@@ -2464,6 +2464,33 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.fee_open_cost == 2 * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_buys == 2
+    # Check with 1 order
+    order_noavg = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=None,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order_noavg)
+    trade.recalc_trade_from_orders()
+
+    # Calling recalc with single initial order should not change anything
+    assert trade.amount == 3 * o1_amount
+    assert trade.stake_amount == 3 * o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == 3 * o1_fee_cost
+    assert trade.open_trade_value == 3 * o1_trade_val
+    assert trade.nr_of_successful_buys == 3
 
 
 @pytest.mark.usefixtures("init_persistence")

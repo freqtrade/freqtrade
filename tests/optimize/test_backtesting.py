@@ -782,6 +782,8 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     # While buy-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     for [contour, numres] in tests:
+        # Debug output for random test failure
+        print(f"{contour}, {numres}")
         assert len(simple_backtest(default_conf, contour, mocker, testdatadir)['results']) == numres
 
 

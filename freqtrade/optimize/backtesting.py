@@ -434,7 +434,12 @@ class Backtesting:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
-            trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+            check_adjust_buy = True
+            if self.strategy.max_entry_position_adjustment > -1:
+                count_of_buys = trade.nr_of_successful_buys
+                check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
+            if check_adjust_buy:
+                trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
         enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
@@ -533,12 +538,14 @@ class Backtesting:
     def _enter_trade(self, pair: str, row: Tuple, direction: str,
                      stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+
         current_time = row[DATE_IDX].to_pydatetime()
+        entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
         propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=row[OPEN_IDX])(
             pair=pair, current_time=current_time,
-            proposed_rate=row[OPEN_IDX])  # default value is the open rate
+            proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
 
         # Move rate to within the candle's low/high rate
         propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
@@ -557,7 +564,7 @@ class Backtesting:
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=current_time, current_rate=propose_rate,
                 proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
-                side=direction)
+                entry_tag=entry_tag, side=direction)
 
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
@@ -585,14 +592,13 @@ class Backtesting:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
                     time_in_force=time_in_force, current_time=current_time,
-                    side=direction):
+                    entry_tag=entry_tag, side=direction):
                 return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             amount = round((stake_amount / propose_rate) * leverage, 8)
             if trade is None:
                 # Enter trade
-                has_buy_tag = len(row) >= ENTER_TAG_IDX + 1
                 trade = LocalTrade(
                     pair=pair,
                     open_rate=propose_rate,
@@ -602,7 +608,7 @@ class Backtesting:
                     fee_open=self.fee,
                     fee_close=self.fee,
                     is_open=True,
-                    enter_tag=row[ENTER_TAG_IDX] if has_buy_tag else None,
+                    enter_tag=entry_tag,
                     exchange=self._exchange_name,
                     is_short=(direction == 'short'),
                     trading_mode=self.trading_mode,
@@ -619,6 +625,9 @@ class Backtesting:
                 side="buy",
                 order_type="market",
                 status="closed",
+                order_date=current_time,
+                order_filled_date=current_time,
+                order_update_date=current_time,
                 price=propose_rate,
                 average=propose_rate,
                 amount=amount,

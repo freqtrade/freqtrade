@@ -363,8 +363,8 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, current_time: datetime,
-                           proposed_rate, **kwargs) -> float:
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
+                           entry_tag: Optional[str], **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
@@ -414,7 +414,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 class AwesomeStrategy(IStrategy):
@@ -427,22 +427,24 @@ class AwesomeStrategy(IStrategy):
         'sell': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                          current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 ```
@@ -501,7 +503,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime,
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
                             side: str, **kwargs) -> bool:
         """
         Called right before placing a entry order.
@@ -579,11 +581,13 @@ The `position_adjustment_enable` strategy property enables the usage of `adjust_
 For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
 `adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging).
 
+`max_entry_position_adjustment` property is used to limit the number of additional buys per trade (on top of the first buy) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment buys.
+
 The strategy is expected to return a stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional buy order should be made (position is increased).
 If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
 Additional orders also result in additional fees and those orders don't count towards `max_open_trades`.
 
-This callback is **not** called when there is an open order (either buy or sell) waiting for execution.
+This callback is **not** called when there is an open order (either buy or sell) waiting for execution, or when you have reached the maximum amount of extra buys that you have set on `max_entry_position_adjustment`.
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 !!! Note "About stake size"
@@ -614,14 +618,14 @@ class DigDeeperStrategy(IStrategy):
     # ... populate_* methods
     
     # Example specific variables
-    max_dca_orders = 3
+    max_entry_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
     
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            entry_tag: Optional[str], **kwargs) -> float:
         
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
@@ -656,8 +660,7 @@ class DigDeeperStrategy(IStrategy):
             return None
 
         filled_buys = trade.select_filled_orders('buy')
-        count_of_buys = len(filled_buys)
-        
+        count_of_buys = trade.nr_of_successful_buys
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
         # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
@@ -666,15 +669,14 @@ class DigDeeperStrategy(IStrategy):
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
         # That is why max_dca_multiplier is 5.5
         # Hope you have a deep wallet!
-        if 0 < count_of_buys <= self.max_dca_orders:
-            try:
-                # This returns first order stake size
-                stake_amount = filled_buys[0].cost
-                # This then calculates current safety order size
-                stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
-                return stake_amount
-            except Exception as exception:
-                return None
+        try:
+            # This returns first order stake size
+            stake_amount = filled_buys[0].cost
+            # This then calculates current safety order size
+            stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
+            return stake_amount
+        except Exception as exception:
+            return None
 
         return None
 

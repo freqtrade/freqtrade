@@ -804,18 +804,19 @@ class LocalTrade():
 
         total_amount = 0.0
         total_stake = 0.0
-        for temp_order in self.orders:
-            if (temp_order.ft_is_open or
-                    (temp_order.ft_order_side != self.enter_side) or
-                    (temp_order.status not in NON_OPEN_EXCHANGE_STATES)):
+        for o in self.orders:
+            if (o.ft_is_open or
+                    (o.ft_order_side != self.enter_side) or
+                    (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
-            tmp_amount = temp_order.amount
-            if temp_order.filled is not None:
-                tmp_amount = temp_order.filled
-            if tmp_amount > 0.0 and temp_order.average is not None:
+            tmp_amount = o.amount
+            tmp_price = o.average or o.price
+            if o.filled is not None:
+                tmp_amount = o.filled
+            if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount
-                total_stake += temp_order.average * tmp_amount
+                total_stake += tmp_price * tmp_amount
 
         if total_amount > 0:
             self.open_rate = total_stake / total_amount

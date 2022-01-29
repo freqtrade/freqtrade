@@ -243,6 +243,8 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
+    for o in trade.orders:
+        assert o.status == "closed"
     assert trade.stake_amount == 120
 
     # Open-rate averaged between 2.0 and 2.0 * 0.995
@@ -258,7 +260,6 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
 
     assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
-
     assert trade.nr_of_successful_buys == 2
 
     # Sell

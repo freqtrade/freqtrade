@@ -4,7 +4,7 @@ channels:
 # - defaults
 dependencies:
 # 1/4 req main
-    - python>=3.7,<3.9
+    - python>=3.8,<=3.10
     - numpy
     - pandas
     - pip
@@ -25,10 +25,14 @@ dependencies:
     - fastapi
     - uvicorn
     - pyjwt
+    - aiofiles
+    - psutil
     - colorama
     - questionary
     - prompt-toolkit
     - schedule
+    - python-dateutil
+
 
     # ============================
     # 2/4 req dev

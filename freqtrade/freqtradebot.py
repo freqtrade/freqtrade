@@ -9,7 +9,6 @@ from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
-import arrow
 from schedule import Scheduler
 
 from freqtrade import __version__, constants
@@ -521,8 +520,8 @@ class FreqtradeBot(LoggingMixin):
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
-                    logger.warning('Unable to adjust position of trade for %s: %s',
-                                   trade.pair, exception)
+                    logger.warning(
+                        f"Unable to adjust position of trade for {trade.pair}: {exception}")
 
     def check_and_call_adjust_trade_position(self, trade: Trade):
         """
@@ -531,6 +530,13 @@ class FreqtradeBot(LoggingMixin):
         Once that completes, the existing trade is modified to match new data.
         """
         # TODO-lev: Check what changes are necessary for DCA in relation to shorts.
+        if self.strategy.max_entry_position_adjustment > -1:
+            count_of_buys = trade.nr_of_successful_buys
+            if count_of_buys > self.strategy.max_entry_position_adjustment:
+                logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
+                return
+        else:
+            logger.debug("Max adjustment entries is set to unlimited.")
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
 
@@ -649,7 +655,7 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, side, trade_side, trade)
+            pair, price, stake_amount, side, trade_side, enter_tag, trade)
 
         if not stake_amount:
             return False
@@ -680,8 +686,7 @@ class FreqtradeBot(LoggingMixin):
                 self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
-                side=trade_side
-        ):
+                entry_tag=enter_tag, side=trade_side):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -814,6 +819,7 @@ class FreqtradeBot(LoggingMixin):
     def get_valid_enter_price_and_stake(
             self, pair: str, price: Optional[float], stake_amount: float,
             side: str, trade_side: str,
+            entry_tag: Optional[str],
             trade: Optional[Trade]) -> Tuple[float, float]:
         if price:
             enter_limit_requested = price
@@ -823,7 +829,7 @@ class FreqtradeBot(LoggingMixin):
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=proposed_enter_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_enter_rate)
+                proposed_rate=proposed_enter_rate, entry_tag=entry_tag)
 
             enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
 
@@ -844,7 +850,7 @@ class FreqtradeBot(LoggingMixin):
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
                 min_stake=min_stake_amount, max_stake=max_stake_amount,
-                side=trade_side
+                entry_tag=entry_tag, side=trade_side
             )
 
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
@@ -1145,20 +1151,6 @@ class FreqtradeBot(LoggingMixin):
             return True
         return False
 
-    def _check_timed_out(self, side: str, order: dict) -> bool:
-        """
-        Check if timeout is active, and if the order is still open and timed out
-        """
-        timeout = self.config.get('unfilledtimeout', {}).get(side)
-        ordertime = arrow.get(order['datetime']).datetime
-        if timeout is not None:
-            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
-            timeout_kwargs = {timeout_unit: -timeout}
-            timeout_threshold = arrow.utcnow().shift(**timeout_kwargs).datetime
-            return (order['status'] == 'open' and order['side'] == side
-                    and ordertime < timeout_threshold)
-        return False
-
     def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if necessary
@@ -1178,18 +1170,12 @@ class FreqtradeBot(LoggingMixin):
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
             is_entering = order['side'] == trade.enter_side
             not_closed = order['status'] == 'open' or fully_cancelled
-            side = trade.enter_side if is_entering else trade.exit_side
-            timed_out = self._check_timed_out(side, order)
-            time_method = 'check_sell_timeout' if order['side'] == 'sell' else 'check_buy_timeout'
+            time_method = 'sell' if order['side'] == 'sell' else 'buy'
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
-            if not_closed and (fully_cancelled or timed_out or (
-                strategy_safe_wrapper(getattr(self.strategy, time_method), default_retval=False)(
-                    pair=trade.pair,
-                    trade=trade,
-                    order=order
-                )
-            )):
+            if not_closed and (fully_cancelled or self.strategy.ft_check_timed_out(
+                        time_method, trade, order, datetime.now(timezone.utc))
+                    ):
                 if is_entering:
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 else:

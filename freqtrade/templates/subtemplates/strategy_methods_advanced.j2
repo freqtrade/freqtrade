@@ -12,9 +12,47 @@ def bot_loop_start(self, **kwargs) -> None:
     """
     pass
 
-def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate: float,
+                       entry_tag: 'Optional[str]', **kwargs) -> float:
+    """
+    Custom entry price logic, returning the new entry price.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns None, orderbook is used to set entry price
+
+    :param pair: Pair that's currently analyzed
+    :param current_time: datetime object, containing the current datetime
+    :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+    :return float: New entry price value if provided
+    """
+    return proposed_rate
+
+def custom_exit_price(self, pair: str, trade: 'Trade',
+                      current_time: 'datetime', proposed_rate: float,
+                      current_profit: float, **kwargs) -> float:
+    """
+    Custom exit price logic, returning the new exit price.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns None, orderbook is used to set exit price
+
+    :param pair: Pair that's currently analyzed
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime
+    :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+    :return float: New exit price value if provided
+    """
+    return proposed_rate
+
+def custom_stake_amount(self, pair: str, current_time: 'datetime', current_rate: float,
                         proposed_stake: float, min_stake: float, max_stake: float,
-                        side: str, **kwargs) -> float:
+                        side: str, entry_tag: 'Optional[str]', **kwargs) -> float:
     """
     Customize stake size for each new trade.
 
@@ -24,6 +62,7 @@ def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: f
     :param proposed_stake: A stake amount proposed by the bot.
     :param min_stake: Minimal stake size allowed by exchange.
     :param max_stake: Balance available for trading.
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
     :param side: 'long' or 'short' - indicating the direction of the proposed trade
     :return: A stake size, which is between min_stake and max_stake.
     """
@@ -78,7 +117,7 @@ def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', curre
     return None
 
 def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                        time_in_force: str, current_time: datetime,
+                        time_in_force: str, current_time: datetime, entry_tag: 'Optional[str]',
                         side: str, **kwargs) -> bool:
     """
     Called right before placing a entry order.
@@ -95,6 +134,7 @@ def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: f
     :param rate: Rate that's going to be used when using limit orders
     :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
     :param current_time: datetime object, containing the current datetime
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
     :param side: 'long' or 'short' - indicating the direction of the proposed trade
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return bool: When True is returned, then the buy-order is placed on the exchange.
@@ -169,3 +209,26 @@ def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -
     :return bool: When True is returned, then the sell-order is cancelled.
     """
     return False
+
+def adjust_trade_position(self, trade: 'Trade', current_time: 'datetime',
+                          current_rate: float, current_profit: float, min_stake: float,
+                          max_stake: float, **kwargs) -> 'Optional[float]':
+    """
+    Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+    This means extra buy orders with additional fees.
+    Only called when `position_adjustment_enable` is set to True.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns None
+
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Current buy rate.
+    :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param min_stake: Minimal stake size allowed by exchange.
+    :param max_stake: Balance available for trading.
+    :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+    :return float: Stake amount to adjust your trade
+    """
+    return None
