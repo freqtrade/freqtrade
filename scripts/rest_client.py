@@ -261,6 +261,20 @@ class FtRestClient():
                 }
         return self._post("forcebuy", data=data)
 
+    def forceenter(self, pair, side, price=None):
+        """Force entering a trade
+
+        :param pair: Pair to buy (ETH/BTC)
+        :param side: 'long' or 'short'
+        :param price: Optional - price to buy
+        :return: json object of the trade
+        """
+        data = {"pair": pair,
+                "side": side,
+                "price": price,
+                }
+        return self._post("forceenter", data=data)
+
     def forcesell(self, tradeid):
         """Force-sell a trade.
 

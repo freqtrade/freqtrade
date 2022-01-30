@@ -543,7 +543,7 @@ def test_api_show_config(botclient):
     assert 'unfilledtimeout' in response
     assert 'version' in response
     assert 'api_version' in response
-    assert 1.1 <= response['api_version'] <= 1.2
+    assert 2.1 <= response['api_version'] <= 2.2
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -1062,23 +1062,27 @@ def test_api_whitelist(botclient):
 
 
 # TODO -lev: add test for forcebuy (short) when feature is supported
-def test_api_forcebuy(botclient, mocker, fee):
+@pytest.mark.parametrize('endpoint', [
+    'forcebuy',
+    'forceenter',
+])
+def test_api_forceentry(botclient, mocker, fee, endpoint):
     ftbot, client = botclient
 
-    rc = client_post(client, f"{BASE_URI}/forcebuy",
+    rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": "Error querying /api/v1/forcebuy: Forcebuy not enabled."}
+    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Forceentry not enabled."}
 
     # enable forcebuy
     ftbot.config['forcebuy_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
-    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
-    rc = client_post(client, f"{BASE_URI}/forcebuy",
+    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
+    rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
-    assert rc.json() == {"status": "Error buying pair ETH/BTC."}
+    assert rc.json() == {"status": "Error entering long trade for pair ETH/BTC."}
 
     # Test creating trade
     fbuy_mock = MagicMock(return_value=Trade(
@@ -1099,9 +1103,9 @@ def test_api_forcebuy(botclient, mocker, fee):
         timeframe=5,
         strategy=CURRENT_TEST_STRATEGY
     ))
-    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
+    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
 
-    rc = client_post(client, f"{BASE_URI}/forcebuy",
+    rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
     assert rc.json() == {

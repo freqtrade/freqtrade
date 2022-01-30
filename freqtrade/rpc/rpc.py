@@ -18,6 +18,8 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
 from freqtrade.enums import SellType, State
+from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -662,7 +664,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forcesell(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
+    def _rpc_forceexit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -719,18 +721,23 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
-                      stake_amount: Optional[float] = None) -> Optional[Trade]:
+    def _rpc_force_entry(self, pair: str, price: Optional[float], *,
+                         order_type: Optional[str] = None,
+                         order_side: SignalDirection = SignalDirection.LONG,
+                         stake_amount: Optional[float] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
         """
 
         if not self._freqtrade.config.get('forcebuy_enable', False):
-            raise RPCException('Forcebuy not enabled.')
+            raise RPCException('Forceentry not enabled.')
 
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
+
+        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
+            raise RPCException("Can't go short on Spot markets.")
 
         # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
@@ -754,7 +761,9 @@ class RPC:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade):
+                                         ordertype=order_type, trade=trade,
+                                         is_short=(order_side == SignalDirection.SHORT)
+                                         ):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade

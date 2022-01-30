@@ -7,6 +7,7 @@ import json
 import logging
 import re
 from datetime import date, datetime, timedelta
+from functools import partial
 from html import escape
 from itertools import chain
 from math import isnan
@@ -23,6 +24,8 @@ from telegram.utils.helpers import escape_markdown
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
+from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
@@ -113,7 +116,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/edge$', r'/help$', r'/version$']
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+                                 r'/edge$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -150,8 +154,11 @@ class Telegram(RPCHandler):
             CommandHandler('balance', self._balance),
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
-            CommandHandler('forcesell', self._forcesell),
-            CommandHandler('forcebuy', self._forcebuy),
+            CommandHandler(['forcesell', 'forceexit'], self._forceexit),
+            CommandHandler(['forcebuy', 'forcelong'], partial(
+                self._forceenter, order_side=SignalDirection.LONG)),
+            CommandHandler('forceshort', partial(
+                self._forceenter, order_side=SignalDirection.SHORT)),
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
@@ -190,7 +197,7 @@ class Telegram(RPCHandler):
                                  pattern='update_sell_reason_performance'),
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
-            CallbackQueryHandler(self._forcebuy_inline),
+            CallbackQueryHandler(self._forceenter_inline),
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -846,7 +853,7 @@ class Telegram(RPCHandler):
         self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _forcesell(self, update: Update, context: CallbackContext) -> None:
+    def _forceexit(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /forcesell <id>.
         Sells the given trade at current price
@@ -860,25 +867,27 @@ class Telegram(RPCHandler):
             self._send_msg("You must specify a trade-id or 'all'.")
             return
         try:
-            msg = self._rpc._rpc_forcesell(trade_id)
+            msg = self._rpc._rpc_forceexit(trade_id)
             self._send_msg('Forcesell Result: `{result}`'.format(**msg))
 
         except RPCException as e:
             self._send_msg(str(e))
 
-    def _forcebuy_action(self, pair, price=None):
+    def _forceenter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         try:
-            self._rpc._rpc_forcebuy(pair, price)
+            self._rpc._rpc_force_entry(pair, price, order_side=order_side)
         except RPCException as e:
             self._send_msg(str(e))
 
-    def _forcebuy_inline(self, update: Update, _: CallbackContext) -> None:
+    def _forceenter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
-            pair = query.data
-            query.answer()
-            query.edit_message_text(text=f"Force Buying: {pair}")
-            self._forcebuy_action(pair)
+            if query.data and '_||_' in query.data:
+                pair, side = query.data.split('_||_')
+                order_side = SignalDirection(side)
+                query.answer()
+                query.edit_message_text(text=f"Manually entering {order_side} for {pair}")
+                self._forceenter_action(pair, None, order_side)
 
     @staticmethod
     def _layout_inline_keyboard(buttons: List[InlineKeyboardButton],
@@ -886,9 +895,10 @@ class Telegram(RPCHandler):
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only
-    def _forcebuy(self, update: Update, context: CallbackContext) -> None:
+    def _forceenter(
+            self, update: Update, context: CallbackContext, order_side: SignalDirection) -> None:
         """
-        Handler for /forcebuy <asset> <price>.
+        Handler for /forcelong <asset> <price> and `/forceshort <asset> <price>
         Buys a pair trade at the given or current price
         :param bot: telegram bot
         :param update: message update
@@ -897,13 +907,18 @@ class Telegram(RPCHandler):
         if context.args:
             pair = context.args[0]
             price = float(context.args[1]) if len(context.args) > 1 else None
-            self._forcebuy_action(pair, price)
+            self._forceenter_action(pair, price, order_side)
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
-            pairs = [InlineKeyboardButton(text=pair, callback_data=pair) for pair in whitelist]
+            pair_buttons = [
+                InlineKeyboardButton(text=pair, callback_data=f"{pair}_||_{order_side}")
+                for pair in whitelist
+            ]
 
             self._send_msg(msg="Which pair?",
-                           keyboard=self._layout_inline_keyboard(pairs))
+                           keyboard=self._layout_inline_keyboard(pair_buttons),
+                           callback_path="update_forcelong",
+                           query=update.callback_query)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
@@ -1269,18 +1284,23 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        forcebuy_text = ("*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. "
-                         "Optionally takes a rate at which to buy "
-                         "(only applies to limit orders).` \n")
+        forceenter_text = ("*/forcelong <pair> [<rate>]:* `Instantly buys the given pair. "
+                           "Optionally takes a rate at which to buy "
+                           "(only applies to limit orders).` \n"
+                           )
+        if self._rpc._freqtrade.trading_mode != TradingMode.SPOT:
+            forceenter_text += ("*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
+                                "Optionally takes a rate at which to sell "
+                                "(only applies to limit orders).` \n")
         message = (
             "_BotControl_\n"
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-            "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
+            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
-            f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
+            f"{forceenter_text if self._config.get('forcebuy_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
             "*/whitelist:* `Show current whitelist` \n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
@@ -1374,6 +1394,7 @@ class Telegram(RPCHandler):
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
+            f"*Market: * `{val['trading_mode']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"

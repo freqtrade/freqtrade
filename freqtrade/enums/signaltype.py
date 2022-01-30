@@ -19,6 +19,6 @@ class SignalTagType(Enum):
     EXIT_TAG = "exit_tag"
 
 
-class SignalDirection(Enum):
+class SignalDirection(str, Enum):
     LONG = 'long'
     SHORT = 'short'
