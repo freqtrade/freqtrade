@@ -630,6 +630,11 @@ class Backtesting:
         self.rejected_trades += 1
         return False
 
+    def run_protections(self, enable_protections, pair: str, current_time: datetime):
+        if enable_protections:
+            self.protections.stop_per_pair(pair, current_time)
+            self.protections.global_stop(current_time)
+
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
@@ -736,9 +741,7 @@ class Backtesting:
                         open_trades[pair].remove(trade)
                         LocalTrade.close_bt_trade(trade)
                         trades.append(trade)
-                        if enable_protections:
-                            self.protections.stop_per_pair(pair, row[DATE_IDX])
-                            self.protections.global_stop(current_time)
+                        self.run_protections(enable_protections, pair, current_time)
 
                     # 5. Cancel expired buy/sell orders.
                     for order in [o for o in trade.orders if o.ft_is_open]:
