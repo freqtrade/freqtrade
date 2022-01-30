@@ -24,5 +24,5 @@ class Okex(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, Collateral.CROSS),
         # (TradingMode.FUTURES, Collateral.CROSS),
-        (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]

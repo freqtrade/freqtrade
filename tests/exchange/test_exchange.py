@@ -242,8 +242,8 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.34559, 4, 0.001, 1, 2.345, 'spot'),
     (2.9999, 4, 0.001, 1, 2.999, 'spot'),
     (2.9909, 4, 0.001, 1, 2.990, 'spot'),
-    (2.9909, 4, 0.005, 0.01, 299.09, 'futures'),
-    (2.9999, 4, 0.005, 10, 0.295, 'futures'),
+    (2.9909, 4, 0.005, 0.01, 2.99, 'futures'),
+    (2.9999, 4, 0.005, 10, 2.995, 'futures'),
 ])
 def test_amount_to_precision(
     default_conf,
@@ -3451,9 +3451,9 @@ def test_set_margin_mode(mocker, default_conf, collateral):
 
     ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
-    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False),
 
     # * Remove once implemented
+    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
@@ -3464,6 +3464,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
 
     # * Uncomment once implemented
+    # ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
