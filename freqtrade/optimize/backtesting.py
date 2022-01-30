@@ -591,9 +591,7 @@ class Backtesting:
                 cost=stake_amount + trade.fee_open,
             )
             if pos_adjust and self._get_order_filled(order.price, row):
-                order.filled = order.amount
-                order.status = 'closed'
-                order.ft_is_open = False
+                order.close_bt_order(current_time)
             else:
                 trade.open_order_id = self.order_id_counter
             trade.orders.append(order)
@@ -718,11 +716,8 @@ class Backtesting:
                     # 2. Process buy orders.
                     order = trade.select_order('buy', is_open=True)
                     if order and self._get_order_filled(order.price, row):
-                        order.order_filled_date = row[DATE_IDX]
+                        order.close_bt_order(current_time)
                         trade.open_order_id = None
-                        order.filled = order.amount
-                        order.status = 'closed'
-                        order.ft_is_open = False
                         LocalTrade.add_bt_trade(trade)
 
                     # 3. Create sell orders (if any)
@@ -733,10 +728,7 @@ class Backtesting:
                     order = trade.select_order('sell', is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         trade.open_order_id = None
-                        order.order_filled_date = trade.close_date = row[DATE_IDX]
-                        order.filled = order.amount
-                        order.status = 'closed'
-                        order.ft_is_open = False
+                        trade.close_date = current_time
                         trade.close(order.price, show_msg=False)
 
                         # logger.debug(f"{pair} - Backtesting sell {trade}")

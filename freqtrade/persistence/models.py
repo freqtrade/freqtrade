@@ -188,6 +188,12 @@ class Order(_DECL_BASE):
             'status': self.status,
         }
 
+    def close_bt_order(self, close_date: datetime):
+        self.order_filled_date = close_date
+        self.filled = self.amount
+        self.status = 'closed'
+        self.ft_is_open = False
+
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
         """
