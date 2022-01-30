@@ -59,7 +59,7 @@ $ freqtrade new-config --config config_binance.json
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC
 ? Please insert your stake amount: 0.05
-? Please insert max_open_trades (Integer or 'unlimited'): 3
+? Please insert max_open_trades (Integer or -1 for unlimited open trades): 3
 ? Please insert your desired timeframe (e.g. 5m): 5m
 ? Please insert your display Currency (for reporting): USD
 ? Select exchange  binance
