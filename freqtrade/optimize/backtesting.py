@@ -355,7 +355,10 @@ class Backtesting:
                     # use Open rate if open_rate > calculated sell rate
                     return sell_row[OPEN_IDX]
 
-                return close_rate
+                # Use the maximum between close_rate and low as we
+                # cannot sell outside of a candle.
+                # Applies when a new ROI setting comes in place and the whole candle is above that.
+                return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
             else:
                 # This should not be reached...
@@ -384,7 +387,7 @@ class Backtesting:
 
     def _get_order_filled(self, rate: float, row: Tuple) -> bool:
         """ Rate is within candle, therefore filled"""
-        return row[LOW_IDX] < rate < row[HIGH_IDX]
+        return row[LOW_IDX] <= rate <= row[HIGH_IDX]
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
@@ -563,6 +566,9 @@ class Backtesting:
                     exchange='backtesting',
                     orders=[]
                 )
+            else:
+                trade.open_order_id = self.order_id_counter
+
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
             order = Order(
@@ -697,7 +703,7 @@ class Backtesting:
                     trade = self._enter_trade(pair, row)
                     if trade:
                         # TODO: hacky workaround to avoid opening > max_open_trades
-                        # This emulates previous behaviour - not sure if this is correct
+                        # This emulates previous behavior - not sure if this is correct
                         # Prevents buying if the trade-slot was freed in this candle
                         open_trade_count_start += 1
                         open_trade_count += 1

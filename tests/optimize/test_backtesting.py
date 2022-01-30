@@ -635,7 +635,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     assert res.sell_reason == SellType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    assert round(res.close_rate, 3) == round(209.0225, 3)
+    sell_order = res.select_order('sell', True)
+    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
