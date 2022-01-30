@@ -566,8 +566,6 @@ class Backtesting:
                     exchange='backtesting',
                     orders=[]
                 )
-            else:
-                trade.open_order_id = self.order_id_counter
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
@@ -592,6 +590,12 @@ class Backtesting:
                 remaining=amount,
                 cost=stake_amount + trade.fee_open,
             )
+            if pos_adjust and self._get_order_filled(order.price, row):
+                order.filled = order.amount
+                order.status = 'closed'
+                order.ft_is_open = False
+            else:
+                trade.open_order_id = self.order_id_counter
             trade.orders.append(order)
             trade.recalc_trade_from_orders()
 
