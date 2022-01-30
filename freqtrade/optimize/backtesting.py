@@ -381,6 +381,7 @@ class Backtesting:
         if stake_amount is not None and stake_amount > 0.0:
             pos_trade = self._enter_trade(trade.pair, row, stake_amount, trade)
             if pos_trade is not None:
+                self.wallets.update()
                 return pos_trade
 
         return trade
@@ -517,7 +518,7 @@ class Backtesting:
         pos_adjust = trade is not None
         if not pos_adjust:
             try:
-                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+                stake_amount = self.wallets.get_trade_stake_amount(pair, None, update=False)
             except DependencyException:
                 return None
 
@@ -746,6 +747,7 @@ class Backtesting:
                         order.close_bt_order(current_time)
                         trade.open_order_id = None
                         LocalTrade.add_bt_trade(trade)
+                        self.wallets.update()
 
                     # 3. Create sell orders (if any)
                     if not trade.open_order_id:
@@ -763,6 +765,7 @@ class Backtesting:
                         open_trades[pair].remove(trade)
                         LocalTrade.close_bt_trade(trade)
                         trades.append(trade)
+                        self.wallets.update()
                         self.run_protections(enable_protections, pair, current_time)
 
                     # 5. Cancel expired buy/sell orders.
@@ -771,6 +774,7 @@ class Backtesting:
                         # Close trade due to buy timeout expiration.
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
+                        self.wallets.update()
 
             # Move time one configured time_interval ahead.
             self.progress.increment()

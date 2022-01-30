@@ -521,6 +521,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     # Fake 2 trades, so there's not enough amount for the next trade left.
     LocalTrade.trades_open.append(trade)
     LocalTrade.trades_open.append(trade)
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
     LocalTrade.trades_open.pop()
@@ -528,6 +529,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is not None
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade
     assert trade.stake_amount == 123.5
