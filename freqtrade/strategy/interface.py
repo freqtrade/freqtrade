@@ -18,6 +18,7 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import LocalTrade, Order
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -862,23 +863,22 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ft_check_timed_out(self, side: str, trade: Trade, order: Dict,
+    def ft_check_timed_out(self, side: str, trade: LocalTrade, order: Order,
                            current_time: datetime) -> bool:
         """
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
         timeout = self.config.get('unfilledtimeout', {}).get(side)
-        ordertime = arrow.get(order['datetime']).datetime
         if timeout is not None:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)
-            timedout = (order['status'] == 'open' and order['side'] == side
-                        and ordertime < timeout_threshold)
+            timedout = (order.status == 'open' and order.side == side
+                        and order.order_date_utc < timeout_threshold)
             if timedout:
                 return True
-        time_method = self.check_sell_timeout if order['side'] == 'sell' else self.check_buy_timeout
+        time_method = self.check_sell_timeout if order.side == 'sell' else self.check_buy_timeout
 
         return strategy_safe_wrapper(time_method,
                                      default_retval=False)(

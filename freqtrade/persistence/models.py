@@ -132,6 +132,10 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
+    @property
+    def order_date_utc(self):
+        return self.order_date.replace(tzinfo=timezone.utc)
+
     def __repr__(self):
 
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -640,6 +644,16 @@ class LocalTrade():
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
+
+    def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
+        """
+        Finds order object by Order id.
+        :param order_id: Exchange order id
+        """
+        orders = [o for o in self.orders if o.order_id == order_id]
+        if orders:
+            return orders[0]
+        return None
 
     def select_order(
             self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:

@@ -593,7 +593,7 @@ class Backtesting:
             if pos_adjust and self._get_order_filled(order.price, row):
                 order.close_bt_order(current_time)
             else:
-                trade.open_order_id = self.order_id_counter
+                trade.open_order_id = str(self.order_id_counter)
             trade.orders.append(order)
             trade.recalc_trade_from_orders()
 
@@ -642,7 +642,7 @@ class Backtesting:
         """
         for order in [o for o in trade.orders if o.ft_is_open]:
 
-            timedout = self.strategy.ft_check_timed_out(order.side, trade, {}, current_time)
+            timedout = self.strategy.ft_check_timed_out(order.side, trade, order, current_time)
             if timedout:
                 if order.side == 'buy':
                     if trade.nr_of_successful_buys == 0:
