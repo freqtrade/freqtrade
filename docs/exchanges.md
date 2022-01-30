@@ -57,7 +57,7 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"
-    Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    Binance supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange..
 
 ### Binance Blacklist
 
@@ -70,6 +70,11 @@ Binance has been split into 2, and users must use the correct ccxt exchange ID f
 
 * [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance`.
 * [binance.us](https://www.binance.us/) - US based users. Use exchange id: `binanceus`.
+
+## Huobi
+
+!!! Tip "Stoploss on Exchange"
+    Huobi supports `stoploss_on_exchange` and uses `stop-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
 
 ## Kraken
 
