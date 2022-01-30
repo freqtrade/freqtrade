@@ -78,8 +78,9 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
-        candleType = CandleType.from_string(candle_type)
-        saved_pair = (pair, str(timeframe), candleType)
+        _candle_type = CandleType.from_string(
+            candle_type) if candle_type != '' else self._config['candle_type_def']
+        saved_pair = (pair, str(timeframe), _candle_type)
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
@@ -93,7 +94,7 @@ class DataProvider:
                 datadir=self._config['datadir'],
                 timerange=timerange,
                 data_format=self._config.get('dataformat_ohlcv', 'json'),
-                candle_type=candleType,
+                candle_type=_candle_type,
 
             )
         return self.__cached_pairs_backtesting[saved_pair].copy()
@@ -221,8 +222,10 @@ class DataProvider:
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+            _candle_type = CandleType.from_string(
+                candle_type) if candle_type != '' else self._config['candle_type_def']
             return self._exchange.klines(
-                (pair, timeframe or self._config['timeframe'], CandleType.from_string(candle_type)),
+                (pair, timeframe or self._config['timeframe'], _candle_type),
                 copy=copy
             )
         else:
