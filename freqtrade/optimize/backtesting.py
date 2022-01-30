@@ -658,6 +658,22 @@ class Backtesting:
 
         return False
 
+    def validate_row(
+            self, data: Dict, pair: str, row_index: int, current_time: datetime) -> Optional[Tuple]:
+        try:
+            # Row is treated as "current incomplete candle".
+            # Buy / sell signals are shifted by 1 to compensate for this.
+            row = data[pair][row_index]
+        except IndexError:
+            # missing Data for one pair at the end.
+            # Warnings for this are shown during data loading
+            return None
+
+        # Waits until the time-counter reaches the start of the data for this pair.
+        if row[DATE_IDX] > current_time:
+            return None
+        return row
+
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
@@ -701,17 +717,8 @@ class Backtesting:
             self.check_abort()
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
-                try:
-                    # Row is treated as "current incomplete candle".
-                    # Buy / sell signals are shifted by 1 to compensate for this.
-                    row = data[pair][row_index]
-                except IndexError:
-                    # missing Data for one pair at the end.
-                    # Warnings for this are shown during data loading
-                    continue
-
-                # Waits until the time-counter reaches the start of the data for this pair.
-                if row[DATE_IDX] > current_time:
+                row = self.validate_row(data, pair, row_index, current_time)
+                if not row:
                     continue
 
                 row_index += 1
@@ -769,8 +776,7 @@ class Backtesting:
                         self.run_protections(enable_protections, pair, current_time)
 
                     # 5. Cancel expired buy/sell orders.
-                    canceled = self.check_order_cancel(trade, current_time)
-                    if canceled:
+                    if self.check_order_cancel(trade, current_time):
                         # Close trade due to buy timeout expiration.
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
