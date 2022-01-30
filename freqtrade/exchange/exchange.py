@@ -633,7 +633,6 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        amount = self._amount_to_contracts(pair, amount)
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -737,7 +736,7 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self._contracts_to_amount(pair, self.amount_to_precision(pair, amount))
+        _amount = self.amount_to_precision(pair, amount)
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -901,7 +900,7 @@ class Exchange:
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.amount_to_precision(pair, amount)
+            amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
             needs_price = (ordertype != 'market'
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
