@@ -735,11 +735,11 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
         ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
 
-    exchange_name = gateio, is_short = true
+    exchange_name = gateio/okex, is_short = true
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
 
-    exchange_name = gateio, is_short = false
+    exchange_name = gateio/okex, is_short = false
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
@@ -747,10 +747,12 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
     leverage = 1.0 if trading_mode == 'spot' else 5.0
+    default_conf_usdt['exchange']['name'] = exchange_name
     if margin_mode:
         default_conf_usdt['collateral'] = margin_mode
+    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
+    patch_exchange(mocker, id=exchange_name)
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)

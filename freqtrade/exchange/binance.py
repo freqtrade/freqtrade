@@ -277,17 +277,15 @@ class Binance(Exchange):
         # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
         # describes the min amount for a bracket, and the lowest bracket will always go down to 0
 
-    def liquidation_price(
+    def dry_run_liquidation_price(
         self,
+        pair: str,
         open_rate: float,   # Entry price of position
         is_short: bool,
-        mm_ratio: float,
         position: float,  # Absolute value of position size
         wallet_balance: float,  # Or margin balance
-        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        maintenance_amt: Optional[float] = None,  # (Binance)
-        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
-        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        mm_ex_1: float = 0.0,  # (Binance) Cross only
+        upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
         MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
@@ -296,14 +294,10 @@ class Binance(Exchange):
         :param exchange_name:
         :param open_rate: (EP1) Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param mm_ratio: (MMR)
-            # Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         :param position: Absolute value of position size (in base currency)
-        :param maintenance_amt: (CUM) Maintenance Amount of position
         :param wallet_balance: (WB)
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param taker_fee_rate:  # * Not required by Binance
         :param maintenance_amt:
 
         # * Only required for Cross
@@ -314,30 +308,20 @@ class Binance(Exchange):
             Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
             Isolated-Margin Mode: 0
         """
-        if self.trading_mode == TradingMode.SPOT:
-            return None
-        elif (self.collateral is None):
-            raise OperationalException('Binance.collateral must be set for liquidation_price')
-
-        if (maintenance_amt is None):
-            raise OperationalException(
-                f"Parameter maintenance_amt is required by Binance.liquidation_price"
-                f"for {self.collateral.value} {self.trading_mode.value}"
-            )
-
-        if (self.collateral == Collateral.CROSS and (mm_ex_1 is None or upnl_ex_1 is None)):
-            raise OperationalException(
-                f"Parameters mm_ex_1 and upnl_ex_1 are required by Binance.liquidation_price"
-                f"for {self.collateral.value} {self.trading_mode.value}"
-            )
 
         side_1 = -1 if is_short else 1
         position = abs(position)
-        cross_vars = (
-            upnl_ex_1 - mm_ex_1  # type: ignore
-            if self.collateral == Collateral.CROSS else
-            0.0
-        )
+        cross_vars = upnl_ex_1 - mm_ex_1 if self.collateral == Collateral.CROSS else 0.0
+
+        # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        # maintenance_amt: (CUM) Maintenance Amount of position
+        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, position)
+
+        if (maintenance_amt is None):
+            raise OperationalException(
+                "Parameter maintenance_amt is required by Binance.liquidation_price"
+                f"for {self.trading_mode.value}"
+            )
 
         if self.trading_mode == TradingMode.FUTURES:
             return (
@@ -348,6 +332,6 @@ class Binance(Exchange):
                     (position * mm_ratio) - (side_1 * position)
                 )
             )
-
-        raise OperationalException(
-            f"Binance does not support {self.collateral.value} {self.trading_mode.value} trading")
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")

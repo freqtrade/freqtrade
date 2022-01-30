@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List, Tuple
+
 from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exchange import Exchange
 

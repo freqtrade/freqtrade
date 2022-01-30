@@ -362,10 +362,7 @@ class LocalTrade():
             self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
-    def set_isolated_liq(
-        self,
-        isolated_liq: float,
-    ):
+    def set_isolated_liq(self, isolated_liq: float):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price

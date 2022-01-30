@@ -817,29 +817,42 @@ def get_markets():
             'symbol': 'ETH/USDT',
             'base': 'ETH',
             'quote': 'USDT',
-            'spot': True,
-            'future': True,
-            'swap': True,
-            'margin': True,
+            'settle': 'USDT',
+            'baseId': 'ETH',
+            'quoteId': 'USDT',
+            'settleId': 'USDT',
             'type': 'spot',
-            'contractSize': None,
+            'spot': True,
+            'margin': True,
+            'swap': True,
+            'future': True,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
             'taker': 0.0006,
             'maker': 0.0002,
+            'contractSize': 1,
+            'expiry': 1680220800000,
+            'expiryDateTime': '2023-03-31T00:00:00.000Z',
+            'strike': None,
+            'optionType': None,
             'precision': {
                 'amount': 8,
-                'price': 8
+                'price': 8,
             },
             'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100,
+                },
                 'amount': {
                     'min': 0.02214286,
-                    'max': None
+                    'max': None,
                 },
                 'price': {
                     'min': 1e-08,
-                    'max': None
-                },
-                'leverage': {
-                    'min': None,
                     'max': None,
                 },
                 'cost': {
@@ -847,8 +860,9 @@ def get_markets():
                     'max': None,
                 },
             },
-            'active': True,
-            'info': {},
+            'info': {
+                'maintenance_rate': '0.005',
+            },
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -1110,7 +1124,6 @@ def get_markets():
             'swap': True,
             'futures': False,
             'option': False,
-            'derivative': True,
             'contract': True,
             'linear': True,
             'inverse': False,

@@ -19,7 +19,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (Collateral, RPCMessageType, RunMode, SellType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, PricingError)
+                                  InvalidOrderException, OperationalException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -606,38 +606,31 @@ class FreqtradeBot(LoggingMixin):
         is_short: bool
     ) -> Tuple[float, Optional[float]]:
 
-        interest_rate = 0.0
-        isolated_liq = None
-
         # if TradingMode == TradingMode.MARGIN:
         #     interest_rate = self.exchange.get_interest_rate(
         #         pair=pair,
         #         open_rate=open_rate,
         #         is_short=is_short
         #     )
-
-        if self.collateral_type == Collateral.ISOLATED:
-            if self.config['dry_run']:
-                mm_ratio, maintenance_amt = self.exchange.get_maintenance_ratio_and_amt(
-                    pair,
-                    amount
-                )
-                taker_fee_rate = self.exchange.markets[pair]['taker']
-                isolated_liq = self.exchange.liquidation_price(
-                    open_rate=open_rate,
-                    is_short=is_short,
-                    mm_ratio=mm_ratio,
-                    position=amount,
-                    wallet_balance=(amount * open_rate)/leverage,  # TODO: Update for cross
-                    taker_fee_rate=taker_fee_rate,
-                    maintenance_amt=maintenance_amt,
-                    mm_ex_1=0.0,
-                    upnl_ex_1=0.0,
-                )
-            else:
-                isolated_liq = self.exchange.get_liquidation_price(pair)
-
-        return interest_rate, isolated_liq
+        if self.trading_mode == TradingMode.SPOT:
+            return (0.0, None)
+        elif (
+            self.collateral_type == Collateral.ISOLATED and
+            self.trading_mode == TradingMode.FUTURES
+        ):
+            isolated_liq = self.exchange.get_liquidation_price(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short,
+                position=amount,
+                wallet_balance=(amount * open_rate)/leverage,  # TODO: Update for cross
+                mm_ex_1=0.0,
+                upnl_ex_1=0.0,
+            )
+            return (0.0, isolated_liq)
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")
 
     def execute_entry(
         self,
