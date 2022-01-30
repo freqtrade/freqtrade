@@ -635,6 +635,28 @@ class Backtesting:
             self.protections.stop_per_pair(pair, current_time)
             self.protections.global_stop(current_time)
 
+    def check_order_cancel(self, trade: LocalTrade, current_time) -> bool:
+        """
+        Check if an order has been canceled.
+        Returns True if the trade should be Deleted (initial order was canceled).
+        """
+        for order in [o for o in trade.orders if o.ft_is_open]:
+
+            timedout = self.strategy.ft_check_timed_out(order.side, trade, {}, current_time)
+            if timedout:
+                if order.side == 'buy':
+                    if trade.nr_of_successful_buys == 0:
+                        # Remove trade due to buy timeout expiration.
+                        return True
+                    else:
+                        # Close additional buy order
+                        del trade.orders[trade.orders.index(order)]
+                if order.side == 'sell':
+                    # Close sell order and retry selling on next signal.
+                    del trade.orders[trade.orders.index(order)]
+
+        return False
+
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
@@ -744,20 +766,11 @@ class Backtesting:
                         self.run_protections(enable_protections, pair, current_time)
 
                     # 5. Cancel expired buy/sell orders.
-                    for order in [o for o in trade.orders if o.ft_is_open]:
-                        timeout = self.config['unfilledtimeout'].get(order.side, 0)
-                        if 0 < timeout <= (current_time - order.order_date).seconds / 60:
-                            trade.open_order_id = None
-                            order.ft_is_open = False
-                            order.filled = 0
-                            order.remaining = 0
-                            if order.side == 'buy':
-                                # Close trade due to buy timeout expiration.
-                                open_trade_count -= 1
-                                open_trades[pair].remove(trade)
-                            elif order.side == 'sell':
-                                # Close sell order and retry selling on next signal.
-                                del trade.orders[trade.orders.index(order)]
+                    canceled = self.check_order_cancel(trade, current_time)
+                    if canceled:
+                        # Close trade due to buy timeout expiration.
+                        open_trade_count -= 1
+                        open_trades[pair].remove(trade)
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
