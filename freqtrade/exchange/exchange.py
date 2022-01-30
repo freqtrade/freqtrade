@@ -685,21 +685,26 @@ class Exchange:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
         min_stake_amounts = []
+        max_stake_amounts = [float('inf')]
         limits = market['limits']
         if (limits['cost']['min'] is not None):
             min_stake_amounts.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['cost']['min']
-                )
+                self._contracts_to_amount(pair, limits['cost']['min'])
             )
 
         if (limits['amount']['min'] is not None):
             min_stake_amounts.append(
-                self._contracts_to_amount(
-                    pair,
-                    limits['amount']['min'] * price
-                )
+                self._contracts_to_amount(pair, limits['amount']['min'] * price)
+            )
+
+        if (limits['cost']['max'] is not None):
+            max_stake_amounts.append(
+                self._contracts_to_amount(pair, limits['cost']['max'])
+            )
+
+        if (limits['amount']['max'] is not None):
+            max_stake_amounts.append(
+                self._contracts_to_amount(pair, limits['amount']['max'] * price)
             )
 
         if not min_stake_amounts:
@@ -717,9 +722,12 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return self._get_stake_amount_considering_leverage(
-            max(min_stake_amounts) * amount_reserve_percent,
-            leverage or 1.0
+        return min(
+            self._get_stake_amount_considering_leverage(
+                max(min_stake_amounts) * amount_reserve_percent,
+                leverage or 1.0
+            ),
+            min(max_stake_amounts)
         )
 
     def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
