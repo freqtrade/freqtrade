@@ -567,8 +567,7 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.exit_side == order['side']:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                # TODO-lev: On shorts, you buy a little bit more than the amount (amount + interest)
-                # TODO-lev: This wll only print the original amount
+                # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             # TODO-lev: Double check this
             self.close(safe_value_fallback(order, 'average', 'price'))
