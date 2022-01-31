@@ -684,13 +684,9 @@ class Exchange:
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
-        if 'limits' not in market:
-            return None
-
         min_stake_amounts = []
         limits = market['limits']
-        if ('cost' in limits and 'min' in limits['cost']
-                and limits['cost']['min'] is not None):
+        if (limits['cost']['min'] is not None):
             min_stake_amounts.append(
                 self._contracts_to_amount(
                     pair,
@@ -698,8 +694,7 @@ class Exchange:
                 )
             )
 
-        if ('amount' in limits and 'min' in limits['amount']
-                and limits['amount']['min'] is not None):
+        if (limits['amount']['min'] is not None):
             min_stake_amounts.append(
                 self._contracts_to_amount(
                     pair,
