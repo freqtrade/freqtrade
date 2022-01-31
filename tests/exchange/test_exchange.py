@@ -4049,143 +4049,119 @@ def test_get_max_amount_tradable(
     default_conf,
 ):
     api_mock = MagicMock()
+    default_conf['collateral'] = 'isolated'
+    default_conf['trading_mode'] = 'futures'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     markets = {
-        'XRP/USDT': {
+        'XRP/USDT:USDT': {
             'limits': {
-                'leverage': {
-                    'min': None,
-                    'max': None,
-                },
                 'amount': {
                     'min': 0.001,
                     'max': 10000
-                },
-                'price': {
-                    'min': 39.86,
-                    'max': 306177
                 },
                 'cost': {
                     'min': 5,
                     'max': None
                 },
-                'market': {
-                    'min': 0.001,
-                    'max': 2000
-                },
-            },
-            'precision': {
-                'price': 2,
-                'amount': 3,
-                'base': 8,
-                'quote': 8
             },
             'contractSize': None,
             'spot': False,
-            'swap': True
         },
-        'LTC/USDT': {
+        'LTC/USDT:USDT': {
             'limits': {
-                'leverage': {
-                    'min': None,
-                    'max': None,
-                },
                 'amount': {
                     'min': 0.001,
                     'max': None
-                },
-                'price': {
-                    'min': 39.86,
-                    'max': 306177
                 },
                 'cost': {
                     'min': 5,
                     'max': None
                 },
-                'market': {
-                    'min': 0.001,
-                    'max': 2000
-                },
-            },
-            'precision': {
-                'price': 2,
-                'amount': 3,
-                'base': 8,
-                'quote': 8
             },
             'contractSize': 0.01,
             'spot': False,
-            'swap': True
         },
-        'ETH/USDT': {
+        'ETH/USDT:USDT': {
             'limits': {
-                'leverage': {
-                    'min': None,
-                    'max': None,
-                },
                 'amount': {
                     'min': 0.001,
                     'max': 10000
                 },
-                'price': {
-                    'min': 39.86,
-                    'max': 306177
-                },
                 'cost': {
                     'min': 5,
-                    'max': None
+                    'max': 30000,
                 },
-                'market': {
-                    'min': 0.001,
-                    'max': 2000
-                },
-            },
-            'precision': {
-                'price': 2,
-                'amount': 3,
-                'base': 8,
-                'quote': 8
             },
             'contractSize': 0.01,
             'spot': False,
-            'swap': True
         },
         'BTC/USDT': {
             'limits': {
-                'leverage': {
-                    'min': None,
-                    'max': None,
-                },
                 'amount': {
                     'min': 0.001,
                     'max': 10000
-                },
-                'price': {
-                    'min': 39.86,
-                    'max': 306177
                 },
                 'cost': {
                     'min': 5,
                     'max': None
                 },
-                'market': {
-                    'min': 0.001,
-                    'max': 2000
-                },
-            },
-            'precision': {
-                'price': 2,
-                'amount': 3,
-                'base': 8,
-                'quote': 8
             },
             'contractSize': 0.01,
             'spot': True,
-            'swap': False
-        }
+        },
+        'ADA/USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500,
+                },
+            },
+            'contractSize': 0.01,
+            'spot': True,
+        },
+        'DOGE/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500
+                },
+            },
+            'contractSize': None,
+            'spot': False,
+        },
+        'LUNA/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500
+                },
+            },
+            'contractSize': 0.01,
+            'spot': False,
+        },
     }
+
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    assert exchange.get_max_amount_tradable('XRP/USDT') == 10000
-    assert exchange.get_max_amount_tradable('LTC/USDT') == float('inf')
-    assert exchange.get_max_amount_tradable('ETH/USDT') == 100
-    assert exchange.get_max_amount_tradable('BTC/USDT') == 10000
+    assert exchange.get_max_amount_tradable('XRP/USDT:USDT', 2.0) == 10000
+    assert exchange.get_max_amount_tradable('LTC/USDT:USDT', 2.0) == float('inf')
+    assert exchange.get_max_amount_tradable('ETH/USDT:USDT', 2.0) == 100
+    assert exchange.get_max_amount_tradable('DOGE/USDT:USDT', 2.0) == 250
+    assert exchange.get_max_amount_tradable('LUNA/USDT:USDT', 2.0) == 2.5
+
+    default_conf['trading_mode'] = 'spot'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    assert exchange.get_max_amount_tradable('BTC/USDT', 2.0) == 10000
+    assert exchange.get_max_amount_tradable('ADA/USDT', 2.0) == 250

@@ -2119,19 +2119,39 @@ class Exchange:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
-    def get_max_amount_tradable(self, pair: str) -> float:
+    def get_max_amount_tradable(self, pair: str, price: float) -> float:
         '''
         Gets the maximum amount of a currency that the exchange will let you trade
         '''
+        try:
+            market = self.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
+
         market = self.markets[pair]
-        contractSize = market['contractSize']
-        if not contractSize or market['spot']:
-            contractSize = 1
-        maxAmount = market['limits']['amount']['max']
-        if maxAmount:
-            return maxAmount * contractSize
-        else:
+        limits = market['limits']
+        max_amounts = []
+
+        if (limits['cost']['max'] is not None):
+            max_amounts.append(
+                self._contracts_to_amount(
+                    pair,
+                    limits['cost']['max'] / price
+                )
+            )
+
+        if (limits['amount']['max'] is not None):
+            max_amounts.append(
+                self._contracts_to_amount(
+                    pair,
+                    limits['amount']['max']
+                )
+            )
+
+        if not max_amounts:
             return float('inf')
+        else:
+            return min(max_amounts)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
