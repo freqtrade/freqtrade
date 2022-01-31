@@ -162,43 +162,49 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
-@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+@pytest.mark.parametrize('pair,stake_amount,max_lev', [
     ("BNB/BUSD", 0.0, 40.0),
-    ("BNB/USDT", 100.0, 153.84615384615384),
+    ("BNB/USDT", 100.0, 100.0),
     ("BTC/USDT", 170.30, 250.0),
-    ("BNB/BUSD", 999999.9, 10.0),
-    ("BNB/USDT", 5000000.0, 6.666666666666667),
-    ("BTC/USDT", 300000000.1, 2.0),
+    ("BNB/BUSD", 99999.9, 10.0),
+    ("BNB/USDT", 750000, 6.666666666666667),
+    ("BTC/USDT", 150000000.1, 2.0),
 ])
-def test_get_max_leverage_binance(default_conf, mocker, pair, nominal_value, max_lev):
+def test_get_max_leverage_binance(default_conf, mocker, pair, stake_amount, max_lev):
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_brackets = {
-        'BNB/BUSD': [[0.0, 0.025],
-                     [100000.0, 0.05],
-                     [500000.0, 0.1],
-                     [1000000.0, 0.15],
-                     [2000000.0, 0.25],
-                     [5000000.0, 0.5]],
-        'BNB/USDT': [[0.0, 0.0065],
-                     [10000.0, 0.01],
-                     [50000.0, 0.02],
-                     [250000.0, 0.05],
-                     [1000000.0, 0.1],
-                     [2000000.0, 0.125],
-                     [5000000.0, 0.15],
-                     [10000000.0, 0.25]],
-        'BTC/USDT': [[0.0, 0.004],
-                     [50000.0, 0.005],
-                     [250000.0, 0.01],
-                     [1000000.0, 0.025],
-                     [5000000.0, 0.05],
-                     [20000000.0, 0.1],
-                     [50000000.0, 0.125],
-                     [100000000.0, 0.15],
-                     [200000000.0, 0.25],
-                     [300000000.0, 0.5]],
+        'BNB/BUSD': [
+            [0.0, 0.025],  # lev = 40.0
+            [100000.0, 0.05],  # lev = 20.0
+            [500000.0, 0.1],  # lev = 10.0
+            [1000000.0, 0.15],  # lev = 6.666666666666667
+            [2000000.0, 0.25],  # lev = 4.0
+            [5000000.0, 0.5],  # lev = 2.0
+        ],
+        'BNB/USDT': [
+            [0.0, 0.0065],  # lev = 153.84615384615384
+            [10000.0, 0.01],  # lev = 100.0
+            [50000.0, 0.02],  # lev = 50.0
+            [250000.0, 0.05],  # lev = 20.0
+            [1000000.0, 0.1],  # lev = 10.0
+            [2000000.0, 0.125],  # lev = 8.0
+            [5000000.0, 0.15],  # lev = 6.666666666666667
+            [10000000.0, 0.25],  # lev = 4.0
+        ],
+        'BTC/USDT': [
+            [0.0, 0.004],  # lev = 250.0
+            [50000.0, 0.005],  # lev = 200.0
+            [250000.0, 0.01],  # lev = 100.0
+            [1000000.0, 0.025],  # lev = 40.0
+            [5000000.0, 0.05],  # lev = 20.0
+            [20000000.0, 0.1],  # lev = 10.0
+            [50000000.0, 0.125],  # lev = 8.0
+            [100000000.0, 0.15],  # lev = 6.666666666666667
+            [200000000.0, 0.25],  # lev = 4.0
+            [300000000.0, 0.5],  # lev = 2.0
+        ],
     }
-    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
+    assert exchange.get_max_leverage(pair, stake_amount) == max_lev
 
 
 def test_fill_leverage_brackets_binance(default_conf, mocker):
