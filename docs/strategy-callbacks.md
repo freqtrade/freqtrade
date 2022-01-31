@@ -74,7 +74,7 @@ class AwesomeStrategy(IStrategy):
 Freqtrade will fall back to the `proposed_stake` value should your code raise an exception. The exception itself will be logged.
 
 !!! Tip
-    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.
+    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this action will be logged.
 
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.
