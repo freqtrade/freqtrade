@@ -100,3 +100,6 @@ target/
 !config_examples/config_ftx.example.json
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
+!config_examples/config_okex.example.json
+!config_examples/config_binance_futures.example.json
+!config_examples/config_okex_futures.example.json
