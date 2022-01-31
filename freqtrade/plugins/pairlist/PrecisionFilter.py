@@ -18,7 +18,6 @@ class PrecisionFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        # TODO-lev: Liquidation price?
         if 'stoploss' not in self._config:
             raise OperationalException(
                 'PrecisionFilter can only work with stoploss defined. Please add the '
