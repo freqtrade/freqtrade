@@ -21,3 +21,4 @@ from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
 from freqtrade.exchange.okex import Okex
+from freqtrade.exchange.waves import Waves
