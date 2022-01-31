@@ -104,10 +104,17 @@ def ask_user_config() -> Dict[str, Any]:
             "default": 'USD',
         },
         {
+            "type": "confirm",
+            "name": "trading_mode",
+            "message": "Do you want to trade Perpetual Swaps (perpetual futures)?",
+            "default": False,
+            "filter": lambda val: '"futures"' if val else '"spot"',
+        },
+        {
             "type": "select",
             "name": "exchange_name",
             "message": "Select exchange",
-            "choices": [
+            "choices": lambda x: [
                 "binance",
                 "binanceus",
                 "okex",
@@ -118,6 +125,10 @@ def ask_user_config() -> Dict[str, Any]:
                 "kucoin",
                 Separator(),
                 "other",
+            ] if x['trading_mode'] == '"spot"' else [
+                "binance",
+                # "okex",
+                "gateio",
             ],
         },
         {
@@ -192,6 +203,11 @@ def ask_user_config() -> Dict[str, Any]:
         },
     ]
     answers = prompt(questions)
+    answers["margin_mode"] = (
+        '\n    "margin_mode": "isolated",'
+        if answers["trading_mode"] == '"futures"'
+        else ''
+    )
 
     if not answers:
         # Interrupted questionary sessions return an empty dict.
