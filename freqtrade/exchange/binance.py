@@ -173,22 +173,35 @@ class Binance(Exchange):
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
-    def get_max_leverage(self, pair: str, nominal_value: float) -> float:
+    def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        :stake_amount: The total value of the traders collateral in quote currency
         """
+        if stake_amount is None:
+            raise OperationalException('binance.get_max_leverage requires argument stake_amount')
         if pair not in self._leverage_brackets:
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
-        for [notional_floor, mm_ratio, _] in reversed(pair_brackets):
-            if nominal_value >= notional_floor:
-                if mm_ratio != 0:
-                    return 1/mm_ratio
-                else:
-                    logger.warning(f"mm_ratio for {pair} with nominal_value {nominal_value} is 0")
-        return 1.0
+        num_brackets = len(pair_brackets)
+        min_amount = 0.0
+        for bracket_num in range(num_brackets):
+            [notional_floor, mm_ratio, _] = pair_brackets[bracket_num]
+            lev = 1.0
+            if mm_ratio != 0:
+                lev = 1.0/mm_ratio
+            else:
+                logger.warning(f"mm_ratio for {pair} with notional floor {notional_floor} is 0")
+            if bracket_num+1 != num_brackets:  # If not on last bracket
+                [min_amount, _, __] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
+            else:
+                return lev
+            nominal_value = stake_amount * lev
+            # Bracket is good if the leveraged trade value doesnt exceed min_amount of next bracket
+            if nominal_value < min_amount:
+                return lev
+        return 1.0  # default leverage
 
     @retrier
     def _set_leverage(

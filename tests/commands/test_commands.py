@@ -810,7 +810,9 @@ def test_download_data_trades(mocker, caplog):
         "--days", "20",
         "--dl-trades"
     ]
-    start_download_data(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_download_data(pargs)
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
