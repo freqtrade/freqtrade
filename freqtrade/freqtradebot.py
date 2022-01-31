@@ -618,12 +618,13 @@ class FreqtradeBot(LoggingMixin):
             self.collateral_type == Collateral.ISOLATED and
             self.trading_mode == TradingMode.FUTURES
         ):
+            wallet_balance = (amount * open_rate)/leverage
             isolated_liq = self.exchange.get_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
                 position=amount,
-                wallet_balance=(amount * open_rate)/leverage,  # TODO: Update for cross
+                wallet_balance=wallet_balance,
                 mm_ex_1=0.0,
                 upnl_ex_1=0.0,
             )
@@ -1176,8 +1177,8 @@ class FreqtradeBot(LoggingMixin):
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
             if not_closed and (fully_cancelled or self.strategy.ft_check_timed_out(
-                        time_method, trade, order, datetime.now(timezone.utc))
-                    ):
+                time_method, trade, order, datetime.now(timezone.utc))
+            ):
                 if is_entering:
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 else:
