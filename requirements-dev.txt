@@ -10,7 +10,7 @@ mypy==0.931
 pytest==6.2.5
 pytest-asyncio==0.17.2
 pytest-cov==3.0.0
-pytest-mock==3.6.1
+pytest-mock==3.7.0
 pytest-random-order==1.0.4
 isort==5.10.1
 # For datetime mocking
