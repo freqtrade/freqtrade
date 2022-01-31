@@ -583,12 +583,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -614,12 +618,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -644,12 +652,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -674,12 +686,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -705,15 +721,23 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
                 },
             },
             'info': {},
@@ -732,15 +756,23 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
                 },
             },
             'info': {},
@@ -753,6 +785,7 @@ def get_markets():
             'active': False,
             'spot': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -771,7 +804,11 @@ def get_markets():
                 'cost': {
                     'min': 0.0001,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -785,6 +822,7 @@ def get_markets():
             'swap': True,
             'margin': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -797,7 +835,15 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'active': True,
             'info': {},
@@ -813,6 +859,7 @@ def get_markets():
             'swap': True,
             'margin': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -825,7 +872,15 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -843,12 +898,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -870,12 +929,16 @@ def get_markets():
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
@@ -891,6 +954,7 @@ def get_markets():
             'active': True,
             'spot': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -902,10 +966,17 @@ def get_markets():
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
                 },
             },
             'info': {},
@@ -931,7 +1002,15 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -943,12 +1022,16 @@ def get_markets():
             'active': True,
             'spot': False,
             'type': 'swap',
-            'contractSize': '0.01',
+            'contractSize': 0.01,
             'precision': {
                 'amount': 8,
                 'price': 8
             },
             'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
                 'amount': {
                     'min': 0.06646786,
                     'max': None
@@ -956,7 +1039,11 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -968,6 +1055,7 @@ def get_markets():
             'active': True,
             'spot': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -975,6 +1063,10 @@ def get_markets():
                 'price': 5
             },
             'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
                 'amount': {
                     'min': 0.001,
                     'max': 10000000.0
@@ -1137,6 +1229,22 @@ def shitcoinmarkets(markets_static):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "NANOUSDT",
             "symbol": "NANO/USDT",
@@ -1162,6 +1270,22 @@ def shitcoinmarkets(markets_static):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "ADAHALFUSDT",
             "symbol": "ADAHALF/USDT",
@@ -1187,6 +1311,22 @@ def shitcoinmarkets(markets_static):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "ADADOUBLEUSDT",
             "symbol": "ADADOUBLE/USDT",
