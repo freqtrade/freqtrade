@@ -17,7 +17,7 @@ isort==5.10.1
 time-machine==2.6.0
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.4.0
+nbconvert==6.4.1
 
 # mypy types
 types-cachetools==4.2.9
