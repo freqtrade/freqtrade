@@ -356,23 +356,10 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     with pytest.raises(ValueError, match=r'.*get market information.*'):
         exchange.get_min_pair_stake_amount('BNB/BTC', 1, stoploss)
 
-    # no 'limits' section
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result is None
-
-    # empty 'limits' section
-    markets["ETH/BTC"]["limits"] = {}
-    mocker.patch(
-        'freqtrade.exchange.Exchange.markets',
-        PropertyMock(return_value=markets)
-    )
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result is None
-
     # no cost Min
     markets["ETH/BTC"]["limits"] = {
-        'cost': {"min": None},
-        'amount': {}
+        'cost': {'min': None, 'max': None},
+        'amount': {'min': None, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -383,8 +370,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # no amount Min
     markets["ETH/BTC"]["limits"] = {
-        'cost': {},
-        'amount': {"min": None}
+        'cost': {'min': None, 'max': None},
+        'amount': {'min': None, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -395,8 +382,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # empty 'cost'/'amount' section
     markets["ETH/BTC"]["limits"] = {
-        'cost': {},
-        'amount': {}
+        'cost': {'min': None, 'max': None},
+        'amount': {'min': None, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -407,8 +394,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # min cost is set
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 2},
-        'amount': {}
+        'cost': {'min': 2, 'max': None},
+        'amount': {'min': None, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -423,8 +410,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
-        'cost': {},
-        'amount': {'min': 2}
+        'cost': {'min': None, 'max': None},
+        'amount': {'min': 2, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -439,8 +426,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 2},
-        'amount': {'min': 2}
+        'cost': {'min': 2, 'max': None},
+        'amount': {'min': 2, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -455,8 +442,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 8},
-        'amount': {'min': 2}
+        'cost': {'min': 8, 'max': None},
+        'amount': {'min': 2, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -3557,11 +3544,11 @@ def test_calculate_funding_fees(
     funding_rates = DataFrame([
         {'date': prior_date, 'open': funding_rate},  # Line not used.
         {'date': trade_date, 'open': funding_rate},
-        ])
+    ])
     mark_rates = DataFrame([
         {'date': prior_date, 'open': mark_price},
         {'date': trade_date, 'open': mark_price},
-        ])
+    ])
     df = exchange.combine_funding_and_mark(funding_rates, mark_rates)
 
     assert exchange.calculate_funding_fees(
