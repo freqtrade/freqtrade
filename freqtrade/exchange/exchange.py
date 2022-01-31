@@ -1993,7 +1993,7 @@ class Exchange:
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
-    ):
+    ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
@@ -2020,8 +2020,11 @@ class Exchange:
 
         try:
             positions = self._api.fetch_positions([pair])
-            pos = positions[0]
-            return pos['liquidationPrice']
+            if len(positions) > 0:
+                pos = positions[0]
+                return pos['liquidationPrice']
+            else:
+                return None
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
