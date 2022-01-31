@@ -164,15 +164,20 @@ class Binance(Exchange):
         if pair not in self._leverage_brackets:
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
-        max_lev = 1.0
-        for [min_amount, margin_req] in pair_brackets:
+        num_brackets = len(pair_brackets)
+        min_amount = 0
+        for bracket_num in range(num_brackets):
+            [_, margin_req] = pair_brackets[bracket_num]
             lev = 1/margin_req
-            nominal_value = stake_amount * lev
-            if nominal_value >= min_amount:
-                max_lev = lev
+            if bracket_num+1 != num_brackets:  # If not on last bracket
+                [min_amount, _] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
             else:
-                break
-        return max_lev
+                return lev
+            nominal_value = stake_amount * lev
+            # Bracket is good if the leveraged trade value doesnt exceed min_amount of next bracket
+            if nominal_value < min_amount:
+                return lev
+        return 1.0  # default leverage
 
     @retrier
     def _set_leverage(
