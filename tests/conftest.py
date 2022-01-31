@@ -1014,8 +1014,7 @@ def get_markets():
             'percentage': True,
             'taker': 0.0006,
             'maker': 0.0002,
-            # TODO-lev: `contractSize` should be numeric - this is an open bug in ccxt.
-            'contractSize': '10',
+            'contractSize': 10,
             'active': True,
             'expiry': None,
             'expiryDatetime': None,
