@@ -376,7 +376,7 @@ class Exchange:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
             contract_size: float = 1.0
-            if 'contractSize' in market and market['contractSize'] is not None:
+            if market['contractSize'] is not None:
                 # ccxt has contractSize in markets as string
                 contract_size = float(market['contractSize'])
             return contract_size
@@ -685,13 +685,9 @@ class Exchange:
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
-        if 'limits' not in market:
-            return None
-
         min_stake_amounts = []
         limits = market['limits']
-        if ('cost' in limits and 'min' in limits['cost']
-                and limits['cost']['min'] is not None):
+        if (limits['cost']['min'] is not None):
             min_stake_amounts.append(
                 self._contracts_to_amount(
                     pair,
@@ -699,8 +695,7 @@ class Exchange:
                 )
             )
 
-        if ('amount' in limits and 'min' in limits['amount']
-                and limits['amount']['min'] is not None):
+        if (limits['amount']['min'] is not None):
             min_stake_amounts.append(
                 self._contracts_to_amount(
                     pair,
@@ -1819,12 +1814,7 @@ class Exchange:
         :param nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         market = self.markets[pair]
-        if (
-            'limits' in market and
-            'leverage' in market['limits'] and
-            'max' in market['limits']['leverage'] and
-            market['limits']['leverage']['max'] is not None
-        ):
+        if market['limits']['leverage']['max'] is not None:
             return market['limits']['leverage']['max']
         else:
             return 1.0
