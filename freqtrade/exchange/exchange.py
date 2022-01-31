@@ -1987,10 +1987,10 @@ class Exchange:
         self,
         pair: str,
         # Dry-run
-        open_rate: Optional[float] = None,   # Entry price of position
-        is_short: Optional[bool] = None,
-        position: Optional[float] = None,  # Absolute value of position size
-        wallet_balance: Optional[float] = None,  # Or margin balance
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        position: float,  # Absolute value of position size
+        wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ):
@@ -2007,16 +2007,6 @@ class Exchange:
                 f"{self.name} does not support {self.collateral.value} {self.trading_mode.value}")
 
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
-            if (
-                open_rate is None or
-                is_short is None or
-                position is None or
-                wallet_balance is None
-            ):
-                raise OperationalException(
-                    f"Parameters open_rate, is_short, position, wallet_balance are"
-                    f"required by {self.name}.liquidation_price for dry_run"
-                )
 
             return self.dry_run_liquidation_price(
                 pair=pair,

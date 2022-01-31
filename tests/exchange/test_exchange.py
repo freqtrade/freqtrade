@@ -3631,7 +3631,13 @@ def test_get_liquidation_price(mocker, default_conf):
     default_conf['collateral'] = 'isolated'
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_liquidation_price('NEAR/USDT:USDT')
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=0.0,
+        is_short=False,
+        position=0.0,
+        wallet_balance=0.0,
+    )
     assert liq_price == 17.47
 
     ccxt_exceptionhandlers(
@@ -3641,7 +3647,11 @@ def test_get_liquidation_price(mocker, default_conf):
         "binance",
         "get_liquidation_price",
         "fetch_positions",
-        pair="XRP/USDT"
+        pair="XRP/USDT",
+        open_rate=0.0,
+        is_short=False,
+        position=0.0,
+        wallet_balance=0.0,
     )
 
 
@@ -3974,15 +3984,15 @@ def test__amount_to_contracts(
     assert result_amount == param_amount
 
 
-@pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
+@pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,collateral', [
     # Bittrex
-    ('bittrex', 2.0, False, 3.0, 'spot', None),
-    ('bittrex', 2.0, False, 1.0, 'spot', 'cross'),
-    ('bittrex', 2.0, True, 3.0, 'spot', 'isolated'),
+    ('bittrex', 2.0, False, 'spot', None),
+    ('bittrex', 2.0, False, 'spot', 'cross'),
+    ('bittrex', 2.0, True, 'spot', 'isolated'),
     # Binance
-    ('binance', 2.0, False, 3.0, 'spot', None),
-    ('binance', 2.0, False, 1.0, 'spot', 'cross'),
-    ('binance', 2.0, True, 3.0, 'spot', 'isolated'),
+    ('binance', 2.0, False, 'spot', None),
+    ('binance', 2.0, False, 'spot', 'cross'),
+    ('binance', 2.0, True, 'spot', 'isolated'),
 ])
 def test_liquidation_price_is_none(
     mocker,
@@ -3990,7 +4000,6 @@ def test_liquidation_price_is_none(
     exchange_name,
     open_rate,
     is_short,
-    leverage,
     trading_mode,
     collateral
 ):
@@ -4009,21 +4018,21 @@ def test_liquidation_price_is_none(
 
 
 @pytest.mark.parametrize(
-    'exchange_name, is_short, leverage, trading_mode, collateral, wallet_balance, '
+    'exchange_name, is_short, trading_mode, collateral, wallet_balance, '
     'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
     'mm_ratio, expected',
     [
-        ("binance", False, 1, 'futures', 'isolated', 1535443.01, 0.0,
+        ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
          0.0, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
-        ("binance", False, 1, 'futures', 'isolated', 1535443.01, 0.0,
+        ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
          0.0, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
-        ("binance", False, 1, 'futures', 'cross', 1535443.01, 71200.81144,
+        ("binance", False, 'futures', 'cross', 1535443.01, 71200.81144,
          -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26),
-        ("binance", False, 1, 'futures', 'cross', 1535443.01, 356512.508,
+        ("binance", False, 'futures', 'cross', 1535443.01, 356512.508,
          -448192.89, 16300.000, 109.488, 32481.980, 0.025, 26316.89)
     ])
 def test_liquidation_price(
-    mocker, default_conf, exchange_name, open_rate, is_short, leverage, trading_mode,
+    mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
     collateral, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
 ):
     default_conf['trading_mode'] = trading_mode
