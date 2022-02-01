@@ -4,6 +4,7 @@ import logging
 import time
 from unittest.mock import MagicMock, PropertyMock
 
+import pandas as pd
 import pytest
 import time_machine
 
@@ -492,7 +493,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history.append(ohlcv_history),
+        ('LTC/BTC', '1d'): pd.concat([ohlcv_history, ohlcv_history]),
         ('XRP/BTC', '1d'): ohlcv_history,
         ('HOT/BTC', '1d'): ohlcv_history_high_vola,
     }
