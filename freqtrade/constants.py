@@ -155,7 +155,7 @@ CONF_SCHEMA = {
         'ignore_roi_if_buy_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
-        'collateral': {'type': 'string', 'enum': COLLATERAL_TYPES},
+        'margin_mode': {'type': 'string', 'enum': COLLATERAL_TYPES},
         'backtest_breakdown': {
             'type': 'array',
             'items': {'type': 'string', 'enum': BACKTEST_BREAKDOWNS}

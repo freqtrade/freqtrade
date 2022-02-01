@@ -11,7 +11,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.enums import CandleType, Collateral, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
@@ -263,7 +263,7 @@ def test_amount_to_precision(
     })
 
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     # digits counting mode
@@ -473,7 +473,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -1165,7 +1165,7 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         'amount': 1
     })
     default_conf['dry_run'] = False
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -2334,7 +2334,7 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
 async def test__async_fetch_trades_contract_size(default_conf, mocker, caplog, exchange_name,
                                                  fetch_trades_result):
     caplog.set_level(logging.DEBUG)
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     default_conf['trading_mode'] = 'futures'
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
@@ -2796,7 +2796,7 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode,
     since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
     default_conf["trading_mode"] = trading_mode
-    default_conf["collateral"] = 'isolated'
+    default_conf["margin_mode"] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     api_mock = MagicMock()
 
@@ -3170,7 +3170,7 @@ def test_market_is_tradable(
         quote, spot, margin, futures, trademode, add_dict, exchange, expected_result
 ) -> None:
     default_conf['trading_mode'] = trademode
-    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
     ex = get_patched_exchange(mocker, default_conf, id=exchange)
     market = {
         'symbol': market_symbol,
@@ -3400,11 +3400,11 @@ def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
     )
 
 
-@pytest.mark.parametrize("collateral", [
-    (Collateral.CROSS),
-    (Collateral.ISOLATED)
+@pytest.mark.parametrize("margin_mode", [
+    (MarginMode.CROSS),
+    (MarginMode.ISOLATED)
 ])
-def test_set_margin_mode(mocker, default_conf, collateral):
+def test_set_margin_mode(mocker, default_conf, margin_mode):
 
     api_mock = MagicMock()
     api_mock.set_margin_mode = MagicMock()
@@ -3419,70 +3419,70 @@ def test_set_margin_mode(mocker, default_conf, collateral):
         "set_margin_mode",
         "set_margin_mode",
         pair="XRP/USDT",
-        collateral=collateral
+        margin_mode=margin_mode
     )
 
 
-@pytest.mark.parametrize("exchange_name, trading_mode, collateral, exception_thrown", [
+@pytest.mark.parametrize("exchange_name, trading_mode, margin_mode, exception_thrown", [
     ("binance", TradingMode.SPOT, None, False),
-    ("binance", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("binance", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("kraken", TradingMode.SPOT, None, False),
-    ("kraken", TradingMode.MARGIN, Collateral.ISOLATED, True),
-    ("kraken", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("kraken", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("ftx", TradingMode.SPOT, None, False),
-    ("ftx", TradingMode.MARGIN, Collateral.ISOLATED, True),
-    ("ftx", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("ftx", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("ftx", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("bittrex", TradingMode.SPOT, None, False),
-    ("bittrex", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("bittrex", TradingMode.MARGIN, Collateral.ISOLATED, True),
-    ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
-    ("gateio", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("bittrex", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("bittrex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("bittrex", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("bittrex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
+    ("gateio", TradingMode.MARGIN, MarginMode.ISOLATED, True),
     ("okex", TradingMode.SPOT, None, False),
-    ("okex", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("okex", TradingMode.MARGIN, Collateral.ISOLATED, True),
-    ("okex", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("okex", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("okex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("okex", TradingMode.FUTURES, MarginMode.CROSS, True),
 
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
-    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
-    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, True),
-    ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("gateio", TradingMode.MARGIN, Collateral.CROSS, True),
-    ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
+    ("binance", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("kraken", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("ftx", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("ftx", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("gateio", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("gateio", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     # * Uncomment once implemented
-    # ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False),
-    # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
-    # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
-    # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
-    # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("gateio", TradingMode.MARGIN, Collateral.CROSS, False),
-    # ("gateio", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    # ("binance", TradingMode.MARGIN, MarginMode.CROSS, False),
+    # ("binance", TradingMode.FUTURES, MarginMode.CROSS, False),
+    # ("kraken", TradingMode.MARGIN, MarginMode.CROSS, False),
+    # ("kraken", TradingMode.FUTURES, MarginMode.CROSS, False),
+    # ("ftx", TradingMode.MARGIN, MarginMode.CROSS, False),
+    # ("ftx", TradingMode.FUTURES, MarginMode.CROSS, False),
+    # ("gateio", TradingMode.MARGIN, MarginMode.CROSS, False),
+    # ("gateio", TradingMode.FUTURES, MarginMode.CROSS, False),
 ])
-def test_validate_trading_mode_and_collateral(
+def test_validate_trading_mode_and_margin_mode(
     default_conf,
     mocker,
     exchange_name,
     trading_mode,
-    collateral,
+    margin_mode,
     exception_thrown
 ):
     exchange = get_patched_exchange(
         mocker, default_conf, id=exchange_name, mock_supported_modes=False)
     if (exception_thrown):
         with pytest.raises(OperationalException):
-            exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+            exchange.validate_trading_mode_and_margin_mode(trading_mode, margin_mode)
     else:
-        exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+        exchange.validate_trading_mode_and_margin_mode(trading_mode, margin_mode)
 
 
 @pytest.mark.parametrize("exchange_name,trading_mode,ccxt_config", [
@@ -3508,7 +3508,7 @@ def test__ccxt_config(
     ccxt_config
 ):
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange._ccxt_config == ccxt_config
 
@@ -3609,7 +3609,7 @@ def test_get_liquidation_price(mocker, default_conf):
             'marginRatio': None,
             'liquidationPrice': 17.47,
             'markPrice': 18.89,
-            'collateral': 1.52549075,
+            'margin_mode': 1.52549075,
             'marginType': 'isolated',
             'side': 'buy',
             'percentage': 0.003177292946409658
@@ -3622,7 +3622,7 @@ def test_get_liquidation_price(mocker, default_conf):
     )
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = 'futures'
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price(
@@ -3786,7 +3786,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
 def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.markets', {
         'LTC/USD': {
             'symbol': 'LTC/USD',
@@ -3826,7 +3826,7 @@ def test__order_contracts_to_amount(
 ):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
@@ -3910,7 +3910,7 @@ def test__trades_contracts_to_amount(
 ):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
@@ -3946,7 +3946,7 @@ def test__amount_to_contracts(
 ):
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'spot'
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.markets', {
         'LTC/USD': {
             'symbol': 'LTC/USD',
@@ -3978,7 +3978,7 @@ def test__amount_to_contracts(
     assert result_amount == param_amount
 
 
-@pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,collateral', [
+@pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,margin_mode', [
     # Bittrex
     ('bittrex', 2.0, False, 'spot', None),
     ('bittrex', 2.0, False, 'spot', 'cross'),
@@ -3995,10 +3995,10 @@ def test_liquidation_price_is_none(
     open_rate,
     is_short,
     trading_mode,
-    collateral
+    margin_mode
 ):
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = collateral
+    default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.get_liquidation_price(
         pair='DOGE/USDT',
@@ -4012,7 +4012,7 @@ def test_liquidation_price_is_none(
 
 
 @pytest.mark.parametrize(
-    'exchange_name, is_short, trading_mode, collateral, wallet_balance, '
+    'exchange_name, is_short, trading_mode, margin_mode, wallet_balance, '
     'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
     'mm_ratio, expected',
     [
@@ -4027,10 +4027,10 @@ def test_liquidation_price_is_none(
     ])
 def test_liquidation_price(
     mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
-    collateral, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
 ):
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = collateral
+    default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
     assert isclose(round(exchange.get_liquidation_price(

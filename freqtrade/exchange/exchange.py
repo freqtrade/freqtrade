@@ -22,7 +22,7 @@ from pandas import DataFrame
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
                                  ListPairsWithTimeframes, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import CandleType, Collateral, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -77,7 +77,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
 
@@ -137,9 +137,9 @@ class Exchange:
 
         self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
 
-        self.collateral: Optional[Collateral] = (
-            Collateral(config.get('collateral'))
-            if config.get('collateral')
+        self.margin_mode: Optional[MarginMode] = (
+            MarginMode(config.get('margin_mode'))
+            if config.get('margin_mode')
             else None
         )
 
@@ -175,7 +175,7 @@ class Exchange:
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
-            self.validate_trading_mode_and_collateral(self.trading_mode, self.collateral)
+            self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -599,23 +599,23 @@ class Exchange:
                            f"if you really need {startup_candles} candles for your strategy")
         return required_candle_call_count
 
-    def validate_trading_mode_and_collateral(
+    def validate_trading_mode_and_margin_mode(
         self,
         trading_mode: TradingMode,
-        collateral: Optional[Collateral]  # Only None when trading_mode = TradingMode.SPOT
+        margin_mode: Optional[MarginMode]  # Only None when trading_mode = TradingMode.SPOT
     ):
         """
         Checks if freqtrade can perform trades using the configured
-        trading mode(Margin, Futures) and Collateral(Cross, Isolated)
+        trading mode(Margin, Futures) and MarginMode(Cross, Isolated)
         Throws OperationalException:
-            If the trading_mode/collateral type are not supported by freqtrade on this exchange
+            If the trading_mode/margin_mode type are not supported by freqtrade on this exchange
         """
         if trading_mode != TradingMode.SPOT and (
-            (trading_mode, collateral) not in self._supported_trading_mode_collateral_pairs
+            (trading_mode, margin_mode) not in self._supported_trading_mode_margin_pairs
         ):
-            collateral_value = collateral and collateral.value
+            mm_value = margin_mode and margin_mode.value
             raise OperationalException(
-                f"Freqtrade does not support {collateral_value} {trading_mode.value} on {self.name}"
+                f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
 
     def exchange_has(self, endpoint: str) -> bool:
@@ -879,7 +879,7 @@ class Exchange:
 
     def _lev_prep(self, pair: str, leverage: float):
         if self.trading_mode != TradingMode.SPOT:
-            self.set_margin_mode(pair, self.collateral)
+            self.set_margin_mode(pair, self.margin_mode)
             self._set_leverage(leverage, pair)
 
     def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
@@ -1810,7 +1810,7 @@ class Exchange:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :param nominal_value: The total value of the trade in quote currency (collateral + debt)
+        :param nominal_value: The total value of the trade in quote currency (margin_mode + debt)
         """
         market = self.markets[pair]
         if market['limits']['leverage']['max'] is not None:
@@ -1830,7 +1830,7 @@ class Exchange:
         have the same leverage on every trade
         """
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
-            # Some exchanges only support one collateral type
+            # Some exchanges only support one margin_mode type
             return
 
         try:
@@ -1851,17 +1851,17 @@ class Exchange:
         return open_date.minute > 0 or open_date.second > 0
 
     @retrier
-    def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
+    def set_margin_mode(self, pair: str, margin_mode: MarginMode, params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
-            # Some exchanges only support one collateral type
+            # Some exchanges only support one margin_mode type
             return
 
         try:
-            self._api.set_margin_mode(pair, collateral.value, params)
+            self._api.set_margin_mode(pair, margin_mode.value, params)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2000,11 +2000,11 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.collateral is None):
-            raise OperationalException(f'{self.name}.collateral must be set for liquidation_price')
-        elif (self.trading_mode != TradingMode.FUTURES and self.collateral != Collateral.ISOLATED):
+        elif (self.margin_mode is None):
+            raise OperationalException(f'{self.name}.margin_mode must be set for liquidation_price')
+        elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
             raise OperationalException(
-                f"{self.name} does not support {self.collateral.value} {self.trading_mode.value}")
+                f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
 
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
@@ -2064,8 +2064,8 @@ class Exchange:
         :param is_short: True if the trade is a short, false otherwise
         :param position: Absolute value of position size incl. leverage (in base currency)
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
-        :param collateral: Either ISOLATED or CROSS
-        :param wallet_balance: Amount of collateral in the wallet being used to trade
+        :param margin_mode: Either ISOLATED or CROSS
+        :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
 
@@ -2078,7 +2078,7 @@ class Exchange:
         taker_fee_rate = market['taker']
         mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, position)
 
-        if self.trading_mode == TradingMode.FUTURES and self.collateral == Collateral.ISOLATED:
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
 
             if market['inverse']:
                 raise OperationalException(

@@ -2,7 +2,7 @@
 import logging
 from typing import Dict, List, Tuple
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
 
 
@@ -24,8 +24,8 @@ class Bybit(Exchange):
         "ccxt_futures_name": "linear"
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.FUTURES, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.FUTURES, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]

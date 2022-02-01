@@ -1177,7 +1177,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
     # Tests detail-data loading
     default_conf_usdt.update({
         "trading_mode": "futures",
-        "collateral": "isolated",
+        "margin_mode": "isolated",
         "use_sell_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
@@ -1495,7 +1495,7 @@ def test_get_strategy_run_id(default_conf_usdt):
     default_conf_usdt.update({
         'strategy': 'StrategyTestV2',
         'max_open_trades': float('inf')
-        })
+    })
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
     x = get_strategy_run_id(strategy)
     assert isinstance(x, str)

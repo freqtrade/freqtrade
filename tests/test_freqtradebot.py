@@ -749,7 +749,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     leverage = 1.0 if trading_mode == 'spot' else 5.0
     default_conf_usdt['exchange']['name'] = exchange_name
     if margin_mode:
-        default_conf_usdt['collateral'] = margin_mode
+        default_conf_usdt['margin_mode'] = margin_mode
     mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
     patch_RPCManager(mocker)
     patch_exchange(mocker, id=exchange_name)
@@ -4809,7 +4809,7 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_funding_fees', return_value=True)
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     time_machine.move_to(f"{t2} +00:00")
@@ -4859,7 +4859,7 @@ def test_update_funding_fees(
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     default_conf['trading_mode'] = 'futures'
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
 
     date_midnight = arrow.get('2021-09-01 00:00:00')
     date_eight = arrow.get('2021-09-01 08:00:00')
