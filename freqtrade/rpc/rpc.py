@@ -136,7 +136,12 @@ class RPC:
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
             'state': str(botstate),
-            'runmode': config['runmode'].value
+            'runmode': config['runmode'].value,
+            'position_adjustment_enable': config.get('position_adjustment_enable', False),
+            'max_entry_position_adjustment': (
+                config.get('max_entry_position_adjustment', -1)
+                if config.get('max_entry_position_adjustment') != float('inf')
+                else -1)
         }
         return val
 
@@ -247,8 +252,11 @@ class RPC:
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
-                    filled_buys = trade.select_filled_orders('buy')
-                    detail_trade.append(str(len(filled_buys)))
+                    max_buy_str = ''
+                    if self._config.get('max_entry_position_adjustment', -1) > 0:
+                        max_buy_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
+                    filled_buys = trade.nr_of_successful_buys
+                    detail_trade.append(f"{filled_buys}{max_buy_str}")
                 trades_list.append(detail_trade)
             profitcol = "Profit"
             if self._fiat_converter:

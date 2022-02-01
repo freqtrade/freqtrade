@@ -173,6 +173,8 @@ class ShowConfig(BaseModel):
     bot_name: str
     state: str
     runmode: str
+    position_adjustment_enable: bool
+    max_entry_position_adjustment: int
 
 
 class TradeSchema(BaseModel):
