@@ -214,7 +214,8 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
 
 
 @router.get('/pair_candles', response_model=PairHistory, tags=['candle data'])
-def pair_candles(pair: str, timeframe: str, limit: Optional[int], rpc: RPC = Depends(get_rpc)):
+def pair_candles(
+        pair: str, timeframe: str, limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_analysed_dataframe(pair, timeframe, limit)
 
 
