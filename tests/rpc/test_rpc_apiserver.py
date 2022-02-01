@@ -17,6 +17,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import CandleType, RunMode, State
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
@@ -962,6 +963,10 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
+        'leverage': 1.0,
+        'interest_rate': 0.0,
+        'funding_fees': None,
+        'trading_mode': ANY,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -1061,7 +1066,6 @@ def test_api_whitelist(botclient):
     }
 
 
-# TODO -lev: add test for forcebuy (short) when feature is supported
 @pytest.mark.parametrize('endpoint', [
     'forcebuy',
     'forceenter',
@@ -1101,7 +1105,8 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         close_rate=0.265441,
         id=22,
         timeframe=5,
-        strategy=CURRENT_TEST_STRATEGY
+        strategy=CURRENT_TEST_STRATEGY,
+        trading_mode=TradingMode.SPOT
     ))
     mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
 
@@ -1109,8 +1114,8 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
     assert rc.json() == {
-        'amount': 1,
-        'amount_requested': 1,
+        'amount': 1.0,
+        'amount_requested': 1.0,
         'trade_id': 22,
         'close_date': None,
         'close_timestamp': None,
@@ -1157,6 +1162,10 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         'enter_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
+        'leverage': None,
+        'interest_rate': None,
+        'funding_fees': None,
+        'trading_mode': 'spot',
     }
 
 

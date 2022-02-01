@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import OrderTypeValues, SignalDirection
+from freqtrade.enums.tradingmode import TradingMode
 
 
 class Ping(BaseModel):
@@ -228,6 +229,11 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
+
+    leverage: Optional[float]
+    interest_rate: Optional[float]
+    funding_fees: Optional[float]
+    trading_mode: Optional[TradingMode]
 
 
 class OpenTradeSchema(TradeSchema):
