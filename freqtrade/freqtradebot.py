@@ -19,7 +19,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (Collateral, RPCMessageType, RunMode, SellType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, PricingError)
+                                  InvalidOrderException, OperationalException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -106,8 +106,8 @@ class FreqtradeBot(LoggingMixin):
         self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
 
         self.collateral_type: Optional[Collateral] = None
-        if 'collateral_type' in self.config:
-            self.collateral_type = Collateral(self.config['collateral_type'])
+        if 'collateral' in self.config:
+            self.collateral_type = Collateral(self.config['collateral'])
 
         self._schedule = Scheduler()
 
@@ -606,29 +606,32 @@ class FreqtradeBot(LoggingMixin):
         is_short: bool
     ) -> Tuple[float, Optional[float]]:
 
-        interest_rate = 0.0
-        isolated_liq = None
-
-        # TODO-lev: Uncomment once liq and interest merged in
         # if TradingMode == TradingMode.MARGIN:
         #     interest_rate = self.exchange.get_interest_rate(
         #         pair=pair,
         #         open_rate=open_rate,
         #         is_short=is_short
         #     )
-
-        #     if self.collateral_type == Collateral.ISOLATED:
-
-        #         isolated_liq = liquidation_price(
-        #             exchange_name=self.exchange.name,
-        #             trading_mode=self.trading_mode,
-        #             open_rate=open_rate,
-        #             amount=amount,
-        #             leverage=leverage,
-        #             is_short=is_short
-        #         )
-
-        return interest_rate, isolated_liq
+        if self.trading_mode == TradingMode.SPOT:
+            return (0.0, None)
+        elif (
+            self.collateral_type == Collateral.ISOLATED and
+            self.trading_mode == TradingMode.FUTURES
+        ):
+            wallet_balance = (amount * open_rate)/leverage
+            isolated_liq = self.exchange.get_liquidation_price(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short,
+                position=amount,
+                wallet_balance=wallet_balance,
+                mm_ex_1=0.0,
+                upnl_ex_1=0.0,
+            )
+            return (0.0, isolated_liq)
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")
 
     def execute_entry(
         self,
@@ -1174,8 +1177,8 @@ class FreqtradeBot(LoggingMixin):
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
             if not_closed and (fully_cancelled or self.strategy.ft_check_timed_out(
-                        time_method, trade, order, datetime.now(timezone.utc))
-                    ):
+                time_method, trade, order, datetime.now(timezone.utc))
+            ):
                 if is_entering:
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 else:

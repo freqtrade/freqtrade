@@ -148,7 +148,7 @@ def test_set_stop_loss_isolated_liq(fee):
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
-    trade.set_isolated_liq(isolated_liq=0.09)
+    trade.set_isolated_liq(0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -158,12 +158,12 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(isolated_liq=0.1)
+    trade.set_isolated_liq(0.1)
     assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(isolated_liq=0.07)
+    trade.set_isolated_liq(0.07)
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09

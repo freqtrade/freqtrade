@@ -817,27 +817,42 @@ def get_markets():
             'symbol': 'ETH/USDT',
             'base': 'ETH',
             'quote': 'USDT',
-            'spot': True,
-            'future': True,
-            'swap': True,
-            'margin': True,
+            'settle': None,
+            'baseId': 'ETH',
+            'quoteId': 'USDT',
+            'settleId': None,
             'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': True,
+            'future': True,
+            'option': False,
+            'active': True,
+            'contract': None,
+            'linear': None,
+            'inverse': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'contractSize': None,
+            'expiry': None,
+            'expiryDateTime': None,
+            'strike': None,
+            'optionType': None,
             'precision': {
                 'amount': 8,
-                'price': 8
+                'price': 8,
             },
             'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100,
+                },
                 'amount': {
                     'min': 0.02214286,
-                    'max': None
+                    'max': None,
                 },
                 'price': {
                     'min': 1e-08,
-                    'max': None
-                },
-                'leverage': {
-                    'min': None,
                     'max': None,
                 },
                 'cost': {
@@ -845,8 +860,9 @@ def get_markets():
                     'max': None,
                 },
             },
-            'active': True,
-            'info': {},
+            'info': {
+                'maintenance_rate': '0.005',
+            },
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -860,6 +876,8 @@ def get_markets():
             'margin': True,
             'type': 'spot',
             'contractSize': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -892,6 +910,8 @@ def get_markets():
             'active': True,
             'spot': True,
             'type': 'spot',
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -923,6 +943,8 @@ def get_markets():
             'active': True,
             'spot': True,
             'type': 'spot',
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -955,6 +977,8 @@ def get_markets():
             'spot': True,
             'type': 'spot',
             'contractSize': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'price': 8,
                 'amount': 8,
@@ -1023,6 +1047,8 @@ def get_markets():
             'spot': False,
             'type': 'swap',
             'contractSize': 0.01,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -1098,7 +1124,6 @@ def get_markets():
             'swap': True,
             'futures': False,
             'option': False,
-            'derivative': True,
             'contract': True,
             'linear': True,
             'inverse': False,

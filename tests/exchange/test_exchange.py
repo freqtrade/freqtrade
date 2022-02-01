@@ -26,6 +26,12 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'gateio']
+spot = TradingMode.SPOT
+margin = TradingMode.MARGIN
+futures = TradingMode.FUTURES
+
+cross = Collateral.CROSS
+isolated = Collateral.ISOLATED
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
@@ -236,8 +242,8 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.34559, 4, 0.001, 1, 2.345, 'spot'),
     (2.9999, 4, 0.001, 1, 2.999, 'spot'),
     (2.9909, 4, 0.001, 1, 2.990, 'spot'),
-    (2.9909, 4, 0.005, 0.01, 299.09, 'futures'),
-    (2.9999, 4, 0.005, 10, 0.295, 'futures'),
+    (2.9909, 4, 0.005, 0.01, 2.99, 'futures'),
+    (2.9999, 4, 0.005, 10, 2.995, 'futures'),
 ])
 def test_amount_to_precision(
     default_conf,
@@ -3438,30 +3444,35 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
     ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("gateio", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("okex", TradingMode.SPOT, None, False),
+    ("okex", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("okex", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("okex", TradingMode.FUTURES, Collateral.CROSS, True),
 
-    # TODO-lev: Remove once implemented
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
+
+    # * Remove once implemented
+    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
     ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
     ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
     ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
     ("gateio", TradingMode.MARGIN, Collateral.CROSS, True),
     ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, True),
 
-    # TODO-lev: Uncomment once implemented
+    # * Uncomment once implemented
+    # ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("gateio", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("gateio", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
 ])
 def test_validate_trading_mode_and_collateral(
     default_conf,
@@ -3582,6 +3593,68 @@ def test_calculate_funding_fees(
         ) == kraken_fee
 
 
+def test_get_liquidation_price(mocker, default_conf):
+
+    api_mock = MagicMock()
+    positions = [
+        {
+            'info': {},
+            'symbol': 'NEAR/USDT:USDT',
+            'timestamp': 1642164737148,
+            'datetime': '2022-01-14T12:52:17.148Z',
+            'initialMargin': 1.51072,
+            'initialMarginPercentage': 0.1,
+            'maintenanceMargin': 0.38916147,
+            'maintenanceMarginPercentage': 0.025,
+            'entryPrice': 18.884,
+            'notional': 15.1072,
+            'leverage': 9.97,
+            'unrealizedPnl': 0.0048,
+            'contracts': 8,
+            'contractSize': 0.1,
+            'marginRatio': None,
+            'liquidationPrice': 17.47,
+            'markPrice': 18.89,
+            'collateral': 1.52549075,
+            'marginType': 'isolated',
+            'side': 'buy',
+            'percentage': 0.003177292946409658
+        }
+    ]
+    api_mock.fetch_positions = MagicMock(return_value=positions)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+    )
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=0.0,
+        is_short=False,
+        position=0.0,
+        wallet_balance=0.0,
+    )
+    assert liq_price == 17.47
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "get_liquidation_price",
+        "fetch_positions",
+        pair="XRP/USDT",
+        open_rate=0.0,
+        is_short=False,
+        position=0.0,
+        wallet_balance=0.0,
+    )
+
+
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
     ('binance', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
     ('binance', 0, 2, "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
@@ -3622,41 +3695,41 @@ def test__fetch_and_calculate_funding_fees(
     amount,
     expected_fees
 ):
-    '''
-        nominal_value = mark_price * size
-        funding_fee = nominal_value * funding_rate
-        size: 30
-            time: 0, mark: 2.77, nominal_value: 83.1, fundRate: -0.000008, fundFee: -0.0006648
-            time: 1, mark: 2.73, nominal_value: 81.9, fundRate: -0.000004, fundFee: -0.0003276
-            time: 2, mark: 2.74, nominal_value: 82.2, fundRate: 0.000012, fundFee: 0.0009864
-            time: 3, mark: 2.76, nominal_value: 82.8, fundRate: -0.000003, fundFee: -0.0002484
-            time: 4, mark: 2.76, nominal_value: 82.8, fundRate: -0.000007, fundFee: -0.0005796
-            time: 5, mark: 2.77, nominal_value: 83.1, fundRate: 0.000003, fundFee: 0.0002493
-            time: 6, mark: 2.78, nominal_value: 83.4, fundRate: 0.000019, fundFee: 0.0015846
-            time: 7, mark: 2.78, nominal_value: 83.4, fundRate: 0.000003, fundFee: 0.0002502
-            time: 8, mark: 2.77, nominal_value: 83.1, fundRate: -0.000003, fundFee: -0.0002493
-            time: 9, mark: 2.77, nominal_value: 83.1, fundRate: 0, fundFee: 0.0
-            time: 10, mark: 2.84, nominal_value: 85.2, fundRate: 0.000013, fundFee: 0.0011076
-            time: 11, mark: 2.81, nominal_value: 84.3, fundRate: 0.000077, fundFee: 0.0064911
-            time: 12, mark: 2.81, nominal_value: 84.3, fundRate: 0.000072, fundFee: 0.0060696
-            time: 13, mark: 2.82, nominal_value: 84.6, fundRate: 0.000097, fundFee: 0.0082062
+    """
+    nominal_value = mark_price * size
+    funding_fee = nominal_value * funding_rate
+    size: 30
+        time: 0, mark: 2.77, nominal_value: 83.1, fundRate: -0.000008, fundFee: -0.0006648
+        time: 1, mark: 2.73, nominal_value: 81.9, fundRate: -0.000004, fundFee: -0.0003276
+        time: 2, mark: 2.74, nominal_value: 82.2, fundRate: 0.000012, fundFee: 0.0009864
+        time: 3, mark: 2.76, nominal_value: 82.8, fundRate: -0.000003, fundFee: -0.0002484
+        time: 4, mark: 2.76, nominal_value: 82.8, fundRate: -0.000007, fundFee: -0.0005796
+        time: 5, mark: 2.77, nominal_value: 83.1, fundRate: 0.000003, fundFee: 0.0002493
+        time: 6, mark: 2.78, nominal_value: 83.4, fundRate: 0.000019, fundFee: 0.0015846
+        time: 7, mark: 2.78, nominal_value: 83.4, fundRate: 0.000003, fundFee: 0.0002502
+        time: 8, mark: 2.77, nominal_value: 83.1, fundRate: -0.000003, fundFee: -0.0002493
+        time: 9, mark: 2.77, nominal_value: 83.1, fundRate: 0, fundFee: 0.0
+        time: 10, mark: 2.84, nominal_value: 85.2, fundRate: 0.000013, fundFee: 0.0011076
+        time: 11, mark: 2.81, nominal_value: 84.3, fundRate: 0.000077, fundFee: 0.0064911
+        time: 12, mark: 2.81, nominal_value: 84.3, fundRate: 0.000072, fundFee: 0.0060696
+        time: 13, mark: 2.82, nominal_value: 84.6, fundRate: 0.000097, fundFee: 0.0082062
 
-        size: 50
-            time: 0, mark: 2.77, nominal_value: 138.5, fundRate: -0.000008, fundFee: -0.001108
-            time: 1, mark: 2.73, nominal_value: 136.5, fundRate: -0.000004, fundFee: -0.000546
-            time: 2, mark: 2.74, nominal_value: 137.0, fundRate: 0.000012, fundFee: 0.001644
-            time: 3, mark: 2.76, nominal_value: 138.0, fundRate: -0.000003, fundFee: -0.000414
-            time: 4, mark: 2.76, nominal_value: 138.0, fundRate: -0.000007, fundFee: -0.000966
-            time: 5, mark: 2.77, nominal_value: 138.5, fundRate: 0.000003, fundFee: 0.0004155
-            time: 6, mark: 2.78, nominal_value: 139.0, fundRate: 0.000019, fundFee: 0.002641
-            time: 7, mark: 2.78, nominal_value: 139.0, fundRate: 0.000003, fundFee: 0.000417
-            time: 8, mark: 2.77, nominal_value: 138.5, fundRate: -0.000003, fundFee: -0.0004155
-            time: 9, mark: 2.77, nominal_value: 138.5, fundRate: 0, fundFee: 0.0
-            time: 10, mark: 2.84, nominal_value: 142.0, fundRate: 0.000013, fundFee: 0.001846
-            time: 11, mark: 2.81, nominal_value: 140.5, fundRate: 0.000077, fundFee: 0.0108185
-            time: 12, mark: 2.81, nominal_value: 140.5, fundRate: 0.000072, fundFee: 0.010116
-            time: 13, mark: 2.82, nominal_value: 141.0, fundRate: 0.000097, fundFee: 0.013677
-    '''
+    size: 50
+        time: 0, mark: 2.77, nominal_value: 138.5, fundRate: -0.000008, fundFee: -0.001108
+        time: 1, mark: 2.73, nominal_value: 136.5, fundRate: -0.000004, fundFee: -0.000546
+        time: 2, mark: 2.74, nominal_value: 137.0, fundRate: 0.000012, fundFee: 0.001644
+        time: 3, mark: 2.76, nominal_value: 138.0, fundRate: -0.000003, fundFee: -0.000414
+        time: 4, mark: 2.76, nominal_value: 138.0, fundRate: -0.000007, fundFee: -0.000966
+        time: 5, mark: 2.77, nominal_value: 138.5, fundRate: 0.000003, fundFee: 0.0004155
+        time: 6, mark: 2.78, nominal_value: 139.0, fundRate: 0.000019, fundFee: 0.002641
+        time: 7, mark: 2.78, nominal_value: 139.0, fundRate: 0.000003, fundFee: 0.000417
+        time: 8, mark: 2.77, nominal_value: 138.5, fundRate: -0.000003, fundFee: -0.0004155
+        time: 9, mark: 2.77, nominal_value: 138.5, fundRate: 0, fundFee: 0.0
+        time: 10, mark: 2.84, nominal_value: 142.0, fundRate: 0.000013, fundFee: 0.001846
+        time: 11, mark: 2.81, nominal_value: 140.5, fundRate: 0.000077, fundFee: 0.0108185
+        time: 12, mark: 2.81, nominal_value: 140.5, fundRate: 0.000072, fundFee: 0.010116
+        time: 13, mark: 2.82, nominal_value: 141.0, fundRate: 0.000097, fundFee: 0.013677
+    """
     d1 = datetime.strptime(f"{d1} +0000", '%Y-%m-%d %H:%M:%S %z')
     d2 = datetime.strptime(f"{d2} +0000", '%Y-%m-%d %H:%M:%S %z')
     funding_rate_history = {
@@ -3909,3 +3982,69 @@ def test__amount_to_contracts(
     assert result_size == param_size
     result_amount = exchange._contracts_to_amount(pair, param_size)
     assert result_amount == param_amount
+
+
+@pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,collateral', [
+    # Bittrex
+    ('bittrex', 2.0, False, 'spot', None),
+    ('bittrex', 2.0, False, 'spot', 'cross'),
+    ('bittrex', 2.0, True, 'spot', 'isolated'),
+    # Binance
+    ('binance', 2.0, False, 'spot', None),
+    ('binance', 2.0, False, 'spot', 'cross'),
+    ('binance', 2.0, True, 'spot', 'isolated'),
+])
+def test_liquidation_price_is_none(
+    mocker,
+    default_conf,
+    exchange_name,
+    open_rate,
+    is_short,
+    trading_mode,
+    collateral
+):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = collateral
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.get_liquidation_price(
+        pair='DOGE/USDT',
+        open_rate=open_rate,
+        is_short=is_short,
+        position=71200.81144,
+        wallet_balance=-56354.57,
+        mm_ex_1=0.10,
+        upnl_ex_1=0.0
+    ) is None
+
+
+@pytest.mark.parametrize(
+    'exchange_name, is_short, trading_mode, collateral, wallet_balance, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
+    'mm_ratio, expected',
+    [
+        ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
+         0.0, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
+        ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
+         0.0, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
+        ("binance", False, 'futures', 'cross', 1535443.01, 71200.81144,
+         -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26),
+        ("binance", False, 'futures', 'cross', 1535443.01, 356512.508,
+         -448192.89, 16300.000, 109.488, 32481.980, 0.025, 26316.89)
+    ])
+def test_liquidation_price(
+    mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
+    collateral, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = collateral
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
+    assert isclose(round(exchange.get_liquidation_price(
+        pair='DOGE/USDT',
+        open_rate=open_rate,
+        is_short=is_short,
+        wallet_balance=wallet_balance,
+        mm_ex_1=mm_ex_1,
+        upnl_ex_1=upnl_ex_1,
+        position=position,
+    ), 2), expected)

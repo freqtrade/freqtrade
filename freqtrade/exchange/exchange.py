@@ -90,7 +90,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict = {}
+        self._leverage_brackets: Dict[str, List[List[float]]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -633,7 +633,6 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        amount = self._amount_to_contracts(pair, amount)
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -737,7 +736,7 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self._contracts_to_amount(pair, self.amount_to_precision(pair, amount))
+        _amount = self.amount_to_precision(pair, amount)
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -901,7 +900,7 @@ class Exchange:
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
-            amount = self.amount_to_precision(pair, amount)
+            amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
             needs_price = (ordertype != 'market'
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
@@ -1982,6 +1981,119 @@ class Exchange:
             return funding_fees
         else:
             return 0.0
+
+    @retrier
+    def get_liquidation_price(
+        self,
+        pair: str,
+        # Dry-run
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        position: float,  # Absolute value of position size
+        wallet_balance: float,  # Or margin balance
+        mm_ex_1: float = 0.0,  # (Binance) Cross only
+        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        Set's the margin mode on the exchange to cross or isolated for a specific pair
+        :param pair: base/quote currency pair (e.g. "ADA/USDT")
+        """
+        if self.trading_mode == TradingMode.SPOT:
+            return None
+        elif (self.collateral is None):
+            raise OperationalException(f'{self.name}.collateral must be set for liquidation_price')
+        elif (self.trading_mode != TradingMode.FUTURES and self.collateral != Collateral.ISOLATED):
+            raise OperationalException(
+                f"{self.name} does not support {self.collateral.value} {self.trading_mode.value}")
+
+        if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
+
+            return self.dry_run_liquidation_price(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short,
+                position=position,
+                wallet_balance=wallet_balance,
+                mm_ex_1=mm_ex_1,
+                upnl_ex_1=upnl_ex_1
+            )
+
+        try:
+            positions = self._api.fetch_positions([pair])
+            if len(positions) > 0:
+                pos = positions[0]
+                return pos['liquidationPrice']
+            else:
+                return None
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
+    ) -> Tuple[float, Optional[float]]:
+        """
+        :return: The maintenance margin ratio and maintenance amount
+        """
+        raise OperationalException(self.name + ' does not support leverage futures trading')
+
+    def dry_run_liquidation_price(
+        self,
+        pair: str,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        position: float,  # Absolute value of position size
+        wallet_balance: float,  # Or margin balance
+        mm_ex_1: float = 0.0,  # (Binance) Cross only
+        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        PERPETUAL:
+         gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
+         okex: https://www.okex.com/support/hc/en-us/articles/
+            360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
+
+        :param exchange_name:
+        :param open_rate: Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param position: Absolute value of position size (in base currency)
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param collateral: Either ISOLATED or CROSS
+        :param wallet_balance: Amount of collateral in the wallet being used to trade
+            Cross-Margin Mode: crossWalletBalance
+            Isolated-Margin Mode: isolatedWalletBalance
+
+        # * Not required by Gateio or OKX
+        :param mm_ex_1:
+        :param upnl_ex_1:
+        """
+
+        market = self.markets[pair]
+        taker_fee_rate = market['taker']
+        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, position)
+
+        if self.trading_mode == TradingMode.FUTURES and self.collateral == Collateral.ISOLATED:
+
+            if market['inverse']:
+                raise OperationalException(
+                    "Freqtrade does not yet support inverse contracts")
+
+            value = wallet_balance / position
+
+            mm_ratio_taker = (mm_ratio + taker_fee_rate)
+            if is_short:
+                return (open_rate + value) / (1 + mm_ratio_taker)
+            else:
+                return (open_rate - value) / (1 - mm_ratio_taker)
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

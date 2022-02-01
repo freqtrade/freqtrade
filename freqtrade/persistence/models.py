@@ -333,7 +333,7 @@ class LocalTrade():
         for key in kwargs:
             setattr(self, key, kwargs[key])
         if self.isolated_liq:
-            self.set_isolated_liq(self.isolated_liq)
+            self.set_isolated_liq(isolated_liq=self.isolated_liq)
         self.recalc_open_trade_value()
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
             raise OperationalException(

@@ -33,10 +33,9 @@ class Binance(Exchange):
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # TODO-lev: Uncomment once supported
         # (TradingMode.MARGIN, Collateral.CROSS),
         # (TradingMode.FUTURES, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.ISOLATED)
+        (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
@@ -120,10 +119,25 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def fill_leverage_brackets(self):
+    def fill_leverage_brackets(self) -> None:
         """
         Assigns property _leverage_brackets to a dictionary of information about the leverage
         allowed on each pair
+        After exectution, self._leverage_brackets = {
+            "pair_name": [
+                [notional_floor, maintenenace_margin_ratio, maintenance_amt],
+                ...
+            ],
+            ...
+        }
+        e.g. {
+            "ETH/USDT:USDT": [
+                [0.0, 0.01, 0.0],
+                [10000, 0.02, 0.01],
+                ...
+            ],
+            ...
+        }
         """
         if self.trading_mode == TradingMode.FUTURES:
             try:
@@ -136,17 +150,21 @@ class Binance(Exchange):
                 else:
                     leverage_brackets = self._api.load_leverage_brackets()
 
-                for pair, brackets in leverage_brackets.items():
-                    self._leverage_brackets[pair] = [
-                        [
-                            min_amount,
-                            float(margin_req)
-                        ] for [
-                            min_amount,
-                            margin_req
-                        ] in brackets
-                    ]
-
+                for pair, brkts in leverage_brackets.items():
+                    [amt, old_ratio] = [0.0, 0.0]
+                    brackets = []
+                    for [notional_floor, mm_ratio] in brkts:
+                        amt = (
+                            (float(notional_floor) * (float(mm_ratio) - float(old_ratio)))
+                            + amt
+                        ) if old_ratio else 0.0
+                        old_ratio = mm_ratio
+                        brackets.append([
+                            float(notional_floor),
+                            float(mm_ratio),
+                            amt,
+                        ])
+                    self._leverage_brackets[pair] = brackets
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -161,16 +179,22 @@ class Binance(Exchange):
         :param pair: The base/quote currency pair being traded
         :stake_amount: The total value of the traders collateral in quote currency
         """
+        if stake_amount is None:
+            raise OperationalException('binance.get_max_leverage requires argument stake_amount')
         if pair not in self._leverage_brackets:
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
         num_brackets = len(pair_brackets)
-        min_amount = 0
+        min_amount = 0.0
         for bracket_num in range(num_brackets):
-            [_, margin_req] = pair_brackets[bracket_num]
-            lev = 1/margin_req
+            [notional_floor, mm_ratio, _] = pair_brackets[bracket_num]
+            lev = 1.0
+            if mm_ratio != 0:
+                lev = 1.0/mm_ratio
+            else:
+                logger.warning(f"mm_ratio for {pair} with notional floor {notional_floor} is 0")
             if bracket_num+1 != num_brackets:  # If not on last bracket
-                [min_amount, _] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
+                [min_amount, _, __] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
             else:
                 return lev
             nominal_value = stake_amount * lev
@@ -237,3 +261,90 @@ class Binance(Exchange):
         :return: The cutoff open time for when a funding fee is charged
         """
         return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
+    ) -> Tuple[float, Optional[float]]:
+        """
+        Formula: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+
+        Maintenance amt = Floor of Position Bracket on Level n *
+          difference between
+              Maintenance Margin Rate on Level n and
+              Maintenance Margin Rate on Level n-1)
+          + Maintenance Amount on Level n-1
+        :return: The maintenance margin ratio and maintenance amount
+        """
+        if nominal_value is None:
+            raise OperationalException(
+                "nominal value is required for binance.get_maintenance_ratio_and_amt")
+        if pair not in self._leverage_brackets:
+            raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
+        pair_brackets = self._leverage_brackets[pair]
+        for [notional_floor, mm_ratio, amt] in reversed(pair_brackets):
+            if nominal_value >= notional_floor:
+                return (mm_ratio, amt)
+        raise OperationalException("nominal value can not be lower than 0")
+        # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
+        # describes the min amount for a bracket, and the lowest bracket will always go down to 0
+
+    def dry_run_liquidation_price(
+        self,
+        pair: str,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        position: float,  # Absolute value of position size
+        wallet_balance: float,  # Or margin balance
+        mm_ex_1: float = 0.0,  # (Binance) Cross only
+        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
+        PERPETUAL: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+
+        :param exchange_name:
+        :param open_rate: (EP1) Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param position: Absolute value of position size (in base currency)
+        :param wallet_balance: (WB)
+            Cross-Margin Mode: crossWalletBalance
+            Isolated-Margin Mode: isolatedWalletBalance
+        :param maintenance_amt:
+
+        # * Only required for Cross
+        :param mm_ex_1: (TMM)
+            Cross-Margin Mode: Maintenance Margin of all other contracts, excluding Contract 1
+            Isolated-Margin Mode: 0
+        :param upnl_ex_1: (UPNL)
+            Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
+            Isolated-Margin Mode: 0
+        """
+
+        side_1 = -1 if is_short else 1
+        position = abs(position)
+        cross_vars = upnl_ex_1 - mm_ex_1 if self.collateral == Collateral.CROSS else 0.0
+
+        # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        # maintenance_amt: (CUM) Maintenance Amount of position
+        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, position)
+
+        if (maintenance_amt is None):
+            raise OperationalException(
+                "Parameter maintenance_amt is required by Binance.liquidation_price"
+                f"for {self.trading_mode.value}"
+            )
+
+        if self.trading_mode == TradingMode.FUTURES:
+            return (
+                (
+                    (wallet_balance + cross_vars + maintenance_amt) -
+                    (side_1 * position * open_rate)
+                ) / (
+                    (position * mm_ratio) - (side_1 * position)
+                )
+            )
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")

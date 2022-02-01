@@ -707,23 +707,52 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
             CandleType.SPOT) in refresh_mock.call_args[0][0]
 
 
-@pytest.mark.parametrize("trading_mode", [
-    'spot',
-    # TODO-lev: Enable other modes
-    # 'margin', 'futures'
-]
-)
-@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short,trading_mode,exchange_name,margin_mode,liq_price", [
+    (False, 'spot', 'binance', None, None),
+    (True, 'spot', 'binance', None, None),
+    (False, 'spot', 'gateio', None, None),
+    (True, 'spot', 'gateio', None, None),
+    (False, 'spot', 'okex', None, None),
+    (True, 'spot', 'okex', None, None),
+    (True, 'futures', 'binance', 'isolated', 11.89108910891089),
+    (False, 'futures', 'binance', 'isolated', 8.070707070707071),
+    (True, 'futures', 'gateio', 'isolated', 11.87413417771621),
+    (False, 'futures', 'gateio', 'isolated', 8.085708510208207),
+    # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
+    # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
-                       limit_order_open, is_short, trading_mode) -> None:
+                       limit_order_open, is_short, trading_mode,
+                       exchange_name, margin_mode, liq_price) -> None:
+    """
+    exchange_name = binance, is_short = true
+        leverage = 5
+        position = 0.2 * 5
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - ((-1) * 1 * 10)) / ((1 * 0.01) - ((-1) * 1)) = 11.89108910891089
 
+    exchange_name = binance, is_short = false
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
+
+    exchange_name = gateio/okex, is_short = true
+        (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
+        (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
+
+    exchange_name = gateio/okex, is_short = false
+        (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
+        (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
+    """
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
-    leverage = 1.0 if trading_mode == 'spot' else 3.0
-    default_conf_usdt['collateral'] = 'cross'
+    leverage = 1.0 if trading_mode == 'spot' else 5.0
+    default_conf_usdt['exchange']['name'] = exchange_name
+    if margin_mode:
+        default_conf_usdt['collateral'] = margin_mode
+    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
+    patch_exchange(mocker, id=exchange_name)
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
@@ -743,6 +772,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
         get_funding_fees=MagicMock(return_value=0),
+        name=exchange_name
     )
     pair = 'ETH/USDT'
 
@@ -886,14 +916,21 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
+    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
+    freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
     assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[8]
+    # Trade(id=9, pair=ETH/USDT, amount=0.20000000, is_short=False,
+    #   leverage=1.0, open_rate=10.00000000, open_since=...)
+    # Trade(id=9, pair=ETH/USDT, amount=0.60000000, is_short=True,
+    #   leverage=3.0, open_rate=10.00000000, open_since=...)
     trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
+    assert trade.isolated_liq == liq_price
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -4794,23 +4831,23 @@ def test_update_funding_fees(
     limit_order_open,
     schedule_off
 ):
-    '''
+    """
     nominal_value = mark_price * size
     funding_fee = nominal_value * funding_rate
     size = 123
-    "LTC/BTC"
+    "LTC/USDT"
         time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
         time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792
-    "ETH/BTC"
+    "ETH/USDT"
         time: 0, mark: 2.4, fundRate: 0.0001, nominal_value: 295.2, fundFee: 0.02952
         time: 8, mark: 2.5, fundRate: 0.0001, nominal_value: 307.5, fundFee: 0.03075
-    "ETC/BTC"
+    "ETC/USDT"
         time: 0, mark: 4.3, fundRate: 0.00031077, nominal_value: 528.9, fundFee: 0.164366253
         time: 8, mark: 4.1, fundRate: 0.00022655, nominal_value: 504.3, fundFee: 0.114249165
-    "XRP/BTC"
+    "XRP/USDT"
         time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
         time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
-    '''
+    """
     # SETUP
     time_machine.move_to("2021-09-01 00:00:00 +00:00")
 
@@ -4831,19 +4868,19 @@ def test_update_funding_fees(
     # 16:00 entry is actually never used
     # But should be kept in the test to ensure we're filtering correctly.
     funding_rates = {
-        "LTC/BTC":
+        "LTC/USDT":
             DataFrame([
                 [date_midnight, 0.00032583, 0, 0, 0, 0],
                 [date_eight, 0.00024472, 0, 0, 0, 0],
                 [date_sixteen, 0.00024472, 0, 0, 0, 0],
             ], columns=columns),
-        "ETH/BTC":
+        "ETH/USDT":
             DataFrame([
                 [date_midnight, 0.0001, 0, 0, 0, 0],
                 [date_eight, 0.0001, 0, 0, 0, 0],
                 [date_sixteen, 0.0001, 0, 0, 0, 0],
             ], columns=columns),
-        "XRP/BTC":
+        "XRP/USDT":
             DataFrame([
                 [date_midnight, 0.00049426, 0, 0, 0, 0],
                 [date_eight, 0.00032715, 0, 0, 0, 0],
@@ -4852,19 +4889,19 @@ def test_update_funding_fees(
     }
 
     mark_prices = {
-        "LTC/BTC":
+        "LTC/USDT":
             DataFrame([
                 [date_midnight, 3.3, 0, 0, 0, 0],
                 [date_eight, 3.2, 0, 0, 0, 0],
                 [date_sixteen, 3.2, 0, 0, 0, 0],
             ], columns=columns),
-        "ETH/BTC":
+        "ETH/USDT":
             DataFrame([
                 [date_midnight, 2.4, 0, 0, 0, 0],
                 [date_eight, 2.5, 0, 0, 0, 0],
                 [date_sixteen, 2.5, 0, 0, 0, 0],
             ], columns=columns),
-        "XRP/BTC":
+        "XRP/USDT":
             DataFrame([
                 [date_midnight, 1.2, 0, 0, 0, 0],
                 [date_eight, 1.2, 0, 0, 0, 0],
@@ -4901,9 +4938,9 @@ def test_update_funding_fees(
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # initial funding fees,
-    freqtrade.execute_entry('ETH/BTC', 123, is_short=is_short)
-    freqtrade.execute_entry('LTC/BTC', 2.0, is_short=is_short)
-    freqtrade.execute_entry('XRP/BTC', 123, is_short=is_short)
+    freqtrade.execute_entry('ETH/USDT', 123, is_short=is_short)
+    freqtrade.execute_entry('LTC/USDT', 2.0, is_short=is_short)
+    freqtrade.execute_entry('XRP/USDT', 123, is_short=is_short)
     multipl = 1 if is_short else -1
     trades = Trade.get_open_trades()
     assert len(trades) == 3
