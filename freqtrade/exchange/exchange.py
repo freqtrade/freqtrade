@@ -2062,7 +2062,7 @@ class Exchange:
         :param exchange_name:
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param position: Absolute value of position size (in base currency)
+        :param position: Absolute value of position size incl. leverage (in base currency)
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
         :param wallet_balance: Amount of collateral in the wallet being used to trade
