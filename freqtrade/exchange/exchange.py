@@ -1290,6 +1290,10 @@ class Exchange:
                     p, _, new_data = res
                     if p == pair:
                         data.extend(new_data)
+        # Some exchanges show data past the current time and set all values to null.
+        current_time = arrow.utcnow().int_timestamp * 1000
+        data = filter(lambda item: item[0] < current_time, data)
+        
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
         return pair, timeframe, data
