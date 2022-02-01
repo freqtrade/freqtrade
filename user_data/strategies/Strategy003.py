@@ -15,9 +15,11 @@ from datetime import datetime
 
 from user_data.strategies.util import  back_test, execute
 from user_data.strategies.config import Config
+from user_data.strategies.notifier import send_backtest_start_deliminator_message
 
 
 class Strategy003(IStrategy):
+    send_backtest_start_deliminator_message('send_backtest_start_deliminator_message',Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR)
     """
     Strategy 003
     author@: Gerald Lonlas
