@@ -1,5 +1,7 @@
 import requests
-from user_data.strategies.config import Config
+import sys
+sys.path.append('/root/workspace2/execution/')
+from config import Config
 
 
 def send_backtest_start_deliminator_message(action, coin, month, year):
