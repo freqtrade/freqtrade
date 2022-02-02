@@ -170,7 +170,7 @@ class Kraken(Exchange):
     ) -> Dict:
         params = super()._get_params(ordertype, leverage, reduceOnly, time_in_force)
         if leverage > 1.0:
-            params['leverage'] = leverage
+            params['leverage'] = round(leverage)
         return params
 
     def calculate_funding_fees(
