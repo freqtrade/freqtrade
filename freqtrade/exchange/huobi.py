@@ -59,7 +59,7 @@ class Huobi(Exchange):
         try:
             params = self._params.copy()
             params.update({
-                "stop-price": stop_price,
+                "stopPrice": stop_price,
                 "operator": "lte",
                 })
 
