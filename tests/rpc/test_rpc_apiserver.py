@@ -1442,3 +1442,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert result['status'] == 'reset'
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
+
+
+def test_health(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/health")
+
+    assert_response(rc)
+    ret = rc.json()
+    assert ret['last_process_ts'] == 0
+    assert ret['last_process'] == '1970-01-01T00:00:00+00:00'

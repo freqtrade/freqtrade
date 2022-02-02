@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 import psutil
 from dateutil.relativedelta import relativedelta
+from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
 from pandas import DataFrame
 
@@ -1037,4 +1038,12 @@ class RPC:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
             "ram_pct": psutil.virtual_memory().percent
+        }
+
+    def _health(self) -> Dict[str, Union[str, int]]:
+        last_p = self._freqtrade.last_process
+        return {
+            'last_process': str(last_p),
+            'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            'last_process_ts': int(last_p.timestamp()),
         }

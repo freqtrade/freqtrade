@@ -1276,3 +1276,13 @@ def test_rpc_edge_enabled(mocker, edge_conf) -> None:
     assert ret[0]['Winrate'] == 0.66
     assert ret[0]['Expectancy'] == 1.71
     assert ret[0]['Stoploss'] == -0.02
+
+
+def test_rpc_health(mocker, default_conf) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
+    result = rpc._health()
+    assert result['last_process'] == '1970-01-01 00:00:00+00:00'
+    assert result['last_process_ts'] == 0

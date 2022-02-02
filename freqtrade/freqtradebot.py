@@ -100,6 +100,8 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
+        self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
     def notify_status(self, msg: str) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -187,6 +189,7 @@ class FreqtradeBot(LoggingMixin):
             self.enter_positions()
 
         Trade.commit()
+        self.last_process = datetime.now(timezone.utc)
 
     def process_stopped(self) -> None:
         """
