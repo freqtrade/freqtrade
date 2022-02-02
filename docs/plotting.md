@@ -14,7 +14,7 @@ pip install -U -r requirements-plot.txt
 
 The `freqtrade plot-dataframe` subcommand shows an interactive graph with three subplots:
 
-* Main plot with candlestics and indicators following price (sma/ema)
+* Main plot with candlesticks and indicators following price (sma/ema)
 * Volume bars
 * Additional indicators as specified by `--indicators2`
 
@@ -275,6 +275,10 @@ def plot_config(self):
 
 !!! Note "Trade position adjustments"
     If `position_adjustment_enable` / `adjust_trade_position()` is used, the trade initial buy price is averaged over multiple orders and the trade start price will most likely appear outside the candle range.
+
+!!! Note "Futures / Margin trading"
+    `plot-dataframe` does not support Futures / short trades, so these trades will simply be missing, and it's unlikely we'll be adding this functionality to this command.
+    Please use freqUI instead by starting freqtrade in [webserver mode](utils.md#webserver-mode) and use the Chart page to plot your dataframe.
 
 ## Plot profit
 
