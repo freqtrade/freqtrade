@@ -4044,7 +4044,7 @@ def test_liquidation_price(
     ), 2), expected)
 
 
-def test_get_max_amount_tradable(
+def test_get_max_pair_stake_amount(
     mocker,
     default_conf,
 ):
@@ -4154,14 +4154,14 @@ def test_get_max_amount_tradable(
     }
 
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    assert exchange.get_max_amount_tradable('XRP/USDT:USDT', 2.0) == 10000
-    assert exchange.get_max_amount_tradable('LTC/USDT:USDT', 2.0) == float('inf')
-    assert exchange.get_max_amount_tradable('ETH/USDT:USDT', 2.0) == 100
-    assert exchange.get_max_amount_tradable('DOGE/USDT:USDT', 2.0) == 250
-    assert exchange.get_max_amount_tradable('LUNA/USDT:USDT', 2.0) == 2.5
+    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0, 0.0) == 20000
+    assert exchange.get_max_pair_stake_amount('LTC/USDT:USDT', 2.0, 0.0) == float('inf')
+    assert exchange.get_max_pair_stake_amount('ETH/USDT:USDT', 2.0, 0.0) == 200
+    assert exchange.get_max_pair_stake_amount('DOGE/USDT:USDT', 2.0, 0.0) == 500
+    assert exchange.get_max_pair_stake_amount('LUNA/USDT:USDT', 2.0, 0.0) == 5.0
 
     default_conf['trading_mode'] = 'spot'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    assert exchange.get_max_amount_tradable('BTC/USDT', 2.0) == 10000
-    assert exchange.get_max_amount_tradable('ADA/USDT', 2.0) == 250
+    assert exchange.get_max_pair_stake_amount('BTC/USDT', 2.0, 0.0) == 20000
+    assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0, 0.0) == 500
