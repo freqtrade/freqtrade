@@ -877,26 +877,48 @@ class Exchange:
 
     # Order handling
 
-    def _lev_prep(self, pair: str, leverage: float):
+    def _lev_prep(
+        self,
+        pair: str,
+        leverage: float,
+        side: str  # buy or sell
+    ):
         if self.trading_mode != TradingMode.SPOT:
             self.set_margin_mode(pair, self.margin_mode)
             self._set_leverage(leverage, pair)
 
-    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
+    def _get_params(
+        self,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'gtc',
+    ) -> Dict:
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
             params.update({param: time_in_force})
+        if reduceOnly:
+            params.update({'reduceOnly': True})
         return params
 
-    def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, leverage: float = 1.0, time_in_force: str = 'gtc') -> Dict:
+    def create_order(
+        self,
+        pair: str,
+        ordertype: str,
+        side: str,
+        amount: float,
+        rate: float,
+        reduceOnly: bool = False,
+        leverage: float = 1.0,
+        time_in_force: str = 'gtc',
+    ) -> Dict:
         # TODO-lev: remove default for leverage
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
             return dry_order
 
-        params = self._get_params(ordertype, leverage, time_in_force)
+        params = self._get_params(ordertype, leverage, reduceOnly, time_in_force)
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
@@ -905,7 +927,9 @@ class Exchange:
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
-            self._lev_prep(pair, leverage)
+            if not reduceOnly:
+                self._lev_prep(pair, leverage, side)
+
             order = self._api.create_order(
                 pair,
                 ordertype,
@@ -1786,7 +1810,7 @@ class Exchange:
 
         try:
             funding_history = self._api.fetch_funding_history(
-                pair=pair,
+                symbol=pair,
                 since=since
             )
             return sum(fee['amount'] for fee in funding_history)
@@ -1861,7 +1885,7 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(pair, margin_mode.value, params)
+            self._api.set_margin_mode(margin_mode.value, pair, params)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

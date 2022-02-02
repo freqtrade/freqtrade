@@ -70,11 +70,13 @@ class Ftx(Exchange):
             if order_types.get('stoploss', 'market') == 'limit':
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
-            self._lev_prep(pair, leverage)
+            self._lev_prep(pair, leverage, side)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, params=params)
             self._log_exchange_response('create_stoploss_order', order)

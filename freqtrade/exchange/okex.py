@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
-
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -26,3 +26,22 @@ class Okex(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
+
+    def _lev_prep(
+        self,
+        pair: str,
+        leverage: float,
+        side: str  # buy or sell
+    ):
+        if self.trading_mode != TradingMode.SPOT:
+            if self.margin_mode is None:
+                raise OperationalException(
+                    f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
+                )
+            self._api.set_leverage(
+                leverage,
+                pair,
+                params={
+                    "mgnMode": self.margin_mode.value,
+                    "posSide": "long" if side == "buy" else "short",
+                })

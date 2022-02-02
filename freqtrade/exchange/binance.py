@@ -86,14 +86,22 @@ class Binance(Exchange):
         try:
             params = self._params.copy()
             params.update({'stopPrice': stop_price})
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             amount = self.amount_to_precision(pair, amount)
 
             rate = self.price_to_precision(pair, rate)
 
-            self._lev_prep(pair, leverage)
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=rate, params=params)
+            self._lev_prep(pair, leverage, side)
+            order = self._api.create_order(
+                symbol=pair,
+                type=ordertype,
+                side=side,
+                amount=amount,
+                price=rate,
+                params=params
+            )
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             self._log_exchange_response('create_stoploss_order', order)
@@ -220,7 +228,7 @@ class Binance(Exchange):
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._api.set_leverage(symbol=pair, leverage=round(leverage))
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
