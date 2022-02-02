@@ -17,7 +17,7 @@ from user_data.strategies.notifier import send_start_deliminator_message
 
 class Strategy004(IStrategy):
     if Config.IS_BACKTEST:
-        send_start_deliminator_message(Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR)
+        send_start_deliminator_message('Freq Strategy004 ', Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR)
     """
     Strategy 004
     author@: Gerald Lonlas
