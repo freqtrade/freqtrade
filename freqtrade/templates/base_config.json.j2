@@ -13,6 +13,8 @@
     "fiat_display_currency": "{{ fiat_display_currency }}",{{ ('\n    "timeframe": "' + timeframe + '",') if timeframe else '' }}
     "dry_run": {{ dry_run | lower }},
     "cancel_open_orders_on_exit": false,
+    "trading_mode": "{{ trading_mode }}",
+    "margin_mode": "{{ margin_mode }}",
     "unfilledtimeout": {
         "buy": 10,
         "sell": 10,
