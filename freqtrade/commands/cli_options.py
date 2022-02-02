@@ -183,15 +183,10 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "exportfilename": Arg(
         "--export-filename",
-        help="Save backtest results to the file with this filename. "
+        "--backtest-filename",
+        help="Use this filename for backtest results."
         "Requires `--export` to be set as well. "
         "Example: `--export-filename=user_data/backtest_results/backtest_today.json`",
-        metavar="PATH",
-    ),
-    "backtestfilename": Arg(
-        "--backtest-filename",
-        help="Use backtest results from this filename."
-        "Example: `--backtest-filename=user_data/backtest_results/backtest_today.json`",
         metavar="PATH",
     ),
     "disableparamexport": Arg(

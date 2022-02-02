@@ -61,12 +61,8 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
                                             startup_candles, min_date)
 
     no_trades = False
-    for arg_name in ['exportfilename', 'backtestfilename']:
-        filename = config.get(arg_name)
-        if filename is not None:
-            break
-
-    if config.get('no_trades', False):
+    filename = config.get("exportfilename")
+    if config.get("no_trades", False):
         no_trades = True
     elif config['trade_source'] == 'file':
         if not filename.is_dir() and not filename.is_file():

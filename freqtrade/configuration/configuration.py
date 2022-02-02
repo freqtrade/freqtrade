@@ -430,13 +430,6 @@ class Configuration:
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
 
-        if self.args.get('backtestfilename'):
-            self._args_to_config(config, argname='backtestfilename',
-                             logstring='Fetching backtest results from {} ...')
-            config['backtestfilename'] = Path(config['backtestfilename'])
-        else:
-            config['backtestfilename'] = (config['user_data_dir']
-                                    / 'backtest_results')
 
 
     def _process_data_options(self, config: Dict[str, Any]) -> None:
