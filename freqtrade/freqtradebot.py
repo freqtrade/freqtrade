@@ -601,7 +601,7 @@ class FreqtradeBot(LoggingMixin):
         self,
         pair: str,
         open_rate: float,
-        amount: float,
+        amount: float,  # quote currency, includes leverage
         leverage: float,
         is_short: bool
     ) -> Tuple[float, Optional[float]]:

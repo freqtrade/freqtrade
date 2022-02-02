@@ -4782,9 +4782,125 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     assert valid_price_at_min_alwd < proposed_price
 
 
-def test_leverage_prep():
-    # TODO-lev
-    return
+@pytest.mark.parametrize(
+    "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
+        (False, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'okex', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'okex', '', 5.0,  10.0, 1.0, None),
+        # Binance, short
+        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 1.0, 11.89108910891089),
+        (True, 'futures', 'binance', 'isolated', 3.0, 10.0, 1.0, 13.211221122079207),
+        (True, 'futures', 'binance', 'isolated', 5.0, 8.0, 1.0, 9.514851485148514),
+        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 0.6, 12.557755775577558),
+        # Binance, long
+        (False, 'futures', 'binance', 'isolated', 5, 10, 1.0, 8.070707070707071),
+        (False, 'futures', 'binance', 'isolated', 5, 8, 1.0, 6.454545454545454),
+        (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.717171717171718),
+        (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 7.39057239057239),
+        # Gateio/okex, short
+        (True, 'futures', 'gateio', 'isolated', 5, 10, 1.0, 11.87413417771621),
+        (True, 'futures', 'gateio', 'isolated', 5, 10, 2.0, 11.87413417771621),
+        (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.476180850346978),
+        (True, 'futures', 'gateio', 'isolated', 5, 8, 1.0, 9.499307342172967),
+        # Gateio/okex, long
+        (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
+        (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
+        # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
+        # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+    ]
+)
+def test_leverage_prep(
+    mocker,
+    default_conf_usdt,
+    is_short,
+    trading_mode,
+    exchange_name,
+    margin_mode,
+    leverage,
+    open_rate,
+    amount,
+    expected_liq,
+):
+    """
+    position = 0.2 * 5
+    wb: wallet balance (stake_amount if isolated)
+    cum_b: maintenance amount
+    side_1: -1 if is_short else 1
+    ep1: entry price
+    mmr_b: maintenance margin ratio
+
+    Binance, Short
+    leverage = 5, open_rate = 10, amount = 1.0
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - ((-1) * 1 * 10)) / ((1 * 0.01) - ((-1) * 1)) = 11.89108910891089
+    leverage = 3, open_rate = 10, amount = 1.0
+        ((3.3333333333 + 0.01) - ((-1) * 1.0 * 10)) / ((1.0 * 0.01) - ((-1) * 1.0)) = 13.2112211220
+    leverage = 5, open_rate = 8, amount = 1.0
+        ((1.6 + 0.01) - ((-1) * 1 * 8)) / ((1 * 0.01) - ((-1) * 1)) = 9.514851485148514
+    leverage = 5, open_rate = 10, amount = 0.6
+        ((1.6 + 0.01) - ((-1) * 0.6 * 10)) / ((0.6 * 0.01) - ((-1) * 0.6)) = 12.557755775577558
+
+    Binance, Long
+    leverage = 5, open_rate = 10, amount = 1.0
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
+    leverage = 5, open_rate = 8, amount = 1.0
+        ((1.6 + 0.01) - (1 * 1 * 8)) / ((1 * 0.01) - (1 * 1)) = 6.454545454545454
+    leverage = 3, open_rate = 10, amount = 1.0
+        ((2 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 6.717171717171718
+    leverage = 5, open_rate = 10, amount = 0.6
+        ((1.6 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 7.39057239057239
+
+    Gateio/Okex, Short
+    leverage = 5, open_rate = 10, amount = 1.0
+        (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
+        (10 + (2 / 1.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
+    leverage = 5, open_rate = 10, amount = 2.0
+        (10 + (4 / 2.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
+    leverage = 3, open_rate = 10, amount = 1.0
+        (10 + (3.3333333333333 / 1.0)) / (1 - (0.01 + 0.0006)) = 13.476180850346978
+    leverage = 5, open_rate = 8, amount = 1.0
+        (8 + (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 9.499307342172967
+
+    Gateio/Okex, Long
+    leverage = 5, open_rate = 10, amount = 1.0
+        (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
+        (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
+    leverage = 5, open_rate = 10, amount = 2.0
+        (10 - (4 / 2.0)) / (1 + (0.01 + 0.0006)) = 7.916089451810806
+    leverage = 3, open_rate = 10, amount = 1.0
+        (10 - (3.333333333333333333 / 1.0)) / (1 - (0.01 + 0.0006)) = 6.738090425173506
+    leverage = 5, open_rate = 8, amount = 1.0
+        (8 - (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 6.332871561448645
+    """
+    default_conf_usdt['trading_mode'] = trading_mode
+    default_conf_usdt['exchange']['name'] = exchange_name
+    default_conf_usdt['margin_mode'] = margin_mode
+    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
+    patch_RPCManager(mocker)
+    patch_exchange(mocker, id=exchange_name)
+    freqtrade = FreqtradeBot(default_conf_usdt)
+
+    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
+    freqtrade.exchange.name = exchange_name
+    # default_conf_usdt.update({
+    #     "dry_run": False,
+    # })
+    (interest, liq) = freqtrade.leverage_prep(
+        pair='ETH/USDT:USDT',
+        open_rate=open_rate,
+        amount=amount,
+        leverage=leverage,
+        is_short=is_short,
+    )
+    assert interest == 0.0
+    if expected_liq is None:
+        assert liq is None
+    else:
+        isclose(expected_liq, liq)
 
 
 @pytest.mark.parametrize('trading_mode,calls,t1,t2', [
