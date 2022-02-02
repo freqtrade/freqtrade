@@ -48,7 +48,7 @@ In addition to the gains/losses from the change in price of the futures contract
 "trading_mode": "futures"
 ```
 
-### Collateral
+### Margin mode
 
 The possible values are: `isolated`, or `cross`(*currently unavailable*)
 
@@ -57,15 +57,16 @@ The possible values are: `isolated`, or `cross`(*currently unavailable*)
 Each market(trading pair), keeps collateral in a separate account
 
 ``` json
-"collateral": "isolated"
+"margin_mode": "isolated"
 ```
 
 #### CROSS
+
 *currently unavailable*
 One account is used to share collateral between markets (trading pairs). Margin is taken from total account balance to avoid liquidation when needed.
 
 ``` json
-"collateral": "cross"
+"margin_mode": "cross"
 ```
 
 ### Developer

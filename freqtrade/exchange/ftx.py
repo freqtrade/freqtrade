@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 import ccxt
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -25,10 +25,10 @@ class Ftx(Exchange):
         "mark_ohlcv_timeframe": "1h",
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS)
     ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
@@ -70,11 +70,13 @@ class Ftx(Exchange):
             if order_types.get('stoploss', 'market') == 'limit':
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
-            self._lev_prep(pair, leverage)
+            self._lev_prep(pair, leverage, side)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, params=params)
             self._log_exchange_response('create_stoploss_order', order)

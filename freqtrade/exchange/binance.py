@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
-from freqtrade.enums import CandleType, Collateral, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -31,11 +31,11 @@ class Binance(Exchange):
         "ccxt_futures_name": "future"
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS),
-        (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS),
+        (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
@@ -86,14 +86,22 @@ class Binance(Exchange):
         try:
             params = self._params.copy()
             params.update({'stopPrice': stop_price})
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             amount = self.amount_to_precision(pair, amount)
 
             rate = self.price_to_precision(pair, rate)
 
-            self._lev_prep(pair, leverage)
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=rate, params=params)
+            self._lev_prep(pair, leverage, side)
+            order = self._api.create_order(
+                symbol=pair,
+                type=ordertype,
+                side=side,
+                amount=amount,
+                price=rate,
+                params=params
+            )
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             self._log_exchange_response('create_stoploss_order', order)
@@ -177,7 +185,7 @@ class Binance(Exchange):
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :stake_amount: The total value of the traders collateral in quote currency
+        :stake_amount: The total value of the traders margin_mode in quote currency
         """
         if stake_amount is None:
             raise OperationalException('binance.get_max_leverage requires argument stake_amount')
@@ -220,7 +228,7 @@ class Binance(Exchange):
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._api.set_leverage(symbol=pair, leverage=round(leverage))
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -324,7 +332,7 @@ class Binance(Exchange):
 
         side_1 = -1 if is_short else 1
         position = abs(position)
-        cross_vars = upnl_ex_1 - mm_ex_1 if self.collateral == Collateral.CROSS else 0.0
+        cross_vars = upnl_ex_1 - mm_ex_1 if self.margin_mode == MarginMode.CROSS else 0.0
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         # maintenance_amt: (CUM) Maintenance Amount of position

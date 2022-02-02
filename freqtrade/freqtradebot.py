@@ -16,7 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (Collateral, RPCMessageType, RunMode, SellType, SignalDirection, State,
+from freqtrade.enums import (MarginMode, RPCMessageType, RunMode, SellType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError)
@@ -105,9 +105,9 @@ class FreqtradeBot(LoggingMixin):
 
         self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
 
-        self.collateral_type: Optional[Collateral] = None
-        if 'collateral' in self.config:
-            self.collateral_type = Collateral(self.config['collateral'])
+        self.margin_mode_type: Optional[MarginMode] = None
+        if 'margin_mode' in self.config:
+            self.margin_mode = MarginMode(self.config['margin_mode'])
 
         self._schedule = Scheduler()
 
@@ -615,7 +615,7 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.SPOT:
             return (0.0, None)
         elif (
-            self.collateral_type == Collateral.ISOLATED and
+            self.margin_mode == MarginMode.ISOLATED and
             self.trading_mode == TradingMode.FUTURES
         ):
             wallet_balance = (amount * open_rate)/leverage
@@ -699,6 +699,7 @@ class FreqtradeBot(LoggingMixin):
             side=side,
             amount=amount,
             rate=enter_limit_requested,
+            reduceOnly=False,
             time_in_force=time_in_force,
             leverage=leverage
         )
@@ -1422,6 +1423,7 @@ class FreqtradeBot(LoggingMixin):
                 side=trade.exit_side,
                 amount=amount,
                 rate=limit,
+                reduceOnly=self.trading_mode == TradingMode.FUTURES,
                 time_in_force=time_in_force
             )
         except InsufficientFundsError as e:

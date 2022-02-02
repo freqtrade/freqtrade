@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, List, Tuple
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
-
+from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,28 @@ class Okex(Exchange):
         "funding_fee_timeframe": "8h",
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
+
+    def _lev_prep(
+        self,
+        pair: str,
+        leverage: float,
+        side: str  # buy or sell
+    ):
+        if self.trading_mode != TradingMode.SPOT:
+            if self.margin_mode is None:
+                raise OperationalException(
+                    f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
+                )
+            self._api.set_leverage(
+                leverage,
+                pair,
+                params={
+                    "mgnMode": self.margin_mode.value,
+                    "posSide": "long" if side == "buy" else "short",
+                })

@@ -46,7 +46,7 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 TRADING_MODES = ['spot', 'margin', 'futures']
-COLLATERAL_TYPES = ['cross', 'isolated']
+MARGIN_MODES = ['cross', 'isolated']
 
 LAST_BT_RESULT_FN = '.last_result.json'
 FTHYPT_FILEVERSION = 'fthypt_fileversion'
@@ -155,7 +155,7 @@ CONF_SCHEMA = {
         'ignore_roi_if_buy_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
-        'collateral': {'type': 'string', 'enum': COLLATERAL_TYPES},
+        'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
         'backtest_breakdown': {
             'type': 'array',
             'items': {'type': 'string', 'enum': BACKTEST_BREAKDOWNS}

@@ -17,7 +17,7 @@ from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import PairInfo
-from freqtrade.enums import CandleType, Collateral, RunMode, SignalDirection, TradingMode
+from freqtrade.enums import CandleType, MarginMode, RunMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -115,12 +115,12 @@ def patch_exchange(
 
     if mock_supported_modes:
         mocker.patch(
-            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_collateral_pairs',
+            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_margin_pairs',
             PropertyMock(return_value=[
-                (TradingMode.MARGIN, Collateral.CROSS),
-                (TradingMode.MARGIN, Collateral.ISOLATED),
-                (TradingMode.FUTURES, Collateral.CROSS),
-                (TradingMode.FUTURES, Collateral.ISOLATED)
+                (TradingMode.MARGIN, MarginMode.CROSS),
+                (TradingMode.MARGIN, MarginMode.ISOLATED),
+                (TradingMode.FUTURES, MarginMode.CROSS),
+                (TradingMode.FUTURES, MarginMode.ISOLATED)
             ])
         )
 

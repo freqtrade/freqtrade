@@ -104,12 +104,12 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf = deepcopy(exchange_conf)
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
-        exchange_conf['collateral'] = 'cross'
+        exchange_conf['margin_mode'] = 'cross'
         exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
 
         # TODO-lev: This mock should no longer be necessary once futures are enabled.
         class_mocker.patch(
-            'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
+            'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
         class_mocker.patch(
             'freqtrade.exchange.binance.Binance.fill_leverage_brackets')
 

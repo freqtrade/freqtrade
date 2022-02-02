@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import ccxt
 from pandas import DataFrame
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -27,10 +27,10 @@ class Kraken(Exchange):
         "mark_ohlcv_timeframe": "4h",
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS)
     ]
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
@@ -101,6 +101,8 @@ class Kraken(Exchange):
         Stoploss market orders is the only stoploss type supported by kraken.
         """
         params = self._params.copy()
+        if self.trading_mode == TradingMode.FUTURES:
+            params.update({'reduceOnly': True})
 
         if order_types.get('stoploss', 'market') == 'limit':
             ordertype = "stop-loss-limit"
@@ -159,10 +161,16 @@ class Kraken(Exchange):
         """
         return
 
-    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
-        params = super()._get_params(ordertype, leverage, time_in_force)
+    def _get_params(
+        self,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'gtc'
+    ) -> Dict:
+        params = super()._get_params(ordertype, leverage, reduceOnly, time_in_force)
         if leverage > 1.0:
-            params['leverage'] = leverage
+            params['leverage'] = round(leverage)
         return params
 
     def calculate_funding_fees(
