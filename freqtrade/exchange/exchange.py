@@ -791,13 +791,18 @@ class Exchange:
         """
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
+    def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
+        params = self._params.copy()
+        # Verify if stopPrice works for your exchange!
+        params.update({'stopPrice': stop_price})
+        return params
+
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         creates a stoploss order.
-        creates a stoploss limit order.
-        Should an exchange support more ordertypes, the exchange should implement this method,
-        using `order_types.get('stoploss', 'market')` to get the correct ordertype (e.g. FTX).
+        requires `_ft_has['stoploss_order_types']` to be set as a dict mapping limit and market
+            to the corresponding exchange type.
 
         The precise ordertype is determined by the order_types dict or exchange default.
 
@@ -812,11 +817,17 @@ class Exchange:
         if not self._ft_has['stoploss_on_exchange']:
             raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
-        # Limit price threshold: As limit price should always be below stop-price
+        user_order_type = order_types.get('stoploss', 'market')
+        if user_order_type in self._ft_has["stoploss_order_types"].keys():
+            ordertype = self._ft_has["stoploss_order_types"][user_order_type]
+        else:
+            # Otherwise pick only one available
+            ordertype = list(self._ft_has["stoploss_order_types"].values())[0]
+
+        # if user_order_type == 'limit':
+            # Limit price threshold: As limit price should always be below stop-price
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         rate = stop_price * limit_price_pct
-
-        ordertype = self._ft_has["stoploss_order_type"]
 
         stop_price = self.price_to_precision(pair, stop_price)
 
@@ -826,14 +837,13 @@ class Exchange:
                 'In stoploss limit order, stop price should be more than limit price')
 
         if self._config['dry_run']:
+            # TODO: will this work if ordertype is limit??
             dry_order = self.create_dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 
         try:
-            params = self._params.copy()
-            # Verify if stopPrice works for your exchange!
-            params.update({'stopPrice': stop_price})
+            params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price)
 
             amount = self.amount_to_precision(pair, amount)
 
