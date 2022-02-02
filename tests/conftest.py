@@ -587,7 +587,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
                 'price': {
                     'min': None,
@@ -622,7 +622,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
                 'price': {
                     'min': None,
@@ -690,7 +690,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
                 'price': {
                     'min': None,
@@ -725,7 +725,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
                 'price': {
                     'min': None,
@@ -760,7 +760,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
                 'price': {
                     'min': None,
@@ -988,7 +988,7 @@ def get_markets():
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000000,
                 },
                 'price': {
                     'min': None,

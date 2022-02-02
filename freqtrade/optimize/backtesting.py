@@ -413,11 +413,16 @@ class Backtesting:
 
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
-        max_stake = self.wallets.get_available_stake_amount()
+        max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
+        if max_stake is None:
+            # * Should never be executed
+            raise OperationalException(f'max_stake_amount is None for {trade}')
+        stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
-            current_profit=current_profit, min_stake=min_stake, max_stake=max_stake)
+            current_profit=current_profit, min_stake=min_stake,
+            max_stake=min(max_stake, stake_available))
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
@@ -551,7 +556,11 @@ class Backtesting:
         propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
-        max_stake_amount = self.wallets.get_available_stake_amount()
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, propose_rate, -0.05) or 0
+        if max_stake_amount is None:
+            # * Should never be executed
+            raise OperationalException(f'max_stake_amount is None for {trade}')
+        stake_available = self.wallets.get_available_stake_amount()
 
         pos_adjust = trade is not None
         if not pos_adjust:
@@ -563,7 +572,8 @@ class Backtesting:
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=current_time, current_rate=propose_rate,
-                proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
+                proposed_stake=stake_amount, min_stake=min_stake_amount,
+                max_stake=min(stake_available, max_stake_amount),
                 entry_tag=entry_tag, side=direction)
 
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
