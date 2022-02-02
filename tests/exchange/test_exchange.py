@@ -3774,6 +3774,8 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     # TODO-lev: test this for longs
     funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, True, d1)
     assert funding_fees == expected_fees
+    funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, False, d1)
+    assert funding_fees == 0 - expected_fees
 
 
 @pytest.mark.parametrize('pair,expected_size,trading_mode', [
