@@ -2,8 +2,9 @@ import logging
 from typing import Dict, List, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exchange import Exchange
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import Exchange
+
 
 logger = logging.getLogger(__name__)
 
