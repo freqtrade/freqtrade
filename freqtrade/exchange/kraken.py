@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import ccxt
 from pandas import DataFrame
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -27,10 +27,10 @@ class Kraken(Exchange):
         "mark_ohlcv_timeframe": "4h",
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS)
     ]
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:

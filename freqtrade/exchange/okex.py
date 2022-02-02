@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Tuple
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
 
 
@@ -20,9 +20,9 @@ class Okex(Exchange):
         "funding_fee_timeframe": "8h",
     }
 
-    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.CROSS),
-        # (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]

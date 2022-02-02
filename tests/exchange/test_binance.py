@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import ccxt
 import pytest
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -236,7 +236,7 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
     })
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
-    default_conf['collateral'] = Collateral.ISOLATED
+    default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_brackets()
 
@@ -282,7 +282,7 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
 def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
     api_mock = MagicMock()
     default_conf['trading_mode'] = TradingMode.FUTURES
-    default_conf['collateral'] = Collateral.ISOLATED
+    default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_brackets()
 
@@ -385,14 +385,14 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, c
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
 
 
-@pytest.mark.parametrize("trading_mode,collateral,config", [
+@pytest.mark.parametrize("trading_mode,margin_mode,config", [
     ("spot", "", {}),
     ("margin", "cross", {"options": {"defaultType": "margin"}}),
     ("futures", "isolated", {"options": {"defaultType": "future"}}),
 ])
-def test__ccxt_config(default_conf, mocker, trading_mode, collateral, config):
+def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
     default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = collateral
+    default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     assert exchange._ccxt_config == config
 
