@@ -108,16 +108,14 @@ def ask_user_config() -> Dict[str, Any]:
             "name": "exchange_name",
             "message": "Select exchange",
             "choices": lambda x: [
-                Separator("------ Spot and Perpetual Swaps/Futures -------"),
                 "binance",
-                "gateio",
-                Separator("----------------- Spot Only -------------------"),
-                "okex",
                 "binanceus",
-                "ftx",
                 "bittrex",
+                "ftx",
+                "gateio",
                 "kraken",
                 "kucoin",
+                "okex",
                 Separator("-----------------------------------------------"),
                 "other",
             ],
@@ -206,9 +204,9 @@ def ask_user_config() -> Dict[str, Any]:
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
-    answers["margin_mode"] = (
+    answers['margin_mode'] = (
         'isolated'
-        if answers.get("trading_mode") == 'futures'
+        if answers.get('trading_mode') == 'futures'
         else ''
     )
     # Force JWT token to be a random string
