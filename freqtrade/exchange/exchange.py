@@ -1880,7 +1880,7 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(pair, margin_mode.value, params)
+            self._api.set_margin_mode(margin_mode.value, pair, params)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
