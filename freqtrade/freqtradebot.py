@@ -1423,6 +1423,7 @@ class FreqtradeBot(LoggingMixin):
                 side=trade.exit_side,
                 amount=amount,
                 rate=limit,
+                leverage=trade.leverage,
                 reduceOnly=self.trading_mode == TradingMode.FUTURES,
                 time_in_force=time_in_force
             )

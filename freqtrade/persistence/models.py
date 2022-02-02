@@ -569,7 +569,7 @@ class LocalTrade():
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # TODO-lev: Double check this
+            # TODO-lev: Is anything else needed here?
             self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None

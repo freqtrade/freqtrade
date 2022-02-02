@@ -1213,7 +1213,8 @@ def test_buy_dry_run(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
 
     order = exchange.create_order(pair='ETH/BTC', ordertype='limit', side="buy",
-                                  amount=1, rate=200, time_in_force='gtc')
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force='gtc')
     assert 'id' in order
     assert 'dry_run_buy_' in order['id']
 
@@ -1238,7 +1239,8 @@ def test_buy_prod(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                                  amount=1, rate=200, time_in_force=time_in_force)
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force=time_in_force)
 
     assert 'id' in order
     assert 'info' in order
@@ -1257,7 +1259,9 @@ def test_buy_prod(default_conf, mocker, exchange_name):
         side="buy",
         amount=1,
         rate=200,
-        time_in_force=time_in_force)
+        leverage=1.0,
+        time_in_force=time_in_force
+    )
     assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
@@ -1269,31 +1273,36 @@ def test_buy_prod(default_conf, mocker, exchange_name):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("Not enough funds"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                              amount=1, rate=200, time_in_force=time_in_force)
+                              amount=1, rate=200, leverage=1.0,
+                              time_in_force=time_in_force)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype='limit', side="buy",
-                              amount=1, rate=200, time_in_force=time_in_force)
+                              amount=1, rate=200, leverage=1.0,
+                              time_in_force=time_in_force)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype='market', side="buy",
-                              amount=1, rate=200, time_in_force=time_in_force)
+                              amount=1, rate=200, leverage=1.0,
+                              time_in_force=time_in_force)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("Network disconnect"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                              amount=1, rate=200, time_in_force=time_in_force)
+                              amount=1, rate=200, leverage=1.0,
+                              time_in_force=time_in_force)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                              amount=1, rate=200, time_in_force=time_in_force)
+                              amount=1, rate=200, leverage=1.0,
+                              time_in_force=time_in_force)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1317,7 +1326,8 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     time_in_force = 'ioc'
 
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                                  amount=1, rate=200, time_in_force=time_in_force)
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force=time_in_force)
 
     assert 'id' in order
     assert 'info' in order
@@ -1334,7 +1344,8 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     time_in_force = 'ioc'
 
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="buy",
-                                  amount=1, rate=200, time_in_force=time_in_force)
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force=time_in_force)
 
     assert 'id' in order
     assert 'info' in order
@@ -1353,7 +1364,7 @@ def test_sell_dry_run(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
 
     order = exchange.create_order(pair='ETH/BTC', ordertype='limit',
-                                  side="sell", amount=1, rate=200)
+                                  side="sell", amount=1, rate=200, leverage=1.0)
     assert 'id' in order
     assert 'dry_run_sell_' in order['id']
 
@@ -1378,7 +1389,7 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type,
-                                  side="sell", amount=1, rate=200)
+                                  side="sell", amount=1, rate=200, leverage=1.0)
 
     assert 'id' in order
     assert 'info' in order
@@ -1392,7 +1403,8 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock.create_order.reset_mock()
     order_type = 'limit'
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type,
-                                  side="sell", amount=1, rate=200)
+                                  side="sell", amount=1, rate=200,
+                                  leverage=1.0)
     assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'sell'
@@ -1403,28 +1415,33 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200)
+        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200,
+                              leverage=1.0)
 
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.create_order(pair='ETH/BTC', ordertype='limit', side="sell", amount=1, rate=200)
+        exchange.create_order(pair='ETH/BTC', ordertype='limit', side="sell", amount=1, rate=200,
+                              leverage=1.0)
 
     # Market orders don't require price, so the behaviour is slightly different
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.create_order(pair='ETH/BTC', ordertype='market', side="sell", amount=1, rate=200)
+        exchange.create_order(pair='ETH/BTC', ordertype='market', side="sell", amount=1, rate=200,
+                              leverage=1.0)
 
     with pytest.raises(TemporaryError):
         api_mock.create_order = MagicMock(side_effect=ccxt.NetworkError("No Connection"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200)
+        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200,
+                              leverage=1.0)
 
     with pytest.raises(OperationalException):
         api_mock.create_order = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200)
+        exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell", amount=1, rate=200,
+                              leverage=1.0)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -1448,7 +1465,8 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     time_in_force = 'ioc'
 
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell",
-                                  amount=1, rate=200, time_in_force=time_in_force)
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force=time_in_force)
 
     assert 'id' in order
     assert 'info' in order
@@ -1464,7 +1482,8 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     order_type = 'market'
     time_in_force = 'ioc'
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell",
-                                  amount=1, rate=200, time_in_force=time_in_force)
+                                  amount=1, rate=200, leverage=1.0,
+                                  time_in_force=time_in_force)
 
     assert 'id' in order
     assert 'info' in order
@@ -3771,7 +3790,6 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    # TODO-lev: test this for longs
     funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, True, d1)
     assert funding_fees == expected_fees
     funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, False, d1)
