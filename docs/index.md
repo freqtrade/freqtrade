@@ -47,7 +47,8 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [FTX](https://ftx.com)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [X] [Kraken](https://kraken.com/)
-- [X] [OKX](https://www.okx.com/)
+- [X] [OKX](https://okx.com/) (Former OKEX)
+- [X] [Huobi](http://huobi.com/)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
