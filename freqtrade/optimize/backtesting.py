@@ -333,8 +333,12 @@ class Backtesting:
                     df_analyzed.loc[:, col] = 0 if not tag_col else None
 
             # Update dataprovider cache
-            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed, CandleType.SPOT)
-            # TODO-lev: Candle-type should be conditional, either "spot" or futures
+            self.dataprovider._set_cached_df(
+                pair,
+                self.timeframe,
+                df_analyzed,
+                CandleType.FUTURES if self.trading_mode == TradingMode.FUTURES else CandleType.SPOT
+            )
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
