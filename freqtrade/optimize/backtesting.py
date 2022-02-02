@@ -275,15 +275,19 @@ class Backtesting:
             # Trim startup period from analyzed dataframe
             df_analyzed = processed[pair] = pair_data = trim_dataframe(
                 df_analyzed, self.timerange, startup_candles=self.required_startup)
+            # Update dataprovider cache
+            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+
+            # Create a copy of the dataframe before shifting, that way the buy signal/tag
+            # remains on the correct candle for callbacks.
+            df_analyzed = df_analyzed.copy()
+
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
             df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
             df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
             df_analyzed.loc[:, 'exit_tag'] = df_analyzed.loc[:, 'exit_tag'].shift(1)
-
-            # Update dataprovider cache
-            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
