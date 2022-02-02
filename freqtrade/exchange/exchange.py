@@ -1786,7 +1786,7 @@ class Exchange:
 
         try:
             funding_history = self._api.fetch_funding_history(
-                pair=pair,
+                symbol=pair,
                 since=since
             )
             return sum(fee['amount'] for fee in funding_history)
