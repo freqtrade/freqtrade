@@ -169,7 +169,6 @@ class StrategyTestV3(IStrategy):
             ),
             'exit_short'] = 1
 
-        # TODO-lev: Add short logic
         return dataframe
 
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
