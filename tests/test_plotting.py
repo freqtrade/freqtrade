@@ -202,6 +202,8 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
                                      datadir=testdatadir, timerange=timerange)
     data['enter_long'] = 0
     data['exit_long'] = 0
+    data['enter_short'] = 0
+    data['exit_short'] = 0
 
     indicators1 = []
     indicators2 = []
@@ -222,8 +224,10 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
     assert row_mock.call_count == 2
     assert trades_mock.call_count == 1
 
-    assert log_has("No buy-signals found.", caplog)
-    assert log_has("No sell-signals found.", caplog)
+    assert log_has("No enter_long-signals found.", caplog)
+    assert log_has("No exit_long-signals found.", caplog)
+    assert log_has("No enter_short-signals found.", caplog)
+    assert log_has("No exit_short-signals found.", caplog)
 
 
 def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir):
@@ -249,7 +253,7 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure
 
-    assert len(figure.data) == 6
+    assert len(figure.data) == 8
     # Candlesticks are plotted first
     candles = find_trace_in_fig_data(figure.data, "Price")
     assert isinstance(candles, go.Candlestick)
@@ -257,15 +261,15 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     volume = find_trace_in_fig_data(figure.data, "Volume")
     assert isinstance(volume, go.Bar)
 
-    buy = find_trace_in_fig_data(figure.data, "buy")
-    assert isinstance(buy, go.Scatter)
+    enter_long = find_trace_in_fig_data(figure.data, "enter_long")
+    assert isinstance(enter_long, go.Scatter)
     # All buy-signals should be plotted
-    assert int(data['enter_long'].sum()) == len(buy.x)
+    assert int(data['enter_long'].sum()) == len(enter_long.x)
 
-    sell = find_trace_in_fig_data(figure.data, "sell")
-    assert isinstance(sell, go.Scatter)
+    exit_long = find_trace_in_fig_data(figure.data, "exit_long")
+    assert isinstance(exit_long, go.Scatter)
     # All buy-signals should be plotted
-    assert int(data['exit_long'].sum()) == len(sell.x)
+    assert int(data['exit_long'].sum()) == len(exit_long.x)
 
     assert find_trace_in_fig_data(figure.data, "Bollinger Band")
 
