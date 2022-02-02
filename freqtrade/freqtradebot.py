@@ -1272,7 +1272,8 @@ class FreqtradeBot(LoggingMixin):
             # to the order dict acquired before cancelling.
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
-            # TODO-lev: Check edge cases, we don't want to make leverage > 1.0 if we don't have to
+            # * Check edge cases, we don't want to make leverage > 1.0 if we don't have to
+            # * (for leverage modes which aren't isolated futures)
 
             trade.stake_amount = trade.amount * trade.open_rate
             self.update_trade_state(trade, trade.open_order_id, corder)
