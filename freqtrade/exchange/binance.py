@@ -93,7 +93,7 @@ class Binance(Exchange):
 
             rate = self.price_to_precision(pair, rate)
 
-            self._lev_prep(pair, leverage)
+            self._lev_prep(pair, leverage, side)
             order = self._api.create_order(
                 symbol=pair,
                 type=ordertype,

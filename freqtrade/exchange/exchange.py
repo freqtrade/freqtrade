@@ -877,7 +877,12 @@ class Exchange:
 
     # Order handling
 
-    def _lev_prep(self, pair: str, leverage: float):
+    def _lev_prep(
+        self,
+        pair: str,
+        leverage: float,
+        side: str  # buy or sell
+    ):
         if self.trading_mode != TradingMode.SPOT:
             self.set_margin_mode(pair, self.margin_mode)
             self._set_leverage(leverage, pair)
@@ -923,7 +928,7 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             if not reduceOnly:
-                self._lev_prep(pair, leverage)
+                self._lev_prep(pair, leverage, side)
 
             order = self._api.create_order(
                 pair,
@@ -1853,7 +1858,7 @@ class Exchange:
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=round(leverage))
+            self._api.set_leverage(symbol=pair, leverage=leverage)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
