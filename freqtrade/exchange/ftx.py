@@ -70,6 +70,8 @@ class Ftx(Exchange):
             if order_types.get('stoploss', 'market') == 'limit':
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)

@@ -101,6 +101,8 @@ class Kraken(Exchange):
         Stoploss market orders is the only stoploss type supported by kraken.
         """
         params = self._params.copy()
+        if self.trading_mode == TradingMode.FUTURES:
+            params.update({'reduceOnly': True})
 
         if order_types.get('stoploss', 'market') == 'limit':
             ordertype = "stop-loss-limit"
@@ -159,8 +161,14 @@ class Kraken(Exchange):
         """
         return
 
-    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
-        params = super()._get_params(ordertype, leverage, time_in_force)
+    def _get_params(
+        self,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'gtc'
+    ) -> Dict:
+        params = super()._get_params(ordertype, leverage, reduceOnly, time_in_force)
         if leverage > 1.0:
             params['leverage'] = leverage
         return params
