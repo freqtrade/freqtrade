@@ -127,7 +127,7 @@ def ask_user_config() -> Dict[str, Any]:
             "name": "trading_mode",
             "message": "Do you want to trade Perpetual Swaps (perpetual futures)?",
             "default": False,
-            "filter": lambda val: '"futures"' if val else '"spot"',
+            "filter": lambda val: 'futures' if val else 'spot',
             "when": lambda x: x["exchange_name"] in ['binance', 'gateio'],
         },
         {
@@ -202,16 +202,15 @@ def ask_user_config() -> Dict[str, Any]:
         },
     ]
     answers = prompt(questions)
-    answers["margin_mode"] = (
-        '\n    "margin_mode": "isolated",'
-        if answers["trading_mode"] == '"futures"'
-        else ''
-    )
 
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
-
+    answers["margin_mode"] = (
+        '\n    "margin_mode": "isolated",'
+        if answers.get("trading_mode") == 'futures'
+        else ''
+    )
     # Force JWT token to be a random string
     answers['api_server_jwt_key'] = secrets.token_hex()
 
