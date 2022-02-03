@@ -823,27 +823,28 @@ class Exchange:
         else:
             # Otherwise pick only one available
             ordertype = list(self._ft_has["stoploss_order_types"].values())[0]
+            user_order_type = list(self._ft_has["stoploss_order_types"].keys())[0]
 
-        # if user_order_type == 'limit':
+        stop_price_norm = self.price_to_precision(pair, stop_price)
+        rate = None
+        if user_order_type == 'limit':
             # Limit price threshold: As limit price should always be below stop-price
-        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-        rate = stop_price * limit_price_pct
+            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+            rate = stop_price * limit_price_pct
 
-        stop_price = self.price_to_precision(pair, stop_price)
-
-        # Ensure rate is less than stop price
-        if stop_price <= rate:
-            raise OperationalException(
-                'In stoploss limit order, stop price should be more than limit price')
+            # Ensure rate is less than stop price
+            if stop_price_norm <= rate:
+                raise OperationalException(
+                    'In stoploss limit order, stop price should be more than limit price')
 
         if self._config['dry_run']:
             # TODO: will this work if ordertype is limit??
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, "sell", amount, stop_price_norm)
             return dry_order
 
         try:
-            params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price)
+            params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price_norm)
 
             amount = self.amount_to_precision(pair, amount)
 
@@ -851,7 +852,7 @@ class Exchange:
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
                                            amount=amount, price=rate, params=params)
-            logger.info(f"stoploss limit order added for {pair}. "
+            logger.info(f"stoploss {user_order_type} order added for {pair}. "
                         f"stop price: {stop_price}. limit: {rate}")
             self._log_exchange_response('create_stoploss_order', order)
             return order
@@ -871,7 +872,7 @@ class Exchange:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+                f'Could not place stoploss order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 

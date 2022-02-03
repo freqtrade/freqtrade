@@ -900,7 +900,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: Dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
