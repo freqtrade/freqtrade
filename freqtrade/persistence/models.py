@@ -172,6 +172,7 @@ class Order(_DECL_BASE):
             'cost': self.cost if self.cost else 0,
             'filled': self.filled,
             'ft_order_side': self.ft_order_side,
+            'is_open': self.ft_is_open,
             'order_date': self.order_date.strftime(DATETIME_PRINT_FORMAT)
             if self.order_date else None,
             'order_timestamp': int(self.order_date.replace(
@@ -181,6 +182,7 @@ class Order(_DECL_BASE):
             'order_filled_timestamp': int(self.order_filled_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
             'order_type': self.order_type,
+            'pair': self.ft_pair,
             'price': self.price,
             'remaining': self.remaining,
             'status': self.status,
@@ -304,14 +306,14 @@ class LocalTrade():
 
     def to_json(self) -> Dict[str, Any]:
         filled_orders = self.select_filled_orders()
-        filled_buys = []
-        filled_sells = []
+        filled_entries = []
+        filled_exits = []
         if len(filled_orders) > 0:
-            for x in range(len(filled_orders)):
-                if filled_orders[x].ft_order_side == 'buy':
-                    filled_buys.append(filled_orders[x].to_json())
-                elif filled_orders[x].ft_order_side == 'sell':
-                    filled_sells.append(filled_orders[x].to_json())
+            for order in filled_orders:
+                if order.ft_order_side == 'buy':
+                    filled_entries.append(order.to_json())
+                if order.ft_order_side == 'sell':
+                    filled_exits.append(order.to_json())
 
         return {
             'trade_id': self.id,
@@ -376,8 +378,8 @@ class LocalTrade():
             'max_rate': self.max_rate,
 
             'open_order_id': self.open_order_id,
-            'filled_buys': filled_buys,
-            'filled_sells': filled_sells,
+            'filled_entry_orders': filled_entries,
+            'filled_exit_orders': filled_exits,
         }
 
     @staticmethod

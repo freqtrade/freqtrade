@@ -437,7 +437,7 @@ class Telegram(RPCHandler):
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
-                r['num_buys'] = len(r['filled_buys'])
+                r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 r['position_adjustment_enable'] = r.get('position_adjustment_enable', False)
                 lines = [
@@ -478,8 +478,9 @@ class Telegram(RPCHandler):
                     else:
                         lines.append("*Open Order:* `{open_order}`")
 
-                if len(r['filled_buys']) > 1:
-                    lines_detail = self._prepare_buy_details(r['filled_buys'], r['base_currency'])
+                if len(r['filled_entry_orders']) > 1:
+                    lines_detail = self._prepare_buy_details(
+                        r['filled_entry_orders'], r['base_currency'])
                     lines.extend(lines_detail)
 
                 # Filter empty lines using list-comprehension

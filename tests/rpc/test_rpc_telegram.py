@@ -202,7 +202,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'stop_loss_ratio': -0.0001,
             'open_order': '(limit buy rem=0.00000000)',
             'is_open': True,
-            'filled_buys': []
+            'filled_entry_orders': []
         }]),
     )
 
