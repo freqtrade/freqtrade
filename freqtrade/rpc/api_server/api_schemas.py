@@ -173,6 +173,8 @@ class ShowConfig(BaseModel):
     bot_name: str
     state: str
     runmode: str
+    position_adjustment_enable: bool
+    max_entry_position_adjustment: int
 
 
 class TradeSchema(BaseModel):
@@ -277,6 +279,7 @@ class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
     ordertype: Optional[OrderTypeValues]
+    stakeamount: Optional[float]
 
 
 class ForceSellPayload(BaseModel):

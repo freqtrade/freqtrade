@@ -3,7 +3,7 @@
 
 import logging
 from copy import deepcopy
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, NamedTuple, Optional
 
 import arrow
 
@@ -238,14 +238,15 @@ class Wallets:
 
         return self._check_available_stake_amount(stake_amount, available_amount)
 
-    def validate_stake_amount(self, pair, stake_amount, min_stake_amount):
+    def validate_stake_amount(
+            self, pair: str, stake_amount: Optional[float], min_stake_amount: Optional[float]):
         if not stake_amount:
             logger.debug(f"Stake amount is {stake_amount}, ignoring possible trade for {pair}.")
             return 0
 
         max_stake_amount = self.get_available_stake_amount()
 
-        if min_stake_amount > max_stake_amount:
+        if min_stake_amount is not None and min_stake_amount > max_stake_amount:
             if self._log:
                 logger.warning("Minimum stake amount > available balance.")
             return 0

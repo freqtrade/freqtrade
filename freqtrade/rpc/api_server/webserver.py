@@ -41,6 +41,8 @@ class ApiServer(RPCHandler):
     _has_rpc: bool = False
     _bgtask_running: bool = False
     _config: Dict[str, Any] = {}
+    # Exchange - only available in webserver mode.
+    _exchange = None
 
     def __new__(cls, *args, **kwargs):
         """

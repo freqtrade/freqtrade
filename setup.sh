@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 9 8 7
+    for v in 9 10 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -37,7 +37,6 @@ function check_installed_python() {
     done
 
     echo "No usable python found. Please make sure to have python3.7 or newer installed."
-    echo "python3.10 is currently not supported."
     exit 1
 }
 
@@ -220,7 +219,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.7 - 3.9, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.8 - 3.10, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
@@ -247,7 +246,7 @@ function help() {
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
-# Verify if 3.7 or 3.8 is installed
+# Verify if 3.8+ is installed
 check_installed_python
 
 case $* in

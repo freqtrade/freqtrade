@@ -1,4 +1,3 @@
-import datetime
 import re
 from datetime import timedelta
 from pathlib import Path
@@ -49,7 +48,7 @@ def test_text_table_bt_results():
         '        0:20:00 |     2     0     1  66.7 |'
     )
 
-    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(['ETH/BTC'], stake_currency='BTC',
                                          starting_balance=4, results=results)
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
@@ -85,6 +84,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'run_id': '123',
         }
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
@@ -103,7 +103,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     assert strat_stats['backtest_end'] == max_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['total_trades'] == len(results['DefStrat']['results'])
     # Above sample had no loosing trade
-    assert strat_stats['max_drawdown'] == 0.0
+    assert strat_stats['max_drawdown_account'] == 0.0
 
     # Retry with losing trade
     results = {'DefStrat': {
@@ -133,6 +133,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'run_id': '124',
         }
     }
 
@@ -143,7 +144,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     assert 'strategy_comparison' in stats
     strat_stats = stats['strategy']['DefStrat']
 
-    assert strat_stats['max_drawdown'] == 0.013803
+    assert pytest.approx(strat_stats['max_drawdown_account']) == 1.399999e-08
     assert strat_stats['drawdown_start'] == '2017-11-14 22:10:00'
     assert strat_stats['drawdown_end'] == '2017-11-14 22:43:00'
     assert strat_stats['drawdown_end_ts'] == 1510699380000
@@ -165,7 +166,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     filename1 = Path(tmpdir / last_fn)
     assert filename1.is_file()
     content = filename1.read_text()
-    assert 'max_drawdown' in content
+    assert 'max_drawdown_account' in content
     assert 'strategy' in content
     assert 'pairlist' in content
 
@@ -179,16 +180,16 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
 
-    store_backtest_stats(testdatadir, {})
+    store_backtest_stats(testdatadir, {'metadata': {}})
 
-    assert dump_mock.call_count == 2
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir/'backtest-result'))
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'
-    store_backtest_stats(filename, {})
-    assert dump_mock.call_count == 2
+    store_backtest_stats(filename, {'metadata': {}})
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
@@ -208,7 +209,7 @@ def test_generate_pair_metrics():
         }
     )
 
-    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(['ETH/BTC'], stake_currency='BTC',
                                          starting_balance=2, results=results)
     assert isinstance(pair_results, list)
     assert len(pair_results) == 2
@@ -227,9 +228,9 @@ def test_generate_daily_stats(testdatadir):
     assert isinstance(res, dict)
     assert round(res['backtest_best_day'], 4) == 0.1796
     assert round(res['backtest_worst_day'], 4) == -0.1468
-    assert res['winning_days'] == 14
-    assert res['draw_days'] == 4
-    assert res['losing_days'] == 3
+    assert res['winning_days'] == 19
+    assert res['draw_days'] == 0
+    assert res['losing_days'] == 2
 
     # Select empty dataframe!
     res = generate_daily_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
@@ -324,51 +325,25 @@ def test_generate_sell_reason_stats():
     assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
 
 
-def test_text_table_strategy(default_conf):
-    default_conf['max_open_trades'] = 2
-    default_conf['dry_run_wallet'] = 3
-    results = {}
-    date = datetime.datetime(year=2020, month=1, day=1, hour=12, minute=30)
-    delta = datetime.timedelta(days=1)
-    results['TestStrategy1'] = {'results': pd.DataFrame(
-        {
-            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'close_date': [date, date + delta, date + delta * 2],
-            'profit_ratio': [0.1, 0.2, 0.3],
-            'profit_abs': [0.2, 0.4, 0.5],
-            'trade_duration': [10, 30, 10],
-            'wins': [2, 0, 0],
-            'draws': [0, 0, 0],
-            'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
-        }
-    ), 'config': default_conf}
-    results['TestStrategy2'] = {'results': pd.DataFrame(
-        {
-            'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
-            'close_date': [date, date + delta, date + delta * 2],
-            'profit_ratio': [0.4, 0.2, 0.3],
-            'profit_abs': [0.4, 0.4, 0.5],
-            'trade_duration': [15, 30, 15],
-            'wins': [4, 1, 0],
-            'draws': [0, 0, 0],
-            'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
-        }
-    ), 'config': default_conf}
+def test_text_table_strategy(testdatadir):
+    filename = testdatadir / "backtest-result_multistrat.json"
+    bt_res_data = load_backtest_stats(filename)
+
+    bt_res_data_comparison = bt_res_data.pop('strategy_comparison')
 
     result_str = (
-        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '|       Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
         '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
-        '|---------------+--------+----------------+----------------+------------------+'
+        '|----------------+--------+----------------+----------------+------------------+'
         '----------------+----------------+-------------------------+-----------------------|\n'
-        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 |'
-        '          36.67 |        0:17:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |\n'
-        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
-        '          43.33 |        0:20:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |'
+        '| StrategyTestV2 |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n'
+        '|   TestStrategy |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |'
     )
 
-    strategy_results = generate_strategy_comparison(all_results=results)
+    strategy_results = generate_strategy_comparison(bt_stats=bt_res_data['strategy'])
+    assert strategy_results == bt_res_data_comparison
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 

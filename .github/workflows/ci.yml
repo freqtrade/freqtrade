@@ -3,9 +3,9 @@ name: Freqtrade CI
 on:
   push:
     branches:
-      - master
       - stable
       - develop
+      - ci/*
     tags:
   release:
     types: [published]
@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-18.04, ubuntu-20.04 ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -39,7 +39,7 @@ jobs:
 
     - name: pip cache (linux)
       uses: actions/cache@v2
-      if: startsWith(matrix.os, 'ubuntu')
+      if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -50,8 +50,9 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - *nix
+      if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -69,7 +70,7 @@ jobs:
       if: matrix.python-version == '3.9'
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -114,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -133,7 +134,7 @@ jobs:
 
     - name: pip cache (macOS)
       uses: actions/cache@v2
-      if: startsWith(matrix.os, 'macOS')
+      if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -144,10 +145,11 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - macOS
+      if: runner.os == 'macOS'
       run: |
         brew update
         brew install hdf5 c-blosc
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -159,7 +161,7 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -195,7 +197,7 @@ jobs:
       uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-          severity: error
+          severity: info
           details: Test Succeeded!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
@@ -205,7 +207,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7, 3.8]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -217,7 +219,6 @@ jobs:
 
     - name: Pip cache (Windows)
       uses: actions/cache@preview
-      if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip

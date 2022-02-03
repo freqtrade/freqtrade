@@ -67,6 +67,8 @@ class Exchange:
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
+        "ohlcv_volume_currency": "base",  # "base" or "quote"
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -83,6 +85,8 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         self._config.update(config)
 
@@ -170,8 +174,10 @@ class Exchange:
 
     def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
-        if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
-            asyncio.get_event_loop().run_until_complete(self._api_async.close())
+        if (self._api_async and inspect.iscoroutinefunction(self._api_async.close)
+                and self._api_async.session):
+            logger.info("Closing async ccxt session.")
+            self.loop.run_until_complete(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
@@ -326,7 +332,7 @@ class Exchange:
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
-                asyncio.get_event_loop().run_until_complete(
+                self.loop.run_until_complete(
                     self._api_async.load_markets(reload=reload))
 
         except (asyncio.TimeoutError, ccxt.BaseError) as e:
@@ -606,8 +612,9 @@ class Exchange:
             'cost': _amount * rate,
             'type': ordertype,
             'side': side,
+            'filled': 0,
             'remaining': _amount,
-            'datetime': arrow.utcnow().isoformat(),
+            'datetime': arrow.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'timestamp': arrow.utcnow().int_timestamp * 1000,
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
@@ -621,6 +628,7 @@ class Exchange:
             average = self.get_dry_market_fill_price(pair, side, amount, rate)
             dry_order.update({
                 'average': average,
+                'filled': _amount,
                 'cost': dry_order['amount'] * average,
             })
             dry_order = self.add_dry_order_fee(pair, dry_order)
@@ -652,7 +660,8 @@ class Exchange:
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
-            filled_amount = 0
+            filled_amount = 0.0
+            book_entry_price = 0.0
             for book_entry in ob[ob_type]:
                 book_entry_price = book_entry[0]
                 book_entry_coin_volume = book_entry[1]
@@ -944,7 +953,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
         """
         :param cached: Allow cached result
         :return: fetch_tickers result
@@ -954,7 +963,7 @@ class Exchange:
             if tickers:
                 return tickers
         try:
-            tickers = self._api.fetch_tickers()
+            tickers = self._api.fetch_tickers(symbols)
             self._fetch_tickers_cache['fetch_tickers'] = tickers
             return tickers
         except ccxt.NotSupported as e:
@@ -1227,7 +1236,7 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
-        pair, timeframe, data = asyncio.get_event_loop().run_until_complete(
+        pair, timeframe, data = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, is_new_pair=is_new_pair))
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
@@ -1329,8 +1338,10 @@ class Exchange:
         results_df = {}
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
-            results = asyncio.get_event_loop().run_until_complete(
-                asyncio.gather(*input_coro, return_exceptions=True))
+            async def gather_stuff():
+                return await asyncio.gather(*input_coro, return_exceptions=True)
+
+            results = self.loop.run_until_complete(gather_stuff())
 
             # handle caching
             for res in results:
@@ -1566,7 +1577,7 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             raise OperationalException("This exchange does not support downloading Trades.")
 
-        return asyncio.get_event_loop().run_until_complete(
+        return self.loop.run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 

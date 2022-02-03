@@ -9,8 +9,8 @@ from typing import Any, List
 
 
 # check min. python version
-if sys.version_info < (3, 7):  # pragma: no cover
-    sys.exit("Freqtrade requires Python version >= 3.7")
+if sys.version_info < (3, 8):  # pragma: no cover
+    sys.exit("Freqtrade requires Python version >= 3.8")
 
 from freqtrade.commands import Arguments
 from freqtrade.exceptions import FreqtradeException, OperationalException

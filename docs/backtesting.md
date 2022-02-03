@@ -22,6 +22,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export {none,trades}] [--export-filename PATH]
                              [--breakdown {day,week,month} [{day,week,month} ...]]
+                             [--cache {none,day,week,month}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -76,6 +77,9 @@ optional arguments:
                         _today.json`
   --breakdown {day,week,month} [{day,week,month} ...]
                         Show backtesting breakdown per [day, week, month].
+  --cache {none,day,week,month}
+                        Load a cached backtest result no older than specified
+                        age (default: day).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -312,7 +316,7 @@ A backtesting result will look like that:
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
-| Drawdown              | 50.63%              |
+| Drawdown (Account)    | 13.33%              |
 | Drawdown              | 0.0015 BTC          |
 | Drawdown high         | 0.0013 BTC          |
 | Drawdown low          | -0.0002 BTC         |
@@ -399,7 +403,7 @@ It contains some useful key metrics about performance of your strategy on backte
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
-| Drawdown              | 50.63%              |
+| Drawdown (Account)    | 13.33%              |
 | Drawdown              | 0.0015 BTC          |
 | Drawdown high         | 0.0013 BTC          |
 | Drawdown low          | -0.0002 BTC         |
@@ -426,7 +430,8 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Rejected Buy signals`: Buy signals that could not be acted upon due to max_open_trades being reached.
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
-- `Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as $(Absolute Drawdown) / (DrawdownHigh + startingBalance)$.
+- `Drawdown`: Maximum, absolute drawdown experienced. Difference between Drawdown High and Subsequent Low point.
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
@@ -456,6 +461,14 @@ freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
 
 The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day.
 
+### Backtest result caching
+
+To save time, by default backtest will reuse a cached result from within the last day when the backtested strategy and config match that of a previous backtest. To force a new backtest despite existing result for an identical run specify `--cache none` parameter.
+
+!!! Warning
+    Caching is automatically disabled for open-ended timeranges (`--timerange 20210101-`), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
+    In this instance, please use `--cache none` once to force a fresh backtest.
+
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
@@ -484,8 +497,8 @@ Since backtesting lacks some detailed information about what happens within a ca
   - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
 - Evaluation sequence (if multiple signals happen on the same candle)
-  - ROI (if not stoploss)
   - Sell-signal
+  - ROI (if not stoploss)
   - Stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.

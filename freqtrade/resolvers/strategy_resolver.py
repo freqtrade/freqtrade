@@ -96,7 +96,9 @@ class StrategyResolver(IResolver):
                       ("ignore_roi_if_buy_signal",        False),
                       ("sell_profit_offset",              0.0),
                       ("disable_dataframe_checks",        False),
-                      ("ignore_buying_expired_candle_after",  0)
+                      ("ignore_buying_expired_candle_after",  0),
+                      ("position_adjustment_enable",      False),
+                      ("max_entry_position_adjustment",      -1),
                       ]
         for attribute, default in attributes:
             StrategyResolver._override_attribute_helper(strategy, config,

@@ -199,8 +199,8 @@ class Telegram(RPCHandler):
 
         self._updater.start_polling(
             bootstrap_retries=-1,
-            timeout=30,
-            read_latency=60,
+            timeout=20,
+            read_latency=60,  # Assumed transmission latency
             drop_pending_updates=True,
         )
         logger.info(
@@ -213,6 +213,7 @@ class Telegram(RPCHandler):
         Stops all running telegram threads.
         :return: None
         """
+        # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
     def _format_buy_msg(self, msg: Dict[str, Any]) -> str:
@@ -764,14 +765,17 @@ class Telegram(RPCHandler):
                     f"(< {balance_dust_level} {result['stake']}):*\n"
                     f"\t`Est. {result['stake']}: "
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+            tc = result['trade_count'] > 0
+            stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
+            fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
 
             output += ("\n*Estimated Value*:\n"
                        f"\t`{result['stake']}: "
                        f"{round_coin_value(result['total'], result['stake'], False)}`"
-                       f" `({result['starting_capital_ratio']:.2%})`\n"
+                       f"{stake_improve}\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`"
-                       f" `({result['starting_capital_fiat_ratio']:.2%})`\n")
+                       f"{fiat_val}\n")
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
@@ -1343,6 +1347,14 @@ class Telegram(RPCHandler):
         else:
             sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
 
+        if val['position_adjustment_enable']:
+            pa_info = (
+                f"*Position adjustment:* On\n"
+                f"*Max enter position adjustment:* `{val['max_entry_position_adjustment']}`\n"
+            )
+        else:
+            pa_info = "*Position adjustment:* Off\n"
+
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
@@ -1352,6 +1364,7 @@ class Telegram(RPCHandler):
             f"*Ask strategy:* ```\n{json.dumps(val['ask_strategy'])}```\n"
             f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
+            f"{pa_info}"
             f"*Timeframe:* `{val['timeframe']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"

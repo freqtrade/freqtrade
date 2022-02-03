@@ -10,7 +10,6 @@ hyperopt = [
     'filelock',
     'joblib',
     'progressbar2',
-    'psutil',
     ]
 
 develop = [
@@ -43,7 +42,7 @@ setup(
         ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=1.60.11',
+        'ccxt>=1.66.32',
         'SQLAlchemy',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
@@ -69,6 +68,7 @@ setup(
         'blosc',
         'fastapi',
         'uvicorn',
+        'psutil',
         'pyjwt',
         'aiofiles'
     ],

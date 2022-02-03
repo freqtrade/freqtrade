@@ -424,10 +424,10 @@ class LocalTrade():
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
-            self.recalc_open_trade_value()
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
+            self.recalc_trade_from_orders()
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
@@ -568,6 +568,38 @@ class LocalTrade():
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
+    def recalc_trade_from_orders(self):
+        # We need at least 2 entry orders for averaging amounts and rates.
+        if len(self.select_filled_orders('buy')) < 2:
+            # Just in case, still recalc open trade value
+            self.recalc_open_trade_value()
+            return
+
+        total_amount = 0.0
+        total_stake = 0.0
+        for o in self.orders:
+            if (o.ft_is_open or
+                    (o.ft_order_side != 'buy') or
+                    (o.status not in NON_OPEN_EXCHANGE_STATES)):
+                continue
+
+            tmp_amount = o.amount
+            tmp_price = o.average or o.price
+            if o.filled is not None:
+                tmp_amount = o.filled
+            if tmp_amount > 0.0 and tmp_price is not None:
+                total_amount += tmp_amount
+                total_stake += tmp_price * tmp_amount
+
+        if total_amount > 0:
+            self.open_rate = total_stake / total_amount
+            self.stake_amount = total_stake
+            self.amount = total_amount
+            self.fee_open_cost = self.fee_open * self.stake_amount
+            self.recalc_open_trade_value()
+            if self.stop_loss_pct is not None and self.open_rate is not None:
+                self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
+
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
@@ -582,6 +614,34 @@ class LocalTrade():
             return orders[-1]
         else:
             return None
+
+    def select_filled_orders(self, order_side: str) -> List['Order']:
+        """
+        Finds filled orders for this orderside.
+        :param order_side: Side of the order (either 'buy' or 'sell')
+        :return: array of Order objects
+        """
+        return [o for o in self.orders if o.ft_order_side == order_side and
+                o.ft_is_open is False and
+                (o.filled or 0) > 0 and
+                o.status in NON_OPEN_EXCHANGE_STATES]
+
+    @property
+    def nr_of_successful_buys(self) -> int:
+        """
+        Helper function to count the number of buy orders that have been filled.
+        :return: int count of buy orders that have been filled for this trade.
+        """
+
+        return len(self.select_filled_orders('buy'))
+
+    @property
+    def nr_of_successful_sells(self) -> int:
+        """
+        Helper function to count the number of sell orders that have been filled.
+        :return: int count of sell orders that have been filled for this trade.
+        """
+        return len(self.select_filled_orders('sell'))
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
@@ -670,7 +730,7 @@ class Trade(_DECL_BASE, LocalTrade):
 
     id = Column(Integer, primary_key=True)
 
-    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan", lazy="joined")
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)
