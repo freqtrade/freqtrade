@@ -4063,7 +4063,7 @@ def test_get_max_pair_stake_amount(
     default_conf,
 ):
     api_mock = MagicMock()
-    default_conf['collateral'] = 'isolated'
+    default_conf['margin_mode'] = 'isolated'
     default_conf['trading_mode'] = 'futures'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     markets = {
