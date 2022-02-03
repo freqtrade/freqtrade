@@ -546,9 +546,6 @@ class FreqtradeBot(LoggingMixin):
         max_stake_amount = self.exchange.get_max_pair_stake_amount(trade.pair,
                                                                    current_rate,
                                                                    self.strategy.stoploss)
-        if max_stake_amount is None:
-            # * Should never be executed
-            raise OperationalException(f'max_stake_amount is None for {trade}')
         stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
@@ -858,9 +855,6 @@ class FreqtradeBot(LoggingMixin):
 
         if not self.edge and trade is None:
             stake_available = self.wallets.get_available_stake_amount()
-            if max_stake_amount is None:
-                # * Should never be executed
-                raise OperationalException(f'max_stake_amount is None for {trade}')
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),

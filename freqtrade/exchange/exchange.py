@@ -691,8 +691,13 @@ class Exchange:
         pair: str,
         price: float,
         stoploss: float
-    ) -> Optional[float]:
-        return self._get_stake_amount_limit(pair, price, stoploss, 'max')
+    ) -> float:
+        max_stake_amount = self._get_stake_amount_limit(pair, price, stoploss, 'max')
+        if max_stake_amount is None:
+            # * Should never be executed
+            raise OperationalException(f'{self.name}.get_max_pair_stake_amount should'
+                                       'never set max_stake_amount to None')
+        return max_stake_amount
 
     def _get_stake_amount_limit(
         self,
