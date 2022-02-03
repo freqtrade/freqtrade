@@ -825,10 +825,13 @@ class FreqtradeBot(LoggingMixin):
         return trade
 
     def get_valid_enter_price_and_stake(
-            self, pair: str, price: Optional[float], stake_amount: float,
-            side: str, trade_side: str,
-            entry_tag: Optional[str],
-            trade: Optional[Trade]) -> Tuple[float, float]:
+        self, pair: str, price: Optional[float], stake_amount: float,
+        side: str, trade_side: str,
+        entry_tag: Optional[str],
+        trade: Optional[Trade]
+    ) -> Tuple[float, float]:
+        # TODO: This method has no tests
+
         if price:
             enter_limit_requested = price
         else:

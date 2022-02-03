@@ -410,7 +410,7 @@ class Backtesting:
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
-
+        # TODO: Write tests
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)

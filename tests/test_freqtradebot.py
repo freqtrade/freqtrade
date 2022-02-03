@@ -932,6 +932,22 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
     assert trade.isolated_liq == liq_price
 
+    # In case of too high stake amount
+
+    order['status'] = 'open'
+    order['id'] = '55672'
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_max_pair_stake_amount=MagicMock(return_value=500),
+    )
+    freqtrade.exchange.get_max_pair_stake_amount = MagicMock(return_value=500)
+
+    assert freqtrade.execute_entry(pair, 2000, is_short=is_short)
+    trade = Trade.query.all()[9]
+    trade.is_short = is_short
+    assert trade.stake_amount == 500
+
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order, is_short) -> None:
