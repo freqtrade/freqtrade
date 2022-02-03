@@ -213,8 +213,6 @@ class RPC:
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
-                cp_cfg = self._config
-                trade_dict['position_adjustment_enable'] = cp_cfg['position_adjustment_enable']
                 results.append(trade_dict)
             return results
 

@@ -391,8 +391,8 @@ class Telegram(RPCHandler):
                     sumA += (filled_trades[y]["amount"] * filled_trades[y]["average"])
                     sumB += filled_trades[y]["amount"]
                 prev_avg_price = sumA/sumB
-                price_to_1st_buy = (cur_buy_average - filled_trades[0]["average"]) \
-                    / filled_trades[0]["average"]
+                price_to_1st_buy = ((cur_buy_average - filled_trades[0]["average"])
+                                    / filled_trades[0]["average"])
                 minus_on_buy = (cur_buy_average - prev_avg_price)/prev_avg_price
                 dur_buys = current_buy_datetime - arrow.get(filled_trades[x-1]["order_filled_date"])
                 days = dur_buys.days
@@ -433,13 +433,12 @@ class Telegram(RPCHandler):
                 trade_ids = [int(i) for i in context.args if i.isnumeric()]
 
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
-
+            position_adjust = self._config.get('position_adjustment_enable', False)
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
                 r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
-                r['position_adjustment_enable'] = r.get('position_adjustment_enable', False)
                 lines = [
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
@@ -448,8 +447,8 @@ class Telegram(RPCHandler):
                     "*Sell Reason:* `{sell_reason}`" if r['sell_reason'] else "",
                 ]
 
-                if r['position_adjustment_enable']:
-                    lines.append("*Number of Buy(s):* `{num_buys}`")
+                if position_adjust:
+                    lines.append("*Number of Buy(s):* `{num_entries}`")
 
                 lines.extend([
                     "*Open Rate:* `{open_rate:.8f}`",
