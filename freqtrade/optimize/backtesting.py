@@ -337,7 +337,7 @@ class Backtesting:
                 pair,
                 self.timeframe,
                 df_analyzed,
-                CandleType.FUTURES if self.trading_mode == TradingMode.FUTURES else CandleType.SPOT
+                self.config['candle_type_def']
             )
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
