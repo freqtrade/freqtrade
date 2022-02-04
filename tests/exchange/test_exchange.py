@@ -2558,6 +2558,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
         amount=5,
         rate=0.55,
         time_in_force='gtc',
+        leverage=1.0,
     )
 
     cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
