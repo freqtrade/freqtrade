@@ -367,7 +367,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     assert result is None
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 1, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 1)
     assert result == float('inf')
 
     # min/max cost is set
@@ -387,7 +387,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
     assert isclose(result, expected_result/3)
     # max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
 
     # min amount is set
@@ -406,7 +406,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
     assert isclose(result, expected_result/5)
     # max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
 
     # min amount and cost are set (cost is minimal)
@@ -441,7 +441,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
     assert isclose(result, expected_result/7.0)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
@@ -451,7 +451,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
     assert isclose(result, expected_result/8.0)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
     # Really big stoploss
@@ -462,7 +462,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, expected_result/12)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
     markets["ETH/BTC"]["contractSize"] = '0.01'
@@ -478,7 +478,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     assert isclose(result, expected_result * 0.01)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, -1)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10
 
     markets["ETH/BTC"]["contractSize"] = '10'
@@ -490,7 +490,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, (expected_result/12) * 10.0)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2, -1)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
 
 
@@ -512,7 +512,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
     assert round(result, 8) == round(expected_result, 8)
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2.0, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2.0)
     assert result == 4000
 
     # Leverage
@@ -525,7 +525,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     assert round(result, 8) == round((expected_result/3), 8)
 
     # Max
-    result = exchange.get_max_pair_stake_amount('ETH/BTC', 12.0, stoploss)
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 12.0)
     assert result == 4000
 
 
@@ -4196,14 +4196,14 @@ def test_get_max_pair_stake_amount(
     }
 
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0, 0.0) == 20000
-    assert exchange.get_max_pair_stake_amount('LTC/USDT:USDT', 2.0, 0.0) == float('inf')
-    assert exchange.get_max_pair_stake_amount('ETH/USDT:USDT', 2.0, 0.0) == 200
-    assert exchange.get_max_pair_stake_amount('DOGE/USDT:USDT', 2.0, 0.0) == 500
-    assert exchange.get_max_pair_stake_amount('LUNA/USDT:USDT', 2.0, 0.0) == 5.0
+    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0) == 20000
+    assert exchange.get_max_pair_stake_amount('LTC/USDT:USDT', 2.0) == float('inf')
+    assert exchange.get_max_pair_stake_amount('ETH/USDT:USDT', 2.0) == 200
+    assert exchange.get_max_pair_stake_amount('DOGE/USDT:USDT', 2.0) == 500
+    assert exchange.get_max_pair_stake_amount('LUNA/USDT:USDT', 2.0) == 5.0
 
     default_conf['trading_mode'] = 'spot'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
-    assert exchange.get_max_pair_stake_amount('BTC/USDT', 2.0, 0.0) == 20000
-    assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0, 0.0) == 500
+    assert exchange.get_max_pair_stake_amount('BTC/USDT', 2.0) == 20000
+    assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0) == 500
