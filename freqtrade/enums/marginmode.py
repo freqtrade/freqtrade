@@ -9,3 +9,4 @@ class MarginMode(Enum):
     """
     CROSS = "cross"
     ISOLATED = "isolated"
+    NONE = ''

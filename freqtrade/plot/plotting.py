@@ -431,7 +431,6 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
-    # TODO-lev: Needs short equivalent
     if 'enter_long' in data.columns:
         df_buy = data[data['enter_long'] == 1]
         if len(df_buy) > 0:
@@ -537,7 +536,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                             "Profit per pair",
                             "Parallelism",
                             "Underwater",
-                            ])
+                        ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
