@@ -601,7 +601,7 @@ class FreqtradeBot(LoggingMixin):
         self,
         pair: str,
         open_rate: float,
-        amount: float,
+        amount: float,  # quote currency, includes leverage
         leverage: float,
         is_short: bool
     ) -> Tuple[float, Optional[float]]:
@@ -1272,7 +1272,8 @@ class FreqtradeBot(LoggingMixin):
             # to the order dict acquired before cancelling.
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
-            # TODO-lev: Check edge cases, we don't want to make leverage > 1.0 if we don't have to
+            # * Check edge cases, we don't want to make leverage > 1.0 if we don't have to
+            # * (for leverage modes which aren't isolated futures)
 
             trade.stake_amount = trade.amount * trade.open_rate
             self.update_trade_state(trade, trade.open_order_id, corder)
@@ -1339,13 +1340,14 @@ class FreqtradeBot(LoggingMixin):
         :return: amount to sell
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
-        # TODO-lev Maybe update?
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
         wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
-        if wallet_amount >= amount:
+        # TODO-lev: Get wallet amount + value of positions
+        if wallet_amount >= amount or self.trading_mode == TradingMode.FUTURES:
+            # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
@@ -1423,6 +1425,7 @@ class FreqtradeBot(LoggingMixin):
                 side=trade.exit_side,
                 amount=amount,
                 rate=limit,
+                leverage=trade.leverage,
                 reduceOnly=self.trading_mode == TradingMode.FUTURES,
                 time_in_force=time_in_force
             )

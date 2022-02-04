@@ -909,11 +909,10 @@ class Exchange:
         side: str,
         amount: float,
         rate: float,
+        leverage: float,
         reduceOnly: bool = False,
-        leverage: float = 1.0,
         time_in_force: str = 'gtc',
     ) -> Dict:
-        # TODO-lev: remove default for leverage
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
             return dry_order
