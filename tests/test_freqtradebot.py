@@ -743,6 +743,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
+    # TODO: Parametrize this test
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode

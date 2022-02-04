@@ -866,6 +866,7 @@ class FreqtradeBot(LoggingMixin):
                 entry_tag=entry_tag, side=trade_side
             )
 
+        stake_amount = min(stake_amount, max_stake_amount)
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         return enter_limit_requested, stake_amount
