@@ -430,10 +430,7 @@ class Configuration:
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
 
-
-
     def _process_data_options(self, config: Dict[str, Any]) -> None:
-
         self._args_to_config(config, argname='new_pairs_days',
                              logstring='Detected --new-pairs-days: {}')
 
