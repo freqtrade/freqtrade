@@ -553,7 +553,7 @@ class Backtesting:
         propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
-        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, propose_rate, -0.05) or 0
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, propose_rate, -0.05)
         stake_available = self.wallets.get_available_stake_amount()
 
         pos_adjust = trade is not None
@@ -570,7 +570,12 @@ class Backtesting:
                 max_stake=min(stake_available, max_stake_amount),
                 entry_tag=entry_tag, side=direction)
 
-        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(
+            pair=pair,
+            stake_amount=stake_amount,
+            min_stake_amount=min_stake_amount,
+            max_stake_amount=max_stake_amount,
+        )
 
         if not stake_amount:
             # In case of pos adjust, still return the original trade

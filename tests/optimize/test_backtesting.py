@@ -548,6 +548,11 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade.stake_amount == 495
     assert trade.is_short is True
 
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=300.0)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
+    assert trade
+    assert trade.stake_amount == 300.0
+
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
