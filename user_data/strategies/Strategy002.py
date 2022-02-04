@@ -171,7 +171,7 @@ class Strategy002(IStrategy):
         brain = "Freq_" + self.__class__.__name__
         if Config.IS_BACKTEST:
             back_test(current_time, coin, brain)
-        else:
+        elif Config.IS_EXECUTION:
             execute(mode, coin, brain)
         
         return True
