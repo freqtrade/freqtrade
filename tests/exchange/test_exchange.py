@@ -1271,7 +1271,8 @@ def test_buy_prod(default_conf, mocker, exchange_name):
         side="buy",
         amount=1,
         rate=200,
-        time_in_force=time_in_force)
+        time_in_force=time_in_force
+    )
     assert api_mock.create_order.call_args[0][0] == 'ETH/BTC'
     assert api_mock.create_order.call_args[0][1] == order_type
     assert api_mock.create_order.call_args[0][2] == 'buy'
@@ -2532,7 +2533,14 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
-    order = exchange.create_order('ETH/BTC', 'limit', "buy", 5, 0.55, 'gtc')
+    order = exchange.create_order(
+        pair='ETH/BTC',
+        ordertype='limit',
+        side='buy',
+        amount=5,
+        rate=0.55,
+        time_in_force='gtc',
+    )
 
     cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
     assert order['id'] == cancel_order['id']

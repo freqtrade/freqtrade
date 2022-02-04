@@ -935,6 +935,7 @@ class Exchange:
 
     def create_order(
         self,
+        *,
         pair: str,
         ordertype: str,
         side: str,
@@ -967,7 +968,7 @@ class Exchange:
                 side,
                 amount,
                 rate_for_order,
-                params
+                params,
             )
             self._log_exchange_response('create_order', order)
             order = self._order_contracts_to_amount(order)
