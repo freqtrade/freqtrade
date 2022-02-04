@@ -830,7 +830,6 @@ class FreqtradeBot(LoggingMixin):
         entry_tag: Optional[str],
         trade: Optional[Trade]
     ) -> Tuple[float, float]:
-        # TODO: This method has no tests
 
         if price:
             enter_limit_requested = price
