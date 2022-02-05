@@ -36,7 +36,7 @@ function check_installed_python() {
         fi
     done
 
-    echo "No usable python found. Please make sure to have python3.7 or newer installed."
+    echo "No usable python found. Please make sure to have python3.8 or newer installed."
     exit 1
 }
 
