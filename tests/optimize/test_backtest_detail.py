@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, C0330, unused-argument
 import logging
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -534,6 +535,47 @@ tc33 = BTContainer(data=[
     )]
 )
 
+# Test 34: Custom-entry-price below all candles should timeout - so no trade happens.
+tc34 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    custom_entry_price=4200, trades=[]
+)
+
+# Test 35: Custom-entry-price above all candles should timeout - so no trade happens.
+tc35 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    custom_entry_price=7200, trades=[]
+)
+
+# Test 36: Custom-entry-price around candle low
+# Causes immediate ROI exit. This is currently expected behavior (#6261)
+# https://github.com/freqtrade/freqtrade/issues/6261
+# But may change at a later point.
+tc36 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.1,
+    custom_entry_price=4952,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
+)
+
+
 TESTS = [
     tc0,
     tc1,
@@ -569,6 +611,9 @@ TESTS = [
     tc31,
     tc32,
     tc33,
+    tc34,
+    tc35,
+    tc36,
 ]
 
 
@@ -597,6 +642,8 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting.required_startup = 0
     backtesting.strategy.advise_buy = lambda a, m: frame
     backtesting.strategy.advise_sell = lambda a, m: frame
+    if data.custom_entry_price:
+        backtesting.strategy.custom_entry_price = MagicMock(return_value=data.custom_entry_price)
     backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     caplog.set_level(logging.DEBUG)
 
