@@ -566,13 +566,44 @@ tc35 = BTContainer(data=[
 tc36 = BTContainer(data=[
     # D   O     H     L     C    V    B  S   BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
-    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Enter and immediate ROI
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.1,
     custom_entry_price=4952,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
+)
+
+
+# Test 37: Custom exit price below all candles
+# causes sell signal timeout
+tc37 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    use_sell_signal=True,
+    custom_exit_price=4552,
+    trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
+)
+
+# Test 38: Custom exit price above all candles
+# causes sell signal timeout
+tc38 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    use_sell_signal=True,
+    custom_exit_price=6052,
+    trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
 
 
@@ -614,6 +645,8 @@ TESTS = [
     tc34,
     tc35,
     tc36,
+    tc37,
+    tc38,
 ]
 
 
@@ -644,6 +677,8 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting.strategy.advise_sell = lambda a, m: frame
     if data.custom_entry_price:
         backtesting.strategy.custom_entry_price = MagicMock(return_value=data.custom_entry_price)
+    if data.custom_exit_price:
+        backtesting.strategy.custom_exit_price = MagicMock(return_value=data.custom_exit_price)
     backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     caplog.set_level(logging.DEBUG)
 

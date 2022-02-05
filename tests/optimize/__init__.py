@@ -37,6 +37,7 @@ class BTContainer(NamedTuple):
     use_sell_signal: bool = False
     use_custom_stoploss: bool = False
     custom_entry_price: Optional[float] = None
+    custom_exit_price: Optional[float] = None
 
 
 def _get_frame_time_from_offset(offset):
