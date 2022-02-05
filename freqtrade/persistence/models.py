@@ -650,9 +650,9 @@ class LocalTrade():
         Finds order object by Order id.
         :param order_id: Exchange order id
         """
-        orders = [o for o in self.orders if o.order_id == order_id]
-        if orders:
-            return orders[0]
+        for o in self.orders:
+            if o.order_id == order_id:
+                return o
         return None
 
     def select_order(
