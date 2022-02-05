@@ -14,6 +14,7 @@ def mock_order_1():
         'side': 'buy',
         'type': 'limit',
         'price': 0.123,
+        'average': 0.123,
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
