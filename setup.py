@@ -10,7 +10,7 @@ hyperopt = [
     'filelock',
     'joblib',
     'progressbar2',
-    ]
+]
 
 develop = [
     'coveralls',
@@ -42,7 +42,7 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=1.66.32',
+        'ccxt>=1.72.29',
         'SQLAlchemy',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',

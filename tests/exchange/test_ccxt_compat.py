@@ -24,6 +24,10 @@ EXCHANGES = {
         'stake_currency': 'USDT',
         'hasQuoteVolume': False,
         'timeframe': '1h',
+        'leverage_in_market': {
+            'spot': False,
+            'futures': False,
+        }
     },
     'binance': {
         'pair': 'BTC/USDT',
@@ -31,12 +35,20 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
+        'leverage_in_market': {
+            'spot': False,
+            'futures': False,
+        }
     },
     'kraken': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_in_market': {
+            'spot': True,
+            'futures': True,
+        }
     },
     'ftx': {
         'pair': 'BTC/USD',
@@ -45,12 +57,20 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',
         'futures': True,
+        'leverage_in_market': {
+            'spot': True,
+            'futures': True,
+        }
     },
     'kucoin': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_in_market': {
+            'spot': False,
+            'futures': False,
+        }
     },
     'gateio': {
         'pair': 'BTC/USDT',
@@ -59,6 +79,10 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
+        'leverage_in_market': {
+            'spot': True,
+            'futures': True,
+        }
     },
     'okex': {
         'pair': 'BTC/USDT',
@@ -67,12 +91,20 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
+        'leverage_in_market': {
+            'spot': True,
+            'futures': True,
+        }
     },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_in_market': {
+            'spot': False,
+            'futures': False,
+        }
     },
 }
 
@@ -296,3 +328,26 @@ class TestCCXTExchange():
         assert 0 < exchange.get_fee(pair, 'limit', 'sell') < threshold
         assert 0 < exchange.get_fee(pair, 'market', 'buy') < threshold
         assert 0 < exchange.get_fee(pair, 'market', 'sell') < threshold
+
+    def test_get_max_leverage_spot(self, exchange):
+        spot, spot_name = exchange
+        if spot:
+            leverage_in_market_spot = EXCHANGES[spot_name]['leverage_in_market']['spot']
+            if leverage_in_market_spot:
+                spot_pair = EXCHANGES[spot_name].get('pair', EXCHANGES[spot_name]['pair'])
+                spot_leverage = spot.get_max_leverage(spot_pair, 20)
+                assert (isinstance(spot_leverage, float) or isinstance(spot_leverage, int))
+                assert spot_leverage >= 1.0
+
+    def test_get_max_leverage_futures(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            leverage_in_market_futures = EXCHANGES[futures_name]['leverage_in_market']['futures']
+            if leverage_in_market_futures:
+                futures_pair = EXCHANGES[futures_name].get(
+                    'futures_pair',
+                    EXCHANGES[futures_name]['pair']
+                )
+                futures_leverage = futures.get_max_leverage(futures_pair, 20)
+                assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
+                assert futures_leverage >= 1.0
