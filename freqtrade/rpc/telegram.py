@@ -450,9 +450,7 @@ class Telegram(RPCHandler):
                 ]
 
                 if position_adjust:
-                    max_buy_str = ''
-                    if max_entries > 0:
-                        max_buy_str = f"/{max_entries + 1}"
+                    max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
                     lines.append("*Number of Buy(s):* `{num_entries}`" + max_buy_str)
 
                 lines.extend([
