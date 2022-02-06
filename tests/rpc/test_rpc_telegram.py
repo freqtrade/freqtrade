@@ -263,6 +263,34 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
     assert re.search(r'Number of Buy.*2', msg)
     assert re.search(r'Average Buy Price', msg)
     assert re.search(r'Order filled at', msg)
+    assert re.search(r'Close Date:', msg) is None
+    assert re.search(r'Close Profit:', msg) is None
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -> None:
+    update.message.chat.id = "123"
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = "123"
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades([Trade.is_open.is_(False)])
+    trade = trades[0]
+    context = MagicMock()
+    context.args = [str(trade.id)]
+    telegram._status(update=update, context=context)
+    assert msg_mock.call_count == 1
+    msg = msg_mock.call_args_list[0][0][0]
+    assert re.search(r'Close Date:', msg)
+    assert re.search(r'Close Profit:', msg)
 
 
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:

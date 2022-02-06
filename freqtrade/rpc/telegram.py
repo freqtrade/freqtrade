@@ -370,7 +370,7 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_buy_details(self, filled_orders, base_currency):
+    def _prepare_buy_details(self, filled_orders, base_currency, is_open):
         """
         Prepare details of trade with buy adjustment enabled
         """
@@ -400,8 +400,9 @@ class Telegram(RPCHandler):
                 hours, remainder = divmod(dur_buys.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
                 lines.append("*Buy #{}:* at {:.2%} avg profit".format(x+1, minus_on_buy))
-                lines.append("({})".format(current_buy_datetime
-                                           .humanize(granularity=["day", "hour", "minute"])))
+                if is_open:
+                    lines.append("({})".format(current_buy_datetime
+                                               .humanize(granularity=["day", "hour", "minute"])))
                 lines.append("*Buy Amount:* {} ({:.8f} {})"
                              .format(cur_buy_amount, order["cost"], base_currency))
                 lines.append("*Average Buy Price:* {} ({:.2%} from 1st buy rate)"
@@ -435,13 +436,15 @@ class Telegram(RPCHandler):
 
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
             position_adjust = self._config.get('position_adjustment_enable', False)
+            max_entries = self._config.get('max_entry_position_adjustment', -1)
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
                 r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
-                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
+                    "*Trade ID:* `{trade_id}`" +
+                    ("` (since {open_date_hum})`" if r['is_open'] else ""),
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
@@ -449,39 +452,40 @@ class Telegram(RPCHandler):
                 ]
 
                 if position_adjust:
-                    lines.append("*Number of Buy(s):* `{num_entries}`")
+                    max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
+                    lines.append("*Number of Buy(s):* `{num_entries}`" + max_buy_str)
 
                 lines.extend([
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
                     "*Open Date:* `{open_date}`",
                     "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                    "*Current Rate:* `{current_rate:.8f}`",
+                    "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                     ("*Current Profit:* " if r['is_open'] else "*Close Profit: *")
                     + "`{profit_ratio:.2%}`",
                 ])
 
-                if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
-                        and r['initial_stop_loss_ratio'] is not None):
-                    # Adding initial stoploss only if it is different from stoploss
-                    lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
-                                 "`({initial_stop_loss_ratio:.2%})`")
+                if r['is_open']:
+                    if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
+                            and r['initial_stop_loss_ratio'] is not None):
+                        # Adding initial stoploss only if it is different from stoploss
+                        lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
+                                     "`({initial_stop_loss_ratio:.2%})`")
 
-                # Adding stoploss and stoploss percentage only if it is not None
-                lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
-                             ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
-                lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
-                             "`({stoploss_current_dist_ratio:.2%})`")
-                if r['open_order']:
-                    if r['sell_order_status']:
-                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
-                    else:
-                        lines.append("*Open Order:* `{open_order}`")
+                    # Adding stoploss and stoploss percentage only if it is not None
+                    lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
+                                 ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
+                    lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
+                                 "`({stoploss_current_dist_ratio:.2%})`")
+                    if r['open_order']:
+                        if r['sell_order_status']:
+                            lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                        else:
+                            lines.append("*Open Order:* `{open_order}`")
 
-                if len(r['filled_entry_orders']) > 1:
-                    lines_detail = self._prepare_buy_details(
-                        r['filled_entry_orders'], r['base_currency'])
-                    lines.extend(lines_detail)
+                lines_detail = self._prepare_buy_details(
+                    r['filled_entry_orders'], r['base_currency'], r['is_open'])
+                lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))
