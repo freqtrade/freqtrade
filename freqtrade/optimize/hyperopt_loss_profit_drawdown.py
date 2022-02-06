@@ -22,8 +22,8 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
 
         # from freqtrade.optimize.optimize_reports.generate_strategy_stats()
         try:
-            _, _, _, _, max_drawdown_per = calculate_max_drawdown(results, value_col="profit_ratio")
+            profit_abs, _, _, _, _ = calculate_max_drawdown(results, value_col="profit_ratio")
         except ValueError:
-            max_drawdown_per = 0
+            profit_abs = 0
 
-        return -1 * (total_profit * (1 - max_drawdown_per * DRAWDOWN_MULT))
+        return -1 * (total_profit * (1 - profit_abs * DRAWDOWN_MULT))
