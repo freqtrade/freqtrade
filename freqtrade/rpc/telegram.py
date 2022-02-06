@@ -442,7 +442,8 @@ class Telegram(RPCHandler):
                 r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
-                    "*Trade ID:* `{trade_id}`" + ("` (since {open_date_hum})`" if r['is_open'] else ""),
+                    "*Trade ID:* `{trade_id}`" +
+                    ("` (since {open_date_hum})`" if r['is_open'] else ""),
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
@@ -468,23 +469,22 @@ class Telegram(RPCHandler):
                             and r['initial_stop_loss_ratio'] is not None):
                         # Adding initial stoploss only if it is different from stoploss
                         lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
-                                    "`({initial_stop_loss_ratio:.2%})`")
+                                     "`({initial_stop_loss_ratio:.2%})`")
 
                     # Adding stoploss and stoploss percentage only if it is not None
                     lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
-                                ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
+                                 ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
                     lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
-                                "`({stoploss_current_dist_ratio:.2%})`")
+                                 "`({stoploss_current_dist_ratio:.2%})`")
                     if r['open_order']:
                         if r['sell_order_status']:
                             lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
                         else:
                             lines.append("*Open Order:* `{open_order}`")
 
-                if len(r['filled_entry_orders']) > 1:
-                    lines_detail = self._prepare_buy_details(
-                        r['filled_entry_orders'], r['base_currency'])
-                    lines.extend(lines_detail)
+                lines_detail = self._prepare_buy_details(
+                    r['filled_entry_orders'], r['base_currency'])
+                lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))
