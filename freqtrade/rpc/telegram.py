@@ -435,6 +435,7 @@ class Telegram(RPCHandler):
 
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
             position_adjust = self._config.get('position_adjustment_enable', False)
+            max_entries = self._config.get('max_entry_position_adjustment', -1)
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
