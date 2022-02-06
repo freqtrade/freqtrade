@@ -17,6 +17,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,

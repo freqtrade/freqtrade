@@ -342,7 +342,7 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
     assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
 
 
-def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
+def test__get_stake_amount_limit(mocker, default_conf) -> None:
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
@@ -356,7 +356,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     with pytest.raises(ValueError, match=r'.*get market information.*'):
         exchange.get_min_pair_stake_amount('BNB/BTC', 1, stoploss)
 
-    # no cost Min
+    # no cost/amount Min
     markets["ETH/BTC"]["limits"] = {
         'cost': {'min': None, 'max': None},
         'amount': {'min': None, 'max': None},
@@ -367,51 +367,33 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     assert result is None
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 1)
+    assert result == float('inf')
 
-    # no amount Min
+    # min/max cost is set
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': None, 'max': None},
+        'cost': {'min': 2, 'max': 10000},
         'amount': {'min': None, 'max': None},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
     )
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result is None
-
-    # empty 'cost'/'amount' section
-    markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': None, 'max': None},
-        'amount': {'min': None, 'max': None},
-    }
-    mocker.patch(
-        'freqtrade.exchange.Exchange.markets',
-        PropertyMock(return_value=markets)
-    )
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result is None
-
-    # min cost is set
-    markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 2, 'max': None},
-        'amount': {'min': None, 'max': None},
-    }
-    mocker.patch(
-        'freqtrade.exchange.Exchange.markets',
-        PropertyMock(return_value=markets)
-    )
+    # min
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     expected_result = 2 * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
     assert isclose(result, expected_result/3)
+    # max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 10000
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
         'cost': {'min': None, 'max': None},
-        'amount': {'min': 2, 'max': None},
+        'amount': {'min': 2, 'max': 10000},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -423,6 +405,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
     assert isclose(result, expected_result/5)
+    # max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 20000
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -442,8 +427,8 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 8, 'max': None},
-        'amount': {'min': 2, 'max': None},
+        'cost': {'min': 8, 'max': 10000},
+        'amount': {'min': 2, 'max': 500},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -455,6 +440,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
     assert isclose(result, expected_result/7.0)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 1000
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
     expected_result = max(8, 2 * 2) * 1.5
@@ -462,6 +450,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
     assert isclose(result, expected_result/8.0)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 1000
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
@@ -470,6 +461,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, expected_result/12)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 1000
 
     markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'
@@ -483,6 +477,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # Contract size 0.01
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     assert isclose(result, expected_result * 0.01)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 10
 
     markets["ETH/BTC"]["contractSize"] = '10'
     mocker.patch(
@@ -492,6 +489,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage, Contract size 10
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, (expected_result/12) * 10.0)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
+    assert result == 10000
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -499,10 +499,10 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
 
-    # Real Binance data
+    # ~Real Binance data
     markets["ETH/BTC"]["limits"] = {
-        'cost': {'min': 0.0001},
-        'amount': {'min': 0.001}
+        'cost': {'min': 0.0001, 'max': 4000},
+        'amount': {'min': 0.001, 'max': 10000},
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
@@ -511,8 +511,22 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
     expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
     assert round(result, 8) == round(expected_result, 8)
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 2.0)
+    assert result == 4000
+
+    # Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
     assert round(result, 8) == round(expected_result/3, 8)
+
+    # Contract_size
+    markets["ETH/BTC"]["contractSize"] = 0.1
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
+    assert round(result, 8) == round((expected_result/3), 8)
+
+    # Max
+    result = exchange.get_max_pair_stake_amount('ETH/BTC', 12.0)
+    assert result == 4000
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -2537,7 +2551,15 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
-    order = exchange.create_order('ETH/BTC', 'limit', "buy", 5, 0.55, 'gtc')
+    order = exchange.create_order(
+        pair='ETH/BTC',
+        ordertype='limit',
+        side='buy',
+        amount=5,
+        rate=0.55,
+        time_in_force='gtc',
+        leverage=1.0,
+    )
 
     cancel_order = exchange.cancel_order(order_id=order['id'], pair='ETH/BTC')
     assert order['id'] == cancel_order['id']
@@ -4062,3 +4084,126 @@ def test_liquidation_price(
         upnl_ex_1=upnl_ex_1,
         position=position,
     ), 2), expected)
+
+
+def test_get_max_pair_stake_amount(
+    mocker,
+    default_conf,
+):
+    api_mock = MagicMock()
+    default_conf['margin_mode'] = 'isolated'
+    default_conf['trading_mode'] = 'futures'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    markets = {
+        'XRP/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+            },
+            'contractSize': None,
+            'spot': False,
+        },
+        'LTC/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': None
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+            },
+            'contractSize': 0.01,
+            'spot': False,
+        },
+        'ETH/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 30000,
+                },
+            },
+            'contractSize': 0.01,
+            'spot': False,
+        },
+        'BTC/USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+            },
+            'contractSize': 0.01,
+            'spot': True,
+        },
+        'ADA/USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500,
+                },
+            },
+            'contractSize': 0.01,
+            'spot': True,
+        },
+        'DOGE/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500
+                },
+            },
+            'contractSize': None,
+            'spot': False,
+        },
+        'LUNA/USDT:USDT': {
+            'limits': {
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'cost': {
+                    'min': 5,
+                    'max': 500
+                },
+            },
+            'contractSize': 0.01,
+            'spot': False,
+        },
+    }
+
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0) == 20000
+    assert exchange.get_max_pair_stake_amount('LTC/USDT:USDT', 2.0) == float('inf')
+    assert exchange.get_max_pair_stake_amount('ETH/USDT:USDT', 2.0) == 200
+    assert exchange.get_max_pair_stake_amount('DOGE/USDT:USDT', 2.0) == 500
+    assert exchange.get_max_pair_stake_amount('LUNA/USDT:USDT', 2.0) == 5.0
+
+    default_conf['trading_mode'] = 'spot'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    assert exchange.get_max_pair_stake_amount('BTC/USDT', 2.0) == 20000
+    assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0) == 500

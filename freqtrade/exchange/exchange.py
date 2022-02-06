@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import ceil
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import arrow
 import ccxt
@@ -677,33 +677,63 @@ class Exchange:
         else:
             return 1 / pow(10, precision)
 
-    def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
-                                  leverage: Optional[float] = 1.0) -> Optional[float]:
+    def get_min_pair_stake_amount(
+        self,
+        pair: str,
+        price: float,
+        stoploss: float,
+        leverage: Optional[float] = 1.0
+    ) -> Optional[float]:
+        return self._get_stake_amount_limit(pair, price, stoploss, 'min', leverage)
+
+    def get_max_pair_stake_amount(
+        self,
+        pair: str,
+        price: float,
+    ) -> float:
+        max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max')
+        if max_stake_amount is None:
+            # * Should never be executed
+            raise OperationalException(f'{self.name}.get_max_pair_stake_amount should'
+                                       'never set max_stake_amount to None')
+        return max_stake_amount
+
+    def _get_stake_amount_limit(
+        self,
+        pair: str,
+        price: float,
+        stoploss: float,
+        limit: Literal['min', 'max'],
+        leverage: Optional[float] = 1.0
+    ) -> Optional[float]:
+
+        isMin = limit == 'min'
+
         try:
             market = self.markets[pair]
         except KeyError:
             raise ValueError(f"Can't get market information for symbol {pair}")
 
-        min_stake_amounts = []
+        stake_limits = []
         limits = market['limits']
-        if (limits['cost']['min'] is not None):
-            min_stake_amounts.append(
+        if (limits['cost'][limit] is not None):
+            stake_limits.append(
                 self._contracts_to_amount(
                     pair,
-                    limits['cost']['min']
+                    limits['cost'][limit]
                 )
             )
 
-        if (limits['amount']['min'] is not None):
-            min_stake_amounts.append(
+        if (limits['amount'][limit] is not None):
+            stake_limits.append(
                 self._contracts_to_amount(
                     pair,
-                    limits['amount']['min'] * price
+                    limits['amount'][limit] * price
                 )
             )
 
-        if not min_stake_amounts:
-            return None
+        if not stake_limits:
+            return None if isMin else float('inf')
 
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
@@ -718,9 +748,9 @@ class Exchange:
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
         return self._get_stake_amount_considering_leverage(
-            max(min_stake_amounts) * amount_reserve_percent,
+            max(stake_limits) * amount_reserve_percent,
             leverage or 1.0
-        )
+        ) if isMin else min(stake_limits)  # TODO-lev: Account 4 max_reserve_percent in max limits?
 
     def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
         """
@@ -904,6 +934,7 @@ class Exchange:
 
     def create_order(
         self,
+        *,
         pair: str,
         ordertype: str,
         side: str,
@@ -935,7 +966,7 @@ class Exchange:
                 side,
                 amount,
                 rate_for_order,
-                params
+                params,
             )
             self._log_exchange_response('create_order', order)
             order = self._order_contracts_to_amount(order)

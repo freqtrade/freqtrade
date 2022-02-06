@@ -543,12 +543,14 @@ class FreqtradeBot(LoggingMixin):
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                    current_rate,
                                                                    self.strategy.stoploss)
-        max_stake_amount = self.wallets.get_available_stake_amount()
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
+        stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             trade=trade, current_time=datetime.now(timezone.utc), current_rate=current_rate,
-            current_profit=current_profit, min_stake=min_stake_amount, max_stake=max_stake_amount)
+            current_profit=current_profit, min_stake=min_stake_amount,
+            max_stake=min(max_stake_amount, stake_available))
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
@@ -821,10 +823,12 @@ class FreqtradeBot(LoggingMixin):
         return trade
 
     def get_valid_enter_price_and_stake(
-            self, pair: str, price: Optional[float], stake_amount: float,
-            side: str, trade_side: str,
-            entry_tag: Optional[str],
-            trade: Optional[Trade]) -> Tuple[float, float]:
+        self, pair: str, price: Optional[float], stake_amount: float,
+        side: str, trade_side: str,
+        entry_tag: Optional[str],
+        trade: Optional[Trade]
+    ) -> Tuple[float, float]:
+
         if price:
             enter_limit_requested = price
         else:
@@ -845,19 +849,25 @@ class FreqtradeBot(LoggingMixin):
         # We do however also need min-stake to determine leverage, therefore this is ignored as
         # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, enter_limit_requested, self.strategy.stoploss,)
+            pair, enter_limit_requested, self.strategy.stoploss)
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, enter_limit_requested)
 
         if not self.edge and trade is None:
-            max_stake_amount = self.wallets.get_available_stake_amount()
+            stake_available = self.wallets.get_available_stake_amount()
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount,
+                min_stake=min_stake_amount, max_stake=min(max_stake_amount, stake_available),
                 entry_tag=entry_tag, side=trade_side
             )
 
-        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(
+            pair=pair,
+            stake_amount=stake_amount,
+            min_stake_amount=min_stake_amount,
+            max_stake_amount=max_stake_amount,
+        )
 
         return enter_limit_requested, stake_amount
 

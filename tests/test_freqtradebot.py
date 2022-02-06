@@ -743,6 +743,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
+    # TODO: Split this test into multiple tests to improve readability
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
@@ -931,6 +932,22 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.open_rate_requested == 10
     assert trade.isolated_liq == liq_price
+
+    # In case of too high stake amount
+
+    order['status'] = 'open'
+    order['id'] = '55672'
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_max_pair_stake_amount=MagicMock(return_value=500),
+    )
+    freqtrade.exchange.get_max_pair_stake_amount = MagicMock(return_value=500)
+
+    assert freqtrade.execute_entry(pair, 2000, is_short=is_short)
+    trade = Trade.query.all()[9]
+    trade.is_short = is_short
+    assert trade.stake_amount == 500
 
 
 @pytest.mark.parametrize("is_short", [False, True])

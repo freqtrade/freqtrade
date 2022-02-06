@@ -497,9 +497,11 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
 
 def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
+    # TODO-lev: test max_pair_stake_amount
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf['stake_amount'] = 'unlimited'
     default_conf['max_open_trades'] = 2
@@ -546,6 +548,11 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade.stake_amount == 495
     assert trade.is_short is True
 
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=300.0)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
+    assert trade
+    assert trade.stake_amount == 300.0
+
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
@@ -566,6 +573,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf['timeframe_detail'] = '1m'
     default_conf['max_open_trades'] = 2
@@ -659,6 +667,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -724,6 +733,7 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
@@ -772,6 +782,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     default_conf['enable_protections'] = True
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     tests = [
         ['sine', 9],
         ['raise', 10],
@@ -806,6 +817,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
         default_conf['enable_protections'] = True
 
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     # While buy-signals are unrealistic, running backtesting
     # over and over again should not cause different results
@@ -846,6 +858,7 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
 
 def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
@@ -892,6 +905,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         return dataframe
 
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
 

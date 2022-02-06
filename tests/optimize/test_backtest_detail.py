@@ -609,6 +609,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch("freqtrade.exchange.Binance.get_max_leverage", return_value=100)
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
