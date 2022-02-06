@@ -37,6 +37,7 @@ def test_validate_order_types_gateio(default_conf, mocker):
 ])
 def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_ratio):
     api_mock = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',

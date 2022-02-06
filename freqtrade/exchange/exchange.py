@@ -73,7 +73,8 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
-        "ccxt_futures_name": "swap"
+        "ccxt_futures_name": "swap",
+        "mmr_key": None,
     }
     _ft_has: Dict = {}
 
@@ -90,7 +91,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict[str, List[List[float]]] = {}
+        self._leverage_brackets: Dict[str, List[Tuple[float, float, Optional(float)]]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -2099,16 +2100,6 @@ class Exchange:
         else:
             return None
 
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
-        """
-        :return: The maintenance margin ratio and maintenance amount
-        """
-        raise OperationalException(self.name + ' does not support leverage futures trading')
-
     def dry_run_liquidation_price(
         self,
         pair: str,
@@ -2160,6 +2151,59 @@ class Exchange:
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    def get_leverage_tiers(self, pair: str):
+        # When exchanges can load all their leverage brackets at once in the constructor
+        # then this method does nothing, it should only be implemented when the leverage
+        # brackets requires per symbol fetching to avoid excess api calls
+        return None
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
+    ) -> Tuple[float, Optional[float]]:
+        """
+        :param pair: Market symbol
+        :param nominal_value: The total trade amount in quote currency including leverage
+        maintenance amount only on Binance
+        :return: (maintenance margin ratio, maintenance amount)
+        """
+        if nominal_value is None:
+            raise OperationalException(
+                f"nominal value is required for {self.name}.get_maintenance_ratio_and_amt"
+            )
+        if self._api.has['fetchLeverageTiers']:
+            if pair not in self._leverage_brackets:
+                # Used when fetchLeverageTiers cannot fetch all symbols at once
+                tiers = self.get_leverage_tiers(pair)
+                if not bool(tiers):
+                    raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
+                else:
+                    self._leverage_brackets[pair] = []
+                    for tier in tiers[pair]:
+                        self._leverage_brackets[pair].append((
+                            tier['notionalFloor'],
+                            tier['maintenanceMarginRatio'],
+                            None,
+                        ))
+            pair_brackets = self._leverage_brackets[pair]
+            for (notional_floor, mm_ratio, amt) in reversed(pair_brackets):
+                if nominal_value >= notional_floor:
+                    return (mm_ratio, amt)
+            raise OperationalException("nominal value can not be lower than 0")
+            # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
+            # describes the min amt for a bracket, and the lowest bracket will always go down to 0
+        else:
+            info = self.markets[pair]['info']
+            mmr_key = self._ft_has['mmr_key']
+            if mmr_key and mmr_key in info:
+                return (float(info[mmr_key]), None)
+            else:
+                raise OperationalException(
+                    f"Cannot fetch maintenance margin. Dry-run for freqtrade {self.trading_mode}"
+                    f"is not available for {self.name}"
+                )
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

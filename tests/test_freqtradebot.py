@@ -722,8 +722,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (False, 'futures', 'binance', 'isolated', 0.05, 8.167171717171717),
     (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
     (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
-    # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
-    # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+    (True, 'futures', 'okex', 'isolated', 11.87413417771621),
+    (False, 'futures', 'okex', 'isolated', 8.085708510208207),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
@@ -778,7 +778,8 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
         get_funding_fees=MagicMock(return_value=0),
-        name=exchange_name
+        name=exchange_name,
+        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
     )
     pair = 'ETH/USDT'
 
@@ -922,7 +923,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
-    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
     freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'

@@ -25,7 +25,7 @@ class Okx(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
-        # (TradingMode.FUTURES, MarginMode.ISOLATED)
+        (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
     def _lev_prep(
@@ -46,3 +46,6 @@ class Okx(Exchange):
                     "mgnMode": self.margin_mode.value,
                     "posSide": "long" if side == "buy" else "short",
                 })
+
+    def get_leverage_tiers(self, pair: str):
+        return self._api.fetch_leverage_tiers(pair)

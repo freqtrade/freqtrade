@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -23,6 +23,7 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
+        "mmr_key": "maintenance_rate",
     }
 
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
@@ -40,14 +41,3 @@ class Gateio(Exchange):
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
                 f'Exchange {self.name} does not support market orders.')
-
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
-        """
-        :return: The maintenance margin ratio and maintenance amount
-        """
-        info = self.markets[pair]['info']
-        return (float(info['maintenance_rate']), None)

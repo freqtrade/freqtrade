@@ -169,11 +169,11 @@ class Binance(Exchange):
                             + amt
                         ) if old_ratio else 0.0
                         old_ratio = mm_ratio
-                        brackets.append([
+                        brackets.append((
                             float(notional_floor),
                             float(mm_ratio),
                             amt,
-                        ])
+                        ))
                     self._leverage_brackets[pair] = brackets
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
@@ -271,34 +271,6 @@ class Binance(Exchange):
         :return: The cutoff open time for when a funding fee is charged
         """
         return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)
-
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
-        """
-        Formula: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-
-        Maintenance amt = Floor of Position Bracket on Level n *
-          difference between
-              Maintenance Margin Rate on Level n and
-              Maintenance Margin Rate on Level n-1)
-          + Maintenance Amount on Level n-1
-        :return: The maintenance margin ratio and maintenance amount
-        """
-        if nominal_value is None:
-            raise OperationalException(
-                "nominal value is required for binance.get_maintenance_ratio_and_amt")
-        if pair not in self._leverage_brackets:
-            raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
-        pair_brackets = self._leverage_brackets[pair]
-        for [notional_floor, mm_ratio, amt] in reversed(pair_brackets):
-            if nominal_value >= notional_floor:
-                return (mm_ratio, amt)
-        raise OperationalException("nominal value can not be lower than 0")
-        # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
-        # describes the min amount for a bracket, and the lowest bracket will always go down to 0
 
     def dry_run_liquidation_price(
         self,
