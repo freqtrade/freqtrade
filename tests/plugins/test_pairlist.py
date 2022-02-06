@@ -15,7 +15,7 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import (create_mock_trades, get_patched_exchange, get_patched_freqtradebot,
+from tests.conftest import (create_mock_trades_usdt, get_patched_exchange, get_patched_freqtradebot,
                             log_has, log_has_re, num_log_has)
 
 
@@ -715,29 +715,31 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None:
-    whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
-    whitelist_conf['pairlists'] = [
+def test_PerformanceFilter_lookback(mocker, default_conf_usdt, fee, caplog) -> None:
+    default_conf_usdt['exchange']['pair_whitelist'].extend(['ADA/USDT', 'XRP/USDT', 'ETC/USDT'])
+    default_conf_usdt['pairlists'] = [
         {"method": "StaticPairList"},
         {"method": "PerformanceFilter", "minutes": 60, "min_profit": 0.01}
     ]
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-    exchange = get_patched_exchange(mocker, whitelist_conf)
-    pm = PairListManager(exchange, whitelist_conf)
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    pm = PairListManager(exchange, default_conf_usdt)
     pm.refresh_pairlist()
 
-    assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
+    assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
 
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
-        create_mock_trades(fee)
+        create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/BTC']
+        assert pm.whitelist == ['XRP/USDT']
         assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
         t.move_to("2021-09-01 07:00:00 +00:00")
         pm.refresh_pairlist()
-        assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
+        assert pm.whitelist == ['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT']
+
+
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
