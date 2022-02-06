@@ -554,7 +554,9 @@ class Hyperopt:
         # Perform a cross-validation estimate of the coefficient of determination using
         # the cross_validation module using all CPUs available on the machine
         # K = 5  # folds
-        R2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, cv=5, n_jobs=jobs).mean()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            R2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, cv=5, n_jobs=jobs).mean()
         print(f'R2: {R2}')
         R2 = R2 if R2 > -5 else -5
         self.mse_list.append(R2)
