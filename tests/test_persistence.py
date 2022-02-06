@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from tests.conftest import create_mock_trades, create_mock_trades_usdt, log_has, log_has_re
 
 
@@ -677,6 +678,38 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak0", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak0, orders_bak0",
                    caplog)
+
+
+def test_migrate_get_last_sequence_ids():
+    engine = MagicMock()
+    engine.begin = MagicMock()
+    engine.name = 'postgresql'
+    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+
+    assert engine.begin.call_count == 2
+    engine.reset_mock()
+    engine.begin.reset_mock()
+
+    engine.name = 'somethingelse'
+    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+
+    assert engine.begin.call_count == 0
+
+
+def test_migrate_set_sequence_ids():
+    engine = MagicMock()
+    engine.begin = MagicMock()
+    engine.name = 'postgresql'
+    set_sequence_ids(engine, 22, 55)
+
+    assert engine.begin.call_count == 1
+    engine.reset_mock()
+    engine.begin.reset_mock()
+
+    engine.name = 'somethingelse'
+    set_sequence_ids(engine, 22, 55)
+
+    assert engine.begin.call_count == 0
 
 
 def test_adjust_stop_loss(fee):
