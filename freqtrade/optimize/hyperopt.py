@@ -538,7 +538,10 @@ class Hyperopt:
         if not hasattr(self, 'r2_list'):
             self.r2_list = []
 
-        r2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, scoring='r2', cv=5, n_jobs=jobs).mean()
+        model = res.models[-1]
+        model.criterion = 'squared_error'
+
+        r2 = cross_val_score(model, X=res.x_iters, y=res.func_vals, scoring='r2', cv=5, n_jobs=jobs).mean()
         print(f'R2: {r2}')
         r2 = r2 if r2 > -5 else -5
         self.r2_list.append(r2)
