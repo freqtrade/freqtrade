@@ -32,18 +32,17 @@ from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
-from skopt.plots import plot_convergence, plot_regret, plot_evaluations, plot_objective 
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from sklearn.base import clone
-
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     from skopt import Optimizer
     from skopt.space import Dimension
+    from sklearn.model_selection import cross_val_score  
+    from skopt.plots import plot_convergence, plot_regret, plot_evaluations, plot_objective 
 
 progressbar.streams.wrap_stderr()
 progressbar.streams.wrap_stdout()
@@ -483,7 +482,7 @@ class Hyperopt:
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
                         res = self.opt.tell(asked, [v['loss'] for v in f_val])
 
-                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, mse=True, objective=True, jobs=jobs)
+                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, r2=True, objective=True, jobs=jobs)
 
                         if res.models and hasattr(res.models[-1], "kernel_"):
                             print(f'kernel: {res.models[-1].kernel_}') 
@@ -532,41 +531,21 @@ class Hyperopt:
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
 
-    def plot_mse(self, res, ax, jobs): 
-        from sklearn.model_selection import cross_val_score     
+    def plot_r2(self, res, ax, jobs):    
         if len(res.x_iters) < 10:
             return                  
 
-        if not hasattr(self, 'mse_list'):
-            self.mse_list = []
+        if not hasattr(self, 'r2_list'):
+            self.r2_list = []
 
-        # model = clone(res.models[-1])
-        # i_subset = random.sample(range(len(res.x_iters)), 100) if len(res.x_iters) > 100 else range(len(res.x_iters))
-
-        # i_train = random.sample(i_subset, round(.8*len(i_subset))) # get 80% random indices
-        # x_train = [x for i, x in enumerate(res.x_iters) if i in i_train]
-        # y_train = [y for i, y in enumerate(res.func_vals) if i in i_train]
-
-        # i_test = [i for i in i_subset if i not in i_train] # get 20% random indices
-        # x_test = [x for i, x in enumerate(res.x_iters) if i in i_test]
-        # y_test = [y for i, y in enumerate(res.func_vals) if i in i_test]
-        # model.fit(res.x_iters, res.func_vals)
-        # Perform a cross-validation estimate of the coefficient of determination using
-        # the cross_validation module using all CPUs available on the machine
-        # K = 5  # folds
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            R2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, cv=5, n_jobs=jobs).mean()
-        print(f'R2: {R2}')
-        R2 = R2 if R2 > -5 else -5
-        self.mse_list.append(R2)
-        # y_pred, sigma = model.predict(np.array(x_test), return_std=True)
-        # mse = np.mean((y_test - y_pred) ** 2)
-        # self.mse_list.append(mse)
+        r2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, scoring='r2', cv=5, n_jobs=jobs).mean()
+        print(f'R2: {r2}')
+        r2 = r2 if r2 > -5 else -5
+        self.r2_list.append(r2)
             
-        ax.plot(range(INITIAL_POINTS, INITIAL_POINTS + jobs * len(self.mse_list), jobs), self.mse_list, label='MSE', marker=".", markersize=12, lw=2)
+        ax.plot(range(INITIAL_POINTS, INITIAL_POINTS + jobs * len(self.r2_list), jobs), self.r2_list, label='R2', marker=".", markersize=12, lw=2)
 
-    def plot_optimizer(self, res, path, jobs, convergence=True, regret=True, evaluations=True, objective=True, mse=True):
+    def plot_optimizer(self, res, path, jobs, convergence=True, regret=True, evaluations=True, objective=True, r2=True):
         path = Path(path)
         if convergence:
             ax = plot_convergence(res)
@@ -586,11 +565,10 @@ class Hyperopt:
             ax = plot_objective(res, sample_source='result', n_samples=50, n_points=10)
             ax.flatten()[0].figure.savefig(path / 'objective.png')
 
-        if mse and res.models:
-#             print('mse')
+        if r2 and res.models:
             fig, ax = plt.subplots()
-            ax.set_ylabel('MSE')
+            ax.set_ylabel('R2')
             ax.set_xlabel('Epoch')
-            ax.set_title('MSE')        
-            ax = self.plot_mse(res, ax, jobs)
-            fig.savefig(path / 'mse.png')
+            ax.set_title('R2')        
+            ax = self.plot_r2(res, ax, jobs)
+            fig.savefig(path / 'r2.png')
