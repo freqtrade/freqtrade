@@ -370,7 +370,7 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_buy_details(self, filled_orders, base_currency):
+    def _prepare_buy_details(self, filled_orders, base_currency, is_open):
         """
         Prepare details of trade with buy adjustment enabled
         """
@@ -400,8 +400,9 @@ class Telegram(RPCHandler):
                 hours, remainder = divmod(dur_buys.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
                 lines.append("*Buy #{}:* at {:.2%} avg profit".format(x+1, minus_on_buy))
-                lines.append("({})".format(current_buy_datetime
-                                           .humanize(granularity=["day", "hour", "minute"])))
+                if is_open:
+                    lines.append("({})".format(current_buy_datetime
+                                               .humanize(granularity=["day", "hour", "minute"])))
                 lines.append("*Buy Amount:* {} ({:.8f} {})"
                              .format(cur_buy_amount, order["cost"], base_currency))
                 lines.append("*Average Buy Price:* {} ({:.2%} from 1st buy rate)"
@@ -483,7 +484,7 @@ class Telegram(RPCHandler):
                             lines.append("*Open Order:* `{open_order}`")
 
                 lines_detail = self._prepare_buy_details(
-                    r['filled_entry_orders'], r['base_currency'])
+                    r['filled_entry_orders'], r['base_currency'], r['is_open'])
                 lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
 
                 # Filter empty lines using list-comprehension
