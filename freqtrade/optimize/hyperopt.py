@@ -540,7 +540,7 @@ class Hyperopt:
         if not hasattr(self, 'mse_list'):
             self.mse_list = []
 
-        model = clone(res.models[-1])
+        # model = clone(res.models[-1])
         # i_subset = random.sample(range(len(res.x_iters)), 100) if len(res.x_iters) > 100 else range(len(res.x_iters))
 
         # i_train = random.sample(i_subset, round(.8*len(i_subset))) # get 80% random indices
@@ -550,11 +550,11 @@ class Hyperopt:
         # i_test = [i for i in i_subset if i not in i_train] # get 20% random indices
         # x_test = [x for i, x in enumerate(res.x_iters) if i in i_test]
         # y_test = [y for i, y in enumerate(res.func_vals) if i in i_test]
-        model.fit(res.x_iters, res.func_vals)
+        # model.fit(res.x_iters, res.func_vals)
         # Perform a cross-validation estimate of the coefficient of determination using
         # the cross_validation module using all CPUs available on the machine
         # K = 5  # folds
-        R2 = cross_val_score(model, X=res.x_iters, y=res.func_vals, cv=5, n_jobs=jobs).mean()
+        R2 = cross_val_score(res.models[-1], X=res.x_iters, y=res.func_vals, cv=5, n_jobs=jobs).mean()
         print(f'R2: {R2}')
         R2 = R2 if R2 > -5 else -5
         self.mse_list.append(R2)
