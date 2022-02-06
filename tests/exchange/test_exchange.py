@@ -3486,9 +3486,9 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
 
     ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
-    ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("binance", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
@@ -3499,7 +3499,6 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("gateio", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     # * Uncomment once implemented
-    # ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     # ("binance", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("binance", TradingMode.FUTURES, MarginMode.CROSS, False),
     # ("kraken", TradingMode.MARGIN, MarginMode.CROSS, False),

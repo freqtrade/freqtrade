@@ -5085,6 +5085,7 @@ def test_update_funding_fees(
         create_order=enter_mm,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
+        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

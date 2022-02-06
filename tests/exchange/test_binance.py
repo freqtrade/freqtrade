@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from math import isclose
 from random import randint
 from unittest.mock import MagicMock, PropertyMock
 
@@ -162,81 +163,419 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
-@pytest.mark.parametrize('pair,stake_amount,max_lev', [
-    ("BNB/BUSD", 0.0, 40.0),
-    ("BNB/USDT", 100.0, 100.0),
-    ("BTC/USDT", 170.30, 250.0),
-    ("BNB/BUSD", 99999.9, 10.0),
-    ("BNB/USDT", 750000, 6.666666666666667),
-    ("BTC/USDT", 150000000.1, 2.0),
-])
-def test_get_max_leverage_binance(default_conf, mocker, pair, stake_amount, max_lev):
+def test_get_max_leverage_binance(default_conf, mocker):
+
+    # Test Spot
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 1.0
+
+    # Test Futures
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+
     exchange._leverage_brackets = {
         'BNB/BUSD': [
-            [0.0, 0.025, 0.0],  # lev = 40.0
-            [100000.0, 0.05, 2500.0],  # lev = 20.0
-            [500000.0, 0.1, 27500.0],  # lev = 10.0
-            [1000000.0, 0.15, 77500.0],  # lev = 6.666666666666667
-            [2000000.0, 0.25, 277500.0],  # lev = 4.0
-            [5000000.0, 0.5, 1527500.0],  # lev = 2.0
+            {
+                "min": 0,       # stake(before leverage) = 0
+                "max": 100000,  # max stake(before leverage) = 5000
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,  # stake = 10000.0
+                "max": 500000,  # max_stake = 50000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,   # stake = 100000.0
+                "max": 1000000,  # max_stake = 200000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,  # stake = 333333.3333333333
+                "max": 2000000,  # max_stake = 666666.6666666666
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,  # stake = 1000000.0
+                "max": 5000000,  # max_stake = 2500000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,   # stake = 5000000.0
+                "max": 30000000,  # max_stake = 30000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
         ],
         'BNB/USDT': [
-            [0.0, 0.0065, 0.0],   # lev = 153.84615384615384
-            [10000.0, 0.01, 35.0],   # lev = 100.0
-            [50000.0, 0.02, 535.0],   # lev = 50.0
-            [250000.0, 0.05, 8035.0],   # lev = 20.0
-            [1000000.0, 0.1, 58035.0],   # lev = 10.0
-            [2000000.0, 0.125, 108035.0],   # lev = 8.0
-            [5000000.0, 0.15, 233035.0],   # lev = 6.666666666666667
-            [10000000.0, 0.25, 1233035.0],   # lev = 4.0
+            {
+                "min": 0,      # stake = 0.0
+                "max": 10000,  # max_stake = 133.33333333333334
+                "mmr": 0.0065,
+                "lev": 75,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 10000,  # stake = 200.0
+                "max": 50000,  # max_stake = 1000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 35.0
+            },
+            {
+                "min": 50000,   # stake = 2000.0
+                "max": 250000,  # max_stake = 10000.0
+                "mmr": 0.02,
+                "lev": 25,
+                "maintAmt": 535.0
+            },
+            {
+                "min": 250000,   # stake = 25000.0
+                "max": 1000000,  # max_stake = 100000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 8035.0
+            },
+            {
+                "min": 1000000,  # stake = 200000.0
+                "max": 2000000,  # max_stake = 400000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 58035.0
+            },
+            {
+                "min": 2000000,  # stake = 500000.0
+                "max": 5000000,  # max_stake = 1250000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 108035.0
+            },
+            {
+                "min": 5000000,   # stake = 1666666.6666666667
+                "max": 10000000,  # max_stake = 3333333.3333333335
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 233035.0
+            },
+            {
+                "min": 10000000,  # stake = 5000000.0
+                "max": 20000000,  # max_stake = 10000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 1233035.0
+            },
+            {
+                "min": 20000000,  # stake = 20000000.0
+                "max": 50000000,  # max_stake = 50000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6233035.0
+            },
         ],
         'BTC/USDT': [
-            [0.0, 0.004, 0.0],   # lev = 250.0
-            [50000.0, 0.005, 50.0],   # lev = 200.0
-            [250000.0, 0.01, 1300.0],   # lev = 100.0
-            [1000000.0, 0.025, 16300.0],   # lev = 40.0
-            [5000000.0, 0.05, 141300.0],   # lev = 20.0
-            [20000000.0, 0.1, 1141300.0],   # lev = 10.0
-            [50000000.0, 0.125, 2391300.0],   # lev = 8.0
-            [100000000.0, 0.15, 4891300.0],   # lev = 6.666666666666667
-            [200000000.0, 0.25, 24891300.0],   # lev = 4.0
-            [300000000.0, 0.5, 99891300.0],   # lev = 2.0
+            {
+                "min": 0,      # stake = 0.0
+                "max": 50000,  # max_stake = 400.0
+                "mmr": 0.004,
+                "lev": 125,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 50000,   # stake = 500.0
+                "max": 250000,  # max_stake = 2500.0
+                "mmr": 0.005,
+                "lev": 100,
+                "maintAmt": 50.0
+            },
+            {
+                "min": 250000,   # stake = 5000.0
+                "max": 1000000,  # max_stake = 20000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 1300.0
+            },
+            {
+                "min": 1000000,  # stake = 50000.0
+                "max": 7500000,  # max_stake = 375000.0
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 16300.0
+            },
+            {
+                "min": 7500000,   # stake = 750000.0
+                "max": 40000000,  # max_stake = 4000000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 203800.0
+            },
+            {
+                "min": 40000000,   # stake = 8000000.0
+                "max": 100000000,  # max_stake = 20000000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 2203800.0
+            },
+            {
+                "min": 100000000,  # stake = 25000000.0
+                "max": 200000000,  # max_stake = 50000000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 4703800.0
+            },
+            {
+                "min": 200000000,  # stake = 66666666.666666664
+                "max": 400000000,  # max_stake = 133333333.33333333
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 9703800.0
+            },
+            {
+                "min": 400000000,  # stake = 200000000.0
+                "max": 600000000,  # max_stake = 300000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 4.97038E7
+            },
+            {
+                "min": 600000000,   # stake = 600000000.0
+                "max": 1000000000,  # max_stake = 1000000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1.997038E8
+            },
         ]
     }
-    assert exchange.get_max_leverage(pair, stake_amount) == max_lev
+
+    assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
+    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
+    assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
+    assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
+    assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
+    assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
+    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last bracket
+
+    assert exchange.get_max_leverage("ETC/USDT", 200) == 1.0    # Pair not in leverage_brackets
+    assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
+    with pytest.raises(
+        InvalidOrderException,
+        match=r'Amount 1000000000.01 too high for BTC/USDT'
+    ):
+        exchange.get_max_leverage("BTC/USDT", 1000000000.01)
 
 
 def test_fill_leverage_brackets_binance(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.load_leverage_brackets = MagicMock(return_value={
+    api_mock.fetch_leverage_tiers = MagicMock(return_value={
         'ADA/BUSD': [
-            [0.0, 0.025],
-            [100000.0, 0.05],
-            [500000.0, 0.1],
-            [1000000.0, 0.15],
-            [2000000.0, 0.25],
-            [5000000.0, 0.5],
-        ],
-        'BTC/USDT': [
-            [0.0, 0.004],
-            [50000.0, 0.005],
-            [250000.0, 0.01],
-            [1000000.0, 0.025],
-            [5000000.0, 0.05],
-            [20000000.0, 0.1],
-            [50000000.0, 0.125],
-            [100000000.0, 0.15],
-            [200000000.0, 0.25],
-            [300000000.0, 0.5],
+            {
+                "tier": 1,
+                "notionalFloor": 0,
+                "notionalCap": 100000,
+                "maintenanceMarginRatio": 0.025,
+                "maxLeverage": 20,
+                "info": {
+                    "bracket": "1",
+                    "initialLeverage": "20",
+                    "notionalCap": "100000",
+                    "notionalFloor": "0",
+                    "maintMarginRatio": "0.025",
+                    "cum": "0.0"
+                }
+            },
+            {
+                "tier": 2,
+                "notionalFloor": 100000,
+                "notionalCap": 500000,
+                "maintenanceMarginRatio": 0.05,
+                "maxLeverage": 10,
+                "info": {
+                    "bracket": "2",
+                    "initialLeverage": "10",
+                    "notionalCap": "500000",
+                    "notionalFloor": "100000",
+                    "maintMarginRatio": "0.05",
+                    "cum": "2500.0"
+                }
+            },
+            {
+                "tier": 3,
+                "notionalFloor": 500000,
+                "notionalCap": 1000000,
+                "maintenanceMarginRatio": 0.1,
+                "maxLeverage": 5,
+                "info": {
+                    "bracket": "3",
+                    "initialLeverage": "5",
+                    "notionalCap": "1000000",
+                    "notionalFloor": "500000",
+                    "maintMarginRatio": "0.1",
+                    "cum": "27500.0"
+                }
+            },
+            {
+                "tier": 4,
+                "notionalFloor": 1000000,
+                "notionalCap": 2000000,
+                "maintenanceMarginRatio": 0.15,
+                "maxLeverage": 3,
+                "info": {
+                    "bracket": "4",
+                    "initialLeverage": "3",
+                    "notionalCap": "2000000",
+                    "notionalFloor": "1000000",
+                    "maintMarginRatio": "0.15",
+                    "cum": "77500.0"
+                }
+            },
+            {
+                "tier": 5,
+                "notionalFloor": 2000000,
+                "notionalCap": 5000000,
+                "maintenanceMarginRatio": 0.25,
+                "maxLeverage": 2,
+                "info": {
+                    "bracket": "5",
+                    "initialLeverage": "2",
+                    "notionalCap": "5000000",
+                    "notionalFloor": "2000000",
+                    "maintMarginRatio": "0.25",
+                    "cum": "277500.0"
+                }
+            },
+            {
+                "tier": 6,
+                "notionalFloor": 5000000,
+                "notionalCap": 30000000,
+                "maintenanceMarginRatio": 0.5,
+                "maxLeverage": 1,
+                "info": {
+                    "bracket": "6",
+                    "initialLeverage": "1",
+                    "notionalCap": "30000000",
+                    "notionalFloor": "5000000",
+                    "maintMarginRatio": "0.5",
+                    "cum": "1527500.0"
+                }
+            }
         ],
         "ZEC/USDT": [
-            [0.0, 0.01],
-            [5000.0, 0.025],
-            [25000.0, 0.05],
-            [100000.0, 0.1],
-            [250000.0, 0.125],
-            [1000000.0, 0.5],
+            {
+                "tier": 1,
+                "notionalFloor": 0,
+                "notionalCap": 50000,
+                "maintenanceMarginRatio": 0.01,
+                "maxLeverage": 50,
+                "info": {
+                    "bracket": "1",
+                    "initialLeverage": "50",
+                    "notionalCap": "50000",
+                    "notionalFloor": "0",
+                    "maintMarginRatio": "0.01",
+                    "cum": "0.0"
+                }
+            },
+            {
+                "tier": 2,
+                "notionalFloor": 50000,
+                "notionalCap": 150000,
+                "maintenanceMarginRatio": 0.025,
+                "maxLeverage": 20,
+                "info": {
+                    "bracket": "2",
+                    "initialLeverage": "20",
+                    "notionalCap": "150000",
+                    "notionalFloor": "50000",
+                    "maintMarginRatio": "0.025",
+                    "cum": "750.0"
+                }
+            },
+            {
+                "tier": 3,
+                "notionalFloor": 150000,
+                "notionalCap": 250000,
+                "maintenanceMarginRatio": 0.05,
+                "maxLeverage": 10,
+                "info": {
+                    "bracket": "3",
+                    "initialLeverage": "10",
+                    "notionalCap": "250000",
+                    "notionalFloor": "150000",
+                    "maintMarginRatio": "0.05",
+                    "cum": "4500.0"
+                }
+            },
+            {
+                "tier": 4,
+                "notionalFloor": 250000,
+                "notionalCap": 500000,
+                "maintenanceMarginRatio": 0.1,
+                "maxLeverage": 5,
+                "info": {
+                    "bracket": "4",
+                    "initialLeverage": "5",
+                    "notionalCap": "500000",
+                    "notionalFloor": "250000",
+                    "maintMarginRatio": "0.1",
+                    "cum": "17000.0"
+                }
+            },
+            {
+                "tier": 5,
+                "notionalFloor": 500000,
+                "notionalCap": 1000000,
+                "maintenanceMarginRatio": 0.125,
+                "maxLeverage": 4,
+                "info": {
+                    "bracket": "5",
+                    "initialLeverage": "4",
+                    "notionalCap": "1000000",
+                    "notionalFloor": "500000",
+                    "maintMarginRatio": "0.125",
+                    "cum": "29500.0"
+                }
+            },
+            {
+                "tier": 6,
+                "notionalFloor": 1000000,
+                "notionalCap": 2000000,
+                "maintenanceMarginRatio": 0.25,
+                "maxLeverage": 2,
+                "info": {
+                    "bracket": "6",
+                    "initialLeverage": "2",
+                    "notionalCap": "2000000",
+                    "notionalFloor": "1000000",
+                    "maintMarginRatio": "0.25",
+                    "cum": "154500.0"
+                }
+            },
+            {
+                "tier": 7,
+                "notionalFloor": 2000000,
+                "notionalCap": 30000000,
+                "maintenanceMarginRatio": 0.5,
+                "maxLeverage": 1,
+                "info": {
+                    "bracket": "7",
+                    "initialLeverage": "1",
+                    "notionalCap": "30000000",
+                    "notionalFloor": "2000000",
+                    "maintMarginRatio": "0.5",
+                    "cum": "654500.0"
+                }
+            }
         ],
 
     })
@@ -248,38 +587,105 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
 
     assert exchange._leverage_brackets == {
         'ADA/BUSD': [
-            (0.0, 0.025, 0.0),
-            (100000.0, 0.05, 2500.0),
-            (500000.0, 0.1, 27500.0),
-            (1000000.0, 0.15, 77499.99999999999),
-            (2000000.0, 0.25, 277500.0),
-            (5000000.0, 0.5, 1527500.0),
-        ],
-        'BTC/USDT': [
-            (0.0, 0.004, 0.0),
-            (50000.0, 0.005, 50.0),
-            (250000.0, 0.01, 1300.0),
-            (1000000.0, 0.025, 16300.000000000002),
-            (5000000.0, 0.05, 141300.0),
-            (20000000.0, 0.1, 1141300.0),
-            (50000000.0, 0.125, 2391300.0),
-            (100000000.0, 0.15, 4891300.0),
-            (200000000.0, 0.25, 24891300.0),
-            (300000000.0, 0.5, 99891300.0),
+            {
+                "min": 0,
+                "max": 100000,
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,
+                "max": 500000,
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,
+                "max": 1000000,
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,
+                "max": 2000000,
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,
+                "max": 5000000,
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,
+                "max": 30000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
         ],
         "ZEC/USDT": [
-            (0.0, 0.01, 0.0),
-            (5000.0, 0.025, 75.0),
-            (25000.0, 0.05, 700.0),
-            (100000.0, 0.1, 5700.0),
-            (250000.0, 0.125,  11949.999999999998),
-            (1000000.0, 0.5, 386950.0),
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
         ]
     }
 
     api_mock = MagicMock()
     api_mock.load_leverage_brackets = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'loadLeverageBrackets': True})
+    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
 
     ccxt_exceptionhandlers(
         mocker,
@@ -287,7 +693,7 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
         api_mock,
         "binance",
         "fill_leverage_brackets",
-        "load_leverage_brackets"
+        "fetch_leverage_tiers"
     )
 
 
@@ -300,37 +706,201 @@ def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
 
     leverage_brackets = {
         "1000SHIB/USDT": [
-            (0.0, 0.01, 0.0),
-            (5000.0, 0.025, 75.0),
-            (25000.0, 0.05, 700.0),
-            (100000.0, 0.1, 5700.0),
-            (250000.0, 0.125, 11949.999999999998),
-            (1000000.0, 0.5, 386950.0),
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
         ],
         "1INCH/USDT": [
-            (0.0, 0.012, 0.0),
-            (5000.0, 0.025, 65.0),
-            (25000.0, 0.05, 690.0),
-            (100000.0, 0.1, 5690.0),
-            (250000.0, 0.125, 11939.999999999998),
-            (1000000.0, 0.5, 386940.0),
+            {
+                'min': 0,
+                'max': 5000,
+                'mmr': 0.012,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 5000,
+                'max': 25000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 65.0
+            },
+            {
+                'min': 25000,
+                'max': 100000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 690.0
+            },
+            {
+                'min': 100000,
+                'max': 250000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 5690.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 2,
+                'maintAmt': 11940.0
+            },
+            {
+                'min': 1000000,
+                'max': 100000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 386940.0
+            },
         ],
         "AAVE/USDT": [
-            (0.0, 0.01, 0.0),
-            (50000.0, 0.02, 500.0),
-            (250000.0, 0.05, 8000.000000000001),
-            (1000000.0, 0.1, 58000.0),
-            (2000000.0, 0.125, 107999.99999999999),
-            (5000000.0, 0.1665, 315500.00000000006),
-            (10000000.0, 0.25, 1150500.0),
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 250000,
+                'mmr': 0.02,
+                'lev': 25,
+                'maintAmt': 500.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 8000.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 58000.0
+            },
+            {
+                'min': 2000000,
+                'max': 5000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 108000.0
+            },
+            {
+                'min': 5000000,
+                'max': 10000000,
+                'mmr': 0.1665,
+                'lev': 3,
+                'maintAmt': 315500.0
+            },
+            {
+                'min': 10000000,
+                'max': 20000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 1150500.0
+            },
+            {
+                "min": 20000000,
+                "max": 50000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6150500.0
+            }
         ],
         "ADA/BUSD": [
-            (0.0, 0.025, 0.0),
-            (100000.0, 0.05, 2500.0),
-            (500000.0, 0.1, 27500.0),
-            (1000000.0, 0.15, 77499.99999999999),
-            (2000000.0, 0.25, 277500.0),
-            (5000000.0, 0.5, 1527500.0),
+            {
+                "min": 0,
+                "max": 100000,
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,
+                "max": 500000,
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,
+                "max": 1000000,
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,
+                "max": 2000000,
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,
+                "max": 5000000,
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,
+                "max": 30000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            },
         ]
     }
 
@@ -415,7 +985,7 @@ def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
     ("BTC/USDT", 170.30, 0.004, 0),
     ("BNB/BUSD", 999999.9, 0.1, 27500.0),
     ("BNB/USDT", 5000000.0, 0.15, 233035.0),
-    ("BTC/USDT", 300000000.1, 0.5, 99891300.0),
+    ("BTC/USDT", 600000000, 0.5, 1.997038E8),
 ])
 def test_get_maintenance_ratio_and_amt_binance(
     default_conf,
@@ -427,31 +997,187 @@ def test_get_maintenance_ratio_and_amt_binance(
 ):
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_brackets = {
-        'BNB/BUSD': [[0.0, 0.025, 0.0],
-                     [100000.0, 0.05, 2500.0],
-                     [500000.0, 0.1, 27500.0],
-                     [1000000.0, 0.15, 77500.0],
-                     [2000000.0, 0.25, 277500.0],
-                     [5000000.0, 0.5, 1527500.0]],
-        'BNB/USDT': [[0.0, 0.0065, 0.0],
-                     [10000.0, 0.01, 35.0],
-                     [50000.0, 0.02, 535.0],
-                     [250000.0, 0.05, 8035.0],
-                     [1000000.0, 0.1, 58035.0],
-                     [2000000.0, 0.125, 108035.0],
-                     [5000000.0, 0.15, 233035.0],
-                     [10000000.0, 0.25, 1233035.0]],
-        'BTC/USDT': [[0.0, 0.004, 0.0],
-                     [50000.0, 0.005, 50.0],
-                     [250000.0, 0.01, 1300.0],
-                     [1000000.0, 0.025, 16300.0],
-                     [5000000.0, 0.05, 141300.0],
-                     [20000000.0, 0.1, 1141300.0],
-                     [50000000.0, 0.125, 2391300.0],
-                     [100000000.0, 0.15, 4891300.0],
-                     [200000000.0, 0.25, 24891300.0],
-                     [300000000.0, 0.5, 99891300.0]
-                     ]
+        'BNB/BUSD': [
+            {
+                "min": 0,       # stake(before leverage) = 0
+                "max": 100000,  # max stake(before leverage) = 5000
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,  # stake = 10000.0
+                "max": 500000,  # max_stake = 50000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,   # stake = 100000.0
+                "max": 1000000,  # max_stake = 200000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,  # stake = 333333.3333333333
+                "max": 2000000,  # max_stake = 666666.6666666666
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,  # stake = 1000000.0
+                "max": 5000000,  # max_stake = 2500000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,   # stake = 5000000.0
+                "max": 30000000,  # max_stake = 30000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
+        ],
+        'BNB/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 10000,  # max_stake = 133.33333333333334
+                "mmr": 0.0065,
+                "lev": 75,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 10000,  # stake = 200.0
+                "max": 50000,  # max_stake = 1000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 35.0
+            },
+            {
+                "min": 50000,   # stake = 2000.0
+                "max": 250000,  # max_stake = 10000.0
+                "mmr": 0.02,
+                "lev": 25,
+                "maintAmt": 535.0
+            },
+            {
+                "min": 250000,   # stake = 25000.0
+                "max": 1000000,  # max_stake = 100000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 8035.0
+            },
+            {
+                "min": 1000000,  # stake = 200000.0
+                "max": 2000000,  # max_stake = 400000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 58035.0
+            },
+            {
+                "min": 2000000,  # stake = 500000.0
+                "max": 5000000,  # max_stake = 1250000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 108035.0
+            },
+            {
+                "min": 5000000,   # stake = 1666666.6666666667
+                "max": 10000000,  # max_stake = 3333333.3333333335
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 233035.0
+            },
+            {
+                "min": 10000000,  # stake = 5000000.0
+                "max": 20000000,  # max_stake = 10000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 1233035.0
+            },
+            {
+                "min": 20000000,  # stake = 20000000.0
+                "max": 50000000,  # max_stake = 50000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6233035.0
+            },
+        ],
+        'BTC/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 50000,  # max_stake = 400.0
+                "mmr": 0.004,
+                "lev": 125,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 50000,   # stake = 500.0
+                "max": 250000,  # max_stake = 2500.0
+                "mmr": 0.005,
+                "lev": 100,
+                "maintAmt": 50.0
+            },
+            {
+                "min": 250000,   # stake = 5000.0
+                "max": 1000000,  # max_stake = 20000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 1300.0
+            },
+            {
+                "min": 1000000,  # stake = 50000.0
+                "max": 7500000,  # max_stake = 375000.0
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 16300.0
+            },
+            {
+                "min": 7500000,   # stake = 750000.0
+                "max": 40000000,  # max_stake = 4000000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 203800.0
+            },
+            {
+                "min": 40000000,   # stake = 8000000.0
+                "max": 100000000,  # max_stake = 20000000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 2203800.0
+            },
+            {
+                "min": 100000000,  # stake = 25000000.0
+                "max": 200000000,  # max_stake = 50000000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 4703800.0
+            },
+            {
+                "min": 200000000,  # stake = 66666666.666666664
+                "max": 400000000,  # max_stake = 133333333.33333333
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 9703800.0
+            },
+            {
+                "min": 400000000,  # stake = 200000000.0
+                "max": 600000000,  # max_stake = 300000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 4.97038E7
+            },
+            {
+                "min": 600000000,   # stake = 600000000.0
+                "max": 1000000000,  # max_stake = 1000000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1.997038E8
+            },
+        ]
     }
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)

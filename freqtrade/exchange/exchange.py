@@ -91,7 +91,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict[str, List[Tuple[float, float, Optional(float)]]] = {}
+        self._leverage_brackets: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -2193,7 +2193,7 @@ class Exchange:
                 if nominal_value >= notional_floor:
                     return (mm_ratio, amt)
             raise OperationalException("nominal value can not be lower than 0")
-            # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
+            # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
             # describes the min amt for a bracket, and the lowest bracket will always go down to 0
         else:
             info = self.markets[pair]['info']

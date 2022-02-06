@@ -153,27 +153,24 @@ class Binance(Exchange):
             try:
                 if self._config['dry_run']:
                     leverage_brackets_path = (
-                        Path(__file__).parent / 'binance_leverage_brackets.json'
+                        Path(__file__).parent / 'binance_leverage_tiers.json'
                     )
                     with open(leverage_brackets_path) as json_file:
                         leverage_brackets = json.load(json_file)
                 else:
-                    leverage_brackets = self._api.load_leverage_brackets()
+                    leverage_brackets = self._api.fetch_leverage_tiers()
 
-                for pair, brkts in leverage_brackets.items():
-                    [amt, old_ratio] = [0.0, 0.0]
+                for pair, tiers in leverage_brackets.items():
                     brackets = []
-                    for [notional_floor, mm_ratio] in brkts:
-                        amt = (
-                            (float(notional_floor) * (float(mm_ratio) - float(old_ratio)))
-                            + amt
-                        ) if old_ratio else 0.0
-                        old_ratio = mm_ratio
-                        brackets.append((
-                            float(notional_floor),
-                            float(mm_ratio),
-                            amt,
-                        ))
+                    for tier in tiers:
+                        info = tier['info']
+                        brackets.append({
+                            'min': tier['notionalFloor'],
+                            'max': tier['notionalCap'],
+                            'mmr': tier['maintenanceMarginRatio'],
+                            'lev': tier['maxLeverage'],
+                            'maintAmt': float(info['cum']) if 'cum' in info else None,
+                        })
                     self._leverage_brackets[pair] = brackets
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
@@ -189,29 +186,69 @@ class Binance(Exchange):
         :param pair: The base/quote currency pair being traded
         :stake_amount: The total value of the traders margin_mode in quote currency
         """
-        if stake_amount is None:
-            raise OperationalException('binance.get_max_leverage requires argument stake_amount')
-        if pair not in self._leverage_brackets:
+
+        if self.trading_mode == TradingMode.SPOT:
             return 1.0
-        pair_brackets = self._leverage_brackets[pair]
-        num_brackets = len(pair_brackets)
-        min_amount = 0.0
-        for bracket_num in range(num_brackets):
-            [notional_floor, mm_ratio, _] = pair_brackets[bracket_num]
-            lev = 1.0
-            if mm_ratio != 0:
-                lev = 1.0/mm_ratio
+
+        if self._api.has['fetchLeverageTiers']:
+
+            # Checks and edge cases
+            if stake_amount is None:
+                raise OperationalException(
+                    'binance.get_max_leverage requires argument stake_amount')
+            if pair not in self._leverage_brackets:  # Not a leveraged market
+                return 1.0
+            if stake_amount == 0:
+                return self._leverage_brackets[pair][0]['lev']  # Max lev for lowest amount
+
+            pair_brackets = self._leverage_brackets[pair]
+            num_brackets = len(pair_brackets)
+
+            for bracket_index in range(num_brackets):
+
+                bracket = pair_brackets[bracket_index]
+                lev = bracket['lev']
+
+                if bracket_index < num_brackets - 1:
+                    next_bracket = pair_brackets[bracket_index+1]
+                    next_floor = next_bracket['min'] / next_bracket['lev']
+                    if next_floor > stake_amount:  # Next bracket min too high for stake amount
+                        return min((bracket['max'] / stake_amount), lev)
+                        #
+                        # With the two leverage brackets below,
+                        # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
+                        # - stakes below 133.33 = max_lev of 75
+                        # - stakes between 133.33-200 = max_lev of 10000/stake = 50.01-74.99
+                        # - stakes from 200 + 1000 = max_lev of 50
+                        #
+                        # {
+                        #     "min": 0,      # stake = 0.0
+                        #     "max": 10000,  # max_stake@75 = 10000/75 = 133.33333333333334
+                        #     "lev": 75,
+                        # },
+                        # {
+                        #     "min": 10000,  # stake = 200.0
+                        #     "max": 50000,  # max_stake@50 = 50000/50 = 1000.0
+                        #     "lev": 50,
+                        # }
+                        #
+
+                else:  # if on the last bracket
+                    if stake_amount > bracket['max']:  # If stake is > than max tradeable amount
+                        raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
+                    else:
+                        return bracket['lev']
+
+            raise OperationalException(
+                'Looped through all tiers without finding a max leverage. Should never be reached'
+            )
+
+        else:  # Search markets.limits for max lev
+            market = self.markets[pair]
+            if market['limits']['leverage']['max'] is not None:
+                return market['limits']['leverage']['max']
             else:
-                logger.warning(f"mm_ratio for {pair} with notional floor {notional_floor} is 0")
-            if bracket_num+1 != num_brackets:  # If not on last bracket
-                [min_amount, _, __] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
-            else:
-                return lev
-            nominal_value = stake_amount * lev
-            # Bracket is good if the leveraged trade value doesnt exceed min_amount of next bracket
-            if nominal_value < min_amount:
-                return lev
-        return 1.0  # default leverage
+                return 1.0  # Default if max leverage cannot be found
 
     @retrier
     def _set_leverage(
