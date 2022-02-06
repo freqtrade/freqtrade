@@ -609,7 +609,8 @@ class Backtesting:
         for pair in open_trades.keys():
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
-                    if trade.open_order_id:
+                    if trade.open_order_id and trade.nr_of_successful_buys == 0:
+                        # Ignore trade if buy-order did not fill yet
                         continue
                     sell_row = data[pair][-1]
 
