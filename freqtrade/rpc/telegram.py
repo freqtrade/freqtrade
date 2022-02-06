@@ -442,7 +442,7 @@ class Telegram(RPCHandler):
                 r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
-                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
+                    "*Trade ID:* `{trade_id}`" + ("` (since {open_date_hum})`" if r['is_open'] else ""),
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
@@ -460,27 +460,28 @@ class Telegram(RPCHandler):
                     "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
                     "*Open Date:* `{open_date}`",
                     "*Close Date:* `{close_date}`" if r['close_date'] else "",
-                    "*Current Rate:* `{current_rate:.8f}`",
+                    "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                     ("*Current Profit:* " if r['is_open'] else "*Close Profit: *")
                     + "`{profit_ratio:.2%}`",
                 ])
 
-                if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
-                        and r['initial_stop_loss_ratio'] is not None):
-                    # Adding initial stoploss only if it is different from stoploss
-                    lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
-                                 "`({initial_stop_loss_ratio:.2%})`")
+                if r['is_open']:
+                    if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
+                            and r['initial_stop_loss_ratio'] is not None):
+                        # Adding initial stoploss only if it is different from stoploss
+                        lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
+                                    "`({initial_stop_loss_ratio:.2%})`")
 
-                # Adding stoploss and stoploss percentage only if it is not None
-                lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
-                             ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
-                lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
-                             "`({stoploss_current_dist_ratio:.2%})`")
-                if r['open_order']:
-                    if r['sell_order_status']:
-                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
-                    else:
-                        lines.append("*Open Order:* `{open_order}`")
+                    # Adding stoploss and stoploss percentage only if it is not None
+                    lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
+                                ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
+                    lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
+                                "`({stoploss_current_dist_ratio:.2%})`")
+                    if r['open_order']:
+                        if r['sell_order_status']:
+                            lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                        else:
+                            lines.append("*Open Order:* `{open_order}`")
 
                 if len(r['filled_entry_orders']) > 1:
                     lines_detail = self._prepare_buy_details(
