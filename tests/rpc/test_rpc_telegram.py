@@ -260,8 +260,8 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
     telegram._status(update=update, context=MagicMock())
     assert msg_mock.call_count == 4
     msg = msg_mock.call_args_list[0][0][0]
-    assert re.search(r'Number of Buy.*2', msg)
-    assert re.search(r'Average Buy Price', msg)
+    assert re.search(r'Number of Entries.*2', msg)
+    assert re.search(r'Average Entry Price', msg)
     assert re.search(r'Order filled at', msg)
     assert re.search(r'Close Date:', msg) is None
     assert re.search(r'Close Profit:', msg) is None
