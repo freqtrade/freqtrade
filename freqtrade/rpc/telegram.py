@@ -376,7 +376,7 @@ class Telegram(RPCHandler):
         """
         lines = []
         for x, order in enumerate(filled_orders):
-            current_entry_datetime = arrow.get(order["order_filled_date"])
+            cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
             cur_entry_average = order["average"]
             lines.append("  ")
@@ -393,15 +393,15 @@ class Telegram(RPCHandler):
                     sumB += filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
                 price_to_1st_entry = ((cur_entry_average - filled_orders[0]["average"])
-                                    / filled_orders[0]["average"])
+                                      / filled_orders[0]["average"])
                 minus_on_entry = (cur_entry_average - prev_avg_price)/prev_avg_price
-                dur_entry = current_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
+                dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
                 days = dur_entry.days
                 hours, remainder = divmod(dur_entry.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
                 lines.append("*Entry #{}:* at {:.2%} avg profit".format(x+1, minus_on_entry))
                 if is_open:
-                    lines.append("({})".format(current_entry_datetime
+                    lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append("*Entry Amount:* {} ({:.8f} {})"
                              .format(cur_entry_amount, order["cost"], base_currency))
