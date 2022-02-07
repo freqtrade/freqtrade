@@ -4211,6 +4211,7 @@ def test_get_max_pair_stake_amount(
 
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0) == 20000
+    assert exchange.get_max_pair_stake_amount('XRP/USDT:USDT', 2.0, 5) == 4000
     assert exchange.get_max_pair_stake_amount('LTC/USDT:USDT', 2.0) == float('inf')
     assert exchange.get_max_pair_stake_amount('ETH/USDT:USDT', 2.0) == 200
     assert exchange.get_max_pair_stake_amount('DOGE/USDT:USDT', 2.0) == 500
