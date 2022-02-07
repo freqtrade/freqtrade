@@ -67,3 +67,6 @@ class Okx(Exchange):
 
         pair_tiers = self._leverage_tiers[pair]
         return pair_tiers[-1]['max'] / leverage
+
+    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        return {}
