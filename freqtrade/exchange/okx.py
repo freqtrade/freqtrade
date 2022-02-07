@@ -49,3 +49,23 @@ class Okx(Exchange):
 
     def get_leverage_tiers(self, pair: str):
         return self._api.fetch_leverage_tiers(pair)
+
+    def get_max_pair_stake_amount(
+        self,
+        pair: str,
+        price: float,
+        leverage: float = 1.0
+    ) -> float:
+
+        if self.trading_mode == TradingMode.SPOT:
+            return float('inf')  # Not actually inf, but this probably won't matter for SPOT
+
+        if pair not in self._leverage_tiers:
+            tiers = self.get_leverage_tiers_for_pair(pair)
+            if not tiers:  # Not a leveraged market
+                return float('inf')
+            else:
+                self._leverage_tiers[pair] = tiers
+
+        pair_tiers = self._leverage_tiers[pair]
+        return pair_tiers[-1]['max'] / leverage
