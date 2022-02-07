@@ -23,7 +23,8 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
         total_profit = results["profit_abs"].sum()
 
         try:
-            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results, value_col="profit_abs")
+            _, _, _, _, _, max_drawdown_abs = calculate_max_drawdown(results, value_col="profit_abs")
+            # max_drawdown_abs = calculate_max_drawdown(results, value_col="profit_abs")[5]
         except ValueError:
             max_drawdown_abs = 0
 
