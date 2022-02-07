@@ -264,7 +264,7 @@ class RPC:
                 profitcol += " (" + fiat_display_currency + ")"
 
             if self._config.get('position_adjustment_enable', False):
-                columns = ['ID', 'Pair', 'Since', profitcol, '# Buys']
+                columns = ['ID', 'Pair', 'Since', profitcol, '# Entries']
             else:
                 columns = ['ID', 'Pair', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
