@@ -3561,8 +3561,10 @@ def test__ccxt_config(
     ("TKN/USDT", 210.30, 1.0),
 ])
 def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
-    # Binance has a different method of getting the max leverage
-    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id="gateio")
+    exchange._api.has['fetchLeverageTiers'] = False
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 

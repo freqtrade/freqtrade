@@ -19,6 +19,7 @@ class Okx(Exchange):
         "ohlcv_candle_limit": 300,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
+        "can_fetch_multiple_tiers": False,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -46,9 +47,6 @@ class Okx(Exchange):
                     "mgnMode": self.margin_mode.value,
                     "posSide": "long" if side == "buy" else "short",
                 })
-
-    def get_leverage_tiers(self, pair: str):
-        return self._api.fetch_leverage_tiers(pair)
 
     def get_max_pair_stake_amount(
         self,

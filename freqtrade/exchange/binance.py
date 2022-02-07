@@ -129,128 +129,6 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def fill_leverage_brackets(self) -> None:
-        """
-        Assigns property _leverage_brackets to a dictionary of information about the leverage
-        allowed on each pair
-        After exectution, self._leverage_brackets = {
-            "pair_name": [
-                [notional_floor, maintenenace_margin_ratio, maintenance_amt],
-                ...
-            ],
-            ...
-        }
-        e.g. {
-            "ETH/USDT:USDT": [
-                [0.0, 0.01, 0.0],
-                [10000, 0.02, 0.01],
-                ...
-            ],
-            ...
-        }
-        """
-        if self.trading_mode == TradingMode.FUTURES:
-            try:
-                if self._config['dry_run']:
-                    leverage_brackets_path = (
-                        Path(__file__).parent / 'binance_leverage_tiers.json'
-                    )
-                    with open(leverage_brackets_path) as json_file:
-                        leverage_brackets = json.load(json_file)
-                else:
-                    leverage_brackets = self._api.fetch_leverage_tiers()
-
-                for pair, tiers in leverage_brackets.items():
-                    brackets = []
-                    for tier in tiers:
-                        info = tier['info']
-                        brackets.append({
-                            'min': tier['notionalFloor'],
-                            'max': tier['notionalCap'],
-                            'mmr': tier['maintenanceMarginRatio'],
-                            'lev': tier['maxLeverage'],
-                            'maintAmt': float(info['cum']) if 'cum' in info else None,
-                        })
-                    self._leverage_brackets[pair] = brackets
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                     f'{e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
-
-    def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
-        """
-        Returns the maximum leverage that a pair can be traded at
-        :param pair: The base/quote currency pair being traded
-        :stake_amount: The total value of the traders margin_mode in quote currency
-        """
-
-        if self.trading_mode == TradingMode.SPOT:
-            return 1.0
-
-        if self._api.has['fetchLeverageTiers']:
-
-            # Checks and edge cases
-            if stake_amount is None:
-                raise OperationalException(
-                    'binance.get_max_leverage requires argument stake_amount')
-            if pair not in self._leverage_brackets:  # Not a leveraged market
-                return 1.0
-            if stake_amount == 0:
-                return self._leverage_brackets[pair][0]['lev']  # Max lev for lowest amount
-
-            pair_brackets = self._leverage_brackets[pair]
-            num_brackets = len(pair_brackets)
-
-            for bracket_index in range(num_brackets):
-
-                bracket = pair_brackets[bracket_index]
-                lev = bracket['lev']
-
-                if bracket_index < num_brackets - 1:
-                    next_bracket = pair_brackets[bracket_index+1]
-                    next_floor = next_bracket['min'] / next_bracket['lev']
-                    if next_floor > stake_amount:  # Next bracket min too high for stake amount
-                        return min((bracket['max'] / stake_amount), lev)
-                        #
-                        # With the two leverage brackets below,
-                        # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
-                        # - stakes below 133.33 = max_lev of 75
-                        # - stakes between 133.33-200 = max_lev of 10000/stake = 50.01-74.99
-                        # - stakes from 200 + 1000 = max_lev of 50
-                        #
-                        # {
-                        #     "min": 0,      # stake = 0.0
-                        #     "max": 10000,  # max_stake@75 = 10000/75 = 133.33333333333334
-                        #     "lev": 75,
-                        # },
-                        # {
-                        #     "min": 10000,  # stake = 200.0
-                        #     "max": 50000,  # max_stake@50 = 50000/50 = 1000.0
-                        #     "lev": 50,
-                        # }
-                        #
-
-                else:  # if on the last bracket
-                    if stake_amount > bracket['max']:  # If stake is > than max tradeable amount
-                        raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
-                    else:
-                        return bracket['lev']
-
-            raise OperationalException(
-                'Looped through all tiers without finding a max leverage. Should never be reached'
-            )
-
-        else:  # Search markets.limits for max lev
-            market = self.markets[pair]
-            if market['limits']['leverage']['max'] is not None:
-                return market['limits']['leverage']['max']
-            else:
-                return 1.0  # Default if max leverage cannot be found
-
-    @retrier
     def _set_leverage(
         self,
         leverage: float,
@@ -367,3 +245,16 @@ class Binance(Exchange):
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    def load_leverage_brackets(self) -> Dict[str, List[Dict]]:
+        if self._config['dry_run']:
+            leverage_brackets_path = (
+                Path(__file__).parent / 'binance_leverage_tiers.json'
+            )
+            leverage_brackets = {}
+            with open(leverage_brackets_path) as json_file:
+                leverage_brackets = json.load(json_file)
+            return leverage_brackets
+        else:
+            leverage_brackets = self._api.fetch_leverage_tiers()
+            return leverage_brackets
