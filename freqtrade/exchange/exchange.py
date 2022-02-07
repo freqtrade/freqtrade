@@ -1857,37 +1857,33 @@ class Exchange:
             raise OperationalException(e) from e
 
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
-        return self._api.fetch_leverage_tiers()
+        if self.trading_mode == TradingMode.FUTURES and self._api.has['fetchLeverageTiers']:
+            try:
+                return self._api.fetch_leverage_tiers()
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not load leverage tiers due to {e.__class__.__name__}.'
+                    f'Message: {e}'
+                ) from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
+        else:
+            return {}
 
     @retrier
     def fill_leverage_tiers(self) -> None:
         """
         Assigns property _leverage_tiers to a dictionary of information about the leverage
         allowed on each pair
-        After exectution, self._leverage_tiers = {
-            "pair_name": [
-                [notional_floor, maintenenace_margin_ratio, maintenance_amt],
-                ...
-            ],
-            ...
-        }
-        e.g. {
-            "ETH/USDT:USDT": [
-                [0.0, 0.01, 0.0],
-                [10000, 0.02, 0.01],
-                ...
-            ],
-            ...
-        }
         """
-        if self._api.has['fetchLeverageTiers']:
-            if self.trading_mode == TradingMode.FUTURES:
-                leverage_tiers = self.load_leverage_tiers()
-                for pair, tiers in leverage_tiers.items():
-                    tiers = []
-                    for tier in tiers:
-                        tiers.append(self.parse_leverage_tier(tier))
-                    self._leverage_tiers[pair] = tiers
+        leverage_tiers = self.load_leverage_tiers()
+        for pair, tiers in leverage_tiers.items():
+            tiers = []
+            for tier in tiers:
+                tiers.append(self.parse_leverage_tier(tier))
+            self._leverage_tiers[pair] = tiers
 
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier['info']
