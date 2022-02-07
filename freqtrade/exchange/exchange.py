@@ -2247,11 +2247,16 @@ class Exchange:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
+    @retrier
     def get_leverage_tiers_for_pair(self, pair: str):
         # When exchanges can load all their leverage tiers at once in the constructor
         # then this method does nothing, it should only be implemented when the leverage
         # tiers requires per symbol fetching to avoid excess api calls
-        if not self._ft_has['can_fetch_multiple_tiers']:
+        if (
+            self._api.has['fetchLeverageTiers'] and
+            not self._ft_has['can_fetch_multiple_tiers'] and
+            self.trading_mode == TradingMode.FUTURES
+        ):
             try:
                 return self._api.fetch_leverage_tiers(pair)
             except ccxt.BadRequest:
