@@ -233,7 +233,8 @@ class Backtesting:
         PairLocks.reset_locks()
         Trade.reset_trades()
         self.rejected_trades = 0
-        self.timedout_orders = 0
+        self.timedout_entry_orders = 0
+        self.timedout_exit_orders = 0
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -647,8 +648,8 @@ class Backtesting:
 
             timedout = self.strategy.ft_check_timed_out(order.side, trade, order, current_time)
             if timedout:
-                self.timedout_orders += 1
                 if order.side == 'buy':
+                    self.timedout_entry_orders += 1
                     if trade.nr_of_successful_buys == 0:
                         # Remove trade due to buy timeout expiration.
                         return True
@@ -656,6 +657,7 @@ class Backtesting:
                         # Close additional buy order
                         del trade.orders[trade.orders.index(order)]
                 if order.side == 'sell':
+                    self.timedout_exit_orders += 1
                     # Close sell order and retry selling on next signal.
                     del trade.orders[trade.orders.index(order)]
 
@@ -798,8 +800,8 @@ class Backtesting:
             'config': self.strategy.config,
             'locks': PairLocks.get_all_locks(),
             'rejected_signals': self.rejected_trades,
-            # TODO: timedout_orders should be shown as part of results.
-            # 'timedout_orders': self.timedout_orders,
+            'timedout_entry_orders': self.timedout_entry_orders,
+            'timedout_exit_orders': self.timedout_exit_orders,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 
