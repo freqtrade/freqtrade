@@ -497,7 +497,6 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
 
 def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
-    # TODO-lev: test max_pair_stake_amount
     default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
