@@ -1880,10 +1880,10 @@ class Exchange:
         """
         leverage_tiers = self.load_leverage_tiers()
         for pair, tiers in leverage_tiers.items():
-            tiers = []
+            pair_tiers = []
             for tier in tiers:
-                tiers.append(self.parse_leverage_tier(tier))
-            self._leverage_tiers[pair] = tiers
+                pair_tiers.append(self.parse_leverage_tier(tier))
+            self._leverage_tiers[pair] = pair_tiers
 
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier['info']

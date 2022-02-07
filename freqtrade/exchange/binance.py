@@ -252,12 +252,10 @@ class Binance(Exchange):
                 Path(__file__).parent / 'binance_leverage_tiers.json'
             )
             with open(leverage_tiers_path) as json_file:
-                leverage_tiers = json.load(json_file)
-                return leverage_tiers
+                return json.load(json_file)
         else:
             try:
-                leverage_tiers = self._api.fetch_leverage_tiers()
-                return leverage_tiers
+                return self._api.fetch_leverage_tiers()
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
