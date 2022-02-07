@@ -174,7 +174,7 @@ def test_get_max_leverage_binance(default_conf, mocker):
     default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
 
-    exchange._leverage_brackets = {
+    exchange._leverage_tiers = {
         'BNB/BUSD': [
             {
                 "min": 0,       # stake(before leverage) = 0
@@ -364,9 +364,9 @@ def test_get_max_leverage_binance(default_conf, mocker):
     assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
     assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
     assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
-    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last bracket
+    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
 
-    assert exchange.get_max_leverage("ETC/USDT", 200) == 1.0    # Pair not in leverage_brackets
+    assert exchange.get_max_leverage("ETC/USDT", 200) == 1.0    # Pair not in leverage_tiers
     assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
     with pytest.raises(
         InvalidOrderException,
@@ -375,7 +375,7 @@ def test_get_max_leverage_binance(default_conf, mocker):
         exchange.get_max_leverage("BTC/USDT", 1000000000.01)
 
 
-def test_fill_leverage_brackets_binance(default_conf, mocker):
+def test_fill_leverage_tiers_binance(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.fetch_leverage_tiers = MagicMock(return_value={
         'ADA/BUSD': [
@@ -583,9 +583,9 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
-    exchange.fill_leverage_brackets()
+    exchange.fill_leverage_tiers()
 
-    assert exchange._leverage_brackets == {
+    assert exchange._leverage_tiers == {
         'ADA/BUSD': [
             {
                 "min": 0,
@@ -684,7 +684,7 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
     }
 
     api_mock = MagicMock()
-    api_mock.load_leverage_brackets = MagicMock()
+    api_mock.load_leverage_tiers = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
 
     ccxt_exceptionhandlers(
@@ -692,19 +692,19 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
         default_conf,
         api_mock,
         "binance",
-        "fill_leverage_brackets",
+        "fill_leverage_tiers",
         "fetch_leverage_tiers"
     )
 
 
-def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
+def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker):
     api_mock = MagicMock()
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
-    exchange.fill_leverage_brackets()
+    exchange.fill_leverage_tiers()
 
-    leverage_brackets = {
+    leverage_tiers = {
         "1000SHIB/USDT": [
             {
                 'min': 0,
@@ -904,8 +904,8 @@ def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
         ]
     }
 
-    for key, value in leverage_brackets.items():
-        assert exchange._leverage_brackets[key] == value
+    for key, value in leverage_tiers.items():
+        assert exchange._leverage_tiers[key] == value
 
 
 def test__set_leverage_binance(mocker, default_conf):
@@ -996,7 +996,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     amt,
 ):
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._leverage_brackets = {
+    exchange._leverage_tiers = {
         'BNB/BUSD': [
             {
                 "min": 0,       # stake(before leverage) = 0

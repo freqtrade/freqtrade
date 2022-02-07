@@ -92,7 +92,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict[str, List[Dict]] = {}
+        self._leverage_tiers: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -185,7 +185,7 @@ class Exchange:
             "markets_refresh_interval", 60) * 60
 
         if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
+            self.fill_leverage_tiers()
 
     def __del__(self):
         """
@@ -461,7 +461,7 @@ class Exchange:
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
-            self.fill_leverage_brackets()
+            self.fill_leverage_tiers()
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -1856,15 +1856,15 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def load_leverage_brackets(self) -> Dict[str, List[Dict]]:
+    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         return self._api.fetch_leverage_tiers()
 
     @retrier
-    def fill_leverage_brackets(self) -> None:
+    def fill_leverage_tiers(self) -> None:
         """
-        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        Assigns property _leverage_tiers to a dictionary of information about the leverage
         allowed on each pair
-        After exectution, self._leverage_brackets = {
+        After exectution, self._leverage_tiers = {
             "pair_name": [
                 [notional_floor, maintenenace_margin_ratio, maintenance_amt],
                 ...
@@ -1882,20 +1882,12 @@ class Exchange:
         """
         if self._api.has['fetchLeverageTiers']:
             if self.trading_mode == TradingMode.FUTURES:
-                leverage_brackets = self.load_leverage_brackets()
-                try:
-                    for pair, tiers in leverage_brackets.items():
-                        brackets = []
-                        for tier in tiers:
-                            brackets.append(self.parse_leverage_tier(tier))
-                        self._leverage_brackets[pair] = brackets
-                except ccxt.DDoSProtection as e:
-                    raise DDosProtection(e) from e
-                except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                    raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                         f'{e.__class__.__name__}. Message: {e}') from e
-                except ccxt.BaseError as e:
-                    raise OperationalException(e) from e
+                leverage_tiers = self.load_leverage_tiers()
+                for pair, tiers in leverage_tiers.items():
+                    tiers = []
+                    for tier in tiers:
+                        tiers.append(self.parse_leverage_tier(tier))
+                    self._leverage_tiers[pair] = tiers
 
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier['info']
@@ -1923,30 +1915,30 @@ class Exchange:
             if stake_amount is None:
                 raise OperationalException(
                     'binance.get_max_leverage requires argument stake_amount')
-            if pair not in self._leverage_brackets:
-                brackets = self.get_leverage_tiers_for_pair(pair)
-                if not brackets:  # Not a leveraged market
+            if pair not in self._leverage_tiers:
+                tiers = self.get_leverage_tiers_for_pair(pair)
+                if not tiers:  # Not a leveraged market
                     return 1.0
                 else:
-                    self._leverage_brackets[pair] = brackets
+                    self._leverage_tiers[pair] = tiers
             if stake_amount == 0:
-                return self._leverage_brackets[pair][0]['lev']  # Max lev for lowest amount
+                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
 
-            pair_brackets = self._leverage_brackets[pair]
-            num_brackets = len(pair_brackets)
+            pair_tiers = self._leverage_tiers[pair]
+            num_tiers = len(pair_tiers)
 
-            for bracket_index in range(num_brackets):
+            for tier_index in range(num_tiers):
 
-                bracket = pair_brackets[bracket_index]
-                lev = bracket['lev']
+                tier = pair_tiers[tier_index]
+                lev = tier['lev']
 
-                if bracket_index < num_brackets - 1:
-                    next_bracket = pair_brackets[bracket_index+1]
-                    next_floor = next_bracket['min'] / next_bracket['lev']
-                    if next_floor > stake_amount:  # Next bracket min too high for stake amount
-                        return min((bracket['max'] / stake_amount), lev)
+                if tier_index < num_tiers - 1:
+                    next_tier = pair_tiers[tier_index+1]
+                    next_floor = next_tier['min'] / next_tier['lev']
+                    if next_floor > stake_amount:  # Next tier min too high for stake amount
+                        return min((tier['max'] / stake_amount), lev)
                         #
-                        # With the two leverage brackets below,
+                        # With the two leverage tiers below,
                         # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
                         # - stakes below 133.33 = max_lev of 75
                         # - stakes between 133.33-200 = max_lev of 10000/stake = 50.01-74.99
@@ -1964,11 +1956,11 @@ class Exchange:
                         # }
                         #
 
-                else:  # if on the last bracket
-                    if stake_amount > bracket['max']:  # If stake is > than max tradeable amount
+                else:  # if on the last tier
+                    if stake_amount > tier['max']:  # If stake is > than max tradeable amount
                         raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
                     else:
-                        return bracket['lev']
+                        return tier['lev']
 
             raise OperationalException(
                 'Looped through all tiers without finding a max leverage. Should never be reached'
@@ -2260,9 +2252,9 @@ class Exchange:
                 "Freqtrade only supports isolated futures for leverage trading")
 
     def get_leverage_tiers_for_pair(self, pair: str):
-        # When exchanges can load all their leverage brackets at once in the constructor
+        # When exchanges can load all their leverage tiers at once in the constructor
         # then this method does nothing, it should only be implemented when the leverage
-        # brackets requires per symbol fetching to avoid excess api calls
+        # tiers requires per symbol fetching to avoid excess api calls
         if not self._ft_has['can_fetch_multiple_tiers']:
             try:
                 return self._api.fetch_leverage_tiers(pair)
@@ -2287,22 +2279,22 @@ class Exchange:
                 f"nominal value is required for {self.name}.get_maintenance_ratio_and_amt"
             )
         if self._api.has['fetchLeverageTiers']:
-            if pair not in self._leverage_brackets:
+            if pair not in self._leverage_tiers:
                 # Used when fetchLeverageTiers cannot fetch all symbols at once
                 tiers = self.get_leverage_tiers_for_pair(pair)
                 if not bool(tiers):
                     raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
                 else:
-                    self._leverage_brackets[pair] = []
+                    self._leverage_tiers[pair] = []
                     for tier in tiers[pair]:
-                        self._leverage_brackets[pair].append(self.parse_leverage_tier(tier))
-            pair_brackets = self._leverage_brackets[pair]
-            for bracket in reversed(pair_brackets):
-                if nominal_value >= bracket['min']:
-                    return (bracket['mmr'], bracket['maintAmt'])
+                        self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
+            pair_tiers = self._leverage_tiers[pair]
+            for tier in reversed(pair_tiers):
+                if nominal_value >= tier['min']:
+                    return (tier['mmr'], tier['maintAmt'])
             raise OperationalException("nominal value can not be lower than 0")
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
-            # describes the min amt for a bracket, and the lowest bracket will always go down to 0
+            # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
             info = self.markets[pair]['info']
             mmr_key = self._ft_has['mmr_key']

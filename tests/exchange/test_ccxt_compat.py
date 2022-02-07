@@ -143,7 +143,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(
             'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
         class_mocker.patch(
-            'freqtrade.exchange.binance.Binance.fill_leverage_brackets')
+            'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
 
         exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 

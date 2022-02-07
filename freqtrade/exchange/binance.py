@@ -246,15 +246,22 @@ class Binance(Exchange):
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
-    def load_leverage_brackets(self) -> Dict[str, List[Dict]]:
+    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         if self._config['dry_run']:
-            leverage_brackets_path = (
+            leverage_tiers_path = (
                 Path(__file__).parent / 'binance_leverage_tiers.json'
             )
-            leverage_brackets = {}
-            with open(leverage_brackets_path) as json_file:
-                leverage_brackets = json.load(json_file)
-            return leverage_brackets
+            with open(leverage_tiers_path) as json_file:
+                leverage_tiers = json.load(json_file)
+                return leverage_tiers
         else:
-            leverage_brackets = self._api.fetch_leverage_tiers()
-            return leverage_brackets
+            try:
+                leverage_tiers = self._api.fetch_leverage_tiers()
+                return leverage_tiers
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                     f'{e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
