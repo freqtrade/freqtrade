@@ -628,3 +628,12 @@ def test_get_maintenance_ratio_and_amt_binance(
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)
+
+
+def test_load_leverage_tiers_binance(mocker, default_conf, leverage_tiers):
+    # TODO-lev
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange

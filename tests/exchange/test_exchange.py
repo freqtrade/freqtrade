@@ -3561,6 +3561,7 @@ def test__ccxt_config(
     ("TKN/USDT", 210.30, 1.0),
 ])
 def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
+    # TODO-lev: Branch coverage
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id="gateio")
@@ -4222,3 +4223,39 @@ def test_get_max_pair_stake_amount(
     mocker.patch('freqtrade.exchange.Exchange.markets', markets)
     assert exchange.get_max_pair_stake_amount('BTC/USDT', 2.0) == 20000
     assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0) == 500
+
+
+def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
+    # TODO-lev
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange
+
+
+def test_parse_leverage_tier(mocker, default_conf, leverage_tiers):
+    # TODO-lev
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange
+
+
+def test_get_leverage_tiers_for_pair(mocker, default_conf, leverage_tiers):
+    # TODO-lev
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange
+
+
+def test_get_maintenance_ratio_and_amt(mocker, default_conf, leverage_tiers):
+    # TODO-lev
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange

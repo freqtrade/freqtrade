@@ -341,6 +341,7 @@ class TestCCXTExchange():
 
     def test_get_max_leverage_futures(self, exchange_futures):
         futures, futures_name = exchange_futures
+        # TODO-lev: binance, gateio, and okex test
         if futures:
             leverage_in_market_futures = EXCHANGES[futures_name]['leverage_in_market']['futures']
             if leverage_in_market_futures:
@@ -362,3 +363,18 @@ class TestCCXTExchange():
             contract_size = futures._get_contract_size(futures_pair)
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
+
+    def test_get_liquidation_price_compat():
+        return  # TODO-lev
+
+    def test_liquidation_price_compat():
+        return  # TODO-lev
+
+    def test_get_max_pair_stake_amount_compat():
+        return  # TODO-lev
+
+    def test_load_leverage_tiers_compat():
+        return  # TODO-lev
+
+    def test_get_maintenance_ratio_and_amt_compat():
+        return  # TODO-lev
