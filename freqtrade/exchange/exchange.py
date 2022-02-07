@@ -750,7 +750,7 @@ class Exchange:
         return self._get_stake_amount_considering_leverage(
             max(stake_limits) * amount_reserve_percent,
             leverage or 1.0
-        ) if isMin else min(stake_limits)  # TODO-lev: Account 4 max_reserve_percent in max limits?
+        ) if isMin else min(stake_limits)
 
     def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
         """
