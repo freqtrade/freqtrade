@@ -3564,8 +3564,9 @@ def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
     # TODO-lev: Branch coverage
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
-    exchange = get_patched_exchange(mocker, default_conf, id="gateio")
-    exchange._api.has['fetchLeverageTiers'] = False
+    api_mock = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 
@@ -4231,7 +4232,22 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    assert exchange
+
+    api_mock = MagicMock()
+    api_mock.set_margin_mode = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
+    default_conf['dry_run'] = False
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "set_margin_mode",
+        "set_margin_mode",
+        pair="XRP/USDT",
+        margin_mode=margin_mode
+    )
 
 
 def test_parse_leverage_tier(mocker, default_conf, leverage_tiers):
