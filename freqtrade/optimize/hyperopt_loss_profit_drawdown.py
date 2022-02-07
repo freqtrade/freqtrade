@@ -14,7 +14,7 @@ from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
 # higher numbers penalize drawdowns more severely
-DRAWDOWN_MULT = 0.075
+DRAWDOWN_MULT = 0.01
 
 
 class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
@@ -23,8 +23,8 @@ class ProfitDrawDownHyperOptLoss(IHyperOptLoss):
         total_profit = results["profit_abs"].sum()
 
         try:
-            profit_abs, _, _, _, _ = calculate_max_drawdown(results, value_col="profit_abs")
+            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results, value_col="profit_abs")
         except ValueError:
-            profit_abs = 0
+            max_drawdown_abs = 0
 
-        return -1 * (total_profit * (1 - profit_abs * DRAWDOWN_MULT))
+        return -1 * (total_profit * (1 - max_drawdown_abs * DRAWDOWN_MULT))
