@@ -20,6 +20,12 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
     We strongly recommend you to have basic coding skills and Python knowledge. Do not hesitate to read the source code and understand the mechanisms of this bot, algorithms and techniques implemented in it.
 
+![freqtrade screenshot](assets/freqtrade-screenshot.png)
+
+## Sponsored promotion
+
+[![tokenbot-promo](assets/TokenBot-Freqtrade-banner.png)](https://www.tokenbot.com)
+
 ## Features
 
 - Develop your Strategy: Write your strategy in python, using [pandas](https://pandas.pydata.org/). Example strategies to inspire you are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
