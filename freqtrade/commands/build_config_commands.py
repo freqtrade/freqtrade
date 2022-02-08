@@ -112,7 +112,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "ftx",
                 "kucoin",
                 "gateio",
-                "okex",
+                "okx",
                 Separator(),
                 "other",
             ],
@@ -140,7 +140,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "password",
             "name": "exchange_key_password",
             "message": "Insert Exchange API Key password",
-            "when": lambda x: not x['dry_run'] and x['exchange_name'] in ('kucoin', 'okex')
+            "when": lambda x: not x['dry_run'] and x['exchange_name'] in ('kucoin', 'okx')
         },
         {
             "type": "confirm",

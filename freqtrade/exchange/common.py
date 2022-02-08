@@ -35,6 +35,7 @@ BAD_EXCHANGES = {
 MAP_EXCHANGE_CHILDCLASS = {
     'binanceus': 'binance',
     'binanceje': 'binance',
+    'okex': 'okx',
 }
 
 
