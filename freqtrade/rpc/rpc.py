@@ -12,7 +12,7 @@ import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
-from pandas import DataFrame
+from pandas import DataFrame, NaT, isnull
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
@@ -963,6 +963,24 @@ class RPC:
                 sell_mask = (dataframe['sell'] == 1)
                 sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_close'] = dataframe.loc[sell_mask, 'close']
+            """
+            band-aid until this is fixed:
+            https://github.com/pandas-dev/pandas/issues/45836
+            """
+            datetime_types = ['datetime', 'datetime64', 'datetime64[ns, UTC]']
+            date_columns = dataframe.select_dtypes(include=datetime_types)
+            for date_column in date_columns:
+                # replace NaT with empty string,
+                # because if replaced with `None`
+                # it will be casted into NaT again
+                dataframe[date_column] = dataframe[date_column].apply(
+                    lambda x: '' if isnull(x) else x)
+
+            """
+            try this if above pandas Issue#45836 is fixed:
+            https://github.com/pandas-dev/pandas/issues/45836
+            """
+            # dataframe = dataframe.replace({NaT: None})
             dataframe = dataframe.replace([inf, -inf], NAN)
             dataframe = dataframe.replace({NAN: None})
 
