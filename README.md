@@ -61,9 +61,9 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 - [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/stable/edge/).
 - [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
 - [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
+- [x] **Builtin WebUI**: Builtin web UI to manage your bot.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram.
-- [x] **Display profit/loss in fiat**: Display your profit/loss in 33 fiat.
-- [x] **Daily summary of profit/loss**: Provide a daily summary of your profit/loss.
+- [x] **Display profit/loss in fiat**: Display your profit/loss in fiat currency.
 - [x] **Performance status report**: Provide a performance status of your current trades.
 
 ## Quick start
