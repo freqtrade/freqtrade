@@ -390,7 +390,7 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning "Backtesting"
     Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
-    Orders that don't fill immediately are subject to regular timeout handling.
+    Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
     `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
 
 ## Custom order timeout rules
@@ -401,7 +401,7 @@ However, freqtrade also offers a custom callback for both order types, which all
 
 !!! Note
     Backtesting fills orders if their price falls within the candle's low/high range.
-    The below callbacks will be called for orders that don't fill automatically (which use custom pricing).
+    The below callbacks will be called once per (detail) candle for orders that don't fill immediately (which use custom pricing).
 
 ### Custom order timeout example
 
