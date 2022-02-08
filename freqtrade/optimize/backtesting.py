@@ -417,16 +417,19 @@ class Backtesting:
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
+            order_type = self.strategy.order_types['sell']
             if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
-                closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                  default_retval=closerate)(
-                    pair=trade.pair, trade=trade,
-                    current_time=sell_candle_time,
-                    proposed_rate=closerate, current_profit=current_profit)
+                if order_type == 'limit':
+                    closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                      default_retval=closerate)(
+                        pair=trade.pair, trade=trade,
+                        current_time=sell_candle_time,
+                        proposed_rate=closerate, current_profit=current_profit)
 
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
+
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
@@ -458,7 +461,7 @@ class Backtesting:
                 symbol=trade.pair,
                 ft_order_side="sell",
                 side="sell",
-                order_type=self.strategy.order_types['sell'],
+                order_type=order_type,
                 status="open",
                 price=closerate,
                 average=closerate,
@@ -537,7 +540,7 @@ class Backtesting:
             # If not pos adjust, trade is None
             return trade
 
-        time_in_force = self.strategy.order_time_in_force['sell']
+        time_in_force = self.strategy.order_time_in_force['buy']
         # Confirm trade entry:
         if not pos_adjust:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
