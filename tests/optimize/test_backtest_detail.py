@@ -547,7 +547,7 @@ tc34 = BTContainer(data=[
     custom_entry_price=4200, trades=[]
 )
 
-# Test 35: Custom-entry-price above all candles should timeout - so no trade happens.
+# Test 35: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
 tc35 = BTContainer(data=[
     # D   O     H     L     C    V    B  S
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
@@ -555,8 +555,10 @@ tc35 = BTContainer(data=[
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
-    custom_entry_price=7200, trades=[]
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01,
+    custom_entry_price=7200, trades=[
+        BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)
+    ]
 )
 
 # Test 36: Custom-entry-price around candle low
@@ -577,7 +579,7 @@ tc36 = BTContainer(data=[
 
 
 # Test 37: Custom exit price below all candles
-# causes sell signal timeout
+# Price adjusted to candle Low.
 tc37 = BTContainer(data=[
     # D   O     H     L     C    V    B  S   BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
@@ -585,10 +587,10 @@ tc37 = BTContainer(data=[
     [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01,
     use_sell_signal=True,
     custom_exit_price=4552,
-    trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=3)]
 )
 
 # Test 38: Custom exit price above all candles

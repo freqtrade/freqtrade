@@ -426,7 +426,9 @@ class Backtesting:
                         pair=trade.pair, trade=trade,
                         current_time=sell_candle_time,
                         proposed_rate=closerate, current_profit=current_profit)
-
+                    # We can't place orders lower than current low.
+                    # freqtrade does not support this in live, and the order would fill immediately
+                    closerate = max(closerate, sell_row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
 
@@ -515,7 +517,10 @@ class Backtesting:
             propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                  default_retval=row[OPEN_IDX])(
                 pair=pair, current_time=current_time,
-                proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
+                proposed_rate=propose_rate, entry_tag=entry_tag)  # default value is the open rate
+            # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
+            # which freqtrade does not support in live.
+            propose_rate = min(propose_rate, row[HIGH_IDX])
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
