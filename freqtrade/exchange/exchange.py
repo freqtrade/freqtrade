@@ -74,7 +74,6 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
-        "mmr_key": None,
         "can_fetch_multiple_tiers": True,
     }
     _ft_has: Dict = {}
@@ -2284,6 +2283,7 @@ class Exchange:
             raise OperationalException(
                 f"nominal value is required for {self.name}.get_maintenance_ratio_and_amt"
             )
+
         if self._api.has['fetchLeverageTiers']:
             if pair not in self._leverage_tiers:
                 # Used when fetchLeverageTiers cannot fetch all symbols at once
@@ -2298,15 +2298,12 @@ class Exchange:
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
             # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
-            info = self.markets[pair]['info']
-            mmr_key = self._ft_has['mmr_key']
-            if mmr_key and mmr_key in info:
-                return (float(info[mmr_key]), None)
-            else:
+            mmr = self.markets[pair]['maintenanceMarginRate']
+            if mmr is None:
                 raise OperationalException(
-                    f"Cannot fetch maintenance margin. Dry-run for freqtrade {self.trading_mode}"
-                    f"is not available for {self.name}"
+                    f"Maintenance margin rate is unavailable for {self.name}"
                 )
+            return (mmr, None)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

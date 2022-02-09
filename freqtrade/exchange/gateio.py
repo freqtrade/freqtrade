@@ -23,7 +23,6 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
-        "mmr_key": "maintenance_rate",
     }
 
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
