@@ -12,7 +12,7 @@ import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
-from pandas import DataFrame, isnull
+from pandas import DataFrame, NaT
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
@@ -973,16 +973,9 @@ class RPC:
                 # replace NaT with empty string,
                 # because if replaced with `None`
                 # it will be casted into NaT again
-                dataframe[date_column] = dataframe[date_column].apply(
-                    lambda x: '' if isnull(x) else x)
+                dataframe[date_column] = dataframe[date_column].astype(object).replace({NaT: None})
 
-            """
-            try this if above pandas Issue#45836 is fixed:
-            https://github.com/pandas-dev/pandas/issues/45836
-            """
-            # dataframe = dataframe.replace({NaT: None})
-            dataframe = dataframe.replace([inf, -inf], NAN)
-            dataframe = dataframe.replace({NAN: None})
+            dataframe = dataframe.replace({inf: None, -inf: None, NAN: None})
 
         res = {
             'pair': pair,
