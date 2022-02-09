@@ -782,6 +782,10 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         name=exchange_name,
         get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
     )
+    mocker.patch.multiple(
+        'freqtrade.exchange.Okex',
+        get_max_pair_stake_amount=MagicMock(return_value=500000),
+    )
     pair = 'ETH/USDT'
 
     assert not freqtrade.execute_entry(pair, stake_amount, is_short=is_short)

@@ -2269,11 +2269,11 @@ class Exchange:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
-        def get_maintenance_ratio_and_amt(
-            self,
-            pair: str,
-            nominal_value: Optional[float] = 0.0,
-        ) -> Tuple[float, Optional[float]]:
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
+    ) -> Tuple[float, Optional[float]]:
         """
         :param pair: Market symbol
         :param nominal_value: The total trade amount in quote currency including leverage
