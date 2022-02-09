@@ -355,7 +355,7 @@ class PairHistory(BaseModel):
 
     class Config:
         json_encoders = {
-            datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT)
+            datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
         }
 
 

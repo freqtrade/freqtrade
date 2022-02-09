@@ -963,10 +963,9 @@ class RPC:
                 sell_mask = (dataframe['sell'] == 1)
                 sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_close'] = dataframe.loc[sell_mask, 'close']
-            """
-            band-aid until this is fixed:
-            https://github.com/pandas-dev/pandas/issues/45836
-            """
+
+            # band-aid until this is fixed:
+            # https://github.com/pandas-dev/pandas/issues/45836
             datetime_types = ['datetime', 'datetime64', 'datetime64[ns, UTC]']
             date_columns = dataframe.select_dtypes(include=datetime_types)
             for date_column in date_columns:
