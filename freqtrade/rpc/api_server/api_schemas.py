@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from pandas import isnull
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -357,8 +356,6 @@ class PairHistory(BaseModel):
     class Config:
         json_encoders = {
             datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT)
-            # needed for aslong NaT doesn't work with strftime
-            if not isnull(v) else "",
         }
 
 

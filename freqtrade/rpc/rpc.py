@@ -12,7 +12,7 @@ import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
-from pandas import DataFrame, NaT, isnull
+from pandas import DataFrame, isnull
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
