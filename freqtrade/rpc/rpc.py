@@ -969,9 +969,7 @@ class RPC:
             datetime_types = ['datetime', 'datetime64', 'datetime64[ns, UTC]']
             date_columns = dataframe.select_dtypes(include=datetime_types)
             for date_column in date_columns:
-                # replace NaT with empty string,
-                # because if replaced with `None`
-                # it will be casted into NaT again
+                # replace NaT with `None`
                 dataframe[date_column] = dataframe[date_column].astype(object).replace({NaT: None})
 
             dataframe = dataframe.replace({inf: None, -inf: None, NAN: None})
