@@ -11,7 +11,7 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 ## Sponsored promotion
 
-[![tokenbot-promo](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/TokenBot-Freqtrade-banner.png)](https://www.tokenbot.com)
+[![tokenbot-promo](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/TokenBot-Freqtrade-banner.png)](https://tokenbot.com/?utm_source=github&utm_medium=freqtrade&utm_campaign=algodevs)
 
 ## Disclaimer
 
