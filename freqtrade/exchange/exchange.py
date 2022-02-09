@@ -1911,12 +1911,12 @@ class Exchange:
             if stake_amount is None:
                 raise OperationalException(
                     'binance.get_max_leverage requires argument stake_amount')
+
             if pair not in self._leverage_tiers:
                 tiers = self.get_leverage_tiers_for_pair(pair)
                 if not tiers:  # Not a leveraged market
                     return 1.0
-                else:
-                    self._leverage_tiers[pair] = tiers
+
             if stake_amount == 0:
                 return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
 
@@ -2248,7 +2248,7 @@ class Exchange:
                 "Freqtrade only supports isolated futures for leverage trading")
 
     @retrier
-    def get_leverage_tiers_for_pair(self, pair: str):
+    def get_leverage_tiers_for_pair(self, pair: str) -> List:
         # When exchanges can load all their leverage tiers at once in the constructor
         # then this method does nothing, it should only be implemented when the leverage
         # tiers requires per symbol fetching to avoid excess api calls
@@ -2257,12 +2257,17 @@ class Exchange:
             not self._ft_has['can_fetch_multiple_tiers'] and
             self.trading_mode == TradingMode.FUTURES
         ):
+            self._leverage_tiers[pair] = []
             try:
-                return self._api.fetch_leverage_tiers(pair)
+                tiers = self._api.fetch_leverage_tiers(pair)
+                for tier in tiers[pair]:
+                    self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
+
+                return tiers
             except ccxt.BadRequest:
-                return None
+                return []
         else:
-            return None
+            return []
 
     def get_maintenance_ratio_and_amt(
         self,
@@ -2285,10 +2290,6 @@ class Exchange:
                 tiers = self.get_leverage_tiers_for_pair(pair)
                 if not bool(tiers):
                     raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
-                else:
-                    self._leverage_tiers[pair] = []
-                    for tier in tiers[pair]:
-                        self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
             pair_tiers = self._leverage_tiers[pair]
             for tier in reversed(pair_tiers):
                 if nominal_value >= tier['min']:
