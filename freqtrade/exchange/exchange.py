@@ -1895,6 +1895,28 @@ class Exchange:
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }
 
+    @retrier
+    def get_leverage_tiers_for_pair(self, pair: str) -> List:
+        # When exchanges can load all their leverage tiers at once in the constructor
+        # then this method does nothing, it should only be implemented when the leverage
+        # tiers requires per symbol fetching to avoid excess api calls
+        if (
+            self._api.has['fetchLeverageTiers'] and
+            not self._ft_has['can_fetch_multiple_tiers'] and
+            self.trading_mode == TradingMode.FUTURES
+        ):
+            self._leverage_tiers[pair] = []
+            try:
+                tiers = self._api.fetch_leverage_tiers(pair)
+                for tier in tiers[pair]:
+                    self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
+
+                return tiers
+            except ccxt.BadRequest:
+                return []
+        else:
+            return []
+
     def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
@@ -2247,33 +2269,11 @@ class Exchange:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
-    @retrier
-    def get_leverage_tiers_for_pair(self, pair: str) -> List:
-        # When exchanges can load all their leverage tiers at once in the constructor
-        # then this method does nothing, it should only be implemented when the leverage
-        # tiers requires per symbol fetching to avoid excess api calls
-        if (
-            self._api.has['fetchLeverageTiers'] and
-            not self._ft_has['can_fetch_multiple_tiers'] and
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            self._leverage_tiers[pair] = []
-            try:
-                tiers = self._api.fetch_leverage_tiers(pair)
-                for tier in tiers[pair]:
-                    self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
-
-                return tiers
-            except ccxt.BadRequest:
-                return []
-        else:
-            return []
-
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
+        def get_maintenance_ratio_and_amt(
+            self,
+            pair: str,
+            nominal_value: Optional[float] = 0.0,
+        ) -> Tuple[float, Optional[float]]:
         """
         :param pair: Market symbol
         :param nominal_value: The total trade amount in quote currency including leverage
