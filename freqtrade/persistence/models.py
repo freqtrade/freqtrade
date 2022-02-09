@@ -132,6 +132,10 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
+    @property
+    def order_date_utc(self):
+        return self.order_date.replace(tzinfo=timezone.utc)
+
     def __repr__(self):
 
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -187,6 +191,12 @@ class Order(_DECL_BASE):
             'remaining': self.remaining,
             'status': self.status,
         }
+
+    def close_bt_order(self, close_date: datetime):
+        self.order_filled_date = close_date
+        self.filled = self.amount
+        self.status = 'closed'
+        self.ft_is_open = False
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -635,14 +645,27 @@ class LocalTrade():
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
 
-    def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
+    def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
+        """
+        Finds order object by Order id.
+        :param order_id: Exchange order id
+        """
+        for o in self.orders:
+            if o.order_id == order_id:
+                return o
+        return None
+
+    def select_order(
+            self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: Side of the order (either 'buy' or 'sell')
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = [o for o in self.orders if o.side == order_side]
+        orders = self.orders
+        if order_side:
+            orders = [o for o in self.orders if o.side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:

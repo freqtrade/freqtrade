@@ -19,7 +19,7 @@ from freqtrade.edge import PairInfo
 from freqtrade.enums import RunMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import LocalTrade, Trade, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
@@ -1985,7 +1985,7 @@ def import_fails() -> None:
 
 @pytest.fixture(scope="function")
 def open_trade():
-    return Trade(
+    trade = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='binance',
@@ -1997,6 +1997,26 @@ def open_trade():
         open_date=arrow.utcnow().shift(minutes=-601).datetime,
         is_open=True
     )
+    trade.orders = [
+        Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=False,
+            order_id='123456789',
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        )
+    ]
+    return trade
 
 
 @pytest.fixture(scope="function")

@@ -456,6 +456,7 @@ SCHEMA_BACKTEST_REQUIRED = [
     'dry_run_wallet',
     'dataformat_ohlcv',
     'dataformat_trades',
+    'unfilledtimeout',
 ]
 
 SCHEMA_MINIMAL_REQUIRED = [

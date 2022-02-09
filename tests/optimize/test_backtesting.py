@@ -521,6 +521,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     # Fake 2 trades, so there's not enough amount for the next trade left.
     LocalTrade.trades_open.append(trade)
     LocalTrade.trades_open.append(trade)
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
     LocalTrade.trades_open.pop()
@@ -528,6 +529,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is not None
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade
     assert trade.stake_amount == 123.5
@@ -635,7 +637,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     assert res.sell_reason == SellType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    assert round(res.close_rate, 3) == round(209.0225, 3)
+    sell_order = res.select_order('sell', True)
+    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -1020,6 +1023,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'config': default_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -1128,6 +1133,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1135,6 +1142,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1237,6 +1246,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1244,6 +1255,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1305,6 +1318,8 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         'config': default_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',

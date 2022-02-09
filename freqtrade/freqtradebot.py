@@ -987,18 +987,20 @@ class FreqtradeBot(LoggingMixin):
 
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
 
+            order_obj = trade.select_order_by_order_id(trade.open_order_id)
+
             if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
-                    or self.strategy.ft_check_timed_out(
-                        'buy', trade, order, datetime.now(timezone.utc))
-                        )):
+                    or (order_obj and self.strategy.ft_check_timed_out(
+                        'buy', trade, order_obj, datetime.now(timezone.utc))
+                        ))):
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
-                  or self.strategy.ft_check_timed_out(
-                      'sell', trade, order, datetime.now(timezone.utc)))
-                  ):
+                  or (order_obj and self.strategy.ft_check_timed_out(
+                      'sell', trade, order_obj, datetime.now(timezone.utc))
+                      ))):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 canceled_count = trade.get_exit_order_count()
                 max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
