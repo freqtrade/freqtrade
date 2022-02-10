@@ -1935,18 +1935,15 @@ class Exchange:
                 )
 
             if pair not in self._leverage_tiers:
-                tiers = self.get_leverage_tiers_for_pair(pair)
-                if not tiers:  # Not a leveraged market
-                    return 1.0
-
-            if stake_amount == 0:
-                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
+                self.get_leverage_tiers_for_pair(pair)
 
             pair_tiers = self._leverage_tiers[pair]
             num_tiers = len(pair_tiers)
-
             if num_tiers < 1:
                 return 1.0
+
+            if stake_amount == 0:
+                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
 
             for tier_index in range(num_tiers):
 
