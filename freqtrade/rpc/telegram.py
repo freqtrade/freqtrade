@@ -766,9 +766,9 @@ class Telegram(RPCHandler):
         duration_msg = tabulate(
             [
                 ['Wins', str(timedelta(seconds=durations['wins']))
-                 if durations['wins'] != 'N/A' else 'N/A'],
+                 if durations['wins'] is not None else 'N/A'],
                 ['Losses', str(timedelta(seconds=durations['losses']))
-                 if durations['losses'] != 'N/A' else 'N/A']
+                 if durations['losses'] is not None else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )

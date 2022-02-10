@@ -109,7 +109,7 @@ class SellReason(BaseModel):
 
 class Stats(BaseModel):
     sell_reasons: Dict[str, SellReason]
-    durations: Dict[str, Union[str, float]]
+    durations: Dict[str, Optional[float]]
 
 
 class DailyRecord(BaseModel):

@@ -440,9 +440,9 @@ class RPC:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
                 dur[trade_win_loss(trade)].append(trade_dur)
 
-        wins_dur = sum(dur['wins']) / len(dur['wins']) if len(dur['wins']) > 0 else 'N/A'
-        draws_dur = sum(dur['draws']) / len(dur['draws']) if len(dur['draws']) > 0 else 'N/A'
-        losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else 'N/A'
+        wins_dur = sum(dur['wins']) / len(dur['wins']) if len(dur['wins']) > 0 else None
+        draws_dur = sum(dur['draws']) / len(dur['draws']) if len(dur['draws']) > 0 else None
+        losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else None
 
         durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
         return {'sell_reasons': sell_reasons, 'durations': durations}
