@@ -1,6 +1,7 @@
 import subprocess
 import threading
 from user_data.strategies.config import Config
+import time
 
 def execute(mode, coin, brain):
     if Config.IS_PARALLEL_EXECUTION:
@@ -17,6 +18,7 @@ def _perform_back_test(date_time, coin, brain):
     subprocess.call("python3 "+ Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " 0.45 3", shell=True)
 
 def back_test(date_time, coin, brain):
+    time.sleep(Config.BACKTEST_THROTTLE_SECOND)
     if Config.IS_PARALLEL_EXECUTION:
         threading.Thread(target=_perform_back_test, args=(date_time, coin, brain)).start()
     else:
