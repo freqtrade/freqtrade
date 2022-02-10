@@ -45,7 +45,9 @@ class Binance(Exchange):
         :param side: "buy" or "sell"
         """
 
-        return order['type'] == 'stop_loss_limit' and (
+        ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
+
+        return order['type'] == ordertype and (
             (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
             (side == "buy" and stop_loss < float(order['info']['stopPrice']))
         )
@@ -67,7 +69,7 @@ class Binance(Exchange):
         else:
             rate = stop_price * (2 - limit_price_pct)
 
-        ordertype = "stop_loss_limit"
+        ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
 
         stop_price = self.price_to_precision(pair, stop_price)
 
