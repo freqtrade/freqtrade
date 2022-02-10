@@ -151,7 +151,7 @@ class Order(_DECL_BASE):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
                 f'side={self.side}, order_type={self.order_type}, status={self.status})')
 
-    def update_from_ccxt_object(self, order):
+    def update_from_ccxt_object(self, order) -> 'Order':
         """
         Update Order from ccxt response
         Only updates if fields are available from ccxt -
@@ -178,6 +178,7 @@ class Order(_DECL_BASE):
             if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
+        return self
 
     def to_json(self) -> Dict[str, Any]:
         return {
@@ -462,14 +463,14 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Order) -> None:
+    def update_trade(self, order: Order) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
         :return: None
         """
         # Ignore open and cancelled orders
-        if order.status == 'open' or safe_value_fallback(order, 'average', 'price') is None:
+        if order.status == 'open' or order.safe_price is None:
             return
 
         logger.info(f'Updating trade (id={self.id}) ...')
