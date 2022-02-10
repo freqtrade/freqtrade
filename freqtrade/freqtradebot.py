@@ -103,8 +103,8 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
+        self.liquidation_buffer = float(self.config.get('liquidation_buffer', '0.05'))
         self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
-
         self.margin_mode_type: Optional[MarginMode] = None
         if 'margin_mode' in self.config:
             self.margin_mode = MarginMode(self.config['margin_mode'])
@@ -758,6 +758,14 @@ class FreqtradeBot(LoggingMixin):
         funding_fees = self.exchange.get_funding_fees(
             pair=pair, amount=amount, is_short=is_short, open_date=open_date)
         # This is a new trade
+        if isolated_liq:
+            liquidation_buffer = abs(enter_limit_filled_price -
+                                     isolated_liq) * self.liquidation_buffer
+            isolated_liq = (
+                isolated_liq - liquidation_buffer
+                if is_short else
+                isolated_liq + liquidation_buffer
+            )
         if trade is None:
             trade = Trade(
                 pair=pair,

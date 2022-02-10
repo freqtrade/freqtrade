@@ -707,23 +707,27 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
             CandleType.SPOT) in refresh_mock.call_args[0][0]
 
 
-@pytest.mark.parametrize("is_short,trading_mode,exchange_name,margin_mode,liq_price", [
-    (False, 'spot', 'binance', None, None),
-    (True, 'spot', 'binance', None, None),
-    (False, 'spot', 'gateio', None, None),
-    (True, 'spot', 'gateio', None, None),
-    (False, 'spot', 'okx', None, None),
-    (True, 'spot', 'okx', None, None),
-    (True, 'futures', 'binance', 'isolated', 11.89108910891089),
-    (False, 'futures', 'binance', 'isolated', 8.070707070707071),
-    (True, 'futures', 'gateio', 'isolated', 11.87413417771621),
-    (False, 'futures', 'gateio', 'isolated', 8.085708510208207),
-    # (True, 'futures', 'okx', 'isolated', 11.87413417771621),
-    # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
+@pytest.mark.parametrize("is_short,trading_mode,exchange_name,margin_mode,liq_buffer,liq_price", [
+    (False, 'spot', 'binance', None, 0.0, None),
+    (True, 'spot', 'binance', None, 0.0, None),
+    (False, 'spot', 'gateio', None, 0.0, None),
+    (True, 'spot', 'gateio', None, 0.0, None),
+    (False, 'spot', 'okx', None, 0.0, None),
+    (True, 'spot', 'okx', None, 0.0, None),
+    (True, 'futures', 'binance', 'isolated', 0.0, 11.89108910891089),
+    (False, 'futures', 'binance', 'isolated', 0.0, 8.070707070707071),
+    (True, 'futures', 'gateio', 'isolated', 0.0, 11.87413417771621),
+    (False, 'futures', 'gateio', 'isolated', 0.0, 8.085708510208207),
+    (True, 'futures', 'binance', 'isolated', 0.05, 11.796534653465345),
+    (False, 'futures', 'binance', 'isolated', 0.05, 8.167171717171717),
+    (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
+    (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
+    # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
+    # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
-                       exchange_name, margin_mode, liq_price) -> None:
+                       exchange_name, margin_mode, liq_buffer, liq_price) -> None:
     """
     exchange_name = binance, is_short = true
         leverage = 5
@@ -747,6 +751,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
+    default_conf_usdt['liquidation_buffer'] = liq_buffer
     leverage = 1.0 if trading_mode == 'spot' else 5.0
     default_conf_usdt['exchange']['name'] = exchange_name
     if margin_mode:
