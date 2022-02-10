@@ -781,6 +781,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_funding_fees=MagicMock(return_value=0),
         name=exchange_name,
         get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
+        get_max_leverage=MagicMock(return_value=10),
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Okex',
