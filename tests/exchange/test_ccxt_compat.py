@@ -364,17 +364,17 @@ class TestCCXTExchange():
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
 
-    def test_get_liquidation_price_compat():
-        return  # TODO-lev
+    # def test_get_liquidation_price_compat():
+    #     return  # TODO-lev
 
-    def test_liquidation_price_compat():
-        return  # TODO-lev
+    # def test_liquidation_price_compat():
+    #     return  # TODO-lev
 
-    def test_get_max_pair_stake_amount_compat():
-        return  # TODO-lev
+    # def test_get_max_pair_stake_amount_compat():
+    #     return  # TODO-lev
 
-    def test_load_leverage_tiers_compat():
-        return  # TODO-lev
+    # def test_load_leverage_tiers_compat():
+    #     return  # TODO-lev
 
-    def test_get_maintenance_ratio_and_amt_compat():
-        return  # TODO-lev
+    # def test_get_maintenance_ratio_and_amt_compat():
+    #     return  # TODO-lev
