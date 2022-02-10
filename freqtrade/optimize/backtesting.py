@@ -709,7 +709,8 @@ class Backtesting:
         """
         trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
-
+        # Ensure wallets are uptodate (important for --strategy-list)
+        self.wallets.update()
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
         data: Dict = self._get_ohlcv_as_lists(processed)
