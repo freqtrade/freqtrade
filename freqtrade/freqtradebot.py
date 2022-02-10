@@ -16,7 +16,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.enums import RPCMessageType, RunMode, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, PricingError)
+                                  InvalidOrderException, OperationalException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -1358,8 +1358,11 @@ class FreqtradeBot(LoggingMixin):
             return True
 
         order = self.handle_order_fee(trade, order)
-
-        trade.update(order)
+        order_obj = trade.select_order_by_order_id(order['id'])
+        if not order_obj:
+            # TODO: this can't happen!
+            raise OperationalException("order-obj not found!")
+        trade.update(order_obj)
         trade.recalc_trade_from_orders()
         Trade.commit()
 
