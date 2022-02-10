@@ -1931,7 +1931,8 @@ class Exchange:
             # Checks and edge cases
             if stake_amount is None:
                 raise OperationalException(
-                    'binance.get_max_leverage requires argument stake_amount')
+                    f'{self.name}.get_max_leverage requires argument stake_amount'
+                )
 
             if pair not in self._leverage_tiers:
                 tiers = self.get_leverage_tiers_for_pair(pair)
@@ -1943,6 +1944,9 @@ class Exchange:
 
             pair_tiers = self._leverage_tiers[pair]
             num_tiers = len(pair_tiers)
+
+            if num_tiers < 1:
+                return 1.0
 
             for tier_index in range(num_tiers):
 
