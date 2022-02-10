@@ -46,18 +46,16 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
                 'ETH/USDT:USDT': {
                     'taker': 0.0000075,
                     'maker': -0.0000025,
-                    'info': {
-                        'maintenance_rate': '0.005',
-                    },
+                    'maintenanceMarginRate': 0.005,
+                    'info': {},
                     'id': 'ETH_USDT',
                     'symbol': 'ETH/USDT:USDT',
                 },
                 'ADA/USDT:USDT': {
                     'taker': 0.0000075,
                     'maker': -0.0000025,
-                    'info': {
-                        'maintenance_rate': '0.003',
-                    },
+                    'maintenanceMarginRate': 0.003,
+                    'info': {},
                     'id': 'ADA_USDT',
                     'symbol': 'ADA/USDT:USDT',
                 },

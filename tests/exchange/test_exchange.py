@@ -4313,7 +4313,7 @@ def test_get_leverage_tiers_for_pair(mocker, default_conf, leverage_tiers):
     type(api_mock)._ft_has = PropertyMock(return_value={'fetchLeverageTiers': True})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('ADA/USDT') is None
+    assert exchange.get_leverage_tiers_for_pair('ADA/USDT') == []
 
     # 'can_fetch_multiple_tiers': True
     default_conf['trading_mode'] = 'futures'
@@ -4321,19 +4321,19 @@ def test_get_leverage_tiers_for_pair(mocker, default_conf, leverage_tiers):
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._ft_has['can_fetch_multiple_tiers'] = True
-    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') is None
+    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') == []
 
     # 'fetchLeverageTiers': False
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') is None
+    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') == []
 
     # 'fetchLeverageTiers': False
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') is not None
+    assert exchange.get_leverage_tiers_for_pair('ADA/USDT:USDT') != []
 
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
     default_conf['dry_run'] = False

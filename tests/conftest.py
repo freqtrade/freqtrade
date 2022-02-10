@@ -1135,6 +1135,7 @@ def get_markets():
             'taker': 0.0006,
             'maker': 0.0002,
             'contractSize': 10,
+            'maintenanceMarginRate': 0.02,
             'active': True,
             'expiry': None,
             'expiryDatetime': None,

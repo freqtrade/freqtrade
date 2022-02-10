@@ -10,7 +10,7 @@ def test_get_maintenance_ratio_and_amt_okex(
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
-    default_conf['dry_run'] = True
+    default_conf['dry_run'] = False
     api_mock.fetch_leverage_tiers = MagicMock(return_value={
         'SHIB/USDT:USDT': [
             {
