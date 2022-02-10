@@ -4350,10 +4350,47 @@ def test_get_leverage_tiers_for_pair(mocker, default_conf, leverage_tiers):
     )
 
 
-def test_get_maintenance_ratio_and_amt(mocker, default_conf, leverage_tiers):
-    # TODO-lev
+def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage_tiers):
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    assert exchange
+    pair = '1000SHIB/USDT'
+
+    exchange._leverage_tiers = {}
+    exchange.get_leverage_tiers_for_pair = MagicMock(return_value=[])
+
+    with pytest.raises(
+        InvalidOrderException,
+        match=f"Cannot calculate liquidation price for {pair}",
+    ):
+        exchange.get_maintenance_ratio_and_amt(pair, 10000)
+
+    exchange._leverage_tiers = leverage_tiers
+    with pytest.raises(
+        OperationalException,
+        match='nominal value can not be lower than 0',
+    ):
+        exchange.get_maintenance_ratio_and_amt(pair, -1)
+
+
+@pytest.mark.parametrize('pair,value,mmr,maintAmt', [
+    ('ADA/BUSD', 500, 0.025, 0.0),
+    ('ADA/BUSD', 20000000, 0.5, 1527500.0),
+    ('ZEC/USDT', 500, 0.01, 0.0),
+    ('ZEC/USDT', 20000000, 0.5, 654500.0),
+])
+def test_get_maintenance_ratio_and_amt(
+    mocker,
+    default_conf,
+    leverage_tiers,
+    pair,
+    value,
+    mmr,
+    maintAmt
+):
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)

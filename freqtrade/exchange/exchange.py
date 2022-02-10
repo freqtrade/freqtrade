@@ -2272,7 +2272,7 @@ class Exchange:
     def get_maintenance_ratio_and_amt(
         self,
         pair: str,
-        nominal_value: Optional[float] = 0.0,
+        nominal_value: float = 0.0,
     ) -> Tuple[float, Optional[float]]:
         """
         :param pair: Market symbol
@@ -2280,10 +2280,6 @@ class Exchange:
         maintenance amount only on Binance
         :return: (maintenance margin ratio, maintenance amount)
         """
-        if nominal_value is None:
-            raise OperationalException(
-                f"nominal value is required for {self.name}.get_maintenance_ratio_and_amt"
-            )
 
         if self._api.has['fetchLeverageTiers']:
             if pair not in self._leverage_tiers:
