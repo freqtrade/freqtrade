@@ -227,7 +227,8 @@ def test_edge_overrides_stoploss(limit_buy_order_usdt, fee, caplog, mocker,
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.enter_positions()
     trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     #############################################
 
     # stoploss shoud be hit
@@ -292,7 +293,8 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_buy_order_usdt, fee,
     assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
 
     assert trade.open_rate == 2.0
     assert trade.amount == 30.0
@@ -1803,7 +1805,8 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
@@ -1812,7 +1815,9 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade.open_order_id == limit_sell_order_usdt['id']
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(
+        limit_sell_order_usdt, limit_sell_order_usdt['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     assert trade.close_rate == 2.2
     assert trade.close_profit == 0.09451372
@@ -1962,8 +1967,11 @@ def test_close_trade(default_conf_usdt, ticker_usdt, limit_buy_order_usdt,
     trade = Trade.query.first()
     assert trade
 
-    trade.update(limit_buy_order_usdt)
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
+    oobj = Order.parse_from_ccxt_object(
+        limit_sell_order_usdt, limit_sell_order_usdt['symbol'], 'sell')
+    trade.update_trade(oobj)
     assert trade.is_open is False
 
     with pytest.raises(DependencyException, match=r'.*closed trade.*'):
@@ -3103,7 +3111,8 @@ def test_sell_profit_only(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade) is handle_first
@@ -3139,7 +3148,9 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_buy_order_usdt, limit_
 
     trade = Trade.query.first()
     amnt = trade.amount
-    trade.update(limit_buy_order_usdt)
+
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     patch_get_signal(freqtrade, value=(False, True, None, None))
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=trade.amount * 0.985))
 
@@ -3247,7 +3258,8 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(True, True, None, None))
     assert freqtrade.handle_trade(trade) is False
@@ -3437,7 +3449,8 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usd
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     # Sell due to min_roi_reached
     patch_get_signal(freqtrade, value=(True, False, None, None))
     assert freqtrade.handle_trade(trade) is True
@@ -3812,7 +3825,8 @@ def test_order_book_depth_of_market(
         assert len(Trade.query.all()) == 1
 
         # Simulate fulfilled LIMIT_BUY order for trade
-        trade.update(limit_buy_order_usdt)
+        oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+        trade.update_trade(oobj)
 
         assert trade.open_rate == 2.0
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
@@ -3906,7 +3920,8 @@ def test_order_book_ask_strategy(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     assert trade.is_open is True
 
