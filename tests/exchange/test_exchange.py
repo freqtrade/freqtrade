@@ -3569,11 +3569,6 @@ def test_get_max_leverage_from_markets(default_conf, mocker, pair, nominal_value
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 
-def test_get_max_leverage_from_tiers(default_conf, mocker):
-    # TODO-lev:
-    return
-
-
 @pytest.mark.parametrize(
     'size,funding_rate,mark_price,time_in_ratio,funding_fee,kraken_fee', [
         (10, 0.0001, 2.0, 1.0, 0.002, 0.002),

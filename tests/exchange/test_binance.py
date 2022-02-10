@@ -192,7 +192,7 @@ def test_get_max_leverage_binance(default_conf, mocker, leverage_tiers):
     assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
     assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
 
-    assert exchange.get_max_leverage("ETC/USDT", 200) == 1.0    # Pair not in leverage_tiers
+    assert exchange.get_max_leverage("SPONGE/USDT", 200) == 1.0    # Pair not in leverage_tiers
     assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
     with pytest.raises(
         InvalidOrderException,
