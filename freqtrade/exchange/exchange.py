@@ -1899,22 +1899,22 @@ class Exchange:
         # When exchanges can load all their leverage tiers at once in the constructor
         # then this method does nothing, it should only be implemented when the leverage
         # tiers requires per symbol fetching to avoid excess api calls
-        if (
-            self._api.has['fetchLeverageTiers'] and
-            not self._ft_has['can_fetch_multiple_tiers'] and
-            self.trading_mode == TradingMode.FUTURES
-        ):
+        if pair not in self._leverage_tiers:
             self._leverage_tiers[pair] = []
-            try:
-                tiers = self._api.fetch_leverage_tiers(pair)
-                for tier in tiers[pair]:
-                    self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
+            if (
+                self._api.has['fetchLeverageTiers'] and
+                not self._ft_has['can_fetch_multiple_tiers'] and
+                self.trading_mode == TradingMode.FUTURES
+            ):
+                try:
+                    tiers = self._api.fetch_leverage_tiers(pair)
+                    for tier in tiers[pair]:
+                        self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
 
-                return tiers
-            except ccxt.BadRequest:
-                return []
-        else:
-            return []
+                except ccxt.BadRequest:
+                    return []
+
+        return self._leverage_tiers[pair]
 
     def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
         """
@@ -1934,10 +1934,7 @@ class Exchange:
                     f'{self.name}.get_max_leverage requires argument stake_amount'
                 )
 
-            if pair not in self._leverage_tiers:
-                self.get_leverage_tiers_for_pair(pair)
-
-            pair_tiers = self._leverage_tiers[pair]
+            pair_tiers = self.get_leverage_tiers_for_pair(pair)
             num_tiers = len(pair_tiers)
             if num_tiers < 1:
                 return 1.0
@@ -2282,23 +2279,30 @@ class Exchange:
         """
 
         if self._api.has['fetchLeverageTiers']:
-            if pair not in self._leverage_tiers:
-                # Used when fetchLeverageTiers cannot fetch all symbols at once
-                tiers = self.get_leverage_tiers_for_pair(pair)
-                if not bool(tiers):
-                    raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
-            pair_tiers = self._leverage_tiers[pair]
+
+            pair_tiers = self.get_leverage_tiers_for_pair(pair)
+
+            if len(pair_tiers) < 1:
+                raise InvalidOrderException(
+                    f"Maintenance margin rate for {pair} is unavailable for {self.name}"
+                )
+
             for tier in reversed(pair_tiers):
                 if nominal_value >= tier['min']:
                     return (tier['mmr'], tier['maintAmt'])
+
             raise OperationalException("nominal value can not be lower than 0")
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
             # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
+            if pair not in self.markets:
+                raise InvalidOrderException(
+                    f"{pair} is not tradeable on {self.name} {self.trading_mode.value}"
+                )
             mmr = self.markets[pair]['maintenanceMarginRate']
             if mmr is None:
-                raise OperationalException(
-                    f"Maintenance margin rate is unavailable for {self.name}"
+                raise InvalidOrderException(
+                    f"Maintenance margin rate for {pair} is unavailable for {self.name}"
                 )
             return (mmr, None)
 

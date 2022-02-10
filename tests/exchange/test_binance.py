@@ -403,7 +403,6 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 }
             }
         ],
-
     })
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import InvalidOrderException, OperationalException
 from freqtrade.exchange import Gateio
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_patched_exchange
@@ -31,12 +31,10 @@ def test_validate_order_types_gateio(default_conf, mocker):
         ExchangeResolver.load_exchange('gateio', default_conf, True)
 
 
-@pytest.mark.parametrize('pair,mm_ratio', [
-    ("ETH/USDT:USDT", 0.005),
-    ("ADA/USDT:USDT", 0.003),
-])
-def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_ratio):
+def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker):
     api_mock = MagicMock()
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
     mocker.patch(
@@ -59,7 +57,29 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
                     'id': 'ADA_USDT',
                     'symbol': 'ADA/USDT:USDT',
                 },
+                'DOGE/USDT:USDT': {
+                    'taker': 0.0000075,
+                    'maker': -0.0000025,
+                    'maintenanceMarginRate': None,
+                    'info': {},
+                    'id': 'ADA_USDT',
+                    'symbol': 'ADA/USDT:USDT',
+                },
             }
         )
     )
-    assert exchange.get_maintenance_ratio_and_amt(pair) == (mm_ratio, None)
+
+    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT") == (0.005, None)
+    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT") == (0.003, None)
+
+    with pytest.raises(
+        InvalidOrderException,
+        match="Maintenance margin rate for DOGE/USDT:USDT is unavailable for Gateio",
+    ):
+        exchange.get_maintenance_ratio_and_amt('DOGE/USDT:USDT')
+
+    with pytest.raises(
+        InvalidOrderException,
+        match="SHIB/USDT:USDT is not tradeable on Gateio futures",
+    ):
+        exchange.get_maintenance_ratio_and_amt('SHIB/USDT:USDT')
