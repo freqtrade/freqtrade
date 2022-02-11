@@ -26,6 +26,7 @@ def mock_order_1(is_short: bool):
         'side': enter_side(is_short),
         'type': 'limit',
         'price': 0.123,
+        'average': 0.123,
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,

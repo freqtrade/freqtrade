@@ -712,14 +712,14 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (True, 'spot', 'binance', None, None),
     (False, 'spot', 'gateio', None, None),
     (True, 'spot', 'gateio', None, None),
-    (False, 'spot', 'okex', None, None),
-    (True, 'spot', 'okex', None, None),
+    (False, 'spot', 'okx', None, None),
+    (True, 'spot', 'okx', None, None),
     (True, 'futures', 'binance', 'isolated', 11.89108910891089),
     (False, 'futures', 'binance', 'isolated', 8.070707070707071),
     (True, 'futures', 'gateio', 'isolated', 11.87413417771621),
     (False, 'futures', 'gateio', 'isolated', 8.085708510208207),
-    # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
-    # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+    # (True, 'futures', 'okx', 'isolated', 11.87413417771621),
+    # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
@@ -735,11 +735,11 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
         ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
 
-    exchange_name = gateio/okex, is_short = true
+    exchange_name = gateio/okx, is_short = true
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
 
-    exchange_name = gateio/okex, is_short = false
+    exchange_name = gateio/okx, is_short = false
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
@@ -791,7 +791,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     call_args = enter_mm.call_args_list[0][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
-    assert pytest.approx(call_args['amount'], round(stake_amount / bid * leverage, 8))
+    assert pytest.approx(call_args['amount']) == round(stake_amount / bid * leverage, 8)
     enter_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
@@ -813,7 +813,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     call_args = enter_mm.call_args_list[1][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
-    assert pytest.approx(call_args['amount'], round(stake_amount / fix_price * leverage, 8))
+    assert pytest.approx(call_args['amount']) == round(stake_amount / fix_price * leverage, 8)
 
     # In case of closed order
     order['status'] = 'closed'
@@ -2268,6 +2268,7 @@ def test_check_handle_timedout_buy_usercustom(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
     open_trade.is_short = is_short
+    open_trade.orders[0].side = 'sell' if is_short else 'buy'
     Trade.query.session.add(open_trade)
 
     # Ensure default is to return empty (so not mocked yet)
@@ -2323,6 +2324,7 @@ def test_check_handle_timedout_buy(
 ) -> None:
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     rpc_mock = patch_RPCManager(mocker)
+    old_order['id'] = open_trade.open_order_id
     limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
@@ -2425,6 +2427,8 @@ def test_check_handle_timedout_sell_usercustom(
     is_short, open_trade_usdt, caplog
 ) -> None:
     default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
+    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2473,7 +2477,7 @@ def test_check_handle_timedout_sell_usercustom(
 
     # 2nd canceled trade - Fail execute sell
     caplog.clear()
-    open_trade_usdt.open_order_id = 'order_id_2'
+    open_trade_usdt.open_order_id = limit_sell_order_old['id']
     mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit',
                  side_effect=DependencyException)
@@ -2484,7 +2488,7 @@ def test_check_handle_timedout_sell_usercustom(
     caplog.clear()
 
     # 2nd canceled trade ...
-    open_trade_usdt.open_order_id = 'order_id_2'
+    open_trade_usdt.open_order_id = limit_sell_order_old['id']
     freqtrade.check_handle_timedout()
     assert log_has_re('Emergencyselling trade.*', caplog)
     assert et_mock.call_count == 1
@@ -2497,6 +2501,7 @@ def test_check_handle_timedout_sell(
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
+    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2561,6 +2566,7 @@ def test_check_handle_timedout_partial(
     open_trade, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    limit_buy_order_old_partial['id'] = open_trade.open_order_id
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
     limit_buy_canceled['status'] = 'canceled'
 
@@ -2594,6 +2600,7 @@ def test_check_handle_timedout_partial_fee(
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    limit_buy_order_old_partial['id'] = open_trade.open_order_id
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=0))
     patch_exchange(mocker)
@@ -2636,6 +2643,8 @@ def test_check_handle_timedout_partial_except(
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial['id'] = open_trade.open_order_id
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -4805,8 +4814,8 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
         (True, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
         (False, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
         (True, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
-        (False, 'spot', 'okex', '', 5.0,  10.0, 1.0, None),
-        (True, 'spot', 'okex', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
         # Binance, short
         (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 1.0, 11.89108910891089),
         (True, 'futures', 'binance', 'isolated', 3.0, 10.0, 1.0, 13.211221122079207),
@@ -4817,16 +4826,16 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
         (False, 'futures', 'binance', 'isolated', 5, 8, 1.0, 6.454545454545454),
         (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.717171717171718),
         (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 7.39057239057239),
-        # Gateio/okex, short
+        # Gateio/okx, short
         (True, 'futures', 'gateio', 'isolated', 5, 10, 1.0, 11.87413417771621),
         (True, 'futures', 'gateio', 'isolated', 5, 10, 2.0, 11.87413417771621),
         (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.476180850346978),
         (True, 'futures', 'gateio', 'isolated', 5, 8, 1.0, 9.499307342172967),
-        # Gateio/okex, long
+        # Gateio/okx, long
         (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
         (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
-        # (True, 'futures', 'okex', 'isolated', 11.87413417771621),
-        # (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+        # (True, 'futures', 'okx', 'isolated', 11.87413417771621),
+        # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
     ]
 )
 def test_leverage_prep(
@@ -4871,7 +4880,7 @@ def test_leverage_prep(
     leverage = 5, open_rate = 10, amount = 0.6
         ((1.6 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 7.39057239057239
 
-    Gateio/Okex, Short
+    Gateio/Okx, Short
     leverage = 5, open_rate = 10, amount = 1.0
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
@@ -4882,7 +4891,7 @@ def test_leverage_prep(
     leverage = 5, open_rate = 8, amount = 1.0
         (8 + (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 9.499307342172967
 
-    Gateio/Okex, Long
+    Gateio/Okx, Long
     leverage = 5, open_rate = 10, amount = 1.0
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207

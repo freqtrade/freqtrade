@@ -84,7 +84,7 @@ EXCHANGES = {
             'futures': True,
         }
     },
-    'okex': {
+    'okx': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,

@@ -86,6 +86,7 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SharpeHyperOptLossDaily",
     "MaxDrawDownHyperOptLoss",
     "CalmarHyperOptLoss",
+    "ProfitDrawDownHyperOptLoss",
 
 ])
 def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunction) -> None:
@@ -106,7 +107,7 @@ def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunct
         config=default_conf,
         processed=None,
         backtest_stats={'profit_total': hyperopt_results['profit_abs'].sum()}
-        )
+    )
     over = hl.hyperopt_loss_function(
         results_over,
         trade_count=len(results_over),

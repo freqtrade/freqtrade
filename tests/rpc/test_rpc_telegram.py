@@ -24,6 +24,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import Order
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
@@ -102,7 +103,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
                    "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
-                   "['logs'], ['edge'], ['help'], ['version']"
+                   "['logs'], ['edge'], ['health'], ['help'], ['version']"
                    "]")
 
     assert log_has(message_str, caplog)
@@ -206,7 +207,8 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'stop_loss_ratio': -0.0001,
             'open_order': '(limit buy rem=0.00000000)',
             'is_open': True,
-            'is_short': False
+            'is_short': False,
+            'filled_entry_orders': [],
         }]),
     )
 
@@ -220,6 +222,80 @@ def test_telegram_status(default_conf, update, mocker) -> None:
     context.args = ["table"]
     telegram._status(update=update, context=context)
     assert status_table.call_count == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
+    update.message.chat.id = "123"
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = "123"
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_open_trades()
+    trade = trades[0]
+    trade.orders.append(Order(
+        order_id='5412vbb',
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=trade.open_rate * 0.95,
+        average=trade.open_rate * 0.95,
+        filled=trade.amount,
+        remaining=0,
+        cost=trade.amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    )
+    trade.recalc_trade_from_orders()
+    Trade.commit()
+
+    telegram._status(update=update, context=MagicMock())
+    assert msg_mock.call_count == 4
+    msg = msg_mock.call_args_list[0][0][0]
+    assert re.search(r'Number of Entries.*2', msg)
+    assert re.search(r'Average Entry Price', msg)
+    assert re.search(r'Order filled at', msg)
+    assert re.search(r'Close Date:', msg) is None
+    assert re.search(r'Close Profit:', msg) is None
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -> None:
+    update.message.chat.id = "123"
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = "123"
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades([Trade.is_open.is_(False)])
+    trade = trades[0]
+    context = MagicMock()
+    context.args = [str(trade.id)]
+    telegram._status(update=update, context=context)
+    assert msg_mock.call_count == 1
+    msg = msg_mock.call_args_list[0][0][0]
+    assert re.search(r'Close Date:', msg)
+    assert re.search(r'Close Profit:', msg)
 
 
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:

@@ -365,6 +365,8 @@ def test_hyperopt_format_results(hyperopt):
         'locks': [],
         'final_balance': 0.02,
         'rejected_signals': 2,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'backtest_start_time': 1619718665,
         'backtest_end_time': 1619718665,
     }
@@ -433,6 +435,8 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'config': hyperopt_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     }
 

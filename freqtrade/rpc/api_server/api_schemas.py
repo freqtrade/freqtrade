@@ -110,7 +110,7 @@ class SellReason(BaseModel):
 
 class Stats(BaseModel):
     sell_reasons: Dict[str, SellReason]
-    durations: Dict[str, Union[str, float]]
+    durations: Dict[str, Optional[float]]
 
 
 class DailyRecord(BaseModel):
@@ -399,3 +399,8 @@ class BacktestResponse(BaseModel):
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float
+
+
+class Health(BaseModel):
+    last_process: datetime
+    last_process_ts: int

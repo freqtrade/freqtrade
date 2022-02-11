@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, C0330, unused-argument
 import logging
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -534,11 +535,84 @@ tc33 = BTContainer(data=[
     )]
 )
 
-# Test 34: (copy of test25 with leverage)
+# Test 34: Custom-entry-price below all candles should timeout - so no trade happens.
+tc34 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    custom_entry_price=4200, trades=[]
+)
+
+# Test 35: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
+tc35 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01,
+    custom_entry_price=7200, trades=[
+        BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)
+    ]
+)
+
+# Test 36: Custom-entry-price around candle low
+# Causes immediate ROI exit. This is currently expected behavior (#6261)
+# https://github.com/freqtrade/freqtrade/issues/6261
+# But may change at a later point.
+tc36 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Enter and immediate ROI
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.1,
+    custom_entry_price=4952,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
+)
+
+
+# Test 37: Custom exit price below all candles
+# Price adjusted to candle Low.
+tc37 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01,
+    use_sell_signal=True,
+    custom_exit_price=4552,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=3)]
+)
+
+# Test 38: Custom exit price above all candles
+# causes sell signal timeout
+tc38 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    use_sell_signal=True,
+    custom_exit_price=6052,
+    trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
+)
+
+# Test 39: (copy of test25 with leverage)
 # Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
-tc34 = BTContainer(data=[
+tc39 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -550,6 +624,7 @@ tc34 = BTContainer(data=[
     leverage=5.0,
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
+
 
 TESTS = [
     tc0,
@@ -587,6 +662,11 @@ TESTS = [
     tc32,
     tc33,
     tc34,
+    tc35,
+    tc36,
+    tc37,
+    tc38,
+    tc39,
     # TODO-lev: Add tests for short here
 ]
 
@@ -621,6 +701,10 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
         backtesting._can_short = True
     backtesting.strategy.advise_entry = lambda a, m: frame
     backtesting.strategy.advise_exit = lambda a, m: frame
+    if data.custom_entry_price:
+        backtesting.strategy.custom_entry_price = MagicMock(return_value=data.custom_entry_price)
+    if data.custom_exit_price:
+        backtesting.strategy.custom_exit_price = MagicMock(return_value=data.custom_exit_price)
     backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     backtesting.strategy.leverage = lambda **kwargs: data.leverage
     caplog.set_level(logging.DEBUG)

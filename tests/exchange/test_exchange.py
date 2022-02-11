@@ -3202,9 +3202,9 @@ def test_timeframe_to_next_date():
         ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'margin', {}, False),
         ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
 
-        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'spot', {}, False),
-        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'margin', {}, False),
-        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'futures', {}, True),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'spot', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'margin', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okx", False, False, True, 'futures', {}, True),
     ])
 def test_market_is_tradable(
         mocker, default_conf, market_symbol, base,
@@ -3479,16 +3479,16 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("bittrex", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("bittrex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("gateio", TradingMode.MARGIN, MarginMode.ISOLATED, True),
-    ("okex", TradingMode.SPOT, None, False),
-    ("okex", TradingMode.MARGIN, MarginMode.CROSS, True),
-    ("okex", TradingMode.MARGIN, MarginMode.ISOLATED, True),
-    ("okex", TradingMode.FUTURES, MarginMode.CROSS, True),
+    ("okx", TradingMode.SPOT, None, False),
+    ("okx", TradingMode.MARGIN, MarginMode.CROSS, True),
+    ("okx", TradingMode.MARGIN, MarginMode.ISOLATED, True),
+    ("okx", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
-    ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, True),
+    ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("binance", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
@@ -3499,7 +3499,7 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("gateio", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     # * Uncomment once implemented
-    # ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    # ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     # ("binance", TradingMode.MARGIN, MarginMode.CROSS, False),
     # ("binance", TradingMode.FUTURES, MarginMode.CROSS, False),
     # ("kraken", TradingMode.MARGIN, MarginMode.CROSS, False),
@@ -3539,7 +3539,7 @@ def test_validate_trading_mode_and_margin_mode(
     ("hitbtc", "futures", {"options": {"defaultType": "swap"}}),
     ("kraken", "futures", {"options": {"defaultType": "swap"}}),
     ("kucoin", "futures", {"options": {"defaultType": "swap"}}),
-    ("okex", "futures", {"options": {"defaultType": "swap"}}),
+    ("okx", "futures", {"options": {"defaultType": "swap"}}),
 ])
 def test__ccxt_config(
     default_conf,

@@ -123,6 +123,7 @@ class FreqtradeBot(LoggingMixin):
                 for minutes in [0, 15, 30, 45]:
                     t = str(time(time_slot, minutes, 2))
                     self._schedule.every().day.at(t).do(update)
+        self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
     def notify_status(self, msg: str) -> None:
         """
@@ -212,6 +213,7 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.FUTURES:
             self._schedule.run_pending()
         Trade.commit()
+        self.last_process = datetime.now(timezone.utc)
 
     def process_stopped(self) -> None:
         """
@@ -1187,8 +1189,9 @@ class FreqtradeBot(LoggingMixin):
             time_method = 'sell' if order['side'] == 'sell' else 'buy'
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
-            if not_closed and (fully_cancelled or self.strategy.ft_check_timed_out(
-                time_method, trade, order, datetime.now(timezone.utc))
+            order_obj = trade.select_order_by_order_id(trade.open_order_id)
+            if not_closed and (fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
+                time_method, trade, order_obj, datetime.now(timezone.utc)))
             ):
                 if is_entering:
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
