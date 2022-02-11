@@ -3669,10 +3669,10 @@ def test_get_liquidation_price(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price(
         pair='NEAR/USDT:USDT',
-        open_rate=0.0,
+        open_rate=18.884,
         is_short=False,
-        position=0.0,
-        wallet_balance=0.0,
+        position=0.8,
+        wallet_balance=0.8,
     )
     assert liq_price == 17.47
 
@@ -3680,12 +3680,12 @@ def test_get_liquidation_price(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price(
         pair='NEAR/USDT:USDT',
-        open_rate=0.0,
+        open_rate=18.884,
         is_short=False,
-        position=0.0,
-        wallet_balance=0.0,
+        position=0.8,
+        wallet_balance=0.8,
     )
-    assert liq_price == 18.8133
+    assert liq_price == 17.540699999999998
 
     ccxt_exceptionhandlers(
         mocker,
