@@ -156,6 +156,7 @@ CONF_SCHEMA = {
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
+        'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
             'items': {'type': 'string', 'enum': BACKTEST_BREAKDOWNS}

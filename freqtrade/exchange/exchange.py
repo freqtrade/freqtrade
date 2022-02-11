@@ -135,13 +135,14 @@ class Exchange:
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
+        # Leverage properties
         self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
-
         self.margin_mode: Optional[MarginMode] = (
             MarginMode(config.get('margin_mode'))
             if config.get('margin_mode')
             else None
         )
+        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -2062,7 +2063,7 @@ class Exchange:
 
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
-            return self.dry_run_liquidation_price(
+            isolated_liq = self.dry_run_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
@@ -2071,21 +2072,32 @@ class Exchange:
                 mm_ex_1=mm_ex_1,
                 upnl_ex_1=upnl_ex_1
             )
+        else:
+            try:
+                positions = self._api.fetch_positions([pair])
+                if len(positions) > 0:
+                    pos = positions[0]
+                    isolated_liq = pos['liquidationPrice']
+                else:
+                    return None
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
 
-        try:
-            positions = self._api.fetch_positions([pair])
-            if len(positions) > 0:
-                pos = positions[0]
-                return pos['liquidationPrice']
-            else:
-                return None
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+        if isolated_liq:
+            buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
+            isolated_liq = (
+                isolated_liq - buffer_amount
+                if is_short else
+                isolated_liq + buffer_amount
+            )
+            return isolated_liq
+        else:
+            return None
 
     def get_maintenance_ratio_and_amt(
         self,
