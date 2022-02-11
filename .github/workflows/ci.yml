@@ -5,6 +5,7 @@ on:
     branches:
       - stable
       - develop
+      - feat/short
       - ci/*
     tags:
   release:
