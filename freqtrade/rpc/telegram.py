@@ -914,10 +914,11 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     def _forcebuy_action(self, pair, price=None):
-        try:
-            self._rpc._rpc_forcebuy(pair, price)
-        except RPCException as e:
-            self._send_msg(str(e))
+        if pair != 'cancel':
+            try:
+                self._rpc._rpc_forcebuy(pair, price)
+            except RPCException as e:
+                self._send_msg(str(e))
 
     def _forcebuy_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
@@ -947,10 +948,13 @@ class Telegram(RPCHandler):
             self._forcebuy_action(pair, price)
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
-            pairs = [InlineKeyboardButton(text=pair, callback_data=pair) for pair in whitelist]
+            pair_buttons = [
+                InlineKeyboardButton(text=pair, callback_data=pair) for pair in sorted(whitelist)]
+            buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which pair?",
-                           keyboard=self._layout_inline_keyboard(pairs))
+                           keyboard=buttons_aligned)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:

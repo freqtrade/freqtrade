@@ -1260,7 +1260,8 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     assert msg_mock.call_args_list[0][1]['msg'] == 'Which pair?'
     # assert msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
     keyboard = msg_mock.call_args_list[0][1]['keyboard']
-    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
+    # One additional button - cancel
+    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = 'XRP/USDT'
