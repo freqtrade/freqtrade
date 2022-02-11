@@ -3664,6 +3664,7 @@ def test_get_liquidation_price(mocker, default_conf):
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
+    default_conf['liquidation_buffer'] = 0.0
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price(
@@ -3674,6 +3675,17 @@ def test_get_liquidation_price(mocker, default_conf):
         wallet_balance=0.0,
     )
     assert liq_price == 17.47
+
+    default_conf['liquidation_buffer'] = 0.05
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=0.0,
+        is_short=False,
+        position=0.0,
+        wallet_balance=0.0,
+    )
+    assert liq_price == 18.8133
 
     ccxt_exceptionhandlers(
         mocker,
@@ -4073,6 +4085,7 @@ def test_liquidation_price(
 ):
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
+    default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
     assert isclose(round(exchange.get_liquidation_price(

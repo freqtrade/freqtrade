@@ -2072,21 +2072,21 @@ class Exchange:
                 mm_ex_1=mm_ex_1,
                 upnl_ex_1=upnl_ex_1
             )
-
-        try:
-            positions = self._api.fetch_positions([pair])
-            if len(positions) > 0:
-                pos = positions[0]
-                isolated_liq = pos['liquidationPrice']
-            else:
-                return None
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+        else:
+            try:
+                positions = self._api.fetch_positions([pair])
+                if len(positions) > 0:
+                    pos = positions[0]
+                    isolated_liq = pos['liquidationPrice']
+                else:
+                    return None
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer

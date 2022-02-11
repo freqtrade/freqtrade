@@ -4813,6 +4813,7 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     assert valid_price_at_min_alwd < proposed_price
 
 
+@pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
 @pytest.mark.parametrize(
     "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
         (False, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
@@ -4854,6 +4855,7 @@ def test_leverage_prep(
     open_rate,
     amount,
     expected_liq,
+    liquidation_buffer,
 ):
     """
     position = 0.2 * 5
@@ -4907,6 +4909,7 @@ def test_leverage_prep(
     leverage = 5, open_rate = 8, amount = 1.0
         (8 - (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 6.332871561448645
     """
+    default_conf_usdt['liquidation_buffer'] = liquidation_buffer
     default_conf_usdt['trading_mode'] = trading_mode
     default_conf_usdt['exchange']['name'] = exchange_name
     default_conf_usdt['margin_mode'] = margin_mode
@@ -4931,6 +4934,8 @@ def test_leverage_prep(
     if expected_liq is None:
         assert liq is None
     else:
+        buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
+        expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
         isclose(expected_liq, liq)
 
 
