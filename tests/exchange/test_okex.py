@@ -162,5 +162,4 @@ def test_get_max_pair_stake_amount_okex(default_conf, mocker, leverage_tiers):
     assert exchange.get_max_pair_stake_amount('BTC/USDT', 1.0) == 1000000000
     assert exchange.get_max_pair_stake_amount('BTC/USDT', 1.0, 10.0) == 100000000
 
-    exchange.get_leverage_tiers_for_pair = MagicMock(return_value=None)
     assert exchange.get_max_pair_stake_amount('TTT/USDT', 1.0) == float('inf')  # Not in tiers

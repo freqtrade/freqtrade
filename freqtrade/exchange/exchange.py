@@ -1894,28 +1894,6 @@ class Exchange:
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }
 
-    @retrier
-    def get_leverage_tiers_for_pair(self, pair: str) -> List:
-        # When exchanges can load all their leverage tiers at once in the constructor
-        # then this method does nothing, it should only be implemented when the leverage
-        # tiers requires per symbol fetching to avoid excess api calls
-        if pair not in self._leverage_tiers:
-            self._leverage_tiers[pair] = []
-            if (
-                self._api.has['fetchLeverageTiers'] and
-                not self._ft_has['can_fetch_multiple_tiers'] and
-                self.trading_mode == TradingMode.FUTURES
-            ):
-                try:
-                    tiers = self._api.fetch_leverage_tiers(pair)
-                    for tier in tiers[pair]:
-                        self._leverage_tiers[pair].append(self.parse_leverage_tier(tier))
-
-                except ccxt.BadRequest:
-                    return []
-
-        return self._leverage_tiers[pair]
-
     def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
@@ -1926,7 +1904,7 @@ class Exchange:
         if self.trading_mode == TradingMode.SPOT:
             return 1.0
 
-        if self._api.has['fetchLeverageTiers']:
+        if self.trading_mode == TradingMode.FUTURES:
 
             # Checks and edge cases
             if stake_amount is None:
@@ -1934,20 +1912,21 @@ class Exchange:
                     f'{self.name}.get_max_leverage requires argument stake_amount'
                 )
 
-            pair_tiers = self.get_leverage_tiers_for_pair(pair)
-            num_tiers = len(pair_tiers)
-            if num_tiers < 1:
+            if pair not in self._leverage_tiers:
+                # Maybe raise exception because it can't be traded on futures?
                 return 1.0
+
+            pair_tiers = self._leverage_tiers[pair]
 
             if stake_amount == 0:
                 return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
 
-            for tier_index in range(num_tiers):
+            for tier_index in range(len(pair_tiers)):
 
                 tier = pair_tiers[tier_index]
                 lev = tier['lev']
 
-                if tier_index < num_tiers - 1:
+                if tier_index < len(pair_tiers) - 1:
                     next_tier = pair_tiers[tier_index+1]
                     next_floor = next_tier['min'] / next_tier['lev']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
@@ -2280,12 +2259,12 @@ class Exchange:
 
         if self._api.has['fetchLeverageTiers']:
 
-            pair_tiers = self.get_leverage_tiers_for_pair(pair)
-
-            if len(pair_tiers) < 1:
+            if pair not in self._leverage_tiers:
                 raise InvalidOrderException(
                     f"Maintenance margin rate for {pair} is unavailable for {self.name}"
                 )
+
+            pair_tiers = self._leverage_tiers[pair]
 
             for tier in reversed(pair_tiers):
                 if nominal_value >= tier['min']:

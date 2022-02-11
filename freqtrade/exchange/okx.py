@@ -59,14 +59,25 @@ class Okx(Exchange):
             return float('inf')  # Not actually inf, but this probably won't matter for SPOT
 
         if pair not in self._leverage_tiers:
-            tiers = self.get_leverage_tiers_for_pair(pair)
-            if not tiers:  # Not a leveraged market
-                return float('inf')
-            else:
-                self._leverage_tiers[pair] = tiers
+            return float('inf')
 
         pair_tiers = self._leverage_tiers[pair]
         return pair_tiers[-1]['max'] / leverage
 
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
-        return {}
+        if self.trading_mode == TradingMode.FUTURES:
+            markets = self.markets
+            symbols = []
+
+            for symbol, market in markets.items():
+                if (market["swap"] and market["linear"]):
+                    symbols.append(market["symbol"])
+
+            tiers = {}
+            for symbol in symbols:
+                res = self._api.fetchLeverageTiers(symbol)
+                tiers[symbol] = res[symbol]
+
+            return tiers
+        else:
+            return {}

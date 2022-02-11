@@ -4300,115 +4300,6 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
 
-def test_get_leverage_tiers_for_pair(
-    mocker,
-    default_conf,
-    leverage_tiers,
-):
-
-    api_mock = MagicMock()
-    api_mock.fetch_leverage_tiers = MagicMock(return_value={
-        'DOGE/USDT:USDT': [
-            {
-                'tier': 1,
-                'notionalFloor': 0,
-                'notionalCap': 500,
-                'maintenanceMarginRatio': 0.02,
-                'maxLeverage': 75,
-                'info': {
-                    'baseMaxLoan': '',
-                    'imr': '0.013',
-                    'instId': '',
-                    'maxLever': '75',
-                    'maxSz': '500',
-                    'minSz': '0',
-                    'mmr': '0.01',
-                    'optMgnFactor': '0',
-                    'quoteMaxLoan': '',
-                    'tier': '1',
-                    'uly': 'DOGE-USDT'
-                }
-            },
-            {
-                'tier': 2,
-                'notionalFloor': 501,
-                'notionalCap': 1000,
-                'maintenanceMarginRatio': 0.025,
-                'maxLeverage': 50,
-                'info': {
-                    'baseMaxLoan': '',
-                    'imr': '0.02',
-                    'instId': '',
-                    'maxLever': '50',
-                    'maxSz': '1000',
-                    'minSz': '501',
-                    'mmr': '0.015',
-                    'optMgnFactor': '0',
-                    'quoteMaxLoan': '',
-                    'tier': '2',
-                    'uly': 'DOGE-USDT'
-                }
-            }
-        ],
-    })
-
-    # Spot
-    type(api_mock)._ft_has = PropertyMock(return_value={'fetchLeverageTiers': True})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('DOGE/USDT:USDT') == []
-
-    # 'can_fetch_multiple_tiers': True
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._ft_has['can_fetch_multiple_tiers'] = True
-    assert exchange.get_leverage_tiers_for_pair('DOGE/USDT:USDT') == []
-
-    # 'fetchLeverageTiers': False
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('DOGE/USDT:USDT') == []
-
-    # 'fetchLeverageTiers': True
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._ft_has['can_fetch_multiple_tiers'] = False
-    assert exchange.get_leverage_tiers_for_pair('DOGE/USDT:USDT') == [
-        {
-            'min': 0,
-            'max': 500,
-            'mmr': 0.02,
-            'lev': 75,
-            'maintAmt': None
-        },
-        {
-            'min': 501,
-            'max': 1000,
-            'mmr': 0.025,
-            'lev': 50,
-            'maintAmt': None
-        }
-    ]
-
-    # exception_handlers
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
-    default_conf['dry_run'] = False
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "get_leverage_tiers_for_pair",
-        "fetch_leverage_tiers",
-        pair='DOGE/USDT:USDT',
-    )
-
-
 def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage_tiers):
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'futures'
@@ -4423,7 +4314,6 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
         exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT', -1)
 
     exchange._leverage_tiers = {}
-    exchange.get_leverage_tiers_for_pair = MagicMock(return_value=[])
 
     with pytest.raises(
         InvalidOrderException,
