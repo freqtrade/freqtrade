@@ -15,7 +15,7 @@ def _perform_execute(mode, coin, brain):
 def _perform_back_test(date_time, coin, brain):
     date = str(date_time)
     date = date.replace(" ", "#")
-    subprocess.call("python3 "+ Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " 0.45 3", shell=True)
+    subprocess.call("python3 "+ Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " " + Config.BACKTEST_DUP + " " + Config.BACKTEST_MAX_COUNT_DUP, shell=True)
 
 def back_test(date_time, coin, brain):
     time.sleep(Config.BACKTEST_THROTTLE_SECOND)
