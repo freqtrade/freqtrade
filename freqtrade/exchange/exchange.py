@@ -143,10 +143,6 @@ class Exchange:
             else None
         )
         self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
-        if self.liquidation_buffer < 0.0:
-            raise OperationalException('Cannot have a negative liquidation_buffer')
-        if self.liquidation_buffer > 0.99:
-            raise OperationalException('Liquidation_buffer must be below 0.99')
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
