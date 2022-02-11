@@ -717,7 +717,8 @@ class RPC:
             return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
-                      stake_amount: Optional[float] = None) -> Optional[Trade]:
+                      stake_amount: Optional[float] = None,
+                      buy_tag: Optional[str] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -751,7 +752,7 @@ class RPC:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade):
+                                         ordertype=order_type, trade=trade, buy_tag=buy_tag):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
