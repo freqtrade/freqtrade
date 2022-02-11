@@ -1221,7 +1221,7 @@ def limit_sell_order_open():
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001173,

@@ -984,11 +984,17 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog,
     trade = Trade.query.first()
     trade.is_open = True
     trade.open_order_id = None
-    trade.stoploss_order_id = 100
+    trade.stoploss_order_id = "100"
+    trade.orders.append(Order(
+        ft_order_side='stoploss',
+        order_id='100',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+    ))
     assert trade
 
     stoploss_order_hit = MagicMock(return_value={
-        'id': 100,
+        'id': "100",
         'status': 'closed',
         'type': 'stop_loss_limit',
         'price': 3,
@@ -1634,9 +1640,9 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
                  return_value=limit_buy_order_usdt['amount'])
-
+    order_id = limit_buy_order_usdt['id']
     trade = Trade(
-        open_order_id=123,
+        open_order_id=order_id,
         fee_open=0.001,
         fee_close=0.001,
         open_rate=0.01,
@@ -1644,29 +1650,35 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
         amount=11,
         exchange="binance",
     )
+    trade.orders.append(Order(
+        ft_order_side='buy',
+        price=0.01,
+        order_id=order_id,
+
+    ))
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
     caplog.clear()
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
     caplog.clear()
     assert trade.open_order_id is None
     assert trade.amount == limit_buy_order_usdt['amount']
 
-    trade.open_order_id = '123'
+    trade.open_order_id = order_id
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
     assert trade.amount != 90.81
     # test amount modified by fee-logic
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
     assert trade.amount == 90.81
     assert trade.open_order_id is None
 
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
 
     assert log_has_re('Found open order for.*', caplog)
     limit_buy_order_usdt_new = deepcopy(limit_buy_order_usdt)
@@ -1675,7 +1687,7 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt_new)
-    res = freqtrade.update_trade_state(trade, '123')
+    res = freqtrade.update_trade_state(trade, order_id)
     # Cancelled empty
     assert res is True
 
@@ -1687,6 +1699,8 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
 def test_update_trade_state_withorderdict(default_conf_usdt, trades_for_order, limit_buy_order_usdt,
                                           fee, mocker, initial_amount, has_rounding_fee, caplog):
     trades_for_order[0]['amount'] = initial_amount
+    order_id = "oid_123456"
+    limit_buy_order_usdt['id'] = order_id
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1702,10 +1716,18 @@ def test_update_trade_state_withorderdict(default_conf_usdt, trades_for_order, l
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456",
+        open_order_id=order_id,
         is_open=True,
     )
-    freqtrade.update_trade_state(trade, '123456', limit_buy_order_usdt)
+    trade.orders.append(
+        Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id=order_id,
+        )
+    )
+    freqtrade.update_trade_state(trade, order_id, limit_buy_order_usdt)
     assert trade.amount != amount
     assert trade.amount == limit_buy_order_usdt['amount']
     if has_rounding_fee:
@@ -3362,7 +3384,8 @@ def test_trailing_stop_loss_positive(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
     assert freqtrade.handle_trade(trade) is False

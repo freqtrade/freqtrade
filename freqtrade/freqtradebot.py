@@ -1361,7 +1361,7 @@ class FreqtradeBot(LoggingMixin):
         order_obj = trade.select_order_by_order_id(order['id'])
         if not order_obj:
             # TODO: this can't happen!
-            raise OperationalException("order-obj not found!")
+            raise OperationalException(f"order-obj for {order['id']} not found!")
         trade.update_trade(order_obj)
         # TODO: is the below necessary? it's already done in update_trade for filled buys
         trade.recalc_trade_from_orders()
