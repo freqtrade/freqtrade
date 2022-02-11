@@ -1786,7 +1786,7 @@ def test_update_trade_state_sell(default_conf_usdt, trades_for_order, limit_sell
         fee_open=0.0025,
         fee_close=0.0025,
         open_date=arrow.utcnow().datetime,
-        open_order_id="123456",
+        open_order_id=limit_sell_order_usdt_open['id'],
         is_open=True,
     )
     order = Order.parse_from_ccxt_object(limit_sell_order_usdt_open, 'LTC/ETH', 'sell')
@@ -2016,7 +2016,7 @@ def test_bot_loop_start_called_once(mocker, default_conf_usdt, caplog):
 def test_check_handle_timedout_buy_usercustom(default_conf_usdt, ticker_usdt, limit_buy_order_old,
                                               open_trade, fee, mocker) -> None:
     default_conf_usdt["unfilledtimeout"] = {"buy": 1400, "sell": 30}
-
+    limit_buy_order_old['id'] = open_trade.open_order_id
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
     cancel_buy_order = deepcopy(limit_buy_order_old)
