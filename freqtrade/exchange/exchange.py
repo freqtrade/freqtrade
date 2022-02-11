@@ -2295,16 +2295,7 @@ class Exchange:
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
             # describes the min amt for a tier, and the lowest tier will always go down to 0
         else:
-            if pair not in self.markets:
-                raise InvalidOrderException(
-                    f"{pair} is not tradeable on {self.name} {self.trading_mode.value}"
-                )
-            mmr = self.markets[pair]['maintenanceMarginRate']
-            if mmr is None:
-                raise InvalidOrderException(
-                    f"Maintenance margin rate for {pair} is unavailable for {self.name}"
-                )
-            return (mmr, None)
+            raise OperationalException(f"Cannot get maintenance ratio using {self.name}")
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
