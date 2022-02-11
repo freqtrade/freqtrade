@@ -758,14 +758,6 @@ class FreqtradeBot(LoggingMixin):
         funding_fees = self.exchange.get_funding_fees(
             pair=pair, amount=amount, is_short=is_short, open_date=open_date)
         # This is a new trade
-        if isolated_liq:
-            liquidation_buffer = abs(enter_limit_filled_price -
-                                     isolated_liq) * self.liquidation_buffer
-            isolated_liq = (
-                isolated_liq - liquidation_buffer
-                if is_short else
-                isolated_liq + liquidation_buffer
-            )
         if trade is None:
             trade = Trade(
                 pair=pair,
