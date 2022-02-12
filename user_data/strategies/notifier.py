@@ -1,6 +1,7 @@
+EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config.py
+
 import requests
 import sys
-EXECUTION_PATH = '/root/workspace2/execution'
 sys.path.append(EXECUTION_PATH)
 from config import Config
 
