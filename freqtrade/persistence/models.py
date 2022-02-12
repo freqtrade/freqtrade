@@ -659,13 +659,13 @@ class LocalTrade():
             self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
-        :param order_side: Side of the order (either 'buy' or 'sell')
+        :param order_side: ft_order_side of the order (either 'buy', 'sell' or 'stoploss')
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
         orders = self.orders
         if order_side:
-            orders = [o for o in self.orders if o.side == order_side]
+            orders = [o for o in self.orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:

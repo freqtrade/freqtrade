@@ -1277,11 +1277,14 @@ def test_select_order(fee):
     order = trades[4].select_order('buy', False)
     assert order is not None
 
+    trades[4].orders[1].ft_order_side = 'sell'
     order = trades[4].select_order('sell', True)
     assert order is not None
+
+    trades[4].orders[1].ft_order_side = 'stoploss'
+    order = trades[4].select_order('stoploss', None)
+    assert order is not None
     assert order.ft_order_side == 'stoploss'
-    order = trades[4].select_order('sell', False)
-    assert order is None
 
 
 def test_Trade_object_idem():
