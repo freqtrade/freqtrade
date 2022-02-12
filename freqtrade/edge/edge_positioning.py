@@ -159,7 +159,7 @@ class Edge:
         logger.info(f'Measuring data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days)..')
-        # Should edge support shorts? needs to be investigated further
+        # TODO: Should edge support shorts? needs to be investigated further
         # * (add enter_short exit_short)
         headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long']
 
