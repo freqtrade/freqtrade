@@ -1,6 +1,7 @@
 import requests
 import sys
-sys.path.append('/root/workspace2/execution')
+EXECUTION_PATH = '/root/workspace2/execution'
+sys.path.append(EXECUTION_PATH)
 from config import Config
 
 
