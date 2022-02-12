@@ -299,28 +299,6 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_insufficient_funds(self, trade: Trade):
         """
-        Determine if we ever opened a sell order for this trade.
-        If not, try update buy fees - otherwise "refind" the open order we obviously lost.
-        """
-        sell_order = trade.select_order('sell', None)
-        if sell_order:
-            self.refind_lost_order(trade)
-        else:
-            self.reupdate_enter_order_fees(trade)
-
-    def reupdate_enter_order_fees(self, trade: Trade):
-        """
-        Get buy order from database, and try to reupdate.
-        Handles trades where the initial fee-update did not work.
-        """
-        logger.info(f"Trying to reupdate buy fees for {trade}")
-        order = trade.select_order('buy', False)
-        if order:
-            logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
-            self.update_trade_state(trade, order.order_id, send_msg=False)
-
-    def refind_lost_order(self, trade):
-        """
         Try refinding a lost trade.
         Only used when InsufficientFunds appears on sell orders (stoploss or sell).
         Tries to walk the stored orders and sell them off eventually.
@@ -332,9 +310,6 @@ class FreqtradeBot(LoggingMixin):
             if not order.ft_is_open:
                 logger.debug(f"Order {order} is no longer open.")
                 continue
-            if order.ft_order_side == 'buy':
-                # Skip buy side - this is handled by reupdate_buy_order_fees
-                continue
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
@@ -345,6 +320,9 @@ class FreqtradeBot(LoggingMixin):
                 elif order.ft_order_side == 'sell':
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
+                        trade.open_order_id = order.order_id
+                elif order.ft_order_side == 'buy':
+                    if fo and fo['status'] == 'open':
                         trade.open_order_id = order.order_id
                 if fo:
                     logger.info(f"Found {order} for trade {trade}.")
