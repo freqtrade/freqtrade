@@ -1528,7 +1528,7 @@ class Exchange:
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-        # TODO-lev: maybe depend this on candle type?
+        # TODO: maybe depend this on candle type?
         drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
         input_coroutines = []
         cached_pairs = []

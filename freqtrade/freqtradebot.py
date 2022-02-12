@@ -1049,7 +1049,7 @@ class FreqtradeBot(LoggingMixin):
         Check if trade is fulfilled in which case the stoploss
         on exchange should be added immediately if stoploss on exchange
         is enabled.
-        # TODO-lev: liquidation price always on exchange, even without stoploss_on_exchange
+        # TODO: liquidation price always on exchange, even without stoploss_on_exchange
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
@@ -1736,7 +1736,7 @@ class FreqtradeBot(LoggingMixin):
                 trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
-            # TODO-lev: leverage?
+            # * Leverage could be a cause for this warning, leverage hasn't been thoroughly tested
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise DependencyException("Half bought? Amounts don't match")
 
