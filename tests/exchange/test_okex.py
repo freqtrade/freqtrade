@@ -12,7 +12,7 @@ def test_get_maintenance_ratio_and_amt_okex(
     default_conf['margin_mode'] = 'isolated'
     default_conf['dry_run'] = False
     api_mock.fetch_leverage_tiers = MagicMock(return_value={
-        'SHIB/USDT:USDT': [
+        'ETH/USDT:USDT': [
             {
                 'tier': 1,
                 'notionalFloor': 0,
@@ -30,7 +30,7 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '1',
-                    'uly': 'SHIB-USDT'
+                    'uly': 'ETH-USDT'
                 }
             },
             {
@@ -50,7 +50,7 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '2',
-                    'uly': 'SHIB-USDT'
+                    'uly': 'ETH-USDT'
                 }
             },
             {
@@ -70,11 +70,11 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '3',
-                    'uly': 'SHIB-USDT'
+                    'uly': 'ETH-USDT'
                 }
             },
         ],
-        'DOGE/USDT:USDT': [
+        'XLTCUSDT': [
             {
                 'tier': 1,
                 'notionalFloor': 0,
@@ -92,7 +92,7 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '1',
-                    'uly': 'DOGE-USDT'
+                    'uly': 'BTC-USDT'
                 }
             },
             {
@@ -112,7 +112,7 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '2',
-                    'uly': 'DOGE-USDT'
+                    'uly': 'BTC-USDT'
                 }
             },
             {
@@ -132,19 +132,19 @@ def test_get_maintenance_ratio_and_amt_okex(
                     'optMgnFactor': '0',
                     'quoteMaxLoan': '',
                     'tier': '3',
-                    'uly': 'DOGE-USDT'
+                    'uly': 'BTC-USDT'
                 }
             },
         ]
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="okex")
-    assert exchange.get_maintenance_ratio_and_amt('SHIB/USDT:USDT', 2000) == (0.01, None)
-    assert exchange.get_maintenance_ratio_and_amt('SHIB/USDT:USDT', 2001) == (0.015, None)
-    assert exchange.get_maintenance_ratio_and_amt('SHIB/USDT:USDT', 4001) == (0.02, None)
-    assert exchange.get_maintenance_ratio_and_amt('SHIB/USDT:USDT', 8000) == (0.02, None)
+    assert exchange.get_maintenance_ratio_and_amt('ETH/USDT:USDT', 2000) == (0.01, None)
+    assert exchange.get_maintenance_ratio_and_amt('ETH/USDT:USDT', 2001) == (0.015, None)
+    assert exchange.get_maintenance_ratio_and_amt('ETH/USDT:USDT', 4001) == (0.02, None)
+    assert exchange.get_maintenance_ratio_and_amt('ETH/USDT:USDT', 8000) == (0.02, None)
 
-    assert exchange.get_maintenance_ratio_and_amt('DOGE/USDT:USDT', 1) == (0.02, None)
-    assert exchange.get_maintenance_ratio_and_amt('DOGE/USDT:USDT', 2000) == (0.03, None)
+    assert exchange.get_maintenance_ratio_and_amt('XLTCUSDT', 1) == (0.02, None)
+    assert exchange.get_maintenance_ratio_and_amt('XLTCUSDT', 2000) == (0.03, None)
 
 
 def test_get_max_pair_stake_amount_okex(default_conf, mocker, leverage_tiers):
