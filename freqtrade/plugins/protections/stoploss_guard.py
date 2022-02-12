@@ -51,7 +51,6 @@ class StoplossGuard(IProtection):
         # if pair:
         #     filters.append(Trade.pair == pair)
         # trades = Trade.get_trades(filters).all()
-        # TODO-lev: Liquidation price?
 
         trades1 = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
         trades = [trade for trade in trades1 if (str(trade.sell_reason) in (
