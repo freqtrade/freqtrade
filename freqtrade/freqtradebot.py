@@ -510,7 +510,7 @@ class FreqtradeBot(LoggingMixin):
         """
         # TODO-lev: Check what changes are necessary for DCA in relation to shorts.
         if self.strategy.max_entry_position_adjustment > -1:
-            count_of_buys = trade.nr_of_successful_buys
+            count_of_buys = trade.nr_of_successful_entries
             if count_of_buys > self.strategy.max_entry_position_adjustment:
                 logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
                 return

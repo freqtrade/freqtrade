@@ -464,11 +464,11 @@ class Backtesting:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
-            check_adjust_buy = True
+            check_adjust_entry = True
             if self.strategy.max_entry_position_adjustment > -1:
-                count_of_buys = trade.nr_of_successful_buys
-                check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
-            if check_adjust_buy:
+                entry_count = trade.nr_of_successful_entries
+                check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
+            if check_adjust_entry:
                 trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
@@ -729,7 +729,7 @@ class Backtesting:
         for pair in open_trades.keys():
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
-                    if trade.open_order_id and trade.nr_of_successful_buys == 0:
+                    if trade.open_order_id and trade.nr_of_successful_entries == 0:
                         # Ignore trade if buy-order did not fill yet
                         continue
                     sell_row = data[pair][-1]
@@ -782,7 +782,7 @@ class Backtesting:
             if timedout:
                 if order.side == 'buy':
                     self.timedout_entry_orders += 1
-                    if trade.nr_of_successful_buys == 0:
+                    if trade.nr_of_successful_entries == 0:
                         # Remove trade due to buy timeout expiration.
                         return True
                     else:

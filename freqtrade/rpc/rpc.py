@@ -261,11 +261,11 @@ class RPC:
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
-                    max_buy_str = ''
+                    max_entry_str = ''
                     if self._config.get('max_entry_position_adjustment', -1) > 0:
-                        max_buy_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
-                    filled_buys = trade.nr_of_successful_buys
-                    detail_trade.append(f"{filled_buys}{max_buy_str}")
+                        max_entry_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
+                    filled_entries = trade.nr_of_successful_entries
+                    detail_trade.append(f"{filled_entries}{max_entry_str}")
                 trades_list.append(detail_trade)
             profitcol = "Profit"
             if self._fiat_converter:

@@ -593,6 +593,8 @@ Additional orders also result in additional fees and those orders don't count to
 This callback is **not** called when there is an open order (either buy or sell) waiting for execution, or when you have reached the maximum amount of extra buys that you have set on `max_entry_position_adjustment`.
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
+Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position, no matter if it's a long or short trade. 
+
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
     If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
@@ -663,7 +665,7 @@ class DigDeeperStrategy(IStrategy):
             return None
 
         filled_buys = trade.select_filled_orders('buy')
-        count_of_buys = trade.nr_of_successful_buys
+        count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
         # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
@@ -676,7 +678,7 @@ class DigDeeperStrategy(IStrategy):
             # This returns first order stake size
             stake_amount = filled_buys[0].cost
             # This then calculates current safety order size
-            stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
+            stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
             return stake_amount
         except Exception as exception:
             return None

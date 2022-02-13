@@ -889,6 +889,8 @@ class LocalTrade():
                 total_stake += tmp_price * tmp_amount
 
         if total_amount > 0:
+            # TODO-lev: This should update leverage as well -
+            # as averaged trades might have different leverage
             self.open_rate = total_stake / total_amount
             self.stake_amount = total_stake
             self.amount = total_amount
@@ -937,9 +939,27 @@ class LocalTrade():
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property
+    def nr_of_successful_entries(self) -> int:
+        """
+        Helper function to count the number of entry orders that have been filled.
+        :return: int count of entry orders that have been filled for this trade.
+        """
+
+        return len(self.select_filled_orders(self.enter_side))
+
+    @property
+    def nr_of_successful_exits(self) -> int:
+        """
+        Helper function to count the number of exit orders that have been filled.
+        :return: int count of exit orders that have been filled for this trade.
+        """
+        return len(self.select_filled_orders(self.exit_side))
+
+    @property
     def nr_of_successful_buys(self) -> int:
         """
         Helper function to count the number of buy orders that have been filled.
+        WARNING: Please use nr_of_successful_entries for short support.
         :return: int count of buy orders that have been filled for this trade.
         """
 
@@ -949,6 +969,7 @@ class LocalTrade():
     def nr_of_successful_sells(self) -> int:
         """
         Helper function to count the number of sell orders that have been filled.
+        WARNING: Please use nr_of_successful_exits for short support.
         :return: int count of sell orders that have been filled for this trade.
         """
         return len(self.select_filled_orders('sell'))

@@ -2418,6 +2418,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_buys == 1
+    assert trade.nr_of_successful_entries == 1
 
     order2 = Order(
         ft_order_side='buy',
@@ -2554,6 +2555,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.fee_open_cost == 3 * o1_fee_cost
     assert trade.open_trade_value == 3 * o1_trade_val
     assert trade.nr_of_successful_buys == 3
+    assert trade.nr_of_successful_entries == 3
 
 
 @pytest.mark.usefixtures("init_persistence")
