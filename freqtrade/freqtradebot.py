@@ -740,6 +740,9 @@ class FreqtradeBot(LoggingMixin):
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
+            # TODO-lev: Evaluate this. Why is setting stake_amount here necessary?
+            # it should never change in theory - and in case of leveraged orders,
+            # may be the leveraged amount.
             stake_amount = order['cost']
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
@@ -1288,6 +1291,7 @@ class FreqtradeBot(LoggingMixin):
             # * Check edge cases, we don't want to make leverage > 1.0 if we don't have to
             # * (for leverage modes which aren't isolated futures)
 
+            # TODO-lev: The below calculation needs to include leverage ...
             trade.stake_amount = trade.amount * trade.open_rate
             self.update_trade_state(trade, trade.open_order_id, corder)
 

@@ -499,7 +499,7 @@ class Exchange:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available on {self.name}. '
+                    f'Pair {pair} is not available on {self.name} {self.trading_mode.value}. '
                     f'Please remove {pair} from your whitelist.')
 
                 # From ccxt Documentation:
