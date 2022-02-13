@@ -214,6 +214,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
 
 def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
+    # TODO-lev: this should also check with different leverages per entry order!
     default_conf_usdt['position_adjustment_enable'] = True
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -231,13 +232,13 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(Trade.get_trades().all()) == 1
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.stake_amount == 60
+    assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 2.0
     # No adjustment
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.stake_amount == 60
+    assert pytest.approx(trade.stake_amount) == 60
 
     # Reduce bid amount
     ticker_usdt_modif = ticker_usdt.return_value
@@ -266,6 +267,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
 
     assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_buys == 2
+    assert trade.nr_of_successful_entries == 2
 
     # Sell
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
@@ -280,3 +282,76 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.orders[2].amount == trade.amount
 
     assert trade.nr_of_successful_buys == 2
+    assert trade.nr_of_successful_entries == 2
+
+
+def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
+    # TODO-lev: this should also check with different leverages per entry order!
+    default_conf_usdt['position_adjustment_enable'] = True
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_usdt,
+        get_fee=fee,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
+    )
+
+    patch_get_signal(freqtrade, enter_long=False, enter_short=True)
+    freqtrade.enter_positions()
+
+    assert len(Trade.get_trades().all()) == 1
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 1
+    assert pytest.approx(trade.stake_amount) == 60
+    assert trade.open_rate == 2.02
+    # No adjustment
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 1
+    assert pytest.approx(trade.stake_amount) == 60
+
+    # Reduce bid amount
+    ticker_usdt_modif = ticker_usdt.return_value
+    ticker_usdt_modif['ask'] = ticker_usdt_modif['ask'] * 1.015
+    ticker_usdt_modif['bid'] = ticker_usdt_modif['bid'] * 1.0125
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value=ticker_usdt_modif)
+
+    # additional buy order
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+    for o in trade.orders:
+        assert o.status == "closed"
+    assert pytest.approx(trade.stake_amount) == 120
+
+    # Open-rate averaged between 2.0 and 2.0 * 1.015
+    assert trade.open_rate >= 2.02
+    assert trade.open_rate < 2.02 * 1.015
+
+    # No action - profit raised above 1% (the bar set in the strategy).
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+    assert pytest.approx(trade.stake_amount) == 120
+    # assert trade.orders[0].amount == 30
+    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+
+    assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
+    assert trade.nr_of_successful_entries == 2
+
+    # Buy
+    patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert trade.is_open is False
+    # assert trade.orders[0].amount == 30
+    assert trade.orders[0].side == 'sell'
+    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+    # Sold everything
+    assert trade.orders[-1].side == 'buy'
+    assert trade.orders[2].amount == trade.amount
+
+    assert trade.nr_of_successful_entries == 2
+    assert trade.nr_of_successful_exits == 1

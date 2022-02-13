@@ -593,7 +593,7 @@ Additional orders also result in additional fees and those orders don't count to
 This callback is **not** called when there is an open order (either buy or sell) waiting for execution, or when you have reached the maximum amount of extra buys that you have set on `max_entry_position_adjustment`.
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
-Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position, no matter if it's a long or short trade. 
+Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position, no matter if it's a long or short trade.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
