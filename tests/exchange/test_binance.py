@@ -593,6 +593,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     mm_ratio,
     amt,
 ):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
