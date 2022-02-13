@@ -70,7 +70,8 @@ class Okx(Exchange):
             symbols = []
 
             for symbol, market in markets.items():
-                if self.market_is_future(market):
+                if (self.market_is_future(market)
+                        and market['quote'] == self._config['stake_currency']):
                     symbols.append(symbol)
 
             tiers = {}
