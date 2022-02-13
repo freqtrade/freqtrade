@@ -960,21 +960,40 @@ def get_markets():
             'symbol': 'NEO/USDT',
             'base': 'NEO',
             'quote': 'USDT',
-            'active': True,
-            'spot': True,
-            'swap': False,
-            'linear': None,
+            'settle': '',
+            'baseId': 'NEO',
+            'quoteId': 'USDT',
+            'settleId': '',
             'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': False,
+            'futures': False,
+            'option': False,
+            'active': True,
+            'contract': False,
+            'linear': None,
+            'inverse': None,
             'taker': 0.0006,
             'maker': 0.0002,
+            'contractSize': None,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'tierBased': None,
+            'percentage': None,
+            'lot': 0.00000001,
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
-            'lot': 0.00000001,
-            'contractSize': None,
             'limits': {
+                "leverage": {
+                    'min': 1,
+                    'max': 10
+                },
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
@@ -1071,10 +1090,10 @@ def get_markets():
             'quote': 'USDT',
             'active': True,
             'spot': False,
-            'swap': True,
-            'linear': True,
             'type': 'swap',
             'contractSize': 0.01,
+            'swap': False,
+            'linear': False,
             'taker': 0.0006,
             'maker': 0.0002,
             'precision': {
@@ -1162,7 +1181,6 @@ def get_markets():
             'taker': 0.0006,
             'maker': 0.0002,
             'contractSize': 10,
-            'maintenanceMarginRate': 0.02,
             'active': True,
             'expiry': None,
             'expiryDatetime': None,
@@ -1190,6 +1208,83 @@ def get_markets():
                 'price': 0.05,
                 'amount': 1
             },
+            'info': {}
+        },
+        'ADA/USDT:USDT': {
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 20,
+                },
+                'amount': {
+                    'min': 1,
+                    'max': 1000000,
+                },
+                'price': {
+                    'min': 0.52981,
+                    'max': 1.58943,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                }
+            },
+            'precision': {
+                'amount': 1,
+                'price': 0.00001
+            },
+            'tierBased': True,
+            'percentage': True,
+            'taker': 0.0000075,
+            'maker': -0.0000025,
+            'feeSide': 'get',
+            'tiers': {
+                'maker': [
+                    [0, 0.002],       [1.5, 0.00185],
+                    [3, 0.00175],     [6, 0.00165],
+                    [12.5, 0.00155],  [25, 0.00145],
+                    [75, 0.00135],    [200, 0.00125],
+                    [500, 0.00115],   [1250, 0.00105],
+                    [2500, 0.00095],  [3000, 0.00085],
+                    [6000, 0.00075],  [11000, 0.00065],
+                    [20000, 0.00055], [40000, 0.00055],
+                    [75000, 0.00055]
+                ],
+                'taker': [
+                    [0, 0.002],       [1.5, 0.00195],
+                    [3, 0.00185],     [6, 0.00175],
+                    [12.5, 0.00165],  [25, 0.00155],
+                    [75, 0.00145],    [200, 0.00135],
+                    [500, 0.00125],   [1250, 0.00115],
+                    [2500, 0.00105],  [3000, 0.00095],
+                    [6000, 0.00085],  [11000, 0.00075],
+                    [20000, 0.00065], [40000, 0.00065],
+                    [75000, 0.00065]
+                ]
+            },
+            'id': 'ADA_USDT',
+            'symbol': 'ADA/USDT:USDT',
+            'base': 'ADA',
+            'quote': 'USDT',
+            'settle': 'USDT',
+            'baseId': 'ADA',
+            'quoteId': 'USDT',
+            'settleId': 'usdt',
+            'type': 'swap',
+            'spot': False,
+            'margin': False,
+            'swap': True,
+            'future': False,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 0.01,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
             'info': {}
         }
     }

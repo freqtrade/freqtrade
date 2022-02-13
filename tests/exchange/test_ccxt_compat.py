@@ -341,7 +341,7 @@ class TestCCXTExchange():
 
     def test_get_max_leverage_futures(self, exchange_futures):
         futures, futures_name = exchange_futures
-        # TODO-lev: binance, gateio, and okex test
+        # TODO-lev: binance, gateio, and okx test
         if futures:
             leverage_in_market_futures = EXCHANGES[futures_name]['leverage_in_market']['futures']
             if leverage_in_market_futures:

@@ -1960,12 +1960,14 @@ class Exchange:
                 'Looped through all tiers without finding a max leverage. Should never be reached'
             )
 
-        else:  # Search markets.limits for max lev
+        elif self.trading_mode == TradingMode.MARGIN:  # Search markets.limits for max lev
             market = self.markets[pair]
             if market['limits']['leverage']['max'] is not None:
                 return market['limits']['leverage']['max']
             else:
                 return 1.0  # Default if max leverage cannot be found
+        else:
+            return 1.0
 
     @retrier
     def _set_leverage(

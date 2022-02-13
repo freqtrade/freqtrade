@@ -1207,9 +1207,20 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     assert exchange._set_leverage.call_count == 0
     assert exchange.set_margin_mode.call_count == 0
 
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        },
+        'symbol': 'ADA/USDT:USDT',
+        'amount': 1
+    })
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     exchange.trading_mode = TradingMode.FUTURES
+    exchange._set_leverage = MagicMock()
+    exchange.set_margin_mode = MagicMock()
     order = exchange.create_order(
-        pair='XLTCUSDT',
+        pair='ADA/USDT:USDT',
         ordertype=ordertype,
         side=side,
         amount=1,
@@ -2998,7 +3009,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # all markets, only spot pairs
         ([], [], False, False, True, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active markets
         ([], [], False, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
@@ -3006,11 +3017,11 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # all pairs
         ([], [], True, False, False, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # active pairs
         ([], [], True, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
-          'TKN/BTC', 'XRP/BTC']),
+          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all markets, base=ETH, LTC
         (['ETH', 'LTC'], [], False, False, False, False,
          ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
@@ -3019,7 +3030,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
          ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # spot markets, base=LTC
         (['LTC'], [], False, False, True, False,
-         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT']),
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, quote=USDT
         ([], ['USDT'], False, False, False, False,
          ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
@@ -3031,13 +3042,13 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
          ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # spot markets, quote=USDT, USD
         ([], ['USDT', 'USD'], False, False, True, False,
-         ['ETH/USDT', 'LTC/USD', 'LTC/USDT']),
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC, quote=USDT
         (['LTC'], ['USDT'], False, False, False, False,
          ['LTC/USDT', 'XLTCUSDT']),
         # all pairs, base=LTC, quote=USDT
         (['LTC'], ['USDT'], True, False, False, False,
-         ['LTC/USDT']),
+         ['LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC, quote=USDT, NONEXISTENT
         (['LTC'], ['USDT', 'NONEXISTENT'], False, False, False, False,
          ['LTC/USDT', 'XLTCUSDT']),
@@ -3486,7 +3497,7 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
 
     ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
-    ("okex", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
     ("binance", TradingMode.MARGIN, MarginMode.CROSS, True),
@@ -3560,8 +3571,8 @@ def test__ccxt_config(
     ("LTC/BTC", 0.0, 1.0),
     ("TKN/USDT", 210.30, 1.0),
 ])
-def test_get_max_leverage_from_markets(default_conf, mocker, pair, nominal_value, max_lev):
-    default_conf['trading_mode'] = 'futures'
+def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value, max_lev):
+    default_conf['trading_mode'] = 'margin'
     default_conf['margin_mode'] = 'isolated'
     api_mock = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
@@ -3836,13 +3847,13 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 1, 'spot'),
     ('LTC/USD', 1, 'futures'),
     ('XLTCUSDT', 0.01, 'futures'),
-    ('LTC/ETH', 1, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures')
 ])
 def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mocker.patch('freqtrade.exchange.Exchange.markets', {
         'LTC/USD': {
             'symbol': 'LTC/USD',
@@ -3852,15 +3863,11 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
             'symbol': 'XLTCUSDT',
             'contractSize': '0.01',
         },
-        'LTC/ETH': {
-            'symbol': 'LTC/ETH',
-        },
         'ETH/USDT:USDT': {
             'symbol': 'ETH/USDT:USDT',
             'contractSize': '10',
         }
     })
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     size = exchange._get_contract_size(pair)
     assert expected_size == size
 
@@ -3868,7 +3875,7 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
 @pytest.mark.parametrize('pair,contract_size,trading_mode', [
     ('XLTCUSDT', 1, 'spot'),
     ('LTC/USD', 1, 'futures'),
-    ('XLTCUSDT', 0.01, 'futures'),
+    ('ADA/USDT:USDT', 0.01, 'futures'),
     ('LTC/ETH', 1, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures'),
 ])
@@ -3952,7 +3959,7 @@ def test__order_contracts_to_amount(
 @pytest.mark.parametrize('pair,contract_size,trading_mode', [
     ('XLTCUSDT', 1, 'spot'),
     ('LTC/USD', 1, 'futures'),
-    ('XLTCUSDT', 0.01, 'futures'),
+    ('ADA/USDT:USDT', 0.01, 'futures'),
     ('LTC/ETH', 1, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures'),
 ])
@@ -3987,7 +3994,7 @@ def test__trades_contracts_to_amount(
 
 
 @pytest.mark.parametrize('pair,param_amount,param_size', [
-    ('XLTCUSDT', 40, 4000),
+    ('ADA/USDT:USDT', 40, 4000),
     ('LTC/ETH', 30, 30),
     ('LTC/USD', 30, 30),
     ('ETH/USDT:USDT', 10, 1),
@@ -4003,6 +4010,7 @@ def test__amount_to_contracts(
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'spot'
     default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mocker.patch('freqtrade.exchange.Exchange.markets', {
         'LTC/USD': {
             'symbol': 'LTC/USD',
@@ -4020,7 +4028,6 @@ def test__amount_to_contracts(
             'contractSize': '10',
         }
     })
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     result_size = exchange._amount_to_contracts(pair, param_amount)
     assert result_size == param_amount
     result_amount = exchange._contracts_to_amount(pair, param_size)
@@ -4342,3 +4349,33 @@ def test_get_maintenance_ratio_and_amt(
     default_conf['margin_mode'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
+
+
+def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
+
+    # Test Spot
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 1.0
+
+    # Test Futures
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+
+    exchange._leverage_tiers = leverage_tiers
+
+    assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
+    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
+    assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
+    assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
+    assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
+    assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
+    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
+
+    assert exchange.get_max_leverage("SPONGE/USDT", 200) == 1.0    # Pair not in leverage_tiers
+    assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
+    with pytest.raises(
+        InvalidOrderException,
+        match=r'Amount 1000000000.01 too high for BTC/USDT'
+    ):
+        exchange.get_max_leverage("BTC/USDT", 1000000000.01)

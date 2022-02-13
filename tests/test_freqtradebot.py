@@ -722,8 +722,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (False, 'futures', 'binance', 'isolated', 0.05, 8.167171717171717),
     (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
     (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
-    (True, 'futures', 'okex', 'isolated', 11.87413417771621),
-    (False, 'futures', 'okex', 'isolated', 8.085708510208207),
+    (True, 'futures', 'okex', 'isolated', 0.0, 11.87413417771621),
+    (False, 'futures', 'okex', 'isolated', 0.0, 8.085708510208207),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,

@@ -171,36 +171,6 @@ def test_stoploss_adjust_binance(
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
-def test_get_max_leverage_binance(default_conf, mocker, leverage_tiers):
-
-    # Test Spot
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 1.0
-
-    # Test Futures
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-
-    exchange._leverage_tiers = leverage_tiers
-
-    assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
-    assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
-    assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
-    assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
-    assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
-    assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
-    assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
-
-    assert exchange.get_max_leverage("SPONGE/USDT", 200) == 1.0    # Pair not in leverage_tiers
-    assert exchange.get_max_leverage("BTC/USDT", 0.0) == 125.0  # No stake amount
-    with pytest.raises(
-        InvalidOrderException,
-        match=r'Amount 1000000000.01 too high for BTC/USDT'
-    ):
-        exchange.get_max_leverage("BTC/USDT", 1000000000.01)
-
-
 def test_fill_leverage_tiers_binance(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.fetch_leverage_tiers = MagicMock(return_value={
