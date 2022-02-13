@@ -522,13 +522,11 @@ def test_create_trades_preopen(default_conf_usdt, ticker_usdt, fee, mocker,
     assert len(trades) == 4
 
 
-@pytest.mark.parametrize('is_short, open_rate', [
-    (False, 2.0),
-    (True, 2.02)
-])
+@pytest.mark.parametrize('is_short', [False, True])
 def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-                                is_short, open_rate, fee, mocker, caplog
+                                is_short, fee, mocker, caplog
                                 ) -> None:
+    ticker_side = 'ask' if is_short else 'bid'
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -554,8 +552,8 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
-    assert trade.open_rate == open_rate  # TODO-lev: I think? That's what the ticker ask price is
-    assert isclose(trade.amount, 60 / open_rate)
+    assert trade.open_rate == ticker_usdt.return_value[ticker_side]
+    assert isclose(trade.amount, 60 / ticker_usdt.return_value[ticker_side])
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
@@ -3342,13 +3340,12 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
 
 
 @pytest.mark.parametrize(
-    "is_short,amount,open_rate,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
-        (False, 30, 2.0, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
-        # TODO-lev: Should the current rate be 2.2 for shorts?
-        (True, 29.70297029, 2.02, 2.2, 2.3, -8.63762376, -0.1443212, 'loss'),
+    "is_short,amount,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
+        (False, 30, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
+        (True, 29.70297029, 2.2, 2.3, -8.63762376, -0.1443212, 'loss'),
     ])
 def test_execute_trade_exit_market_order(
-    default_conf_usdt, ticker_usdt, fee, is_short, current_rate, amount, open_rate,
+    default_conf_usdt, ticker_usdt, fee, is_short, current_rate, amount,
     limit, profit_amount, profit_ratio, profit_or_loss, ticker_usdt_sell_up, mocker
 ) -> None:
     """
@@ -3368,6 +3365,7 @@ def test_execute_trade_exit_market_order(
         long: (65.835/60.15) - 1 = 0.0945137157107232
         short: 1 - (68.48762376237624/59.85) = -0.1443211990371971
     """
+    open_rate = ticker_usdt.return_value['ask' if is_short else 'bid']
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -4234,14 +4232,13 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
     (0.1, False),
     (100, True),
 ])
-@pytest.mark.parametrize('is_short, open_rate', [
-    (False, 2.0),
-    (True, 2.02),
-])
+@pytest.mark.parametrize('is_short', [False, True])
 def test_order_book_depth_of_market(
-    default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-    fee, mocker, order_book_l2, delta, is_high_delta, is_short, open_rate
+    default_conf_usdt, ticker_usdt, limit_order_open,
+    fee, mocker, order_book_l2, delta, is_high_delta, is_short
 ):
+    ticker_side = 'ask' if is_short else 'bid'
+
     default_conf_usdt['bid_strategy']['check_depth_of_market']['enabled'] = True
     default_conf_usdt['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = delta
     patch_RPCManager(mocker)
@@ -4276,7 +4273,7 @@ def test_order_book_depth_of_market(
         # Simulate fulfilled LIMIT_BUY order for trade
         trade.update(limit_order_open[enter_side(is_short)])
 
-        assert trade.open_rate == open_rate  # TODO-lev: double check
+        assert trade.open_rate == ticker_usdt.return_value[ticker_side]
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
