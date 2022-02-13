@@ -3266,9 +3266,9 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     assert rpc_mock.call_count == 3
 
 
-# TODO-lev: add short, RPC short, short fill
-def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt, ticker_usdt, fee,
-                                                               mocker) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
+        default_conf_usdt, ticker_usdt, fee, mocker, is_short) -> None:
     default_conf_usdt['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3292,7 +3292,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3306,7 +3306,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     assert trade.stoploss_order_id == '123'
     assert trade.open_order_id is None
 
-    # Assuming stoploss on exchnage is hit
+    # Assuming stoploss on exchange is hit
     # stoploss_order_id should become None
     # and trade should be sold at the price of stoploss
     stoploss_executed = MagicMock(return_value={
@@ -3334,9 +3334,15 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     assert trade.is_open is False
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
-    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
-    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
-    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+    if is_short:
+        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.SHORT
+        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.SHORT_FILL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+
+    else:
+        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
+        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
 
 
 @pytest.mark.parametrize(
