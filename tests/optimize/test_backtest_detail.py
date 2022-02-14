@@ -568,11 +568,11 @@ tc35 = BTContainer(data=[
 tc36 = BTContainer(data=[
     # D   O     H     L     C    V    B  S   BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
-    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Enter and immediate ROI
+    [1, 5000, 5500, 4951, 4999, 6172, 0, 0],    # Enter and immediate ROI
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.1,
+    stop_loss=-0.10, roi={"0": 0.01}, profit_perc=0.01,
     custom_entry_price=4952,
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
 )
