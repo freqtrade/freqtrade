@@ -536,7 +536,6 @@ class Backtesting:
         sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
 
         if self.trading_mode == TradingMode.FUTURES:
-            # TODO: liquidation price?
             trade.funding_fees = self.exchange.calculate_funding_fees(
                 self.futures_data[trade.pair],
                 amount=trade.amount,

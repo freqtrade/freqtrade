@@ -160,6 +160,7 @@ def start_list_data(args: Dict[str, Any]) -> None:
     from freqtrade.data.history.idatahandler import get_datahandler
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
 
+    # TODO-lev: trading-mode should be parsed at config level, and available as Enum in the config.
     paircombs = dhc.ohlcv_get_available_data(config['datadir'], config.get('trading_mode', 'spot'))
 
     if args['pairs']:
