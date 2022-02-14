@@ -77,11 +77,17 @@ class Okx(Exchange):
 
             tiers: Dict[str, List[Dict]] = {}
 
+            # Be verbose here, as this delays startup by ~1 minute.
+            logger.info(
+                f"Initializing leverage_tiers for {len(symbols)} markets. "
+                "This will take about a minute.")
+
             for symbol in symbols:
                 res = self._api.fetchLeverageTiers(symbol)
                 tiers[symbol] = []
                 for tier in res[symbol]:
                     tiers[symbol].append(self.parse_leverage_tier(tier))
+            logger.info(f"Done initializing {len(symbols)} markets.")
 
             return tiers
         else:
