@@ -689,7 +689,7 @@ def test_validate_stakecurrency_error(default_conf, mocker, caplog):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT'])
+    assert set(ex.get_quote_currencies()) == set(['USD', 'ETH', 'BTC', 'USDT', 'BUSD'])
 
 
 @pytest.mark.parametrize('pair,expected', [
@@ -3233,6 +3233,7 @@ def test_market_is_tradable(
         'future': futures,
         'swap': futures,
         'margin': margin,
+        'linear': True,
         **(add_dict),
     }
     assert ex.market_is_tradable(market) == expected_result
@@ -3497,10 +3498,11 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
     ("okx", TradingMode.FUTURES, MarginMode.CROSS, True),
 
     ("binance", TradingMode.FUTURES, MarginMode.ISOLATED, False),
-    ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
+    # ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, False),
     ("okx", TradingMode.FUTURES, MarginMode.ISOLATED, False),
 
     # * Remove once implemented
+    ("gateio", TradingMode.FUTURES, MarginMode.ISOLATED, True),
     ("binance", TradingMode.MARGIN, MarginMode.CROSS, True),
     ("binance", TradingMode.FUTURES, MarginMode.CROSS, True),
     ("kraken", TradingMode.MARGIN, MarginMode.CROSS, True),
@@ -4351,6 +4353,7 @@ def test_get_maintenance_ratio_and_amt(
     default_conf['margin_mode'] = 'isolated'
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange._leverage_tiers = leverage_tiers
     exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
 
 

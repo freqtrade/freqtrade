@@ -151,7 +151,6 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
 def test_stoploss_adjust_binance(
     mocker,
     default_conf,
-    leverage_tiers,
     sl1,
     sl2,
     sl3,

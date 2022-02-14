@@ -31,7 +31,7 @@ class Gateio(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
-        (TradingMode.FUTURES, MarginMode.ISOLATED)
+        # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
     def validate_ordertypes(self, order_types: Dict) -> None:

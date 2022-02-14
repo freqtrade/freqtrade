@@ -65,6 +65,7 @@ class Okx(Exchange):
         return pair_tiers[-1]['max'] / leverage
 
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        # * This is slow(~45s) on Okex, must make 90-some api calls to load all linear swap markets
         if self.trading_mode == TradingMode.FUTURES:
             markets = self.markets
             symbols = []
@@ -74,11 +75,13 @@ class Okx(Exchange):
                         and market['quote'] == self._config['stake_currency']):
                     symbols.append(symbol)
 
-            tiers = {}
+            tiers: Dict[str, List[Dict]] = {}
+
             for symbol in symbols:
                 res = self._api.fetchLeverageTiers(symbol)
-                res_symbol = res[symbol]
-                tiers[symbol] = self.parse_leverage_tier(res[symbol])
+                tiers[symbol] = []
+                for tier in res[symbol]:
+                    tiers[symbol].append(self.parse_leverage_tier(tier))
 
             return tiers
         else:

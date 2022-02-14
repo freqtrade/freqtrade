@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock  # , PropertyMock
 
+from freqtrade.enums import MarginMode, TradingMode
 from tests.conftest import get_patched_exchange
-from freqtrade.enums import TradingMode, MarginMode
 
 
 def test_get_maintenance_ratio_and_amt_okx(
