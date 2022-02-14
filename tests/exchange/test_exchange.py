@@ -2988,7 +2988,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
 
 @pytest.mark.parametrize(
     "base_currencies,quote_currencies,tradable_only,active_only,spot_only,"
-    "futures_only,expected_keys", [
+    "futures_only,expected_keys,test_comment", [
         # Testing markets (in conftest.py):
         # 'BLK/BTC':  'active': True
         # 'BTT/BTC':  'active': True
@@ -3002,64 +3002,65 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'TKN/BTC':  'active'  not set
         # 'XLTCUSDT': 'active': True, not a pair
         # 'XRP/BTC':  'active': False
-        # all markets
         ([], [], False, False, False, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-        # all markets, only spot pairs
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC'],
+         'all markets'),
         ([], [], False, False, True, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-        # active markets
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC'],
+         'all markets, only spot pairs'),
         ([], [], False, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
-          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-        # all pairs
+          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC'],
+         'active markets'),
         ([], [], True, False, False, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-        # active pairs
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC'],
+         'all pairs'),
         ([], [], True, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
-          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
-        # all markets, base=ETH, LTC
+          'TKN/BTC', 'XLTCUSDT', 'XRP/BTC'],
+         'active pairs'),
         (['ETH', 'LTC'], [], False, False, False, False,
-         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-        # all markets, base=LTC
+         ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT'],
+         'all markets, base=ETH, LTC'),
         (['LTC'], [], False, False, False, False,
-         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-        # spot markets, base=LTC
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT'],
+         'all markets, base=LTC'),
         (['LTC'], [], False, False, True, False,
-         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-        # all markets, quote=USDT
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT'],
+         'spot markets, base=LTC'),
         ([], ['USDT'], False, False, False, False,
-         ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
-        # Futures markets, quote=USDT
+         ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT'],
+         'all markets, quote=USDT'),
         ([], ['USDT'], False, False, False, True,
-         ['ETH/USDT', 'LTC/USDT']),
-        # all markets, quote=USDT, USD
+         ['ETH/USDT', 'LTC/USDT'],
+         'Futures markets, quote=USDT'),
         ([], ['USDT', 'USD'], False, False, False, False,
-         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-        # spot markets, quote=USDT, USD
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT'],
+         'all markets, quote=USDT, USD'),
         ([], ['USDT', 'USD'], False, False, True, False,
-         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
-        # all markets, base=LTC, quote=USDT
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT'],
+         'spot markets, quote=USDT, USD'),
         (['LTC'], ['USDT'], False, False, False, False,
-         ['LTC/USDT', 'XLTCUSDT']),
-        # all pairs, base=LTC, quote=USDT
+         ['LTC/USDT', 'XLTCUSDT'],
+         'all markets, base=LTC, quote=USDT'),
         (['LTC'], ['USDT'], True, False, False, False,
-         ['LTC/USDT', 'XLTCUSDT']),
-        # all markets, base=LTC, quote=USDT, NONEXISTENT
+         ['LTC/USDT', 'XLTCUSDT'],
+         'all pairs, base=LTC, quote=USDT'),
         (['LTC'], ['USDT', 'NONEXISTENT'], False, False, False, False,
-         ['LTC/USDT', 'XLTCUSDT']),
-        # all markets, base=LTC, quote=NONEXISTENT
+         ['LTC/USDT', 'XLTCUSDT'],
+         'all markets, base=LTC, quote=USDT, NONEXISTENT'),
         (['LTC'], ['NONEXISTENT'], False, False, False, False,
-         []),
+         [],
+         'all markets, base=LTC, quote=NONEXISTENT'),
     ])
 def test_get_markets(default_conf, mocker, markets_static,
                      base_currencies, quote_currencies, tradable_only, active_only,
-                     spot_only, futures_only,
-                     expected_keys):
+                     spot_only, futures_only, expected_keys,
+                     test_comment  # Here for debugging purposes (Not used within method)
+                     ):
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           _init_ccxt=MagicMock(return_value=MagicMock()),
                           _load_async_markets=MagicMock(),
