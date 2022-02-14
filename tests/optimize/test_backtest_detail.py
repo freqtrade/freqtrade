@@ -562,9 +562,9 @@ tc35 = BTContainer(data=[
 )
 
 # Test 36: Custom-entry-price around candle low
-# Causes immediate ROI exit. This is currently expected behavior (#6261)
-# https://github.com/freqtrade/freqtrade/issues/6261
-# But may change at a later point.
+# Would cause immediate ROI exit, but since the trade was entered
+# below open, we treat this as cheating, and delay the sell by 1 candle.
+# details: https://github.com/freqtrade/freqtrade/issues/6261
 tc36 = BTContainer(data=[
     # D   O     H     L     C    V    B  S   BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
@@ -574,7 +574,7 @@ tc36 = BTContainer(data=[
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.01}, profit_perc=0.01,
     custom_entry_price=4952,
-    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=1)]
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
 )
 
 
