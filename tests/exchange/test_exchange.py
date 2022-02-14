@@ -4312,6 +4312,7 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
     exchange._leverage_tiers = leverage_tiers
@@ -4348,6 +4349,7 @@ def test_get_maintenance_ratio_and_amt(
     api_mock = MagicMock()
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     exchange.get_maintenance_ratio_and_amt(pair, value) == (mmr, maintAmt)
 

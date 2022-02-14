@@ -1856,7 +1856,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
-        if self.trading_mode == TradingMode.FUTURES and self._api.has['fetchLeverageTiers']:
+        if self.trading_mode == TradingMode.FUTURES and self.exchange_has('fetchLeverageTiers'):
             try:
                 return self._api.fetch_leverage_tiers()
             except ccxt.DDoSProtection as e:
@@ -2259,7 +2259,7 @@ class Exchange:
         :return: (maintenance margin ratio, maintenance amount)
         """
 
-        if self._api.has['fetchLeverageTiers']:
+        if self.exchange_has('fetchLeverageTiers'):
 
             if pair not in self._leverage_tiers:
                 raise InvalidOrderException(
