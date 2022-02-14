@@ -329,7 +329,7 @@ class TestCCXTExchange():
         assert 0 < exchange.get_fee(pair, 'market', 'buy') < threshold
         assert 0 < exchange.get_fee(pair, 'market', 'sell') < threshold
 
-    def test_get_max_leverage_spot(self, exchange):
+    def test_ccxt_get_max_leverage_spot(self, exchange):
         spot, spot_name = exchange
         if spot:
             leverage_in_market_spot = EXCHANGES[spot_name]['leverage_in_market']['spot']
@@ -339,7 +339,7 @@ class TestCCXTExchange():
                 assert (isinstance(spot_leverage, float) or isinstance(spot_leverage, int))
                 assert spot_leverage >= 1.0
 
-    def test_get_max_leverage_futures(self, exchange_futures):
+    def test_ccxt_get_max_leverage_futures(self, exchange_futures):
         futures, futures_name = exchange_futures
         # TODO-lev: binance, gateio, and okx test
         if futures:
@@ -364,17 +364,17 @@ class TestCCXTExchange():
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
 
-    # def test_get_liquidation_price_compat():
+    # def test_ccxt_get_liquidation_price():
     #     return  # TODO-lev
 
-    # def test_liquidation_price_compat():
+    # def test_ccxt_liquidation_price():
     #     return  # TODO-lev
 
-    # def test_get_max_pair_stake_amount_compat():
+    # def test_ccxt_get_max_pair_stake_amount():
     #     return  # TODO-lev
 
-    # def test_load_leverage_tiers_compat():
+    # def test_ccxt_load_leverage_tiers():
     #     return  # TODO-lev
 
-    # def test_get_maintenance_ratio_and_amt_compat():
+    # def test_ccxt_get_maintenance_ratio_and_amt():
     #     return  # TODO-lev
