@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from math import isclose
 from random import randint
 from unittest.mock import MagicMock, PropertyMock
 
