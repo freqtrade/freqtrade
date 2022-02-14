@@ -77,7 +77,8 @@ class Okx(Exchange):
             tiers = {}
             for symbol in symbols:
                 res = self._api.fetchLeverageTiers(symbol)
-                tiers[symbol] = res[symbol]
+                res_symbol = res[symbol]
+                tiers[symbol] = self.parse_leverage_tier(res[symbol])
 
             return tiers
         else:

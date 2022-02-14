@@ -891,7 +891,8 @@ def get_markets():
             'future': True,
             'swap': True,
             'margin': True,
-            'linear': True,
+            'linear': False,
+            'inverse': True,
             'type': 'spot',
             'contractSize': None,
             'taker': 0.0006,
@@ -1286,7 +1287,108 @@ def get_markets():
             'strike': None,
             'optionType': None,
             'info': {}
-        }
+        },
+        'SOL/BUSD:BUSD': {
+            'limits': {
+                'leverage': {'min': None, 'max': None},
+                'amount': {'min': 1, 'max': 1000000},
+                'price': {'min': 0.04, 'max': 100000},
+                'cost': {'min': 5, 'max': None},
+                'market': {'min': 1, 'max': 1500}
+            },
+            'precision': {'amount': 0, 'price': 2, 'base': 8, 'quote': 8},
+            'tierBased': False,
+            'percentage': True,
+            'taker': 0.0004,
+            'maker': 0.0002,
+            'feeSide': 'get',
+            'id': 'SOLBUSD',
+            'lowercaseId': 'solbusd',
+            'symbol': 'SOL/BUSD',
+            'base': 'SOL',
+            'quote': 'BUSD',
+            'settle': 'BUSD',
+            'baseId': 'SOL',
+            'quoteId': 'BUSD',
+            'settleId': 'BUSD',
+            'type': 'future',
+            'spot': False,
+            'margin': False,
+            'future': True,
+            'delivery': False,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 1,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'info': {
+                'symbol': 'SOLBUSD',
+                'pair': 'SOLBUSD',
+                'contractType': 'PERPETUAL',
+                'deliveryDate': '4133404800000',
+                'onboardDate': '1630566000000',
+                'status': 'TRADING',
+                'maintMarginPercent': '2.5000',
+                'requiredMarginPercent': '5.0000',
+                'baseAsset': 'SOL',
+                'quoteAsset': 'BUSD',
+                'marginAsset': 'BUSD',
+                'pricePrecision': '4',
+                'quantityPrecision': '0',
+                'baseAssetPrecision': '8',
+                'quotePrecision': '8',
+                'underlyingType': 'COIN',
+                'underlyingSubType': [],
+                'settlePlan': '0',
+                'triggerProtect': '0.0500',
+                'liquidationFee': '0.005000',
+                'marketTakeBound': '0.05',
+                'filters': [
+                    {
+                        'minPrice': '0.0400',
+                        'maxPrice': '100000',
+                        'filterType': 'PRICE_FILTER',
+                        'tickSize': '0.0100'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'LOT_SIZE',
+                        'maxQty': '1000000',
+                        'minQty': '1'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'MARKET_LOT_SIZE',
+                        'maxQty': '1500',
+                        'minQty': '1'
+                    },
+                    {'limit': '200', 'filterType': 'MAX_NUM_ORDERS'},
+                    {'limit': '10', 'filterType': 'MAX_NUM_ALGO_ORDERS'},
+                    {'notional': '5', 'filterType': 'MIN_NOTIONAL'},
+                    {
+                        'multiplierDown': '0.9500',
+                        'multiplierUp': '1.0500',
+                        'multiplierDecimal': '4',
+                        'filterType': 'PERCENT_PRICE'
+                    }
+                ],
+                'orderTypes': [
+                    'LIMIT',
+                    'MARKET',
+                    'STOP',
+                    'STOP_MARKET',
+                    'TAKE_PROFIT',
+                    'TAKE_PROFIT_MARKET',
+                    'TRAILING_STOP_MARKET'
+                ],
+                'timeInForce': ['GTC', 'IOC', 'FOK', 'GTX']
+            }
+        },
     }
 
 

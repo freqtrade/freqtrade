@@ -347,7 +347,10 @@ class Exchange:
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
-        return market.get(self._ft_has["ccxt_futures_name"], False) is True
+        return (
+            market.get(self._ft_has["ccxt_futures_name"], False) is True and
+            market.get('linear', False) is True
+        )
 
     def market_is_spot(self, market: Dict[str, Any]) -> bool:
         return market.get('spot', False) is True
