@@ -4247,7 +4247,7 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
         mocker,
         default_conf,
         api_mock,
-        "binance",
+        "ftx",
         "load_leverage_tiers",
         "fetch_leverage_tiers",
     )

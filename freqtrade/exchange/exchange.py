@@ -1858,6 +1858,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    @retrier
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         if self.trading_mode == TradingMode.FUTURES and self.exchange_has('fetchLeverageTiers'):
             try:
@@ -1874,7 +1875,6 @@ class Exchange:
         else:
             return {}
 
-    @retrier
     def fill_leverage_tiers(self) -> None:
         """
         Assigns property _leverage_tiers to a dictionary of information about the leverage

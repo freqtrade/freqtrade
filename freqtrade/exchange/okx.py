@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,7 @@ class Okx(Exchange):
         pair_tiers = self._leverage_tiers[pair]
         return pair_tiers[-1]['max'] / leverage
 
+    @retrier
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         # * This is slow(~45s) on Okex, must make 90-some api calls to load all linear swap markets
         if self.trading_mode == TradingMode.FUTURES:
