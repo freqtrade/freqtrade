@@ -60,6 +60,7 @@ class PerformanceFilter(IPairList):
 
         # Get pairlist from performance dataframe values
         list_df = pd.DataFrame({'pair': pairlist})
+        list_df['prior_idx'] = list_df.index
 
         # Set initial value for pairs with no trades to 0
         # Sort the list using:
@@ -67,7 +68,7 @@ class PerformanceFilter(IPairList):
         #  - then count (low to high, so as to favor same performance with fewer trades)
         #  - then pair name alphametically
         sorted_df = list_df.merge(performance, on='pair', how='left')\
-            .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
+            .fillna(0).sort_values(by=['count', 'prior_idx'], ascending=True)\
             .sort_values(by=['profit_ratio'], ascending=False)
         if self._min_profit is not None:
             removed = sorted_df[sorted_df['profit_ratio'] < self._min_profit]

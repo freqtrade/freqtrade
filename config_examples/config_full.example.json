@@ -86,6 +86,7 @@
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "password": "",
+        "log_responses": false,
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [

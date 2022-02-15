@@ -313,6 +313,7 @@ A backtesting result will look like that:
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 | Rejected Buy signals  | 3089                |
+| Entry/Exit Timeouts   | 0 / 0               |
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
@@ -400,6 +401,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 | Rejected Buy signals  | 3089                |
+| Entry/Exit Timeouts   | 0 / 0               |
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
@@ -429,6 +431,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Rejected Buy signals`: Buy signals that could not be acted upon due to max_open_trades being reached.
+- `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
 - `Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as $(Absolute Drawdown) / (DrawdownHigh + startingBalance)$.
 - `Drawdown`: Maximum, absolute drawdown experienced. Difference between Drawdown High and Subsequent Low point.

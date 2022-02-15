@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
+import pandas as pd
 import pytest
 import uvicorn
 from fastapi import FastAPI
@@ -1181,6 +1182,24 @@ def test_api_pair_candles(botclient, ohlcv_history):
                  0.7039405, 8.885e-05, 0, 0, 1511686800000, None, None]
 
              ])
+    ohlcv_history['sell'] = ohlcv_history['sell'].astype('float64')
+    ohlcv_history.at[0, 'sell'] = float('inf')
+    ohlcv_history['date1'] = ohlcv_history['date']
+    ohlcv_history.at[0, 'date1'] = pd.NaT
+
+    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
+    assert_response(rc)
+    assert (rc.json()['data'] ==
+            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+              None, 0, None, None, 1511686200000, None, None],
+             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, '2017-11-26 08:55:00',
+                 1511686500000, 8.893e-05, None],
+             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 0, 0.0, '2017-11-26 09:00:00', 1511686800000, None, None]
+             ])
 
 
 def test_api_pair_history(botclient, ohlcv_history):
@@ -1442,3 +1461,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert result['status'] == 'reset'
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
+
+
+def test_health(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/health")
+
+    assert_response(rc)
+    ret = rc.json()
+    assert ret['last_process_ts'] == 0
+    assert ret['last_process'] == '1970-01-01T00:00:00+00:00'

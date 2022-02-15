@@ -27,13 +27,15 @@ API_FETCH_ORDER_RETRY_COUNT = 5
 
 BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
-    "phemex": "Does not provide history. ",
+    "phemex": "Does not provide history.",
+    "probit": "Requires additional, regular calls to `signIn()`.",
     "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
 }
 
 MAP_EXCHANGE_CHILDCLASS = {
     'binanceus': 'binance',
     'binanceje': 'binance',
+    'okex': 'okx',
 }
 
 

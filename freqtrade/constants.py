@@ -26,7 +26,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
                          'CalmarHyperOptLoss',
-                         'MaxDrawDownHyperOptLoss']
+                         'MaxDrawDownHyperOptLoss', 'ProfitDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
@@ -456,6 +456,7 @@ SCHEMA_BACKTEST_REQUIRED = [
     'dry_run_wallet',
     'dataformat_ohlcv',
     'dataformat_trades',
+    'unfilledtimeout',
 ]
 
 SCHEMA_MINIMAL_REQUIRED = [
