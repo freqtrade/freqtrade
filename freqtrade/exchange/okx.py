@@ -86,9 +86,7 @@ class Okx(Exchange):
 
             for symbol in sorted(symbols):
                 res = self._api.fetch_leverage_tiers(symbol)
-                tiers[symbol] = []
-                for tier in res[symbol]:
-                    tiers[symbol].append(self.parse_leverage_tier(tier))
+                tiers[symbol] = res[symbol]
             logger.info(f"Done initializing {len(symbols)} markets.")
 
             return tiers

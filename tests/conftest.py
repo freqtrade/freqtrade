@@ -846,7 +846,7 @@ def get_markets():
             'option': False,
             'active': True,
             'contract': None,
-            'linear': True,
+            'linear': None,
             'inverse': None,
             'taker': 0.0006,
             'maker': 0.0002,
@@ -891,7 +891,7 @@ def get_markets():
             'future': True,
             'swap': True,
             'margin': True,
-            'linear': True,
+            'linear': None,
             'inverse': False,
             'type': 'spot',
             'contractSize': None,
@@ -1398,7 +1398,9 @@ def markets_static():
     # market list. Do not modify this list without a good reason! Do not modify market parameters
     # of listed pairs in get_markets() without a good reason either!
     static_markets = ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']
+                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC',
+                      'ADA/USDT:USDT', 'ETH/USDT:USDT',
+                      ]
     all_markets = get_markets()
     return {m: all_markets[m] for m in static_markets}
 

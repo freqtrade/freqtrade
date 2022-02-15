@@ -309,7 +309,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
     exchange.trading_mode = TradingMode.FUTURES
     exchange.margin_mode = MarginMode.ISOLATED
     exchange.markets = markets
-    assert exchange.load_leverage_tiers() == {
+    # Initialization of load_leverage_tiers happens as part of exchange init.
+    exchange._leverage_tiers == {
         'ADA/USDT:USDT': [
             {
                 'tier': 1,
