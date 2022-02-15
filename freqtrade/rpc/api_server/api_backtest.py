@@ -20,6 +20,7 @@ router = APIRouter()
 
 
 @router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+# flake8: noqa: C901
 async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
                              config=Depends(get_config)):
     """Start backtesting if not done so already"""
