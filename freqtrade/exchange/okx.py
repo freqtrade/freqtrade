@@ -42,8 +42,8 @@ class Okx(Exchange):
                     f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
                 )
             self._api.set_leverage(
-                leverage,
-                pair,
+                leverage=leverage,
+                symbol=pair,
                 params={
                     "mgnMode": self.margin_mode.value,
                     "posSide": "long" if side == "buy" else "short",
