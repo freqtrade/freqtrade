@@ -82,8 +82,8 @@ class Okx(Exchange):
                 f"Initializing leverage_tiers for {len(symbols)} markets. "
                 "This will take about a minute.")
 
-            for symbol in symbols:
-                res = self._api.fetchLeverageTiers(symbol)
+            for symbol in sorted(symbols):
+                res = self._api.fetch_leverage_tiers(symbol)
                 tiers[symbol] = []
                 for tier in res[symbol]:
                     tiers[symbol].append(self.parse_leverage_tier(tier))

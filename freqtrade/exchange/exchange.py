@@ -1888,7 +1888,7 @@ class Exchange:
             self._leverage_tiers[pair] = pair_tiers
 
     def parse_leverage_tier(self, tier) -> Dict:
-        info = tier['info']
+        info = tier.get('info', {})
         return {
             'min': tier['notionalFloor'],
             'max': tier['notionalCap'],
