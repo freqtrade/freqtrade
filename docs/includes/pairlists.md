@@ -246,7 +246,7 @@ On exchanges that deduct fees from the receiving currency (e.g. FTX) - this can 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to > 0.
 
-For `PriceFiler` at least one of its `min_price`, `max_price` or `low_price_ratio` settings must be applied.
+For `PriceFilter` at least one of its `min_price`, `max_price` or `low_price_ratio` settings must be applied.
 
 Calculation example:
 
