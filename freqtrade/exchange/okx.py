@@ -1,8 +1,10 @@
 import logging
 from typing import Dict, List, Tuple
 
+import ccxt
+
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 
@@ -30,6 +32,7 @@ class Okx(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
+    @retrier
     def _lev_prep(
         self,
         pair: str,
@@ -41,13 +44,21 @@ class Okx(Exchange):
                 raise OperationalException(
                     f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
                 )
-            self._api.set_leverage(
-                leverage=leverage,
-                symbol=pair,
-                params={
-                    "mgnMode": self.margin_mode.value,
-                    "posSide": "long" if side == "buy" else "short",
-                })
+            try:
+                self._api.set_leverage(
+                    leverage=leverage,
+                    symbol=pair,
+                    params={
+                        "mgnMode": self.margin_mode.value,
+                        # "posSide": "net"",
+                    })
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
 
     def get_max_pair_stake_amount(
         self,
