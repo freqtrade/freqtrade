@@ -4250,7 +4250,7 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
                 'tier': 1,
                 'notionalFloor': 0,
                 'notionalCap': 500,
-                'maintenanceMarginRatio': 0.02,
+                'maintenanceMarginRate': 0.02,
                 'maxLeverage': 75,
                 'info': {
                     'baseMaxLoan': '',
@@ -4291,7 +4291,7 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
                 'tier': 1,
                 'notionalFloor': 0,
                 'notionalCap': 500,
-                'maintenanceMarginRatio': 0.02,
+                'maintenanceMarginRate': 0.02,
                 'maxLeverage': 75,
                 'info': {
                     'baseMaxLoan': '',
@@ -4327,7 +4327,7 @@ def test_parse_leverage_tier(mocker, default_conf):
         "tier": 1,
         "notionalFloor": 0,
         "notionalCap": 100000,
-        "maintenanceMarginRatio": 0.025,
+        "maintenanceMarginRate": 0.025,
         "maxLeverage": 20,
         "info": {
             "bracket": "1",
@@ -4351,7 +4351,7 @@ def test_parse_leverage_tier(mocker, default_conf):
         'tier': 1,
         'notionalFloor': 0,
         'notionalCap': 2000,
-        'maintenanceMarginRatio': 0.01,
+        'maintenanceMarginRate': 0.01,
         'maxLeverage': 75,
         'info': {
             'baseMaxLoan': '',

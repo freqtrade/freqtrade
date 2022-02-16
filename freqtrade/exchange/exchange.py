@@ -1891,7 +1891,7 @@ class Exchange:
         return {
             'min': tier['notionalFloor'],
             'max': tier['notionalCap'],
-            'mmr': tier['maintenanceMarginRatio'],
+            'mmr': tier['maintenanceMarginRate'],
             'lev': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }

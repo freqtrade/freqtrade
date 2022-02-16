@@ -177,7 +177,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 1,
                 "notionalFloor": 0,
                 "notionalCap": 100000,
-                "maintenanceMarginRatio": 0.025,
+                "maintenanceMarginRate": 0.025,
                 "maxLeverage": 20,
                 "info": {
                     "bracket": "1",
@@ -192,7 +192,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 2,
                 "notionalFloor": 100000,
                 "notionalCap": 500000,
-                "maintenanceMarginRatio": 0.05,
+                "maintenanceMarginRate": 0.05,
                 "maxLeverage": 10,
                 "info": {
                     "bracket": "2",
@@ -207,7 +207,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 3,
                 "notionalFloor": 500000,
                 "notionalCap": 1000000,
-                "maintenanceMarginRatio": 0.1,
+                "maintenanceMarginRate": 0.1,
                 "maxLeverage": 5,
                 "info": {
                     "bracket": "3",
@@ -222,7 +222,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 4,
                 "notionalFloor": 1000000,
                 "notionalCap": 2000000,
-                "maintenanceMarginRatio": 0.15,
+                "maintenanceMarginRate": 0.15,
                 "maxLeverage": 3,
                 "info": {
                     "bracket": "4",
@@ -237,7 +237,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 5,
                 "notionalFloor": 2000000,
                 "notionalCap": 5000000,
-                "maintenanceMarginRatio": 0.25,
+                "maintenanceMarginRate": 0.25,
                 "maxLeverage": 2,
                 "info": {
                     "bracket": "5",
@@ -252,7 +252,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 6,
                 "notionalFloor": 5000000,
                 "notionalCap": 30000000,
-                "maintenanceMarginRatio": 0.5,
+                "maintenanceMarginRate": 0.5,
                 "maxLeverage": 1,
                 "info": {
                     "bracket": "6",
@@ -269,7 +269,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 1,
                 "notionalFloor": 0,
                 "notionalCap": 50000,
-                "maintenanceMarginRatio": 0.01,
+                "maintenanceMarginRate": 0.01,
                 "maxLeverage": 50,
                 "info": {
                     "bracket": "1",
@@ -284,7 +284,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 2,
                 "notionalFloor": 50000,
                 "notionalCap": 150000,
-                "maintenanceMarginRatio": 0.025,
+                "maintenanceMarginRate": 0.025,
                 "maxLeverage": 20,
                 "info": {
                     "bracket": "2",
@@ -299,7 +299,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 3,
                 "notionalFloor": 150000,
                 "notionalCap": 250000,
-                "maintenanceMarginRatio": 0.05,
+                "maintenanceMarginRate": 0.05,
                 "maxLeverage": 10,
                 "info": {
                     "bracket": "3",
@@ -314,7 +314,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 4,
                 "notionalFloor": 250000,
                 "notionalCap": 500000,
-                "maintenanceMarginRatio": 0.1,
+                "maintenanceMarginRate": 0.1,
                 "maxLeverage": 5,
                 "info": {
                     "bracket": "4",
@@ -329,7 +329,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 5,
                 "notionalFloor": 500000,
                 "notionalCap": 1000000,
-                "maintenanceMarginRatio": 0.125,
+                "maintenanceMarginRate": 0.125,
                 "maxLeverage": 4,
                 "info": {
                     "bracket": "5",
@@ -344,7 +344,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 6,
                 "notionalFloor": 1000000,
                 "notionalCap": 2000000,
-                "maintenanceMarginRatio": 0.25,
+                "maintenanceMarginRate": 0.25,
                 "maxLeverage": 2,
                 "info": {
                     "bracket": "6",
@@ -359,7 +359,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
                 "tier": 7,
                 "notionalFloor": 2000000,
                 "notionalCap": 30000000,
-                "maintenanceMarginRatio": 0.5,
+                "maintenanceMarginRate": 0.5,
                 "maxLeverage": 1,
                 "info": {
                     "bracket": "7",
