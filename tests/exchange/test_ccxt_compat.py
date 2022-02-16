@@ -24,10 +24,8 @@ EXCHANGES = {
         'stake_currency': 'USDT',
         'hasQuoteVolume': False,
         'timeframe': '1h',
-        'leverage_in_market': {
-            'spot': False,
-            'futures': False,
-        }
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
     'binance': {
         'pair': 'BTC/USDT',
@@ -35,20 +33,16 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
-        'leverage_in_market': {
-            'spot': False,
-            'futures': False,
-        }
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
     'kraken': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'leverage_in_market': {
-            'spot': True,
-            'futures': True,
-        }
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': True,
     },
     'ftx': {
         'pair': 'BTC/USD',
@@ -57,20 +51,16 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',
         'futures': True,
-        'leverage_in_market': {
-            'spot': True,
-            'futures': True,
-        }
+        'leverage_tiers_public': False,  # TODO: Set to True once implemented on CCXT
+        'leverage_in_spot_market': True,
     },
     'kucoin': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'leverage_in_market': {
-            'spot': False,
-            'futures': False,
-        }
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': True,
     },
     'gateio': {
         'pair': 'BTC/USDT',
@@ -79,10 +69,8 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
-        'leverage_in_market': {
-            'spot': True,
-            'futures': True,
-        }
+        'leverage_tiers_public': False,  # TODO-lev: Set to True once implemented on CCXT
+        'leverage_in_spot_market': True,
     },
     'okx': {
         'pair': 'BTC/USDT',
@@ -91,20 +79,16 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
-        'leverage_in_market': {
-            'spot': True,
-            'futures': True,
-        }
+        'leverage_tiers_public': True,
+        'leverage_in_spot_market': True,
     },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'leverage_in_market': {
-            'spot': False,
-            'futures': False,
-        }
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
 }
 
@@ -332,7 +316,7 @@ class TestCCXTExchange():
     def test_ccxt_get_max_leverage_spot(self, exchange):
         spot, spot_name = exchange
         if spot:
-            leverage_in_market_spot = EXCHANGES[spot_name]['leverage_in_market']['spot']
+            leverage_in_market_spot = EXCHANGES[spot_name]['leverage_in_spot_market']
             if leverage_in_market_spot:
                 spot_pair = EXCHANGES[spot_name].get('pair', EXCHANGES[spot_name]['pair'])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
@@ -342,9 +326,8 @@ class TestCCXTExchange():
     def test_ccxt_get_max_leverage_futures(self, exchange_futures):
         futures, futures_name = exchange_futures
         if futures:
-            leverage_in_market_futures = EXCHANGES[futures_name]['leverage_in_market']['futures']
-            # TODO-lev: binance, gateio, and okx don't have leverage_in_market
-            if leverage_in_market_futures:
+            leverage_tiers_public = EXCHANGES[futures_name]['leverage_tiers_public']
+            if leverage_tiers_public:
                 futures_pair = EXCHANGES[futures_name].get(
                     'futures_pair',
                     EXCHANGES[futures_name]['pair']
@@ -364,6 +347,34 @@ class TestCCXTExchange():
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
 
+    def test_ccxt_load_leverage_tiers(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures and EXCHANGES[futures_name]['leverage_tiers_public']:
+            leverage_tiers = futures.load_leverage_tiers()
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            assert (isinstance(leverage_tiers, dict))
+            assert futures_pair in leverage_tiers
+            pair_tiers = leverage_tiers[futures_pair]
+            assert len(pair_tiers) > 0
+            oldLeverage = 0
+            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = float('inf')
+            for tier in pair_tiers:
+                for key in ['maintenanceMarginRate', 'notionalFloor', 'notionalCap', 'maxLeverage']:
+                    assert key in tier
+                    assert pair_tiers[key] > 0.0
+                assert pair_tiers['notionalCap'] > pair_tiers['notionalFloor']
+                assert tier['maxLeverage'] < oldLeverage
+                assert tier['maintenanceMarginRate'] > oldMaintenanceMarginRate
+                assert tier['notionalFloor'] > oldNotionalFloor
+                assert tier['notionalCap'] > oldNotionalCap
+                oldLeverage = tier['maxLeverage']
+                oldMaintenanceMarginRate = tier['maintenanceMarginRate']
+                oldNotionalFloor = tier['notionalFloor']
+                oldNotionalCap = tier['notionalCap']
+
     # def test_ccxt_get_liquidation_price():
     #     return  # TODO-lev
 
@@ -371,9 +382,6 @@ class TestCCXTExchange():
     #     return  # TODO-lev
 
     # def test_ccxt_get_max_pair_stake_amount():
-    #     return  # TODO-lev
-
-    # def test_ccxt_load_leverage_tiers():
     #     return  # TODO-lev
 
     # def test_ccxt_get_maintenance_ratio_and_amt():
