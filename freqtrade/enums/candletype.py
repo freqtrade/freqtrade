@@ -11,7 +11,7 @@ class CandleType(str, Enum):
 
     # TODO: Could take up less memory if these weren't a CandleType
     FUNDING_RATE = "funding_rate"
-    BORROW_RATE = "borrow_rate"  # * unimplemented
+    # BORROW_RATE = "borrow_rate"  # * unimplemented
 
     @staticmethod
     def from_string(value: str) -> 'CandleType':
