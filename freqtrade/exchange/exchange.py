@@ -1179,9 +1179,7 @@ class Exchange:
                         else:
                             order_amount = 0
 
-                        if side == 'short':
-                            currency: str = market['quote']
-                        else:
+                        if side == 'long' or side == 'buy':
                             currency = market['base']
 
                             if currency in balances:
