@@ -363,7 +363,7 @@ class TestCCXTExchange():
             oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = -1
             for tier in pair_tiers:
                 for key in [
-                    'maintenanceMarginRatio',  # TODO-lev: Change to maintenanceMarginRate
+                    'maintenanceMarginRate',
                     'notionalFloor',
                     'notionalCap',
                     'maxLeverage'
@@ -372,11 +372,11 @@ class TestCCXTExchange():
                     assert tier[key] >= 0.0
                 assert tier['notionalCap'] > tier['notionalFloor']
                 assert tier['maxLeverage'] <= oldLeverage
-                assert tier['maintenanceMarginRatio'] >= oldMaintenanceMarginRate
+                assert tier['maintenanceMarginRate'] >= oldMaintenanceMarginRate
                 assert tier['notionalFloor'] > oldNotionalFloor
                 assert tier['notionalCap'] > oldNotionalCap
                 oldLeverage = tier['maxLeverage']
-                oldMaintenanceMarginRate = tier['maintenanceMarginRatio']
+                oldMaintenanceMarginRate = tier['maintenanceMarginRate']
                 oldNotionalFloor = tier['notionalFloor']
                 oldNotionalCap = tier['notionalCap']
 
