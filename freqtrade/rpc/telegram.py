@@ -235,17 +235,30 @@ class Telegram(RPCHandler):
 
         if msg['type'] == RPCMessageType.BUY_FILL:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+            total = msg['amount'] * msg['open_rate']
 
         elif msg['type'] == RPCMessageType.BUY:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-
+            total = msg['amount'] * msg['limit']
+        if self._rpc._fiat_converter:
+            total_fiat = self._rpc._fiat_converter.convert_amount(
+                total, msg['stake_currency'], msg['fiat_currency'])
+        else:
+            total_fiat = 0
         message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            message += f", {round_coin_value(total, msg['fiat_currency'])}"
 
-        message += ")`"
+        message += ")`\n"
+        if msg['partial']:
+            message += f"*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
         return message
 
     def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
@@ -287,7 +300,18 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
             message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
+        if self._rpc._fiat_converter:
+            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+        else:
+            msg['stake_amount_fiat'] = 0
+        if msg['partial']:
+            message += f"*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:

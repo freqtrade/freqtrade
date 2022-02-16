@@ -476,7 +476,18 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
+            self.open_order_id = None
+            if partial:
+                orders=(self.select_filled_orders('buy'))
+                lbuy=orders[-2]
+                lamount = (lbuy.filled or lbuy.amount)
+                lbuy.average=(lbuy.average * lamount - self.calc_profit2(orders[-1].rate, order.rate, order.filled or order.amount))/lamount
+                Order.query.session.commit()
+                self.orders.remove(orders[-1])
+                self.recalc_trade_from_orders()
+                Trade.commit()
+            else:
+                self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -488,6 +499,8 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order_type}')
         Trade.commit()
 
+    def calc_profit2(self, open_rate: float, close_rate: float, amount: Float) ->float:
+        return Decimal(self.amount) *( (1-self.fee_close)* Decimal(close_rate) -(1+self.fee_open)* Decimal(open_rate) )
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
