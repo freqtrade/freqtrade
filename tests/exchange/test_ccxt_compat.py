@@ -120,7 +120,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf = deepcopy(exchange_conf)
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
-        exchange_conf['margin_mode'] = 'cross'
+        exchange_conf['margin_mode'] = 'isolated'
         exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
 
         # TODO-lev: This mock should no longer be necessary once futures are enabled.
@@ -134,6 +134,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         yield exchange, request.param
 
 
+@pytest.mark.longrun
 class TestCCXTExchange():
 
     def test_load_markets(self, exchange):
@@ -379,11 +380,34 @@ class TestCCXTExchange():
                 oldNotionalFloor = tier['notionalFloor']
                 oldNotionalCap = tier['notionalCap']
 
-    def test_ccxt_get_liquidation_price():
-        return  # TODO-lev
+    def test_ccxt_dry_run_liquidation_price(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures and EXCHANGES[futures_name]['leverage_tiers_public']:
 
-    def test_ccxt_liquidation_price():
-        return  # TODO-lev
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
+
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
 
     def test_ccxt_get_max_pair_stake_amount(self, exchange_futures):
         futures, futures_name = exchange_futures
