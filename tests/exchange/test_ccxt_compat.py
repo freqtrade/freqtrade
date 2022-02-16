@@ -134,7 +134,6 @@ def exchange_futures(request, exchange_conf, class_mocker):
         yield exchange, request.param
 
 
-@pytest.mark.longrun
 class TestCCXTExchange():
 
     def test_load_markets(self, exchange):
@@ -380,14 +379,19 @@ class TestCCXTExchange():
                 oldNotionalFloor = tier['notionalFloor']
                 oldNotionalCap = tier['notionalCap']
 
-    # def test_ccxt_get_liquidation_price():
-    #     return  # TODO-lev
+    def test_ccxt_get_liquidation_price():
+        return  # TODO-lev
 
-    # def test_ccxt_liquidation_price():
-    #     return  # TODO-lev
+    def test_ccxt_liquidation_price():
+        return  # TODO-lev
 
-    # def test_ccxt_get_max_pair_stake_amount():
-    #     return  # TODO-lev
-
-    # def test_ccxt_get_maintenance_ratio_and_amt():
-    #     return  # TODO-lev
+    def test_ccxt_get_max_pair_stake_amount(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
+            assert (isinstance(max_stake_amount, float))
+            assert max_stake_amount >= 0.0
