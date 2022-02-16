@@ -342,7 +342,7 @@ class Exchange:
 
     def get_pair_base_currency(self, pair: str) -> str:
         """
-        Return a pair's quote currency
+        Return a pair's base currency
         """
         return self.markets.get(pair, {}).get('base', '')
 
@@ -1157,6 +1157,39 @@ class Exchange:
             balances.pop("free", None)
             balances.pop("total", None)
             balances.pop("used", None)
+
+            if self.trading_mode == TradingMode.FUTURES:
+
+                open_orders_response: List[dict] = self._api.fetch_open_orders()
+                open_orders: dict = {}
+                for order in open_orders_response:
+                    symbol: str = order['symbol']
+                    open_orders[symbol] = order
+
+                positions: List[dict] = self._api.fetch_positions()
+                for position in positions:
+                    symbol = position['symbol']
+                    market: dict = self.markets[symbol]
+                    size: float = self._contracts_to_amount(symbol, position['contracts'])
+                    side: str = position['side']
+                    if size > 0:
+
+                        if symbol in open_orders:
+                            order_amount: float = open_orders[symbol]['remaining']
+                        else:
+                            order_amount = 0
+
+                        if side == 'short':
+                            currency: str = market['quote']
+                        else:
+                            currency = market['base']
+
+                            if currency in balances:
+                                balances[currency] = {
+                                    'free': size - order_amount,
+                                    'used': order_amount,
+                                    'total': size,
+                                }
 
             return balances
         except ccxt.DDoSProtection as e:

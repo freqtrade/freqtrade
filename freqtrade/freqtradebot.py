@@ -1338,7 +1338,6 @@ class FreqtradeBot(LoggingMixin):
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
         wallet_amount = self.wallets.get_free(trade_base_currency)
         logger.debug(f"{pair} - Wallet: {wallet_amount} - Trade-amount: {amount}")
-        # TODO-lev: Get wallet amount + value of positions
         if wallet_amount >= amount or self.trading_mode == TradingMode.FUTURES:
             # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
