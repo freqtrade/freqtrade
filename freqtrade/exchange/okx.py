@@ -32,6 +32,24 @@ class Okx(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
+    def _get_params(
+        self,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'gtc',
+    ) -> Dict:
+        # TODO-lev: Test me
+        params = super()._get_params(
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
+            params['tdMode'] = self.margin_mode.value
+        return params
+
     @retrier
     def _lev_prep(
         self,
@@ -45,6 +63,7 @@ class Okx(Exchange):
                     f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
                 )
             try:
+                # TODO-lev: Test me properly (check mgnMode passed)
                 self._api.set_leverage(
                     leverage=leverage,
                     symbol=pair,
