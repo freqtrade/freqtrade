@@ -1175,19 +1175,26 @@ class Exchange:
                     if size > 0:
 
                         if symbol in open_orders:
-                            order_amount: float = open_orders[symbol]['remaining']
+                            order = open_orders[symbol]
+                            order_amount: float = order['remaining']
+                            order_side: str = order['side']
+                            if order_side == 'buy' or order_side == 'long':
+                                order_amount = 0
                         else:
                             order_amount = 0
 
                         if side == 'long' or side == 'buy':
                             currency = market['base']
+                            free = size - order_amount
 
-                            if currency in balances:
-                                balances[currency] = {
-                                    'free': size - order_amount,
-                                    'used': order_amount,
-                                    'total': size,
-                                }
+                            balances[currency] = {
+                                'free': free,
+                                'used': order_amount,
+                                'total': size,
+                            }
+                            balances['free'][currency] = free
+                            balances['used'][currency] = order_amount
+                            balances['total'][currency] = size
 
             return balances
         except ccxt.DDoSProtection as e:
