@@ -4273,13 +4273,14 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.load_leverage_tiers() == {}
 
-    # FUTURES has.fetchLeverageTiers == False
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    assert exchange.load_leverage_tiers() == {}
+
+    if exchange_name != 'binance':
+        # FUTURES has.fetchLeverageTiers == False
+        type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        assert exchange.load_leverage_tiers() == {}
 
     # FUTURES regular
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
