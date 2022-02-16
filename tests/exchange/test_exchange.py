@@ -4236,54 +4236,54 @@ def test_get_max_pair_stake_amount(
     assert exchange.get_max_pair_stake_amount('ADA/USDT', 2.0) == 500
 
 
-def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
+@pytest.mark.parametrize('exchange_name', EXCHANGES)
+def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_leverage_tiers = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
     default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
 
-    api_mock.fetch_leverage_tiers = MagicMock(return_value=[
-        {
-            'ADA/USDT:USDT': [
-                {
-                    'tier': 1,
-                    'notionalFloor': 0,
-                    'notionalCap': 500,
-                    'maintenanceMarginRatio': 0.02,
-                    'maxLeverage': 75,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.013',
-                        'instId': '',
-                        'maxLever': '75',
-                        'maxSz': '500',
-                        'minSz': '0',
-                        'mmr': '0.01',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '1',
-                        'uly': 'ADA-USDT'
-                    }
-                },
-            ]
-        }
-    ])
+    api_mock.fetch_leverage_tiers = MagicMock(return_value={
+        'ADA/USDT:USDT': [
+            {
+                'tier': 1,
+                'notionalFloor': 0,
+                'notionalCap': 500,
+                'maintenanceMarginRatio': 0.02,
+                'maxLeverage': 75,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.013',
+                    'instId': '',
+                    'maxLever': '75',
+                    'maxSz': '500',
+                    'minSz': '0',
+                    'mmr': '0.01',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '1',
+                    'uly': 'ADA-USDT'
+                }
+            },
+        ]
+    })
 
     # SPOT
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.load_leverage_tiers() == {}
 
     # FUTURES has.fetchLeverageTiers == False
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': False})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     assert exchange.load_leverage_tiers() == {}
 
     # FUTURES regular
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.load_leverage_tiers() == {
         'ADA/USDT:USDT': [
             {
@@ -4313,7 +4313,7 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
         mocker,
         default_conf,
         api_mock,
-        "ftx",
+        exchange_name,
         "load_leverage_tiers",
         "fetch_leverage_tiers",
     )
