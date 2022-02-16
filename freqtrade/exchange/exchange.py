@@ -503,7 +503,7 @@ class Exchange:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available on {self.name}. '
+                    f'Pair {pair} is not available on {self.name} {self.trading_mode.value}. '
                     f'Please remove {pair} from your whitelist.')
 
                 # From ccxt Documentation:
@@ -1533,7 +1533,6 @@ class Exchange:
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-        # TODO-lev: maybe depend this on candle type?
         drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
         input_coroutines = []
         cached_pairs = []

@@ -71,7 +71,7 @@ class StrategyTestV3(IStrategy):
     protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
-    # TODO-lev: Can this work with protection tests? (replace HyperoptableStrategy implicitly ... )
+    # TODO: Can this work with protection tests? (replace HyperoptableStrategy implicitly ... )
     # @property
     # def protections(self):
     #     prot = []

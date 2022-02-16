@@ -522,13 +522,11 @@ def test_create_trades_preopen(default_conf_usdt, ticker_usdt, fee, mocker,
     assert len(trades) == 4
 
 
-@pytest.mark.parametrize('is_short, open_rate', [
-    (False, 2.0),
-    (True, 2.02)
-])
+@pytest.mark.parametrize('is_short', [False, True])
 def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-                                is_short, open_rate, fee, mocker, caplog
+                                is_short, fee, mocker, caplog
                                 ) -> None:
+    ticker_side = 'ask' if is_short else 'bid'
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -554,8 +552,8 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
-    assert trade.open_rate == open_rate  # TODO-lev: I think? That's what the ticker ask price is
-    assert isclose(trade.amount, 60 / open_rate)
+    assert trade.open_rate == ticker_usdt.return_value[ticker_side]
+    assert isclose(trade.amount, 60 / ticker_usdt.return_value[ticker_side])
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
@@ -3275,9 +3273,9 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     assert rpc_mock.call_count == 3
 
 
-# TODO-lev: add short, RPC short, short fill
-def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt, ticker_usdt, fee,
-                                                               mocker) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
+        default_conf_usdt, ticker_usdt, fee, mocker, is_short) -> None:
     default_conf_usdt['exchange']['name'] = 'binance'
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3301,7 +3299,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3315,7 +3313,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     assert trade.stoploss_order_id == '123'
     assert trade.open_order_id is None
 
-    # Assuming stoploss on exchnage is hit
+    # Assuming stoploss on exchange is hit
     # stoploss_order_id should become None
     # and trade should be sold at the price of stoploss
     stoploss_executed = MagicMock(return_value={
@@ -3343,19 +3341,24 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     assert trade.is_open is False
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
-    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
-    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
-    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+    if is_short:
+        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.SHORT
+        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.SHORT_FILL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+
+    else:
+        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
+        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
 
 
 @pytest.mark.parametrize(
-    "is_short,amount,open_rate,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
-        (False, 30, 2.0, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
-        # TODO-lev: Should the current rate be 2.2 for shorts?
-        (True, 29.70297029, 2.02, 2.2, 2.3, -8.63762376, -0.1443212, 'loss'),
+    "is_short,amount,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
+        (False, 30, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
+        (True, 29.70297029, 2.2, 2.3, -8.63762376, -0.1443212, 'loss'),
     ])
 def test_execute_trade_exit_market_order(
-    default_conf_usdt, ticker_usdt, fee, is_short, current_rate, amount, open_rate,
+    default_conf_usdt, ticker_usdt, fee, is_short, current_rate, amount,
     limit, profit_amount, profit_ratio, profit_or_loss, ticker_usdt_sell_up, mocker
 ) -> None:
     """
@@ -3375,6 +3378,7 @@ def test_execute_trade_exit_market_order(
         long: (65.835/60.15) - 1 = 0.0945137157107232
         short: 1 - (68.48762376237624/59.85) = -0.1443211990371971
     """
+    open_rate = ticker_usdt.return_value['ask' if is_short else 'bid']
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -4241,14 +4245,13 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
     (0.1, False),
     (100, True),
 ])
-@pytest.mark.parametrize('is_short, open_rate', [
-    (False, 2.0),
-    (True, 2.02),
-])
+@pytest.mark.parametrize('is_short', [False, True])
 def test_order_book_depth_of_market(
-    default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-    fee, mocker, order_book_l2, delta, is_high_delta, is_short, open_rate
+    default_conf_usdt, ticker_usdt, limit_order_open,
+    fee, mocker, order_book_l2, delta, is_high_delta, is_short
 ):
+    ticker_side = 'ask' if is_short else 'bid'
+
     default_conf_usdt['bid_strategy']['check_depth_of_market']['enabled'] = True
     default_conf_usdt['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = delta
     patch_RPCManager(mocker)
@@ -4283,7 +4286,7 @@ def test_order_book_depth_of_market(
         # Simulate fulfilled LIMIT_BUY order for trade
         trade.update(limit_order_open[enter_side(is_short)])
 
-        assert trade.open_rate == open_rate  # TODO-lev: double check
+        assert trade.open_rate == ticker_usdt.return_value[ticker_side]
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
