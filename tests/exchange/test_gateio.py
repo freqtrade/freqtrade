@@ -75,5 +75,5 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
 ])
 def test_get_max_leverage_gateio(default_conf, mocker, pair, nominal_value, max_lev):
     # Binance has a different method of getting the max leverage
-    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
+    exchange = get_patched_exchange(mocker, default_conf, id="gateio")
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev

@@ -4242,8 +4242,66 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers):
     api_mock.fetch_leverage_tiers = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
     default_conf['dry_run'] = False
+
+    api_mock.fetch_leverage_tiers = MagicMock(return_value=[
+        {
+            'ADA/USDT:USDT': [
+                {
+                    'tier': 1,
+                    'notionalFloor': 0,
+                    'notionalCap': 500,
+                    'maintenanceMarginRatio': 0.02,
+                    'maxLeverage': 75,
+                    'info': {
+                        'baseMaxLoan': '',
+                        'imr': '0.013',
+                        'instId': '',
+                        'maxLever': '75',
+                        'maxSz': '500',
+                        'minSz': '0',
+                        'mmr': '0.01',
+                        'optMgnFactor': '0',
+                        'quoteMaxLoan': '',
+                        'tier': '1',
+                        'uly': 'ADA-USDT'
+                    }
+                },
+            ]
+        }
+    ])
+
+    # SPOT
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange.load_leverage_tiers() == {}
+
+    # FUTURES
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    assert exchange.load_leverage_tiers() == {
+            'ADA/USDT:USDT': [
+                {
+                    'tier': 1,
+                    'notionalFloor': 0,
+                    'notionalCap': 500,
+                    'maintenanceMarginRatio': 0.02,
+                    'maxLeverage': 75,
+                    'info': {
+                        'baseMaxLoan': '',
+                        'imr': '0.013',
+                        'instId': '',
+                        'maxLever': '75',
+                        'maxSz': '500',
+                        'minSz': '0',
+                        'mmr': '0.01',
+                        'optMgnFactor': '0',
+                        'quoteMaxLoan': '',
+                        'tier': '1',
+                        'uly': 'ADA-USDT'
+                    }
+                },
+            ]
+        }
 
     ccxt_exceptionhandlers(
         mocker,
