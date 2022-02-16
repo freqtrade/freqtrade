@@ -8,8 +8,10 @@ class CandleType(str, Enum):
     MARK = "mark"
     INDEX = "index"
     PREMIUMINDEX = "premiumIndex"
-    # TODO-lev: not sure this belongs here, as the datatype is really different
+
+    # TODO: Could take up less memory if these weren't a CandleType
     FUNDING_RATE = "funding_rate"
+    # BORROW_RATE = "borrow_rate"  # * unimplemented
 
     @staticmethod
     def from_string(value: str) -> 'CandleType':

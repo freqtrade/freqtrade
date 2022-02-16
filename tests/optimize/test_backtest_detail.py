@@ -558,7 +558,7 @@ tc35 = BTContainer(data=[
     stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01,
     custom_entry_price=7200, trades=[
         BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)
-    ]
+]
 )
 
 # Test 36: Custom-entry-price around candle low
@@ -697,7 +697,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.required_startup = 0
     if data.leverage > 1.0:
-        # TODO-lev: Should we initialize this properly??
+        # TODO: Should we initialize this properly??
         backtesting._can_short = True
     backtesting.strategy.advise_entry = lambda a, m: frame
     backtesting.strategy.advise_exit = lambda a, m: frame
