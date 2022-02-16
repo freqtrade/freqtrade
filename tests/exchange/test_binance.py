@@ -486,7 +486,7 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
         api_mock,
         "binance",
         "fill_leverage_tiers",
-        "fetch_leverage_tiers"
+        "fetch_leverage_tiers",
     )
 
 

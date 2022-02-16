@@ -1,9 +1,12 @@
 import logging
 from typing import Dict, List, Tuple
 
+import ccxt
+
 from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,25 @@ class Okx(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
+    def _get_params(
+        self,
+        ordertype: str,
+        leverage: float,
+        reduceOnly: bool,
+        time_in_force: str = 'gtc',
+    ) -> Dict:
+        # TODO-lev: Test me
+        params = super()._get_params(
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
+            params['tdMode'] = self.margin_mode.value
+        return params
+
+    @retrier
     def _lev_prep(
         self,
         pair: str,
@@ -40,13 +62,22 @@ class Okx(Exchange):
                 raise OperationalException(
                     f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
                 )
-            self._api.set_leverage(
-                leverage,
-                pair,
-                params={
-                    "mgnMode": self.margin_mode.value,
-                    "posSide": "long" if side == "buy" else "short",
-                })
+            try:
+                # TODO-lev: Test me properly (check mgnMode passed)
+                self._api.set_leverage(
+                    leverage=leverage,
+                    symbol=pair,
+                    params={
+                        "mgnMode": self.margin_mode.value,
+                        # "posSide": "net"",
+                    })
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
 
     def get_max_pair_stake_amount(
         self,
@@ -64,6 +95,7 @@ class Okx(Exchange):
         pair_tiers = self._leverage_tiers[pair]
         return pair_tiers[-1]['max'] / leverage
 
+    @retrier
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         # * This is slow(~45s) on Okex, must make 90-some api calls to load all linear swap markets
         if self.trading_mode == TradingMode.FUTURES:
@@ -82,11 +114,9 @@ class Okx(Exchange):
                 f"Initializing leverage_tiers for {len(symbols)} markets. "
                 "This will take about a minute.")
 
-            for symbol in symbols:
-                res = self._api.fetchLeverageTiers(symbol)
-                tiers[symbol] = []
-                for tier in res[symbol]:
-                    tiers[symbol].append(self.parse_leverage_tier(tier))
+            for symbol in sorted(symbols):
+                res = self._api.fetch_leverage_tiers(symbol)
+                tiers[symbol] = res[symbol]
             logger.info(f"Done initializing {len(symbols)} markets.")
 
             return tiers
