@@ -929,6 +929,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
+    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
     freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'
