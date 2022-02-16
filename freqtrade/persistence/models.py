@@ -161,6 +161,8 @@ class Order(_DECL_BASE):
         self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
+        # TODO-lev: ccxt order objects don't contain leverage.
+        # Therefore the below will always be 1.0 - which is wrong.
         self.leverage = order.get('leverage', self.leverage)
 
         if 'timestamp' in order and order['timestamp'] is not None:
