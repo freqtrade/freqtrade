@@ -61,3 +61,5 @@ class Gateio(Exchange):
         market = self.markets[pair]
         if market['limits']['leverage']['max'] is not None:
             return market['limits']['leverage']['max']
+        else:
+            return 1.0

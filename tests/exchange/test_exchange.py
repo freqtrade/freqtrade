@@ -4335,7 +4335,7 @@ def test_get_maintenance_ratio_and_amt_exceptions(mocker, default_conf, leverage
         exchange.get_maintenance_ratio_and_amt('1000SHIB/USDT', 10000)
 
 
-@ pytest.mark.parametrize('pair,value,mmr,maintAmt', [
+@pytest.mark.parametrize('pair,value,mmr,maintAmt', [
     ('ADA/BUSD', 500, 0.025, 0.0),
     ('ADA/BUSD', 20000000, 0.5, 1527500.0),
     ('ZEC/USDT', 500, 0.01, 0.0),
