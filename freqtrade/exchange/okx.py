@@ -39,7 +39,6 @@ class Okx(Exchange):
         reduceOnly: bool,
         time_in_force: str = 'gtc',
     ) -> Dict:
-        # TODO-lev: Test me
         params = super()._get_params(
             ordertype=ordertype,
             leverage=leverage,

@@ -4452,3 +4452,57 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
         match=r'Amount 1000000000.01 too high for BTC/USDT'
     ):
         exchange.get_max_leverage("BTC/USDT", 1000000000.01)
+
+
+@pytest.mark.parametrize("exchange_name", ['bittrex', 'binance', 'kraken', 'ftx', 'gateio', 'okx'])
+def test__get_params(mocker, default_conf, exchange_name):
+    api_mock = MagicMock()
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._params = {'test': True}
+
+    params1 = {'test': True}
+    params2 = {
+        'test': True,
+        'timeInForce': 'ioc',
+        'reduceOnly': True,
+    }
+
+    if exchange_name == 'kraken':
+        params2['leverage'] = 3.0
+
+    if exchange_name == 'okx':
+        params2['tdMode'] = 'isolated'
+
+    assert exchange._get_params(
+        ordertype='market',
+        reduceOnly=False,
+        time_in_force='gtc',
+        leverage=1.0,
+    ) == params1
+
+    assert exchange._get_params(
+        ordertype='market',
+        reduceOnly=False,
+        time_in_force='ioc',
+        leverage=1.0,
+    ) == params1
+
+    assert exchange._get_params(
+        ordertype='limit',
+        reduceOnly=False,
+        time_in_force='gtc',
+        leverage=1.0,
+    ) == params1
+
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._params = {'test': True}
+
+    assert exchange._get_params(
+        ordertype='limit',
+        reduceOnly=True,
+        time_in_force='ioc',
+        leverage=3.0,
+    ) == params2
