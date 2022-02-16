@@ -1291,8 +1291,7 @@ class FreqtradeBot(LoggingMixin):
             # * Check edge cases, we don't want to make leverage > 1.0 if we don't have to
             # * (for leverage modes which aren't isolated futures)
 
-            # TODO-lev: The below calculation needs to include leverage ...
-            trade.stake_amount = trade.amount * trade.open_rate
+            trade.stake_amount = trade.amount * trade.open_rate / trade.leverage
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
