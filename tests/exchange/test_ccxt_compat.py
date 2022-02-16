@@ -359,19 +359,24 @@ class TestCCXTExchange():
             assert futures_pair in leverage_tiers
             pair_tiers = leverage_tiers[futures_pair]
             assert len(pair_tiers) > 0
-            oldLeverage = 0
-            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = float('inf')
+            oldLeverage = float('inf')
+            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = -1
             for tier in pair_tiers:
-                for key in ['maintenanceMarginRate', 'notionalFloor', 'notionalCap', 'maxLeverage']:
+                for key in [
+                    'maintenanceMarginRatio',  # TODO-lev: Change to maintenanceMarginRate
+                    'notionalFloor',
+                    'notionalCap',
+                    'maxLeverage'
+                ]:
                     assert key in tier
-                    assert pair_tiers[key] > 0.0
-                assert pair_tiers['notionalCap'] > pair_tiers['notionalFloor']
-                assert tier['maxLeverage'] < oldLeverage
-                assert tier['maintenanceMarginRate'] > oldMaintenanceMarginRate
+                    assert tier[key] >= 0.0
+                assert tier['notionalCap'] > tier['notionalFloor']
+                assert tier['maxLeverage'] <= oldLeverage
+                assert tier['maintenanceMarginRatio'] >= oldMaintenanceMarginRate
                 assert tier['notionalFloor'] > oldNotionalFloor
                 assert tier['notionalCap'] > oldNotionalCap
                 oldLeverage = tier['maxLeverage']
-                oldMaintenanceMarginRate = tier['maintenanceMarginRate']
+                oldMaintenanceMarginRate = tier['maintenanceMarginRatio']
                 oldNotionalFloor = tier['notionalFloor']
                 oldNotionalCap = tier['notionalCap']
 
