@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -31,7 +31,7 @@ class Gateio(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
-        # (TradingMode.FUTURES, MarginMode.ISOLATED)
+        (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
     def validate_ordertypes(self, order_types: Dict) -> None:
@@ -40,3 +40,24 @@ class Gateio(Exchange):
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
                 f'Exchange {self.name} does not support market orders.')
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
+    ) -> Tuple[float, Optional[float]]:
+        """
+        :return: The maintenance margin ratio and maintenance amount
+        """
+        info = self.markets[pair]['info']
+        return (float(info['maintenance_rate']), None)
+
+    def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
+        """
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :param nominal_value: The total value of the trade in quote currency (margin_mode + debt)
+        """
+        market = self.markets[pair]
+        if market['limits']['leverage']['max'] is not None:
+            return market['limits']['leverage']['max']
