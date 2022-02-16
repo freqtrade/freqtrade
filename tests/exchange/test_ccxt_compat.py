@@ -120,7 +120,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf = deepcopy(exchange_conf)
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
-        exchange_conf['margin_mode'] = 'cross'
+        exchange_conf['margin_mode'] = 'isolated'
         exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
 
         # TODO-lev: This mock should no longer be necessary once futures are enabled.
@@ -359,15 +359,20 @@ class TestCCXTExchange():
             assert futures_pair in leverage_tiers
             pair_tiers = leverage_tiers[futures_pair]
             assert len(pair_tiers) > 0
-            oldLeverage = 0
-            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = float('inf')
+            oldLeverage = float('inf')
+            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = -1
             for tier in pair_tiers:
-                for key in ['maintenanceMarginRate', 'notionalFloor', 'notionalCap', 'maxLeverage']:
+                for key in [
+                    'maintenanceMarginRate',
+                    'notionalFloor',
+                    'notionalCap',
+                    'maxLeverage'
+                ]:
                     assert key in tier
-                    assert pair_tiers[key] > 0.0
-                assert pair_tiers['notionalCap'] > pair_tiers['notionalFloor']
-                assert tier['maxLeverage'] < oldLeverage
-                assert tier['maintenanceMarginRate'] > oldMaintenanceMarginRate
+                    assert tier[key] >= 0.0
+                assert tier['notionalCap'] > tier['notionalFloor']
+                assert tier['maxLeverage'] <= oldLeverage
+                assert tier['maintenanceMarginRate'] >= oldMaintenanceMarginRate
                 assert tier['notionalFloor'] > oldNotionalFloor
                 assert tier['notionalCap'] > oldNotionalCap
                 oldLeverage = tier['maxLeverage']
@@ -375,14 +380,42 @@ class TestCCXTExchange():
                 oldNotionalFloor = tier['notionalFloor']
                 oldNotionalCap = tier['notionalCap']
 
-    # def test_ccxt_get_liquidation_price():
-    #     return  # TODO-lev
+    def test_ccxt_dry_run_liquidation_price(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures and EXCHANGES[futures_name]['leverage_tiers_public']:
 
-    # def test_ccxt_liquidation_price():
-    #     return  # TODO-lev
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
 
-    # def test_ccxt_get_max_pair_stake_amount():
-    #     return  # TODO-lev
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
 
-    # def test_ccxt_get_maintenance_ratio_and_amt():
-    #     return  # TODO-lev
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
+
+    def test_ccxt_get_max_pair_stake_amount(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
+            assert (isinstance(max_stake_amount, float))
+            assert max_stake_amount >= 0.0
