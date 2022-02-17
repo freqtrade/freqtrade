@@ -1,5 +1,7 @@
 """ FTX exchange subclass """
 import logging
+from decimal import Decimal
+from math import ceil
 from typing import Any, Dict, List, Tuple
 
 import ccxt
@@ -162,3 +164,25 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
+
+    @classmethod
+    def interest(
+        cls,
+        borrowed: Decimal,
+        rate: Decimal,
+        hours: Decimal
+    ) -> Decimal:
+        """
+        Equation to calculate interest on margin trades
+
+        :param borrowed: The amount of currency being borrowed
+        :param rate: The rate of interest (i.e daily interest rate)
+        :param hours: The time in hours that the currency has been borrowed for
+
+        Returns: The amount of interest owed (currency matches borrowed)
+        """
+        twenty_four = Decimal(24.0)
+
+        # As Explained under #Interest rates section in
+        # https://help.ftx.com/hc/en-us/articles/360053007671-Spot-Margin-Trading-Explainer
+        return borrowed * rate * ceil(hours)/twenty_four

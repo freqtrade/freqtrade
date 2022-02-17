@@ -2,6 +2,8 @@
 import json
 import logging
 from datetime import datetime
+from decimal import Decimal
+from math import ceil
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -358,3 +360,23 @@ class Binance(Exchange):
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    @classmethod
+    def interest(
+        cls,
+        borrowed: Decimal,
+        rate: Decimal,
+        hours: Decimal
+    ) -> Decimal:
+        """
+        Equation to calculate interest on margin trades
+
+        :param borrowed: The amount of currency being borrowed
+        :param rate: The rate of interest (i.e daily interest rate)
+        :param hours: The time in hours that the currency has been borrowed for
+
+        Returns: The amount of interest owed (currency matches borrowed)
+        """
+        twenty_four = Decimal(24.0)
+
+        return borrowed * rate * ceil(hours)/twenty_four

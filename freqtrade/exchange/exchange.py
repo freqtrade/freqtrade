@@ -8,6 +8,7 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from math import ceil
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
@@ -2159,6 +2160,28 @@ class Exchange:
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    @classmethod
+    def interest(
+        cls,
+        borrowed: Decimal,
+        rate: Decimal,
+        hours: Decimal
+    ) -> Decimal:
+        """
+        Equation to calculate interest on margin trades
+
+        :param borrowed: The amount of currency being borrowed
+        :param rate: The rate of interest (i.e daily interest rate)
+        :param hours: The time in hours that the currency has been borrowed for
+
+        Raises:
+            OperationalException: Raised if freqtrade does
+            not support margin trading for this exchange
+
+        Returns: The amount of interest owed (currency matches borrowed)
+        """
+        raise OperationalException('interest not implemented for ' + cls.__name__)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
