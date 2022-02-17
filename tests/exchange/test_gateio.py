@@ -64,3 +64,16 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
         )
     )
     assert exchange.get_maintenance_ratio_and_amt(pair) == (mm_ratio, None)
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("ETH/BTC", 0.0, 2.0),
+    ("TKN/BTC", 100.0, 5.0),
+    ("BLK/BTC", 173.31, 3.0),
+    ("LTC/BTC", 0.0, 1.0),
+    ("TKN/USDT", 210.30, 1.0),
+])
+def test_get_max_leverage_gateio(default_conf, mocker, pair, nominal_value, max_lev):
+    # Binance has a different method of getting the max leverage
+    exchange = get_patched_exchange(mocker, default_conf, id="gateio")
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev

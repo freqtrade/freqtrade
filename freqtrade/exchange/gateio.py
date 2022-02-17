@@ -51,3 +51,15 @@ class Gateio(Exchange):
         """
         info = self.markets[pair]['info']
         return (float(info['maintenance_rate']), None)
+
+    def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
+        """
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :param nominal_value: The total value of the trade in quote currency (margin_mode + debt)
+        """
+        market = self.markets[pair]
+        if market['limits']['leverage']['max'] is not None:
+            return market['limits']['leverage']['max']
+        else:
+            return 1.0

@@ -579,6 +579,8 @@ def get_markets():
             'quote': 'BTC',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -614,6 +616,8 @@ def get_markets():
             # According to ccxt, markets without active item set are also active
             # 'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -648,6 +652,8 @@ def get_markets():
             'quote': 'BTC',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -682,6 +688,8 @@ def get_markets():
             'quote': 'BTC',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -717,6 +725,8 @@ def get_markets():
             'quote': 'BTC',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -752,6 +762,8 @@ def get_markets():
             'quote': 'BTC',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'precision': {
                 'price': 8,
@@ -787,6 +799,8 @@ def get_markets():
             'quote': 'BTC',
             'active': False,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'contractSize': None,
             'precision': {
@@ -877,6 +891,8 @@ def get_markets():
             'future': True,
             'swap': True,
             'margin': True,
+            'linear': None,
+            'inverse': False,
             'type': 'spot',
             'contractSize': None,
             'taker': 0.0006,
@@ -912,6 +928,8 @@ def get_markets():
             'quote': 'USDT',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'taker': 0.0006,
             'maker': 0.0002,
@@ -943,19 +961,40 @@ def get_markets():
             'symbol': 'NEO/USDT',
             'base': 'NEO',
             'quote': 'USDT',
-            'active': True,
-            'spot': True,
+            'settle': '',
+            'baseId': 'NEO',
+            'quoteId': 'USDT',
+            'settleId': '',
             'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': False,
+            'futures': False,
+            'option': False,
+            'active': True,
+            'contract': False,
+            'linear': None,
+            'inverse': None,
             'taker': 0.0006,
             'maker': 0.0002,
+            'contractSize': None,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'tierBased': None,
+            'percentage': None,
+            'lot': 0.00000001,
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
-            'lot': 0.00000001,
-            'contractSize': None,
             'limits': {
+                "leverage": {
+                    'min': 1,
+                    'max': 10
+                },
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
@@ -978,6 +1017,8 @@ def get_markets():
             'quote': 'USDT',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'contractSize': None,
             'taker': 0.0006,
@@ -1015,6 +1056,8 @@ def get_markets():
             'quote': 'USD',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'contractSize': None,
             'precision': {
@@ -1050,6 +1093,8 @@ def get_markets():
             'spot': False,
             'type': 'swap',
             'contractSize': 0.01,
+            'swap': False,
+            'linear': False,
             'taker': 0.0006,
             'maker': 0.0002,
             'precision': {
@@ -1083,6 +1128,8 @@ def get_markets():
             'quote': 'ETH',
             'active': True,
             'spot': True,
+            'swap': False,
+            'linear': None,
             'type': 'spot',
             'contractSize': None,
             'precision': {
@@ -1163,7 +1210,185 @@ def get_markets():
                 'amount': 1
             },
             'info': {}
-        }
+        },
+        'ADA/USDT:USDT': {
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 20,
+                },
+                'amount': {
+                    'min': 1,
+                    'max': 1000000,
+                },
+                'price': {
+                    'min': 0.52981,
+                    'max': 1.58943,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                }
+            },
+            'precision': {
+                'amount': 1,
+                'price': 0.00001
+            },
+            'tierBased': True,
+            'percentage': True,
+            'taker': 0.0000075,
+            'maker': -0.0000025,
+            'feeSide': 'get',
+            'tiers': {
+                'maker': [
+                    [0, 0.002],       [1.5, 0.00185],
+                    [3, 0.00175],     [6, 0.00165],
+                    [12.5, 0.00155],  [25, 0.00145],
+                    [75, 0.00135],    [200, 0.00125],
+                    [500, 0.00115],   [1250, 0.00105],
+                    [2500, 0.00095],  [3000, 0.00085],
+                    [6000, 0.00075],  [11000, 0.00065],
+                    [20000, 0.00055], [40000, 0.00055],
+                    [75000, 0.00055]
+                ],
+                'taker': [
+                    [0, 0.002],       [1.5, 0.00195],
+                    [3, 0.00185],     [6, 0.00175],
+                    [12.5, 0.00165],  [25, 0.00155],
+                    [75, 0.00145],    [200, 0.00135],
+                    [500, 0.00125],   [1250, 0.00115],
+                    [2500, 0.00105],  [3000, 0.00095],
+                    [6000, 0.00085],  [11000, 0.00075],
+                    [20000, 0.00065], [40000, 0.00065],
+                    [75000, 0.00065]
+                ]
+            },
+            'id': 'ADA_USDT',
+            'symbol': 'ADA/USDT:USDT',
+            'base': 'ADA',
+            'quote': 'USDT',
+            'settle': 'USDT',
+            'baseId': 'ADA',
+            'quoteId': 'USDT',
+            'settleId': 'usdt',
+            'type': 'swap',
+            'spot': False,
+            'margin': False,
+            'swap': True,
+            'future': False,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 0.01,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'info': {}
+        },
+        'SOL/BUSD:BUSD': {
+            'limits': {
+                'leverage': {'min': None, 'max': None},
+                'amount': {'min': 1, 'max': 1000000},
+                'price': {'min': 0.04, 'max': 100000},
+                'cost': {'min': 5, 'max': None},
+                'market': {'min': 1, 'max': 1500}
+            },
+            'precision': {'amount': 0, 'price': 2, 'base': 8, 'quote': 8},
+            'tierBased': False,
+            'percentage': True,
+            'taker': 0.0004,
+            'maker': 0.0002,
+            'feeSide': 'get',
+            'id': 'SOLBUSD',
+            'lowercaseId': 'solbusd',
+            'symbol': 'SOL/BUSD',
+            'base': 'SOL',
+            'quote': 'BUSD',
+            'settle': 'BUSD',
+            'baseId': 'SOL',
+            'quoteId': 'BUSD',
+            'settleId': 'BUSD',
+            'type': 'future',
+            'spot': False,
+            'margin': False,
+            'future': True,
+            'delivery': False,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 1,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'info': {
+                'symbol': 'SOLBUSD',
+                'pair': 'SOLBUSD',
+                'contractType': 'PERPETUAL',
+                'deliveryDate': '4133404800000',
+                'onboardDate': '1630566000000',
+                'status': 'TRADING',
+                'maintMarginPercent': '2.5000',
+                'requiredMarginPercent': '5.0000',
+                'baseAsset': 'SOL',
+                'quoteAsset': 'BUSD',
+                'marginAsset': 'BUSD',
+                'pricePrecision': '4',
+                'quantityPrecision': '0',
+                'baseAssetPrecision': '8',
+                'quotePrecision': '8',
+                'underlyingType': 'COIN',
+                'underlyingSubType': [],
+                'settlePlan': '0',
+                'triggerProtect': '0.0500',
+                'liquidationFee': '0.005000',
+                'marketTakeBound': '0.05',
+                'filters': [
+                    {
+                        'minPrice': '0.0400',
+                        'maxPrice': '100000',
+                        'filterType': 'PRICE_FILTER',
+                        'tickSize': '0.0100'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'LOT_SIZE',
+                        'maxQty': '1000000',
+                        'minQty': '1'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'MARKET_LOT_SIZE',
+                        'maxQty': '1500',
+                        'minQty': '1'
+                    },
+                    {'limit': '200', 'filterType': 'MAX_NUM_ORDERS'},
+                    {'limit': '10', 'filterType': 'MAX_NUM_ALGO_ORDERS'},
+                    {'notional': '5', 'filterType': 'MIN_NOTIONAL'},
+                    {
+                        'multiplierDown': '0.9500',
+                        'multiplierUp': '1.0500',
+                        'multiplierDecimal': '4',
+                        'filterType': 'PERCENT_PRICE'
+                    }
+                ],
+                'orderTypes': [
+                    'LIMIT',
+                    'MARKET',
+                    'STOP',
+                    'STOP_MARKET',
+                    'TAKE_PROFIT',
+                    'TAKE_PROFIT_MARKET',
+                    'TRAILING_STOP_MARKET'
+                ],
+                'timeInForce': ['GTC', 'IOC', 'FOK', 'GTX']
+            }
+        },
     }
 
 
@@ -1173,7 +1398,9 @@ def markets_static():
     # market list. Do not modify this list without a good reason! Do not modify market parameters
     # of listed pairs in get_markets() without a good reason either!
     static_markets = ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
-                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']
+                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC',
+                      'ADA/USDT:USDT', 'ETH/USDT:USDT',
+                      ]
     all_markets = get_markets()
     return {m: all_markets[m] for m in static_markets}
 
@@ -2841,3 +3068,438 @@ def funding_rate_history_octohourly():
             "datetime": "2021-09-01T08:00:00.000Z"
         }
     ]
+
+
+@pytest.fixture(scope='function')
+def leverage_tiers():
+    return {
+        "1000SHIB/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
+        ],
+        "1INCH/USDT": [
+            {
+                'min': 0,
+                'max': 5000,
+                'mmr': 0.012,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 5000,
+                'max': 25000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 65.0
+            },
+            {
+                'min': 25000,
+                'max': 100000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 690.0
+            },
+            {
+                'min': 100000,
+                'max': 250000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 5690.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 2,
+                'maintAmt': 11940.0
+            },
+            {
+                'min': 1000000,
+                'max': 100000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 386940.0
+            },
+        ],
+        "AAVE/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 250000,
+                'mmr': 0.02,
+                'lev': 25,
+                'maintAmt': 500.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 8000.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 58000.0
+            },
+            {
+                'min': 2000000,
+                'max': 5000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 108000.0
+            },
+            {
+                'min': 5000000,
+                'max': 10000000,
+                'mmr': 0.1665,
+                'lev': 3,
+                'maintAmt': 315500.0
+            },
+            {
+                'min': 10000000,
+                'max': 20000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 1150500.0
+            },
+            {
+                "min": 20000000,
+                "max": 50000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6150500.0
+            }
+        ],
+        "ADA/BUSD": [
+            {
+                "min": 0,
+                "max": 100000,
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,
+                "max": 500000,
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,
+                "max": 1000000,
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,
+                "max": 2000000,
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,
+                "max": 5000000,
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,
+                "max": 30000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            },
+        ],
+        'BNB/BUSD': [
+            {
+                "min": 0,       # stake(before leverage) = 0
+                "max": 100000,  # max stake(before leverage) = 5000
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,  # stake = 10000.0
+                "max": 500000,  # max_stake = 50000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,   # stake = 100000.0
+                "max": 1000000,  # max_stake = 200000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,  # stake = 333333.3333333333
+                "max": 2000000,  # max_stake = 666666.6666666666
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,  # stake = 1000000.0
+                "max": 5000000,  # max_stake = 2500000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,   # stake = 5000000.0
+                "max": 30000000,  # max_stake = 30000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
+        ],
+        'BNB/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 10000,  # max_stake = 133.33333333333334
+                "mmr": 0.0065,
+                "lev": 75,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 10000,  # stake = 200.0
+                "max": 50000,  # max_stake = 1000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 35.0
+            },
+            {
+                "min": 50000,   # stake = 2000.0
+                "max": 250000,  # max_stake = 10000.0
+                "mmr": 0.02,
+                "lev": 25,
+                "maintAmt": 535.0
+            },
+            {
+                "min": 250000,   # stake = 25000.0
+                "max": 1000000,  # max_stake = 100000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 8035.0
+            },
+            {
+                "min": 1000000,  # stake = 200000.0
+                "max": 2000000,  # max_stake = 400000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 58035.0
+            },
+            {
+                "min": 2000000,  # stake = 500000.0
+                "max": 5000000,  # max_stake = 1250000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 108035.0
+            },
+            {
+                "min": 5000000,   # stake = 1666666.6666666667
+                "max": 10000000,  # max_stake = 3333333.3333333335
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 233035.0
+            },
+            {
+                "min": 10000000,  # stake = 5000000.0
+                "max": 20000000,  # max_stake = 10000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 1233035.0
+            },
+            {
+                "min": 20000000,  # stake = 20000000.0
+                "max": 50000000,  # max_stake = 50000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6233035.0
+            },
+        ],
+        'BTC/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 50000,  # max_stake = 400.0
+                "mmr": 0.004,
+                "lev": 125,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 50000,   # stake = 500.0
+                "max": 250000,  # max_stake = 2500.0
+                "mmr": 0.005,
+                "lev": 100,
+                "maintAmt": 50.0
+            },
+            {
+                "min": 250000,   # stake = 5000.0
+                "max": 1000000,  # max_stake = 20000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 1300.0
+            },
+            {
+                "min": 1000000,  # stake = 50000.0
+                "max": 7500000,  # max_stake = 375000.0
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 16300.0
+            },
+            {
+                "min": 7500000,   # stake = 750000.0
+                "max": 40000000,  # max_stake = 4000000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 203800.0
+            },
+            {
+                "min": 40000000,   # stake = 8000000.0
+                "max": 100000000,  # max_stake = 20000000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 2203800.0
+            },
+            {
+                "min": 100000000,  # stake = 25000000.0
+                "max": 200000000,  # max_stake = 50000000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 4703800.0
+            },
+            {
+                "min": 200000000,  # stake = 66666666.666666664
+                "max": 400000000,  # max_stake = 133333333.33333333
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 9703800.0
+            },
+            {
+                "min": 400000000,  # stake = 200000000.0
+                "max": 600000000,  # max_stake = 300000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 4.97038E7
+            },
+            {
+                "min": 600000000,   # stake = 600000000.0
+                "max": 1000000000,  # max_stake = 1000000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1.997038E8
+            },
+        ],
+        "ZEC/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
+        ]
+    }

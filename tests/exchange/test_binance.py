@@ -162,168 +162,338 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
-@pytest.mark.parametrize('pair,stake_amount,max_lev', [
-    ("BNB/BUSD", 0.0, 40.0),
-    ("BNB/USDT", 100.0, 100.0),
-    ("BTC/USDT", 170.30, 250.0),
-    ("BNB/BUSD", 99999.9, 10.0),
-    ("BNB/USDT", 750000, 6.666666666666667),
-    ("BTC/USDT", 150000000.1, 2.0),
-])
-def test_get_max_leverage_binance(default_conf, mocker, pair, stake_amount, max_lev):
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._leverage_brackets = {
-        'BNB/BUSD': [
-            [0.0, 0.025, 0.0],  # lev = 40.0
-            [100000.0, 0.05, 2500.0],  # lev = 20.0
-            [500000.0, 0.1, 27500.0],  # lev = 10.0
-            [1000000.0, 0.15, 77500.0],  # lev = 6.666666666666667
-            [2000000.0, 0.25, 277500.0],  # lev = 4.0
-            [5000000.0, 0.5, 1527500.0],  # lev = 2.0
-        ],
-        'BNB/USDT': [
-            [0.0, 0.0065, 0.0],   # lev = 153.84615384615384
-            [10000.0, 0.01, 35.0],   # lev = 100.0
-            [50000.0, 0.02, 535.0],   # lev = 50.0
-            [250000.0, 0.05, 8035.0],   # lev = 20.0
-            [1000000.0, 0.1, 58035.0],   # lev = 10.0
-            [2000000.0, 0.125, 108035.0],   # lev = 8.0
-            [5000000.0, 0.15, 233035.0],   # lev = 6.666666666666667
-            [10000000.0, 0.25, 1233035.0],   # lev = 4.0
-        ],
-        'BTC/USDT': [
-            [0.0, 0.004, 0.0],   # lev = 250.0
-            [50000.0, 0.005, 50.0],   # lev = 200.0
-            [250000.0, 0.01, 1300.0],   # lev = 100.0
-            [1000000.0, 0.025, 16300.0],   # lev = 40.0
-            [5000000.0, 0.05, 141300.0],   # lev = 20.0
-            [20000000.0, 0.1, 1141300.0],   # lev = 10.0
-            [50000000.0, 0.125, 2391300.0],   # lev = 8.0
-            [100000000.0, 0.15, 4891300.0],   # lev = 6.666666666666667
-            [200000000.0, 0.25, 24891300.0],   # lev = 4.0
-            [300000000.0, 0.5, 99891300.0],   # lev = 2.0
-        ]
-    }
-    assert exchange.get_max_leverage(pair, stake_amount) == max_lev
-
-
-def test_fill_leverage_brackets_binance(default_conf, mocker):
+def test_fill_leverage_tiers_binance(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.load_leverage_brackets = MagicMock(return_value={
-        'ADA/BUSD': [[0.0, 0.025],
-                     [100000.0, 0.05],
-                     [500000.0, 0.1],
-                     [1000000.0, 0.15],
-                     [2000000.0, 0.25],
-                     [5000000.0, 0.5]],
-        'BTC/USDT': [[0.0, 0.004],
-                     [50000.0, 0.005],
-                     [250000.0, 0.01],
-                     [1000000.0, 0.025],
-                     [5000000.0, 0.05],
-                     [20000000.0, 0.1],
-                     [50000000.0, 0.125],
-                     [100000000.0, 0.15],
-                     [200000000.0, 0.25],
-                     [300000000.0, 0.5]],
-        "ZEC/USDT": [[0.0, 0.01],
-                     [5000.0, 0.025],
-                     [25000.0, 0.05],
-                     [100000.0, 0.1],
-                     [250000.0, 0.125],
-                     [1000000.0, 0.5]],
-
+    api_mock.fetch_leverage_tiers = MagicMock(return_value={
+        'ADA/BUSD': [
+            {
+                "tier": 1,
+                "notionalFloor": 0,
+                "notionalCap": 100000,
+                "maintenanceMarginRate": 0.025,
+                "maxLeverage": 20,
+                "info": {
+                    "bracket": "1",
+                    "initialLeverage": "20",
+                    "notionalCap": "100000",
+                    "notionalFloor": "0",
+                    "maintMarginRatio": "0.025",
+                    "cum": "0.0"
+                }
+            },
+            {
+                "tier": 2,
+                "notionalFloor": 100000,
+                "notionalCap": 500000,
+                "maintenanceMarginRate": 0.05,
+                "maxLeverage": 10,
+                "info": {
+                    "bracket": "2",
+                    "initialLeverage": "10",
+                    "notionalCap": "500000",
+                    "notionalFloor": "100000",
+                    "maintMarginRatio": "0.05",
+                    "cum": "2500.0"
+                }
+            },
+            {
+                "tier": 3,
+                "notionalFloor": 500000,
+                "notionalCap": 1000000,
+                "maintenanceMarginRate": 0.1,
+                "maxLeverage": 5,
+                "info": {
+                    "bracket": "3",
+                    "initialLeverage": "5",
+                    "notionalCap": "1000000",
+                    "notionalFloor": "500000",
+                    "maintMarginRatio": "0.1",
+                    "cum": "27500.0"
+                }
+            },
+            {
+                "tier": 4,
+                "notionalFloor": 1000000,
+                "notionalCap": 2000000,
+                "maintenanceMarginRate": 0.15,
+                "maxLeverage": 3,
+                "info": {
+                    "bracket": "4",
+                    "initialLeverage": "3",
+                    "notionalCap": "2000000",
+                    "notionalFloor": "1000000",
+                    "maintMarginRatio": "0.15",
+                    "cum": "77500.0"
+                }
+            },
+            {
+                "tier": 5,
+                "notionalFloor": 2000000,
+                "notionalCap": 5000000,
+                "maintenanceMarginRate": 0.25,
+                "maxLeverage": 2,
+                "info": {
+                    "bracket": "5",
+                    "initialLeverage": "2",
+                    "notionalCap": "5000000",
+                    "notionalFloor": "2000000",
+                    "maintMarginRatio": "0.25",
+                    "cum": "277500.0"
+                }
+            },
+            {
+                "tier": 6,
+                "notionalFloor": 5000000,
+                "notionalCap": 30000000,
+                "maintenanceMarginRate": 0.5,
+                "maxLeverage": 1,
+                "info": {
+                    "bracket": "6",
+                    "initialLeverage": "1",
+                    "notionalCap": "30000000",
+                    "notionalFloor": "5000000",
+                    "maintMarginRatio": "0.5",
+                    "cum": "1527500.0"
+                }
+            }
+        ],
+        "ZEC/USDT": [
+            {
+                "tier": 1,
+                "notionalFloor": 0,
+                "notionalCap": 50000,
+                "maintenanceMarginRate": 0.01,
+                "maxLeverage": 50,
+                "info": {
+                    "bracket": "1",
+                    "initialLeverage": "50",
+                    "notionalCap": "50000",
+                    "notionalFloor": "0",
+                    "maintMarginRatio": "0.01",
+                    "cum": "0.0"
+                }
+            },
+            {
+                "tier": 2,
+                "notionalFloor": 50000,
+                "notionalCap": 150000,
+                "maintenanceMarginRate": 0.025,
+                "maxLeverage": 20,
+                "info": {
+                    "bracket": "2",
+                    "initialLeverage": "20",
+                    "notionalCap": "150000",
+                    "notionalFloor": "50000",
+                    "maintMarginRatio": "0.025",
+                    "cum": "750.0"
+                }
+            },
+            {
+                "tier": 3,
+                "notionalFloor": 150000,
+                "notionalCap": 250000,
+                "maintenanceMarginRate": 0.05,
+                "maxLeverage": 10,
+                "info": {
+                    "bracket": "3",
+                    "initialLeverage": "10",
+                    "notionalCap": "250000",
+                    "notionalFloor": "150000",
+                    "maintMarginRatio": "0.05",
+                    "cum": "4500.0"
+                }
+            },
+            {
+                "tier": 4,
+                "notionalFloor": 250000,
+                "notionalCap": 500000,
+                "maintenanceMarginRate": 0.1,
+                "maxLeverage": 5,
+                "info": {
+                    "bracket": "4",
+                    "initialLeverage": "5",
+                    "notionalCap": "500000",
+                    "notionalFloor": "250000",
+                    "maintMarginRatio": "0.1",
+                    "cum": "17000.0"
+                }
+            },
+            {
+                "tier": 5,
+                "notionalFloor": 500000,
+                "notionalCap": 1000000,
+                "maintenanceMarginRate": 0.125,
+                "maxLeverage": 4,
+                "info": {
+                    "bracket": "5",
+                    "initialLeverage": "4",
+                    "notionalCap": "1000000",
+                    "notionalFloor": "500000",
+                    "maintMarginRatio": "0.125",
+                    "cum": "29500.0"
+                }
+            },
+            {
+                "tier": 6,
+                "notionalFloor": 1000000,
+                "notionalCap": 2000000,
+                "maintenanceMarginRate": 0.25,
+                "maxLeverage": 2,
+                "info": {
+                    "bracket": "6",
+                    "initialLeverage": "2",
+                    "notionalCap": "2000000",
+                    "notionalFloor": "1000000",
+                    "maintMarginRatio": "0.25",
+                    "cum": "154500.0"
+                }
+            },
+            {
+                "tier": 7,
+                "notionalFloor": 2000000,
+                "notionalCap": 30000000,
+                "maintenanceMarginRate": 0.5,
+                "maxLeverage": 1,
+                "info": {
+                    "bracket": "7",
+                    "initialLeverage": "1",
+                    "notionalCap": "30000000",
+                    "notionalFloor": "2000000",
+                    "maintMarginRatio": "0.5",
+                    "cum": "654500.0"
+                }
+            }
+        ],
     })
     default_conf['dry_run'] = False
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
-    exchange.fill_leverage_brackets()
+    exchange.fill_leverage_tiers()
 
-    assert exchange._leverage_brackets == {
-        'ADA/BUSD': [[0.0, 0.025, 0.0],
-                     [100000.0, 0.05, 2500.0],
-                     [500000.0, 0.1, 27500.0],
-                     [1000000.0, 0.15, 77499.99999999999],
-                     [2000000.0, 0.25, 277500.0],
-                     [5000000.0, 0.5, 1527500.0]],
-        'BTC/USDT': [[0.0, 0.004, 0.0],
-                     [50000.0, 0.005, 50.0],
-                     [250000.0, 0.01, 1300.0],
-                     [1000000.0, 0.025, 16300.000000000002],
-                     [5000000.0, 0.05, 141300.0],
-                     [20000000.0, 0.1, 1141300.0],
-                     [50000000.0, 0.125, 2391300.0],
-                     [100000000.0, 0.15, 4891300.0],
-                     [200000000.0, 0.25, 24891300.0],
-                     [300000000.0, 0.5, 99891300.0]],
-        "ZEC/USDT": [[0.0, 0.01, 0.0],
-                     [5000.0, 0.025, 75.0],
-                     [25000.0, 0.05, 700.0],
-                     [100000.0, 0.1, 5700.0],
-                     [250000.0, 0.125,  11949.999999999998],
-                     [1000000.0, 0.5, 386950.0]]
+    assert exchange._leverage_tiers == {
+        'ADA/BUSD': [
+            {
+                "min": 0,
+                "max": 100000,
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,
+                "max": 500000,
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,
+                "max": 1000000,
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,
+                "max": 2000000,
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,
+                "max": 5000000,
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,
+                "max": 30000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
+        ],
+        "ZEC/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
+        ]
     }
 
     api_mock = MagicMock()
-    api_mock.load_leverage_brackets = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'loadLeverageBrackets': True})
+    api_mock.load_leverage_tiers = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'fetchLeverageTiers': True})
 
     ccxt_exceptionhandlers(
         mocker,
         default_conf,
         api_mock,
         "binance",
-        "fill_leverage_brackets",
-        "load_leverage_brackets"
+        "fill_leverage_tiers",
+        "fetch_leverage_tiers",
     )
 
 
-def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
+def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers):
     api_mock = MagicMock()
     default_conf['trading_mode'] = TradingMode.FUTURES
     default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
-    exchange.fill_leverage_brackets()
+    exchange.fill_leverage_tiers()
 
-    leverage_brackets = {
-        "1000SHIB/USDT": [
-            [0.0, 0.01, 0.0],
-            [5000.0, 0.025, 75.0],
-            [25000.0, 0.05, 700.0],
-            [100000.0, 0.1, 5700.0],
-            [250000.0, 0.125, 11949.999999999998],
-            [1000000.0, 0.5, 386950.0],
-        ],
-        "1INCH/USDT": [
-            [0.0, 0.012, 0.0],
-            [5000.0, 0.025, 65.0],
-            [25000.0, 0.05, 690.0],
-            [100000.0, 0.1, 5690.0],
-            [250000.0, 0.125, 11939.999999999998],
-            [1000000.0, 0.5, 386940.0],
-        ],
-        "AAVE/USDT": [
-            [0.0, 0.01, 0.0],
-            [50000.0, 0.02, 500.0],
-            [250000.0, 0.05, 8000.000000000001],
-            [1000000.0, 0.1, 58000.0],
-            [2000000.0, 0.125, 107999.99999999999],
-            [5000000.0, 0.1665, 315500.00000000006],
-            [10000000.0, 0.25, 1150500.0],
-        ],
-        "ADA/BUSD": [
-            [0.0, 0.025, 0.0],
-            [100000.0, 0.05, 2500.0],
-            [500000.0, 0.1, 27500.0],
-            [1000000.0, 0.15, 77499.99999999999],
-            [2000000.0, 0.25, 277500.0],
-            [5000000.0, 0.5, 1527500.0],
-        ]
-    }
+    leverage_tiers = leverage_tiers
 
-    for key, value in leverage_brackets.items():
-        assert exchange._leverage_brackets[key] == value
+    for key, value in leverage_tiers.items():
+        assert exchange._leverage_tiers[key] == value
 
 
 def test__set_leverage_binance(mocker, default_conf):
@@ -403,43 +573,19 @@ def test__ccxt_config(default_conf, mocker, trading_mode, margin_mode, config):
     ("BTC/USDT", 170.30, 0.004, 0),
     ("BNB/BUSD", 999999.9, 0.1, 27500.0),
     ("BNB/USDT", 5000000.0, 0.15, 233035.0),
-    ("BTC/USDT", 300000000.1, 0.5, 99891300.0),
+    ("BTC/USDT", 600000000, 0.5, 1.997038E8),
 ])
 def test_get_maintenance_ratio_and_amt_binance(
     default_conf,
     mocker,
+    leverage_tiers,
     pair,
     nominal_value,
     mm_ratio,
     amt,
 ):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    exchange._leverage_brackets = {
-        'BNB/BUSD': [[0.0, 0.025, 0.0],
-                     [100000.0, 0.05, 2500.0],
-                     [500000.0, 0.1, 27500.0],
-                     [1000000.0, 0.15, 77500.0],
-                     [2000000.0, 0.25, 277500.0],
-                     [5000000.0, 0.5, 1527500.0]],
-        'BNB/USDT': [[0.0, 0.0065, 0.0],
-                     [10000.0, 0.01, 35.0],
-                     [50000.0, 0.02, 535.0],
-                     [250000.0, 0.05, 8035.0],
-                     [1000000.0, 0.1, 58035.0],
-                     [2000000.0, 0.125, 108035.0],
-                     [5000000.0, 0.15, 233035.0],
-                     [10000000.0, 0.25, 1233035.0]],
-        'BTC/USDT': [[0.0, 0.004, 0.0],
-                     [50000.0, 0.005, 50.0],
-                     [250000.0, 0.01, 1300.0],
-                     [1000000.0, 0.025, 16300.0],
-                     [5000000.0, 0.05, 141300.0],
-                     [20000000.0, 0.1, 1141300.0],
-                     [50000000.0, 0.125, 2391300.0],
-                     [100000000.0, 0.15, 4891300.0],
-                     [200000000.0, 0.25, 24891300.0],
-                     [300000000.0, 0.5, 99891300.0]
-                     ]
-    }
+    exchange._leverage_tiers = leverage_tiers
     (result_ratio, result_amt) = exchange.get_maintenance_ratio_and_amt(pair, nominal_value)
     assert (round(result_ratio, 8), round(result_amt, 8)) == (mm_ratio, amt)

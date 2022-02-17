@@ -73,7 +73,8 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
-        "ccxt_futures_name": "swap"
+        "ccxt_futures_name": "swap",
+        "can_fetch_multiple_tiers": True,
     }
     _ft_has: Dict = {}
 
@@ -90,7 +91,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict[str, List[List[float]]] = {}
+        self._leverage_tiers: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -183,7 +184,7 @@ class Exchange:
             "markets_refresh_interval", 60) * 60
 
         if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
+            self.fill_leverage_tiers()
 
     def __del__(self):
         """
@@ -346,7 +347,10 @@ class Exchange:
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
-        return market.get(self._ft_has["ccxt_futures_name"], False) is True
+        return (
+            market.get(self._ft_has["ccxt_futures_name"], False) is True and
+            market.get('linear', False) is True
+        )
 
     def market_is_spot(self, market: Dict[str, Any]) -> bool:
         return market.get('spot', False) is True
@@ -459,7 +463,7 @@ class Exchange:
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
-            self.fill_leverage_brackets()
+            self.fill_leverage_tiers()
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -691,13 +695,14 @@ class Exchange:
         self,
         pair: str,
         price: float,
+        leverage: float = 1.0
     ) -> float:
         max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max')
         if max_stake_amount is None:
             # * Should never be executed
             raise OperationalException(f'{self.name}.get_max_pair_stake_amount should'
                                        'never set max_stake_amount to None')
-        return max_stake_amount
+        return max_stake_amount / leverage
 
     def _get_stake_amount_limit(
         self,
@@ -1852,23 +1857,117 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def fill_leverage_brackets(self):
+    @retrier
+    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        if self.trading_mode == TradingMode.FUTURES and self.exchange_has('fetchLeverageTiers'):
+            try:
+                return self._api.fetch_leverage_tiers()
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f'Could not load leverage tiers due to {e.__class__.__name__}.'
+                    f'Message: {e}'
+                ) from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
+        else:
+            return {}
+
+    def fill_leverage_tiers(self) -> None:
         """
-        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        Assigns property _leverage_tiers to a dictionary of information about the leverage
         allowed on each pair
-        Not used if the exchange has a static max leverage value for the account or each pair
         """
-        return
+        leverage_tiers = self.load_leverage_tiers()
+        for pair, tiers in leverage_tiers.items():
+            pair_tiers = []
+            for tier in tiers:
+                pair_tiers.append(self.parse_leverage_tier(tier))
+            self._leverage_tiers[pair] = pair_tiers
+
+    def parse_leverage_tier(self, tier) -> Dict:
+        info = tier.get('info', {})
+        return {
+            'min': tier['notionalFloor'],
+            'max': tier['notionalCap'],
+            'mmr': tier['maintenanceMarginRate'],
+            'lev': tier['maxLeverage'],
+            'maintAmt': float(info['cum']) if 'cum' in info else None,
+        }
 
     def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :param nominal_value: The total value of the trade in quote currency (margin_mode + debt)
+        :stake_amount: The total value of the traders margin_mode in quote currency
         """
-        market = self.markets[pair]
-        if market['limits']['leverage']['max'] is not None:
-            return market['limits']['leverage']['max']
+
+        if self.trading_mode == TradingMode.SPOT:
+            return 1.0
+
+        if self.trading_mode == TradingMode.FUTURES:
+
+            # Checks and edge cases
+            if stake_amount is None:
+                raise OperationalException(
+                    f'{self.name}.get_max_leverage requires argument stake_amount'
+                )
+
+            if pair not in self._leverage_tiers:
+                # Maybe raise exception because it can't be traded on futures?
+                return 1.0
+
+            pair_tiers = self._leverage_tiers[pair]
+
+            if stake_amount == 0:
+                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
+
+            for tier_index in range(len(pair_tiers)):
+
+                tier = pair_tiers[tier_index]
+                lev = tier['lev']
+
+                if tier_index < len(pair_tiers) - 1:
+                    next_tier = pair_tiers[tier_index+1]
+                    next_floor = next_tier['min'] / next_tier['lev']
+                    if next_floor > stake_amount:  # Next tier min too high for stake amount
+                        return min((tier['max'] / stake_amount), lev)
+                        #
+                        # With the two leverage tiers below,
+                        # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
+                        # - stakes below 133.33 = max_lev of 75
+                        # - stakes between 133.33-200 = max_lev of 10000/stake = 50.01-74.99
+                        # - stakes from 200 + 1000 = max_lev of 50
+                        #
+                        # {
+                        #     "min": 0,      # stake = 0.0
+                        #     "max": 10000,  # max_stake@75 = 10000/75 = 133.33333333333334
+                        #     "lev": 75,
+                        # },
+                        # {
+                        #     "min": 10000,  # stake = 200.0
+                        #     "max": 50000,  # max_stake@50 = 50000/50 = 1000.0
+                        #     "lev": 50,
+                        # }
+                        #
+
+                else:  # if on the last tier
+                    if stake_amount > tier['max']:  # If stake is > than max tradeable amount
+                        raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
+                    else:
+                        return tier['lev']
+
+            raise OperationalException(
+                'Looped through all tiers without finding a max leverage. Should never be reached'
+            )
+
+        elif self.trading_mode == TradingMode.MARGIN:  # Search markets.limits for max lev
+            market = self.markets[pair]
+            if market['limits']['leverage']['max'] is not None:
+                return market['limits']['leverage']['max']
+            else:
+                return 1.0  # Default if max leverage cannot be found
         else:
             return 1.0
 
@@ -2098,16 +2197,6 @@ class Exchange:
         else:
             return None
 
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
-        """
-        :return: The maintenance margin ratio and maintenance amount
-        """
-        raise OperationalException(self.name + ' does not support leverage futures trading')
-
     def dry_run_liquidation_price(
         self,
         pair: str,
@@ -2159,6 +2248,37 @@ class Exchange:
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: str,
+        nominal_value: float = 0.0,
+    ) -> Tuple[float, Optional[float]]:
+        """
+        :param pair: Market symbol
+        :param nominal_value: The total trade amount in quote currency including leverage
+        maintenance amount only on Binance
+        :return: (maintenance margin ratio, maintenance amount)
+        """
+
+        if self.exchange_has('fetchLeverageTiers'):
+
+            if pair not in self._leverage_tiers:
+                raise InvalidOrderException(
+                    f"Maintenance margin rate for {pair} is unavailable for {self.name}"
+                )
+
+            pair_tiers = self._leverage_tiers[pair]
+
+            for tier in reversed(pair_tiers):
+                if nominal_value >= tier['min']:
+                    return (tier['mmr'], tier['maintAmt'])
+
+            raise OperationalException("nominal value can not be lower than 0")
+            # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
+            # describes the min amt for a tier, and the lowest tier will always go down to 0
+        else:
+            raise OperationalException(f"Cannot get maintenance ratio using {self.name}")
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

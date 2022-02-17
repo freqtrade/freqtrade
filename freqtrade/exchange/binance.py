@@ -129,91 +129,6 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def fill_leverage_brackets(self) -> None:
-        """
-        Assigns property _leverage_brackets to a dictionary of information about the leverage
-        allowed on each pair
-        After exectution, self._leverage_brackets = {
-            "pair_name": [
-                [notional_floor, maintenenace_margin_ratio, maintenance_amt],
-                ...
-            ],
-            ...
-        }
-        e.g. {
-            "ETH/USDT:USDT": [
-                [0.0, 0.01, 0.0],
-                [10000, 0.02, 0.01],
-                ...
-            ],
-            ...
-        }
-        """
-        if self.trading_mode == TradingMode.FUTURES:
-            try:
-                if self._config['dry_run']:
-                    leverage_brackets_path = (
-                        Path(__file__).parent / 'binance_leverage_brackets.json'
-                    )
-                    with open(leverage_brackets_path) as json_file:
-                        leverage_brackets = json.load(json_file)
-                else:
-                    leverage_brackets = self._api.load_leverage_brackets()
-
-                for pair, brkts in leverage_brackets.items():
-                    [amt, old_ratio] = [0.0, 0.0]
-                    brackets = []
-                    for [notional_floor, mm_ratio] in brkts:
-                        amt = (
-                            (float(notional_floor) * (float(mm_ratio) - float(old_ratio)))
-                            + amt
-                        ) if old_ratio else 0.0
-                        old_ratio = mm_ratio
-                        brackets.append([
-                            float(notional_floor),
-                            float(mm_ratio),
-                            amt,
-                        ])
-                    self._leverage_brackets[pair] = brackets
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                     f'{e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
-
-    def get_max_leverage(self, pair: str, stake_amount: Optional[float]) -> float:
-        """
-        Returns the maximum leverage that a pair can be traded at
-        :param pair: The base/quote currency pair being traded
-        :stake_amount: The total value of the traders margin_mode in quote currency
-        """
-        if stake_amount is None:
-            raise OperationalException('binance.get_max_leverage requires argument stake_amount')
-        if pair not in self._leverage_brackets:
-            return 1.0
-        pair_brackets = self._leverage_brackets[pair]
-        num_brackets = len(pair_brackets)
-        min_amount = 0.0
-        for bracket_num in range(num_brackets):
-            [notional_floor, mm_ratio, _] = pair_brackets[bracket_num]
-            lev = 1.0
-            if mm_ratio != 0:
-                lev = 1.0/mm_ratio
-            else:
-                logger.warning(f"mm_ratio for {pair} with notional floor {notional_floor} is 0")
-            if bracket_num+1 != num_brackets:  # If not on last bracket
-                [min_amount, _, __] = pair_brackets[bracket_num+1]  # Get min_amount of next bracket
-            else:
-                return lev
-            nominal_value = stake_amount * lev
-            # Bracket is good if the leveraged trade value doesnt exceed min_amount of next bracket
-            if nominal_value < min_amount:
-                return lev
-        return 1.0  # default leverage
-
-    @retrier
     def _set_leverage(
         self,
         leverage: float,
@@ -271,34 +186,6 @@ class Binance(Exchange):
         :return: The cutoff open time for when a funding fee is charged
         """
         return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)
-
-    def get_maintenance_ratio_and_amt(
-        self,
-        pair: str,
-        nominal_value: Optional[float] = 0.0,
-    ) -> Tuple[float, Optional[float]]:
-        """
-        Formula: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-
-        Maintenance amt = Floor of Position Bracket on Level n *
-          difference between
-              Maintenance Margin Rate on Level n and
-              Maintenance Margin Rate on Level n-1)
-          + Maintenance Amount on Level n-1
-        :return: The maintenance margin ratio and maintenance amount
-        """
-        if nominal_value is None:
-            raise OperationalException(
-                "nominal value is required for binance.get_maintenance_ratio_and_amt")
-        if pair not in self._leverage_brackets:
-            raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
-        pair_brackets = self._leverage_brackets[pair]
-        for [notional_floor, mm_ratio, amt] in reversed(pair_brackets):
-            if nominal_value >= notional_floor:
-                return (mm_ratio, amt)
-        raise OperationalException("nominal value can not be lower than 0")
-        # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
-        # describes the min amount for a bracket, and the lowest bracket will always go down to 0
 
     def dry_run_liquidation_price(
         self,
@@ -358,3 +245,25 @@ class Binance(Exchange):
         else:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
+
+    @retrier
+    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        if self.trading_mode == TradingMode.FUTURES:
+            if self._config['dry_run']:
+                leverage_tiers_path = (
+                    Path(__file__).parent / 'binance_leverage_tiers.json'
+                )
+                with open(leverage_tiers_path) as json_file:
+                    return json.load(json_file)
+            else:
+                try:
+                    return self._api.fetch_leverage_tiers()
+                except ccxt.DDoSProtection as e:
+                    raise DDosProtection(e) from e
+                except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                    raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                         f'{e.__class__.__name__}. Message: {e}') from e
+                except ccxt.BaseError as e:
+                    raise OperationalException(e) from e
+        else:
+            return {}
