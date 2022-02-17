@@ -148,14 +148,7 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
     (1501, 1499, 1501, "sell"),
     (1499, 1501, 1499, "buy")
 ])
-def test_stoploss_adjust_binance(
-    mocker,
-    default_conf,
-    sl1,
-    sl2,
-    sl3,
-    side
-):
+def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
     order = {
         'type': 'stop_loss_limit',

@@ -310,10 +310,9 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
     exchange.margin_mode = MarginMode.ISOLATED
     exchange.markets = markets
     # Initialization of load_leverage_tiers happens as part of exchange init.
-    exchange._leverage_tiers == {
+    assert exchange._leverage_tiers == {
         'ADA/USDT:USDT': [
             {
-                'tier': 1,
                 'min': 0,
                 'max': 500,
                 'mmr': 0.02,
@@ -321,7 +320,6 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
                 'maintAmt': None
             },
             {
-                'tier': 2,
                 'min': 501,
                 'max': 1000,
                 'mmr': 0.025,
@@ -329,7 +327,6 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
                 'maintAmt': None
             },
             {
-                'tier': 3,
                 'min': 1001,
                 'max': 2000,
                 'mmr': 0.03,
@@ -339,7 +336,6 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
         ],
         'ETH/USDT:USDT': [
             {
-                'tier': 1,
                 'min': 0,
                 'max': 2000,
                 'mmr': 0.01,
@@ -347,7 +343,6 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
                 'maintAmt': None
             },
             {
-                'tier': 2,
                 'min': 2001,
                 'max': 4000,
                 'mmr': 0.015,
@@ -355,7 +350,6 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
                 'maintAmt': None
             },
             {
-                'tier': 3,
                 'min': 4001,
                 'max': 8000,
                 'mmr': 0.02,
