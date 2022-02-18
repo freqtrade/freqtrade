@@ -2407,6 +2407,7 @@ def test_check_handle_timedout_buy_exception(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     is_short, fee, mocker
 ) -> None:
+    # TODO-lev: use is_short or remove it
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2436,6 +2437,7 @@ def test_check_handle_timedout_sell_usercustom(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker,
     is_short, open_trade_usdt, caplog
 ) -> None:
+    # TODO-lev: use is_short or remove it
     default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
     limit_sell_order_old['id'] = open_trade_usdt.open_order_id
 
@@ -2609,6 +2611,7 @@ def test_check_handle_timedout_partial_fee(
     limit_buy_order_old_partial, trades_for_order,
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
+    # TODO-lev: use is_short or remove it
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
@@ -2652,6 +2655,7 @@ def test_check_handle_timedout_partial_except(
     limit_buy_order_old_partial, trades_for_order,
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
+    # TODO-lev: use is_short or remove it
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
@@ -2775,6 +2779,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
                          indirect=['limit_buy_order_canceled_empty'])
 def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short,
                                        limit_buy_order_canceled_empty) -> None:
+    # TODO-lev: use is_short or remove it
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = mocker.patch(
