@@ -2564,11 +2564,13 @@ def test_check_handle_cancelled_sell(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("leverage", [1, 3, 5, 10])
 def test_check_handle_timedout_partial(
-    default_conf_usdt, ticker_usdt, limit_buy_order_old_partial, is_short,
+    default_conf_usdt, ticker_usdt, limit_buy_order_old_partial, is_short, leverage,
     open_trade, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    open_trade.leverage = leverage
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
     limit_buy_canceled['status'] = 'canceled'
@@ -2582,7 +2584,7 @@ def test_check_handle_timedout_partial(
         cancel_order_with_result=cancel_order_mock
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-
+    prior_stake = open_trade.stake_amount
     Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
@@ -2593,7 +2595,8 @@ def test_check_handle_timedout_partial(
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
-    assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount
+    assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount / leverage
+    assert trades[0].stake_amount != prior_stake
 
 
 @pytest.mark.parametrize("is_short", [False, True])
