@@ -2031,7 +2031,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.015,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': None,
@@ -2044,7 +2044,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
-                                        '*Total:* `(0.00100000 BTC)`')
+                                        '*Total:* `(0.01500000 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
