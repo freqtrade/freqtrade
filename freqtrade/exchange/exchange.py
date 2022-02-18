@@ -1158,50 +1158,28 @@ class Exchange:
             balances.pop("total", None)
             balances.pop("used", None)
 
-            if self.trading_mode == TradingMode.FUTURES:
-
-                open_orders_response: List[dict] = self._api.fetch_open_orders()
-                open_orders: dict = {}
-                for order in open_orders_response:
-                    symbol: str = order['symbol']
-                    open_orders[symbol] = order
-
-                positions: List[dict] = self._api.fetch_positions()
-                for position in positions:
-                    symbol = position['symbol']
-                    market: dict = self.markets[symbol]
-                    size: float = self._contracts_to_amount(symbol, position['contracts'])
-                    side: str = position['side']
-                    if size > 0:
-
-                        if symbol in open_orders:
-                            order = open_orders[symbol]
-                            order_amount: float = order['remaining']
-                            order_side: str = order['side']
-                            if order_side == 'buy' or order_side == 'long':
-                                order_amount = 0
-                        else:
-                            order_amount = 0
-
-                        if side == 'long' or side == 'buy':
-                            currency = market['base']
-                            free = size - order_amount
-
-                            balances[currency] = {
-                                'free': free,
-                                'used': order_amount,
-                                'total': size,
-                            }
-                            balances['free'][currency] = free
-                            balances['used'][currency] = order_amount
-                            balances['total'][currency] = size
-
             return balances
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def get_positions(self) -> List[Dict]:
+        if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
+            return []
+        try:
+            positions: List[Dict] = self._api.fetch_positions()
+            self._log_exchange_response('fetch_positions', positions)
+            return positions
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get positions due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 

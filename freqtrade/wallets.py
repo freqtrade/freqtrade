@@ -23,6 +23,7 @@ class Wallet(NamedTuple):
     free: float = 0
     used: float = 0
     total: float = 0
+    position: float = 0
 
 
 class Wallets:
@@ -108,6 +109,18 @@ class Wallets:
         for currency in deepcopy(self._wallets):
             if currency not in balances:
                 del self._wallets[currency]
+        # TODO-lev: Implement dry-run/backtest counterpart
+        positions = self._exchange.get_positions()
+        for position in positions:
+            symbol = position['symbol']
+            if position['side'] is None:
+                # Position is not open ...
+                continue
+            size = self._exchange._contracts_to_amount(symbol, position['contracts'])
+
+            self._wallets[symbol] = Wallet(
+                symbol, position=size
+            )
 
     def update(self, require_update: bool = True) -> None:
         """
