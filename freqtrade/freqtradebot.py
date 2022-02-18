@@ -1065,7 +1065,11 @@ class FreqtradeBot(LoggingMixin):
 
         # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
         if not stoploss_order:
-            stoploss = self.edge.stoploss(pair=trade.pair) if self.edge else self.strategy.stoploss
+            stoploss = (
+                self.edge.stoploss(pair=trade.pair)
+                if self.edge else
+                self.strategy.stoploss / trade.leverage
+            )
             if trade.is_short:
                 stop_price = trade.open_rate * (1 - stoploss)
             else:
