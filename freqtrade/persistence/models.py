@@ -452,7 +452,7 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Dict, partial:bool=False) -> None:
+    def update(self, order: Dict, sub_trade:bool=False) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -477,7 +477,7 @@ class LocalTrade():
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.open_order_id = None
-            if partial:
+            if sub_trade:
                 orders=(self.select_filled_orders('buy'))
                 lbuy=orders[-2]
                 lamount = (lbuy.filled or lbuy.amount)

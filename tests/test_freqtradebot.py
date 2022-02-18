@@ -2619,6 +2619,9 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'partial': False,
+        'stake_amount': 60.0,
+
     } == last_msg
 
 
@@ -2673,6 +2676,8 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'partial': False,
+        'stake_amount': 60.0,        
     } == last_msg
 
 
@@ -2741,6 +2746,8 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'partial': False,
+        'stake_amount': 60.0,        
     } == last_msg
 
 
@@ -2801,6 +2808,8 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'partial': False,
+        'stake_amount': 60.0,        
     } == last_msg
 
 
@@ -3019,6 +3028,8 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'partial': False,
+        'stake_amount': 60.0,        
 
     } == last_msg
 

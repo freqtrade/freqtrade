@@ -251,9 +251,9 @@ class Telegram(RPCHandler):
         if msg.get('fiat_currency', None):
             message += f", {round_coin_value(total, msg['fiat_currency'])}"
 
-        message += ")`\n"
-        if msg['partial']:
-            message += f"*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        message += ")`"
+        if msg.get('sub_trade'):
+            message += f"\n*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
             if msg.get('fiat_currency', None):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
@@ -300,13 +300,13 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
             message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
-        if self._rpc._fiat_converter:
-            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-        else:
-            msg['stake_amount_fiat'] = 0
-        if msg['partial']:
-            message += f"*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        if msg.get('sub_trade'):
+            if self._rpc._fiat_converter:
+                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
+            message += f"\n*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
             if msg.get('fiat_currency', None):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
