@@ -1734,7 +1734,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1751,7 +1751,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
     caplog.clear()
@@ -1825,7 +1825,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
         'buy_tag': 'buy_signal_01',
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1839,7 +1839,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
            '*Buy Tag:* `buy_signal_01`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -2031,7 +2031,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': None,
@@ -2044,7 +2044,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
-                                        '*Total:* `(0.00100000 BTC)`')
+                                        '*Total:* `(0.01465333 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
