@@ -3,7 +3,7 @@
 
 import logging
 from copy import deepcopy
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Dict, NamedTuple, Optional
 
 import arrow
 
@@ -26,6 +26,14 @@ class Wallet(NamedTuple):
     position: float = 0
 
 
+class PositionWallet(NamedTuple):
+    symbol: str
+    position: float = 0
+    leverage: float = 0
+    collateral: float = 0
+    side: str = 'long'
+
+
 class Wallets:
 
     def __init__(self, config: dict, exchange: Exchange, log: bool = True) -> None:
@@ -33,6 +41,7 @@ class Wallets:
         self._log = log
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
+        self._positions: Dict[str, PositionWallet] = {}
         self.start_cap = config['dry_run_wallet']
         self._last_wallet_refresh = 0
         self.update()
@@ -113,13 +122,17 @@ class Wallets:
         positions = self._exchange.get_positions()
         for position in positions:
             symbol = position['symbol']
-            if position['side'] is None:
+            if position['side'] is None or position['collateral'] == 0.0:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position['contracts'])
-
-            self._wallets[symbol] = Wallet(
-                symbol, position=size
+            collateral = position['collateral']
+            leverage = position['leverage']
+            self._positions[symbol] = PositionWallet(
+                symbol, position=size,
+                leverage=leverage,
+                collateral=collateral,
+                side=position['side']
             )
 
     def update(self, require_update: bool = True) -> None:
@@ -139,8 +152,11 @@ class Wallets:
                 logger.info('Wallets synced.')
             self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
-    def get_all_balances(self) -> Dict[str, Any]:
+    def get_all_balances(self) -> Dict[str, Wallet]:
         return self._wallets
+
+    def get_all_positions(self) -> Dict[str, PositionWallet]:
+        return self._positions
 
     def get_starting_balance(self) -> float:
         """
