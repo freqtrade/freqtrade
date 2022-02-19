@@ -770,7 +770,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
     mocker.patch('freqtrade.wallets.Wallets.get_starting_balance', return_value=0.01)
-    assert ('∙ `-0.00000500 BTC (-0.50%) (-0.0 \N{GREEK CAPITAL LETTER SIGMA}%)`'
+    assert ('∙ `-0.000005 BTC (-0.50%) (-0.0 \N{GREEK CAPITAL LETTER SIGMA}%)`'
             in msg_mock.call_args_list[-1][0][0])
     msg_mock.reset_mock()
 
@@ -845,7 +845,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC: 12.00000000' in result
+    assert 'BTC: 12' in result
     assert "*3 Other Currencies (< 0.0001 BTC):*" in result
     assert 'BTC: 0.00000309' in result
 
@@ -874,7 +874,7 @@ def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
     assert "*Warning:* Simulated balances in Dry Mode." in result
-    assert "Starting capital: `1000` BTC" in result
+    assert "Starting capital: `1000 BTC`" in result
 
 
 def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
@@ -1734,7 +1734,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1751,7 +1751,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
     caplog.clear()
@@ -1825,7 +1825,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
         'buy_tag': 'buy_signal_01',
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1839,7 +1839,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
            '*Buy Tag:* `buy_signal_01`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -2031,7 +2031,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': None,
@@ -2044,7 +2044,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
-                                        '*Total:* `(0.00100000 BTC)`')
+                                        '*Total:* `(0.01465333 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:

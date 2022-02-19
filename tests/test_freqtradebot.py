@@ -2436,6 +2436,9 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_buy_order_
     mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_enter(trade, limit_buy_order_usdt, reason)
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
+    # min_pair_stake empty should not crash
+    mocker.patch('freqtrade.exchange.Exchange.get_min_pair_stake_amount', return_value=None)
+    assert not freqtrade.handle_cancel_enter(trade, limit_buy_order_usdt, reason)
 
 
 @pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],

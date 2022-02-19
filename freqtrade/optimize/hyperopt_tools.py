@@ -373,7 +373,7 @@ class HyperoptTools():
 
         trials[f"Max Drawdown{' (Acct)' if has_account_drawdown else ''}"] = trials.apply(
             lambda x: "{} {}".format(
-                round_coin_value(x['max_drawdown_abs'], stake_currency),
+                round_coin_value(x['max_drawdown_abs'], stake_currency, keep_trailing_zeros=True),
                 (f"({x['max_drawdown_account']:,.2%})"
                     if has_account_drawdown
                     else f"({x['max_drawdown']:,.2%})"
@@ -388,7 +388,7 @@ class HyperoptTools():
 
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
-                round_coin_value(x['Total profit'], stake_currency),
+                round_coin_value(x['Total profit'], stake_currency, keep_trailing_zeros=True),
                 f"({x['Profit']:,.2%})".rjust(10, ' ')
             ).rjust(25+len(stake_currency))
             if x['Total profit'] != 0.0 else '--'.rjust(25+len(stake_currency)),
