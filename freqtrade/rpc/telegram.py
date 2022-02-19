@@ -790,12 +790,13 @@ class Telegram(RPCHandler):
             output = ''
             if self._config['dry_run']:
                 output += "*Warning:* Simulated balances in Dry Mode.\n"
-
-            output += ("Starting capital: "
-                       f"`{result['starting_capital']}` {self._config['stake_currency']}"
-                       )
-            output += (f" `{result['starting_capital_fiat']}` "
-                       f"{self._config['fiat_display_currency']}.\n"
+            starting_cap = round_coin_value(
+                result['starting_capital'], self._config['stake_currency'])
+            output += f"Starting capital: `{starting_cap}`"
+            starting_cap_fiat = round_coin_value(
+                result['starting_capital_fiat'], self._config['fiat_display_currency']
+            ) if result['starting_capital_fiat'] > 0 else ''
+            output += (f" `, {starting_cap_fiat}`.\n"
                        ) if result['starting_capital_fiat'] > 0 else '.\n'
 
             total_dust_balance = 0
