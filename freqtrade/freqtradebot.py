@@ -1021,12 +1021,12 @@ class FreqtradeBot(LoggingMixin):
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
-            filled_val = order.get('filled', 0.0) or 0.0
+            filled_val: float = order.get('filled', 0.0) or 0.0
             filled_stake = filled_val * trade.open_rate
             minstake = self.exchange.get_min_pair_stake_amount(
                 trade.pair, trade.open_rate, self.strategy.stoploss)
 
-            if filled_val > 0 and filled_stake < minstake:
+            if filled_val > 0 and minstake and filled_stake < minstake:
                 logger.warning(
                     f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
                     f"as the filled amount of {filled_val} would result in an unsellable trade.")

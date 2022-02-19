@@ -799,11 +799,11 @@ class Trade(_DECL_BASE, LocalTrade):
     fee_close = Column(Float, nullable=False, default=0.0)
     fee_close_cost = Column(Float, nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
-    open_rate = Column(Float)
+    open_rate: float = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = Column(Float)
-    close_rate = Column(Float)
+    close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
