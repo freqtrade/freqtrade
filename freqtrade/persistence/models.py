@@ -116,7 +116,7 @@ class Order(_DECL_BASE):
     ft_order_side = Column(String(25), nullable=False)
     ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-
+    is_recovered = Column(Boolean, nullable=False, default=False)
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
@@ -481,9 +481,17 @@ class LocalTrade():
                 orders=(self.select_filled_orders('buy'))
                 lbuy=orders[-2]
                 lamount = (lbuy.filled or lbuy.amount)
-                lbuy.average=(lbuy.average * lamount - self.calc_profit2(orders[-1].rate, order.rate, order.filled or order.amount))/lamount
+                o_rate = float(safe_value_fallback(order, 'average', 'price'))
+                o_amount = float(safe_value_fallback(order, 'filled', 'amount'))
+                o1_rate = orders[-1].average or orders[-1].price
+                lbuy.average=(lbuy.average * lamount - self.calc_profit2(o1_rate, o_rate, o_amount))/lamount
+                orders[-1].is_recovered=True
+                self.update_order(orders[-1])
+                
+              
+                # self.orders.remove(orders[-1])
+                self.update_order(lbuy)
                 Order.query.session.commit()
-                self.orders.remove(orders[-1])
                 self.recalc_trade_from_orders()
                 Trade.commit()
             else:
@@ -499,8 +507,11 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order_type}')
         Trade.commit()
 
-    def calc_profit2(self, open_rate: float, close_rate: float, amount: Float) ->float:
-        return Decimal(self.amount) *( (1-self.fee_close)* Decimal(close_rate) -(1+self.fee_open)* Decimal(open_rate) )
+    def calc_profit2(self, open_rate: float, close_rate: float, amount: float) ->float:
+        return float (Decimal(amount) * \
+            ( Decimal(1-self.fee_close)* Decimal(close_rate) - \
+            Decimal(1+self.fee_open)* Decimal(open_rate) ))
+
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
@@ -638,6 +649,7 @@ class LocalTrade():
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
+                    o.is_recovered==True or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -695,6 +707,7 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
+                o.is_recovered==False and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property

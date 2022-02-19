@@ -4320,7 +4320,6 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
         get_fee=fee,
     )
     pair = 'ETH/USDT'
-
     # Initial buy
     closed_successful_buy_order = {
         'pair': pair,
@@ -4385,7 +4384,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
         'status': None,
         'price': 9,
         'amount': 12,
-        'cost': 100,
+        'cost': 108,
         'ft_is_open': True,
         'id': '651',
         'order_id': '651'
@@ -4532,7 +4531,46 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Make sure the closed order is found as the second order.
     order = trade.select_order('buy', False)
     assert order.order_id == '652'
+    closed_sell_dca_order_1 = {
+        'ft_pair': pair,
+        'status': 'closed',
+        'ft_order_side': 'sell',
+        'side': 'sell',
+        'type': 'limit',
+        'price': 8,
+        'average': 8,
+        'amount': 15,
+        'filled': 15,
+        'cost': 120,
+        'ft_is_open': False,
+        'id': '653',
+        'order_id': '653'
+    }
+    mocker.patch('freqtrade.exchange.Exchange.create_order',
+                 MagicMock(return_value=closed_sell_dca_order_1))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 MagicMock(return_value=closed_sell_dca_order_1))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 MagicMock(return_value=closed_sell_dca_order_1))
+    assert freqtrade.execute_trade_exit(trade=trade, limit=8,
+                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS),sub_trade_amt=15)
 
+    # Assert trade is as expected (averaged dca)
+    trade = Trade.query.first()
+    print(trade.open_rate,trade.amount,trade.stake_amount,'DEBUG')
+    assert trade
+    assert trade.open_order_id is None
+    assert trade.amount == 22
+    assert trade.stake_amount == 203.5625
+    assert pytest.approx(trade.open_rate) == 9.252840909090908
+
+    orders = Order.query.all()
+    assert orders
+    assert len(orders) == 4
+
+    # Make sure the closed order is found as the second order.
+    order = trade.select_order('sell', False)
+    assert order.order_id == '653'
 
 def test_process_open_trade_positions_exception(mocker, default_conf_usdt, fee, caplog) -> None:
     default_conf_usdt.update({
