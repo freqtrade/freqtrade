@@ -827,13 +827,21 @@ class Telegram(RPCHandler):
             for curr in result['currencies']:
                 curr_output = ''
                 if curr['est_stake'] > balance_dust_level:
-                    curr_output = (
-                        f"*{curr['currency']}:*\n"
-                        f"\t`Available: {curr['free']:.8f}`\n"
-                        f"\t`Balance: {curr['balance']:.8f}`\n"
-                        f"\t`Pending: {curr['used']:.8f}`\n"
-                        f"\t`Est. {curr['stake']}: "
-                        f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                    if curr['is_position']:
+                        curr_output = (
+                            f"*{curr['currency']}:*\n"
+                            f"\t`{curr['side']}: {curr['position']:.8f}`\n"
+                            f"\t`Leverage: {curr['leverage']:.1f}`\n"
+                            f"\t`Est. {curr['stake']}: "
+                            f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                    else:
+                        curr_output = (
+                            f"*{curr['currency']}:*\n"
+                            f"\t`Available: {curr['free']:.8f}`\n"
+                            f"\t`Balance: {curr['balance']:.8f}`\n"
+                            f"\t`Pending: {curr['used']:.8f}`\n"
+                            f"\t`Est. {curr['stake']}: "
+                            f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 elif curr['est_stake'] <= balance_dust_level:
                     total_dust_balance += curr['est_stake']
                     total_dust_currencies += 1

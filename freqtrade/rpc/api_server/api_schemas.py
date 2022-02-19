@@ -39,6 +39,11 @@ class Balance(BaseModel):
     used: float
     est_stake: float
     stake: str
+    # Starting with 2.x
+    side: str
+    leverage: float
+    is_position: bool
+    position: float
 
 
 class Balances(BaseModel):

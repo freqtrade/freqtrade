@@ -609,6 +609,10 @@ class RPC:
                 'used': balance.used if balance.used is not None else 0,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
+                'side': 'long',
+                'leverage': 1,
+                'position': 0,
+                'is_position': False,
             })
         symbol: str
         position: PositionWallet
@@ -617,22 +621,14 @@ class RPC:
             currencies.append({
                 'currency': symbol,
                 'free': 0,
-                'balance': position.position,
+                'balance': 0,
                 'used': 0,
-                'est_stake': position.collateral,
-                'stake': stake_currency,
-            })
-
-            positions.append({
-                'currency': symbol,
-                # 'free': balance.free if balance.free is not None else 0,
-                # 'balance': balance.total if balance.total is not None else 0,
-                # 'used': balance.used if balance.used is not None else 0,
                 'position': position.position,
-                'side': position.side,
                 'est_stake': position.collateral,
-                'leverage': position.leverage,
                 'stake': stake_currency,
+                'leverage': position.leverage,
+                'side': position.side,
+                'is_position': True
             })
 
         value = self._fiat_converter.convert_amount(
@@ -645,7 +641,6 @@ class RPC:
 
         return {
             'currencies': currencies,
-            'positions': positions,
             'total': total,
             'symbol': fiat_display_currency,
             'value': value,
