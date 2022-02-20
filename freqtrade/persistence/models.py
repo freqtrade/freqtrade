@@ -160,7 +160,7 @@ class Order(_DECL_BASE):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
                 f'side={self.side}, order_type={self.order_type}, status={self.status})')
 
-    def update_from_ccxt_object(self, order) -> 'Order':
+    def update_from_ccxt_object(self, order):
         """
         Update Order from ccxt response
         Only updates if fields are available from ccxt -

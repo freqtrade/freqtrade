@@ -1358,6 +1358,9 @@ class FreqtradeBot(LoggingMixin):
             return True
 
         order_obj = trade.select_order_by_order_id(order_id)
+        if not order_obj:
+            raise DependencyException(
+                f"Order_obj not found for {order_id}. This should not have happened.")
         self.handle_order_fee(trade, order_obj, order)
 
         trade.update_trade(order_obj)

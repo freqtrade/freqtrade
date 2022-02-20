@@ -209,9 +209,6 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
             decl_base, inspector, engine, table_back_name, cols, order_table_bak_name, cols_orders)
-        # Reread columns - the above recreated the table!
-        inspector = inspect(engine)
-        cols = inspector.get_columns('trades')
 
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
