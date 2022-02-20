@@ -1357,8 +1357,8 @@ class FreqtradeBot(LoggingMixin):
             # Handling of this will happen in check_handle_timedout.
             return True
 
-        order = self.handle_order_fee(trade, order)
         order_obj = trade.select_order_by_order_id(order_id)
+        order = self.handle_order_fee(trade, order_obj, order)
         if not order_obj:
             # TODO: this can't happen!
             raise OperationalException(f"order-obj for {order_id} not found!")
@@ -1415,14 +1415,16 @@ class FreqtradeBot(LoggingMixin):
             return real_amount
         return amount
 
-    def handle_order_fee(self, trade: Trade, order: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> Dict[str, Any]:
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
-                order['amount'] = new_amount
-                order.pop('filled', None)
+                # TODO: ??
+                # order['amount'] = new_amount
+                order_obj.ft_fee_base = trade.amount - new_amount
+                # order.pop('filled', None)
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
         return order

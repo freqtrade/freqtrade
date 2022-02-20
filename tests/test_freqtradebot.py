@@ -1729,9 +1729,14 @@ def test_update_trade_state_withorderdict(default_conf_usdt, trades_for_order, l
     )
     freqtrade.update_trade_state(trade, order_id, limit_buy_order_usdt)
     assert trade.amount != amount
-    assert trade.amount == limit_buy_order_usdt['amount']
+    log_text = r'Applying fee on amount for .*'
     if has_rounding_fee:
-        assert log_has_re(r'Applying fee on amount for .*', caplog)
+        assert pytest.approx(trade.amount) == 29.992
+        assert log_has_re(log_text, caplog)
+    else:
+        assert pytest.approx(trade.amount) == limit_buy_order_usdt['amount']
+        assert not log_has_re(log_text, caplog)
+
 
 
 def test_update_trade_state_exception(mocker, default_conf_usdt,
@@ -2319,6 +2324,7 @@ def test_check_handle_timedout_partial_fee(default_conf_usdt, ticker_usdt, open_
                                            limit_buy_order_old_partial_canceled, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=0))
     patch_exchange(mocker)

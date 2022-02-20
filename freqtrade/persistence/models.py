@@ -132,6 +132,8 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
+    ft_fee_base = Column(Float, nullable=True)
+
     @property
     def order_date_utc(self) -> datetime:
         """ Order-date with UTC timezoneinfo"""
@@ -143,7 +145,15 @@ class Order(_DECL_BASE):
 
     @property
     def safe_filled(self) -> float:
-        return self.filled or self.amount
+        return self.filled or self.amount or 0.0
+
+    @property
+    def safe_fee_base(self) -> float:
+        return self.ft_fee_base or 0.0
+
+    @property
+    def safe_amount_after_fee(self) -> float:
+        return self.safe_filled - self.safe_fee_base
 
     def __repr__(self):
 
@@ -477,7 +487,7 @@ class LocalTrade():
         if order.ft_order_side == 'buy':
             # Update open rate and actual amount
             self.open_rate = order.safe_price
-            self.amount = order.safe_filled
+            self.amount = order.safe_amount_after_fee
             if self.is_open:
                 logger.info(f'{order.order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
@@ -637,7 +647,7 @@ class LocalTrade():
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
-            tmp_amount = o.amount
+            tmp_amount = o.safe_amount_after_fee
             tmp_price = o.average or o.price
             if o.filled is not None:
                 tmp_amount = o.filled
