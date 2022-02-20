@@ -16,7 +16,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
 from freqtrade.enums import RPCMessageType, RunMode, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException, PricingError)
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -1358,10 +1358,8 @@ class FreqtradeBot(LoggingMixin):
             return True
 
         order_obj = trade.select_order_by_order_id(order_id)
-        order = self.handle_order_fee(trade, order_obj, order)
-        if not order_obj:
-            # TODO: this can't happen!
-            raise OperationalException(f"order-obj for {order_id} not found!")
+        self.handle_order_fee(trade, order_obj, order)
+
         trade.update_trade(order_obj)
         # TODO: is the below necessary? it's already done in update_trade for filled buys
         trade.recalc_trade_from_orders()
@@ -1415,20 +1413,15 @@ class FreqtradeBot(LoggingMixin):
             return real_amount
         return amount
 
-    def handle_order_fee(
-            self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> None:
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
-                # TODO: ??
-                # order['amount'] = new_amount
                 order_obj.ft_fee_base = trade.amount - new_amount
-                # order.pop('filled', None)
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
-        return order
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
