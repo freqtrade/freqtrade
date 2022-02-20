@@ -116,7 +116,8 @@ class Order(_DECL_BASE):
     ft_order_side = Column(String(25), nullable=False)
     ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-    is_recovered = Column(Boolean, nullable=False, default=False)
+    is_processed = Column(Boolean, nullable=True, default=False)
+
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
@@ -485,7 +486,7 @@ class LocalTrade():
                 o_amount = float(safe_value_fallback(order, 'filled', 'amount'))
                 o1_rate = orders[-1].average or orders[-1].price
                 lbuy.average=(lbuy.average * lamount - self.calc_profit2(o1_rate, o_rate, o_amount))/lamount
-                orders[-1].is_recovered=True
+                orders[-1].is_processed=True
                 self.update_order(orders[-1])
                 
               
@@ -649,7 +650,7 @@ class LocalTrade():
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
-                    o.is_recovered==True or
+                    o.is_processed==True or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -707,7 +708,7 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
-                o.is_recovered==False and
+                o.is_processed!=True and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property
