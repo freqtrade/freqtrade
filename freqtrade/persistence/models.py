@@ -187,7 +187,6 @@ class Order(_DECL_BASE):
             if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
-        return self
 
     def to_json(self) -> Dict[str, Any]:
         return {

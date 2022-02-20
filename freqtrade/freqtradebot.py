@@ -1415,7 +1415,8 @@ class FreqtradeBot(LoggingMixin):
             return real_amount
         return amount
 
-    def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_order_fee(
+            self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> Dict[str, Any]:
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order)

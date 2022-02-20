@@ -1738,7 +1738,6 @@ def test_update_trade_state_withorderdict(default_conf_usdt, trades_for_order, l
         assert not log_has_re(log_text, caplog)
 
 
-
 def test_update_trade_state_exception(mocker, default_conf_usdt,
                                       limit_buy_order_usdt, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
