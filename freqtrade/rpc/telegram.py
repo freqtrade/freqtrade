@@ -416,7 +416,8 @@ class Telegram(RPCHandler):
                 sumB = 0
                 first_order_price = filled_orders[0]["average"] or filled_orders[0]["price"]
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * (filled_orders[y]["average"] or filled_orders[y]["price"]))
+                    sumA += (filled_orders[y]["amount"] * (filled_orders[y]["average"]
+                             or filled_orders[y]["price"]))
                     sumB += filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
                 price_to_1st_entry = ((cur_entry_average - first_order_price)
