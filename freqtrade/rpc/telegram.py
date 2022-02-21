@@ -416,7 +416,7 @@ class Telegram(RPCHandler):
                 sumB = 0
                 first_order_price = filled_orders[0]["average"] or filled_orders[0]["price"]
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["average"])
+                    sumA += (filled_orders[y]["amount"] * (filled_orders[y]["average"] or filled_orders[y]["price"]))
                     sumB += filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
                 price_to_1st_entry = ((cur_entry_average - first_order_price)
@@ -562,7 +562,9 @@ class Telegram(RPCHandler):
                                reload_able=True, callback_path="update_status_table",
                                query=update.callback_query)
         except RPCException as e:
-            self._send_msg(str(e))
+            self._send_msg(str(e), reload_able=True,
+                           callback_path="update_status_table",
+                           query=update.callback_query)
 
     @authorized_only
     def _daily(self, update: Update, context: CallbackContext) -> None:
