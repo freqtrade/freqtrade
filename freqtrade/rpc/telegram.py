@@ -253,7 +253,8 @@ class Telegram(RPCHandler):
 
         message += ")`"
         if msg.get('sub_trade'):
-            message += f"\n*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
 
             if msg.get('fiat_currency', None):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
@@ -306,7 +307,8 @@ class Telegram(RPCHandler):
                     msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
             else:
                 msg['stake_amount_fiat'] = 0
-            message += f"\n*Balance:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
 
             if msg.get('fiat_currency', None):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"

@@ -2621,8 +2621,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'close_rate': ANY,
         'sub_trade': False,
         'stake_amount': 60.0,
-
-    } == last_msg
+            } == last_msg
 
 
 def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_down,
@@ -2677,8 +2676,8 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,        
-    } == last_msg
+        'stake_amount': 60.0,
+            } == last_msg
 
 
 def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fee,
@@ -2747,8 +2746,8 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,        
-    } == last_msg
+        'stake_amount': 60.0,
+            } == last_msg
 
 
 def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
@@ -2809,7 +2808,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,        
+        'stake_amount': 60.0,
     } == last_msg
 
 
@@ -3029,7 +3028,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,        
+        'stake_amount': 60.0,
 
     } == last_msg
 
@@ -4553,11 +4552,11 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                  MagicMock(return_value=closed_sell_dca_order_1))
     assert freqtrade.execute_trade_exit(trade=trade, limit=8,
-                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS),sub_trade_amt=15)
+                                        sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS),
+                                        sub_trade_amt=15)
 
     # Assert trade is as expected (averaged dca)
     trade = Trade.query.first()
-    print(trade.open_rate,trade.amount,trade.stake_amount,'DEBUG')
     assert trade
     assert trade.open_order_id is None
     assert trade.amount == 22
@@ -4571,6 +4570,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Make sure the closed order is found as the second order.
     order = trade.select_order('sell', False)
     assert order.order_id == '653'
+
 
 def test_process_open_trade_positions_exception(mocker, default_conf_usdt, fee, caplog) -> None:
     default_conf_usdt.update({
