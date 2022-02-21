@@ -414,12 +414,13 @@ class Telegram(RPCHandler):
             else:
                 sumA = 0
                 sumB = 0
+                first_order_price = filled_orders[0]["average"] or filled_orders[0]["price"]
                 for y in range(x):
                     sumA += (filled_orders[y]["amount"] * filled_orders[y]["average"])
                     sumB += filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
-                price_to_1st_entry = ((cur_entry_average - filled_orders[0]["average"])
-                                      / filled_orders[0]["average"])
+                price_to_1st_entry = ((cur_entry_average - first_order_price)
+                                      / first_order_price)
                 minus_on_entry = (cur_entry_average - prev_avg_price)/prev_avg_price
                 dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
                 days = dur_entry.days

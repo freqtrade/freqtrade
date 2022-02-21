@@ -701,7 +701,7 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
+            'amount': order.get('filled') or order.get('amount')
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
             'sub_trade': sub_trade,
@@ -1384,11 +1384,11 @@ class FreqtradeBot(LoggingMixin):
 
         if not trade.is_open:
             if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True)
+                self._notify_exit(trade, '', True, sub_trade=sub_trade)
             self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
             # Buy fill
-            self._notify_enter(trade, order, fill=True)
+            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
 
         return False
 
