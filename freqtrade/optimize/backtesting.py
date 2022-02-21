@@ -639,17 +639,20 @@ class Backtesting:
             # If not pos adjust, trade is None
             return trade
 
-        max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-        leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-            pair=pair,
-            current_time=current_time,
-            current_rate=row[OPEN_IDX],
-            proposed_leverage=1.0,
-            max_leverage=max_leverage,
-            side=direction,
-        ) if self._can_short else 1.0
-        # Cap leverage between 1.0 and max_leverage.
-        leverage = min(max(leverage, 1.0), max_leverage)
+        if not pos_adjust:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=current_time,
+                current_rate=row[OPEN_IDX],
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=direction,
+            ) if self._can_short else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+        else:
+            leverage = trade.leverage if trade else 1.0
 
         order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['buy']

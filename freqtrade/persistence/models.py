@@ -889,8 +889,7 @@ class LocalTrade():
                 total_stake += tmp_price * tmp_amount
 
         if total_amount > 0:
-            # TODO-lev: This should update leverage as well -
-            # as averaged trades might have different leverage
+            # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = total_stake / total_amount
             self.stake_amount = total_stake
             self.amount = total_amount

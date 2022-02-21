@@ -643,18 +643,21 @@ class FreqtradeBot(LoggingMixin):
 
         if not stake_amount:
             return False
-
-        max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-        leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-            pair=pair,
-            current_time=datetime.now(timezone.utc),
-            current_rate=enter_limit_requested,
-            proposed_leverage=1.0,
-            max_leverage=max_leverage,
-            side=trade_side,
-        ) if self.trading_mode != TradingMode.SPOT else 1.0
-        # Cap leverage between 1.0 and max_leverage.
-        leverage = min(max(leverage, 1.0), max_leverage)
+        if not pos_adjust:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=datetime.now(timezone.utc),
+                current_rate=enter_limit_requested,
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=trade_side,
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+        else:
+            # Changing leverage currently not possible
+            leverage = trade.leverage if trade else 1.0
         if pos_adjust:
             logger.info(f"Position adjust: about to create a new order for {pair} with stake: "
                         f"{stake_amount} for {trade}")
