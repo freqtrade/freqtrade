@@ -32,7 +32,7 @@ sdnotify==0.3.2
 
 # API Server
 fastapi==0.74.0
-uvicorn==0.17.4
+uvicorn==0.17.5
 pyjwt==2.3.0
 aiofiles==0.8.0
 psutil==5.9.0
