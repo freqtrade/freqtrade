@@ -501,28 +501,28 @@ class LocalTrade():
         profit = 0
         idx = -1
         while sell_amount:
-            border = orders[idx]
-            buy_amount = border.filled or border.amount
-            buy_rate = border.average or border.price
+            b_order = orders[idx]
+            buy_amount = b_order.filled or b_order.amount
+            buy_rate = b_order.average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
             else:
-                if len(orders) == 1 and sell_amount == buy_amount:
+                if len(orders) == 1 and sell_amount == self.amount:
                     self.close(safe_value_fallback(order, 'average', 'price'))
                     Trade.commit()
                     return
-                border.is_realized = True
-                self.update_order(border)
+                b_order.is_realized = True
+                self.update_order(b_order)
                 idx -= 1
                 amount = buy_amount
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
-        border2 = orders[idx]
-        if not border.is_realized:
-            border2.filled -= amount
-        amount2 = border2.filled or border2.amount
-        border2.average = (border2.average * amount2 - profit) / amount2
-        self.update_order(border2)
+        b_order2 = orders[idx]
+        if not b_order.is_realized:
+            b_order2.filled -= amount
+        amount2 = b_order2.filled or b_order2.amount
+        b_order2.average = (b_order2.average * amount2 - profit) / amount2
+        self.update_order(b_order2)
         Order.query.session.commit()
         self.recalc_trade_from_orders()
         Trade.commit()
