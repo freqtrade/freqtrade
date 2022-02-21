@@ -14,6 +14,7 @@ from freqtrade.configuration.directory_operations import create_datadir, create_
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_config_file, load_file
 from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, CandleType, RunMode
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
@@ -436,7 +437,7 @@ class Configuration:
         self._args_to_config(config, argname='trading_mode',
                              logstring='Detected --trading-mode: {}')
         config['candle_type_def'] = CandleType.get_default(config.get('trading_mode', 'spot'))
-
+        config['trading_mode'] = TradingMode(config.get('trading_mode', 'spot'))
         self._args_to_config(config, argname='candle_types',
                              logstring='Detected --candle-types: {}')
 

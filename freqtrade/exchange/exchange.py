@@ -137,7 +137,7 @@ class Exchange:
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
         # Leverage properties
-        self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
+        self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         self.margin_mode: Optional[MarginMode] = (
             MarginMode(config.get('margin_mode'))
             if config.get('margin_mode')
