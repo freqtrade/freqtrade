@@ -498,7 +498,7 @@ class LocalTrade():
         orders = (self.select_filled_orders('buy'))
         sell_rate = float(safe_value_fallback(order, 'average', 'price'))
         sell_amount = float(safe_value_fallback(order, 'filled', 'amount'))
-        profit = 0
+        profit = 0.0
         idx = -1
         while sell_amount:
             b_order = orders[idx]
