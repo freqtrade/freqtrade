@@ -116,7 +116,7 @@ class Order(_DECL_BASE):
     ft_order_side = Column(String(25), nullable=False)
     ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-    is_realized = Column(Boolean, nullable=True, default=False)
+    is_fully_realized = Column(Boolean, nullable=True, default=False)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -506,20 +506,19 @@ class LocalTrade():
             buy_rate = b_order.average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
+                b_order.filled -= amount
             else:
                 if len(orders) == 1 and sell_amount == self.amount:
                     self.close(safe_value_fallback(order, 'average', 'price'))
                     Trade.commit()
                     return
-                b_order.is_realized = True
+                b_order.is_fully_realized = True
                 self.update_order(b_order)
                 idx -= 1
                 amount = buy_amount
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         b_order2 = orders[idx]
-        if not b_order.is_realized:
-            b_order2.filled -= amount
         amount2 = b_order2.filled or b_order2.amount
         b_order2.average = (b_order2.average * amount2 - profit) / amount2
         self.update_order(b_order2)
@@ -670,7 +669,7 @@ class LocalTrade():
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
-                    o.is_realized or
+                    o.is_fully_realized or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -728,7 +727,7 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
-                not o.is_realized and
+                not o.is_fully_realized and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property
