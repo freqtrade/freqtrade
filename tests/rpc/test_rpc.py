@@ -636,6 +636,10 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
          'used': 2.0,
          'est_stake': 12.0,
          'stake': 'BTC',
+         'is_position': False,
+         'leverage': 1.0,
+         'position': 0.0,
+         'side': 'long',
          },
         {'free': 1.0,
          'balance': 5.0,
@@ -643,6 +647,10 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
          'est_stake': 0.30794,
          'used': 4.0,
          'stake': 'BTC',
+         'is_position': False,
+         'leverage': 1.0,
+         'position': 0.0,
+         'side': 'long',
 
          },
         {'free': 5.0,
@@ -651,6 +659,10 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
          'est_stake': 0.0011563153318162476,
          'used': 5.0,
          'stake': 'BTC',
+         'is_position': False,
+         'leverage': 1.0,
+         'position': 0.0,
+         'side': 'long',
          }
     ]
     assert result['total'] == 12.309096315331816

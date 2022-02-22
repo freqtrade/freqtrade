@@ -568,7 +568,6 @@ class RPC:
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
         currencies = []
-        positions = []
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers(cached=True)
