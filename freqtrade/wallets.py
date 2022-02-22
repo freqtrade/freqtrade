@@ -8,7 +8,7 @@ from typing import Dict, NamedTuple, Optional
 import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RunMode
+from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import LocalTrade, Trade
@@ -23,7 +23,6 @@ class Wallet(NamedTuple):
     free: float = 0
     used: float = 0
     total: float = 0
-    position: float = 0
 
 
 class PositionWallet(NamedTuple):
@@ -76,6 +75,7 @@ class Wallets:
         """
         # Recreate _wallets to reset closed trade balances
         _wallets = {}
+        _positions = {}
         open_trades = Trade.get_trades_proxy(is_open=True)
         # If not backtesting...
         # TODO: potentially remove the ._log workaround to determine backtest mode.
@@ -84,24 +84,46 @@ class Wallets:
         else:
             tot_profit = LocalTrade.total_profit
         tot_in_trades = sum(trade.stake_amount for trade in open_trades)
+        used_stake = 0.0
 
-        current_stake = self.start_cap + tot_profit - tot_in_trades
+        if self._config.get('trading_mode', 'spot') != TradingMode.FUTURES:
+            current_stake = self.start_cap + tot_profit - tot_in_trades
+            total_stake = current_stake
+            for trade in open_trades:
+                curr = self._exchange.get_pair_base_currency(trade.pair)
+                _wallets[curr] = Wallet(
+                    curr,
+                    trade.amount,
+                    0,
+                    trade.amount
+                )
+        else:
+            tot_in_trades = 0
+            for position in open_trades:
+                # size = self._exchange._contracts_to_amount(position.pair, position['contracts'])
+                size = position.amount
+                # TODO-lev: stake_amount in real trades does not include the leverage ...
+                collateral = position.stake_amount / position.leverage
+                leverage = position.leverage
+                tot_in_trades -= collateral
+                _positions[position.pair] = PositionWallet(
+                    position.pair, position=size,
+                    leverage=leverage,
+                    collateral=collateral,
+                    side=position.trade_direction
+                )
+            current_stake = self.start_cap + tot_profit
+            used_stake = tot_in_trades
+            total_stake = current_stake - tot_in_trades
+
         _wallets[self._config['stake_currency']] = Wallet(
-            self._config['stake_currency'],
-            current_stake,
-            0,
-            current_stake
+            currency=self._config['stake_currency'],
+            free=current_stake,
+            used=used_stake,
+            total=total_stake
         )
-
-        for trade in open_trades:
-            curr = self._exchange.get_pair_base_currency(trade.pair)
-            _wallets[curr] = Wallet(
-                curr,
-                trade.amount,
-                0,
-                trade.amount
-            )
         self._wallets = _wallets
+        self._positions = _positions
 
     def _update_live(self) -> None:
         balances = self._exchange.get_balances()
@@ -121,7 +143,7 @@ class Wallets:
 
         # TODO-lev: Implement dry-run/backtest counterpart
         positions = self._exchange.get_positions()
-        self._positions = []
+        self._positions = {}
         for position in positions:
             symbol = position['symbol']
             if position['side'] is None or position['collateral'] == 0.0:
