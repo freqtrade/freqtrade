@@ -46,7 +46,6 @@ def test_init_invalid_db_url():
         init_db('sqlite:///', True)
 
 
-
 def test_init_prod_db(default_conf, mocker):
     default_conf.update({'dry_run': False})
     default_conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})

@@ -599,11 +599,6 @@ class RPC:
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
             })
-        if total == 0.0:
-            if self._freqtrade.config['dry_run']:
-                raise RPCException('Running in Dry Run, balances are not available.')
-            else:
-                raise RPCException('All balances are zero.')
 
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
