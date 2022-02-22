@@ -104,7 +104,7 @@ class FreqtradeBot(LoggingMixin):
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
         self.liquidation_buffer = float(self.config.get('liquidation_buffer', '0.05'))
-        self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
+        self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
         self.margin_mode_type: Optional[MarginMode] = None
         if 'margin_mode' in self.config:
             self.margin_mode = MarginMode(self.config['margin_mode'])

@@ -74,6 +74,10 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history.loc[1, 'exit_short'] = 0
     mocked_history.loc[1, 'enter_tag'] = 'sell_signal_01'
 
+    # Don't provide short signal while in spot mode
+    assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
+
+    _STRATEGY.config['trading_mode'] = 'futures'
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (SignalDirection.SHORT, 'sell_signal_01')
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
@@ -88,6 +92,8 @@ def test_returns_latest_signal(ohlcv_history):
         'ETH/BTC', '5m', mocked_history) == (False, False, 'sell_signal_02')
     assert _STRATEGY.get_exit_signal(
         'ETH/BTC', '5m', mocked_history, True) == (False, True, 'sell_signal_02')
+
+    _STRATEGY.config['trading_mode'] = 'spot'
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):

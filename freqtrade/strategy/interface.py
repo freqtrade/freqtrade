@@ -14,6 +14,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, SellType, SignalDirection, SignalTagType, SignalType
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -765,7 +766,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
-        if enter_short == 1 and not any([exit_short, enter_long]):
+        if (self.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
+                and enter_short == 1 and not any([exit_short, enter_long])):
             enter_signal = SignalDirection.SHORT
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
 
