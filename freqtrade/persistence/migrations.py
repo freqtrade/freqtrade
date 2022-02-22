@@ -186,6 +186,13 @@ def migrate_orders_table(engine, table_back_name: str, cols: List):
             """))
 
 
+def set_sqlite_to_wal(engine):
+    if engine.name == 'sqlite' and str(engine.url) != 'sqlite://':
+        # Set Mode to
+        with engine.begin() as connection:
+            connection.execute(text("PRAGMA journal_mode=wal"))
+
+
 def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -212,3 +219,4 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
+    set_sqlite_to_wal(engine)
