@@ -129,6 +129,13 @@ class {{ strategy }}(IStrategy):
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'enter_long'] = 1
+        # Uncomment to use shorts (remember to set margin in trading mode in configuration)
+        '''dataframe.loc[
+            (
+                {{ sell_trend | indent(16) }}
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            'enter_short'] = 1'''
 
         return dataframe
 
@@ -145,5 +152,12 @@ class {{ strategy }}(IStrategy):
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'exit_long'] = 1
+        # Uncomment to use shorts (remember to set margin in trading mode in configuration)
+        '''dataframe.loc[
+            (
+                {{ buy_trend | indent(16) }}
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            'exit_short'] = 1'''
         return dataframe
     {{ additional_methods | indent(4) }}
