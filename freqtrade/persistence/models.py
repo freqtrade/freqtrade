@@ -39,6 +39,9 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     kwargs = {}
 
+    if db_url == 'sqlite:///':
+        raise OperationalException(
+            f'Bad db-url {db_url}. For in-memory database, please use `sqlite://`.')
     if db_url == 'sqlite://':
         kwargs.update({
             'poolclass': StaticPool,

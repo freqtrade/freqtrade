@@ -33,13 +33,18 @@ def test_init_custom_db_url(default_conf, tmpdir):
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
     assert Path(filename).is_file()
+    r = Trade._session.execute(text("PRAGMA journal_mode"))
+    assert r.first() == ('wal',)
 
 
-def test_init_invalid_db_url(default_conf):
+def test_init_invalid_db_url():
     # Update path to a value other than default, but still in-memory
-    default_conf.update({'db_url': 'unknown:///some.url'})
     with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init_db(default_conf['db_url'], default_conf['dry_run'])
+        init_db('unknown:///some.url', True)
+
+    with pytest.raises(OperationalException, match=r'Bad db-url.*For in-memory database, pl.*'):
+        init_db('sqlite:///', True)
+
 
 
 def test_init_prod_db(default_conf, mocker):
