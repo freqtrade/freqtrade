@@ -29,18 +29,23 @@ def decimals_per_coin(coin: str):
     return DECIMALS_PER_COIN.get(coin, DECIMAL_PER_COIN_FALLBACK)
 
 
-def round_coin_value(value: float, coin: str, show_coin_name=True) -> str:
+def round_coin_value(
+        value: float, coin: str, show_coin_name=True, keep_trailing_zeros=False) -> str:
     """
     Get price value for this coin
     :param value: Value to be printed
     :param coin: Which coin are we printing the price / value for
     :param show_coin_name: Return string in format: "222.22 USDT" or "222.22"
+    :param keep_trailing_zeros: Keep trailing zeros "222.200" vs. "222.2"
     :return: Formatted / rounded value (with or without coin name)
     """
+    val = f"{value:.{decimals_per_coin(coin)}f}"
+    if not keep_trailing_zeros:
+        val = val.rstrip('0').rstrip('.')
     if show_coin_name:
-        return f"{value:.{decimals_per_coin(coin)}f} {coin}"
-    else:
-        return f"{value:.{decimals_per_coin(coin)}f}"
+        val = f"{val} {coin}"
+
+    return val
 
 
 def shorten_date(_date: str) -> str:

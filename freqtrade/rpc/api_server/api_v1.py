@@ -141,9 +141,11 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
+    entry_tag = payload.entry_tag if payload.entry_tag else None
 
     trade = rpc._rpc_force_entry(payload.pair, payload.price, order_side=payload.side,
-                                 order_type=ordertype, stake_amount=stake_amount)
+                                 order_type=ordertype, stake_amount=stake_amount,
+                                 enter_tag=entry_tag)
 
     if trade:
         return ForceEnterResponse.parse_obj(trade.to_json())

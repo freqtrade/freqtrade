@@ -345,29 +345,6 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_insufficient_funds(self, trade: Trade):
         """
-        Determine if we ever opened a exiting order for this trade.
-        If not, try update entering fees - otherwise "refind" the open order we obviously lost.
-        """
-        exit_order = trade.select_order(trade.exit_side, None)
-        if exit_order:
-            self.refind_lost_order(trade)
-        else:
-            self.reupdate_enter_order_fees(trade)
-
-    def reupdate_enter_order_fees(self, trade: Trade):
-        """
-        Get buy order from database, and try to reupdate.
-        Handles trades where the initial fee-update did not work.
-        """
-        logger.info(f"Trying to reupdate {trade.enter_side} fees for {trade}")
-        order = trade.select_order(trade.enter_side, False)
-        if order:
-            logger.info(
-                f"Updating {trade.enter_side}-fee on trade {trade} for order {order.order_id}.")
-            self.update_trade_state(trade, order.order_id, send_msg=False)
-
-    def refind_lost_order(self, trade):
-        """
         Try refinding a lost trade.
         Only used when InsufficientFunds appears on exit orders (stoploss or long sell/short buy).
         Tries to walk the stored orders and sell them off eventually.
@@ -379,9 +356,6 @@ class FreqtradeBot(LoggingMixin):
             if not order.ft_is_open:
                 logger.debug(f"Order {order} is no longer open.")
                 continue
-            if order.ft_order_side == trade.enter_side:
-                # Skip buy side - this is handled by reupdate_enter_order_fees
-                continue
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
@@ -392,6 +366,9 @@ class FreqtradeBot(LoggingMixin):
                 elif order.ft_order_side == trade.exit_side:
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
+                        trade.open_order_id = order.order_id
+                elif order.ft_order_side == trade.enter_side:
+                    if fo and fo['status'] == 'open':
                         trade.open_order_id = order.order_id
                 if fo:
                     logger.info(f"Found {order} for trade {trade}.")
@@ -1241,12 +1218,12 @@ class FreqtradeBot(LoggingMixin):
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
-            filled_val = order.get('filled', 0.0) or 0.0
+            filled_val: float = order.get('filled', 0.0) or 0.0
             filled_stake = filled_val * trade.open_rate
             minstake = self.exchange.get_min_pair_stake_amount(
                 trade.pair, trade.open_rate, self.strategy.stoploss)
 
-            if filled_val > 0 and filled_stake < minstake:
+            if filled_val > 0 and minstake and filled_stake < minstake:
                 logger.warning(
                     f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
                     f"as the filled amount of {filled_val} would result in an unexitable trade.")

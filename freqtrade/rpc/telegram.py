@@ -813,12 +813,13 @@ class Telegram(RPCHandler):
             output = ''
             if self._config['dry_run']:
                 output += "*Warning:* Simulated balances in Dry Mode.\n"
-
-            output += ("Starting capital: "
-                       f"`{result['starting_capital']}` {self._config['stake_currency']}"
-                       )
-            output += (f" `{result['starting_capital_fiat']}` "
-                       f"{self._config['fiat_display_currency']}.\n"
+            starting_cap = round_coin_value(
+                result['starting_capital'], self._config['stake_currency'])
+            output += f"Starting capital: `{starting_cap}`"
+            starting_cap_fiat = round_coin_value(
+                result['starting_capital_fiat'], self._config['fiat_display_currency']
+            ) if result['starting_capital_fiat'] > 0 else ''
+            output += (f" `, {starting_cap_fiat}`.\n"
                        ) if result['starting_capital_fiat'] > 0 else '.\n'
 
             total_dust_balance = 0
@@ -937,10 +938,11 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     def _forceenter_action(self, pair, price: Optional[float], order_side: SignalDirection):
-        try:
-            self._rpc._rpc_force_entry(pair, price, order_side=order_side)
-        except RPCException as e:
-            self._send_msg(str(e))
+        if pair != 'cancel':
+            try:
+                self._rpc._rpc_force_entry(pair, price, order_side=order_side)
+            except RPCException as e:
+                self._send_msg(str(e))
 
     def _forceenter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
@@ -975,12 +977,13 @@ class Telegram(RPCHandler):
             whitelist = self._rpc._rpc_whitelist()['whitelist']
             pair_buttons = [
                 InlineKeyboardButton(text=pair, callback_data=f"{pair}_||_{order_side}")
-                for pair in whitelist
+                for pair in sorted(whitelist)
             ]
+            buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which pair?",
-                           keyboard=self._layout_inline_keyboard(pair_buttons),
-                           callback_path="update_forcelong",
+                           keyboard=buttons_aligned,
                            query=update.callback_query)
 
     @authorized_only

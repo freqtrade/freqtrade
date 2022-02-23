@@ -1,8 +1,8 @@
 numpy==1.22.2
-pandas==1.4.0
+pandas==1.4.1
 pandas-ta==0.3.14b
 
-ccxt==1.73.17
+ccxt==1.73.70
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==36.0.1
 aiohttp==3.8.1
@@ -25,13 +25,13 @@ blosc==1.10.6
 py_find_1st==1.1.5
 
 # Load ticker files 30% faster
-python-rapidjson==1.5
+python-rapidjson==1.6
 
 # Notify systemd
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.73.0
+fastapi==0.74.0
 uvicorn==0.17.4
 pyjwt==2.3.0
 aiofiles==0.8.0
@@ -41,7 +41,7 @@ psutil==5.9.0
 colorama==0.4.4
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.26
+prompt-toolkit==3.0.28
 # Extensions to datetime library
 python-dateutil==2.8.2
 

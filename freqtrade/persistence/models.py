@@ -40,6 +40,9 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     kwargs = {}
 
+    if db_url == 'sqlite:///':
+        raise OperationalException(
+            f'Bad db-url {db_url}. For in-memory database, please use `sqlite://`.')
     if db_url == 'sqlite://':
         kwargs.update({
             'poolclass': StaticPool,
@@ -885,13 +888,13 @@ class LocalTrade():
             self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
-        :param order_side: Side of the order (either 'buy' or 'sell')
+        :param order_side: ft_order_side of the order (either 'buy', 'sell' or 'stoploss')
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
         orders = self.orders
         if order_side:
-            orders = [o for o in self.orders if o.side == order_side]
+            orders = [o for o in self.orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
@@ -1025,11 +1028,11 @@ class Trade(_DECL_BASE, LocalTrade):
     fee_close = Column(Float, nullable=False, default=0.0)
     fee_close_cost = Column(Float, nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
-    open_rate = Column(Float)
+    open_rate: float = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = Column(Float)
-    close_rate = Column(Float)
+    close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)

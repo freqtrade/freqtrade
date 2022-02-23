@@ -174,7 +174,7 @@ def test_stoploss_adjust_ftx(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
-def test_fetch_stoploss_order(default_conf, mocker, limit_sell_order, limit_buy_order):
+def test_fetch_stoploss_order_ftx(default_conf, mocker, limit_sell_order, limit_buy_order):
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
@@ -196,9 +196,15 @@ def test_fetch_stoploss_order(default_conf, mocker, limit_sell_order, limit_buy_
     with pytest.raises(InvalidOrderException, match=r"Could not get stoploss order for id X"):
         exchange.fetch_stoploss_order('X', 'TKN/BTC')['status']
 
-    api_mock.fetch_orders = MagicMock(return_value=[{'id': 'X', 'status': 'closed'}])
+    # stoploss Limit order
+    api_mock.fetch_orders = MagicMock(return_value=[
+        {'id': 'X', 'status': 'closed',
+         'info': {
+             'orderId': 'mocked_limit_sell',
+         }}])
     api_mock.fetch_order = MagicMock(return_value=limit_sell_order)
 
+    # No orderId field - no call to fetch_order
     resp = exchange.fetch_stoploss_order('X', 'TKN/BTC')
     assert resp
     assert api_mock.fetch_order.call_count == 1
@@ -207,15 +213,16 @@ def test_fetch_stoploss_order(default_conf, mocker, limit_sell_order, limit_buy_
     assert resp['type'] == 'stop'
     assert resp['status_stop'] == 'triggered'
 
-    api_mock.fetch_order = MagicMock(return_value=limit_buy_order)
-
+    # Stoploss market order
+    # Contains no new Order, but "average" instead
+    order = {'id': 'X', 'status': 'closed', 'info': {'orderId': None}, 'average': 0.254}
+    api_mock.fetch_orders = MagicMock(return_value=[order])
+    api_mock.fetch_order.reset_mock()
     resp = exchange.fetch_stoploss_order('X', 'TKN/BTC')
     assert resp
-    assert api_mock.fetch_order.call_count == 1
-    assert resp['id_stop'] == 'mocked_limit_buy'
-    assert resp['id'] == 'X'
-    assert resp['type'] == 'stop'
-    assert resp['status_stop'] == 'triggered'
+    # fetch_order not called (no regular order ID)
+    assert api_mock.fetch_order.call_count == 0
+    assert order == order
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_orders = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))

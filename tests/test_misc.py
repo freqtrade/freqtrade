@@ -21,16 +21,19 @@ def test_decimals_per_coin():
 
 def test_round_coin_value():
     assert round_coin_value(222.222222, 'USDT') == '222.222 USDT'
-    assert round_coin_value(222.2, 'USDT') == '222.200 USDT'
+    assert round_coin_value(222.2, 'USDT', keep_trailing_zeros=True) == '222.200 USDT'
+    assert round_coin_value(222.2, 'USDT') == '222.2 USDT'
     assert round_coin_value(222.12745, 'EUR') == '222.127 EUR'
     assert round_coin_value(0.1274512123, 'BTC') == '0.12745121 BTC'
     assert round_coin_value(0.1274512123, 'ETH') == '0.12745 ETH'
 
     assert round_coin_value(222.222222, 'USDT', False) == '222.222'
-    assert round_coin_value(222.2, 'USDT', False) == '222.200'
+    assert round_coin_value(222.2, 'USDT', False) == '222.2'
+    assert round_coin_value(222.00, 'USDT', False) == '222'
     assert round_coin_value(222.12745, 'EUR', False) == '222.127'
     assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
     assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
+    assert round_coin_value(222.2, 'USDT', False, True) == '222.200'
 
 
 def test_shorten_date() -> None:

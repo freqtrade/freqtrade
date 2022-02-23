@@ -2730,8 +2730,7 @@ def test_check_handle_timedout_exception(default_conf_usdt, ticker_usdt, open_tr
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
-                             is_short) -> None:
+def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     l_order = limit_order[enter_side(is_short)]
@@ -2775,6 +2774,9 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
     mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
+    # min_pair_stake empty should not crash
+    mocker.patch('freqtrade.exchange.Exchange.get_min_pair_stake_amount', return_value=None)
+    assert not freqtrade.handle_cancel_enter(trade, limit_order[enter_side(is_short)], reason)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -4609,23 +4611,17 @@ def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog, is_sh
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
-    create_mock_trades(fee, is_short=is_short)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 return_value={'status': 'open'})
+    create_mock_trades(fee, is_short)
     trades = Trade.get_trades().all()
 
-    freqtrade.reupdate_enter_order_fees(trades[0])
-    assert log_has_re(
-        f"Trying to reupdate {enter_side(is_short)} "
-        r"fees for .*",
-        caplog
-    )
+    freqtrade.handle_insufficient_funds(trades[3])
+    # assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 1
-    assert mock_uts.call_args_list[0][0][0] == trades[0]
-    assert mock_uts.call_args_list[0][0][1] == mock_order_1(is_short=is_short)['id']
-    assert log_has_re(
-        f"Updating {enter_side(is_short)}-fee on trade "
-        r".* for order .*\.",
-        caplog
-    )
+    assert mock_uts.call_args_list[0][0][0] == trades[3]
+    assert mock_uts.call_args_list[0][0][1] == mock_order_4(is_short)['id']
+    assert log_has_re(r"Trying to refind lost order for .*", caplog)
     mock_uts.reset_mock()
     caplog.clear()
 
@@ -4644,55 +4640,14 @@ def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog, is_sh
     )
     Trade.query.session.add(trade)
 
-    freqtrade.reupdate_enter_order_fees(trade)
-    assert log_has_re(f"Trying to reupdate {enter_side(is_short)} fees for "
-                      r".*", caplog)
+    freqtrade.handle_insufficient_funds(trade)
+    # assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 0
-    assert not log_has_re(f"Updating {enter_side(is_short)}-fee on trade "
-                          r".* for order .*\.", caplog)
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_handle_insufficient_funds(mocker, default_conf_usdt, fee):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
-    mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_enter_order_fees')
-    create_mock_trades(fee, is_short=False)
-    trades = Trade.get_trades().all()
-
-    # Trade 0 has only a open buy order, no closed order
-    freqtrade.handle_insufficient_funds(trades[0])
-    assert mock_rlo.call_count == 0
-    assert mock_bof.call_count == 1
-
-    mock_rlo.reset_mock()
-    mock_bof.reset_mock()
-
-    # Trade 1 has closed buy and sell orders
-    freqtrade.handle_insufficient_funds(trades[1])
-    assert mock_rlo.call_count == 1
-    assert mock_bof.call_count == 0
-
-    mock_rlo.reset_mock()
-    mock_bof.reset_mock()
-
-    # Trade 2 has closed buy and sell orders
-    freqtrade.handle_insufficient_funds(trades[2])
-    assert mock_rlo.call_count == 1
-    assert mock_bof.call_count == 0
-
-    mock_rlo.reset_mock()
-    mock_bof.reset_mock()
-
-    # Trade 3 has an opne buy order
-    freqtrade.handle_insufficient_funds(trades[3])
-    assert mock_rlo.call_count == 0
-    assert mock_bof.call_count == 1
 
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
-def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
+def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, caplog):
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
@@ -4716,7 +4671,7 @@ def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
     assert trade.open_order_id is None
     assert trade.stoploss_order_id is None
 
-    freqtrade.refind_lost_order(trade)
+    freqtrade.handle_insufficient_funds(trade)
     order = mock_order_1(is_short=is_short)
     assert log_has_re(r"Order Order(.*order_id=" + order['id'] + ".*) is no longer open.", caplog)
     assert mock_fo.call_count == 0
@@ -4734,13 +4689,13 @@ def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
     assert trade.open_order_id is None
     assert trade.stoploss_order_id is None
 
-    freqtrade.refind_lost_order(trade)
+    freqtrade.handle_insufficient_funds(trade)
     order = mock_order_4(is_short=is_short)
     assert log_has_re(r"Trying to refind Order\(.*", caplog)
-    assert mock_fo.call_count == 0
-    assert mock_uts.call_count == 0
-    # No change to orderid - as update_trade_state is mocked
-    assert trade.open_order_id is None
+    assert mock_fo.call_count == 1
+    assert mock_uts.call_count == 1
+    # Found open buy order
+    assert trade.open_order_id is not None
     assert trade.stoploss_order_id is None
 
     caplog.clear()
@@ -4752,11 +4707,11 @@ def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
     assert trade.open_order_id is None
     assert trade.stoploss_order_id is None
 
-    freqtrade.refind_lost_order(trade)
+    freqtrade.handle_insufficient_funds(trade)
     order = mock_order_5_stoploss(is_short=is_short)
     assert log_has_re(r"Trying to refind Order\(.*", caplog)
     assert mock_fo.call_count == 1
-    assert mock_uts.call_count == 1
+    assert mock_uts.call_count == 2
     # stoploss_order_id is "refound" and added to the trade
     assert trade.open_order_id is None
     assert trade.stoploss_order_id is not None
@@ -4771,7 +4726,7 @@ def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
     assert trade.open_order_id is None
     assert trade.stoploss_order_id is None
 
-    freqtrade.refind_lost_order(trade)
+    freqtrade.handle_insufficient_funds(trade)
     order = mock_order_6_sell(is_short=is_short)
     assert log_has_re(r"Trying to refind Order\(.*", caplog)
     assert mock_fo.call_count == 1
@@ -4787,7 +4742,7 @@ def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
                            side_effect=ExchangeError())
     order = mock_order_5_stoploss(is_short=is_short)
 
-    freqtrade.refind_lost_order(trades[4])
+    freqtrade.handle_insufficient_funds(trades[4])
     assert log_has(f"Error updating {order['id']}.", caplog)
 
 

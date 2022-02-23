@@ -116,7 +116,7 @@ class RPC:
             'short_allowed': config.get('trading_mode', 'spot') != 'spot',
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
-            'stake_amount': config['stake_amount'],
+            'stake_amount': str(config['stake_amount']),
             'available_capital': config.get('available_capital'),
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
@@ -606,11 +606,6 @@ class RPC:
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
             })
-        if total == 0.0:
-            if self._freqtrade.config['dry_run']:
-                raise RPCException('Running in Dry Run, balances are not available.')
-            else:
-                raise RPCException('All balances are zero.')
 
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
@@ -727,7 +722,8 @@ class RPC:
     def _rpc_force_entry(self, pair: str, price: Optional[float], *,
                          order_type: Optional[str] = None,
                          order_side: SignalDirection = SignalDirection.LONG,
-                         stake_amount: Optional[float] = None) -> Optional[Trade]:
+                         stake_amount: Optional[float] = None,
+                         enter_tag: Optional[str] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -765,7 +761,8 @@ class RPC:
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
                                          ordertype=order_type, trade=trade,
-                                         is_short=(order_side == SignalDirection.SHORT)
+                                         is_short=(order_side == SignalDirection.SHORT),
+                                         enter_tag=enter_tag,
                                          ):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()

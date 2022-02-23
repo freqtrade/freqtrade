@@ -20,6 +20,7 @@ router = APIRouter()
 
 
 @router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+# flake8: noqa: C901
 async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
                              config=Depends(get_config)):
     """Start backtesting if not done so already"""
@@ -32,6 +33,10 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     for setting in settings.keys():
         if settings[setting] is not None:
             btconfig[setting] = settings[setting]
+    try:
+        btconfig['stake_amount'] = float(btconfig['stake_amount'])
+    except ValueError:
+        pass
 
     # Force dry-run for backtesting
     btconfig['dry_run'] = True
@@ -57,8 +62,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             ):
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
-                if ApiServer._bt.timeframe_detail:
-                    ApiServer._bt.load_bt_data_detail()
+                ApiServer._bt.load_bt_data_detail()
             else:
                 ApiServer._bt.config = btconfig
                 ApiServer._bt.init_backtest()
