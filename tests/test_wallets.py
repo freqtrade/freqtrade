@@ -234,3 +234,104 @@ def test_get_starting_balance(mocker, default_conf, available_capital, closed_pr
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     assert freqtrade.wallets.get_starting_balance() == expected
+
+
+def test_sync_wallet_futures_live(mocker, default_conf):
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    mock_result = [
+        {
+            "symbol": "ETH/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 100.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 100.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        },
+        {
+            "symbol": "ADA/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 100.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 100.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 0.91,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        },
+        {
+            # Closed position
+            "symbol": "SOL/BUSD:BUSD",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 0.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 0.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 15.41,
+            "collateral": 0.0,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        }
+    ]
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value={
+            "USDT": {
+                "free": 900,
+                "used": 100,
+                "total": 1000
+            },
+        }),
+        get_positions=MagicMock(return_value=mock_result)
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 2
+
+    assert 'USDT' in freqtrade.wallets._wallets
+    assert 'ETH/USDT:USDT' in freqtrade.wallets._positions
+    assert freqtrade.wallets._last_wallet_refresh > 0
+
+    # Remove ETH/USDT:USDT position
+    del mock_result[0]
+    freqtrade.wallets.update()
+    assert len(freqtrade.wallets._positions) == 1
+    assert 'ETH/USDT:USDT' not in freqtrade.wallets._positions

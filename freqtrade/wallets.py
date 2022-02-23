@@ -141,7 +141,6 @@ class Wallets:
             if currency not in balances:
                 del self._wallets[currency]
 
-        # TODO-lev: Implement dry-run/backtest counterpart
         positions = self._exchange.get_positions()
         self._positions = {}
         for position in positions:

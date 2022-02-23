@@ -95,6 +95,7 @@ def test_enter_exit_side(fee, is_short):
     )
     assert trade.enter_side == enter_side
     assert trade.exit_side == exit_side
+    assert trade.trade_direction == 'short' if is_short else 'long'
 
 
 @pytest.mark.usefixtures("init_persistence")
