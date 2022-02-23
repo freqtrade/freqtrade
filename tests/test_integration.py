@@ -214,7 +214,6 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
 
 def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
-    # TODO-lev: this should also check with different leverages per entry order!
     default_conf_usdt['position_adjustment_enable'] = True
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -286,7 +285,6 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
 
 
 def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
-    # TODO-lev: this should also check with different leverages per entry order!
     default_conf_usdt['position_adjustment_enable'] = True
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)

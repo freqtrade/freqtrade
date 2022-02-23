@@ -2372,7 +2372,6 @@ def test_recalc_trade_from_orders(fee):
 
 
 @pytest.mark.parametrize('is_short', [True, False])
-# TODO-lev: this should also check with different leverages per entry order!
 def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
 
     o1_amount = 100
