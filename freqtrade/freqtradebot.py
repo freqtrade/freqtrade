@@ -479,7 +479,7 @@ class FreqtradeBot(LoggingMixin):
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
             self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
-                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=stake_amount)
+                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=-stake_amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
