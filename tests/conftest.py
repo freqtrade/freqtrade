@@ -201,6 +201,9 @@ def create_mock_trades(fee, use_db: bool = True):
     """
     Create some fake trades ...
     """
+    if use_db:
+        Trade.query.session.rollback()
+
     def add_trade(trade):
         if use_db:
             Trade.query.session.add(trade)
