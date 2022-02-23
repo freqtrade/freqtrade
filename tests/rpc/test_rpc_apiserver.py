@@ -596,8 +596,8 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     assert rc.json()['total_trades'] == 2
 
 
-@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
+@pytest.mark.usefixtures("init_persistence")
 def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
@@ -619,8 +619,8 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     assert rc.json()['is_short'] == is_short
 
 
-@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
+@pytest.mark.usefixtures("init_persistence")
 def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
@@ -637,6 +637,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert_response(rc, 502)
 
     create_mock_trades(fee, is_short=is_short)
+    Trade.query.session.flush()
 
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
