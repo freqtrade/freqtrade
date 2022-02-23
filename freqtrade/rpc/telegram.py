@@ -235,17 +235,31 @@ class Telegram(RPCHandler):
 
         if msg['type'] == RPCMessageType.BUY_FILL:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+            total = msg['amount'] * msg['open_rate']
 
         elif msg['type'] == RPCMessageType.BUY:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-
-        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+            total = msg['amount'] * msg['limit']
+        if self._rpc._fiat_converter:
+            total_fiat = self._rpc._fiat_converter.convert_amount(
+                total, msg['stake_currency'], msg['fiat_currency'])
+        else:
+            total_fiat = 0
+        message += f"*Total:* `({round_coin_value(total, msg['stake_currency'])}"
 
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            message += f", {round_coin_value(total_fiat, msg['fiat_currency'])}"
 
         message += ")`"
+        if msg.get('sub_trade'):
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
+
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
         return message
 
     def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
@@ -287,7 +301,19 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
             message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
+        if msg.get('sub_trade'):
+            if self._rpc._fiat_converter:
+                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
 
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
@@ -388,12 +414,14 @@ class Telegram(RPCHandler):
             else:
                 sumA = 0
                 sumB = 0
+                first_order_price = filled_orders[0]["average"] or filled_orders[0]["price"]
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["average"])
+                    sumA += (filled_orders[y]["amount"] * (filled_orders[y]["average"]
+                             or filled_orders[y]["price"]))
                     sumB += filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
-                price_to_1st_entry = ((cur_entry_average - filled_orders[0]["average"])
-                                      / filled_orders[0]["average"])
+                price_to_1st_entry = ((cur_entry_average - first_order_price)
+                                      / first_order_price)
                 minus_on_entry = (cur_entry_average - prev_avg_price)/prev_avg_price
                 dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
                 days = dur_entry.days
@@ -535,7 +563,9 @@ class Telegram(RPCHandler):
                                reload_able=True, callback_path="update_status_table",
                                query=update.callback_query)
         except RPCException as e:
-            self._send_msg(str(e))
+            self._send_msg(str(e), reload_able=True,
+                           callback_path="update_status_table",
+                           query=update.callback_query)
 
     @authorized_only
     def _daily(self, update: Update, context: CallbackContext) -> None:

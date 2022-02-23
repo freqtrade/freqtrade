@@ -119,6 +119,7 @@ class Order(_DECL_BASE):
     ft_order_side = Column(String(25), nullable=False)
     ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
+    is_fully_realized = Column(Boolean, nullable=True, default=False)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -455,7 +456,7 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Dict) -> None:
+    def update(self, order: Dict, sub_trade: bool = False) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -479,7 +480,13 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
+            self.open_order_id = None
+            if sub_trade or 1:
+                logger.info(f'debug1:{sub_trade}')
+                self.process_sell_sub_trade(order)
+                return
+            # else:
+            #     self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -490,6 +497,44 @@ class LocalTrade():
         else:
             raise ValueError(f'Unknown order type: {order_type}')
         Trade.commit()
+
+    def process_sell_sub_trade(self, order: Dict) -> None:
+        orders = (self.select_filled_orders('buy'))
+        sell_rate = float(safe_value_fallback(order, 'average', 'price'))
+        sell_amount = float(safe_value_fallback(order, 'filled', 'amount'))
+        profit = 0.0
+        idx = -1
+        while sell_amount:
+            b_order = orders[idx]
+            buy_amount = b_order.filled or b_order.amount
+            buy_rate = b_order.average or b_order.price
+            if sell_amount < buy_amount:
+                amount = sell_amount
+                b_order.filled -= amount
+            else:
+                if sell_amount == self.amount:
+                    self.close(safe_value_fallback(order, 'average', 'price'))
+                    Trade.commit()
+                    return
+                b_order.is_fully_realized = True
+                self.update_order(b_order)
+                idx -= 1
+                amount = buy_amount
+            sell_amount -= amount
+            profit += self.calc_profit2(buy_rate, sell_rate, amount)
+        b_order2 = orders[idx]
+        amount2 = b_order2.filled or b_order2.amount
+        b_order2.average = (b_order2.average * amount2 - profit) / amount2
+        self.update_order(b_order2)
+        Order.query.session.commit()
+        self.recalc_trade_from_orders()
+        Trade.commit()
+
+    def calc_profit2(self, open_rate: float, close_rate: float,
+                     amount: float) -> float:
+        return float(Decimal(amount) *
+                     (Decimal(1 - self.fee_close) * Decimal(close_rate) -
+                      Decimal(1 + self.fee_open) * Decimal(open_rate)))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
@@ -628,6 +673,7 @@ class LocalTrade():
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
+                    o.is_fully_realized or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -685,6 +731,7 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
+                not o.is_fully_realized and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property

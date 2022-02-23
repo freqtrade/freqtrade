@@ -478,9 +478,8 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            # TODO: Selling part of the trade not implemented yet.
-            logger.error(f"Unable to decrease trade position / sell partially"
-                         f" for pair {trade.pair}, feature not implemented.")
+            self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
+                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=-stake_amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -620,7 +619,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_enter(trade, order, order_type)
+        self._notify_enter(trade, order, order_type, sub_trade=pos_adjust)
 
         if pos_adjust:
             if order_status == 'closed':
@@ -677,7 +676,7 @@ class FreqtradeBot(LoggingMixin):
         return enter_limit_requested, stake_amount
 
     def _notify_enter(self, trade: Trade, order: Dict, order_type: Optional[str] = None,
-                      fill: bool = False) -> None:
+                      fill: bool = False, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a buy occurred.
         """
@@ -693,7 +692,7 @@ class FreqtradeBot(LoggingMixin):
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
             'buy_tag': trade.buy_tag,
-            'exchange': self.exchange.name.capitalize(),
+            'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'limit': open_rate,  # Deprecated (?)
             'open_rate': open_rate,
@@ -701,15 +700,17 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
+            'amount': order.get('filled') or order.get('amount'),
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
+            'sub_trade': sub_trade,
         }
 
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str,
+                             sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a buy cancel occurred.
         """
@@ -730,6 +731,7 @@ class FreqtradeBot(LoggingMixin):
             'open_date': trade.open_date,
             'current_rate': current_rate,
             'reason': reason,
+            'sub_trade': sub_trade,
         }
 
         # Send the message
@@ -1153,6 +1155,7 @@ class FreqtradeBot(LoggingMixin):
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
+            sub_trade_amt: float = None,
             ) -> bool:
         """
         Executes a trade exit for the given trade and limit
@@ -1190,7 +1193,7 @@ class FreqtradeBot(LoggingMixin):
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
-        amount = self._safe_exit_amount(trade.pair, trade.amount)
+        amount = sub_trade_amt or self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
@@ -1225,15 +1228,17 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_exit(trade, order_type)
+        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt))
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
-            self.update_trade_state(trade, trade.open_order_id, order)
+            self.update_trade_state(trade, trade.open_order_id, order,
+                                    sub_trade=bool(sub_trade_amt))
         Trade.commit()
 
         return True
 
-    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False) -> None:
+    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
+                     sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
@@ -1264,9 +1269,11 @@ class FreqtradeBot(LoggingMixin):
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
+            'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-        }
+            'sub_trade': sub_trade,
+                   }
 
         if 'fiat_display_currency' in self.config:
             msg.update({
@@ -1276,7 +1283,8 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str,
+                            sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
@@ -1311,6 +1319,8 @@ class FreqtradeBot(LoggingMixin):
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'reason': reason,
+            'sub_trade': sub_trade,
+            'stake_amount': trade.stake_amount,
         }
 
         if 'fiat_display_currency' in self.config:
@@ -1326,7 +1336,8 @@ class FreqtradeBot(LoggingMixin):
 #
 
     def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
-                           stoploss_order: bool = False, send_msg: bool = True) -> bool:
+                           stoploss_order: bool = False, send_msg: bool = True,
+                           sub_trade: bool = False) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
@@ -1359,7 +1370,7 @@ class FreqtradeBot(LoggingMixin):
 
         order = self.handle_order_fee(trade, order)
 
-        trade.update(order)
+        trade.update(order, sub_trade=sub_trade)
         trade.recalc_trade_from_orders()
         Trade.commit()
 
@@ -1372,11 +1383,11 @@ class FreqtradeBot(LoggingMixin):
 
         if not trade.is_open:
             if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True)
+                self._notify_exit(trade, '', True, sub_trade=sub_trade)
             self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
             # Buy fill
-            self._notify_enter(trade, order, fill=True)
+            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
 
         return False
 

@@ -1037,6 +1037,8 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False
     } == last_msg
 
 
@@ -1102,6 +1104,8 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False
     } == last_msg
 
 
@@ -1157,6 +1161,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False
     } == msg
 
 
