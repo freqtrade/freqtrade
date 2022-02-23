@@ -596,6 +596,7 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     assert rc.json()['total_trades'] == 2
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
 def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     ftbot, client = botclient
@@ -618,6 +619,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     assert rc.json()['is_short'] == is_short
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('is_short', [True, False])
 def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
