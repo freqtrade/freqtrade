@@ -1168,7 +1168,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_positions(self) -> List[Dict]:
+    def fetch_positions(self) -> List[Dict]:
         if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
             return []
         try:

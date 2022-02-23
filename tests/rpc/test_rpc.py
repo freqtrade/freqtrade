@@ -638,7 +638,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
         'freqtrade.exchange.Exchange',
         validate_trading_mode_and_margin_mode=MagicMock(),
         get_balances=MagicMock(return_value=mock_balance),
-        get_positions=MagicMock(return_value=mock_pos),
+        fetch_positions=MagicMock(return_value=mock_pos),
         get_tickers=tickers,
         get_valid_pair_combination=MagicMock(
             side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")

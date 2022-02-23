@@ -318,7 +318,7 @@ def test_sync_wallet_futures_live(mocker, default_conf):
                 "total": 1000
             },
         }),
-        get_positions=MagicMock(return_value=mock_result)
+        fetch_positions=MagicMock(return_value=mock_result)
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

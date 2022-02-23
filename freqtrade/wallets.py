@@ -141,7 +141,7 @@ class Wallets:
             if currency not in balances:
                 del self._wallets[currency]
 
-        positions = self._exchange.get_positions()
+        positions = self._exchange.fetch_positions()
         self._positions = {}
         for position in positions:
             symbol = position['symbol']
