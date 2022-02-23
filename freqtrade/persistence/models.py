@@ -478,11 +478,12 @@ class LocalTrade():
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.open_order_id = None
-            if sub_trade:
+            if sub_trade or 1:
+                log.info(f'debug1:{sub_trade}')
                 self.process_sell_sub_trade(order)
                 return
-            else:
-                self.close(safe_value_fallback(order, 'average', 'price'))
+            # else:
+            #     self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -508,7 +509,7 @@ class LocalTrade():
                 amount = sell_amount
                 b_order.filled -= amount
             else:
-                if len(orders) == 1 and sell_amount == self.amount:
+                if sell_amount == self.amount:
                     self.close(safe_value_fallback(order, 'average', 'price'))
                     Trade.commit()
                     return
