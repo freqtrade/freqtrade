@@ -6,7 +6,7 @@ import pytest
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
-from tests.conftest import get_patched_freqtradebot, patch_wallet
+from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_wallet
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):
@@ -335,3 +335,24 @@ def test_sync_wallet_futures_live(mocker, default_conf):
     freqtrade.wallets.update()
     assert len(freqtrade.wallets._positions) == 1
     assert 'ETH/USDT:USDT' not in freqtrade.wallets._positions
+
+
+def test_sync_wallet_futures_dry(mocker, default_conf, fee):
+    default_conf['dry_run'] = True
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 0
+
+    create_mock_trades(fee, is_short=None)
+
+    freqtrade.wallets.update()
+
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 4
+    positions = freqtrade.wallets.get_all_positions()
+    positions['ETH/BTC'].side == 'short'
+    positions['ETC/BTC'].side == 'long'
+    positions['XRP/BTC'].side == 'long'
+    positions['LTC/BTC'].side == 'short'
