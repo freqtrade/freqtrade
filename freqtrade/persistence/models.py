@@ -479,7 +479,7 @@ class LocalTrade():
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.open_order_id = None
             if sub_trade or 1:
-                log.info(f'debug1:{sub_trade}')
+                logger.info(f'debug1:{sub_trade}')
                 self.process_sell_sub_trade(order)
                 return
             # else:
