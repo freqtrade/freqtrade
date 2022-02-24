@@ -564,11 +564,11 @@ class Telegram(RPCHandler):
                     lines = message.split("\n")
                     message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
                 self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML,
-                               reload_able=True, callback_path=f"update_status_table {bool(show_order)}",
+                               reload_able=True, callback_path=f"update_status_table {int(show_order)}",
                                query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e), reload_able=True,
-                           callback_path=f"update_status_table {bool(show_order)}",
+                           callback_path=f"update_status_table {int(show_order)}",
                            query=update.callback_query)
 
     @authorized_only
