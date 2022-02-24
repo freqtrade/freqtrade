@@ -240,7 +240,9 @@ class RPC:
                     trade_profit = trade.calc_profit2(open_rate, current_rate, amount)
                     profit_pct = ( open_cost + trade_profit)/open_cost - 1
                     profit_str = f'{profit_pct:.2%}'
+                    open_date = b_order.order_date
                 else:
+                    open_date = trade.open_date
                     trade_profit = trade.calc_profit(current_rate)
                     profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
                 if self._fiat_converter:
@@ -254,14 +256,14 @@ class RPC:
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
                 last_sell_order = trade.select_order('sell')
-                last_sell_order_id = last_sell_order.order_id if last_sell_order else None
+                last_sell_order_id = last_sell_order.order_id if last_sell_order else -1
                 detail_trade = [
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id ==
                                     trade.select_order('buy').order_id) else '')
                     + ('**' if (trade.open_order_id ==
                                     last_sell_order_id) else ''),
-                    shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                    shorten_date(arrow.get(open_date).humanize(only_distance=True)),
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
@@ -276,7 +278,7 @@ class RPC:
                 profitcol += " (" + fiat_display_currency + ")"
 
             if self._config.get('position_adjustment_enable', False):
-                columns = ['ID', 'Pair', 'Since', profitcol, '# Entries']
+                columns = ['ID', 'Pair', 'Since', profitcol, '# Entr'+['ies', 'y'][show_order]]
             else:
                 columns = ['ID', 'Pair', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
