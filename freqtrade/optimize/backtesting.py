@@ -128,7 +128,8 @@ class Backtesting:
     def __del__(self):
         self.cleanup()
 
-    def cleanup(self):
+    @staticmethod
+    def cleanup():
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True

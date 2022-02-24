@@ -52,6 +52,13 @@ def trim_dictlist(dict_list, num):
     return new
 
 
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
+
+
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = history.load_pair_history(pair='UNITTEST/BTC', datadir=testdatadir,
@@ -552,8 +559,6 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
 
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
-
-    backtesting.cleanup()
 
 
 def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
@@ -1423,7 +1428,7 @@ def test_get_strategy_run_id(default_conf_usdt):
     default_conf_usdt.update({
         'strategy': 'StrategyTestV2',
         'max_open_trades': float('inf')
-        })
+    })
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
     x = get_strategy_run_id(strategy)
     assert isinstance(x, str)
