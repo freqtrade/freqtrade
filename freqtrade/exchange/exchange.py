@@ -836,6 +836,7 @@ class Exchange:
             if stop_price_norm <= rate:
                 raise OperationalException(
                     'In stoploss limit order, stop price should be more than limit price')
+            rate = self.price_to_precision(pair, rate)
 
         if self._config['dry_run']:
             # TODO: will this work if ordertype is limit??
@@ -847,8 +848,6 @@ class Exchange:
             params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price_norm)
 
             amount = self.amount_to_precision(pair, amount)
-
-            rate = self.price_to_precision(pair, rate)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
                                            amount=amount, price=rate, params=params)
@@ -872,7 +871,8 @@ class Exchange:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place stoploss order due to {e.__class__.__name__}. Message: {e}') from e
+                f"Could not place stoploss order due to {e.__class__.__name__}. "
+                f"Message: {e}") from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 

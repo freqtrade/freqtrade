@@ -33,7 +33,7 @@ class Kucoin(Exchange):
         Returns True if adjustment is necessary.
         """
         # TODO: since kucoin uses Limit orders, changes to models will be required.
-        return order['info']['stop'] is not None and stop_loss > float(order['stopPrice'])
+        return order['info'].get('stop') is not None and stop_loss > float(order['stopPrice'])
 
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
 
