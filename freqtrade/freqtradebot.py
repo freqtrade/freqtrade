@@ -1271,7 +1271,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'amount': amount,
             'open_rate': open_rate,
-            'close_rate': trade.close_rate,
+            'close_rate': profit_rate,
             'current_rate': current_rate,
             'profit_amount': profit,
             'profit_ratio': profit_ratio,

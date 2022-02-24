@@ -537,6 +537,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         try:
+            if update.callback_query:show_order = '1' in update.callback_query.data
             fiat_currency = self._config.get('fiat_display_currency', '')
             statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
                 self._config['stake_currency'], fiat_currency, show_order)
@@ -563,11 +564,11 @@ class Telegram(RPCHandler):
                     lines = message.split("\n")
                     message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
                 self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML,
-                               reload_able=True, callback_path="update_status_table",
+                               reload_able=True, callback_path=f"update_status_table {bool(show_order)}",
                                query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e), reload_able=True,
-                           callback_path="update_status_table",
+                           callback_path=f"update_status_table {bool(show_order)}",
                            query=update.callback_query)
 
     @authorized_only
