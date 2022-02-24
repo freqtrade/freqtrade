@@ -285,6 +285,9 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     """
     Create some fake trades ...
     """
+    if use_db:
+        Trade.query.session.rollback()
+
     def add_trade(trade):
         if use_db:
             Trade.query.session.add(trade)
@@ -1818,7 +1821,7 @@ def limit_sell_order_open():
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001173,
@@ -2825,7 +2828,7 @@ def limit_sell_order_usdt_open():
         'id': 'mocked_limit_sell_usdt',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 2.20,

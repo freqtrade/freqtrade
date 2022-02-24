@@ -228,7 +228,8 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     caplog.clear()
-    trade.update(limit_order['buy'])
+    oobj = Order.parse_from_ccxt_object(limit_order['buy'], 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     #############################################
 
     # stoploss shoud be hit
@@ -299,7 +300,9 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
     assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_order[enter_side(is_short)])
+    oobj = Order.parse_from_ccxt_object(
+        limit_order[enter_side(is_short)], 'ADA/USDT', enter_side(is_short))
+    trade.update_trade(oobj)
 
     assert trade.open_rate == open_rate
     assert trade.amount == 30.0
@@ -1101,11 +1104,17 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
-    trade.stoploss_order_id = 100
+    trade.stoploss_order_id = "100"
+    trade.orders.append(Order(
+        ft_order_side='stoploss',
+        order_id='100',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+    ))
     assert trade
 
     stoploss_order_hit = MagicMock(return_value={
-        'id': 100,
+        'id': "100",
         'status': 'closed',
         'type': 'stop_loss_limit',
         'price': 3,
@@ -1832,9 +1841,10 @@ def test_update_trade_state(
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
                  return_value=order['amount'])
+    order_id = order['id']
 
     trade = Trade(
-        open_order_id=123,
+        open_order_id=order_id,
         fee_open=0.001,
         fee_close=0.001,
         open_rate=0.01,
@@ -1843,29 +1853,35 @@ def test_update_trade_state(
         exchange="binance",
         is_short=is_short
     )
+    trade.orders.append(Order(
+        ft_order_side=enter_side(is_short),
+        price=0.01,
+        order_id=order_id,
+
+    ))
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
     caplog.clear()
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
     caplog.clear()
     assert trade.open_order_id is None
     assert trade.amount == order['amount']
 
-    trade.open_order_id = '123'
+    trade.open_order_id = order_id
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
     assert trade.amount != 90.81
     # test amount modified by fee-logic
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
     assert trade.amount == 90.81
     assert trade.open_order_id is None
 
     trade.is_open = True
     trade.open_order_id = None
     # Assert we call handle_trade() if trade is feasible for execution
-    freqtrade.update_trade_state(trade, '123')
+    freqtrade.update_trade_state(trade, order_id)
 
     assert log_has_re('Found open order for.*', caplog)
     limit_buy_order_usdt_new = deepcopy(limit_order)
@@ -1874,7 +1890,7 @@ def test_update_trade_state(
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt_new)
-    res = freqtrade.update_trade_state(trade, '123')
+    res = freqtrade.update_trade_state(trade, order_id)
     # Cancelled empty
     assert res is True
 
@@ -1890,6 +1906,8 @@ def test_update_trade_state_withorderdict(
 ):
     order = limit_order[enter_side(is_short)]
     trades_for_order[0]['amount'] = initial_amount
+    order_id = "oid_123456"
+    order['id'] = order_id
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1905,15 +1923,27 @@ def test_update_trade_state_withorderdict(
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_order_id="123456",
+        open_order_id=order_id,
         is_open=True,
         is_short=is_short
     )
-    freqtrade.update_trade_state(trade, '123456', order)
+    trade.orders.append(
+        Order(
+            ft_order_side=enter_side(is_short),
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id=order_id,
+        )
+    )
+    log_text = r'Applying fee on amount for .*'
+    freqtrade.update_trade_state(trade, order_id, order)
     assert trade.amount != amount
-    assert trade.amount == order['amount']
     if has_rounding_fee:
-        assert log_has_re(r'Applying fee on amount for .*', caplog)
+        assert pytest.approx(trade.amount) == 29.992
+        assert log_has_re(log_text, caplog)
+    else:
+        assert pytest.approx(trade.amount) == order['amount']
+        assert not log_has_re(log_text, caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1974,12 +2004,12 @@ def test_update_trade_state_sell(
         fee_open=0.0025,
         fee_close=0.0025,
         open_date=arrow.utcnow().datetime,
-        open_order_id="123456",
+        open_order_id=open_order['id'],
         is_open=True,
         interest_rate=0.0005,
         is_short=is_short
     )
-    order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', (enter_side(is_short)))
+    order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', exit_side(is_short))
     trade.orders.append(order)
     assert order.status == 'open'
     freqtrade.update_trade_state(trade, trade.open_order_id, l_order)
@@ -2026,7 +2056,8 @@ def test_handle_trade(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    trade.update(enter_order)
+    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], enter_side(is_short))
+    trade.update_trade(oobj)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
@@ -2035,8 +2066,9 @@ def test_handle_trade(
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == exit_order['id']
 
-    # Simulate fulfilled LIMIT order for trade
-    trade.update(exit_order)
+    # Simulate fulfilled LIMIT_SELL order for trade
+    oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], exit_side(is_short))
+    trade.update_trade(oobj)
 
     assert trade.close_rate == 2.0 if is_short else 2.2
     assert trade.close_profit == close_profit
@@ -2230,8 +2262,10 @@ def test_close_trade(
     trade.is_short = is_short
     assert trade
 
-    trade.update(enter_order)
-    trade.update(exit_order)
+    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], 'buy')
+    trade.update_trade(oobj)
+    oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], 'sell')
+    trade.update_trade(oobj)
     assert trade.is_open is False
 
     with pytest.raises(DependencyException, match=r'.*closed trade.*'):
@@ -2258,6 +2292,8 @@ def test_check_handle_timedout_buy_usercustom(
 ) -> None:
 
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
+    old_order['id'] = open_trade.open_order_id
+
     default_conf_usdt["unfilledtimeout"] = {"buy": 30,
                                             "sell": 1400} if is_short else {"buy": 1400, "sell": 30}
 
@@ -2617,6 +2653,7 @@ def test_check_handle_timedout_partial_fee(
     # TODO-lev: use is_short or remove it
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=0))
     patch_exchange(mocker)
@@ -3511,6 +3548,7 @@ def test_sell_profit_only(
         fee, mocker, profit_only, bid, ask, handle_first, handle_second, sell_type) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    eside = enter_side(is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
@@ -3519,7 +3557,7 @@ def test_sell_profit_only(
             'last': bid
         }),
         create_order=MagicMock(side_effect=[
-            limit_order_open[enter_side(is_short)],
+            limit_order_open[eside],
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -3540,7 +3578,8 @@ def test_sell_profit_only(
 
     trade = Trade.query.first()
     trade.is_short = is_short
-    trade.update(limit_order[enter_side(is_short)])
+    oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is handle_first
@@ -3576,7 +3615,9 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_order, limit_order_ope
 
     trade = Trade.query.first()
     amnt = trade.amount
-    trade.update(limit_order['buy'])
+
+    oobj = Order.parse_from_ccxt_object(limit_order['buy'], limit_order['buy']['symbol'], 'buy')
+    trade.update_trade(oobj)
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=trade.amount * 0.985))
 
@@ -3668,6 +3709,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
                                   fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    eside = enter_side(is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
@@ -3676,7 +3718,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
             'last': 2.19
         }),
         create_order=MagicMock(side_effect=[
-            limit_order_open[enter_side(is_short)],
+            limit_order_open[eside],
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -3691,7 +3733,9 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
 
     trade = Trade.query.first()
     trade.is_short = is_short
-    trade.update(limit_order[enter_side(is_short)])
+    oobj = Order.parse_from_ccxt_object(
+        limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     if is_short:
         patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
@@ -3786,6 +3830,7 @@ def test_trailing_stop_loss_positive(
     enter_price = limit_order[enter_side(is_short)]['price']
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    eside = enter_side(is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
@@ -3794,7 +3839,7 @@ def test_trailing_stop_loss_positive(
             'last': enter_price - (-0.01 if is_short else 0.01),
         }),
         create_order=MagicMock(side_effect=[
-            limit_order_open[enter_side(is_short)],
+            limit_order_open[eside],
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -3813,7 +3858,8 @@ def test_trailing_stop_loss_positive(
 
     trade = Trade.query.first()
     trade.is_short = is_short
-    trade.update(limit_order[enter_side(is_short)])
+    oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_trade(oobj)
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
     assert freqtrade.handle_trade(trade) is False
@@ -3880,6 +3926,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
                                           is_short, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    eside = enter_side(is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
@@ -3888,7 +3935,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
             'last': 2.0
         }),
         create_order=MagicMock(side_effect=[
-            limit_order_open[enter_side(is_short)],
+            limit_order_open[eside],
             {'id': 1234553382},
             {'id': 1234553383}
         ]),
@@ -3906,7 +3953,10 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
 
     trade = Trade.query.first()
     trade.is_short = is_short
-    trade.update(limit_order[enter_side(is_short)])
+
+    oobj = Order.parse_from_ccxt_object(
+        limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_trade(oobj)
     # Sell due to min_roi_reached
     patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade) is True
@@ -4294,7 +4344,9 @@ def test_order_book_depth_of_market(
         assert len(Trade.query.all()) == 1
 
         # Simulate fulfilled LIMIT_BUY order for trade
-        trade.update(limit_order_open[enter_side(is_short)])
+        oobj = Order.parse_from_ccxt_object(
+            limit_order_open[enter_side(is_short)], 'ADA/USDT', enter_side(is_short))
+        trade.update_trade(oobj)
 
         assert trade.open_rate == ticker_usdt.return_value[ticker_side]
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
@@ -4389,7 +4441,8 @@ def test_order_book_ask_strategy(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, limit_buy_order_usdt['symbol'], 'buy')
+    trade.update_trade(oobj)
     freqtrade.wallets.update()
     assert trade.is_open is True
 

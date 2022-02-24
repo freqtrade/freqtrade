@@ -191,19 +191,22 @@ def drop_orders_table(engine, table_back_name: str):
         connection.execute(text("drop table orders"))
 
 
-def migrate_orders_table(engine, table_back_name: str, cols: List):
+def migrate_orders_table(engine, table_back_name: str, cols_order: List):
+
+    ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
 
     # let SQLAlchemy create the schema as required
-    leverage = get_column_def(cols, 'leverage', '1.0')
+    leverage = get_column_def(cols_order, 'leverage', '1.0')
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, leverage)
+            order_date, order_filled_date, order_update_date, ft_fee_base, leverage)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date, {leverage} leverage
+            order_date, order_filled_date, order_update_date, {ft_fee_base} ft_fee_base,
+            {leverage} leverage
             from {table_back_name}
             """))
 
@@ -222,22 +225,22 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     inspector = inspect(engine)
 
     cols = inspector.get_columns('trades')
+    cols_orders = inspector.get_columns('orders')
     tabs = get_table_names_for_table(inspector, 'trades')
-    cols_order = inspector.get_columns('orders')
     table_back_name = get_backup_name(tabs, 'trades_bak')
     order_tabs = get_table_names_for_table(inspector, 'orders')
     order_table_bak_name = get_backup_name(order_tabs, 'orders_bak')
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    if not has_column(cols, 'enter_tag'):
+    # if not has_column(cols, 'buy_tag'):
+    if ('orders' not in previous_tables
+            or not has_column(cols_orders, 'ft_fee_base')
+            or not has_column(cols_orders, 'leverage')):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
-            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name, cols_order)
-        # Reread columns - the above recreated the table!
-        inspector = inspect(engine)
-        cols = inspector.get_columns('trades')
+            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name, cols_orders)
 
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')

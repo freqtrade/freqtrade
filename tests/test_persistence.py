@@ -474,7 +474,8 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_date is None
 
     trade.open_order_id = 'something'
-    trade.update(enter_order)
+    oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', enter_side)
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == open_rate
     assert trade.close_profit is None
@@ -487,7 +488,8 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     caplog.clear()
     trade.open_order_id = 'something'
-    trade.update(exit_order)
+    oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.close_rate == close_rate
     assert trade.close_profit == profit
@@ -517,7 +519,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     )
 
     trade.open_order_id = 'something'
-    trade.update(market_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.0
     assert trade.close_profit is None
@@ -530,7 +533,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = 'something'
-    trade.update(market_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.close_rate == 2.2
     assert trade.close_profit == round(0.0945137157107232, 8)
@@ -583,8 +587,12 @@ def test_calc_open_close_trade_price(
 
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
 
-    trade.update(limit_buy_order_usdt)
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
+
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
+
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
@@ -640,7 +648,8 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     )
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade.calc_close_trade_value() == 0.0
 
 
@@ -662,7 +671,8 @@ def test_update_open_order(limit_buy_order_usdt):
     assert trade.close_date is None
 
     limit_buy_order_usdt['status'] = 'open'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
 
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -682,8 +692,9 @@ def test_update_invalid_order(limit_buy_order_usdt):
         trading_mode=margin
     )
     limit_buy_order_usdt['type'] = 'invalid'
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'meep')
     with pytest.raises(ValueError, match=r'Unknown order type'):
-        trade.update(limit_buy_order_usdt)
+        trade.update_trade(oobj)
 
 
 @pytest.mark.parametrize('exchange', ['binance', 'kraken'])
@@ -737,6 +748,9 @@ def test_calc_open_trade_value(
         trading_mode=trading_mode
     )
     trade.open_order_id = 'open_trade'
+    oobj = Order.parse_from_ccxt_object(
+        limit_buy_order_usdt, 'ADA/USDT', 'sell' if is_short else 'buy')
+    trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == result

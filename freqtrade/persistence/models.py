@@ -17,7 +17,6 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
-from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
 
@@ -117,14 +116,15 @@ class Order(_DECL_BASE):
 
     trade = relationship("Trade", back_populates="orders")
 
-    ft_order_side = Column(String(25), nullable=False)
-    ft_pair = Column(String(25), nullable=False)
+    # order_side can only be 'buy', 'sell' or 'stoploss'
+    ft_order_side: str = Column(String(25), nullable=False)
+    ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
-    order_type = Column(String(50), nullable=True)
+    order_type: str = Column(String(50), nullable=True)
     side = Column(String(25), nullable=True)
     price = Column(Float, nullable=True)
     average = Column(Float, nullable=True)
@@ -137,9 +137,28 @@ class Order(_DECL_BASE):
     order_update_date = Column(DateTime, nullable=True)
     leverage = Column(Float, nullable=True, default=1.0)
 
+    ft_fee_base = Column(Float, nullable=True)
+
     @property
-    def order_date_utc(self):
+    def order_date_utc(self) -> datetime:
+        """ Order-date with UTC timezoneinfo"""
         return self.order_date.replace(tzinfo=timezone.utc)
+
+    @property
+    def safe_price(self) -> float:
+        return self.average or self.price
+
+    @property
+    def safe_filled(self) -> float:
+        return self.filled or self.amount or 0.0
+
+    @property
+    def safe_fee_base(self) -> float:
+        return self.ft_fee_base or 0.0
+
+    @property
+    def safe_amount_after_fee(self) -> float:
+        return self.safe_filled - self.safe_fee_base
 
     def __repr__(self):
 
@@ -584,50 +603,46 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Dict) -> None:
+    def update_trade(self, order: Order) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
         :return: None
         """
-        order_type = order['type']
-
-        if 'is_short' in order and order['side'] == 'sell':
-            # Only set's is_short on opening trades, ignores non-shorts
-            self.is_short = order['is_short']
 
         # Ignore open and cancelled orders
-        if order['status'] == 'open' or safe_value_fallback(order, 'average', 'price') is None:
+        if order.status == 'open' or order.safe_price is None:
             return
 
-        logger.info('Updating trade (id=%s) ...', self.id)
+        logger.info(f'Updating trade (id={self.id}) ...')
 
-        if order_type in ('market', 'limit') and self.enter_side == order['side']:
+        if order.ft_order_side == self.enter_side:
             # Update open rate and actual amount
-            self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
-            self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
-            if 'leverage' in order:
-                self.leverage = order['leverage']
+            self.open_rate = order.safe_price
+            self.amount = order.safe_amount_after_fee
+            # if 'leverage' in order:
+            # TODO-lev: order.leverage is not properly filled on the order object!
+            # self.leverage = order.leverage
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
-                logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
+                logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.open_order_id = None
             self.recalc_trade_from_orders()
-        elif order_type in ('market', 'limit') and self.exit_side == order['side']:
+        elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
-                logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
-        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
+                logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
+            self.close(order.safe_price)
+        elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
-                logger.info(f'{order_type.upper()} is hit for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
+                logger.info(f'{order.order_type.upper()} is hit for {self}.')
+            self.close(order.safe_price)
         else:
-            raise ValueError(f'Unknown order type: {order_type}')
+            raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
@@ -857,7 +872,7 @@ class LocalTrade():
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
-            tmp_amount = o.amount
+            tmp_amount = o.safe_amount_after_fee
             tmp_price = o.average or o.price
             if o.filled is not None:
                 tmp_amount = o.filled
