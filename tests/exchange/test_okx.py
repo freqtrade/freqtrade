@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock  # , PropertyMock
+from unittest.mock import MagicMock, PropertyMock
 
 from freqtrade.enums import MarginMode, TradingMode
 from tests.conftest import get_patched_exchange
@@ -172,7 +172,11 @@ def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
 
 def test_load_leverage_tiers_okx(default_conf, mocker, markets):
     api_mock = MagicMock()
-    api_mock.fetch_leverage_tiers = MagicMock(side_effect=[
+    type(api_mock).has = PropertyMock(return_value={
+        'fetchLeverageTiers': False,
+        'fetchMarketLeverageTiers': True,
+    })
+    api_mock.fetch_market_leverage_tiers = MagicMock(side_effect=[
         {
             'ADA/USDT:USDT': [
                 {

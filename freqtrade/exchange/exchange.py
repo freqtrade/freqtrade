@@ -74,7 +74,6 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
-        "can_fetch_multiple_tiers": True,
     }
     _ft_has: Dict = {}
 
@@ -1875,18 +1874,44 @@ class Exchange:
 
     @retrier
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
-        if self.trading_mode == TradingMode.FUTURES and self.exchange_has('fetchLeverageTiers'):
-            try:
-                return self._api.fetch_leverage_tiers()
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not load leverage tiers due to {e.__class__.__name__}.'
-                    f'Message: {e}'
-                ) from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
+        if self.trading_mode == TradingMode.FUTURES:
+            if self.exchange_has('fetchLeverageTiers'):
+                try:
+                    return self._api.fetch_leverage_tiers()
+                except ccxt.DDoSProtection as e:
+                    raise DDosProtection(e) from e
+                except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                    raise TemporaryError(
+                        f'Could not load leverage tiers due to {e.__class__.__name__}.'
+                        f'Message: {e}'
+                    ) from e
+                except ccxt.BaseError as e:
+                    raise OperationalException(e) from e
+            elif self.exchange_has('fetchMarketLeverageTiers'):
+                # * This is slow(~45s) on Okex, makes ~90 api calls to load all linear swap markets
+                markets = self.markets
+                symbols = []
+
+                for symbol, market in markets.items():
+                    if (self.market_is_future(market)
+                            and market['quote'] == self._config['stake_currency']):
+                        symbols.append(symbol)
+
+                tiers: Dict[str, List[Dict]] = {}
+
+                # Be verbose here, as this delays startup by ~1 minute.
+                logger.info(
+                    f"Initializing leverage_tiers for {len(symbols)} markets. "
+                    "This will take about a minute.")
+
+                for symbol in sorted(symbols):
+                    res = self._api.fetch_market_leverage_tiers(symbol)
+                    tiers[symbol] = res[symbol]
+                logger.info(f"Done initializing {len(symbols)} markets.")
+
+                return tiers
+            else:
+                return {}
         else:
             return {}
 
