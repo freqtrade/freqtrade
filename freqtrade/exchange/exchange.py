@@ -1905,8 +1905,18 @@ class Exchange:
                     "This will take about a minute.")
 
                 for symbol in sorted(symbols):
-                    res = self._api.fetch_market_leverage_tiers(symbol)
-                    tiers[symbol] = res[symbol]
+                    try:
+                        res = self._api.fetch_market_leverage_tiers(symbol)
+                        tiers[symbol] = res[symbol]
+                    except ccxt.DDoSProtection as e:
+                        raise DDosProtection(e) from e
+                    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                        raise TemporaryError(
+                            f'Could not load leverage tiers for {symbol}'
+                            f' due to {e.__class__.__name__}. Message: {e}'
+                        ) from e
+                    except ccxt.BaseError as e:
+                        raise OperationalException(e) from e
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
