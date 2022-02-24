@@ -238,7 +238,7 @@ class RPC:
                     open_rate = b_order.average or b_order.price
                     open_cost=open_rate * amount * (1+ trade.fee_open)
                     trade_profit = trade.calc_profit2(open_rate, current_rate, amount)
-                    profit_pct = ( open_cost + profit)/open_cost - 1
+                    profit_pct = ( open_cost + trade_profit)/open_cost - 1
                     profit_str = f'{profit_pct:.2%}'
                 else:
                     trade_profit = trade.calc_profit(current_rate)
