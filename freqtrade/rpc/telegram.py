@@ -291,7 +291,6 @@ class Telegram(RPCHandler):
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Buy Tag:* `{msg['buy_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
-            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
             f"*Amount:* `{msg['amount']:.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
 
@@ -314,6 +313,8 @@ class Telegram(RPCHandler):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
 
             message += ")`"
+        else:
+            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
@@ -453,7 +454,9 @@ class Telegram(RPCHandler):
         if context.args and 'table' in context.args:
             self._status_table(update, context)
             return
-
+        if context.args and 'order' in context.args:
+            self._status_table(update, context, show_order=True)
+            return
         try:
 
             # Check if there's at least one numerical ID provided.
@@ -525,7 +528,7 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
-    def _status_table(self, update: Update, context: CallbackContext) -> None:
+    def _status_table(self, update: Update, context: CallbackContext, show_order: bool = False) -> None:
         """
         Handler for /status table.
         Returns the current TradeThread status in table format
@@ -536,7 +539,7 @@ class Telegram(RPCHandler):
         try:
             fiat_currency = self._config.get('fiat_display_currency', '')
             statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
-                self._config['stake_currency'], fiat_currency)
+                self._config['stake_currency'], fiat_currency, show_order)
 
             show_total = not isnan(fiat_profit_sum) and len(statlist) > 1
             max_trades_per_msg = 50

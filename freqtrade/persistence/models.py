@@ -495,10 +495,16 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order_type}')
         Trade.commit()
 
-    def process_sell_sub_trade(self, order: Dict) -> None:
+    def process_sell_sub_trade(self, order: Dict, is_closed: bool = True) -> float:
         orders = (self.select_filled_orders('buy'))
-        sell_rate = float(safe_value_fallback(order, 'average', 'price'))
+        # is_closed = order['ft_is_open']
         sell_amount = float(safe_value_fallback(order, 'filled', 'amount'))
+        if is_closed:
+            if sell_amount == self.amount:
+                self.close(safe_value_fallback(order, 'average', 'price'))
+                Trade.commit()
+                return
+        sell_rate = float(safe_value_fallback(order, 'average', 'price'))
         profit = 0.0
         idx = -1
         while sell_amount:
@@ -507,31 +513,37 @@ class LocalTrade():
             buy_rate = b_order.average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
-                b_order.filled -= amount
+                if is_closed:
+                    b_order.filled -= amount
             else:
-                if sell_amount == self.amount:
-                    self.close(safe_value_fallback(order, 'average', 'price'))
-                    Trade.commit()
-                    return
-                b_order.is_fully_realized = True
-                self.update_order(b_order)
+                if is_closed:
+                    b_order.is_fully_realized = True
+                    self.update_order(b_order)
                 idx -= 1
                 amount = buy_amount
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         b_order2 = orders[idx]
         amount2 = b_order2.filled or b_order2.amount
-        b_order2.average = (b_order2.average * amount2 - profit) / amount2
-        self.update_order(b_order2)
-        Order.query.session.commit()
-        self.recalc_trade_from_orders()
-        Trade.commit()
+        if is_closed :
+            b_order2.average = (b_order2.average * amount2 - profit) / amount2
+            self.update_order(b_order2)
+            Order.query.session.commit()
+            self.recalc_trade_from_orders()
+            Trade.commit()
+        return profit
 
     def calc_profit2(self, open_rate: float, close_rate: float,
                      amount: float) -> float:
         return float(Decimal(amount) *
                      (Decimal(1 - self.fee_close) * Decimal(close_rate) -
                       Decimal(1 + self.fee_open) * Decimal(open_rate)))
+
+    def get_open_rate(self, profit: float, close_rate: float,
+                     amount: float) -> float:
+        return float(Decimal(amount) *
+                     (Decimal(1 - self.fee_close) * Decimal(close_rate)) -
+                      profit)/(Decimal(amount) * Decimal(1 + self.fee_open))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """

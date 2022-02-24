@@ -1879,11 +1879,11 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`'
+            '*Close Rate:* `0.00003201`\n'
+            '*Duration:* `1:00:00 (60.0 min)`'
             )
 
     msg_mock.reset_mock()
@@ -1911,11 +1911,11 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Unrealized Profit:* `-57.41%`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`'
+            '*Close Rate:* `0.00003201`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
             )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
@@ -1982,10 +1982,10 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
             '*Profit:* `-57.41%`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
-            '*Close Rate:* `0.00003201`'
+            '*Close Rate:* `0.00003201`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
             )
 
 
@@ -2081,11 +2081,11 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Unrealized Profit:* `-57.41%`\n'
                                         '*Buy Tag:* `buy_signal1`\n'
                                         '*Sell Reason:* `stop_loss`\n'
-                                        '*Duration:* `2:35:03 (155.1 min)`\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00007500`\n'
                                         '*Current Rate:* `0.00003201`\n'
-                                        '*Close Rate:* `0.00003201`'
+                                        '*Close Rate:* `0.00003201`\n'
+                                        '*Duration:* `2:35:03 (155.1 min)`'
                                         )
 
 

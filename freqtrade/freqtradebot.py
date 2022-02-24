@@ -1238,16 +1238,26 @@ class FreqtradeBot(LoggingMixin):
         return True
 
     def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
-                     sub_trade: bool = False) -> None:
+                     sub_trade: bool = False, order: Dict = None) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
-        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
-        profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
-        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        if order:
+            profit_rate = safe_value_fallback(order, 'average', 'price')
+            amount = safe_value_fallback(order, 'filled', 'amount')
+            profit = trade.process_sell_sub_trade(order, is_closed=False)
+            open_rate = trade.get_open_rate(profit, profit_rate, amount)
+            open_cost=open_rate * amount * (1+ trade.fee_open)
+            profit_ratio =  ( open_cost + profit)/open_cost - 1
+        else:    
+            profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+            profit = trade.calc_profit(rate=profit_rate)
+            profit_ratio = trade.calc_profit_ratio(profit_rate)
+            amount = trade.amount
+            open_rate = trade.open_rate
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
@@ -1259,11 +1269,11 @@ class FreqtradeBot(LoggingMixin):
             'gain': gain,
             'limit': profit_rate,
             'order_type': order_type,
-            'amount': trade.amount,
-            'open_rate': trade.open_rate,
+            'amount': amount,
+            'open_rate': open_rate,
             'close_rate': trade.close_rate,
             'current_rate': current_rate,
-            'profit_amount': profit_trade,
+            'profit_amount': profit,
             'profit_ratio': profit_ratio,
             'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
@@ -1275,10 +1285,7 @@ class FreqtradeBot(LoggingMixin):
             'sub_trade': sub_trade,
                    }
 
-        if 'fiat_display_currency' in self.config:
-            msg.update({
-                'fiat_currency': self.config['fiat_display_currency'],
-            })
+        
 
         # Send the message
         self.rpc.send_msg(msg)
@@ -1382,9 +1389,10 @@ class FreqtradeBot(LoggingMixin):
             self.wallets.update()
 
         if not trade.is_open:
+            self.handle_protections(trade.pair)
+        if order.get('side', None) == 'sell':
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True, sub_trade=sub_trade)
-            self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
             # Buy fill
             self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)

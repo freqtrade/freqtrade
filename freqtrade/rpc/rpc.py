@@ -218,7 +218,7 @@ class RPC:
             return results
 
     def _rpc_status_table(self, stake_currency: str,
-                          fiat_display_currency: str) -> Tuple[List, List, float]:
+                          fiat_display_currency: str, show_order: bool = False) -> Tuple[List, List, float]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
@@ -232,8 +232,17 @@ class RPC:
                         trade.pair, refresh=False, side="sell")
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                if show_order:
+                    b_order = trade.select_order('buy', is_open=False)
+                    amount = b_order.filled or b_order.amount
+                    open_rate = b_order.average or b_order.price
+                    open_cost=open_rate * amount * (1+ trade.fee_open)
+                    trade_profit = trade.calc_profit2(open_rate, current_rate, amount)
+                    profit_pct = ( open_cost + profit)/open_cost - 1
+                    profit_str = f'{profit_pct:.2%}'
+                else:
+                    trade_profit = trade.calc_profit(current_rate)
+                    profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -244,11 +253,14 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
+                last_sell_order = trade.select_order('sell')
+                last_sell_order_id = last_sell_order.order_id if last_sell_order else None
                 detail_trade = [
                     trade.id,
-                    trade.pair + ('*' if (trade.open_order_id is not None
-                                          and trade.close_rate_requested is None) else '')
-                    + ('**' if (trade.close_rate_requested is not None) else ''),
+                    trade.pair + ('*' if (trade.open_order_id ==
+                                    trade.select_order('buy').order_id) else '')
+                    + ('**' if (trade.open_order_id ==
+                                    last_sell_order_id) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ]
