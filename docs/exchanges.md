@@ -177,6 +177,10 @@ Kucoin requires a passphrase for each api key, you will therefore need to add th
 
 Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force).
 
+!!! Tip "Stoploss on Exchange"
+    Kucoin supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type of stoploss shall be used.
+
 ### Kucoin Blacklists
 
 For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
