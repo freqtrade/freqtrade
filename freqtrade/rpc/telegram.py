@@ -448,7 +448,8 @@ class Telegram(RPCHandler):
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Entry Tag:* `{buy_tag}`" if r['buy_tag'] else "",
-                    "*Exit Reason:* `{sell_reason}`" if r['sell_reason'] else "",
+                    "*Exit Reason:* `{sell_reason}`"
+                    if (r['sell_reason'] and not r['is_open']) else "",
                 ]
 
                 if position_adjust:
