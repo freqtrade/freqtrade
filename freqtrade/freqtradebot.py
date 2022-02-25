@@ -1170,8 +1170,8 @@ class FreqtradeBot(LoggingMixin):
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and sell_type == 'stoploss' \
-           and self.strategy.order_types['stoploss_on_exchange']:
+        if (self.config['dry_run'] and sell_type == 'stoploss'
+                and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available

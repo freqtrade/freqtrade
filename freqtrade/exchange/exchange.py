@@ -600,7 +600,8 @@ class Exchange:
     # Dry-run methods
 
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                             rate: float, params: Dict = {}) -> Dict[str, Any]:
+                             rate: float, params: Dict = {},
+                             stop_loss: bool = False) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order: Dict[str, Any] = {
@@ -616,14 +617,17 @@ class Exchange:
             'remaining': _amount,
             'datetime': arrow.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'timestamp': arrow.utcnow().int_timestamp * 1000,
-            'status': "closed" if ordertype == "market" else "open",
+            'status': "closed" if ordertype == "market" and not stop_loss else "open",
             'fee': None,
             'info': {}
         }
-        if dry_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
+        if stop_loss:
             dry_order["info"] = {"stopPrice": dry_order["price"]}
+            dry_order["stopPrice"] = dry_order["price"]
+            # Workaround to avoid filling stoploss orders immediately
+            dry_order["ft_order_type"] = "stoploss"
 
-        if dry_order["type"] == "market":
+        if dry_order["type"] == "market" and not dry_order.get("ft_order_type"):
             # Update market order pricing
             average = self.get_dry_market_fill_price(pair, side, amount, rate)
             dry_order.update({
@@ -714,7 +718,9 @@ class Exchange:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
-        if order['status'] != "closed" and order['type'] in ["limit"]:
+        if (order['status'] != "closed"
+                and order['type'] in ["limit"]
+                and not order.get('ft_order_type')):
             pair = order['symbol']
             if self._is_dry_limit_order_filled(pair, order['side'], order['price']):
                 order.update({
@@ -839,9 +845,8 @@ class Exchange:
             rate = self.price_to_precision(pair, rate)
 
         if self._config['dry_run']:
-            # TODO: will this work if ordertype is limit??
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price_norm)
+                pair, ordertype, "sell", amount, stop_price_norm, stop_loss=True)
             return dry_order
 
         try:
