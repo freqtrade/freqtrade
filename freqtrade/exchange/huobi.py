@@ -21,7 +21,7 @@ class Huobi(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
-        "ohlcv_candle_limit": 2000,
+        "ohlcv_candle_limit": 1000,
     }
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
