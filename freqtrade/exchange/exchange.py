@@ -1873,22 +1873,40 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
+    def get_leverage_tiers(self) -> Dict[str, List[Dict]]:
+        try:
+            return self._api.fetch_leverage_tiers()
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load leverage tiers due to {e.__class__.__name__}. Message: {e}'
+            ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def get_market_leverage_tiers(self, symbol) -> List[Dict]:
+        try:
+            return self._api.fetch_market_leverage_tiers(symbol)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load leverage tiers for {symbol}'
+                f' due to {e.__class__.__name__}. Message: {e}'
+            ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
     def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
         if self.trading_mode == TradingMode.FUTURES:
             if self.exchange_has('fetchLeverageTiers'):
-                try:
-                    return self._api.fetch_leverage_tiers()
-                except ccxt.DDoSProtection as e:
-                    raise DDosProtection(e) from e
-                except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                    raise TemporaryError(
-                        f'Could not load leverage tiers due to {e.__class__.__name__}.'
-                        f'Message: {e}'
-                    ) from e
-                except ccxt.BaseError as e:
-                    raise OperationalException(e) from e
+                # Fetch all leverage tiers at once
+                return self.get_leverage_tiers()
             elif self.exchange_has('fetchMarketLeverageTiers'):
-                # * This is slow(~45s) on Okex, makes ~90 api calls to load all linear swap markets
+                # Must fetch the leverage tiers for each market separately
+                # * This is slow(~45s) on Okx, makes ~90 api calls to load all linear swap markets
                 markets = self.markets
                 symbols = []
 
@@ -1905,18 +1923,8 @@ class Exchange:
                     "This will take about a minute.")
 
                 for symbol in sorted(symbols):
-                    try:
-                        res = self._api.fetch_market_leverage_tiers(symbol)
-                        tiers[symbol] = res[symbol]
-                    except ccxt.DDoSProtection as e:
-                        raise DDosProtection(e) from e
-                    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                        raise TemporaryError(
-                            f'Could not load leverage tiers for {symbol}'
-                            f' due to {e.__class__.__name__}. Message: {e}'
-                        ) from e
-                    except ccxt.BaseError as e:
-                        raise OperationalException(e) from e
+                    tiers[symbol] = self.get_market_leverage_tiers(symbol)
+
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
