@@ -3,7 +3,6 @@ Main Freqtrade worker class.
 """
 import logging
 import time
-
 import traceback
 from os import getpid
 from typing import Any, Callable, Dict, Optional
@@ -176,14 +175,6 @@ class Worker:
 
         # Load and validate config and create new instance of the bot
         self._init(True)
-
-        # Todo Temporary fix to reload all strategies
-        from pathlib import Path
-        from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
-
-        directory = Path(self._config.get('strategy_path', self._config['user_data_dir'] / USERPATH_STRATEGIES))
-        strategy_objs = StrategyResolver.search_all_objects(directory, False)
 
         self.freqtrade.notify_status('config reloaded')
 
