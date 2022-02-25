@@ -21,6 +21,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import RunMode, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.misc import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
@@ -49,6 +50,13 @@ def trim_dictlist(dict_list, num):
     for pair, pair_data in dict_list.items():
         new[pair] = pair_data[num:].reset_index()
     return new
+
+
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
 
 
 def load_data_test(what, testdatadir):
@@ -520,6 +528,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     # Fake 2 trades, so there's not enough amount for the next trade left.
     LocalTrade.trades_open.append(trade)
     LocalTrade.trades_open.append(trade)
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
     LocalTrade.trades_open.pop()
@@ -527,6 +536,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is not None
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade
     assert trade.stake_amount == 123.5
@@ -549,8 +559,6 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
 
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
-
-    backtesting.cleanup()
 
 
 def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
@@ -634,7 +642,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     assert res.sell_reason == SellType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    assert round(res.close_rate, 3) == round(209.0225, 3)
+    sell_order = res.select_order('sell', True)
+    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -650,6 +659,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
                              timerange=timerange)
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
+
     result = backtesting.backtest(
         processed=deepcopy(processed),
         start_date=min_date,
@@ -739,6 +749,46 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
     for col in ['close', 'high', 'low', 'open', 'date',
                 'ema10', 'rsi', 'fastd', 'plus_di']:
         assert col in cols
+
+
+def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    timerange = TimeRange('date', None, 1517227800, 0)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    global count
+    count = 0
+
+    def tmp_confirm_entry(pair, current_time, **kwargs):
+        dp = backtesting.strategy.dp
+        df, _ = dp.get_analyzed_dataframe(pair, backtesting.strategy.timeframe)
+        current_candle = df.iloc[-1].squeeze()
+        assert current_candle['buy'] == 1
+
+        candle_date = timeframe_to_next_date(backtesting.strategy.timeframe, current_candle['date'])
+        assert candle_date == current_time
+        # These asserts don't properly raise as they are nested,
+        # therefore we increment count and assert for that.
+        global count
+        count = count + 1
+
+    backtesting.strategy.confirm_trade_entry = tmp_confirm_entry
+    backtesting.backtest(
+        processed=deepcopy(processed),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+        position_stacking=False,
+    )
+    assert count == 5
 
 
 def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
@@ -978,6 +1028,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'config': default_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -1086,6 +1138,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1093,6 +1147,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1195,6 +1251,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1202,6 +1260,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1263,6 +1323,8 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         'config': default_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -1366,7 +1428,7 @@ def test_get_strategy_run_id(default_conf_usdt):
     default_conf_usdt.update({
         'strategy': 'StrategyTestV2',
         'max_open_trades': float('inf')
-        })
+    })
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
     x = get_strategy_run_id(strategy)
     assert isinstance(x, str)

@@ -8,7 +8,7 @@ from freqtrade.configuration.config_validation import validate_config_consistenc
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
 from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
-from freqtrade.rpc.api_server.deps import get_config
+from freqtrade.rpc.api_server.deps import get_config, is_webserver_mode
 from freqtrade.rpc.api_server.webserver import ApiServer
 from freqtrade.rpc.rpc import RPCException
 
@@ -20,8 +20,9 @@ router = APIRouter()
 
 
 @router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+# flake8: noqa: C901
 async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
-                             config=Depends(get_config)):
+                             config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
     """Start backtesting if not done so already"""
     if ApiServer._bgtask_running:
         raise RPCException('Bot Background task already running')
@@ -32,6 +33,10 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     for setting in settings.keys():
         if settings[setting] is not None:
             btconfig[setting] = settings[setting]
+    try:
+        btconfig['stake_amount'] = float(btconfig['stake_amount'])
+    except ValueError:
+        pass
 
     # Force dry-run for backtesting
     btconfig['dry_run'] = True
@@ -57,8 +62,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             ):
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
-                if ApiServer._bt.timeframe_detail:
-                    ApiServer._bt.load_bt_data_detail()
+                ApiServer._bt.load_bt_data_detail()
             else:
                 ApiServer._bt.config = btconfig
                 ApiServer._bt.init_backtest()
@@ -117,7 +121,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
 
 
 @router.get('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_get_backtest():
+def api_get_backtest(ws_mode=Depends(is_webserver_mode)):
     """
     Get backtesting result.
     Returns Result after backtesting has been ran.
@@ -153,7 +157,7 @@ def api_get_backtest():
 
 
 @router.delete('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_delete_backtest():
+def api_delete_backtest(ws_mode=Depends(is_webserver_mode)):
     """Reset backtesting"""
     if ApiServer._bgtask_running:
         return {
@@ -179,7 +183,7 @@ def api_delete_backtest():
 
 
 @router.get('/backtest/abort', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_backtest_abort():
+def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
     if not ApiServer._bgtask_running:
         return {
             "status": "not_running",

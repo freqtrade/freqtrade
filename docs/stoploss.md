@@ -2,6 +2,7 @@
 
 The `stoploss` configuration parameter is loss as ratio that should trigger a sale.
 For example, value `-0.10` will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
+Stoploss calculations do include fees, so a stoploss of -10% is placed exactly 10% below the entry point.
 
 Most of the strategy files already include the optimal `stoploss` value.
 
@@ -30,7 +31,7 @@ These modes can be configured with these values:
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
 Enable or Disable stop loss on exchange.
-If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order happens successfully. This will protect you against sudden crashes in market as the order will be in the queue immediately and if market goes down then the order has more chance of being fulfilled.
+If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order fills. This will protect you against sudden crashes in market, as the order execution happens purely within the exchange, and has no potential network overhead.
 
 If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.  
 `stoploss` defines the stop-price where the limit order is placed - and limit should be slightly below this.  

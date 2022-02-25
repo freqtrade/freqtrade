@@ -389,8 +389,8 @@ class AwesomeStrategy(IStrategy):
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
-    While Custom prices are supported in backtesting (starting with 2021.12), prices will be moved to within the candle's high/low prices.
-    This behavior is currently being tested, and might be changed at a later point.
+    Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
+    Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
     `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
 
 ## Custom order timeout rules
@@ -400,7 +400,8 @@ Simple, time-based order-timeouts can be configured either via strategy or in th
 However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.
 
 !!! Note
-    Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
+    Backtesting fills orders if their price falls within the candle's low/high range.
+    The below callbacks will be called once per (detail) candle for orders that don't fill immediately (which use custom pricing).
 
 ### Custom order timeout example
 
@@ -467,7 +468,8 @@ class AwesomeStrategy(IStrategy):
         'sell': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
+                          current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
@@ -476,7 +478,8 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 2% below the order.

@@ -62,6 +62,7 @@ This loop will be repeated again and again until the bot is stopped.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
   * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
   * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
+  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_buy_timeout()` / `check_sell_timeout()` strategy callbacks.
 * Generate backtest report output
 
 !!! Note

@@ -211,7 +211,7 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, edge=None) -> float:
+    def get_trade_stake_amount(self, pair: str, edge=None, update: bool = True) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -219,7 +219,8 @@ class Wallets:
         """
         stake_amount: float
         # Ensure wallets are uptodate.
-        self.update()
+        if update:
+            self.update()
         val_tied_up = Trade.total_open_trades_stakes()
         available_amount = self.get_available_stake_amount()
 

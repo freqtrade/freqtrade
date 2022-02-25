@@ -17,6 +17,15 @@ from freqtrade.constants import SUPPORTED_FIAT
 logger = logging.getLogger(__name__)
 
 
+# Manually map symbol to ID for some common coins
+# with duplicate coingecko entries
+coingecko_mapping = {
+    'eth': 'ethereum',
+    'bnb': 'binancecoin',
+    'sol': 'solana',
+}
+
+
 class CryptoToFiatConverter:
     """
     Main class to initiate Crypto to FIAT.
@@ -77,8 +86,9 @@ class CryptoToFiatConverter:
             else:
                 return None
         found = [x for x in self._coinlistings if x['symbol'] == crypto_symbol]
-        if crypto_symbol == 'eth':
-            found = [x for x in self._coinlistings if x['id'] == 'ethereum']
+
+        if crypto_symbol in coingecko_mapping.keys():
+            found = [x for x in self._coinlistings if x['id'] == coingecko_mapping[crypto_symbol]]
 
         if len(found) == 1:
             return found[0]['id']

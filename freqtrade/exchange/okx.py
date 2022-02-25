@@ -7,8 +7,8 @@ from freqtrade.exchange import Exchange
 logger = logging.getLogger(__name__)
 
 
-class Okex(Exchange):
-    """Okex exchange class.
+class Okx(Exchange):
+    """Okx exchange class.
 
     Contains adjustments needed for Freqtrade to work with this exchange.
     """

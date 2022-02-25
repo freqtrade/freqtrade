@@ -8,11 +8,12 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, text
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from tests.conftest import create_mock_trades, create_mock_trades_usdt, log_has, log_has_re
 
 
@@ -32,13 +33,17 @@ def test_init_custom_db_url(default_conf, tmpdir):
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
     assert Path(filename).is_file()
+    r = Trade._session.execute(text("PRAGMA journal_mode"))
+    assert r.first() == ('wal',)
 
 
-def test_init_invalid_db_url(default_conf):
+def test_init_invalid_db_url():
     # Update path to a value other than default, but still in-memory
-    default_conf.update({'db_url': 'unknown:///some.url'})
     with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init_db(default_conf['db_url'], default_conf['dry_run'])
+        init_db('unknown:///some.url', True)
+
+    with pytest.raises(OperationalException, match=r'Bad db-url.*For in-memory database, pl.*'):
+        init_db('sqlite:///', True)
 
 
 def test_init_prod_db(default_conf, mocker):
@@ -107,7 +112,8 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
     assert trade.close_date is None
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.00
     assert trade.close_profit is None
@@ -118,7 +124,8 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
 
     caplog.clear()
     trade.open_order_id = 'something'
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.close_rate == 2.20
     assert trade.close_profit == round(0.0945137157107232, 8)
@@ -145,7 +152,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     )
 
     trade.open_order_id = 'something'
-    trade.update(market_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.0
     assert trade.close_profit is None
@@ -157,7 +165,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = 'something'
-    trade.update(market_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.close_rate == 2.2
     assert trade.close_profit == round(0.0945137157107232, 8)
@@ -180,9 +189,11 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     )
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade._calc_open_trade_value() == 60.15
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert isclose(trade.calc_close_trade_value(), 65.835)
 
     # Profit in USDT
@@ -235,7 +246,8 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     )
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
     assert trade.calc_close_trade_value() == 0.0
 
 
@@ -256,7 +268,8 @@ def test_update_open_order(limit_buy_order_usdt):
     assert trade.close_date is None
 
     limit_buy_order_usdt['status'] = 'open'
-    trade.update(limit_buy_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)
 
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -275,8 +288,9 @@ def test_update_invalid_order(limit_buy_order_usdt):
         exchange='binance',
     )
     limit_buy_order_usdt['type'] = 'invalid'
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'meep')
     with pytest.raises(ValueError, match=r'Unknown order type'):
-        trade.update(limit_buy_order_usdt)
+        trade.update_trade(oobj)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -303,7 +317,8 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
         exchange='binance',
     )
     trade.open_order_id = 'open_trade'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == 60.15
@@ -324,14 +339,16 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
         exchange='binance',
     )
     trade.open_order_id = 'close_trade'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the close rate price with a custom close rate and a regular fee rate
     assert trade.calc_close_trade_value(rate=2.5) == 74.8125
     # Get the close rate price with a custom close rate and a custom fee rate
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.775
     # Test when we apply a Sell order, and ask price with a custom fee rate
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.calc_close_trade_value(fee=0.005) == 65.67
 
 
@@ -408,7 +425,9 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         exchange='binance',
     )
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+
+    trade.update_trade(oobj)  # Buy @ 2.0
 
     # Custom closing rate and regular fee rate
     # Higher than open rate - 2.1 quote
@@ -423,7 +442,8 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit(rate=1.9, fee=0.003) == round(-3.320999999999998, 8)
 
     # Test when we apply a Sell order. Sell higher than open rate @ 2.2
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.calc_profit() == round(5.684999999999995, 8)
 
     # Test with a custom fee rate on the close trade
@@ -442,7 +462,9 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         exchange='binance'
     )
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
+
+    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.update_trade(oobj)  # Buy @ 2.0
 
     # Higher than open rate - 2.1 quote
     assert trade.calc_profit_ratio(rate=2.1) == round(0.04476309226932673, 8)
@@ -456,7 +478,8 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit_ratio(rate=1.9, fee=0.003) == round(-0.05521197007481293, 8)
 
     # Test when we apply a Sell order. Sell higher than open rate @ 2.2
-    trade.update(limit_sell_order_usdt)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.update_trade(oobj)
     assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
 
     # Test with a custom fee rate on the close trade
@@ -600,70 +623,12 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
-    assert log_has("Running database migration for trades - backup: trades_bak2", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
+                   caplog)
     assert trade.open_trade_value == trade._calc_open_trade_value()
     assert trade.close_profit_abs is None
 
     assert log_has("Moving open orders to Orders table.", caplog)
-    orders = Order.query.all()
-    assert len(orders) == 2
-    assert orders[0].order_id == 'buy_order'
-    assert orders[0].ft_order_side == 'buy'
-
-    assert orders[1].order_id == 'stop_order_id222'
-    assert orders[1].ft_order_side == 'stoploss'
-
-    caplog.clear()
-    # Drop latest column
-    with engine.begin() as connection:
-        connection.execute(text("alter table orders rename to orders_bak"))
-    inspector = inspect(engine)
-
-    with engine.begin() as connection:
-        for index in inspector.get_indexes('orders_bak'):
-            connection.execute(text(f"drop index {index['name']}"))
-        # Recreate table
-        connection.execute(text("""
-            CREATE TABLE orders (
-                id INTEGER NOT NULL,
-                ft_trade_id INTEGER,
-                ft_order_side VARCHAR NOT NULL,
-                ft_pair VARCHAR NOT NULL,
-                ft_is_open BOOLEAN NOT NULL,
-                order_id VARCHAR NOT NULL,
-                status VARCHAR,
-                symbol VARCHAR,
-                order_type VARCHAR,
-                side VARCHAR,
-                price FLOAT,
-                amount FLOAT,
-                filled FLOAT,
-                remaining FLOAT,
-                cost FLOAT,
-                order_date DATETIME,
-                order_filled_date DATETIME,
-                order_update_date DATETIME,
-                PRIMARY KEY (id),
-                CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
-                FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
-            )
-            """))
-
-        connection.execute(text("""
-        insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-            order_filled_date, order_update_date)
-            select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-            order_filled_date, order_update_date
-            from orders_bak
-        """))
-
-    # Run init to test migration
-    init_db(default_conf['db_url'], default_conf['dry_run'])
-
-    assert log_has("trying orders_bak1", caplog)
-
     orders = Order.query.all()
     assert len(orders) == 2
     assert orders[0].order_id == 'buy_order'
@@ -733,7 +698,40 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_value == trade._calc_open_trade_value()
     assert log_has("trying trades_bak0", caplog)
-    assert log_has("Running database migration for trades - backup: trades_bak0", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak0, orders_bak0",
+                   caplog)
+
+
+def test_migrate_get_last_sequence_ids():
+    engine = MagicMock()
+    engine.begin = MagicMock()
+    engine.name = 'postgresql'
+    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+
+    assert engine.begin.call_count == 2
+    engine.reset_mock()
+    engine.begin.reset_mock()
+
+    engine.name = 'somethingelse'
+    get_last_sequence_ids(engine, 'trades_bak', 'orders_bak')
+
+    assert engine.begin.call_count == 0
+
+
+def test_migrate_set_sequence_ids():
+    engine = MagicMock()
+    engine.begin = MagicMock()
+    engine.name = 'postgresql'
+    set_sequence_ids(engine, 22, 55)
+
+    assert engine.begin.call_count == 1
+    engine.reset_mock()
+    engine.begin.reset_mock()
+
+    engine.name = 'somethingelse'
+    set_sequence_ids(engine, 22, 55)
+
+    assert engine.begin.call_count == 0
 
 
 def test_adjust_stop_loss(fee):
@@ -903,6 +901,8 @@ def test_to_json(default_conf, fee):
                       'buy_tag': None,
                       'timeframe': None,
                       'exchange': 'binance',
+                      'filled_entry_orders': [],
+                      'filled_exit_orders': []
                       }
 
     # Simulate dry_run entries
@@ -970,6 +970,8 @@ def test_to_json(default_conf, fee):
                       'buy_tag': 'buys_signal_001',
                       'timeframe': None,
                       'exchange': 'binance',
+                      'filled_entry_orders': [],
+                      'filled_exit_orders': []
                       }
 
 
@@ -1297,11 +1299,14 @@ def test_select_order(fee):
     order = trades[4].select_order('buy', False)
     assert order is not None
 
+    trades[4].orders[1].ft_order_side = 'sell'
     order = trades[4].select_order('sell', True)
     assert order is not None
+
+    trades[4].orders[1].ft_order_side = 'stoploss'
+    order = trades[4].select_order('stoploss', None)
+    assert order is not None
     assert order.ft_order_side == 'stoploss'
-    order = trades[4].select_order('sell', False)
-    assert order is None
 
 
 def test_Trade_object_idem():

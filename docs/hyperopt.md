@@ -116,7 +116,7 @@ optional arguments:
                         ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
                         SortinoHyperOptLoss, SortinoHyperOptLossDaily,
-                        CalmarHyperOptLoss, MaxDrawDownHyperOptLoss
+                        CalmarHyperOptLoss, MaxDrawDownHyperOptLoss, ProfitDrawDownHyperOptLoss
   --disable-param-export
                         Disable automatic hyperopt parameter export.
   --ignore-missing-spaces, --ignore-unparameterized-spaces
@@ -508,6 +508,46 @@ class MyAwesomeStrategy(IStrategy):
 
 You will then obviously also change potential interesting entries to parameters to allow hyper-optimization.
 
+### Optimizing `max_entry_position_adjustment`
+
+While `max_entry_position_adjustment` is not a separate space, it can still be used in hyperopt by using the property approach shown above.
+
+``` python
+from pandas import DataFrame
+from functools import reduce
+
+import talib.abstract as ta
+
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+                                IStrategy, IntParameter)
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+class MyAwesomeStrategy(IStrategy):
+    stoploss = -0.05
+    timeframe = '15m'
+
+    # Define the parameter spaces
+    max_epa = CategoricalParameter([-1, 0, 1, 3, 5, 10], default=1, space="buy", optimize=True)
+
+    @property
+    def max_entry_position_adjustment(self):
+        return self.max_epa.value
+        
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # ...
+```
+
+??? Tip "Using `IntParameter`"
+    You can also use the `IntParameter` for this optimization, but you must explicitly return an integer:
+    ``` python
+    max_epa = IntParameter(-1, 10, default=1, space="buy", optimize=True)
+
+    @property
+    def max_entry_position_adjustment(self):
+        return int(self.max_epa.value)
+    ```
+
 ## Loss-functions
 
 Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
@@ -525,6 +565,7 @@ Currently, the following loss functions are builtin:
 * `SortinoHyperOptLossDaily` - optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation.
 * `MaxDrawDownHyperOptLoss` - Optimizes Maximum drawdown.
 * `CalmarHyperOptLoss` - Optimizes Calmar Ratio calculated on trade returns relative to max drawdown.
+* `ProfitDrawDownHyperOptLoss` - Optimizes by max Profit & min Drawdown objective. `DRAWDOWN_MULT` variable within the hyperoptloss file can be adjusted to be stricter or more flexible on drawdown purposes.
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 

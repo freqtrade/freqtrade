@@ -109,7 +109,7 @@ class SellReason(BaseModel):
 
 class Stats(BaseModel):
     sell_reasons: Dict[str, SellReason]
-    durations: Dict[str, Union[str, float]]
+    durations: Dict[str, Optional[float]]
 
 
 class DailyRecord(BaseModel):
@@ -149,7 +149,7 @@ class ShowConfig(BaseModel):
     api_version: float
     dry_run: bool
     stake_currency: str
-    stake_amount: Union[float, str]
+    stake_amount: str
     available_capital: Optional[float]
     stake_currency_decimals: int
     max_open_trades: int
@@ -280,6 +280,7 @@ class ForceBuyPayload(BaseModel):
     price: Optional[float]
     ordertype: Optional[OrderTypeValues]
     stakeamount: Optional[float]
+    entry_tag: Optional[str]
 
 
 class ForceSellPayload(BaseModel):
@@ -365,7 +366,7 @@ class BacktestRequest(BaseModel):
     timeframe_detail: Optional[str]
     timerange: Optional[str]
     max_open_trades: Optional[int]
-    stake_amount: Optional[Union[float, str]]
+    stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
 
@@ -384,3 +385,8 @@ class BacktestResponse(BaseModel):
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float
+
+
+class Health(BaseModel):
+    last_process: datetime
+    last_process_ts: int

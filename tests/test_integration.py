@@ -4,6 +4,7 @@ import pytest
 
 from freqtrade.enums import SellType
 from freqtrade.persistence import Trade
+from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
 from freqtrade.strategy.interface import SellCheckTuple
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
@@ -94,7 +95,11 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     trades = Trade.query.all()
     # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
     for trade in trades:
-        trade.stoploss_order_id = 3
+        stoploss_order_closed['id'] = '3'
+        oobj = Order.parse_from_ccxt_object(stoploss_order_closed, trade.pair, 'stoploss')
+
+        trade.orders.append(oobj)
+        trade.stoploss_order_id = '3'
         trade.open_order_id = None
 
     n = freqtrade.exit_positions(trades)

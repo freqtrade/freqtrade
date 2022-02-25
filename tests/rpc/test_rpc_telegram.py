@@ -23,6 +23,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import Order
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
@@ -99,7 +100,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
                    "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
-                   "['logs'], ['edge'], ['help'], ['version']"
+                   "['logs'], ['edge'], ['health'], ['help'], ['version']"
                    "]")
 
     assert log_has(message_str, caplog)
@@ -201,7 +202,8 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'stoploss_current_dist_ratio': -0.0002,
             'stop_loss_ratio': -0.0001,
             'open_order': '(limit buy rem=0.00000000)',
-            'is_open': True
+            'is_open': True,
+            'filled_entry_orders': []
         }]),
     )
 
@@ -215,6 +217,80 @@ def test_telegram_status(default_conf, update, mocker) -> None:
     context.args = ["table"]
     telegram._status(update=update, context=context)
     assert status_table.call_count == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
+    update.message.chat.id = "123"
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = "123"
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_open_trades()
+    trade = trades[0]
+    trade.orders.append(Order(
+        order_id='5412vbb',
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=trade.open_rate * 0.95,
+        average=trade.open_rate * 0.95,
+        filled=trade.amount,
+        remaining=0,
+        cost=trade.amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    )
+    trade.recalc_trade_from_orders()
+    Trade.commit()
+
+    telegram._status(update=update, context=MagicMock())
+    assert msg_mock.call_count == 4
+    msg = msg_mock.call_args_list[0][0][0]
+    assert re.search(r'Number of Entries.*2', msg)
+    assert re.search(r'Average Entry Price', msg)
+    assert re.search(r'Order filled at', msg)
+    assert re.search(r'Close Date:', msg) is None
+    assert re.search(r'Close Profit:', msg) is None
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -> None:
+    update.message.chat.id = "123"
+    default_conf['telegram']['enabled'] = False
+    default_conf['telegram']['chat_id'] = "123"
+    default_conf['position_adjustment_enable'] = True
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_order=MagicMock(return_value=None),
+        get_rate=MagicMock(return_value=0.22),
+    )
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    create_mock_trades(fee)
+    trades = Trade.get_trades([Trade.is_open.is_(False)])
+    trade = trades[0]
+    context = MagicMock()
+    context.args = [str(trade.id)]
+    telegram._status(update=update, context=context)
+    assert msg_mock.call_count == 1
+    msg = msg_mock.call_args_list[0][0][0]
+    assert re.search(r'Close Date:', msg)
+    assert re.search(r'Close Profit:', msg)
 
 
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -342,10 +418,12 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobjs)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -385,8 +463,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update(limit_buy_order)
-        trade.update(limit_sell_order)
+        trade.update_trade(oobj)
+        trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
 
@@ -451,10 +529,12 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobjs)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -498,8 +578,8 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update(limit_buy_order)
-        trade.update(limit_sell_order)
+        trade.update_trade(oobj)
+        trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
 
@@ -567,10 +647,12 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobjs)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -614,8 +696,8 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update(limit_buy_order)
-        trade.update(limit_sell_order)
+        trade.update_trade(oobj)
+        trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
 
@@ -685,7 +767,9 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     trade = Trade.query.first()
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
+
     context = MagicMock()
     # Test with invalid 2nd argument (should silently pass)
     context.args = ["aaa"]
@@ -694,13 +778,15 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
     mocker.patch('freqtrade.wallets.Wallets.get_starting_balance', return_value=0.01)
-    assert ('∙ `-0.00000500 BTC (-0.50%) (-0.0 \N{GREEK CAPITAL LETTER SIGMA}%)`'
+    assert ('∙ `-0.000005 BTC (-0.50%) (-0.0 \N{GREEK CAPITAL LETTER SIGMA}%)`'
             in msg_mock.call_args_list[-1][0][0])
     msg_mock.reset_mock()
 
     # Update the ticker with a market going up
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
-    trade.update(limit_sell_order)
+    # Simulate fulfilled LIMIT_SELL order for trade
+    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     trade.close_date = datetime.now(timezone.utc)
     trade.is_open = False
@@ -769,7 +855,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC: 12.00000000' in result
+    assert 'BTC: 12' in result
     assert "*3 Other Currencies (< 0.0001 BTC):*" in result
     assert 'BTC: 0.00000309' in result
 
@@ -785,7 +871,7 @@ def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
     telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert 'All balances are zero.' in result
+    assert 'Starting capital: `0 BTC' in result
 
 
 def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None:
@@ -798,7 +884,7 @@ def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
     assert "*Warning:* Simulated balances in Dry Mode." in result
-    assert "Starting capital: `1000` BTC" in result
+    assert "Starting capital: `1000 BTC`" in result
 
 
 def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
@@ -1184,7 +1270,8 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     assert msg_mock.call_args_list[0][1]['msg'] == 'Which pair?'
     # assert msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
     keyboard = msg_mock.call_args_list[0][1]['keyboard']
-    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
+    # One additional button - cancel
+    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = 'XRP/USDT'
@@ -1209,10 +1296,12 @@ def test_telegram_performance_handle(default_conf, update, ticker, fee,
     assert trade
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -1236,13 +1325,15 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
     freqtradebot.enter_positions()
     trade = Trade.query.first()
     assert trade
+    trade.buy_tag = "TESTBUY"
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
 
-    trade.buy_tag = "TESTBUY"
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -1279,13 +1370,14 @@ def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, f
     freqtradebot.enter_positions()
     trade = Trade.query.first()
     assert trade
-
-    # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
-
     trade.sell_reason = 'TESTSELL'
+    # Simulate fulfilled LIMIT_BUY order for trade
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
+
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -1322,15 +1414,16 @@ def test_telegram_mix_tag_performance_handle(default_conf, update, ticker, fee,
     freqtradebot.enter_positions()
     trade = Trade.query.first()
     assert trade
-
-    # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
-
     trade.buy_tag = "TESTBUY"
     trade.sell_reason = "TESTSELL"
 
+    # Simulate fulfilled LIMIT_BUY order for trade
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
+    trade.update_trade(oobj)
+
     # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    trade.update_trade(oobj)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
@@ -1657,7 +1750,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1674,7 +1767,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
     caplog.clear()
@@ -1748,7 +1841,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
         'buy_tag': 'buy_signal_01',
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1762,7 +1855,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
            '*Buy Tag:* `buy_signal_01`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
-           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1954,7 +2047,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
         'order_type': 'limit',
-        'stake_amount': 0.001,
+        'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': None,
@@ -1967,7 +2060,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
-                                        '*Total:* `(0.00100000 BTC)`')
+                                        '*Total:* `(0.01465333 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:

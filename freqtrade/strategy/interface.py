@@ -18,6 +18,7 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import LocalTrade, Order
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -686,7 +687,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return False
 
-    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
+    def should_sell(self, trade: Trade, rate: float, current_time: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
@@ -703,7 +704,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=date, current_profit=current_profit,
+                                              current_time=current_time,
+                                              current_profit=current_profit,
                                               force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting sell
@@ -713,7 +715,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
         roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
-                                                current_time=date))
+                                                current_time=current_time))
 
         sell_signal = SellType.NONE
         custom_reason = ''
@@ -729,8 +731,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                 sell_signal = SellType.SELL_SIGNAL
             else:
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
-                    pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
-                    current_profit=current_profit)
+                    pair=trade.pair, trade=trade, current_time=current_time,
+                    current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
@@ -862,23 +864,22 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ft_check_timed_out(self, side: str, trade: Trade, order: Dict,
+    def ft_check_timed_out(self, side: str, trade: LocalTrade, order: Order,
                            current_time: datetime) -> bool:
         """
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
         timeout = self.config.get('unfilledtimeout', {}).get(side)
-        ordertime = arrow.get(order['datetime']).datetime
         if timeout is not None:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)
-            timedout = (order['status'] == 'open' and order['side'] == side
-                        and ordertime < timeout_threshold)
+            timedout = (order.status == 'open' and order.side == side
+                        and order.order_date_utc < timeout_threshold)
             if timedout:
                 return True
-        time_method = self.check_sell_timeout if order['side'] == 'sell' else self.check_buy_timeout
+        time_method = self.check_sell_timeout if order.side == 'sell' else self.check_buy_timeout
 
         return strategy_safe_wrapper(time_method,
                                      default_retval=False)(

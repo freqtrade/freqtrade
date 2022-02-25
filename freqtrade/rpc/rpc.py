@@ -10,8 +10,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import arrow
 import psutil
 from dateutil.relativedelta import relativedelta
+from dateutil.tz import tzlocal
 from numpy import NAN, inf, int64, mean
-from pandas import DataFrame
+from pandas import DataFrame, NaT
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
@@ -111,7 +112,7 @@ class RPC:
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
-            'stake_amount': config['stake_amount'],
+            'stake_amount': str(config['stake_amount']),
             'available_capital': config.get('available_capital'),
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
@@ -263,7 +264,7 @@ class RPC:
                 profitcol += " (" + fiat_display_currency + ")"
 
             if self._config.get('position_adjustment_enable', False):
-                columns = ['ID', 'Pair', 'Since', profitcol, '# Buys']
+                columns = ['ID', 'Pair', 'Since', profitcol, '# Entries']
             else:
                 columns = ['ID', 'Pair', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
@@ -439,9 +440,9 @@ class RPC:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
                 dur[trade_win_loss(trade)].append(trade_dur)
 
-        wins_dur = sum(dur['wins']) / len(dur['wins']) if len(dur['wins']) > 0 else 'N/A'
-        draws_dur = sum(dur['draws']) / len(dur['draws']) if len(dur['draws']) > 0 else 'N/A'
-        losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else 'N/A'
+        wins_dur = sum(dur['wins']) / len(dur['wins']) if len(dur['wins']) > 0 else None
+        draws_dur = sum(dur['draws']) / len(dur['draws']) if len(dur['draws']) > 0 else None
+        losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else None
 
         durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
         return {'sell_reasons': sell_reasons, 'durations': durations}
@@ -598,11 +599,6 @@ class RPC:
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
             })
-        if total == 0.0:
-            if self._freqtrade.config['dry_run']:
-                raise RPCException('Running in Dry Run, balances are not available.')
-            else:
-                raise RPCException('All balances are zero.')
 
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
@@ -716,7 +712,8 @@ class RPC:
             return {'result': f'Created sell order for trade {trade_id}.'}
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
-                      stake_amount: Optional[float] = None) -> Optional[Trade]:
+                      stake_amount: Optional[float] = None,
+                      buy_tag: Optional[str] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -750,7 +747,7 @@ class RPC:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade):
+                                         ordertype=order_type, trade=trade, buy_tag=buy_tag):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
@@ -962,8 +959,16 @@ class RPC:
                 sell_mask = (dataframe['sell'] == 1)
                 sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_close'] = dataframe.loc[sell_mask, 'close']
-            dataframe = dataframe.replace([inf, -inf], NAN)
-            dataframe = dataframe.replace({NAN: None})
+
+            # band-aid until this is fixed:
+            # https://github.com/pandas-dev/pandas/issues/45836
+            datetime_types = ['datetime', 'datetime64', 'datetime64[ns, UTC]']
+            date_columns = dataframe.select_dtypes(include=datetime_types)
+            for date_column in date_columns:
+                # replace NaT with `None`
+                dataframe[date_column] = dataframe[date_column].astype(object).replace({NaT: None})
+
+            dataframe = dataframe.replace({inf: None, -inf: None, NAN: None})
 
         res = {
             'pair': pair,
@@ -1037,4 +1042,12 @@ class RPC:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
             "ram_pct": psutil.virtual_memory().percent
+        }
+
+    def _health(self) -> Dict[str, Union[str, int]]:
+        last_p = self._freqtrade.last_process
+        return {
+            'last_process': str(last_p),
+            'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
+            'last_process_ts': int(last_p.timestamp()),
         }
