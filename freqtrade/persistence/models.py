@@ -16,7 +16,6 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
 
@@ -39,6 +38,9 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     kwargs = {}
 
+    if db_url == 'sqlite:///':
+        raise OperationalException(
+            f'Bad db-url {db_url}. For in-memory database, please use `sqlite://`.')
     if db_url == 'sqlite://':
         kwargs.update({
             'poolclass': StaticPool,
@@ -113,14 +115,15 @@ class Order(_DECL_BASE):
 
     trade = relationship("Trade", back_populates="orders")
 
-    ft_order_side = Column(String(25), nullable=False)
-    ft_pair = Column(String(25), nullable=False)
+    # order_side can only be 'buy', 'sell' or 'stoploss'
+    ft_order_side: str = Column(String(25), nullable=False)
+    ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
-    order_type = Column(String(50), nullable=True)
+    order_type: str = Column(String(50), nullable=True)
     side = Column(String(25), nullable=True)
     price = Column(Float, nullable=True)
     average = Column(Float, nullable=True)
@@ -132,9 +135,28 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
+    ft_fee_base = Column(Float, nullable=True)
+
     @property
-    def order_date_utc(self):
+    def order_date_utc(self) -> datetime:
+        """ Order-date with UTC timezoneinfo"""
         return self.order_date.replace(tzinfo=timezone.utc)
+
+    @property
+    def safe_price(self) -> float:
+        return self.average or self.price
+
+    @property
+    def safe_filled(self) -> float:
+        return self.filled or self.amount or 0.0
+
+    @property
+    def safe_fee_base(self) -> float:
+        return self.ft_fee_base or 0.0
+
+    @property
+    def safe_amount_after_fee(self) -> float:
+        return self.safe_filled - self.safe_fee_base
 
     def __repr__(self):
 
@@ -452,40 +474,39 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Dict) -> None:
+    def update_trade(self, order: Order) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
         :return: None
         """
-        order_type = order['type']
         # Ignore open and cancelled orders
-        if order['status'] == 'open' or safe_value_fallback(order, 'average', 'price') is None:
+        if order.status == 'open' or order.safe_price is None:
             return
 
-        logger.info('Updating trade (id=%s) ...', self.id)
+        logger.info(f'Updating trade (id={self.id}) ...')
 
-        if order_type in ('market', 'limit') and order['side'] == 'buy':
+        if order.ft_order_side == 'buy':
             # Update open rate and actual amount
-            self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
-            self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
+            self.open_rate = order.safe_price
+            self.amount = order.safe_amount_after_fee
             if self.is_open:
-                logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
+                logger.info(f'{order.order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
             self.recalc_trade_from_orders()
-        elif order_type in ('market', 'limit') and order['side'] == 'sell':
+        elif order.ft_order_side == 'sell':
             if self.is_open:
-                logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
-        elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
+                logger.info(f'{order.order_type.upper()}_SELL has been fulfilled for {self}.')
+            self.close(order.safe_price)
+        elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
             self.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
-                logger.info(f'{order_type.upper()} is hit for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
+                logger.info(f'{order.order_type.upper()} is hit for {self}.')
+            self.close(order.safe_price)
         else:
-            raise ValueError(f'Unknown order type: {order_type}')
+            raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
@@ -628,7 +649,7 @@ class LocalTrade():
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
-            tmp_amount = o.amount
+            tmp_amount = o.safe_amount_after_fee
             tmp_price = o.average or o.price
             if o.filled is not None:
                 tmp_amount = o.filled
@@ -799,11 +820,11 @@ class Trade(_DECL_BASE, LocalTrade):
     fee_close = Column(Float, nullable=False, default=0.0)
     fee_close_cost = Column(Float, nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
-    open_rate = Column(Float)
+    open_rate: float = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value = Column(Float)
-    close_rate = Column(Float)
+    close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)

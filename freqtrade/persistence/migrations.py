@@ -57,7 +57,7 @@ def set_sequence_ids(engine, order_id, trade_id):
 def migrate_trades_and_orders_table(
         decl_base, inspector, engine,
         trade_back_name: str, cols: List,
-        order_back_name: str):
+        order_back_name: str, cols_order: List):
     fee_open = get_column_def(cols, 'fee_open', 'fee')
     fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
     fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
@@ -141,7 +141,7 @@ def migrate_trades_and_orders_table(
             from {trade_back_name}
             """))
 
-    migrate_orders_table(engine, order_back_name, cols)
+    migrate_orders_table(engine, order_back_name, cols_order)
     set_sequence_ids(engine, order_id, trade_id)
 
 
@@ -171,19 +171,28 @@ def drop_orders_table(engine, table_back_name: str):
         connection.execute(text("drop table orders"))
 
 
-def migrate_orders_table(engine, table_back_name: str, cols: List):
+def migrate_orders_table(engine, table_back_name: str, cols_order: List):
+
+    ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
 
     # let SQLAlchemy create the schema as required
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date)
+            order_date, order_filled_date, order_update_date, ft_fee_base)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date
+            order_date, order_filled_date, order_update_date, {ft_fee_base}
             from {table_back_name}
             """))
+
+
+def set_sqlite_to_wal(engine):
+    if engine.name == 'sqlite' and str(engine.url) != 'sqlite://':
+        # Set Mode to
+        with engine.begin() as connection:
+            connection.execute(text("PRAGMA journal_mode=wal"))
 
 
 def check_migrate(engine, decl_base, previous_tables) -> None:
@@ -193,6 +202,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     inspector = inspect(engine)
 
     cols = inspector.get_columns('trades')
+    cols_orders = inspector.get_columns('orders')
     tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = get_backup_name(tabs, 'trades_bak')
     order_tabs = get_table_names_for_table(inspector, 'orders')
@@ -200,15 +210,14 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    if not has_column(cols, 'buy_tag'):
+    # if not has_column(cols, 'buy_tag'):
+    if 'orders' not in previous_tables or not has_column(cols_orders, 'ft_fee_base'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
-            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name)
-        # Reread columns - the above recreated the table!
-        inspector = inspect(engine)
-        cols = inspector.get_columns('trades')
+            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name, cols_orders)
 
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
+    set_sqlite_to_wal(engine)

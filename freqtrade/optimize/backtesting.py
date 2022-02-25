@@ -128,7 +128,8 @@ class Backtesting:
     def __del__(self):
         self.cleanup()
 
-    def cleanup(self):
+    @staticmethod
+    def cleanup():
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
@@ -357,6 +358,18 @@ class Backtesting:
                     # use Open rate if open_rate > calculated sell rate
                     return sell_row[OPEN_IDX]
 
+                if (
+                    trade_dur == 0
+                    # Red candle (for longs), TODO: green candle (for shorts)
+                    and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # Red candle
+                    and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
+                    and close_rate > sell_row[CLOSE_IDX]
+                ):
+                    # ROI on opening candles with custom pricing can only
+                    # trigger if the entry was at Open or lower.
+                    # details: https: // github.com/freqtrade/freqtrade/issues/6261
+                    # If open_rate is < open, only allow sells below the close on red candles.
+                    raise ValueError("Opening candle ROI on red candles.")
                 # Use the maximum between close_rate and low as we
                 # cannot sell outside of a candle.
                 # Applies when a new ROI setting comes in place and the whole candle is above that.
@@ -414,7 +427,10 @@ class Backtesting:
             trade.close_date = sell_candle_time
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
-            closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+            try:
+                closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+            except ValueError:
+                return None
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
             order_type = self.strategy.order_types['sell']
