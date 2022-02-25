@@ -426,8 +426,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                  proposed_leverage: float, max_leverage: float, side: str,
                  **kwargs) -> float:
         """
-        Customize leverage for each new trade. This method is not called when edge module is
-        enabled.
+        Customize leverage for each new trade. This method is only called in futures mode.
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
