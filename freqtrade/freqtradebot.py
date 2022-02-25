@@ -979,10 +979,10 @@ class FreqtradeBot(LoggingMixin):
                   or (order_obj and self.strategy.ft_check_timed_out(
                       'sell', trade, order_obj, datetime.now(timezone.utc))
                       ))):
-                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                canceled = self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 canceled_count = trade.get_exit_order_count()
                 max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
-                if max_timeouts > 0 and canceled_count >= max_timeouts:
+                if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
                     logger.warning(f'Emergencyselling trade {trade}, as the sell order '
                                    f'timed out {max_timeouts} times.')
                     try:
@@ -1079,11 +1079,12 @@ class FreqtradeBot(LoggingMixin):
                                   reason=reason)
         return was_trade_fully_canceled
 
-    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
+    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> bool:
         """
         Sell cancel - cancel order and update trade
-        :return: Reason for cancel
+        :return: True if exit order was cancelled, false otherwise
         """
+        cancelled = False
         # if trade is not partially completed, just cancel the order
         if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
@@ -1094,7 +1095,7 @@ class FreqtradeBot(LoggingMixin):
                     trade.update_order(co)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel sell order {trade.open_order_id}")
-                    return 'error cancelling order'
+                    return False
                 logger.info('Sell order %s for %s.', reason, trade)
             else:
                 reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
@@ -1108,9 +1109,11 @@ class FreqtradeBot(LoggingMixin):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
+            cancelled = True
         else:
             # TODO: figure out how to handle partially complete sell orders
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+            cancelled = False
 
         self.wallets.update()
         self._notify_exit_cancel(
@@ -1118,7 +1121,7 @@ class FreqtradeBot(LoggingMixin):
             order_type=self.strategy.order_types['sell'],
             reason=reason
         )
-        return reason
+        return cancelled
 
     def _safe_exit_amount(self, pair: str, amount: float) -> float:
         """

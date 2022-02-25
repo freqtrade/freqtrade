@@ -6,7 +6,7 @@ import time
 from copy import deepcopy
 from math import isclose
 from typing import List
-from unittest.mock import ANY, MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import arrow
 import pytest
@@ -2220,9 +2220,14 @@ def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, l
 
     et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
     caplog.clear()
-
     # 2nd canceled trade ...
     open_trade.open_order_id = limit_sell_order_old['id']
+
+    # If cancelling fails - no emergency sell!
+    with patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_exit', return_value=False):
+        freqtrade.check_handle_timedout()
+        assert et_mock.call_count == 0
+
     freqtrade.check_handle_timedout()
     assert log_has_re('Emergencyselling trade.*', caplog)
     assert et_mock.call_count == 1
@@ -2564,13 +2569,17 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     send_msg_mock.reset_mock()
 
     order['amount'] = 2
-    assert freqtrade.handle_cancel_exit(trade, order, reason
-                                        ) == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
-    assert freqtrade.handle_cancel_exit(trade, order, reason
-                                        ) == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert (send_msg_mock.call_args_list[0][0][0]['reason']
+            == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
+
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
+
+    send_msg_mock.call_args_list[0][0][0]['reason'] = CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+
     # Message should not be iterated again
     assert trade.sell_order_status == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
     assert send_msg_mock.call_count == 1
@@ -2589,7 +2598,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     order = {'remaining': 1,
              'amount': 1,
              'status': "open"}
-    assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
 
 
 def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, mocker
