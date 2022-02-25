@@ -177,134 +177,130 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
         'fetchMarketLeverageTiers': True,
     })
     api_mock.fetch_market_leverage_tiers = MagicMock(side_effect=[
-        {
-            'ADA/USDT:USDT': [
-                {
-                    'tier': 1,
-                    'notionalFloor': 0,
-                    'notionalCap': 500,
-                    'maintenanceMarginRate': 0.02,
-                    'maxLeverage': 75,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.013',
-                        'instId': '',
-                        'maxLever': '75',
-                        'maxSz': '500',
-                        'minSz': '0',
-                        'mmr': '0.01',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '1',
-                        'uly': 'ADA-USDT'
-                    }
-                },
-                {
-                    'tier': 2,
-                    'notionalFloor': 501,
-                    'notionalCap': 1000,
-                    'maintenanceMarginRate': 0.025,
-                    'maxLeverage': 50,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.02',
-                        'instId': '',
-                        'maxLever': '50',
-                        'maxSz': '1000',
-                        'minSz': '501',
-                        'mmr': '0.015',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '2',
-                        'uly': 'ADA-USDT'
-                    }
-                },
-                {
-                    'tier': 3,
-                    'notionalFloor': 1001,
-                    'notionalCap': 2000,
-                    'maintenanceMarginRate': 0.03,
-                    'maxLeverage': 20,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.05',
-                        'instId': '',
-                        'maxLever': '20',
-                        'maxSz': '2000',
-                        'minSz': '1001',
-                        'mmr': '0.02',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '3',
-                        'uly': 'ADA-USDT'
-                    }
-                },
-            ]
-        },
-        {
-            'ETH/USDT:USDT': [
-                {
-                    'tier': 1,
-                    'notionalFloor': 0,
-                    'notionalCap': 2000,
-                    'maintenanceMarginRate': 0.01,
-                    'maxLeverage': 75,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.013',
-                        'instId': '',
-                        'maxLever': '75',
-                        'maxSz': '2000',
-                        'minSz': '0',
-                        'mmr': '0.01',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '1',
-                        'uly': 'ETH-USDT'
-                    }
-                },
-                {
-                    'tier': 2,
-                    'notionalFloor': 2001,
-                    'notionalCap': 4000,
-                    'maintenanceMarginRate': 0.015,
-                    'maxLeverage': 50,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.02',
-                        'instId': '',
-                        'maxLever': '50',
-                        'maxSz': '4000',
-                        'minSz': '2001',
-                        'mmr': '0.015',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '2',
-                        'uly': 'ETH-USDT'
-                    }
-                },
-                {
-                    'tier': 3,
-                    'notionalFloor': 4001,
-                    'notionalCap': 8000,
-                    'maintenanceMarginRate': 0.02,
-                    'maxLeverage': 20,
-                    'info': {
-                        'baseMaxLoan': '',
-                        'imr': '0.05',
-                        'instId': '',
-                        'maxLever': '20',
-                        'maxSz': '8000',
-                        'minSz': '4001',
-                        'mmr': '0.02',
-                        'optMgnFactor': '0',
-                        'quoteMaxLoan': '',
-                        'tier': '3',
-                        'uly': 'ETH-USDT'
-                    }
-                },
-            ]
-        },
+        [
+            {
+                'tier': 1,
+                'notionalFloor': 0,
+                'notionalCap': 500,
+                'maintenanceMarginRate': 0.02,
+                'maxLeverage': 75,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.013',
+                    'instId': '',
+                    'maxLever': '75',
+                    'maxSz': '500',
+                    'minSz': '0',
+                    'mmr': '0.01',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '1',
+                    'uly': 'ADA-USDT'
+                }
+            },
+            {
+                'tier': 2,
+                'notionalFloor': 501,
+                'notionalCap': 1000,
+                'maintenanceMarginRate': 0.025,
+                'maxLeverage': 50,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.02',
+                    'instId': '',
+                    'maxLever': '50',
+                    'maxSz': '1000',
+                    'minSz': '501',
+                    'mmr': '0.015',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '2',
+                    'uly': 'ADA-USDT'
+                }
+            },
+            {
+                'tier': 3,
+                'notionalFloor': 1001,
+                'notionalCap': 2000,
+                'maintenanceMarginRate': 0.03,
+                'maxLeverage': 20,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.05',
+                    'instId': '',
+                    'maxLever': '20',
+                    'maxSz': '2000',
+                    'minSz': '1001',
+                    'mmr': '0.02',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '3',
+                    'uly': 'ADA-USDT'
+                }
+            },
+        ],
+        [
+            {
+                'tier': 1,
+                'notionalFloor': 0,
+                'notionalCap': 2000,
+                'maintenanceMarginRate': 0.01,
+                'maxLeverage': 75,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.013',
+                    'instId': '',
+                    'maxLever': '75',
+                    'maxSz': '2000',
+                    'minSz': '0',
+                    'mmr': '0.01',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '1',
+                    'uly': 'ETH-USDT'
+                }
+            },
+            {
+                'tier': 2,
+                'notionalFloor': 2001,
+                'notionalCap': 4000,
+                'maintenanceMarginRate': 0.015,
+                'maxLeverage': 50,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.02',
+                    'instId': '',
+                    'maxLever': '50',
+                    'maxSz': '4000',
+                    'minSz': '2001',
+                    'mmr': '0.015',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '2',
+                    'uly': 'ETH-USDT'
+                }
+            },
+            {
+                'tier': 3,
+                'notionalFloor': 4001,
+                'notionalCap': 8000,
+                'maintenanceMarginRate': 0.02,
+                'maxLeverage': 20,
+                'info': {
+                    'baseMaxLoan': '',
+                    'imr': '0.05',
+                    'instId': '',
+                    'maxLever': '20',
+                    'maxSz': '8000',
+                    'minSz': '4001',
+                    'mmr': '0.02',
+                    'optMgnFactor': '0',
+                    'quoteMaxLoan': '',
+                    'tier': '3',
+                    'uly': 'ETH-USDT'
+                }
+            },
+        ]
     ])
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
