@@ -1350,6 +1350,11 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     ftbot, client = botclient
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
 
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    # Backtest prevented in default mode
+    assert_response(rc, 502)
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
     # Backtesting not started yet
     rc = client_get(client, f"{BASE_URI}/backtest")
     assert_response(rc)
