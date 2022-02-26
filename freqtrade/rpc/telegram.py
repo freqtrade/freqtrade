@@ -384,10 +384,10 @@ class Telegram(RPCHandler):
             cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
-                lines.append("*Entry #{}:*".format(x+1))
-                lines.append("*Entry Amount:* {} ({:.8f} {})"
-                             .format(cur_entry_amount, order["cost"], base_currency))
-                lines.append("*Average Entry Price:* {}".format(cur_entry_average))
+                lines.append(f"*Entry #{x+1}:*")
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average}")
             else:
                 sumA = 0
                 sumB = 0
@@ -404,17 +404,16 @@ class Telegram(RPCHandler):
                 days = dur_entry.days
                 hours, remainder = divmod(dur_entry.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
-                lines.append("*Entry #{}:* at {:.2%} avg profit".format(x+1, minus_on_entry))
+                lines.append(f"*Entry #{x+1}:* at {minus_on_entry:.2%} avg profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
-                lines.append("*Entry Amount:* {} ({:.8f} {})"
-                             .format(cur_entry_amount, order["cost"], base_currency))
-                lines.append("*Average Entry Price:* {} ({:.2%} from 1st entry rate)"
-                             .format(cur_entry_average, price_to_1st_entry))
-                lines.append("*Order filled at:* {}".format(order["order_filled_date"]))
-                lines.append("({}d {}h {}m {}s from previous entry)"
-                             .format(days, hours, minutes, seconds))
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average} "
+                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                lines.append(f"*Order filled at:* {order['order_filled_date']}")
+                lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
         return lines
 
     @authorized_only
