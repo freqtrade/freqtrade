@@ -634,7 +634,7 @@ tc39 = BTContainer(data=[
     [3, 5010, 5010, 4986, 5010, 6172, 0, 1],
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
+    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
     leverage=5.0,
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
