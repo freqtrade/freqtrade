@@ -50,7 +50,7 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',
-        'futures': True,
+        'futures': False,
         'leverage_tiers_public': False,  # TODO: Set to True once implemented on CCXT
         'leverage_in_spot_market': True,
     },
