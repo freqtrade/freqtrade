@@ -613,11 +613,8 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Trade not found.'
 
+    Trade.query.session.rollback()
     create_mock_trades(fee, is_short=is_short)
-
-    # The below line avoids random test failures.
-    # It's unclear why.
-    assert len(Trade.get_trades().all()) > 1
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
     assert_response(rc)
