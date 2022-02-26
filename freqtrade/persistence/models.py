@@ -566,13 +566,14 @@ class LocalTrade():
             # Don't modify if called with initial and nothing to do
             return
 
+        leverage = self.leverage or 1.0
         if self.is_short:
-            new_loss = float(current_price * (1 + abs(stoploss)))
+            new_loss = float(current_price * (1 + abs(stoploss / leverage)))
             # If trading with leverage, don't set the stoploss below the liquidation price
             if self.isolated_liq:
                 new_loss = min(self.isolated_liq, new_loss)
         else:
-            new_loss = float(current_price * (1 - abs(stoploss)))
+            new_loss = float(current_price * (1 - abs(stoploss / leverage)))
             # If trading with leverage, don't set the stoploss below the liquidation price
             if self.isolated_liq:
                 new_loss = max(self.isolated_liq, new_loss)
