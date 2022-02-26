@@ -86,6 +86,8 @@ class Kraken(Exchange):
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
+        TODO: investigate if this can be combined with generic implementation
+              (careful, prices are reversed)
         """
         params = self._params.copy()
 
