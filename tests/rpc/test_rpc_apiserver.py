@@ -453,6 +453,10 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
         'used': 0.0,
         'est_stake': 12.0,
         'stake': 'BTC',
+        'is_position': False,
+        'leverage': 1.0,
+        'position': 0.0,
+        'side': 'long',
     }
     assert 'starting_capital' in response
     assert 'starting_capital_fiat' in response

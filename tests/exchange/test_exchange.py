@@ -1548,6 +1548,27 @@ def test_get_balances_prod(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_fetch_positions(default_conf, mocker, exchange_name):
+    mocker.patch('freqtrade.exchange.Exchange.validate_trading_mode_and_margin_mode')
+    api_mock = MagicMock()
+    api_mock.fetch_positions = MagicMock(return_value=[
+        {'symbol': 'ETH/USDT:USDT', 'leverage': 5},
+        {'symbol': 'XRP/USDT:USDT', 'leverage': 5},
+    ])
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    assert exchange.fetch_positions() == []
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    res = exchange.fetch_positions()
+    assert len(res) == 2
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_positions", "fetch_positions")
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {

@@ -905,6 +905,10 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
             'balance': i,
             'est_stake': 1,
             'stake': 'BTC',
+            'is_position': False,
+            'leverage': 1.0,
+            'position': 0.0,
+            'side': 'long',
         })
     mocker.patch('freqtrade.rpc.rpc.RPC._rpc_balance', return_value={
         'currencies': balances,

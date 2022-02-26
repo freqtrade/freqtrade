@@ -603,6 +603,30 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'used': 5.0,
         }
     }
+    mock_pos = [
+        {
+            "symbol": "ETH/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 100.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 100.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        }
+    ]
 
     mocker.patch.multiple(
         'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
@@ -612,12 +636,15 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        validate_trading_mode_and_margin_mode=MagicMock(),
         get_balances=MagicMock(return_value=mock_balance),
+        fetch_positions=MagicMock(return_value=mock_pos),
         get_tickers=tickers,
         get_valid_pair_combination=MagicMock(
             side_effect=lambda a, b: f"{b}/{a}" if a == "USDT" else f"{a}/{b}")
     )
     default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
@@ -630,28 +657,55 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
-        {'currency': 'BTC',
-         'free': 10.0,
-         'balance': 12.0,
-         'used': 2.0,
-         'est_stake': 12.0,
-         'stake': 'BTC',
-         },
-        {'free': 1.0,
-         'balance': 5.0,
-         'currency': 'ETH',
-         'est_stake': 0.30794,
-         'used': 4.0,
-         'stake': 'BTC',
+        {
+            'currency': 'BTC',
+            'free': 10.0,
+            'balance': 12.0,
+            'used': 2.0,
+            'est_stake': 12.0,
+            'stake': 'BTC',
+            'is_position': False,
+            'leverage': 1.0,
+            'position': 0.0,
+            'side': 'long',
+        },
+        {
+            'free': 1.0,
+            'balance': 5.0,
+            'currency': 'ETH',
+            'est_stake': 0.30794,
+            'used': 4.0,
+            'stake': 'BTC',
+            'is_position': False,
+            'leverage': 1.0,
+            'position': 0.0,
+            'side': 'long',
 
-         },
-        {'free': 5.0,
-         'balance': 10.0,
-         'currency': 'USDT',
-         'est_stake': 0.0011563153318162476,
-         'used': 5.0,
-         'stake': 'BTC',
-         }
+        },
+        {
+            'free': 5.0,
+            'balance': 10.0,
+            'currency': 'USDT',
+            'est_stake': 0.0011563153318162476,
+            'used': 5.0,
+            'stake': 'BTC',
+            'is_position': False,
+            'leverage': 1.0,
+            'position': 0.0,
+            'side': 'long',
+        },
+        {
+            'free': 0.0,
+            'balance': 0.0,
+            'currency': 'ETH/USDT:USDT',
+            'est_stake': 20,
+            'used': 0,
+            'stake': 'BTC',
+            'is_position': True,
+            'leverage': 5.0,
+            'position': 1000.0,
+            'side': 'short',
+        }
     ]
     assert result['total'] == 12.309096315331816
 

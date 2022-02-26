@@ -385,6 +385,13 @@ class LocalTrade():
         else:
             return "sell"
 
+    @property
+    def trade_direction(self) -> str:
+        if self.is_short:
+            return "short"
+        else:
+            return "long"
+
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])

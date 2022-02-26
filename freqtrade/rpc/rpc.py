@@ -30,6 +30,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.wallets import PositionWallet, Wallet
 
 
 logger = logging.getLogger(__name__)
@@ -566,7 +567,7 @@ class RPC:
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
-        output = []
+        currencies = []
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers(cached=True)
@@ -577,7 +578,8 @@ class RPC:
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
             starting_capital, stake_currency, fiat_display_currency) if self._fiat_converter else 0
-
+        coin: str
+        balance: Wallet
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
@@ -598,13 +600,34 @@ class RPC:
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             total = total + (est_stake or 0)
-            output.append({
+            currencies.append({
                 'currency': coin,
+                # TODO: The below can be simplified if we don't assign None to values.
                 'free': balance.free if balance.free is not None else 0,
                 'balance': balance.total if balance.total is not None else 0,
                 'used': balance.used if balance.used is not None else 0,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
+                'side': 'long',
+                'leverage': 1,
+                'position': 0,
+                'is_position': False,
+            })
+        symbol: str
+        position: PositionWallet
+        for symbol, position in self._freqtrade.wallets.get_all_positions().items():
+
+            currencies.append({
+                'currency': symbol,
+                'free': 0,
+                'balance': 0,
+                'used': 0,
+                'position': position.position,
+                'est_stake': position.collateral,
+                'stake': stake_currency,
+                'leverage': position.leverage,
+                'side': position.side,
+                'is_position': True
             })
 
         value = self._fiat_converter.convert_amount(
@@ -616,7 +639,7 @@ class RPC:
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
         return {
-            'currencies': output,
+            'currencies': currencies,
             'total': total,
             'symbol': fiat_display_currency,
             'value': value,

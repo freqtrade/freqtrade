@@ -342,7 +342,7 @@ class Exchange:
 
     def get_pair_base_currency(self, pair: str) -> str:
         """
-        Return a pair's quote currency
+        Return a pair's base currency
         """
         return self.markets.get(pair, {}).get('base', '')
 
@@ -1164,6 +1164,22 @@ class Exchange:
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get balance due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def fetch_positions(self) -> List[Dict]:
+        if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
+            return []
+        try:
+            positions: List[Dict] = self._api.fetch_positions()
+            self._log_exchange_response('fetch_positions', positions)
+            return positions
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get positions due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
