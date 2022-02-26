@@ -114,7 +114,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
-            'is_open': False, 'pair': 'ETH/BTC',
+            'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
             'remaining': ANY, 'status': ANY}],
         'filled_exit_orders': []
     }
@@ -189,7 +189,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
-            'is_open': False, 'pair': 'ETH/BTC',
+            'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
             'remaining': ANY, 'status': ANY}],
         'filled_exit_orders': []
     }
