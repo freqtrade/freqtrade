@@ -57,7 +57,7 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"
-    Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    Binance supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange..
 
 ### Binance Blacklist
 
@@ -186,7 +186,12 @@ Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force)
 For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
 Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
 
-## OKX
+## Huobi
+
+!!! Tip "Stoploss on Exchange"
+    Huobi supports `stoploss_on_exchange` and uses `stop-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+
+## OKX (former OKEX)
 
 OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
 
