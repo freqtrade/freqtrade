@@ -370,15 +370,18 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_entry_details(self, filled_orders, base_currency, is_open):
+    def _prepare_entry_details(self, filled_orders: List, base_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
-        lines = []
+        lines: List[str] = []
+        if len(filled_orders) > 0:
+            first_avg = filled_orders[0]["safe_price"]
+
         for x, order in enumerate(filled_orders):
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
-            cur_entry_average = order["average"]
+            cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
                 lines.append("*Entry #{}:*".format(x+1))
@@ -389,12 +392,14 @@ class Telegram(RPCHandler):
                 sumA = 0
                 sumB = 0
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["average"])
+                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["safe_price"])
                     sumB += filled_orders[y]["amount"]
-                prev_avg_price = sumA/sumB
-                price_to_1st_entry = ((cur_entry_average - filled_orders[0]["average"])
-                                      / filled_orders[0]["average"])
-                minus_on_entry = (cur_entry_average - prev_avg_price)/prev_avg_price
+                prev_avg_price = sumA / sumB
+                price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
+                minus_on_entry = 0
+                if prev_avg_price:
+                    minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
+
                 dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
                 days = dur_entry.days
                 hours, remainder = divmod(dur_entry.seconds, 3600)

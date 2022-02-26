@@ -110,7 +110,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
         'filled_entry_orders': [{
-            'amount': 91.07468123, 'average': 1.098e-05,
+            'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
@@ -185,7 +185,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
         'filled_entry_orders': [{
-            'amount': 91.07468123, 'average': 1.098e-05,
+            'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
