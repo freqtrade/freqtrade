@@ -478,6 +478,15 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
+            #TODO : debug 
+            open_sell_order=trade.select_order('sell', True)
+            if open_sell_order: 
+                msg = {
+                'type': RPCMessageType.WARNING,
+                'status':'bug open_order_id is None'
+            }
+                self.rpc.send_msg(msg)
+                return 
             self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
                 sell_type=SellType.CUSTOM_SELL), sub_trade_amt=-stake_amount)
 
@@ -1228,7 +1237,7 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt))
+        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order,
@@ -1245,9 +1254,9 @@ class FreqtradeBot(LoggingMixin):
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
-        if order:
-            profit_rate = safe_value_fallback(order, 'average', 'price')
-            amount = safe_value_fallback(order, 'filled', 'amount')
+        if sub_trade:
+            amount = order.get('filled') or order.get('amount') or 0
+            profit_rate = order.get('average') or order.get('price') or 0
             profit = trade.process_sell_sub_trade(order, is_closed=False)
             open_rate = trade.get_open_rate(profit, profit_rate, amount)
             open_cost=open_rate * amount * (1+ trade.fee_open)
@@ -1377,7 +1386,7 @@ class FreqtradeBot(LoggingMixin):
 
         order = self.handle_order_fee(trade, order)
 
-        trade.update(order, sub_trade=sub_trade)
+        trade.update(order)
         trade.recalc_trade_from_orders()
         Trade.commit()
 
@@ -1390,9 +1399,10 @@ class FreqtradeBot(LoggingMixin):
 
         if not trade.is_open:
             self.handle_protections(trade.pair)
+        sub_trade = order.get('filled') != trade.amount
         if order.get('side', None) == 'sell':
             if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True, sub_trade=sub_trade)
+                self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order)
         elif send_msg and not trade.open_order_id:
             # Buy fill
             self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
@@ -1486,6 +1496,13 @@ class FreqtradeBot(LoggingMixin):
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            msg = {
+                'type': RPCMessageType.WARNING,
+                'status': "fees bug"
+
+                    
+            }
+            self.rpc.send_msg(msg)
             return order_amount
         fee_currency = None
         amount = 0
@@ -1543,3 +1560,4 @@ class FreqtradeBot(LoggingMixin):
         return max(
             min(valid_custom_price, max_custom_price_allowed),
             min_custom_price_allowed)
+5

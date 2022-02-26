@@ -453,7 +453,7 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def update(self, order: Dict, sub_trade: bool = False) -> None:
+    def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
         :param order: order retrieved by exchange.fetch_order()
@@ -478,12 +478,8 @@ class LocalTrade():
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
             self.open_order_id = None
-            if sub_trade or 1:
-                logger.info(f'debug1:{sub_trade}')
-                self.process_sell_sub_trade(order)
-                return
-            # else:
-            #     self.close(safe_value_fallback(order, 'average', 'price'))
+            self.process_sell_sub_trade(order)
+            return
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -497,14 +493,20 @@ class LocalTrade():
 
     def process_sell_sub_trade(self, order: Dict, is_closed: bool = True) -> float:
         orders = (self.select_filled_orders('buy'))
+        
+        if len(orders)<1:
+            #Todo /test_freqtradebot.py::test_execute_trade_exit_market_order
+            self.close(0)
+            Trade.commit()
+            logger.info("debug:"*10);return 0
         # is_closed = order['ft_is_open']
-        sell_amount = float(safe_value_fallback(order, 'filled', 'amount'))
+        sell_amount = order.get('filled') or order.get('amount')
+        sell_rate = order.get('average') or order.get('price')
         if is_closed:
             if sell_amount == self.amount:
-                self.close(safe_value_fallback(order, 'average', 'price'))
+                self.close(sell_rate)
                 Trade.commit()
                 return
-        sell_rate = float(safe_value_fallback(order, 'average', 'price'))
         profit = 0.0
         idx = -1
         while sell_amount:
@@ -525,7 +527,7 @@ class LocalTrade():
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         b_order2 = orders[idx]
         amount2 = b_order2.filled or b_order2.amount
-        if is_closed :
+        if is_closed:
             b_order2.average = (b_order2.average * amount2 - profit) / amount2
             self.update_order(b_order2)
             Order.query.session.commit()
@@ -541,9 +543,9 @@ class LocalTrade():
 
     def get_open_rate(self, profit: float, close_rate: float,
                      amount: float) -> float:
-        return float(Decimal(amount) *
+        return float((Decimal(amount) *
                      (Decimal(1 - self.fee_close) * Decimal(close_rate)) -
-                      profit)/(Decimal(amount) * Decimal(1 + self.fee_open))
+                      Decimal(profit))/(Decimal(amount) * Decimal(1 + self.fee_open)))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
@@ -671,12 +673,6 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
-        # We need at least 2 entry orders for averaging amounts and rates.
-        if len(self.select_filled_orders('buy')) < 2:
-            # Just in case, still recalc open trade value
-            self.recalc_open_trade_value()
-            return
-
         total_amount = 0.0
         total_stake = 0.0
         for o in self.orders:
@@ -693,7 +689,6 @@ class LocalTrade():
             if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount
                 total_stake += tmp_price * tmp_amount
-
         if total_amount > 0:
             self.open_rate = total_stake / total_amount
             self.stake_amount = total_stake
