@@ -2320,7 +2320,7 @@ class Exchange:
         :return: (maintenance margin ratio, maintenance amount)
         """
 
-        if self.exchange_has('fetchLeverageTiers'):
+        if self.exchange_has('fetchLeverageTiers') or self.exchange_has('fetchMarketLeverageTiers'):
 
             if pair not in self._leverage_tiers:
                 raise InvalidOrderException(
