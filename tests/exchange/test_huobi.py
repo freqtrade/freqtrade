@@ -48,7 +48,7 @@ def test_stoploss_order_huobi(default_conf, mocker, limitratio, expected):
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     # Price should be 1% below stopprice
     assert api_mock.create_order.call_args_list[0][1]['price'] == expected
-    assert api_mock.create_order.call_args_list[0][1]['params'] == {"stop-price": 220,
+    assert api_mock.create_order.call_args_list[0][1]['params'] == {"stopPrice": 220,
                                                                     "operator": "lte",
                                                                     }
 
