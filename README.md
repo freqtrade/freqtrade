@@ -30,13 +30,13 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
+- [X] [Binance](https://www.binance.com/)
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Huobi](http://huobi.com/)
 - [X] [Kraken](https://kraken.com/)
 - [X] [OKX](https://okx.com/) (Former OKEX)
-- [X] [Huobi](http://huobi.com/)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
