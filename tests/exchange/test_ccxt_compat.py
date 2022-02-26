@@ -50,7 +50,7 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',
-        'futures': True,
+        'futures': False,
         'leverage_tiers_public': False,  # TODO: Set to True once implemented on CCXT
         'leverage_in_spot_market': True,
     },
@@ -69,7 +69,7 @@ EXCHANGES = {
         'timeframe': '5m',
         'futures': True,
         'futures_pair': 'BTC/USDT:USDT',
-        'leverage_tiers_public': False,  # TODO-lev: Set to True once implemented on CCXT
+        'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
     'okx': {
@@ -123,9 +123,6 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf['margin_mode'] = 'isolated'
         exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
 
-        # TODO-lev: This mock should no longer be necessary once futures are enabled.
-        class_mocker.patch(
-            'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
         class_mocker.patch(
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
 
