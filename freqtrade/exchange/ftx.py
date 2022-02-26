@@ -56,7 +56,7 @@ class Ftx(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, "sell", amount, stop_price, stop_loss=True)
             return dry_order
 
         try:
