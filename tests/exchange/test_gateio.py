@@ -1,11 +1,8 @@
-from unittest.mock import MagicMock, PropertyMock
-
 import pytest
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Gateio
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_patched_exchange
 
 
 def test_validate_order_types_gateio(default_conf, mocker):

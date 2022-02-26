@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
