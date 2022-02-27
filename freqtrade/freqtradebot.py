@@ -103,7 +103,6 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.liquidation_buffer = float(self.config.get('liquidation_buffer', '0.05'))
         self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
         self.margin_mode_type: Optional[MarginMode] = None
         if 'margin_mode' in self.config:
@@ -1602,6 +1601,16 @@ class FreqtradeBot(LoggingMixin):
             # If a entry order was closed, force update on stoploss on exchange
             if order.get('side', None) == trade.enter_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
+                # TODO: Margin will need to use interest_rate as well.
+                _, isolated_liq = self.leverage_prep(
+                    leverage=trade.leverage,
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    open_rate=trade.open_rate,
+                    is_short=trade.is_short
+                )
+                if isolated_liq:
+                    trade.set_isolated_liq(isolated_liq)
             # Updating wallets when order is closed
             self.wallets.update()
 
