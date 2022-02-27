@@ -233,10 +233,11 @@ class RPC:
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 if show_order:
-                    b_order = trade.select_order('buy', is_open=False)
+                    b_order = trade.select_order('buy', is_open=True)
                     amount = b_order.filled or b_order.amount
                     open_rate = b_order.average or b_order.price
                     open_cost=open_rate * amount * (1+ trade.fee_open)
+                    logger.info(b_order)
                     trade_profit = trade.calc_profit2(open_rate, current_rate, amount)
                     profit_pct = ( open_cost + trade_profit)/open_cost - 1
                     profit_str = f'{profit_pct:.2%}'

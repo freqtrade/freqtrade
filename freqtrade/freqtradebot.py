@@ -1232,7 +1232,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = exit_tag or sell_reason.sell_reason
+        trade.sell_reason = exit_tag or sell_reason.sell_reason + order['id'] + ' debug'
 
         # Lock pair for one candle to prevent immediate re-buys
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
@@ -1258,10 +1258,14 @@ class FreqtradeBot(LoggingMixin):
         if sub_trade:
             amount = order.get('filled') or order.get('amount') or 0
             profit_rate = order.get('average') or order.get('price') or 0
-            profit_ratio =  trade.close_profit
-            profit = (trade.close_profit_abs if fill 
-                      else trade.process_sell_sub_trade(order, is_closed=False))
+            sell_stake_amount = profit_rate * amount * (1 - self.fee_close)
             logger.info(order)
+            if fill:
+                profit_ratio =  trade.close_profit
+                profit = trade.close_profit_abs 
+            else:
+                profit = trade.process_sell_sub_trade(order, is_closed=False)
+                profit_ratio = sell_stake_amount / (sell_stake_amount - profit) -1
 
             open_rate = trade.get_open_rate(profit, profit_rate, amount)
         else:    
