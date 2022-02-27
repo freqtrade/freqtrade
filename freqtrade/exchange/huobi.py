@@ -18,6 +18,8 @@ class Huobi(Exchange):
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop-limit"},
         "ohlcv_candle_limit": 1000,
+        "l2_limit_range": [5, 10, 20],
+        "l2_limit_range_required": False,
     }
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
