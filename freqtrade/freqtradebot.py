@@ -1260,7 +1260,7 @@ class FreqtradeBot(LoggingMixin):
             profit_rate = order.get('average') or order.get('price') or 0
             profit_ratio =  trade.close_profit
             profit = (trade.close_profit_abs if fill 
-                      else trade.process_sell_sub_trade(order, isclosed=False))
+                      else trade.process_sell_sub_trade(order, is_closed=False))
             logger.info(order)
 
             open_rate = trade.get_open_rate(profit, profit_rate, amount)
@@ -1502,7 +1502,7 @@ class FreqtradeBot(LoggingMixin):
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
             msg = {
                 'type': RPCMessageType.WARNING,
-                'status': "fees bug"
+                'status': f"fees bug for {trade.id}"
 
                     
             }
