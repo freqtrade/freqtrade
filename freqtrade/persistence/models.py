@@ -472,12 +472,16 @@ class LocalTrade():
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
-            self.open_order_id = None
+            # condition to avoid reset value when updating fees
+            if self.open_order_id==order['id']:
+                self.open_order_id = None
             self.recalc_trade_from_orders()
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.open_order_id = None
+            # condition to avoid reset value when updating fees
+            if self.open_order_id==order['id']:
+                self.open_order_id = None
             self.process_sell_sub_trade(order)
             return
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
