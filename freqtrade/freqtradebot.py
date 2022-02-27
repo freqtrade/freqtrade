@@ -690,6 +690,7 @@ class FreqtradeBot(LoggingMixin):
         Sends rpc notification when a buy occurred.
         """
         open_rate = safe_value_fallback(order, 'average', 'price')
+        amount = order.get('filled') or order.get('amount')
         if open_rate is None:
             open_rate = trade.open_rate
 
@@ -709,7 +710,7 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': order.get('amount') if fill else order.get('filled'),
+            'amount': order.get('amount') if fill else amount,
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
             'sub_trade': sub_trade,
@@ -1257,9 +1258,9 @@ class FreqtradeBot(LoggingMixin):
         if sub_trade:
             amount = order.get('filled') or order.get('amount') or 0
             profit_rate = order.get('average') or order.get('price') or 0
-            profit = self.close_profit_abs
             open_rate = trade.get_open_rate(profit, profit_rate, amount)
-            profit_ratio =  self.close_profit
+            profit_ratio =  trade.close_profit
+            profit = trade.close_profit_abs
         else:    
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
             profit = trade.calc_profit(rate=profit_rate)
