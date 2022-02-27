@@ -688,7 +688,7 @@ class LocalTrade():
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
                     o.is_fully_realized or
-                    (o.status not in NON_OPEN_EXCHANGE_STATES)):
+                    (o.status in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
             tmp_amount = o.amount
@@ -745,7 +745,7 @@ class LocalTrade():
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
                 not o.is_fully_realized and
-                o.status in NON_OPEN_EXCHANGE_STATES]
+                o.status not in NON_OPEN_EXCHANGE_STATES]
 
     @property
     def nr_of_successful_buys(self) -> int:

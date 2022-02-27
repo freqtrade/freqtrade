@@ -1232,7 +1232,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = exit_tag or sell_reason.sell_reason + order['id'] + ' debug'
+        trade.sell_reason = exit_tag or sell_reason.sell_reason
 
         # Lock pair for one candle to prevent immediate re-buys
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
