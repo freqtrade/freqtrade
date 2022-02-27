@@ -542,7 +542,6 @@ class FreqtradeBot(LoggingMixin):
                 entry_tag=buy_tag):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)

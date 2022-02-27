@@ -727,7 +727,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     call_args = buy_mm.call_args_list[0][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
-    assert call_args['amount'] == round(stake_amount / bid, 8)
+    assert call_args['amount'] == stake_amount / bid
     buy_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
@@ -748,7 +748,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     call_args = buy_mm.call_args_list[1][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
-    assert call_args['amount'] == round(stake_amount / fix_price, 8)
+    assert call_args['amount'] == stake_amount / fix_price
 
     # In case of closed order
     limit_buy_order_usdt['status'] = 'closed'
@@ -1266,7 +1266,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee,
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=27.39726027,
+        amount=pytest.approx(27.39726027),
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.95
@@ -1458,7 +1458,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=31.57894736,
+        amount=pytest.approx(31.57894736),
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.96
@@ -1583,7 +1583,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee,
     assert trade.stop_loss == 4.4 * 0.99
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
     stoploss_order_mock.assert_called_once_with(
-        amount=11.41438356,
+        amount=pytest.approx(11.41438356),
         pair='NEO/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.99
