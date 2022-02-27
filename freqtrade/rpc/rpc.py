@@ -233,7 +233,7 @@ class RPC:
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 if show_order:
-                    b_order = trade.select_order('buy', is_open=True)
+                    b_order = trade.select_order('buy')
                     amount = b_order.filled or b_order.amount
                     open_rate = b_order.average or b_order.price
                     open_cost=open_rate * amount * (1+ trade.fee_open)
