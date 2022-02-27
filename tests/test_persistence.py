@@ -1749,6 +1749,67 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.initial_stop_loss_pct == -0.04
 
 
+def test_stoploss_reinitialization_leverage(default_conf, fee):
+    init_db(default_conf['db_url'])
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=30.0,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=30.0,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+        max_rate=1,
+        leverage=5.0,
+    )
+
+    trade.adjust_stop_loss(trade.open_rate, 0.1, True)
+    assert trade.stop_loss == 0.98
+    assert trade.stop_loss_pct == -0.1
+    assert trade.initial_stop_loss == 0.98
+    assert trade.initial_stop_loss_pct == -0.1
+    Trade.query.session.add(trade)
+
+    # Lower stoploss
+    Trade.stoploss_reinitialization(0.15)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 0.97
+    assert trade_adj.stop_loss_pct == -0.15
+    assert trade_adj.initial_stop_loss == 0.97
+    assert trade_adj.initial_stop_loss_pct == -0.15
+
+    # Raise stoploss
+    Trade.stoploss_reinitialization(0.05)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 0.99
+    assert trade_adj.stop_loss_pct == -0.05
+    assert trade_adj.initial_stop_loss == 0.99
+    assert trade_adj.initial_stop_loss_pct == -0.05
+
+    # Trailing stoploss (move stoplos up a bit)
+    trade.adjust_stop_loss(1.02, 0.05)
+    assert trade_adj.stop_loss == 1.0098
+    assert trade_adj.initial_stop_loss == 0.99
+
+    Trade.stoploss_reinitialization(0.05)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    # Stoploss should not change in this case.
+    assert trade_adj.stop_loss == 1.0098
+    assert trade_adj.stop_loss_pct == -0.05
+    assert trade_adj.initial_stop_loss == 0.99
+    assert trade_adj.initial_stop_loss_pct == -0.05
+
+
 def test_stoploss_reinitialization_short(default_conf, fee):
     init_db(default_conf['db_url'])
     trade = Trade(
@@ -1762,50 +1823,50 @@ def test_stoploss_reinitialization_short(default_conf, fee):
         open_rate=1,
         max_rate=1,
         is_short=True,
-        leverage=3.0,
+        leverage=5.0,
     )
-    trade.adjust_stop_loss(trade.open_rate, -0.05, True)
-    assert trade.stop_loss == 1.05
-    assert trade.stop_loss_pct == 0.05
-    assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    trade.adjust_stop_loss(trade.open_rate, -0.1, True)
+    assert trade.stop_loss == 1.02
+    assert trade.stop_loss_pct == 0.1
+    assert trade.initial_stop_loss == 1.02
+    assert trade.initial_stop_loss_pct == 0.1
     Trade.query.session.add(trade)
     # Lower stoploss
-    Trade.stoploss_reinitialization(-0.06)
+    Trade.stoploss_reinitialization(-0.15)
     trades = Trade.get_open_trades()
     assert len(trades) == 1
     trade_adj = trades[0]
-    assert trade_adj.stop_loss == 1.06
-    assert trade_adj.stop_loss_pct == 0.06
-    assert trade_adj.initial_stop_loss == 1.06
-    assert trade_adj.initial_stop_loss_pct == 0.06
+    assert trade_adj.stop_loss == 1.03
+    assert trade_adj.stop_loss_pct == 0.15
+    assert trade_adj.initial_stop_loss == 1.03
+    assert trade_adj.initial_stop_loss_pct == 0.15
     # Raise stoploss
-    Trade.stoploss_reinitialization(-0.04)
+    Trade.stoploss_reinitialization(-0.05)
     trades = Trade.get_open_trades()
     assert len(trades) == 1
     trade_adj = trades[0]
-    assert trade_adj.stop_loss == 1.04
-    assert trade_adj.stop_loss_pct == 0.04
-    assert trade_adj.initial_stop_loss == 1.04
-    assert trade_adj.initial_stop_loss_pct == 0.04
+    assert trade_adj.stop_loss == 1.01
+    assert trade_adj.stop_loss_pct == 0.05
+    assert trade_adj.initial_stop_loss == 1.01
+    assert trade_adj.initial_stop_loss_pct == 0.05
     # Trailing stoploss
-    trade.adjust_stop_loss(0.98, -0.04)
-    assert trade_adj.stop_loss == 1.0192
-    assert trade_adj.initial_stop_loss == 1.04
-    Trade.stoploss_reinitialization(-0.04)
+    trade.adjust_stop_loss(0.98, -0.05)
+    assert trade_adj.stop_loss == 0.9898
+    assert trade_adj.initial_stop_loss == 1.01
+    Trade.stoploss_reinitialization(-0.05)
     trades = Trade.get_open_trades()
     assert len(trades) == 1
     trade_adj = trades[0]
     # Stoploss should not change in this case.
-    assert trade_adj.stop_loss == 1.0192
-    assert trade_adj.stop_loss_pct == 0.04
-    assert trade_adj.initial_stop_loss == 1.04
-    assert trade_adj.initial_stop_loss_pct == 0.04
+    assert trade_adj.stop_loss == 0.9898
+    assert trade_adj.stop_loss_pct == 0.05
+    assert trade_adj.initial_stop_loss == 1.01
+    assert trade_adj.initial_stop_loss_pct == 0.05
     # Stoploss can't go above liquidation price
-    trade_adj.set_isolated_liq(1.0)
-    trade.adjust_stop_loss(0.97, -0.04)
-    assert trade_adj.stop_loss == 1.0
-    assert trade_adj.stop_loss == 1.0
+    trade_adj.set_isolated_liq(0.985)
+    trade.adjust_stop_loss(0.9799, -0.05)
+    assert trade_adj.stop_loss == 0.985
+    assert trade_adj.stop_loss == 0.985
 
 
 def test_update_fee(fee):
