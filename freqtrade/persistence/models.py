@@ -491,7 +491,7 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order_type}')
         Trade.commit()
 
-    def process_sell_sub_trade(self, order: Dict) -> float:
+    def process_sell_sub_trade(self, order: Dict, is_closed: bool = True) -> float:
         orders = (self.select_filled_orders('buy'))
         
         if len(orders)<1:
@@ -503,10 +503,11 @@ class LocalTrade():
         sell_amount = order.get('filled') or order.get('amount')
         sell_rate = order.get('average') or order.get('price')
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
-        if sell_amount == self.amount:
-            self.close(sell_rate)
-            Trade.commit()
-            return
+        if is_closed:
+            if sell_amount == self.amount:
+                self.close(sell_rate)
+                Trade.commit()
+                return
         profit = 0.0
         idx = -1
         while sell_amount:
@@ -515,25 +516,28 @@ class LocalTrade():
             buy_rate = b_order.average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
-                b_order.filled -= amount
+                if is_closed:
+                    b_order.filled -= amount
             else:
-                b_order.is_fully_realized = True
-                b_order.order_update_date = datetime.now(timezone.utc)
-                self.update_order(b_order)
+                if is_closed:
+                    b_order.is_fully_realized = True
+                    b_order.order_update_date = datetime.now(timezone.utc)
+                    self.update_order(b_order)
                 idx -= 1
                 amount = buy_amount
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
-        b_order2 = orders[idx]
-        amount2 = b_order2.filled or b_order2.amount
-        b_order2.average = (b_order2.average * amount2 - profit) / amount2
-        b_order2.order_update_date = datetime.now(timezone.utc)
-        self.update_order(b_order2)
-        Order.query.session.commit()
-        self.recalc_trade_from_orders()
-        self.close_profit_abs = profit
-        self.close_profit = sell_stake_amount / (sell_stake_amount - profit) -1
-        Trade.commit()
+        if is_closed:
+            b_order2 = orders[idx]
+            amount2 = b_order2.filled or b_order2.amount
+            b_order2.average = (b_order2.average * amount2 - profit) / amount2
+            b_order2.order_update_date = datetime.now(timezone.utc)
+            self.update_order(b_order2)
+            Order.query.session.commit()
+            self.recalc_trade_from_orders()
+            self.close_profit_abs = profit
+            self.close_profit = sell_stake_amount / (sell_stake_amount - profit) -1
+            Trade.commit()
         return profit
 
     def calc_profit2(self, open_rate: float, close_rate: float,
