@@ -86,7 +86,7 @@ class Worker:
         # Log state transition
         if state != old_state:
 
-            if old_state != State.RELOAD_CONFIG:
+            if state != State.RELOAD_CONFIG:
                 self.freqtrade.notify_status(f'{state.name.lower()}')
 
             logger.info(
