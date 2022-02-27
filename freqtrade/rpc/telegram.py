@@ -404,8 +404,8 @@ class Telegram(RPCHandler):
         lines = []
         for x, order in enumerate(filled_orders):
             cur_entry_datetime = arrow.get(order["order_filled_date"])
-            cur_entry_amount = order["amount"]
-            cur_entry_average = order["average"]
+            cur_entry_amount = order["filled"] or order["amount"]
+            cur_entry_average = order["average"] or order["price"]
             lines.append("  ")
             if x == 0:
                 lines.append("*Entry #{}:*".format(x+1))
@@ -417,9 +417,10 @@ class Telegram(RPCHandler):
                 sumB = 0
                 first_order_price = filled_orders[0]["average"] or filled_orders[0]["price"]
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * (filled_orders[y]["average"]
+                    sumA += ((filled_orders[y]["filled"] or filled_orders[y]["amount"])
+                        * (filled_orders[y]["average"]
                              or filled_orders[y]["price"]))
-                    sumB += filled_orders[y]["amount"]
+                    sumB += filled_orders[y]["filled"] or filled_orders[y]["amount"]
                 prev_avg_price = sumA/sumB
                 price_to_1st_entry = ((cur_entry_average - first_order_price)
                                       / first_order_price)
