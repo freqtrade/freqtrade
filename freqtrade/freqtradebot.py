@@ -709,7 +709,7 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': order.get('filled') or order.get('amount'),
+            'amount': order.get('amount') if fill else order.get('filled'),
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
             'sub_trade': sub_trade,
@@ -1257,10 +1257,9 @@ class FreqtradeBot(LoggingMixin):
         if sub_trade:
             amount = order.get('filled') or order.get('amount') or 0
             profit_rate = order.get('average') or order.get('price') or 0
-            profit = trade.process_sell_sub_trade(order, is_closed=False)
+            profit = self.close_profit_abs
             open_rate = trade.get_open_rate(profit, profit_rate, amount)
-            open_cost=open_rate * amount * (1+ trade.fee_open)
-            profit_ratio =  ( open_cost + profit)/open_cost - 1
+            profit_ratio =  self.close_profit
         else:    
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
             profit = trade.calc_profit(rate=profit_rate)
@@ -1484,6 +1483,7 @@ class FreqtradeBot(LoggingMixin):
                 return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
 
+    rpc_msg = {}
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
                                   trades: List) -> float:
         """
@@ -1502,7 +1502,9 @@ class FreqtradeBot(LoggingMixin):
 
                     
             }
-            self.rpc.send_msg(msg)
+            if not self.rpc_msg.get(trade.id):
+                self.rpc.send_msg(msg)
+                self.rpc_msg[trade.id] = 1
             return order_amount
         fee_currency = None
         amount = 0
