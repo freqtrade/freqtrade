@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from arrow import Arrow
+from math import isclose
 
 from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
@@ -561,6 +562,30 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade
     assert trade.stake_amount == 300.0
+
+    backtesting.strategy.leverage = MagicMock(return_value=5.0)
+    mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt",
+                 return_value=(0.01, 0.01))
+
+    # leverage = 5
+    # ep1(trade.open_rate) = 0.001
+    # position(trade.amount) = 60000
+    # stake_amount = 300 -> wb = 300 / 5 = 60
+    # mmr = 0.01
+    # cum_b = 0.01
+    # side_1: -1 if is_short else 1
+    #
+    # Binance, Short
+    # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+    # ((60 + 0.01) - ((-1) * 60000 * 0.001)) / ((60000 * 0.01) - ((-1) * 60000)) = 0.00198036303630
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
+    assert isclose(trade.isolated_liq, 0.0019803630363036304)
+
+    # Binance, Long
+    # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+    # ((60 + 0.01) - (1 * 60000 * 0.001)) / ((60000 * 0.01) - (1 * 60000)) = -1.6835016835013486e-07
+    trade = backtesting._enter_trade(pair, row=row, direction='short')
+    assert isclose(trade.isolated_liq, -1.6835016835013486e-07)
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
