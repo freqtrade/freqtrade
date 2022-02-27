@@ -1258,7 +1258,7 @@ class FreqtradeBot(LoggingMixin):
         if sub_trade:
             amount = order.get('filled') or order.get('amount') or 0
             profit_rate = order.get('average') or order.get('price') or 0
-            sell_stake_amount = profit_rate * amount * (1 - self.fee_close)
+            sell_stake_amount = profit_rate * amount * (1 - trade.fee_close)
             logger.info(order)
             if fill:
                 profit_ratio =  trade.close_profit
