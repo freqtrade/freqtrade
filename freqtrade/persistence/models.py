@@ -891,7 +891,7 @@ class LocalTrade():
         if total_amount > 0:
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = total_stake / total_amount
-            self.stake_amount = total_stake
+            self.stake_amount = total_stake / (self.leverage or 1.0)
             self.amount = total_amount
             self.fee_open_cost = self.fee_open * self.stake_amount
             self.recalc_open_trade_value()
