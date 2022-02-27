@@ -1258,9 +1258,9 @@ class FreqtradeBot(LoggingMixin):
         if sub_trade:
             amount = order.get('filled') or order.get('amount') or 0
             profit_rate = order.get('average') or order.get('price') or 0
-            open_rate = trade.get_open_rate(profit, profit_rate, amount)
             profit_ratio =  trade.close_profit
             profit = trade.close_profit_abs
+            open_rate = trade.get_open_rate(profit, profit_rate, amount)
         else:    
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
             profit = trade.calc_profit(rate=profit_rate)
