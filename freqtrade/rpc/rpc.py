@@ -696,19 +696,18 @@ class RPC:
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                if order['side'] == 'buy':
+                if order['side'] == trade.enter_side:
                     fully_canceled = self._freqtrade.handle_cancel_enter(
                         trade, order, CANCEL_REASON['FORCE_SELL'])
 
-                if order['side'] == 'sell':
+                if order['side'] == trade.exit_side:
                     # Cancel order - so it is placed anew with a fresh price.
                     self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_SELL'])
 
             if not fully_canceled:
                 # Get current rate and execute sell
-                closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, refresh=False, side=closing_side)
+                    trade.pair, refresh=False, side=trade.exit_side)
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])

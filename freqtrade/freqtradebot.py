@@ -1599,8 +1599,8 @@ class FreqtradeBot(LoggingMixin):
         Trade.commit()
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
-            # If a buy order was closed, force update on stoploss on exchange
-            if order.get('side', None) == 'buy':
+            # If a entry order was closed, force update on stoploss on exchange
+            if order.get('side', None) == trade.enter_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
             # Updating wallets when order is closed
             self.wallets.update()
@@ -1610,7 +1610,7 @@ class FreqtradeBot(LoggingMixin):
                 self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
-            # Buy fill
+            # Enter fill
             self._notify_enter(trade, order, fill=True)
 
         return False
