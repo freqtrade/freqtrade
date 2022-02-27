@@ -1128,9 +1128,6 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     assert trade.is_open is False
     caplog.clear()
 
-    # TODO-lev: Test 2 identical orders but one with leverage, 1 without, and test that the
-    # leveraged trade is hit, but the other trade is not
-
     mocker.patch(
         'freqtrade.exchange.Binance.stoploss',
         side_effect=ExchangeError()
