@@ -56,7 +56,7 @@ WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
-NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'expired')
+NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
 
 # Define decimals per coin for outputs
 # Only used for outputs.
