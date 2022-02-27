@@ -902,8 +902,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
-        'filled_entry_orders': [],
-        'filled_exit_orders': [],
+        'orders': [ANY],
 
     }
 
@@ -1092,6 +1091,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
+        'orders': [],
     }
 
 

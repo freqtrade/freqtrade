@@ -240,8 +240,7 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
-    filled_entry_orders: List[OrderSchema]
-    filled_exit_orders: List[OrderSchema]
+    orders: List[OrderSchema]
 
 
 class OpenTradeSchema(TradeSchema):
