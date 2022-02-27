@@ -701,16 +701,16 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             amount = round((stake_amount / propose_rate) * leverage, 8)
+            is_short = (direction == 'short')
+            (interest_rate, isolated_liq) = self._leverage_prep(
+                pair=pair,
+                open_rate=propose_rate,
+                amount=amount,
+                leverage=leverage,
+                is_short=is_short,
+            )
             if trade is None:
                 # Enter trade
-                is_short = (direction == 'short')
-                (interest_rate, isolated_liq) = self._leverage_prep(
-                    pair=pair,
-                    open_rate=propose_rate,
-                    amount=amount,
-                    leverage=leverage,
-                    is_short=is_short,
-                )
                 self.trade_id_counter += 1
                 trade = LocalTrade(
                     id=self.trade_id_counter,
@@ -736,6 +736,13 @@ class Backtesting:
                 )
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
+
+            if self.trading_mode == TradingMode.FUTURES:
+                if isolated_liq is None:
+                    raise OperationalException(
+                        f'isolated_liq is none for {pair} while trading futures, '
+                        'this should never happen')
+                trade.set_isolated_liq(isolated_liq)
 
             order = Order(
                 id=self.order_id_counter,
