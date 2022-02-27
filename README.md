@@ -69,15 +69,9 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 
 ## Quick start
 
-Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
+Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/) on how to get started quickly.
 
-```bash
-git clone -b develop https://github.com/freqtrade/freqtrade.git
-cd freqtrade
-./setup.sh --install
-```
-
-For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/stable/installation/).
+For further (native) installation methods, please refer to the [Installation documentation page](https://www.freqtrade.io/en/stable/installation/).
 
 ## Basic Usage
 
