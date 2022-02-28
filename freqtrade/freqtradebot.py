@@ -726,6 +726,7 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
+        # TODO: this might be unnecessary, as we're calling it in update_trade_state.
         interest_rate, isolated_liq = self.leverage_prep(
             leverage=leverage,
             pair=pair,
