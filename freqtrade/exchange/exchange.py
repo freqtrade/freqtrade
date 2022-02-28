@@ -2307,6 +2307,7 @@ class Exchange:
          gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
+        Important: Must be fetching data from cached values as this is used by backtesting!
 
         :param exchange_name:
         :param open_rate: Entry price of position
@@ -2350,6 +2351,7 @@ class Exchange:
         nominal_value: float = 0.0,
     ) -> Tuple[float, Optional[float]]:
         """
+        Important: Must be fetching data from cached values as this is used by backtesting!
         :param pair: Market symbol
         :param nominal_value: The total trade amount in quote currency including leverage
         maintenance amount only on Binance
