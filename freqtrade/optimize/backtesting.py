@@ -695,17 +695,12 @@ class Backtesting:
                     trading_mode=self.trading_mode,
                     leverage=leverage,
                     interest_rate=interest_rate,
-                    isolated_liq=isolated_liq,
                     orders=[],
                 )
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
             if self.trading_mode == TradingMode.FUTURES:
-                if isolated_liq is None:
-                    raise OperationalException(
-                        f'isolated_liq is none for {pair} while trading futures, '
-                        'this should never happen')
                 trade.set_isolated_liq(isolated_liq)
 
             order = Order(
