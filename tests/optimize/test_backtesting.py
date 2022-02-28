@@ -21,7 +21,6 @@ from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import RunMode, SellType
-from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.misc import get_strategy_run_id

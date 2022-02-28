@@ -183,7 +183,7 @@ class StrategyTestV3(IStrategy):
                               current_profit: float, min_stake: float, max_stake: float, **kwargs):
 
         if current_profit < -0.0075:
-            orders = trade.select_filled_orders('buy')
+            orders = trade.select_filled_orders(trade.enter_side)
             return round(orders[0].cost, 0)
 
         return None

@@ -465,11 +465,11 @@ class Backtesting:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
-            check_adjust_buy = True
+            check_adjust_entry = True
             if self.strategy.max_entry_position_adjustment > -1:
-                count_of_buys = trade.nr_of_successful_buys
-                check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
-            if check_adjust_buy:
+                entry_count = trade.nr_of_successful_entries
+                check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
+            if check_adjust_entry:
                 trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
@@ -640,17 +640,20 @@ class Backtesting:
             # If not pos adjust, trade is None
             return trade
 
-        max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-        leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-            pair=pair,
-            current_time=current_time,
-            current_rate=row[OPEN_IDX],
-            proposed_leverage=1.0,
-            max_leverage=max_leverage,
-            side=direction,
-        ) if self._can_short else 1.0
-        # Cap leverage between 1.0 and max_leverage.
-        leverage = min(max(leverage, 1.0), max_leverage)
+        if not pos_adjust:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=current_time,
+                current_rate=row[OPEN_IDX],
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=direction,
+            ) if self._can_short else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+        else:
+            leverage = trade.leverage if trade else 1.0
 
         order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['buy']
@@ -745,7 +748,7 @@ class Backtesting:
         for pair in open_trades.keys():
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
-                    if trade.open_order_id and trade.nr_of_successful_buys == 0:
+                    if trade.open_order_id and trade.nr_of_successful_entries == 0:
                         # Ignore trade if buy-order did not fill yet
                         continue
                     sell_row = data[pair][-1]
@@ -798,7 +801,7 @@ class Backtesting:
             if timedout:
                 if order.side == 'buy':
                     self.timedout_entry_orders += 1
-                    if trade.nr_of_successful_buys == 0:
+                    if trade.nr_of_successful_entries == 0:
                         # Remove trade due to buy timeout expiration.
                         return True
                     else:
