@@ -111,7 +111,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_limit_buy_usdt'
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
     assert trade.open_order_id is None
@@ -123,7 +123,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
                       caplog)
 
     caplog.clear()
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_limit_sell_usdt'
     oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
     trade.update_trade(oobj)
     assert trade.open_order_id is None
@@ -151,8 +151,9 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         exchange='binance',
     )
 
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_market_buy'
     oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
+    print(market_buy_order_usdt)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.0
@@ -164,7 +165,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
     caplog.clear()
     trade.is_open = True
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_market_sell'
     oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
     trade.update_trade(oobj)
     assert trade.open_order_id is None

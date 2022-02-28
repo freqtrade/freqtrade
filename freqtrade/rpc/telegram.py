@@ -235,17 +235,31 @@ class Telegram(RPCHandler):
 
         if msg['type'] == RPCMessageType.BUY_FILL:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+            total = msg['amount'] * msg['open_rate']
 
         elif msg['type'] == RPCMessageType.BUY:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-
-        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+            total = msg['amount'] * msg['limit']
+        if self._rpc._fiat_converter:
+            total_fiat = self._rpc._fiat_converter.convert_amount(
+                total, msg['stake_currency'], msg['fiat_currency'])
+        else:
+            total_fiat = 0
+        message += f"*Total:* `({round_coin_value(total, msg['stake_currency'])}"
 
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            message += f", {round_coin_value(total_fiat, msg['fiat_currency'])}"
 
         message += ")`"
+        if msg.get('sub_trade'):
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
+
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
         return message
 
     def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
@@ -277,7 +291,6 @@ class Telegram(RPCHandler):
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Buy Tag:* `{msg['buy_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
-            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
             f"*Amount:* `{msg['amount']:.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
 
@@ -287,7 +300,21 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
             message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
+        if msg.get('sub_trade'):
+            if self._rpc._fiat_converter:
+                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
+            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Balance:* `({bal}"
 
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
+        else:
+            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
@@ -380,8 +407,8 @@ class Telegram(RPCHandler):
 
         for x, order in enumerate(filled_orders):
             cur_entry_datetime = arrow.get(order["order_filled_date"])
-            cur_entry_amount = order["amount"]
-            cur_entry_average = order["safe_price"]
+            cur_entry_amount = order["filled"] or order["amount"]
+            cur_entry_average = order["safeprice"]
             lines.append("  ")
             if x == 0:
                 lines.append(f"*Entry #{x+1}:*")
@@ -392,8 +419,9 @@ class Telegram(RPCHandler):
                 sumA = 0
                 sumB = 0
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["safe_price"])
-                    sumB += filled_orders[y]["amount"]
+                    amount = filled_orders[y]["filled"] or filled_orders[y]["amount"]
+                    sumA += amount * filled_orders[y]["safe_price"]
+                    sumB += amount
                 prev_avg_price = sumA / sumB
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
                 minus_on_entry = 0

@@ -119,6 +119,7 @@ class Order(_DECL_BASE):
     ft_order_side: str = Column(String(25), nullable=False)
     ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
+    is_fully_realized = Column(Boolean, nullable=True, default=False)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -493,12 +494,18 @@ class LocalTrade():
             self.amount = order.safe_amount_after_fee
             if self.is_open:
                 logger.info(f'{order.order_type.upper()}_BUY has been fulfilled for {self}.')
-            self.open_order_id = None
+            # condition to avoid reset value when updating fees
+            if self.open_order_id == order.order_id:
+                self.open_order_id = None
             self.recalc_trade_from_orders()
         elif order.ft_order_side == 'sell':
             if self.is_open:
                 logger.info(f'{order.order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.close(order.safe_price)
+            # condition to avoid reset value when updating fees
+            if self.open_order_id == order.order_id:
+                self.open_order_id = None
+            self.process_sell_sub_trade(order)
+            return
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -509,6 +516,68 @@ class LocalTrade():
         else:
             raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
+
+    def process_sell_sub_trade(self, order: Order, is_closed: bool = True) -> None:
+        orders = (self.select_filled_orders('buy'))
+
+        if len(orders) < 1:
+            # Todo /test_freqtradebot.py::test_execute_trade_exit_market_order
+            self.close(order.safe_price)
+            Trade.commit()
+            logger.info("*:"*500)
+            return
+
+        sell_amount = order.filled if is_closed else order.amount
+        sell_rate = order.safe_price
+        sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
+        if is_closed:
+            if sell_amount == self.amount:
+                self.close(sell_rate)
+                Trade.commit()
+                return
+        profit = 0.0
+        idx = -1
+        while sell_amount:
+            b_order = orders[idx]
+            buy_amount = b_order.filled or b_order.amount
+            buy_rate = b_order.average or b_order.price
+            if sell_amount < buy_amount:
+                amount = sell_amount
+                if is_closed:
+                    b_order.filled -= amount
+            else:
+                if is_closed:
+                    b_order.is_fully_realized = True
+                    b_order.order_update_date = datetime.now(timezone.utc)
+                    self.update_order(b_order)
+                idx -= 1
+                amount = buy_amount
+            sell_amount -= amount
+            profit += self.calc_profit2(buy_rate, sell_rate, amount)
+        if is_closed:
+            b_order2 = orders[idx]
+            amount2 = b_order2.filled or b_order2.amount
+            b_order2.average = (b_order2.average * amount2 - profit) / amount2
+            b_order2.order_update_date = datetime.now(timezone.utc)
+            self.update_order(b_order2)
+            Order.query.session.commit()
+            self.recalc_trade_from_orders()
+
+        self.close_profit_abs = profit
+        self.close_profit = sell_stake_amount / (sell_stake_amount - profit) - 1
+        Trade.commit()
+
+    def calc_profit2(self, open_rate: float, close_rate: float,
+                     amount: float) -> float:
+        return float(Decimal(amount) *
+                     (Decimal(1 - self.fee_close) * Decimal(close_rate) -
+                      Decimal(1 + self.fee_open) * Decimal(open_rate)))
+
+    def get_open_rate(self, profit: float, close_rate: float,
+                      amount: float) -> float:
+        return float((Decimal(amount) *
+                     (Decimal(1 - self.fee_close) * Decimal(close_rate)) -
+                      Decimal(profit))/(Decimal(amount) * Decimal(1 + self.fee_open)))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
@@ -636,24 +705,17 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
-        # We need at least 2 entry orders for averaging amounts and rates.
-        if len(self.select_filled_orders('buy')) < 2:
-            # Just in case, still recalc open trade value
-            self.recalc_open_trade_value()
-            return
-
         total_amount = 0.0
         total_stake = 0.0
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
+                    o.is_fully_realized or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
             tmp_amount = o.safe_amount_after_fee
-            tmp_price = o.average or o.price
-            if o.filled is not None:
-                tmp_amount = o.filled
+            tmp_price = o.safe_price
             if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount
                 total_stake += tmp_price * tmp_amount
@@ -685,9 +747,9 @@ class LocalTrade():
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = self.orders
+        orders = [o for o in self.orders if not o.is_fully_realized]
         if order_side:
-            orders = [o for o in self.orders if o.ft_order_side == order_side]
+            orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
@@ -704,6 +766,7 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
+                not o.is_fully_realized and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property

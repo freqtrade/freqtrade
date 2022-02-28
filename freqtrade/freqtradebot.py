@@ -478,9 +478,17 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            # TODO: Selling part of the trade not implemented yet.
-            logger.error(f"Unable to decrease trade position / sell partially"
-                         f" for pair {trade.pair}, feature not implemented.")
+            # TODO : debug
+            open_sell_order = trade.select_order('sell', True)
+            if open_sell_order:
+                msg = {
+                    'type': RPCMessageType.WARNING,
+                    'status': 'bug open_order_id is None'
+                }
+                self.rpc.send_msg(msg)
+                return
+            self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
+                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=-stake_amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -619,7 +627,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_enter(trade, order, order_type)
+        self._notify_enter(trade, order, order_type, sub_trade=pos_adjust)
 
         if pos_adjust:
             if order_status == 'closed':
@@ -676,11 +684,12 @@ class FreqtradeBot(LoggingMixin):
         return enter_limit_requested, stake_amount
 
     def _notify_enter(self, trade: Trade, order: Dict, order_type: Optional[str] = None,
-                      fill: bool = False) -> None:
+                      fill: bool = False, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a buy occurred.
         """
         open_rate = safe_value_fallback(order, 'average', 'price')
+
         if open_rate is None:
             open_rate = trade.open_rate
 
@@ -692,7 +701,7 @@ class FreqtradeBot(LoggingMixin):
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
             'buy_tag': trade.buy_tag,
-            'exchange': self.exchange.name.capitalize(),
+            'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'limit': open_rate,  # Deprecated (?)
             'open_rate': open_rate,
@@ -700,15 +709,17 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
+            'amount': order.get('filled') if fill else order.get('amount'),
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
+            'sub_trade': sub_trade,
         }
 
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str,
+                             sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a buy cancel occurred.
         """
@@ -729,6 +740,7 @@ class FreqtradeBot(LoggingMixin):
             'open_date': trade.open_date,
             'current_rate': current_rate,
             'reason': reason,
+            'sub_trade': sub_trade,
         }
 
         # Send the message
@@ -1155,6 +1167,7 @@ class FreqtradeBot(LoggingMixin):
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
+            sub_trade_amt: float = None,
             ) -> bool:
         """
         Executes a trade exit for the given trade and limit
@@ -1192,7 +1205,7 @@ class FreqtradeBot(LoggingMixin):
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
-        amount = self._safe_exit_amount(trade.pair, trade.amount)
+        amount = sub_trade_amt or self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
@@ -1227,7 +1240,7 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_exit(trade, order_type)
+        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1235,16 +1248,33 @@ class FreqtradeBot(LoggingMixin):
 
         return True
 
-    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False) -> None:
+    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
+                     sub_trade: bool = False, order: Dict = None) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
-        profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
-        profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
-        profit_ratio = trade.calc_profit_ratio(profit_rate)
+        if sub_trade:
+            assert order is not None
+            amount = safe_value_fallback(order, 'filled', 'amount')
+            profit_rate = safe_value_fallback(order, 'average', 'price')
+
+            if not fill:
+                order_obj = trade.select_order_by_order_id(order['id'])
+                assert order_obj is not None
+                trade.process_sell_sub_trade(order_obj, is_closed=False)
+
+            profit_ratio = trade.close_profit
+            profit = trade.close_profit_abs
+            open_rate = trade.get_open_rate(profit, profit_rate, amount)
+        else:
+            profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+            profit = trade.calc_profit(rate=profit_rate)
+            profit_ratio = trade.calc_profit_ratio(profit_rate)
+            amount = trade.amount
+            open_rate = trade.open_rate
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
@@ -1256,29 +1286,27 @@ class FreqtradeBot(LoggingMixin):
             'gain': gain,
             'limit': profit_rate,
             'order_type': order_type,
-            'amount': trade.amount,
-            'open_rate': trade.open_rate,
-            'close_rate': trade.close_rate,
+            'amount': amount,
+            'open_rate': open_rate,
+            'close_rate': profit_rate,
             'current_rate': current_rate,
-            'profit_amount': profit_trade,
+            'profit_amount': profit,
             'profit_ratio': profit_ratio,
             'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
+            'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
+            'sub_trade': sub_trade,
         }
-
-        if 'fiat_display_currency' in self.config:
-            msg.update({
-                'fiat_currency': self.config['fiat_display_currency'],
-            })
 
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str,
+                            sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
@@ -1313,6 +1341,8 @@ class FreqtradeBot(LoggingMixin):
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'reason': reason,
+            'sub_trade': sub_trade,
+            'stake_amount': trade.stake_amount,
         }
 
         if 'fiat_display_currency' in self.config:
@@ -1378,12 +1408,14 @@ class FreqtradeBot(LoggingMixin):
             self.wallets.update()
 
         if not trade.is_open:
-            if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair)
+        sub_trade = order.get('filled') != trade.amount
+        if order.get('side', None) == 'sell':
+            if send_msg and not stoploss_order and not trade.open_order_id:
+                self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order)
         elif send_msg and not trade.open_order_id:
             # Buy fill
-            self._notify_enter(trade, order, fill=True)
+            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
 
         return False
 
@@ -1460,6 +1492,8 @@ class FreqtradeBot(LoggingMixin):
                 return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
 
+    rpc_msg:Dict[Any, Any] = {}
+
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
                                   trades: List) -> float:
         """
@@ -1472,6 +1506,13 @@ class FreqtradeBot(LoggingMixin):
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
+            msg = {
+                'type': RPCMessageType.WARNING,
+                'status': f"fees bug for {trade.id}"
+            }
+            if not self.rpc_msg.get(trade.id):
+                self.rpc.send_msg(msg)
+                self.rpc_msg[trade.id] = 1
             return order_amount
         fee_currency = None
         amount = 0
