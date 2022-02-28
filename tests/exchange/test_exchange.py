@@ -3666,7 +3666,7 @@ def test_calculate_funding_fees(
         ) == kraken_fee
 
 
-def test_get_liquidation_price(mocker, default_conf):
+def test_get_or_calculate_liquidation_price(mocker, default_conf):
 
     api_mock = MagicMock()
     positions = [
@@ -3705,7 +3705,7 @@ def test_get_liquidation_price(mocker, default_conf):
     default_conf['liquidation_buffer'] = 0.0
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_liquidation_price(
+    liq_price = exchange.get_or_calculate_liquidation_price(
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
@@ -3716,7 +3716,7 @@ def test_get_liquidation_price(mocker, default_conf):
 
     default_conf['liquidation_buffer'] = 0.05
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_liquidation_price(
+    liq_price = exchange.get_or_calculate_liquidation_price(
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
@@ -3730,7 +3730,7 @@ def test_get_liquidation_price(mocker, default_conf):
         default_conf,
         api_mock,
         "binance",
-        "get_liquidation_price",
+        "get_or_calculate_liquidation_price",
         "fetch_positions",
         pair="XRP/USDT",
         open_rate=0.0,
@@ -4088,7 +4088,7 @@ def test_liquidation_price_is_none(
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_liquidation_price(
+    assert exchange.get_or_calculate_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -4122,7 +4122,7 @@ def test_liquidation_price(
     default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert isclose(round(exchange.get_liquidation_price(
+    assert isclose(round(exchange.get_or_calculate_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,

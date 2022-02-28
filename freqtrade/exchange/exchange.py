@@ -2077,7 +2077,7 @@ class Exchange:
             self.trading_mode == TradingMode.FUTURES
         ):
             wallet_balance = (amount * open_rate) / leverage
-            isolated_liq = self.get_liquidation_price(
+            isolated_liq = self.get_or_calculate_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
