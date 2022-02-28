@@ -2055,6 +2055,42 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def leverage_prep(
+            self,
+            pair: str,
+            open_rate: float,
+            amount: float,  # quote currency, includes leverage
+            leverage: float,
+            is_short: bool
+    ) -> Tuple[float, Optional[float]]:
+
+        # if TradingMode == TradingMode.MARGIN:
+        #     interest_rate = self.get_interest_rate(
+        #         pair=pair,
+        #         open_rate=open_rate,
+        #         is_short=is_short
+        #     )
+        if self.trading_mode == TradingMode.SPOT:
+            return (0.0, None)
+        elif (
+            self.margin_mode == MarginMode.ISOLATED and
+            self.trading_mode == TradingMode.FUTURES
+        ):
+            wallet_balance = (amount * open_rate) / leverage
+            isolated_liq = self.get_liquidation_price(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short,
+                position=amount,
+                wallet_balance=wallet_balance,
+                mm_ex_1=0.0,
+                upnl_ex_1=0.0,
+            )
+            return (0.0, isolated_liq)
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")
+
     def funding_fee_cutoff(self, open_date: datetime):
         """
         :param open_date: The open date for a trade

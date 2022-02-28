@@ -592,42 +592,6 @@ class Backtesting:
         else:
             return self._get_sell_trade_entry_for_candle(trade, sell_row)
 
-    def _leverage_prep(
-        self,
-        pair: str,
-        open_rate: float,
-        amount: float,  # quote currency, includes leverage
-        leverage: float,
-        is_short: bool
-    ) -> Tuple[float, Optional[float]]:
-
-        # if TradingMode == TradingMode.MARGIN:
-        #     interest_rate = self.exchange.get_interest_rate(
-        #         pair=pair,
-        #         open_rate=open_rate,
-        #         is_short=is_short
-        #     )
-        if self.trading_mode == TradingMode.SPOT:
-            return (0.0, None)
-        elif (
-            self.margin_mode == MarginMode.ISOLATED and
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            wallet_balance = (amount * open_rate)/leverage
-            isolated_liq = self.exchange.get_liquidation_price(
-                pair=pair,
-                open_rate=open_rate,
-                is_short=is_short,
-                position=amount,
-                wallet_balance=wallet_balance,
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-            )
-            return (0.0, isolated_liq)
-        else:
-            raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
-
     def _enter_trade(self, pair: str, row: Tuple, direction: str,
                      stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
@@ -702,7 +666,7 @@ class Backtesting:
             self.order_id_counter += 1
             amount = round((stake_amount / propose_rate) * leverage, 8)
             is_short = (direction == 'short')
-            (interest_rate, isolated_liq) = self._leverage_prep(
+            (interest_rate, isolated_liq) = self.exchange.leverage_prep(
                 pair=pair,
                 open_rate=propose_rate,
                 amount=amount,

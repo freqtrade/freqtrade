@@ -3,6 +3,7 @@
 import random
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
@@ -10,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from arrow import Arrow
-from math import isclose
 
 from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
