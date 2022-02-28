@@ -261,11 +261,11 @@ class RPC:
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
-                    max_buy_str = ''
+                    max_entry_str = ''
                     if self._config.get('max_entry_position_adjustment', -1) > 0:
-                        max_buy_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
-                    filled_buys = trade.nr_of_successful_buys
-                    detail_trade.append(f"{filled_buys}{max_buy_str}")
+                        max_entry_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
+                    filled_entries = trade.nr_of_successful_entries
+                    detail_trade.append(f"{filled_entries}{max_entry_str}")
                 trades_list.append(detail_trade)
             profitcol = "Profit"
             if self._fiat_converter:
@@ -696,19 +696,18 @@ class RPC:
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                if order['side'] == 'buy':
+                if order['side'] == trade.enter_side:
                     fully_canceled = self._freqtrade.handle_cancel_enter(
                         trade, order, CANCEL_REASON['FORCE_SELL'])
 
-                if order['side'] == 'sell':
+                if order['side'] == trade.exit_side:
                     # Cancel order - so it is placed anew with a fresh price.
                     self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_SELL'])
 
             if not fully_canceled:
                 # Get current rate and execute sell
-                closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, refresh=False, side=closing_side)
+                    trade.pair, refresh=False, side=trade.exit_side)
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])
@@ -769,8 +768,10 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        is_short = (order_side == SignalDirection.SHORT)
         if trade:
+            is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -784,7 +785,7 @@ class RPC:
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
                                          ordertype=order_type, trade=trade,
-                                         is_short=(order_side == SignalDirection.SHORT),
+                                         is_short=is_short,
                                          enter_tag=enter_tag,
                                          ):
             Trade.commit()

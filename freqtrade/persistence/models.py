@@ -867,7 +867,7 @@ class LocalTrade():
 
     def recalc_trade_from_orders(self):
         # We need at least 2 entry orders for averaging amounts and rates.
-        if len(self.select_filled_orders('buy')) < 2:
+        if len(self.select_filled_orders(self.enter_side)) < 2:
             # Just in case, still recalc open trade value
             self.recalc_open_trade_value()
             return
@@ -889,8 +889,9 @@ class LocalTrade():
                 total_stake += tmp_price * tmp_amount
 
         if total_amount > 0:
+            # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = total_stake / total_amount
-            self.stake_amount = total_stake
+            self.stake_amount = total_stake / (self.leverage or 1.0)
             self.amount = total_amount
             self.fee_open_cost = self.fee_open * self.stake_amount
             self.recalc_open_trade_value()
@@ -937,9 +938,27 @@ class LocalTrade():
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property
+    def nr_of_successful_entries(self) -> int:
+        """
+        Helper function to count the number of entry orders that have been filled.
+        :return: int count of entry orders that have been filled for this trade.
+        """
+
+        return len(self.select_filled_orders(self.enter_side))
+
+    @property
+    def nr_of_successful_exits(self) -> int:
+        """
+        Helper function to count the number of exit orders that have been filled.
+        :return: int count of exit orders that have been filled for this trade.
+        """
+        return len(self.select_filled_orders(self.exit_side))
+
+    @property
     def nr_of_successful_buys(self) -> int:
         """
         Helper function to count the number of buy orders that have been filled.
+        WARNING: Please use nr_of_successful_entries for short support.
         :return: int count of buy orders that have been filled for this trade.
         """
 
@@ -949,6 +968,7 @@ class LocalTrade():
     def nr_of_successful_sells(self) -> int:
         """
         Helper function to count the number of sell orders that have been filled.
+        WARNING: Please use nr_of_successful_exits for short support.
         :return: int count of sell orders that have been filled for this trade.
         """
         return len(self.select_filled_orders('sell'))

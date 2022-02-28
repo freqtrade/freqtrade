@@ -2371,13 +2371,16 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
 
-def test_recalc_trade_from_orders_ignores_bad_orders(fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
 
     o1_amount = 100
     o1_rate = 1
     o1_cost = o1_amount * o1_rate
     o1_fee_cost = o1_cost * fee.return_value
-    o1_trade_val = o1_cost + o1_fee_cost
+    o1_trade_val = o1_cost - o1_fee_cost if is_short else o1_cost + o1_fee_cost
+    enter_side = "sell" if is_short else "buy"
+    exit_side = "buy" if is_short else "sell"
 
     trade = Trade(
         pair='ADA/USDT',
@@ -2389,17 +2392,18 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
         exchange='binance',
         open_rate=o1_rate,
         max_rate=o1_rate,
+        is_short=is_short,
     )
-    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, 'buy')
+    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, enter_side)
     # Check with 1 order
     order1 = Order(
-        ft_order_side='buy',
+        ft_order_side=enter_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side="buy",
+        side=enter_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2417,16 +2421,16 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
-    assert trade.nr_of_successful_buys == 1
+    assert trade.nr_of_successful_entries == 1
 
     order2 = Order(
-        ft_order_side='buy',
+        ft_order_side=enter_side,
         ft_pair=trade.pair,
         ft_is_open=True,
         status="open",
         symbol=trade.pair,
         order_type="market",
-        side="buy",
+        side=enter_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2444,17 +2448,17 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
-    assert trade.nr_of_successful_buys == 1
+    assert trade.nr_of_successful_entries == 1
 
     # Let's try with some other orders
     order3 = Order(
-        ft_order_side='buy',
+        ft_order_side=enter_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="cancelled",
         symbol=trade.pair,
         order_type="market",
-        side="buy",
+        side=enter_side,
         price=1,
         average=2,
         filled=0,
@@ -2472,16 +2476,16 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
-    assert trade.nr_of_successful_buys == 1
+    assert trade.nr_of_successful_entries == 1
 
     order4 = Order(
-        ft_order_side='buy',
+        ft_order_side=enter_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side="buy",
+        side=enter_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2499,17 +2503,17 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == 2 * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
-    assert trade.nr_of_successful_buys == 2
+    assert trade.nr_of_successful_entries == 2
 
-    # Just to make sure sell orders are ignored, let's calculate one more time.
+    # Just to make sure exit orders are ignored, let's calculate one more time.
     sell1 = Order(
-        ft_order_side='sell',
+        ft_order_side=exit_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side="sell",
+        side=exit_side,
         price=4,
         average=3,
         filled=2,
@@ -2526,16 +2530,17 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == 2 * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
-    assert trade.nr_of_successful_buys == 2
+    assert trade.nr_of_successful_entries == 2
+
     # Check with 1 order
     order_noavg = Order(
-        ft_order_side='buy',
+        ft_order_side=enter_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side="buy",
+        side=enter_side,
         price=o1_rate,
         average=None,
         filled=o1_amount,
@@ -2553,7 +2558,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == 3 * o1_fee_cost
     assert trade.open_trade_value == 3 * o1_trade_val
-    assert trade.nr_of_successful_buys == 3
+    assert trade.nr_of_successful_entries == 3
 
 
 @pytest.mark.usefixtures("init_persistence")

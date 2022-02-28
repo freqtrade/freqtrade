@@ -103,7 +103,6 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.liquidation_buffer = float(self.config.get('liquidation_buffer', '0.05'))
         self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
         self.margin_mode_type: Optional[MarginMode] = None
         if 'margin_mode' in self.config:
@@ -510,7 +509,7 @@ class FreqtradeBot(LoggingMixin):
         """
         # TODO-lev: Check what changes are necessary for DCA in relation to shorts.
         if self.strategy.max_entry_position_adjustment > -1:
-            count_of_buys = trade.nr_of_successful_buys
+            count_of_buys = trade.nr_of_successful_entries
             if count_of_buys > self.strategy.max_entry_position_adjustment:
                 logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
                 return
@@ -533,7 +532,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
-            self.execute_entry(trade.pair, stake_amount, trade=trade)
+            self.execute_entry(trade.pair, stake_amount, trade=trade, is_short=trade.is_short)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -643,18 +642,21 @@ class FreqtradeBot(LoggingMixin):
 
         if not stake_amount:
             return False
-
-        max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-        leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-            pair=pair,
-            current_time=datetime.now(timezone.utc),
-            current_rate=enter_limit_requested,
-            proposed_leverage=1.0,
-            max_leverage=max_leverage,
-            side=trade_side,
-        ) if self.trading_mode != TradingMode.SPOT else 1.0
-        # Cap leverage between 1.0 and max_leverage.
-        leverage = min(max(leverage, 1.0), max_leverage)
+        if not pos_adjust:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=datetime.now(timezone.utc),
+                current_rate=enter_limit_requested,
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=trade_side,
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+        else:
+            # Changing leverage currently not possible
+            leverage = trade.leverage if trade else 1.0
         if pos_adjust:
             logger.info(f"Position adjust: about to create a new order for {pair} with stake: "
                         f"{stake_amount} for {trade}")
@@ -724,6 +726,7 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
+        # TODO: this might be unnecessary, as we're calling it in update_trade_state.
         interest_rate, isolated_liq = self.leverage_prep(
             leverage=leverage,
             pair=pair,
@@ -1596,9 +1599,19 @@ class FreqtradeBot(LoggingMixin):
         Trade.commit()
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
-            # If a buy order was closed, force update on stoploss on exchange
-            if order.get('side', None) == 'buy':
+            # If a entry order was closed, force update on stoploss on exchange
+            if order.get('side', None) == trade.enter_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
+                # TODO: Margin will need to use interest_rate as well.
+                _, isolated_liq = self.leverage_prep(
+                    leverage=trade.leverage,
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    open_rate=trade.open_rate,
+                    is_short=trade.is_short
+                )
+                if isolated_liq:
+                    trade.set_isolated_liq(isolated_liq)
             # Updating wallets when order is closed
             self.wallets.update()
 
@@ -1607,7 +1620,7 @@ class FreqtradeBot(LoggingMixin):
                 self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
-            # Buy fill
+            # Enter fill
             self._notify_enter(trade, order, fill=True)
 
         return False
