@@ -19,7 +19,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (MarginMode, RPCMessageType, RunMode, SellType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException, PricingError)
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -688,13 +688,14 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
-        interest_rate, isolated_liq = self.exchange.leverage_prep(
+        isolated_liq = self.exchange.get_liquidation_price(
             leverage=leverage,
             pair=pair,
             amount=amount,
             open_rate=enter_limit_filled_price,
             is_short=is_short
         )
+        interest_rate = self.exchange.get_interest_rate()
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')

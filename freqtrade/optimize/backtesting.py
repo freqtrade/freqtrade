@@ -666,13 +666,16 @@ class Backtesting:
             self.order_id_counter += 1
             amount = round((stake_amount / propose_rate) * leverage, 8)
             is_short = (direction == 'short')
-            (interest_rate, isolated_liq) = self.exchange.leverage_prep(
+            isolated_liq = self.exchange.get_liquidation_price(
                 pair=pair,
                 open_rate=propose_rate,
                 amount=amount,
                 leverage=leverage,
                 is_short=is_short,
             )
+            # Necessary for Margin trading. Disabled until support is enabled.
+            # interest_rate = self.exchange.get_interest_rate()
+
             if trade is None:
                 # Enter trade
                 self.trade_id_counter += 1
@@ -694,7 +697,7 @@ class Backtesting:
                     is_short=is_short,
                     trading_mode=self.trading_mode,
                     leverage=leverage,
-                    interest_rate=interest_rate,
+                    # interest_rate=interest_rate,
                     orders=[],
                 )
 

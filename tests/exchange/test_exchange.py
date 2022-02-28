@@ -4560,7 +4560,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
     ]
 )
-def test_leverage_prep(
+def test_get_liquidation_price(
     mocker,
     default_conf_usdt,
     is_short,
@@ -4637,14 +4637,13 @@ def test_leverage_prep(
     # default_conf_usdt.update({
     #     "dry_run": False,
     # })
-    (interest, liq) = exchange.leverage_prep(
+    liq = exchange.get_liquidation_price(
         pair='ETH/USDT:USDT',
         open_rate=open_rate,
         amount=amount,
         leverage=leverage,
         is_short=is_short,
     )
-    assert interest == 0.0
     if expected_liq is None:
         assert liq is None
     else:
