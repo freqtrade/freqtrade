@@ -639,6 +639,8 @@ class Backtesting:
             # In case of pos adjust, still return the original trade
             # If not pos adjust, trade is None
             return trade
+        order_type = self.strategy.order_types['buy']
+        time_in_force = self.strategy.order_time_in_force['buy']
 
         if not pos_adjust:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
@@ -652,30 +654,20 @@ class Backtesting:
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
-        else:
-            leverage = trade.leverage if trade else 1.0
 
-        order_type = self.strategy.order_types['buy']
-        time_in_force = self.strategy.order_time_in_force['buy']
-        # Confirm trade entry:
-        if not pos_adjust:
+            # Confirm trade entry:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
                     time_in_force=time_in_force, current_time=current_time,
                     entry_tag=entry_tag, side=direction):
-                return None
+                return trade
+        else:
+            leverage = trade.leverage if trade else 1.0
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             amount = round((stake_amount / propose_rate) * leverage, 8)
             is_short = (direction == 'short')
-            isolated_liq = self.exchange.get_liquidation_price(
-                pair=pair,
-                open_rate=propose_rate,
-                amount=amount,
-                leverage=leverage,
-                is_short=is_short,
-            )
             # Necessary for Margin trading. Disabled until support is enabled.
             # interest_rate = self.exchange.get_interest_rate()
 
@@ -706,8 +698,13 @@ class Backtesting:
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
-            if self.trading_mode == TradingMode.FUTURES:
-                trade.set_isolated_liq(isolated_liq)
+            trade.set_isolated_liq(self.exchange.get_liquidation_price(
+                pair=pair,
+                open_rate=propose_rate,
+                amount=amount,
+                leverage=leverage,
+                is_short=is_short,
+            ))
 
             order = Order(
                 id=self.order_id_counter,
