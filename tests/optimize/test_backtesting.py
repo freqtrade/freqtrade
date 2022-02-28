@@ -21,6 +21,7 @@ from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import RunMode, SellType
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.misc import get_strategy_run_id
@@ -562,6 +563,33 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade
     assert trade.stake_amount == 300.0
+
+
+def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
+    default_conf_usdt['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    patch_exchange(mocker)
+    default_conf_usdt['stake_amount'] = 'unlimited'
+    default_conf_usdt['max_open_trades'] = 2
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
+    default_conf_usdt['stake_currency'] = 'BUSD'
+    default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
+    backtesting = Backtesting(default_conf_usdt)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    pair = 'UNITTEST/BTC'
+    row = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
+        1,  # Buy
+        0.001,  # Open
+        0.0011,  # Close
+        0,  # Sell
+        0.00099,  # Low
+        0.0012,  # High
+        '',  # Buy Signal Name
+    ]
 
     backtesting.strategy.leverage = MagicMock(return_value=5.0)
     mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt",
