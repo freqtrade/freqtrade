@@ -470,8 +470,8 @@ class LocalTrade():
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
-            if self.is_open:
-                logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
+            if self.is_open and 0:
+                logger.info(f'{order.order_type.upper()}_BUY has been fulfilled for {self}.')
             # condition to avoid reset value when updating fees
             if self.open_order_id==order['id']:
                 self.open_order_id = None
