@@ -1,4 +1,4 @@
-EXECUTION_PATH = '../execution'  # do not move this to config.py
+EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config.py
 
 import requests
 import sys
