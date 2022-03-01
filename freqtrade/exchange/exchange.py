@@ -2057,7 +2057,8 @@ class Exchange:
 
     def get_interest_rate(self) -> float:
         """
-        Calculate interest rate - necessary for Margin trading.
+        Retrieve interest rate - necessary for Margin trading.
+        Should not call the exchange directly when used from backtesting.
         """
         return 0.0
 
@@ -2070,7 +2071,7 @@ class Exchange:
             is_short: bool
     ) -> Optional[float]:
 
-        if self.trading_mode in (TradingMode.SPOT, TradingMode.MARGIN):
+        if self.trading_mode in TradingMode.SPOT:
             return None
         elif (
             self.margin_mode == MarginMode.ISOLATED and
