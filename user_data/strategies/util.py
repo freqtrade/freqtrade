@@ -21,12 +21,7 @@ def _perform_execute(mode, coin, brain):
 
 def _perform_back_test(date_time, coin, brain):
     date = str(date_time)
-    date = date.replace(" ", "#")
-    # subprocess.call(
-    #     "python3 " + Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " " + Config.BACKTEST_DUP + " " + Config.BACKTEST_MAX_COUNT_DUP,
-    #     shell=True)
-
-    date = date.replace("#", ", ")
+    date = date.replace(" ", ",")
     ExecutionConfig.COIN = coin
     ExecutionConfig.BRAIN = brain
     ExecutionConfig.ROMEO_D_UP_PERCENTAGE = float(Config.BACKTEST_DUP)
@@ -37,9 +32,9 @@ def _perform_back_test(date_time, coin, brain):
     ExecutionConfig.IS_BACKTEST = True
     print("back_tester: Config.BACKTEST_SIGNAL_TIMESTAMP = " + str(
         ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP) + " Config.BACKTEST_MONTH_INDEX = " + str(
-        ExecutionConfig.BACKTEST_MONTH_INDEX) + " Config.COIN = " + str(Config.COIN) + " Config.BRAIN = " + str(
+        ExecutionConfig.BACKTEST_MONTH_INDEX) + " Config.COIN = " + str(ExecutionConfig.COIN) + " Config.BRAIN = " + str(
         ExecutionConfig.BRAIN) + " Config.ROMEO_D_UP_PERCENTAGE = " + str(
-        ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " Config.ROMEO_D_UP_MAX = " + str(Config.ROMEO_D_UP_MAX))
+        ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " Config.ROMEO_D_UP_MAX = " + str(ExecutionConfig.ROMEO_D_UP_MAX))
 
     Romeo.instance(True)
 
