@@ -22,7 +22,7 @@ def _perform_back_test(date_time, coin, brain):
     #     "python3 " + Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " " + Config.BACKTEST_DUP + " " + Config.BACKTEST_MAX_COUNT_DUP,
     #     shell=True)
 
-    #todo: uncomment line 26-41, import execution, pass the variables from line 22 above and test if it works directly
+    #todo: uncomment line 26-41, import execution classes, you can import config as ExecutionConfig, Use the variables from line 22 above and test if line 41 works directly
     # date = sys.argv[1].replace("#", ", ")
     # Config.COIN = sys.argv[2]
     # Config.BRAIN = sys.argv[3]
