@@ -6,6 +6,7 @@ from freqtrade.strategy.interface import IStrategy
 from typing import Dict, List
 from functools import reduce
 from pandas import DataFrame
+import threading
 # --------------------------------
 
 import talib.abstract as ta
@@ -13,14 +14,15 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from user_data.strategies.util import  back_test, execute
+from user_data.strategies.util import back_test, execute, create_429_watcher
 from user_data.strategies.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 
 
 class Strategy003(IStrategy):
     if Config.IS_BACKTEST:
-        send_start_deliminator_message('Freq Strategy003 ',Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
+        send_start_deliminator_message('Freq Strategy003 ', Config.BACKTEST_COIN, Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
+        threading.Thread(target=create_429_watcher, args=(True,)).start()
     """
     Strategy 003
     author@: Gerald Lonlas
