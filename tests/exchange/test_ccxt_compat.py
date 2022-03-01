@@ -59,6 +59,12 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
+    'huobi': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
@@ -140,7 +146,10 @@ class TestCCXTExchange():
             else:
                 next_limit = exchange.get_next_limit_in_list(
                     val, l2_limit_range, l2_limit_range_required)
-                if next_limit is None or next_limit > 200:
+                if next_limit is None:
+                    assert len(l2['asks']) > 100
+                    assert len(l2['asks']) > 100
+                elif next_limit > 200:
                     # Large orderbook sizes can be a problem for some exchanges (bitrex ...)
                     assert len(l2['asks']) > 200
                     assert len(l2['asks']) > 200

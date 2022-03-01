@@ -195,6 +195,7 @@ class Order(_DECL_BASE):
         return {
             'amount': self.amount,
             'average': round(self.average, 8) if self.average else 0,
+            'safe_price': self.safe_price,
             'cost': self.cost if self.cost else 0,
             'filled': self.filled,
             'ft_order_side': self.ft_order_side,
