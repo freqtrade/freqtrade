@@ -119,7 +119,6 @@ class Order(_DECL_BASE):
     ft_order_side: str = Column(String(25), nullable=False)
     ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
-    is_fully_realized = Column(Boolean, nullable=True, default=False)
 
     order_id = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
@@ -526,12 +525,15 @@ class LocalTrade():
             Trade.commit()
             logger.info("*:"*500)
             return
-
+        logger.info('debug')    
+        for o in orders:logger.info(o.to_json())
+        logger.info(order.to_json())
         sell_amount = order.filled if is_closed else order.amount
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
         if is_closed:
-            if sell_amount == self.amount:
+            if sell_amount >= self.amount:
+                # Todo tests/rpc/test_rpc.py::test_rpc_trade_statistics
                 self.close(sell_rate)
                 Trade.commit()
                 return
@@ -543,15 +545,12 @@ class LocalTrade():
             buy_rate = b_order.average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
-                if is_closed:
-                    b_order.filled -= amount
             else:
-                if is_closed:
-                    b_order.is_fully_realized = True
-                    b_order.order_update_date = datetime.now(timezone.utc)
-                    self.update_order(b_order)
                 idx -= 1
                 amount = buy_amount
+            if is_closed:
+                b_order.filled -= amount
+                self.update_order(b_order)
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         if is_closed:
@@ -705,12 +704,16 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
+        if len(self.select_filled_orders('buy')) < 2:
+            # Just in case, still recalc open trade value
+            self.recalc_open_trade_value()
+            return
         total_amount = 0.0
         total_stake = 0.0
         for o in self.orders:
             if (o.ft_is_open or
                     (o.ft_order_side != 'buy') or
-                    o.is_fully_realized or
+                    not o.filled or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -747,7 +750,7 @@ class LocalTrade():
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = [o for o in self.orders if not o.is_fully_realized]
+        orders = [o for o in self.orders if not o.filled]
         if order_side:
             orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:
@@ -766,7 +769,6 @@ class LocalTrade():
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
-                not o.is_fully_realized and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property

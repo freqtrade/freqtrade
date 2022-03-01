@@ -487,8 +487,13 @@ class FreqtradeBot(LoggingMixin):
                 }
                 self.rpc.send_msg(msg)
                 return
+            # Starategy should return amount in base currency to avoid dust
+            amount = -stake_amount
+            if amount > trade.amount:
+                logger.info("Amount is higher than available.")
+                return
             self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
-                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=-stake_amount)
+                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -627,7 +632,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_enter(trade, order, order_type, sub_trade=pos_adjust)
+        self._notify_enter(trade, order_obj, order_type, sub_trade=pos_adjust)
 
         if pos_adjust:
             if order_status == 'closed':
@@ -683,12 +688,12 @@ class FreqtradeBot(LoggingMixin):
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
         return enter_limit_requested, stake_amount
 
-    def _notify_enter(self, trade: Trade, order: Dict, order_type: Optional[str] = None,
+    def _notify_enter(self, trade: Trade, order: Order, order_type: Optional[str] = None,
                       fill: bool = False, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a buy occurred.
         """
-        open_rate = safe_value_fallback(order, 'average', 'price')
+        open_rate = order.safe_price
 
         if open_rate is None:
             open_rate = trade.open_rate
@@ -709,7 +714,7 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': order.get('filled') if fill else order.get('amount'),
+            'amount': order.safe_amount_after_fee
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
             'sub_trade': sub_trade,
@@ -1240,7 +1245,7 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order)
+        self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order_obj)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1249,7 +1254,7 @@ class FreqtradeBot(LoggingMixin):
         return True
 
     def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
-                     sub_trade: bool = False, order: Dict = None) -> None:
+                     sub_trade: bool = False, order: Order = None) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
@@ -1258,13 +1263,11 @@ class FreqtradeBot(LoggingMixin):
             trade.pair, refresh=False, side="sell") if not fill else None
         if sub_trade:
             assert order is not None
-            amount = safe_value_fallback(order, 'filled', 'amount')
-            profit_rate = safe_value_fallback(order, 'average', 'price')
+            amount = order.safe_filled
+            profit_rate = order.safe_price
 
             if not fill:
-                order_obj = trade.select_order_by_order_id(order['id'])
-                assert order_obj is not None
-                trade.process_sell_sub_trade(order_obj, is_closed=False)
+                trade.process_sell_sub_trade(order, is_closed=False)
 
             profit_ratio = trade.close_profit
             profit = trade.close_profit_abs
@@ -1412,10 +1415,10 @@ class FreqtradeBot(LoggingMixin):
         sub_trade = order.get('filled') != trade.amount
         if order.get('side', None) == 'sell':
             if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order)
+                self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order_obj)
         elif send_msg and not trade.open_order_id:
             # Buy fill
-            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
+            self._notify_enter(trade, order_obj, fill=True, sub_trade=sub_trade)
 
         return False
 
