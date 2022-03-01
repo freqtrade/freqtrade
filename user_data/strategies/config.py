@@ -11,5 +11,6 @@ class Config:
     IS_EXECUTION = True
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
+    _429_DIRECTORY = "/root/" + WORKSPACE_PATH + "/freqtrade/_429_DIRECTORY/"
     IS_PARALLEL_EXECUTION = True
     BACKTEST_THROTTLE_SECOND = 1

@@ -9,8 +9,8 @@ from pandas import DataFrame
 from datetime import datetime
 
 import talib.abstract as ta
-
-from user_data.strategies.util import back_test, execute
+import threading
+from user_data.strategies.util import back_test, execute, create_429_watcher
 from user_data.strategies.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 
@@ -18,6 +18,7 @@ from user_data.strategies.notifier import send_start_deliminator_message
 class Strategy004(IStrategy):
     if Config.IS_BACKTEST:
         send_start_deliminator_message('Freq Strategy004 ',Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
+        threading.Thread(target=create_429_watcher, args=(True,)).start()
     """
     Strategy 004
     author@: Gerald Lonlas
