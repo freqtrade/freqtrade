@@ -26,12 +26,11 @@ def _perform_back_test(date_time, coin, brain):
     #     "python3 " + Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " " + Config.BACKTEST_DUP + " " + Config.BACKTEST_MAX_COUNT_DUP,
     #     shell=True)
 
-    #todo: uncomment line 26-41, import execution classes, you can import config as ExecutionConfig, Use the variables from line 22 above and test if line 41 works directly
-    date = sys.argv[1].replace("#", ", ")
-    ExecutionConfig.COIN = sys.argv[2]
-    ExecutionConfig.BRAIN = sys.argv[3]
-    ExecutionConfig.ROMEO_D_UP_PERCENTAGE = float(sys.argv[4])
-    ExecutionConfig.ROMEO_D_UP_MAX = int(sys.argv[5])
+    date = date.replace("#", ", ")
+    ExecutionConfig.COIN = coin
+    ExecutionConfig.BRAIN = brain
+    ExecutionConfig.ROMEO_D_UP_PERCENTAGE = float(Config.BACKTEST_DUP)
+    ExecutionConfig.ROMEO_D_UP_MAX = int(Config.BACKTEST_MAX_COUNT_DUP)
     ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = get_unix_timestamp(date.split("+", 1)[0])
     ExecutionConfig.BACKTEST_MONTH_INDEX = get_month_from_timestamp()
     ExecutionConfig.BACKTEST_YEAR = get_year_from_timestamp()
