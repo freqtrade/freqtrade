@@ -2554,9 +2554,12 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         exchange='binance',
         open_rate=0.245441,
         open_order_id="123456",
-        open_date=arrow.utcnow().datetime,
+        open_date=arrow.utcnow().shift(days=-2).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
+        close_rate=0.555,
+        close_date=arrow.utcnow().datetime,
+        sell_reason="sell_reason_whatever",
     )
     order = {'remaining': 1,
              'amount': 1,
@@ -2565,6 +2568,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
+    assert trade.close_rate is None
+    assert trade.sell_reason is None
 
     send_msg_mock.reset_mock()
 
