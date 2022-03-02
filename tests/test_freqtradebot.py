@@ -227,8 +227,7 @@ def test_edge_overrides_stoploss(limit_buy_order_usdt, fee, caplog, mocker,
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.enter_positions()
     trade = Trade.query.first()
-    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = 2
     #############################################
 
     # stoploss shoud be hit

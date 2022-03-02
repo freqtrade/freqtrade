@@ -408,7 +408,7 @@ class Telegram(RPCHandler):
         for x, order in enumerate(filled_orders):
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["filled"] or order["amount"]
-            cur_entry_average = order["safeprice"]
+            cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
                 lines.append(f"*Entry #{x+1}:*")

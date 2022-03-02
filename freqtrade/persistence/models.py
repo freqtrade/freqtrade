@@ -518,22 +518,11 @@ class LocalTrade():
 
     def process_sell_sub_trade(self, order: Order, is_closed: bool = True, is_non_bt: bool = True) -> None:
         orders = (self.select_filled_orders('buy'))
-
-        if len(orders) < 1:
-            # Todo /test_freqtradebot.py::test_execute_trade_exit_market_order
-            self.close(order.safe_price)
-            if is_non_bt: Trade.commit()
-            logger.info("*:"*500)
-            return
-        logger.info('debug')    
-        for o in orders:logger.info(o.to_json())
-        logger.info(order.to_json())
         sell_amount = order.safe_filled
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
         if is_closed:
-            if sell_amount >= self.amount:
-                # Todo tests/rpc/test_rpc.py::test_rpc_trade_statistics
+            if sell_amount == self.amount:
                 self.close(sell_rate)
                 if is_non_bt: Trade.commit()
                 return
@@ -541,8 +530,8 @@ class LocalTrade():
         idx = -1
         while sell_amount:
             b_order = orders[idx]
-            buy_amount = b_order.filled or b_order.amount
-            buy_rate = b_order.average or b_order.price
+            buy_amount = b_order.safe_amount_after_fee
+            buy_rate = b_order.safe_price
             if sell_amount < buy_amount:
                 amount = sell_amount
             else:
@@ -550,7 +539,6 @@ class LocalTrade():
                 amount = buy_amount
             if is_closed:
                 b_order.filled -= amount
-                self.update_order(b_order)
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         if is_closed:
@@ -704,11 +692,9 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
-        if len(self.select_filled_orders('buy')) < 2:
-            # Just in case, still recalc open trade value
-            # needs to remove 
-            self.recalc_open_trade_value()
-            return
+        # mdebug
+        # import json
+        # logger.info(json.dumps(self.to_json(), indent =4))
         total_amount = 0.0
         total_stake = 0.0
         for o in self.orders:
@@ -732,6 +718,7 @@ class LocalTrade():
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
+        # logger.info(json.dumps(self.to_json(), indent =4))
 
     def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
         """

@@ -418,7 +418,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     freqtradebot.enter_positions()
     trade = Trade.query.first()
     # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'sell')
+    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
     trade.update_trade(oobj)
 
     # Update the ticker with a market going up
