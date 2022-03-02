@@ -11,13 +11,6 @@ from back_tester import get_unix_timestamp, get_month_from_timestamp, get_year_f
 from romeo import Romeo
 
 
-def execute(mode, coin, brain):
-    if Config.IS_PARALLEL_EXECUTION:
-        threading.Thread(target=_perform_execute, args=(mode, coin, brain)).start()
-    else:
-        _perform_execute(mode, coin, brain)
-
-
 def _perform_execute(mode, coin, brain):
     is_test_mode = False
     if mode == ExecutionConfig.MODE_TEST:
@@ -51,10 +44,3 @@ def _perform_back_test(date_time, coin, brain):
 
     Romeo.instance(True).start()
 
-
-def back_test(date_time, coin, brain):
-    time.sleep(Config.BACKTEST_THROTTLE_SECOND)
-    if Config.IS_PARALLEL_EXECUTION:
-        threading.Thread(target=_perform_back_test, args=(date_time, coin, brain)).start()
-    else:
-        _perform_back_test(date_time, coin, brain)

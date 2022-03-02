@@ -3,8 +3,6 @@
 
 
 from freqtrade.strategy import IStrategy
-from typing import Dict, List
-from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 
@@ -13,7 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from user_data.strategies.util import execute, back_test
+from wao.util import execute, back_test
 from user_data.strategies.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 

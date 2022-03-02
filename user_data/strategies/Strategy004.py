@@ -1,22 +1,22 @@
 # --- Do not remove these libs ---
-import threading
 from freqtrade.persistence import Trade
 
 from freqtrade.strategy import IStrategy
-from typing import Dict, List
-from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 from datetime import datetime
 
 import talib.abstract as ta
 
-from user_data.strategies.util import back_test, execute, test_romeo_start, test_romeo_sell, test_romeo_start_parallel
+from wao.util import back_test, execute
 from user_data.strategies.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
+from wao.strategy_controller import StrategyController
 
 
 class Strategy004(IStrategy):
+    controller = StrategyController()
+
     if Config.IS_BACKTEST:
         send_start_deliminator_message('Freq Strategy004 ',Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
     """
@@ -188,9 +188,9 @@ class Strategy004(IStrategy):
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
         if Config.IS_BACKTEST:
-            back_test(current_time, coin, brain)
+            self.controller.back_test(current_time, coin, brain)
         elif Config.IS_EXECUTION:
-            execute(mode, coin, brain)
+            self.controller.execute(mode, coin, brain)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,

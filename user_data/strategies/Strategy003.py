@@ -1,10 +1,7 @@
 
 # --- Do not remove these libs ---
-import threading
 
 from freqtrade.strategy.interface import IStrategy
-from typing import Dict, List
-from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 
@@ -13,7 +10,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from user_data.strategies.util import  back_test, execute
+from wao.util import  back_test, execute
 from user_data.strategies.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 
