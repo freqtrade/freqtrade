@@ -398,6 +398,7 @@ class Backtesting:
             if pos_trade is not None:
                 self.wallets.update()
                 return pos_trade
+
         if stake_amount is not None and stake_amount < 0.0:
             amount = -stake_amount / current_rate
             logger.info("partial_sell_bt")
@@ -426,6 +427,7 @@ class Backtesting:
                 check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
             if check_adjust_buy:
                 trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_candle_time, sell_row[BUY_IDX],
@@ -481,6 +483,7 @@ class Backtesting:
     def _exit_trade(self, trade: LocalTrade,sell_row: Tuple, 
         closerate: float, amount: float = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
+        # mdebug
         if amount:
             a = trade.select_filled_orders('buy')[-1].safe_price
             logger.info(f'{closerate}, {amount}, {a}, selling'+'\n'*3)
@@ -510,9 +513,6 @@ class Backtesting:
             cost=trade.amount * closerate,
         )
         trade.orders.append(order)
-        if amount:
-            trade.process_sell_sub_trade(order, is_non_bt = False)
-            trade.recalc_trade_from_orders()
         return trade
 
     def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
@@ -816,9 +816,13 @@ class Backtesting:
                     order = trade.select_order('sell', is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         trade.open_order_id = None
-                        sub_trade = order.safe_filled != trade.amount
+                        sub_trade = order.safe_amount_after_fee != trade.amount
                         if sub_trade:
+                            # mdebug
+                            logger.info(f'822 {order.safe_amount_after_fee} != {trade.amount}')
                             order.close_bt_order(current_time)
+                            trade.process_sell_sub_trade(order, is_non_bt = False)
+                            trade.recalc_trade_from_orders()
                         else:
                             trade.close_date = current_time
                             trade.close(order.price, show_msg=False)
