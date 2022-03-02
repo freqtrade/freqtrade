@@ -597,7 +597,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
 
     # leverage = 5
     # ep1(trade.open_rate) = 0.001
-    # position(trade.amount) = 60000
+    # position(trade.amount) = 1500000
     # stake_amount = 300 -> wb = 300 / 5 = 60
     # mmr = 0.01
     # cum_b = 0.01
@@ -605,15 +605,15 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     #
     # Binance, Long
     # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    # ((300 + 0.01) - (1 * 150000 * 0.001)) / ((150000 * 0.01) - (1 * 150000)) = -0.00101016835
-    # TODO-lev: is the above formula correct?
-    # The values inserted above seem correct, but the result is different.
+    # ((300 + 0.01) - (1 * 1500000 * 0.001)) / ((1500000 * 0.01) - (1 * 1500000))
+    # = 0.0008080740740740741
     trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert pytest.approx(trade.isolated_liq) == 0.00081767037
 
     # Binance, Short
     # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    # ((300 + 0.01) - ((-1) * 150000 * 0.001)) / ((150000 * 0.01) - ((-1) * 150000)) = 0.002970363
+    # ((300 + 0.01) - ((-1) * 1500000 * 0.001)) / ((1500000 * 0.01) - ((-1) * 1500000))
+    # = 0.0011881254125412541
 
     trade = backtesting._enter_trade(pair, row=row, direction='short')
     assert pytest.approx(trade.isolated_liq) == 0.0011787191
