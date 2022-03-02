@@ -1,8 +1,5 @@
 EXECUTION_PATH = '/root/workspace2/execution'
-import subprocess
-import threading
-from user_data.strategies.config import Config
-import time
+from wao.config import Config
 import sys
 
 sys.path.append(EXECUTION_PATH)
@@ -20,7 +17,7 @@ def _perform_execute(mode, coin, brain):
 
     ExecutionConfig.COIN = coin
     ExecutionConfig.BRAIN = brain
-    Romeo.instance(is_test_mode).start()
+    Romeo.instance(is_test_mode, True).start()
 
 
 def _perform_back_test(date_time, coin, brain):
@@ -42,5 +39,5 @@ def _perform_back_test(date_time, coin, brain):
         ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " ExecutionConfig.ROMEO_D_UP_MAX = " + str(
         ExecutionConfig.ROMEO_D_UP_MAX))
 
-    Romeo.instance(True).start()
+    Romeo.instance(True, True).start()
 

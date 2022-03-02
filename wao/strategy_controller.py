@@ -3,7 +3,7 @@ from wao.util import _perform_execute, _perform_back_test
 EXECUTION_PATH = '/root/workspace2/execution'
 import subprocess
 import threading
-from user_data.strategies.config import Config
+from wao.config import Config
 import time
 import sys
 

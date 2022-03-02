@@ -8,8 +8,7 @@ from datetime import datetime
 
 import talib.abstract as ta
 
-from wao.util import back_test, execute
-from user_data.strategies.config import Config
+from wao.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 from wao.strategy_controller import StrategyController
 

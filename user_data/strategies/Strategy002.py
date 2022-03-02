@@ -12,7 +12,7 @@ import numpy # noqa
 from datetime import datetime
 
 from wao.util import execute, back_test
-from user_data.strategies.config import Config
+from wao.config import Config
 from user_data.strategies.notifier import send_start_deliminator_message
 
 
