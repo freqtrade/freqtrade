@@ -77,6 +77,7 @@ class HDF5DataHandler(IDataHandler):
         _data = data.copy()
 
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        self.create_dir_if_needed(filename)
 
         _data.loc[:, self._columns].to_hdf(
             filename, key, mode='a', complevel=9, complib='blosc',
