@@ -3,11 +3,11 @@ class Config:
     BACKTEST_DUP = '0.35'
     BACKTEST_MAX_COUNT_DUP = '3'
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
-    BACKTEST_COIN = 'BTC'
+    BACKTEST_COIN = 'ETH'
     BACKTEST_MONTH_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
-    IS_BACKTEST = False
+    IS_BACKTEST = True
     IS_EXECUTION = True
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
