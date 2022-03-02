@@ -482,7 +482,7 @@ class Backtesting:
         closerate: float, amount: float = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         if amount:
-            a = trade.select_filled_orders('buy')[-1].safe_filled
+            a = trade.select_filled_orders('buy')[-1].safe_price
             logger.info(f'{closerate}, {amount}, {a}, selling'+'\n'*3)
 
         else:
@@ -494,7 +494,7 @@ class Backtesting:
             ft_trade_id=trade.id,
             order_date=sell_candle_time,
             order_update_date=sell_candle_time,
-            ft_is_open=True,
+            ft_is_open=False,
             ft_pair=trade.pair,
             order_id=str(self.order_id_counter),
             symbol=trade.pair,
@@ -816,16 +816,20 @@ class Backtesting:
                     order = trade.select_order('sell', is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         trade.open_order_id = None
-                        trade.close_date = current_time
-                        trade.close(order.price, show_msg=False)
+                        sub_trade = order.safe_filled != trade.amount
+                        if sub_trade:
+                            order.close_bt_order(current_time)
+                        else:
+                            trade.close_date = current_time
+                            trade.close(order.price, show_msg=False)
 
-                        # logger.debug(f"{pair} - Backtesting sell {trade}")
-                        open_trade_count -= 1
-                        open_trades[pair].remove(trade)
-                        LocalTrade.close_bt_trade(trade)
-                        trades.append(trade)
+                            # logger.debug(f"{pair} - Backtesting sell {trade}")
+                            open_trade_count -= 1
+                            open_trades[pair].remove(trade)
+                            LocalTrade.close_bt_trade(trade)
+                            trades.append(trade)
+                            self.run_protections(enable_protections, pair, current_time)
                         self.wallets.update()
-                        self.run_protections(enable_protections, pair, current_time)
 
                     # 5. Cancel expired buy/sell orders.
                     if self.check_order_cancel(trade, current_time):
