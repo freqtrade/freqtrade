@@ -601,18 +601,28 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     # mmr = 0.01
     # cum_b = 0.01
     # side_1: -1 if is_short else 1
+    # liq_buffer = 0.05
     #
     # Binance, Long
-    # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    # ((300 + 0.01) - (1 * 1500000 * 0.001)) / ((1500000 * 0.01) - (1 * 1500000))
-    # = 0.0008080740740740741
+    # liquidation_price
+    #   = ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+    #   = ((300 + 0.01) - (1 * 1500000 * 0.001)) / ((1500000 * 0.01) - (1 * 1500000))
+    #   = 0.0008080740740740741
+    # freqtrade_liquidation_price = liq + (abs(open_rate - liq) * liq_buffer * side_1)
+    #   = 0.0008080740740740741 + ((0.001 - 0.0008080740740740741) * 0.05 * 1)
+    #   = 0.0008176703703703704
+
     trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert pytest.approx(trade.isolated_liq) == 0.00081767037
 
     # Binance, Short
-    # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    # ((300 + 0.01) - ((-1) * 1500000 * 0.001)) / ((1500000 * 0.01) - ((-1) * 1500000))
-    # = 0.0011881254125412541
+    # liquidation_price
+    #   = ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+    #   = ((300 + 0.01) - ((-1) * 1500000 * 0.001)) / ((1500000 * 0.01) - ((-1) * 1500000))
+    #   = 0.0011881254125412541
+    # freqtrade_liquidation_price = liq + (abs(open_rate - liq) * liq_buffer * side_1)
+    #   = 0.0011881254125412541 + (abs(0.001 - 0.0011881254125412541) * 0.05 * -1)
+    #   = 0.0011787191419141915
 
     trade = backtesting._enter_trade(pair, row=row, direction='short')
     assert pytest.approx(trade.isolated_liq) == 0.0011787191
