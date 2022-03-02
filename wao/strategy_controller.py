@@ -31,3 +31,16 @@ class StrategyController:
             threading.Thread(target=_perform_execute, args=(mode, coin, brain, self.romeo_pool)).start()
         else:
             _perform_execute(mode, coin, brain, self.romeo_pool)
+
+    def perform_sell_signal(self, coin):
+        romeo = self.romeo_pool.get(coin)
+        if romeo is not None:
+            romeo.perform_sell_signal()
+            self.remove_from_pool(coin)
+
+    def remove_from_pool(self, coin):
+        romeo = self.romeo_pool.get(coin)
+        if romeo is not None:
+            del self.romeo_pool[coin]
+
+

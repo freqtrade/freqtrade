@@ -181,7 +181,7 @@ class Strategy004(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        print("-------------------BUY BUY BUY -----------------------" )
+        print("-------------------BUY BUY BUY -----------------------")
         
         mode = "test"
         coin = pair.split("/")[0]
@@ -218,10 +218,13 @@ class Strategy004(IStrategy):
             False aborts the process
         """
         print("-----------------------SELL SELL SELL------------------" + sell_reason)
+
+        coin = pair.split("/")[0]
+        brain = "Freq_" + self.__class__.__name__
+
         if sell_reason == 'sell_signal':
-            coin = pair.split("/")[0]
-            brain = "Freq_" + self.__class__.__name__
-            # test_romeo_sell(current_time, coin, brain)
-            #todo implement sell
+            self.controller.perform_sell_signal(coin)
+        else:
+            self.controller.remove_from_pool(coin)
 
         return True
