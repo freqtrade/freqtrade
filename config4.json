@@ -34,12 +34,7 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-   "BTC/USDT",
-
-    "ETH/USDT",
-
-    "ADA/USDT",
-    "XLM/USDT"
+    "ETH/USDT"
 	],
         "pair_blacklist": [
             "BNB/.*"

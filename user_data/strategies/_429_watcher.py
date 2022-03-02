@@ -17,7 +17,6 @@ class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
                                                              ignore_directories=True, case_sensitive=False)
 
     def on_created(self, event):
-        print("_429_Watcher:on_create: file name = " + str(event.src_path).split('/')[6])
         file = str(event.src_path)
         if os.path.isfile(file):
             # content = Path('countries.txt').read_text()
