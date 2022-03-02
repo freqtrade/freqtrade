@@ -574,11 +574,11 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     default_conf_usdt['max_open_trades'] = 2
     default_conf_usdt['trading_mode'] = 'futures'
     default_conf_usdt['margin_mode'] = 'isolated'
-    default_conf_usdt['stake_currency'] = 'BUSD'
+    default_conf_usdt['stake_currency'] = 'USDT'
     default_conf_usdt['exchange']['pair_whitelist'] = ['.*']
     backtesting = Backtesting(default_conf_usdt)
     backtesting._set_strategy(backtesting.strategylist[0])
-    pair = 'UNITTEST/BTC'
+    pair = 'UNITTEST/USDT:USDT'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
         1,  # Buy
@@ -606,13 +606,13 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
     # ((60 + 0.01) - ((-1) * 60000 * 0.001)) / ((60000 * 0.01) - ((-1) * 60000)) = 0.00198036303630
     trade = backtesting._enter_trade(pair, row=row, direction='long')
-    assert isclose(trade.isolated_liq, 0.0019803630363036304)
+    assert pytest.approx(trade.isolated_liq) == 0.0019803630363036304
 
     # Binance, Long
     # ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
     # ((60 + 0.01) - (1 * 60000 * 0.001)) / ((60000 * 0.01) - (1 * 60000)) = -1.6835016835013486e-07
     trade = backtesting._enter_trade(pair, row=row, direction='short')
-    assert isclose(trade.isolated_liq, -1.6835016835013486e-07)
+    assert pytest.approx(trade.isolated_liq) == -1.6835016835013486e-07
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
