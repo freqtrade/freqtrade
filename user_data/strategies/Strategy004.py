@@ -9,7 +9,7 @@ from datetime import datetime
 import talib.abstract as ta
 
 from wao.config import Config
-from user_data.strategies.notifier import send_start_deliminator_message
+from wao.notifier import send_start_deliminator_message
 from wao.strategy_controller import StrategyController
 
 
@@ -219,12 +219,12 @@ class Strategy004(IStrategy):
         """
         print("-----------------------SELL SELL SELL------------------" + sell_reason)
 
-        coin = pair.split("/")[0]
-        brain = "Freq_" + self.__class__.__name__
+        # coin = pair.split("/")[0]
+        # brain = "Freq_" + self.__class__.__name__
 
-        if sell_reason == 'sell_signal':
-            self.controller.perform_sell_signal(coin)
-        else:
-            self.controller.remove_from_pool(coin)
+        # if sell_reason == 'sell_signal':
+        #     self.controller.perform_sell_signal(coin)
+        # else:
+        #     self.controller.remove_from_pool(coin)
 
         return True
