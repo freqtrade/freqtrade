@@ -78,7 +78,7 @@ def test_romeo_sell(date_time, coin, brain):
         ExecutionConfig.BRAIN) + " Config.ROMEO_D_UP_PERCENTAGE = " + str(
         ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " Config.ROMEO_D_UP_MAX = " + str(ExecutionConfig.ROMEO_D_UP_MAX))
 
-    Romeo.instance(True).sell()
+    Romeo.instance(True).perform_sell_signal()
 
 
 
