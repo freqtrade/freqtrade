@@ -22,12 +22,12 @@ class StrategyController:
     def back_test(self, date_time, coin, brain):
         time.sleep(Config.BACKTEST_THROTTLE_SECOND)
         if Config.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=_perform_back_test, args=(date_time, coin, brain)).start()
+            threading.Thread(target=_perform_back_test, args=(date_time, coin, brain, self.romeo_pool)).start()
         else:
-            _perform_back_test(date_time, coin, brain)
+            _perform_back_test(date_time, coin, brain, self.romeo_pool)
 
     def execute(self, mode, coin, brain):
         if Config.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=_perform_execute, args=(mode, coin, brain)).start()
+            threading.Thread(target=_perform_execute, args=(mode, coin, brain, self.romeo_pool)).start()
         else:
-            _perform_execute(mode, coin, brain)
+            _perform_execute(mode, coin, brain, self.romeo_pool)

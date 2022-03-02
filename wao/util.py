@@ -8,7 +8,7 @@ from back_tester import get_unix_timestamp, get_month_from_timestamp, get_year_f
 from romeo import Romeo
 
 
-def _perform_execute(mode, coin, brain):
+def _perform_execute(mode, coin, brain, romeo_pool):
     is_test_mode = False
     if mode == ExecutionConfig.MODE_TEST:
         is_test_mode = True
@@ -17,10 +17,13 @@ def _perform_execute(mode, coin, brain):
 
     ExecutionConfig.COIN = coin
     ExecutionConfig.BRAIN = brain
-    Romeo.instance(is_test_mode, True).start()
+
+    romeo = Romeo.instance(is_test_mode, True)
+    romeo_pool[coin] = romeo
+    romeo.start()
 
 
-def _perform_back_test(date_time, coin, brain):
+def _perform_back_test(date_time, coin, brain, romeo_pool):
     date = str(date_time)
     date = date.replace(" ", ", ")
     ExecutionConfig.COIN = coin
@@ -39,5 +42,7 @@ def _perform_back_test(date_time, coin, brain):
         ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " ExecutionConfig.ROMEO_D_UP_MAX = " + str(
         ExecutionConfig.ROMEO_D_UP_MAX))
 
-    Romeo.instance(True, True).start()
+    romeo = Romeo.instance(True, True)
+    romeo_pool[coin] = romeo
+    romeo.start()
 
