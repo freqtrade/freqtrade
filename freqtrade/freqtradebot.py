@@ -487,8 +487,10 @@ class FreqtradeBot(LoggingMixin):
                 }
                 self.rpc.send_msg(msg)
                 return
-            # Starategy should return amount in base currency to avoid dust
-            amount = -stake_amount
+            amount = -stake_amount / current_rate
+            if trade.amount - amount < min_stake_amount:
+                logger.info('Remaining amount would be too small')
+                return
             if amount > trade.amount:
                 logger.info("Amount is higher than available.")
                 return
