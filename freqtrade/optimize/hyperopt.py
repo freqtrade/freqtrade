@@ -396,6 +396,7 @@ class Hyperopt:
 
     def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
         logger.info("Dataload complete. Calculating indicators")
 
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
