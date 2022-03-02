@@ -183,16 +183,14 @@ class Strategy004(IStrategy):
             False aborts the process
         """
         print("-------------------BUY BUY BUY -----------------------" )
-
         
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
-        test_romeo_start_parallel(current_time, coin, brain)
-        # if Config.IS_BACKTEST:
-        #     back_test(current_time, coin, brain)
-        # elif Config.IS_EXECUTION:
-        #     execute(mode, coin, brain)
+        if Config.IS_BACKTEST:
+            back_test(current_time, coin, brain)
+        elif Config.IS_EXECUTION:
+            execute(mode, coin, brain)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -221,12 +219,10 @@ class Strategy004(IStrategy):
             False aborts the process
         """
         print("-----------------------SELL SELL SELL------------------" + sell_reason)
-        if sell_reason == 'sell_signal' or True:
+        if sell_reason == 'sell_signal':
             coin = pair.split("/")[0]
             brain = "Freq_" + self.__class__.__name__
-            test_romeo_sell(current_time, coin, brain)
-
-            # if execution_exists(coin, brain):
-            #     write_sell_signal(coin, brain)
+            # test_romeo_sell(current_time, coin, brain)
+            #todo implement sell
 
         return True
