@@ -70,9 +70,14 @@ One account is used to share collateral between markets (trading pairs). Margin 
 ```
 
 ## Understand `liquidation_buffer`
-*Defaults to `0.05`.*
+*Defaults to `0.05`*
 
-A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price
+A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price.
+This artificial liquidation price is calculated as 
+
+`freqtrade_liquidation_price = liquidation_price ± (abs(open_rate - liquidation_price) * liquidation_buffer)`
+- `±` = `+` for long trades
+- `±` = `-` for short trades
 
 Possible values are any floats between 0.0 and 0.99
 
