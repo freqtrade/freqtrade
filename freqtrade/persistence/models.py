@@ -751,7 +751,7 @@ class LocalTrade():
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = [o for o in self.orders if not o.filled]
+        orders = [o for o in self.orders if o.filled or o.ft_is_open]
         if order_side:
             orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:
