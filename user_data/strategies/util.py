@@ -6,7 +6,8 @@ import time
 import sys
 sys.path.append(EXECUTION_PATH)
 from config import Config as ExecutionConfig
-
+from back_tester import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
+from romeo import Romeo
 
 def execute(mode, coin, brain):
     if Config.IS_PARALLEL_EXECUTION:
