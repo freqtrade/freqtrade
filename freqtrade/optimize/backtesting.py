@@ -383,18 +383,28 @@ class Backtesting:
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
-
-        current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
-        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
+        current_rate = row[OPEN_IDX]
+        current_profit = trade.calc_profit_ratio(current_rate)
+        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
         max_stake = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake, max_stake=max_stake)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
             pos_trade = self._enter_trade(trade.pair, row, stake_amount, trade)
+            if pos_trade is not None:
+                self.wallets.update()
+                return pos_trade
+        if stake_amount is not None and stake_amount < 0.0:
+            amount = -stake_amount / current_rate
+            logger.info("partial_sell_bt")
+            if amount > trade.amount:
+                logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
+                return trade
+            pos_trade = self._exit_trade(trade, row, current_rate, amount)
             if pos_trade is not None:
                 self.wallets.update()
                 return pos_trade
@@ -416,7 +426,6 @@ class Backtesting:
                 check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
             if check_adjust_buy:
                 trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
-
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_candle_time, sell_row[BUY_IDX],
@@ -467,31 +476,44 @@ class Backtesting:
             ):
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
-            self.order_id_counter += 1
-            order = Order(
-                id=self.order_id_counter,
-                ft_trade_id=trade.id,
-                order_date=sell_candle_time,
-                order_update_date=sell_candle_time,
-                ft_is_open=True,
-                ft_pair=trade.pair,
-                order_id=str(self.order_id_counter),
-                symbol=trade.pair,
-                ft_order_side="sell",
-                side="sell",
-                order_type=order_type,
-                status="open",
-                price=closerate,
-                average=closerate,
-                amount=trade.amount,
-                filled=0,
-                remaining=trade.amount,
-                cost=trade.amount * closerate,
-            )
-            trade.orders.append(order)
-            return trade
+            return self._exit_trade(trade, sell_row, closerate)
 
-        return None
+    def _exit_trade(self, trade: LocalTrade,sell_row: Tuple, 
+        closerate: float, amount: float = None) -> Optional[LocalTrade]:
+        self.order_id_counter += 1
+        if amount:
+            a = trade.select_filled_orders('buy')[-1].safe_filled
+            logger.info(f'{closerate}, {amount}, {a}, selling'+'\n'*3)
+
+        else:
+            logger.info(f'{closerate}, {amount}, {trade.open_rate}, selling'+'\n'*3)
+        sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
+        order_type = self.strategy.order_types['sell']
+        order = Order(
+            id=self.order_id_counter,
+            ft_trade_id=trade.id,
+            order_date=sell_candle_time,
+            order_update_date=sell_candle_time,
+            ft_is_open=True,
+            ft_pair=trade.pair,
+            order_id=str(self.order_id_counter),
+            symbol=trade.pair,
+            ft_order_side="sell",
+            side="sell",
+            order_type=order_type,
+            status="open",
+            price=closerate,
+            average=closerate,
+            amount=amount or trade.amount,
+            filled=0,
+            remaining=trade.amount,
+            cost=trade.amount * closerate,
+        )
+        trade.orders.append(order)
+        if amount:
+            trade.process_sell_sub_trade(order, is_non_bt = False)
+            trade.recalc_trade_from_orders()
+        return trade
 
     def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
         if self.timeframe_detail and trade.pair in self.detail_data:

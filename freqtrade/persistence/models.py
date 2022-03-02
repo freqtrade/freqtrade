@@ -516,26 +516,26 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
-    def process_sell_sub_trade(self, order: Order, is_closed: bool = True) -> None:
+    def process_sell_sub_trade(self, order: Order, is_closed: bool = True, is_non_bt: bool = True) -> None:
         orders = (self.select_filled_orders('buy'))
 
         if len(orders) < 1:
             # Todo /test_freqtradebot.py::test_execute_trade_exit_market_order
             self.close(order.safe_price)
-            Trade.commit()
+            if is_non_bt: Trade.commit()
             logger.info("*:"*500)
             return
         logger.info('debug')    
         for o in orders:logger.info(o.to_json())
         logger.info(order.to_json())
-        sell_amount = order.filled if is_closed else order.amount
+        sell_amount = order.safe_filled
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
         if is_closed:
             if sell_amount >= self.amount:
                 # Todo tests/rpc/test_rpc.py::test_rpc_trade_statistics
                 self.close(sell_rate)
-                Trade.commit()
+                if is_non_bt: Trade.commit()
                 return
         profit = 0.0
         idx = -1
@@ -559,12 +559,12 @@ class LocalTrade():
             b_order2.average = (b_order2.average * amount2 - profit) / amount2
             b_order2.order_update_date = datetime.now(timezone.utc)
             self.update_order(b_order2)
-            Order.query.session.commit()
+            if is_non_bt: Order.query.session.commit()
             self.recalc_trade_from_orders()
 
         self.close_profit_abs = profit
         self.close_profit = sell_stake_amount / (sell_stake_amount - profit) - 1
-        Trade.commit()
+        if is_non_bt: Trade.commit()
 
     def calc_profit2(self, open_rate: float, close_rate: float,
                      amount: float) -> float:
@@ -706,6 +706,7 @@ class LocalTrade():
     def recalc_trade_from_orders(self):
         if len(self.select_filled_orders('buy')) < 2:
             # Just in case, still recalc open trade value
+            # needs to remove 
             self.recalc_open_trade_value()
             return
         total_amount = 0.0

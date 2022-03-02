@@ -492,7 +492,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.info('Remaining amount would be too small')
                 return
             if amount > trade.amount:
-                logger.info("Amount is higher than available.")
+                logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
                 return
             self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
                 sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
