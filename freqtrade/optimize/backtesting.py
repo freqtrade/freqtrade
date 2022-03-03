@@ -19,7 +19,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import BacktestState, CandleType, SellType, TradingMode
+from freqtrade.enums import BacktestState, CandleType, MarginMode, SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
@@ -130,6 +130,7 @@ class Backtesting:
         # TODO-lev: This should come from the configuration setting or better a
         # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
+        self.margin_mode: MarginMode = config.get('margin_mode', MarginMode.NONE)
         self._can_short = self.trading_mode != TradingMode.SPOT
 
         self.progress = BTProgress()
@@ -638,6 +639,8 @@ class Backtesting:
             # In case of pos adjust, still return the original trade
             # If not pos adjust, trade is None
             return trade
+        order_type = self.strategy.order_types['buy']
+        time_in_force = self.strategy.order_time_in_force['buy']
 
         if not pos_adjust:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
@@ -651,22 +654,23 @@ class Backtesting:
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
-        else:
-            leverage = trade.leverage if trade else 1.0
 
-        order_type = self.strategy.order_types['buy']
-        time_in_force = self.strategy.order_time_in_force['buy']
-        # Confirm trade entry:
-        if not pos_adjust:
+            # Confirm trade entry:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
                     time_in_force=time_in_force, current_time=current_time,
                     entry_tag=entry_tag, side=direction):
-                return None
+                return trade
+        else:
+            leverage = trade.leverage if trade else 1.0
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             amount = round((stake_amount / propose_rate) * leverage, 8)
+            is_short = (direction == 'short')
+            # Necessary for Margin trading. Disabled until support is enabled.
+            # interest_rate = self.exchange.get_interest_rate()
+
             if trade is None:
                 # Enter trade
                 self.trade_id_counter += 1
@@ -685,13 +689,22 @@ class Backtesting:
                     is_open=True,
                     enter_tag=entry_tag,
                     exchange=self._exchange_name,
-                    is_short=(direction == 'short'),
+                    is_short=is_short,
                     trading_mode=self.trading_mode,
                     leverage=leverage,
-                    orders=[]
+                    # interest_rate=interest_rate,
+                    orders=[],
                 )
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
+
+            trade.set_isolated_liq(self.exchange.get_liquidation_price(
+                pair=pair,
+                open_rate=propose_rate,
+                amount=amount,
+                leverage=leverage,
+                is_short=is_short,
+            ))
 
             order = Order(
                 id=self.order_id_counter,

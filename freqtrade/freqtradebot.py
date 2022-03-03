@@ -19,7 +19,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (MarginMode, RPCMessageType, RunMode, SellType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException, PricingError)
+                                  InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
@@ -577,42 +577,6 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def leverage_prep(
-        self,
-        pair: str,
-        open_rate: float,
-        amount: float,  # quote currency, includes leverage
-        leverage: float,
-        is_short: bool
-    ) -> Tuple[float, Optional[float]]:
-
-        # if TradingMode == TradingMode.MARGIN:
-        #     interest_rate = self.exchange.get_interest_rate(
-        #         pair=pair,
-        #         open_rate=open_rate,
-        #         is_short=is_short
-        #     )
-        if self.trading_mode == TradingMode.SPOT:
-            return (0.0, None)
-        elif (
-            self.margin_mode == MarginMode.ISOLATED and
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            wallet_balance = (amount * open_rate)/leverage
-            isolated_liq = self.exchange.get_liquidation_price(
-                pair=pair,
-                open_rate=open_rate,
-                is_short=is_short,
-                position=amount,
-                wallet_balance=wallet_balance,
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-            )
-            return (0.0, isolated_liq)
-        else:
-            raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
-
     def execute_entry(
         self,
         pair: str,
@@ -727,13 +691,14 @@ class FreqtradeBot(LoggingMixin):
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
         # TODO: this might be unnecessary, as we're calling it in update_trade_state.
-        interest_rate, isolated_liq = self.leverage_prep(
+        isolated_liq = self.exchange.get_liquidation_price(
             leverage=leverage,
             pair=pair,
             amount=amount,
             open_rate=enter_limit_filled_price,
             is_short=is_short
         )
+        interest_rate = self.exchange.get_interest_rate()
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -1603,15 +1568,16 @@ class FreqtradeBot(LoggingMixin):
             if order.get('side', None) == trade.enter_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
                 # TODO: Margin will need to use interest_rate as well.
-                _, isolated_liq = self.leverage_prep(
+                # interest_rate = self.exchange.get_interest_rate()
+                trade.set_isolated_liq(self.exchange.get_liquidation_price(
+
                     leverage=trade.leverage,
                     pair=trade.pair,
                     amount=trade.amount,
                     open_rate=trade.open_rate,
                     is_short=trade.is_short
-                )
-                if isolated_liq:
-                    trade.set_isolated_liq(isolated_liq)
+                ))
+
             # Updating wallets when order is closed
             self.wallets.update()
 

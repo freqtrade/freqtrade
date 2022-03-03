@@ -3666,7 +3666,7 @@ def test_calculate_funding_fees(
         ) == kraken_fee
 
 
-def test_get_liquidation_price(mocker, default_conf):
+def test_get_or_calculate_liquidation_price(mocker, default_conf):
 
     api_mock = MagicMock()
     positions = [
@@ -3705,7 +3705,7 @@ def test_get_liquidation_price(mocker, default_conf):
     default_conf['liquidation_buffer'] = 0.0
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_liquidation_price(
+    liq_price = exchange.get_or_calculate_liquidation_price(
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
@@ -3716,7 +3716,7 @@ def test_get_liquidation_price(mocker, default_conf):
 
     default_conf['liquidation_buffer'] = 0.05
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_liquidation_price(
+    liq_price = exchange.get_or_calculate_liquidation_price(
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
@@ -3730,7 +3730,7 @@ def test_get_liquidation_price(mocker, default_conf):
         default_conf,
         api_mock,
         "binance",
-        "get_liquidation_price",
+        "get_or_calculate_liquidation_price",
         "fetch_positions",
         pair="XRP/USDT",
         open_rate=0.0,
@@ -4088,7 +4088,7 @@ def test_liquidation_price_is_none(
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_liquidation_price(
+    assert exchange.get_or_calculate_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -4122,7 +4122,7 @@ def test_liquidation_price(
     default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert isclose(round(exchange.get_liquidation_price(
+    assert isclose(round(exchange.get_or_calculate_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -4527,3 +4527,126 @@ def test__get_params(mocker, default_conf, exchange_name):
         time_in_force='ioc',
         leverage=3.0,
     ) == params2
+
+
+@pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
+@pytest.mark.parametrize(
+    "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
+        (False, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'binance', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'gateio', '', 5.0,  10.0, 1.0, None),
+        (False, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
+        (True, 'spot', 'okx', '', 5.0,  10.0, 1.0, None),
+        # Binance, short
+        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 1.0, 11.89108910891089),
+        (True, 'futures', 'binance', 'isolated', 3.0, 10.0, 1.0, 13.211221122079207),
+        (True, 'futures', 'binance', 'isolated', 5.0, 8.0, 1.0, 9.514851485148514),
+        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 0.6, 12.557755775577558),
+        # Binance, long
+        (False, 'futures', 'binance', 'isolated', 5, 10, 1.0, 8.070707070707071),
+        (False, 'futures', 'binance', 'isolated', 5, 8, 1.0, 6.454545454545454),
+        (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.717171717171718),
+        (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 7.39057239057239),
+        # Gateio/okx, short
+        (True, 'futures', 'gateio', 'isolated', 5, 10, 1.0, 11.87413417771621),
+        (True, 'futures', 'gateio', 'isolated', 5, 10, 2.0, 11.87413417771621),
+        (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.476180850346978),
+        (True, 'futures', 'gateio', 'isolated', 5, 8, 1.0, 9.499307342172967),
+        # Gateio/okx, long
+        (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
+        (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
+        # (True, 'futures', 'okx', 'isolated', 11.87413417771621),
+        # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
+    ]
+)
+def test_get_liquidation_price(
+    mocker,
+    default_conf_usdt,
+    is_short,
+    trading_mode,
+    exchange_name,
+    margin_mode,
+    leverage,
+    open_rate,
+    amount,
+    expected_liq,
+    liquidation_buffer,
+):
+    """
+    position = 0.2 * 5
+    wb: wallet balance (stake_amount if isolated)
+    cum_b: maintenance amount
+    side_1: -1 if is_short else 1
+    ep1: entry price
+    mmr_b: maintenance margin ratio
+
+    Binance, Short
+    leverage = 5, open_rate = 10, amount = 1.0
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - ((-1) * 1 * 10)) / ((1 * 0.01) - ((-1) * 1)) = 11.89108910891089
+    leverage = 3, open_rate = 10, amount = 1.0
+        ((3.3333333333 + 0.01) - ((-1) * 1.0 * 10)) / ((1.0 * 0.01) - ((-1) * 1.0)) = 13.2112211220
+    leverage = 5, open_rate = 8, amount = 1.0
+        ((1.6 + 0.01) - ((-1) * 1 * 8)) / ((1 * 0.01) - ((-1) * 1)) = 9.514851485148514
+    leverage = 5, open_rate = 10, amount = 0.6
+        ((1.6 + 0.01) - ((-1) * 0.6 * 10)) / ((0.6 * 0.01) - ((-1) * 0.6)) = 12.557755775577558
+
+    Binance, Long
+    leverage = 5, open_rate = 10, amount = 1.0
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
+    leverage = 5, open_rate = 8, amount = 1.0
+        ((1.6 + 0.01) - (1 * 1 * 8)) / ((1 * 0.01) - (1 * 1)) = 6.454545454545454
+    leverage = 3, open_rate = 10, amount = 1.0
+        ((2 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 6.717171717171718
+    leverage = 5, open_rate = 10, amount = 0.6
+        ((1.6 + 0.01) - (1 * 0.6 * 10)) / ((0.6 * 0.01) - (1 * 0.6)) = 7.39057239057239
+
+    Gateio/Okx, Short
+    leverage = 5, open_rate = 10, amount = 1.0
+        (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
+        (10 + (2 / 1.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
+    leverage = 5, open_rate = 10, amount = 2.0
+        (10 + (4 / 2.0)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
+    leverage = 3, open_rate = 10, amount = 1.0
+        (10 + (3.3333333333333 / 1.0)) / (1 - (0.01 + 0.0006)) = 13.476180850346978
+    leverage = 5, open_rate = 8, amount = 1.0
+        (8 + (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 9.499307342172967
+
+    Gateio/Okx, Long
+    leverage = 5, open_rate = 10, amount = 1.0
+        (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
+        (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
+    leverage = 5, open_rate = 10, amount = 2.0
+        (10 - (4 / 2.0)) / (1 + (0.01 + 0.0006)) = 7.916089451810806
+    leverage = 3, open_rate = 10, amount = 1.0
+        (10 - (3.333333333333333333 / 1.0)) / (1 - (0.01 + 0.0006)) = 6.738090425173506
+    leverage = 5, open_rate = 8, amount = 1.0
+        (8 - (1.6 / 1.0)) / (1 + (0.01 + 0.0006)) = 6.332871561448645
+    """
+    default_conf_usdt['liquidation_buffer'] = liquidation_buffer
+    default_conf_usdt['trading_mode'] = trading_mode
+    default_conf_usdt['exchange']['name'] = exchange_name
+    default_conf_usdt['margin_mode'] = margin_mode
+    mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
+    exchange.name = exchange_name
+    # default_conf_usdt.update({
+    #     "dry_run": False,
+    # })
+    liq = exchange.get_liquidation_price(
+        pair='ETH/USDT:USDT',
+        open_rate=open_rate,
+        amount=amount,
+        leverage=leverage,
+        is_short=is_short,
+    )
+    if expected_liq is None:
+        assert liq is None
+    else:
+        buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
+        expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
+        isclose(expected_liq, liq)

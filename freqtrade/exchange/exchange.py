@@ -2055,6 +2055,43 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def get_interest_rate(self) -> float:
+        """
+        Retrieve interest rate - necessary for Margin trading.
+        Should not call the exchange directly when used from backtesting.
+        """
+        return 0.0
+
+    def get_liquidation_price(
+            self,
+            pair: str,
+            open_rate: float,
+            amount: float,  # quote currency, includes leverage
+            leverage: float,
+            is_short: bool
+    ) -> Optional[float]:
+
+        if self.trading_mode in TradingMode.SPOT:
+            return None
+        elif (
+            self.margin_mode == MarginMode.ISOLATED and
+            self.trading_mode == TradingMode.FUTURES
+        ):
+            wallet_balance = (amount * open_rate) / leverage
+            isolated_liq = self.get_or_calculate_liquidation_price(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short,
+                position=amount,
+                wallet_balance=wallet_balance,
+                mm_ex_1=0.0,
+                upnl_ex_1=0.0,
+            )
+            return isolated_liq
+        else:
+            raise OperationalException(
+                "Freqtrade only supports isolated futures for leverage trading")
+
     def funding_fee_cutoff(self, open_date: datetime):
         """
         :param open_date: The open date for a trade
@@ -2195,7 +2232,7 @@ class Exchange:
             return 0.0
 
     @retrier
-    def get_liquidation_price(
+    def get_or_calculate_liquidation_price(
         self,
         pair: str,
         # Dry-run
@@ -2271,6 +2308,7 @@ class Exchange:
          gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
+        Important: Must be fetching data from cached values as this is used by backtesting!
 
         :param exchange_name:
         :param open_rate: Entry price of position
@@ -2314,6 +2352,7 @@ class Exchange:
         nominal_value: float = 0.0,
     ) -> Tuple[float, Optional[float]]:
         """
+        Important: Must be fetching data from cached values as this is used by backtesting!
         :param pair: Market symbol
         :param nominal_value: The total trade amount in quote currency including leverage
         maintenance amount only on Binance

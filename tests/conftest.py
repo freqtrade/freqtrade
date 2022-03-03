@@ -1175,7 +1175,7 @@ def get_markets():
             'spot': False,
             'margin': False,
             'swap': True,
-            'futures': False,
+            'future': True,  # Binance mode ...
             'option': False,
             'contract': True,
             'linear': True,
@@ -1278,7 +1278,7 @@ def get_markets():
             'spot': False,
             'margin': False,
             'swap': True,
-            'future': False,
+            'future': True,  # Binance mode ...
             'option': False,
             'active': True,
             'contract': True,
