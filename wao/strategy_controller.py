@@ -1,16 +1,7 @@
 from wao.util import _perform_execute, _perform_back_test
-
-EXECUTION_PATH = '/root/workspace2/execution'
-import subprocess
 import threading
 from wao.config import Config
 import time
-import sys
-
-sys.path.append(EXECUTION_PATH)
-from config import Config as ExecutionConfig
-from back_tester import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
-from romeo import Romeo
 
 
 class StrategyController:
@@ -41,5 +32,3 @@ class StrategyController:
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             del self.romeo_pool[coin]
-
-
