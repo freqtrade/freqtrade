@@ -8,7 +8,6 @@ class Config:
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
     IS_BACKTEST = True
-    IS_EXECUTION = True
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
     IS_PARALLEL_EXECUTION = True

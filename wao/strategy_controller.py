@@ -36,7 +36,6 @@ class StrategyController:
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             romeo.perform_sell_signal()
-            self.remove_from_pool(coin)
 
     def remove_from_pool(self, coin):
         romeo = self.romeo_pool.get(coin)

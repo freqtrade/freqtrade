@@ -17,7 +17,10 @@ class Strategy004(IStrategy):
     controller = StrategyController()
 
     if Config.IS_BACKTEST:
-        send_start_deliminator_message('Freq Strategy004 ',Config.BACKTEST_COIN ,Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
+        send_start_deliminator_message('Freq Strategy004 ', Config.BACKTEST_COIN,
+                                       Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX],
+                                       Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP,
+                                       Config.BACKTEST_MAX_COUNT_DUP)
     """
     Strategy 004
     author@: Gerald Lonlas
@@ -182,13 +185,13 @@ class Strategy004(IStrategy):
             False aborts the process
         """
         print("-------------------BUY BUY BUY -----------------------")
-        
+
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
         if Config.IS_BACKTEST:
             self.controller.back_test(current_time, coin, brain)
-        elif Config.IS_EXECUTION:
+        else:
             self.controller.execute(mode, coin, brain)
         return True
 
@@ -219,12 +222,16 @@ class Strategy004(IStrategy):
         """
         print("-----------------------SELL SELL SELL------------------" + sell_reason)
 
-        # coin = pair.split("/")[0]
-        # brain = "Freq_" + self.__class__.__name__
+        coin = pair.split("/")[0]
+        brain = "Freq_" + self.__class__.__name__
 
-        # if sell_reason == 'sell_signal':
-        #     self.controller.perform_sell_signal(coin)
-        # else:
-        #     self.controller.remove_from_pool(coin)
+        if sell_reason == 'sell_signal':
+            if Config.IS_BACKTEST:
+                # todo: implement backtest adoption code with current_time
+                pass
+            else:
+                self.controller.perform_sell_signal(coin)
+
+        self.controller.remove_from_pool(coin)
 
         return True
