@@ -4,8 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import OrderTypeValues, SignalDirection
-from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
 
 
 class Ping(BaseModel):
