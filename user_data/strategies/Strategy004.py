@@ -184,7 +184,7 @@ class Strategy004(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        print("-------------------BUY BUY BUY -----------------------")
+        print("confirm_trade_entry: BUY --- "+str(current_time))
 
         mode = "test"
         coin = pair.split("/")[0]
@@ -220,10 +220,10 @@ class Strategy004(IStrategy):
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
         """
-        print("-----------------------SELL SELL SELL------------------" + sell_reason)
+        print("confirm_trade_exit: SELL --- " + sell_reason + " " + str(current_time))
 
         coin = pair.split("/")[0]
-        brain = "Freq_" + self.__class__.__name__
+        # brain = "Freq_" + self.__class__.__name__
 
         if sell_reason == 'sell_signal':
             if Config.IS_BACKTEST:

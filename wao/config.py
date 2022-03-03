@@ -7,7 +7,7 @@ class Config:
     BACKTEST_MONTH_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
-    IS_BACKTEST = True
+    IS_BACKTEST = False
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
     IS_PARALLEL_EXECUTION = True
