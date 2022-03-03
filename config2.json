@@ -33,7 +33,8 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "ETH/USDT"
+            "SOL/USDT",
+            "BTC/USDT"
 	],
         "pair_blacklist": [
             "BNB/.*"
