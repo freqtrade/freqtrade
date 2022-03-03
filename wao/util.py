@@ -4,7 +4,7 @@ import sys
 
 sys.path.append(EXECUTION_PATH)
 from config import Config as ExecutionConfig
-from back_tester import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
+from util import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
 from romeo import Romeo
 
 
