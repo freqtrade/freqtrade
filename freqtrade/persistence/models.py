@@ -539,14 +539,14 @@ class LocalTrade():
                 amount = buy_amount
             if is_closed:
                 b_order.filled -= amount
+                b_order.order_update_date = datetime.now(timezone.utc)
             sell_amount -= amount
             profit += self.calc_profit2(buy_rate, sell_rate, amount)
         if is_closed:
             b_order2 = orders[idx]
-            amount2 = b_order2.filled or b_order2.amount
-            b_order2.average = (b_order2.average * amount2 - profit) / amount2
+            amount2 = b_order2.safe_amount_after_fee
+            b_order2.average = (b_order2.average * amount2 - profit / (1 + self.fee_open)) / amount2
             b_order2.order_update_date = datetime.now(timezone.utc)
-            self.update_order(b_order2)
             if is_non_bt: Order.query.session.commit()
             self.recalc_trade_from_orders()
 
@@ -693,8 +693,13 @@ class LocalTrade():
 
     def recalc_trade_from_orders(self):
         # mdebug
-        # import json
+        import json
         # logger.info(json.dumps(self.to_json(), indent =4))
+        if len(self.select_filled_orders('buy')) < 2 and 0:
+            # Just in case, still recalc open trade value
+            # needs to remove 
+            self.recalc_open_trade_value()
+            return
         total_amount = 0.0
         total_stake = 0.0
         for o in self.orders:
@@ -719,6 +724,7 @@ class LocalTrade():
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
         # logger.info(json.dumps(self.to_json(), indent =4))
+        # mdebug
 
     def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
         """
