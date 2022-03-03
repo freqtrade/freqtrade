@@ -37,6 +37,7 @@ class Gateio(Exchange):
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
 
-        if any(v == 'market' for k, v in order_types.items()):
-            raise OperationalException(
-                f'Exchange {self.name} does not support market orders.')
+        if self.trading_mode != TradingMode.FUTURES:
+            if any(v == 'market' for k, v in order_types.items()):
+                raise OperationalException(
+                    f'Exchange {self.name} does not support market orders.')
