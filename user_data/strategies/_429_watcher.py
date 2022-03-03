@@ -19,10 +19,7 @@ class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_created(self, event):
         file = str(event.src_path)
         if os.path.isfile(file):
-            # content = Path('countries.txt').read_text()
-            with open(file, 'r') as file:
-                content = file.read(-1)
-            file.close()
+            content = Path(file).read_text()
             time.sleep(1)  # this sleep makes the watcher wait to avoid overlapping
             print("sending message on: "+str(content))
             post_request(str(content), True)

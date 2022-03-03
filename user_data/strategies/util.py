@@ -35,7 +35,7 @@ def back_test(date_time, coin, brain):
 
 
 def create_429_watcher(is_test_mode):
-    print("create_429_watcher:...")
+    print("create_429_watcher: watching:- " + str(Config._429_DIRECTORY))
     event_handler = _429_Watcher(is_test_mode)
     observer = watchdog.observers.Observer()
     observer.schedule(event_handler, path=Config._429_DIRECTORY, recursive=True)

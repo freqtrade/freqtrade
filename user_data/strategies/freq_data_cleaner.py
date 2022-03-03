@@ -22,17 +22,3 @@
 #     json_object = json.dumps(list)
 #     file.close()
 #     write_to_json(json_object)
-
-# def write_to_json(json_object):  
-#     print("write_to_json: json_path = " + Config.BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH)  
-#     with open("temp.json", "w") as outfile:
-#         outfile.write(json_object)
-#     os.rename("temp.json", Config.BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH)
-
-# if len(sys.argv) < 2:
-#     exit("""Incorrect number of arguments. 
-#     python3 freq_data_cleaner.py [json_file] 
-#     """)
-# else:
-#     Config.BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = sys.argv[1]
-#     clean_json()
