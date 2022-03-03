@@ -389,46 +389,52 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_entry_details(self, filled_orders, base_currency, is_open):
+    def _prepare_entry_details(self, filled_orders: List, base_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
-        lines = []
+        lines: List[str] = []
+        if len(filled_orders) > 0:
+            first_avg = filled_orders[0]["safe_price"]
+
         for x, order in enumerate(filled_orders):
+            if order['ft_order_side'] != 'buy':
+                continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
-            cur_entry_average = order["average"]
+            cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
-                lines.append("*Entry #{}:*".format(x+1))
-                lines.append("*Entry Amount:* {} ({:.8f} {})"
-                             .format(cur_entry_amount, order["cost"], base_currency))
-                lines.append("*Average Entry Price:* {}".format(cur_entry_average))
+                lines.append(f"*Entry #{x+1}:*")
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average}")
             else:
                 sumA = 0
                 sumB = 0
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["average"])
+                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["safe_price"])
                     sumB += filled_orders[y]["amount"]
-                prev_avg_price = sumA/sumB
-                price_to_1st_entry = ((cur_entry_average - filled_orders[0]["average"])
-                                      / filled_orders[0]["average"])
-                minus_on_entry = (cur_entry_average - prev_avg_price)/prev_avg_price
+                prev_avg_price = sumA / sumB
+                price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
+                minus_on_entry = 0
+                if prev_avg_price:
+                    minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
+
                 dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
                 days = dur_entry.days
                 hours, remainder = divmod(dur_entry.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
-                lines.append("*Entry #{}:* at {:.2%} avg profit".format(x+1, minus_on_entry))
+                lines.append(f"*Entry #{x+1}:* at {minus_on_entry:.2%} avg profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
-                lines.append("*Entry Amount:* {} ({:.8f} {})"
-                             .format(cur_entry_amount, order["cost"], base_currency))
-                lines.append("*Average Entry Price:* {} ({:.2%} from 1st entry rate)"
-                             .format(cur_entry_average, price_to_1st_entry))
-                lines.append("*Order filled at:* {}".format(order["order_filled_date"]))
-                lines.append("({}d {}h {}m {}s from previous entry)"
-                             .format(days, hours, minutes, seconds))
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average} "
+                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                lines.append(f"*Order filled at:* {order['order_filled_date']}")
+                lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
         return lines
 
     @authorized_only
@@ -459,7 +465,7 @@ class Telegram(RPCHandler):
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
-                r['num_entries'] = len(r['filled_entry_orders'])
+                r['num_entries'] = len([o for o in r['orders'] if o['ft_order_side'] == 'buy'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
                     "*Trade ID:* `{trade_id}`" +
@@ -505,8 +511,8 @@ class Telegram(RPCHandler):
                             lines.append("*Open Order:* `{open_order}`")
 
                 lines_detail = self._prepare_entry_details(
-                    r['filled_entry_orders'], r['base_currency'], r['is_open'])
-                lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
+                    r['orders'], r['base_currency'], r['is_open'])
+                lines.extend(lines_detail if lines_detail else "")
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))

@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 # 1.12: add blacklist delete endpoint
 # 1.13: forcebuy supports stake_amount
 # versions 2.xx -> futures/short branch
-# 2.13: addition of Forceenter
-API_VERSION = 2.13
+# 2.14: Add entry/exit orders to trade response
+API_VERSION = 2.14
 
 # Public API, requires no auth.
 router_public = APIRouter()

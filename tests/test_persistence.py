@@ -1610,6 +1610,7 @@ def test_to_json(default_conf, fee):
                       'funding_fees': None,
                       'filled_entry_orders': [],
                       'filled_exit_orders': [],
+                      'orders': [],
                       }
 
     # Simulate dry_run entries
@@ -1686,6 +1687,7 @@ def test_to_json(default_conf, fee):
                       'funding_fees': None,
                       'filled_entry_orders': [],
                       'filled_exit_orders': [],
+                      'orders': [],
                       }
 
 

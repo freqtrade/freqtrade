@@ -6,7 +6,7 @@ import time
 from copy import deepcopy
 from math import isclose
 from typing import List
-from unittest.mock import ANY, MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import arrow
 import pytest
@@ -1407,7 +1407,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=amt,
+        amount=pytest.approx(amt),
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=stop_price[1],
@@ -1611,7 +1611,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     # Long uses modified ask - offset, short modified bid + offset
     stoploss_order_mock.assert_called_once_with(
-        amount=trade.amount,
+        amount=pytest.approx(trade.amount),
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.96 if not is_short else 0.95 * 1.04,
@@ -1741,7 +1741,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     assert trade.stop_loss == 4.4 * 0.99
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
     stoploss_order_mock.assert_called_once_with(
-        amount=11.41438356,
+        amount=pytest.approx(11.41438356),
         pair='NEO/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.99,
@@ -2534,9 +2534,14 @@ def test_check_handle_timedout_sell_usercustom(
 
     et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
     caplog.clear()
-
     # 2nd canceled trade ...
     open_trade_usdt.open_order_id = limit_sell_order_old['id']
+
+    # If cancelling fails - no emergency sell!
+    with patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_exit', return_value=False):
+        freqtrade.check_handle_timedout()
+        assert et_mock.call_count == 0
+
     freqtrade.check_handle_timedout()
     assert log_has_re('Emergencyselling trade.*', caplog)
     assert et_mock.call_count == 1
@@ -2896,9 +2901,12 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         exchange='binance',
         open_rate=0.245441,
         open_order_id="123456",
-        open_date=arrow.utcnow().datetime,
+        open_date=arrow.utcnow().shift(days=-2).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
+        close_rate=0.555,
+        close_date=arrow.utcnow().datetime,
+        sell_reason="sell_reason_whatever",
     )
     order = {'remaining': 1,
              'amount': 1,
@@ -2907,17 +2915,23 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
+    assert trade.close_rate is None
+    assert trade.sell_reason is None
 
     send_msg_mock.reset_mock()
 
     order['amount'] = 2
-    assert freqtrade.handle_cancel_exit(trade, order, reason
-                                        ) == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
-    assert freqtrade.handle_cancel_exit(trade, order, reason
-                                        ) == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert (send_msg_mock.call_args_list[0][0][0]['reason']
+            == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
+
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
+
+    send_msg_mock.call_args_list[0][0][0]['reason'] = CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+
     # Message should not be iterated again
     assert trade.sell_order_status == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
     assert send_msg_mock.call_count == 1
@@ -2936,7 +2950,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     order = {'remaining': 1,
              'amount': 1,
              'status': "open"}
-    assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
+    assert not freqtrade.handle_cancel_exit(trade, order, reason)
 
 
 @pytest.mark.parametrize("is_short, open_rate, amt", [
