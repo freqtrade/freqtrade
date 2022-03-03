@@ -395,6 +395,8 @@ for more information.
     ``` python
     def informative(timeframe: str, asset: str = '',
                     fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                    *,
+                    candle_type: Optional[CandleType] = None,
                     ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
         """
         A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
@@ -423,6 +425,7 @@ for more information.
         * {column} - name of dataframe column.
         * {timeframe} - timeframe of informative dataframe.
         :param ffill: ffill dataframe after merging informative pair.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
     ```
 
@@ -509,7 +512,6 @@ for more information.
     Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
     will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
     created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
-
 
 ## Additional data (DataProvider)
 

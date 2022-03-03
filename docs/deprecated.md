@@ -52,7 +52,7 @@ Please switch to the new [Parametrized Strategies](hyperopt.md) to benefit from 
 
 As strategies now have to support multiple different signal types, some things had to change.
 
-Columns:
+Dataframe columns:
 
 * `buy` -> `enter_long`
 * `sell` -> `exit_long`
