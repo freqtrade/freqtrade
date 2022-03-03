@@ -177,6 +177,22 @@ class ShowConfig(BaseModel):
     max_entry_position_adjustment: int
 
 
+class OrderSchema(BaseModel):
+    pair: str
+    order_id: str
+    status: str
+    remaining: float
+    amount: float
+    safe_price: float
+    cost: float
+    filled: float
+    ft_order_side: str
+    order_type: str
+    is_open: bool
+    order_timestamp: Optional[int]
+    order_filled_timestamp: Optional[int]
+
+
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str
@@ -224,6 +240,7 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
+    orders: List[OrderSchema]
 
 
 class OpenTradeSchema(TradeSchema):
