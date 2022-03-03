@@ -23,6 +23,7 @@ nav:
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Leverage: leverage.md
+    - Strategy migration: strategy_migration.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
     - Exchange-specific Notes: exchanges.md
