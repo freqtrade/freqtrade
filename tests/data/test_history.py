@@ -24,7 +24,7 @@ from freqtrade.data.history.history_utils import (_download_pair_history, _downl
                                                   validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
@@ -716,7 +716,7 @@ def test_rebuild_pair_from_filename(input, expected):
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
-    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/BTC', '5m', CandleType.SPOT),
@@ -738,7 +738,7 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('NOPAIR/XXX', '4m', CandleType.SPOT),
     }
 
-    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'futures')
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.FUTURES)
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/USDT', '1h', 'mark'),
@@ -748,9 +748,9 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('XRP/USDT', '8h', 'funding_rate'),
     }
 
-    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
+    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '8m', CandleType.SPOT)}
-    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, 'spot')
+    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     assert set(paircombs) == {('UNITTEST/BTC', '5m', CandleType.SPOT)}
 
 

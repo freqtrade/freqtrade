@@ -10,7 +10,7 @@ from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import trades_dict_to_list
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 
 from .idatahandler import IDataHandler
 
@@ -24,7 +24,8 @@ class JsonDataHandler(IDataHandler):
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @classmethod
-    def ohlcv_get_available_data(cls, datadir: Path, trading_mode: str) -> ListPairsWithTimeframes:
+    def ohlcv_get_available_data(
+            cls, datadir: Path, trading_mode: TradingMode) -> ListPairsWithTimeframes:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files

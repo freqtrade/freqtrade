@@ -8,7 +8,7 @@ from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.enums import CandleType, RunMode
+from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import market_is_active
@@ -160,8 +160,10 @@ def start_list_data(args: Dict[str, Any]) -> None:
     from freqtrade.data.history.idatahandler import get_datahandler
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
 
-    # TODO-lev: trading-mode should be parsed at config level, and available as Enum in the config.
-    paircombs = dhc.ohlcv_get_available_data(config['datadir'], config.get('trading_mode', 'spot'))
+    paircombs = dhc.ohlcv_get_available_data(
+        config['datadir'],
+        config.get('trading_mode', TradingMode.SPOT)
+        )
 
     if args['pairs']:
         paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]

@@ -9,7 +9,7 @@ from fastapi.exceptions import HTTPException
 from freqtrade import __version__
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
@@ -279,7 +279,7 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
                          candletype: Optional[CandleType] = None, config=Depends(get_config)):
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
-    trading_mode = config.get('trading_mode', 'spot')
+    trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
     pair_interval = dh.ohlcv_get_available_data(config['datadir'], trading_mode)
 
     if timeframe:
