@@ -1,4 +1,4 @@
-EXECUTION_PATH = '/root/workspace2/execution'
+EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
 from wao.config import Config
 import sys
 
@@ -45,4 +45,3 @@ def _perform_back_test(date_time, coin, brain, romeo_pool):
     romeo = Romeo.instance(True, True)
     romeo_pool[coin] = romeo
     romeo.start()
-
