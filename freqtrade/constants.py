@@ -440,7 +440,6 @@ SCHEMA_TRADE_REQUIRED = [
     'dry_run_wallet',
     'ask_strategy',
     'bid_strategy',
-    'unfilledtimeout',
     'stoploss',
     'minimal_roi',
     'internals',
@@ -456,7 +455,6 @@ SCHEMA_BACKTEST_REQUIRED = [
     'dry_run_wallet',
     'dataformat_ohlcv',
     'dataformat_trades',
-    'unfilledtimeout',
 ]
 
 SCHEMA_MINIMAL_REQUIRED = [

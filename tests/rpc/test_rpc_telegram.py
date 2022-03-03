@@ -203,7 +203,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'stop_loss_ratio': -0.0001,
             'open_order': '(limit buy rem=0.00000000)',
             'is_open': True,
-            'filled_entry_orders': []
+            'orders': []
         }]),
     )
 
@@ -236,6 +236,8 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
     create_mock_trades(fee)
     trades = Trade.get_open_trades()
     trade = trades[0]
+    # Average may be empty on some exchanges
+    trade.orders[0].average = 0
     trade.orders.append(Order(
         order_id='5412vbb',
         ft_order_side='buy',
@@ -246,7 +248,7 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
         order_type="market",
         side="buy",
         price=trade.open_rate * 0.95,
-        average=trade.open_rate * 0.95,
+        average=0,
         filled=trade.amount,
         remaining=0,
         cost=trade.amount,

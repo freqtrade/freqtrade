@@ -86,6 +86,8 @@ class Kraken(Exchange):
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
+        TODO: investigate if this can be combined with generic implementation
+              (careful, prices are reversed)
         """
         params = self._params.copy()
 
@@ -101,7 +103,7 @@ class Kraken(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, "sell", amount, stop_price, stop_loss=True)
             return dry_order
 
         try:

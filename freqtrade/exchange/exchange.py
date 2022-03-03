@@ -600,7 +600,8 @@ class Exchange:
     # Dry-run methods
 
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                             rate: float, params: Dict = {}) -> Dict[str, Any]:
+                             rate: float, params: Dict = {},
+                             stop_loss: bool = False) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order: Dict[str, Any] = {
@@ -616,14 +617,17 @@ class Exchange:
             'remaining': _amount,
             'datetime': arrow.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'timestamp': arrow.utcnow().int_timestamp * 1000,
-            'status': "closed" if ordertype == "market" else "open",
+            'status': "closed" if ordertype == "market" and not stop_loss else "open",
             'fee': None,
             'info': {}
         }
-        if dry_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
+        if stop_loss:
             dry_order["info"] = {"stopPrice": dry_order["price"]}
+            dry_order["stopPrice"] = dry_order["price"]
+            # Workaround to avoid filling stoploss orders immediately
+            dry_order["ft_order_type"] = "stoploss"
 
-        if dry_order["type"] == "market":
+        if dry_order["type"] == "market" and not dry_order.get("ft_order_type"):
             # Update market order pricing
             average = self.get_dry_market_fill_price(pair, side, amount, rate)
             dry_order.update({
@@ -714,7 +718,9 @@ class Exchange:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
-        if order['status'] != "closed" and order['type'] in ["limit"]:
+        if (order['status'] != "closed"
+                and order['type'] in ["limit"]
+                and not order.get('ft_order_type')):
             pair = order['symbol']
             if self._is_dry_limit_order_filled(pair, order['side'], order['price']):
                 order.update({
@@ -791,18 +797,89 @@ class Exchange:
         """
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
+    def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
+        params = self._params.copy()
+        # Verify if stopPrice works for your exchange!
+        params.update({'stopPrice': stop_price})
+        return params
+
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         creates a stoploss order.
+        requires `_ft_has['stoploss_order_types']` to be set as a dict mapping limit and market
+            to the corresponding exchange type.
+
         The precise ordertype is determined by the order_types dict or exchange default.
-        Since ccxt does not unify stoploss-limit orders yet, this needs to be implemented in each
-        exchange's subclass.
+
         The exception below should never raise, since we disallow
         starting the bot in validate_ordertypes()
-        Note: Changes to this interface need to be applied to all sub-classes too.
-        """
 
-        raise OperationalException(f"stoploss is not implemented for {self.name}.")
+        This may work with a limited number of other exchanges, but correct working
+            needs to be tested individually.
+        WARNING: setting `stoploss_on_exchange` to True will NOT auto-enable stoploss on exchange.
+            `stoploss_adjust` must still be implemented for this to work.
+        """
+        if not self._ft_has['stoploss_on_exchange']:
+            raise OperationalException(f"stoploss is not implemented for {self.name}.")
+
+        user_order_type = order_types.get('stoploss', 'market')
+        if user_order_type in self._ft_has["stoploss_order_types"].keys():
+            ordertype = self._ft_has["stoploss_order_types"][user_order_type]
+        else:
+            # Otherwise pick only one available
+            ordertype = list(self._ft_has["stoploss_order_types"].values())[0]
+            user_order_type = list(self._ft_has["stoploss_order_types"].keys())[0]
+
+        stop_price_norm = self.price_to_precision(pair, stop_price)
+        rate = None
+        if user_order_type == 'limit':
+            # Limit price threshold: As limit price should always be below stop-price
+            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+            rate = stop_price * limit_price_pct
+
+            # Ensure rate is less than stop price
+            if stop_price_norm <= rate:
+                raise OperationalException(
+                    'In stoploss limit order, stop price should be more than limit price')
+            rate = self.price_to_precision(pair, rate)
+
+        if self._config['dry_run']:
+            dry_order = self.create_dry_run_order(
+                pair, ordertype, "sell", amount, stop_price_norm, stop_loss=True)
+            return dry_order
+
+        try:
+            params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price_norm)
+
+            amount = self.amount_to_precision(pair, amount)
+
+            order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
+                                           amount=amount, price=rate, params=params)
+            logger.info(f"stoploss {user_order_type} order added for {pair}. "
+                        f"stop price: {stop_price}. limit: {rate}")
+            self._log_exchange_response('create_stoploss_order', order)
+            return order
+        except ccxt.InsufficientFunds as e:
+            raise InsufficientFundsError(
+                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
+                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Message: {e}') from e
+        except ccxt.InvalidOrder as e:
+            # Errors:
+            # `Order would trigger immediately.`
+            raise InvalidOrderException(
+                f'Could not create {ordertype} sell order on market {pair}. '
+                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Could not place stoploss order due to {e.__class__.__name__}. "
+                f"Message: {e}") from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
@@ -1587,7 +1664,7 @@ def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = Non
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
-    return exchange_name in ['bittrex', 'binance', 'kraken', 'ftx', 'gateio', 'okx']
+    return exchange_name in ['binance', 'bittrex', 'ftx', 'gateio', 'huobi', 'kraken', 'okx']
 
 
 def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:

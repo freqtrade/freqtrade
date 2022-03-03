@@ -542,7 +542,6 @@ class FreqtradeBot(LoggingMixin):
                 entry_tag=buy_tag):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
@@ -900,7 +899,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: Dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -1109,6 +1108,7 @@ class FreqtradeBot(LoggingMixin):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
+            trade.sell_reason = None
             cancelled = True
         else:
             # TODO: figure out how to handle partially complete sell orders
@@ -1170,8 +1170,8 @@ class FreqtradeBot(LoggingMixin):
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and sell_type == 'stoploss' \
-           and self.strategy.order_types['stoploss_on_exchange']:
+        if (self.config['dry_run'] and sell_type == 'stoploss'
+                and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available

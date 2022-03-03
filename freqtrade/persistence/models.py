@@ -120,7 +120,7 @@ class Order(_DECL_BASE):
     ft_pair: str = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
 
-    order_id = Column(String(255), nullable=False, index=True)
+    order_id: str = Column(String(255), nullable=False, index=True)
     status = Column(String(255), nullable=True)
     symbol = Column(String(25), nullable=True)
     order_type: str = Column(String(50), nullable=True)
@@ -193,8 +193,12 @@ class Order(_DECL_BASE):
 
     def to_json(self) -> Dict[str, Any]:
         return {
+            'pair': self.ft_pair,
+            'order_id': self.order_id,
+            'status': self.status,
             'amount': self.amount,
             'average': round(self.average, 8) if self.average else 0,
+            'safe_price': self.safe_price,
             'cost': self.cost if self.cost else 0,
             'filled': self.filled,
             'ft_order_side': self.ft_order_side,
@@ -208,10 +212,8 @@ class Order(_DECL_BASE):
             'order_filled_timestamp': int(self.order_filled_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
             'order_type': self.order_type,
-            'pair': self.ft_pair,
             'price': self.price,
             'remaining': self.remaining,
-            'status': self.status,
         }
 
     def close_bt_order(self, close_date: datetime):
@@ -338,14 +340,7 @@ class LocalTrade():
 
     def to_json(self) -> Dict[str, Any]:
         filled_orders = self.select_filled_orders()
-        filled_entries = []
-        filled_exits = []
-        if len(filled_orders) > 0:
-            for order in filled_orders:
-                if order.ft_order_side == 'buy':
-                    filled_entries.append(order.to_json())
-                if order.ft_order_side == 'sell':
-                    filled_exits.append(order.to_json())
+        orders = [order.to_json() for order in filled_orders]
 
         return {
             'trade_id': self.id,
@@ -410,8 +405,7 @@ class LocalTrade():
             'max_rate': self.max_rate,
 
             'open_order_id': self.open_order_id,
-            'filled_entry_orders': filled_entries,
-            'filled_exit_orders': filled_exits,
+            'orders': orders,
         }
 
     @staticmethod
