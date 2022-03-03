@@ -4621,8 +4621,8 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert trade.open_order_id is None
     assert trade.is_open
     assert trade.amount == 22
-    assert trade.stake_amount == 203.5625
-    assert pytest.approx(trade.open_rate) == 9.252840909090908
+    assert trade.stake_amount == 203.59850374064837
+    assert pytest.approx(trade.open_rate) == 9.254477442756745
 
     orders = Order.query.all()
     assert orders
@@ -4635,7 +4635,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
 
 def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     """
-    buy 100 @ 11 
+    buy 100 @ 11
     sell 50 @ 8
     sell 50 @ 16
     """
@@ -4801,6 +4801,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     # Make sure the closed order is found as the second order.
     order = trade.select_order('sell', False)
     assert order.order_id == '602'
+    assert trade.is_open is False
 
 
 def test_process_open_trade_positions_exception(mocker, default_conf_usdt, fee, caplog) -> None:

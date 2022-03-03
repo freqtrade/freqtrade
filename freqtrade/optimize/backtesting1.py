@@ -480,8 +480,10 @@ class Backtesting:
 
             return self._exit_trade(trade, sell_row, closerate)
 
-    def _exit_trade(self, trade: LocalTrade,sell_row: Tuple, 
-        closerate: float, amount: float = None) -> Optional[LocalTrade]:
+        return None
+
+    def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
+                    closerate: float, amount: float = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         # mdebug
         if amount:
@@ -821,7 +823,7 @@ class Backtesting:
                             # mdebug
                             logger.info(f'822 {order.safe_amount_after_fee} != {trade.amount}')
                             order.close_bt_order(current_time)
-                            trade.process_sell_sub_trade(order, is_non_bt = False)
+                            trade.process_sell_sub_trade(order, is_non_bt=False)
                             trade.recalc_trade_from_orders()
                         else:
                             trade.close_date = current_time

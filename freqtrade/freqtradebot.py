@@ -629,7 +629,10 @@ class FreqtradeBot(LoggingMixin):
             trade.open_order_id = order_id
 
         trade.orders.append(order_obj)
-        trade.recalc_trade_from_orders()
+        if pos_adjust:
+            trade.recalc_trade_from_orders()
+        else:
+            trade.recalc_open_trade_value()
         Trade.query.session.add(trade)
         Trade.commit()
 
@@ -1500,7 +1503,7 @@ class FreqtradeBot(LoggingMixin):
                 return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
 
-    rpc_msg:Dict[Any, Any] = {}
+    rpc_msg: Dict[Any, Any] = {}
 
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
                                   trades: List) -> float:

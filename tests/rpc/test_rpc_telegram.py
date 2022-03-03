@@ -421,7 +421,9 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
+    trade.recalc_open_trade_value()
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -465,7 +467,9 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update_trade(oobj)
+        trade.open_rate = oobj.safe_price
+        trade.amount = oobj.safe_amount_after_fee
+        trade.recalc_open_trade_value()
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
@@ -532,7 +536,9 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
+    trade.recalc_open_trade_value()
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -580,7 +586,9 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update_trade(oobj)
+        trade.open_rate = oobj.safe_price
+        trade.amount = oobj.safe_amount_after_fee
+        trade.recalc_open_trade_value()
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
@@ -650,7 +658,9 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
+    trade.recalc_open_trade_value()
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -698,7 +708,9 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.update_trade(oobj)
+        trade.open_rate = oobj.safe_price
+        trade.amount = oobj.safe_amount_after_fee
+        trade.recalc_open_trade_value()
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
@@ -770,7 +782,9 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
+    Trade.commit()
 
     context = MagicMock()
     # Test with invalid 2nd argument (should silently pass)
@@ -1305,7 +1319,8 @@ def test_telegram_performance_handle(default_conf, update, ticker, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -1337,7 +1352,8 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -1381,7 +1397,8 @@ def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, f
     trade.sell_reason = 'TESTSELL'
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
@@ -1427,7 +1444,8 @@ def test_telegram_mix_tag_performance_handle(default_conf, update, ticker, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
+    trade.open_rate = oobj.safe_price
+    trade.amount = oobj.safe_amount_after_fee
 
     # Simulate fulfilled LIMIT_SELL order for trade
     oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')

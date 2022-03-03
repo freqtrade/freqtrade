@@ -439,7 +439,6 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
     trade.open_rate = oobj.safe_price
     trade.amount = oobj.safe_amount_after_fee
-
     # Update the ticker with a market going up
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
