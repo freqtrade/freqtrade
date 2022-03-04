@@ -306,8 +306,8 @@ class Telegram(RPCHandler):
                     msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
             else:
                 msg['stake_amount_fiat'] = 0
-            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Balance:* `({bal}"
+            rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Remaining:* `({rem}"
 
             if msg.get('fiat_currency', None):
                 message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
