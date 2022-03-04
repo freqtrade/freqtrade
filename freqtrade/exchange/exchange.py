@@ -1008,6 +1008,17 @@ class Exchange:
         """
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
+    def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
+
+        available_order_Types: Dict[str, str] = self._ft_has["stoploss_order_types"]
+        if user_order_type in available_order_Types.keys():
+            ordertype = available_order_Types[user_order_type]
+        else:
+            # Otherwise pick only one available
+            ordertype = list(available_order_Types.values())[0]
+            user_order_type = list(available_order_Types.keys())[0]
+        return ordertype, user_order_type
+
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()
         # Verify if stopPrice works for your exchange!
@@ -1015,7 +1026,8 @@ class Exchange:
         return params
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict, side: str, leverage: float) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict,
+                 side: str, leverage: float) -> Dict:
         """
         creates a stoploss order.
         requires `_ft_has['stoploss_order_types']` to be set as a dict mapping limit and market
@@ -1035,22 +1047,22 @@ class Exchange:
             raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
         user_order_type = order_types.get('stoploss', 'market')
-        if user_order_type in self._ft_has["stoploss_order_types"].keys():
-            ordertype = self._ft_has["stoploss_order_types"][user_order_type]
-        else:
-            # Otherwise pick only one available
-            ordertype = list(self._ft_has["stoploss_order_types"].values())[0]
-            user_order_type = list(self._ft_has["stoploss_order_types"].keys())[0]
+        ordertype, user_order_type = self._get_stop_order_type(user_order_type)
 
         stop_price_norm = self.price_to_precision(pair, stop_price)
         rate = None
         if user_order_type == 'limit':
             # Limit price threshold: As limit price should always be below stop-price
             limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            rate = stop_price * limit_price_pct
+            if side == "sell":
+                # TODO: Name limit_rate in other exchange subclasses
+                rate = stop_price * limit_price_pct
+            else:
+                rate = stop_price * (2 - limit_price_pct)
 
+            bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
             # Ensure rate is less than stop price
-            if stop_price_norm <= rate:
+            if bad_stop_price:
                 raise OperationalException(
                     'In stoploss limit order, stop price should be more than limit price')
             rate = self.price_to_precision(pair, rate)

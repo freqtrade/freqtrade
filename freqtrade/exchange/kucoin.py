@@ -27,7 +27,7 @@ class Kucoin(Exchange):
         "time_in_force_parameter": "timeInForce",
     }
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.

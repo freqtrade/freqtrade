@@ -110,8 +110,8 @@ def test_stoploss_adjust_huobi(mocker, default_conf):
         'price': 1500,
         'stopPrice': '1500',
     }
-    assert exchange.stoploss_adjust(1501, order)
-    assert not exchange.stoploss_adjust(1499, order)
+    assert exchange.stoploss_adjust(1501, order, 'sell')
+    assert not exchange.stoploss_adjust(1499, order, 'sell')
     # Test with invalid order case
     order['type'] = 'stop_loss'
-    assert not exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1501, order, 'sell')
