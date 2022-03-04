@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import arrow
+import ccxt
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, OperationalException, TemporaryError)
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
 
 
 logger = logging.getLogger(__name__)
