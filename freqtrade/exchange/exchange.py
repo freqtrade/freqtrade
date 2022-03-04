@@ -1019,6 +1019,22 @@ class Exchange:
             user_order_type = list(available_order_Types.keys())[0]
         return ordertype, user_order_type
 
+    def _get_stop_limit_rate(self, stop_price: float, order_types: Dict, side: str) -> float:
+        # Limit price threshold: As limit price should always be below stop-price
+        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        if side == "sell":
+            # TODO: Name limit_rate in other exchange subclasses
+            rate = stop_price * limit_price_pct
+        else:
+            rate = stop_price * (2 - limit_price_pct)
+
+        bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
+        # Ensure rate is less than stop price
+        if bad_stop_price:
+            raise OperationalException(
+                'In stoploss limit order, stop price should be more than limit price')
+        return rate
+
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()
         # Verify if stopPrice works for your exchange!
@@ -1052,19 +1068,7 @@ class Exchange:
         stop_price_norm = self.price_to_precision(pair, stop_price)
         rate = None
         if user_order_type == 'limit':
-            # Limit price threshold: As limit price should always be below stop-price
-            limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            if side == "sell":
-                # TODO: Name limit_rate in other exchange subclasses
-                rate = stop_price * limit_price_pct
-            else:
-                rate = stop_price * (2 - limit_price_pct)
-
-            bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
-            # Ensure rate is less than stop price
-            if bad_stop_price:
-                raise OperationalException(
-                    'In stoploss limit order, stop price should be more than limit price')
+            rate = self._get_stop_limit_rate(stop_price, order_types, side)
             rate = self.price_to_precision(pair, rate)
 
         if self._config['dry_run']:
