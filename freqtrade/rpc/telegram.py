@@ -398,7 +398,7 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if order['ft_order_side'] != 'buy':
+            if not order['ft_is_entry']:
                 continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
@@ -465,7 +465,7 @@ class Telegram(RPCHandler):
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
-                r['num_entries'] = len([o for o in r['orders'] if o['ft_order_side'] == 'buy'])
+                r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
                     "*Trade ID:* `{trade_id}`" +

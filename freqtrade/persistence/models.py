@@ -197,7 +197,7 @@ class Order(_DECL_BASE):
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self, entry_side: str) -> Dict[str, Any]:
         return {
             'pair': self.ft_pair,
             'order_id': self.order_id,
@@ -219,6 +219,7 @@ class Order(_DECL_BASE):
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
             'order_type': self.order_type,
             'price': self.price,
+            'ft_is_entry': self.ft_order_side == entry_side,
             'remaining': self.remaining,
         }
 
@@ -458,7 +459,7 @@ class LocalTrade():
 
     def to_json(self) -> Dict[str, Any]:
         filled_orders = self.select_filled_orders()
-        orders = [order.to_json() for order in filled_orders]
+        orders = [order.to_json(self.enter_side) for order in filled_orders]
 
         return {
             'trade_id': self.id,
