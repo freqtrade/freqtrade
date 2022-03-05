@@ -26,8 +26,8 @@ This will create a new strategy file from a template, which will be located unde
 A strategy file contains all the information needed to build a good strategy:
 
 - Indicators
-- Buy strategy rules
-- Sell strategy rules
+- Entry strategy rules
+- Exit strategy rules
 - Minimal ROI recommended
 - Stoploss strongly recommended
 
@@ -82,7 +82,7 @@ As a dataframe is a table, simple python comparisons like the following will not
 
 ``` python
     if dataframe['rsi'] > 30:
-        dataframe['buy'] = 1
+        dataframe['enter_long'] = 1
 ```
 
 The above section will fail with `The truth value of a Series is ambiguous. [...]`.
@@ -92,7 +92,7 @@ This must instead be written in a pandas-compatible way, so the operation is per
 ``` python
     dataframe.loc[
         (dataframe['rsi'] > 30)
-    , 'buy'] = 1
+    , 'enter_long'] = 1
 ```
 
 With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
@@ -199,13 +199,13 @@ If this data is available, indicators will be calculated with this extended time
 !!! Note
     If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
 
-### Buy signal rules
+### Entry signal rules
 
-Edit the method `populate_buy_trend()` in your strategy file to update your buy strategy.
+Edit the method `populate_buy_trend()` in your strategy file to update your entry strategy.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
+This method will also define a new column, `"enter_long"`, which needs to contain 1 for entries, and 0 for "no action".
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
@@ -224,22 +224,50 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
-        'buy'] = 1
+        ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
     return dataframe
 ```
 
+??? Note "Enter short trades"
+    Short-entries can be created by setting `enter_short` (corresponds to `enter_long` for long trades).
+    The `enter_tag` column remains identical.
+    Short-trades need to be supported by your exchange and market configuration!
+
+    ```python
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
+
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
+
+        return dataframe
+    ```
+
 !!! Note
     Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the bot does not buy/sell in no-activity periods.
 
-### Sell signal rules
+### Exit signal rules
 
 Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
 Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
+This method will also define a new column, `"exit_long"`, which needs to contain 1 for sells, and 0 for "no action".
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
@@ -258,9 +286,35 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
             (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
-        'sell'] = 1
+        ['exit_long', 'exit_tag']] = (1, 'rsi_too_high')
     return dataframe
 ```
+
+??? Note "Exit short trades"
+    Short-exits can be created by setting `exit_short` (corresponds to `exit_long`).
+    The `exit_tag` column remains identical.
+    Short-trades need to be supported by your exchange and market configuration!
+
+    ```python
+    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['exit_long', 'exit_tag']] = (1, 'rsi_too_high')
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(dataframe['rsi'], 30)) &  # Signal: RSI crosses below 30
+                (dataframe['tema'] < dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['exit_short', 'exit_tag']] = (1, 'rsi_too_low')
+        return dataframe
+    ```
 
 ### Minimal ROI
 
@@ -325,7 +379,7 @@ stoploss = -0.10
 
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
 
-### Timeframe (formerly ticker interval)
+### Timeframe
 
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
@@ -454,7 +508,7 @@ for more information.
 
         # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
         # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
-        # instead of hardcoding actual stake currency. Available in populate_indicators and other 
+        # instead of hard-coding actual stake currency. Available in populate_indicators and other 
         # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
         @informative('1h', 'BTC/{stake}')
         def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -501,7 +555,7 @@ for more information.
                 &
                 (dataframe['volume'] > 0)
             ),
-            ['buy', 'enter_tag']] = (1, 'buy_signal_rsi')
+            ['enter_long', 'enter_tag']] = (1, 'buy_signal_rsi')
     
         return dataframe
     ```
@@ -716,7 +770,7 @@ class SampleStrategy(IStrategy):
                 (dataframe['rsi_1d'] < 30) &                     # Ensure daily RSI is < 30
                 (dataframe['volume'] > 0)                        # Ensure this candle had volume (important for backtesting)
             ),
-            'buy'] = 1
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
 ```
 
@@ -922,7 +976,7 @@ if self.config['runmode'].value in ('live', 'dry_run'):
 Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).
 
 ``` json
-{'pair': "ETH/BTC", 'profit': 0.015, 'count': 5}
+{"pair": "ETH/BTC", "profit": 0.015, "count": 5}
 ```
 
 !!! Warning
@@ -985,7 +1039,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         (
             #>> whatever condition<<<
         ),
-        'buy'] = 1
+        ['enter_long', 'enter_tag']] = (1, 'somestring')
 
     # Print the Analyzed pair
     print(f"result for {metadata['pair']}")
@@ -1014,7 +1068,12 @@ The following lists some common patterns which should be avoided to prevent frus
 
 ### Colliding signals
 
-When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing and ignore the entry (buy) signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
+When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
+
+The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:
+
+- `enter_long` -> `exit_long`, `exit_short`
+- `enter_short` -> `exit_short`, `enter_long`
 
 ## Further strategy ideas
 

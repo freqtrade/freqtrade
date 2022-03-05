@@ -153,8 +153,8 @@ Checklist on all tasks / possibilities in hyperopt
 
 Depending on the space you want to optimize, only some of the below are required:
 
-* define parameters with `space='buy'` - for buy signal optimization
-* define parameters with `space='sell'` - for sell signal optimization
+* define parameters with `space='buy'` - for entry signal optimization
+* define parameters with `space='sell'` - for exit signal optimization
 
 !!! Note
     `populate_indicators` needs to create all indicators any of the spaces may use, otherwise hyperopt will not work.
@@ -204,7 +204,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 Hyper-optimization will, for each epoch round, pick one trigger and possibly multiple guards.
 
-#### Sell optimization
+#### Exit signal optimization
 
 Similar to the entry-signal above, exit-signals can also be optimized.
 Place the corresponding settings into the following methods
@@ -216,7 +216,7 @@ The configuration and rules are the same than for buy signals.
 
 ## Solving a Mystery
 
-Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your buys. 
+Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your buys.
 And you also wonder should you use RSI or ADX to help with those buy decisions. 
 If you decide to use RSI or ADX, which values should I use for them? 
 
@@ -296,7 +296,7 @@ So let's write the buy strategy using these values:
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
 
         return dataframe
 ```
@@ -376,7 +376,7 @@ class MyAwesomeStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -391,7 +391,7 @@ class MyAwesomeStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'sell'] = 1
+                'exit_long'] = 1
         return dataframe
 ```
 

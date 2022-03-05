@@ -89,7 +89,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             (dataframe['rsi'] < 35) &
             (dataframe['volume'] > 0)
         ),
-        ['buy', 'enter_tag']] = (1, 'buy_signal_rsi')
+        ['enter_long', 'enter_tag']] = (1, 'buy_signal_rsi')
 
     return dataframe
 
@@ -117,7 +117,7 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
             (dataframe['rsi'] > 70) &
             (dataframe['volume'] > 0)
         ),
-        ['sell', 'exit_tag']] = (1, 'exit_rsi')
+        ['exit_long', 'exit_tag']] = (1, 'exit_rsi')
 
     return dataframe
 ```

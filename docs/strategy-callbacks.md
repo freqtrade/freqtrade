@@ -664,7 +664,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        filled_buys = trade.select_filled_orders('buy')
+        filled_entries = trade.select_filled_orders(trade.enter_side)
         count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
@@ -676,7 +676,7 @@ class DigDeeperStrategy(IStrategy):
         # Hope you have a deep wallet!
         try:
             # This returns first order stake size
-            stake_amount = filled_buys[0].cost
+            stake_amount = filled_entries[0].cost
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
             return stake_amount
