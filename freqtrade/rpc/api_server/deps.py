@@ -2,6 +2,7 @@ from typing import Any, Dict, Iterator, Optional
 
 from fastapi import Depends
 
+from freqtrade.enums import RunMode
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc import RPC, RPCException
 
@@ -38,3 +39,9 @@ def get_exchange(config=Depends(get_config)):
         ApiServer._exchange = ExchangeResolver.load_exchange(
             config['exchange']['name'], config)
     return ApiServer._exchange
+
+
+def is_webserver_mode(config=Depends(get_config)):
+    if config['runmode'] != RunMode.WEBSERVER:
+        raise RPCException('Bot is not in the correct state')
+    return None

@@ -971,6 +971,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'interest_rate': 0.0,
         'funding_fees': None,
         'trading_mode': ANY,
+        'orders': [ANY],
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -1044,8 +1045,8 @@ def test_api_blacklist(botclient, mocker):
                              "NOTHING/BTC": {
                                  "error_msg": "Pair NOTHING/BTC is not in the current blacklist."
                              }
-                             },
-                         }
+    },
+    }
     rc = client_delete(
         client,
         f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
@@ -1170,6 +1171,7 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         'interest_rate': None,
         'funding_fees': None,
         'trading_mode': 'spot',
+        'orders': [],
     }
 
 
@@ -1452,6 +1454,11 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     ftbot, client = botclient
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
 
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    # Backtest prevented in default mode
+    assert_response(rc, 502)
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
     # Backtesting not started yet
     rc = client_get(client, f"{BASE_URI}/backtest")
     assert_response(rc)

@@ -639,7 +639,6 @@ class FreqtradeBot(LoggingMixin):
                 entry_tag=enter_tag, side=trade_side):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.create_order(
             pair=pair,
             ordertype=order_type,
@@ -1070,7 +1069,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: Dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -1142,15 +1141,19 @@ class FreqtradeBot(LoggingMixin):
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
             order_obj = trade.select_order_by_order_id(trade.open_order_id)
+
             if not_closed and (fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
                 time_method, trade, order_obj, datetime.now(timezone.utc)))
             ):
                 if is_entering:
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 else:
-                    self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                    canceled = self.handle_cancel_exit(
+                        trade, order, constants.CANCEL_REASON['TIMEOUT'])
                     canceled_count = trade.get_exit_order_count()
-                    if max_timeouts > 0 and canceled_count >= max_timeouts:
+                    max_timeouts = self.config.get(
+                        'unfilledtimeout', {}).get('exit_timeout_count', 0)
+                    if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
                         logger.warning(f'Emergencyselling trade {trade}, as the sell order '
                                        f'timed out {max_timeouts} times.')
                         try:
@@ -1252,11 +1255,12 @@ class FreqtradeBot(LoggingMixin):
                                   reason=reason)
         return was_trade_fully_canceled
 
-    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
+    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> bool:
         """
         exit order cancel - cancel order and update trade
-        :return: Reason for cancel
+        :return: True if exit order was cancelled, false otherwise
         """
+        cancelled = False
         # if trade is not partially completed, just cancel the order
         if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
             if not self.exchange.check_order_canceled_empty(order):
@@ -1268,7 +1272,7 @@ class FreqtradeBot(LoggingMixin):
                 except InvalidOrderException:
                     logger.exception(
                         f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
-                    return 'error cancelling order'
+                    return False
                 logger.info('%s order %s for %s.', trade.exit_side.capitalize(), reason, trade)
             else:
                 reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
@@ -1282,9 +1286,12 @@ class FreqtradeBot(LoggingMixin):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
+            trade.sell_reason = None
+            cancelled = True
         else:
             # TODO: figure out how to handle partially complete sell orders
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+            cancelled = False
 
         self.wallets.update()
         self._notify_exit_cancel(
@@ -1292,7 +1299,7 @@ class FreqtradeBot(LoggingMixin):
             order_type=self.strategy.order_types[trade.exit_side],
             reason=reason
         )
-        return reason
+        return cancelled
 
     def _safe_exit_amount(self, pair: str, amount: float) -> float:
         """
@@ -1351,8 +1358,8 @@ class FreqtradeBot(LoggingMixin):
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and exit_type == 'stoploss' \
-           and self.strategy.order_types['stoploss_on_exchange']:
+        if (self.config['dry_run'] and exit_type == 'stoploss'
+           and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available

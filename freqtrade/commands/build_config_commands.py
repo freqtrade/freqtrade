@@ -110,6 +110,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "bittrex",
                 "ftx",
                 "gateio",
+                "huobi",
                 "kraken",
                 "kucoin",
                 "okx",

@@ -30,12 +30,13 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
+- [X] [Binance](https://www.binance.com/)
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [FTX](https://ftx.com)
+- [X] [FTX](https://ftx.com/#a=2258149)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Huobi](http://huobi.com/)
 - [X] [Kraken](https://kraken.com/)
-- [X] [OKX](https://www.okx.com/)
+- [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
@@ -68,15 +69,9 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 
 ## Quick start
 
-Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
+Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/) on how to get started quickly.
 
-```bash
-git clone -b develop https://github.com/freqtrade/freqtrade.git
-cd freqtrade
-./setup.sh --install
-```
-
-For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/stable/installation/).
+For further (native) installation methods, please refer to the [Installation documentation page](https://www.freqtrade.io/en/stable/installation/).
 
 ## Basic Usage
 

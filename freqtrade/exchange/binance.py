@@ -9,8 +9,7 @@ import arrow
 import ccxt
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
-                                  OperationalException, TemporaryError)
+from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
 
@@ -22,6 +21,8 @@ class Binance(Exchange):
 
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "stoploss_order_types": {"limit": "stop_loss_limit"},
+        "stoploss_order_types_futures": {"limit": "stop"},
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_candle_limit": 1000,
@@ -51,82 +52,6 @@ class Binance(Exchange):
             (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
             (side == "buy" and stop_loss < float(order['info']['stopPrice']))
         )
-
-    @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float,
-                 order_types: Dict, side: str, leverage: float) -> Dict:
-        """
-        creates a stoploss limit order.
-        this stoploss-limit is binance-specific.
-        It may work with a limited number of other exchanges, but this has not been tested yet.
-        :param side: "buy" or "sell"
-        """
-        # Limit price threshold: As limit price should always be below stop-price
-        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-        if side == "sell":
-            # TODO: Name limit_rate in other exchange subclasses
-            rate = stop_price * limit_price_pct
-        else:
-            rate = stop_price * (2 - limit_price_pct)
-
-        ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
-
-        stop_price = self.price_to_precision(pair, stop_price)
-
-        bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
-
-        # Ensure rate is less than stop price
-        if bad_stop_price:
-            raise OperationalException(
-                'In stoploss limit order, stop price should be better than limit price')
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price, leverage)
-            return dry_order
-
-        try:
-            params = self._params.copy()
-            params.update({'stopPrice': stop_price})
-            if self.trading_mode == TradingMode.FUTURES:
-                params.update({'reduceOnly': True})
-
-            amount = self.amount_to_precision(pair, amount)
-
-            rate = self.price_to_precision(pair, rate)
-
-            self._lev_prep(pair, leverage, side)
-            order = self._api.create_order(
-                symbol=pair,
-                type=ordertype,
-                side=side,
-                amount=amount,
-                price=rate,
-                params=params
-            )
-            logger.info('stoploss limit order added for %s. '
-                        'stop price: %s. limit: %s', pair, stop_price, rate)
-            self._log_exchange_response('create_stoploss_order', order)
-            return order
-        except ccxt.InsufficientFunds as e:
-            raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
-                f'Tried to {side} amount {amount} at rate {rate}. '
-                f'Message: {e}') from e
-        except ccxt.InvalidOrder as e:
-            # Errors:
-            # `binance Order would trigger immediately.`
-            raise InvalidOrderException(
-                f'Could not create {ordertype} {side} order on market {pair}. '
-                f'Tried to {side} amount {amount} at rate {rate}. '
-                f'Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
 
     @retrier
     def _set_leverage(

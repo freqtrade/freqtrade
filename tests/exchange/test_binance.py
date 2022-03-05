@@ -11,6 +11,7 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
+@pytest.mark.parametrize('trademode', [TradingMode.FUTURES, TradingMode.SPOT])
 @pytest.mark.parametrize('limitratio,expected,side', [
     (None, 220 * 0.99, "sell"),
     (0.99, 220 * 0.99, "sell"),
@@ -19,16 +20,10 @@ from tests.exchange.test_exchange import ccxt_exceptionhandlers
     (0.99, 220 * 1.01, "buy"),
     (0.98, 220 * 1.02, "buy"),
 ])
-def test_stoploss_order_binance(
-    default_conf,
-    mocker,
-    limitratio,
-    expected,
-    side
-):
+def test_stoploss_order_binance(default_conf, mocker, limitratio, expected, side, trademode):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
-    order_type = 'stop_loss_limit'
+    order_type = 'stop_loss_limit' if trademode == TradingMode.SPOT else 'stop'
 
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
@@ -37,6 +32,8 @@ def test_stoploss_order_binance(
         }
     })
     default_conf['dry_run'] = False
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    default_conf['trading_mode'] = trademode
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
@@ -72,7 +69,11 @@ def test_stoploss_order_binance(
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     # Price should be 1% below stopprice
     assert api_mock.create_order.call_args_list[0][1]['price'] == expected
-    assert api_mock.create_order.call_args_list[0][1]['params'] == {'stopPrice': 220}
+    if trademode == TradingMode.SPOT:
+        params_dict = {'stopPrice': 220}
+    else:
+        params_dict = {'stopPrice': 220, 'reduceOnly': True}
+    assert api_mock.create_order.call_args_list[0][1]['params'] == params_dict
 
     # test exception handling
     with pytest.raises(DependencyException):

@@ -42,12 +42,13 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#binance-blacklist))
+- [X] [Binance](https://www.binance.com/)
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [FTX](https://ftx.com)
+- [X] [FTX](https://ftx.com/#a=2258149)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Huobi](http://huobi.com/)
 - [X] [Kraken](https://kraken.com/)
-- [X] [OKX](https://www.okx.com/)
+- [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested

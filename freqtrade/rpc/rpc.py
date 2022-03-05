@@ -171,7 +171,7 @@ class RPC:
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
-                        closing_side = "buy" if trade.is_short else "sell"
+                        closing_side = trade.exit_side
                         current_rate = self._freqtrade.exchange.get_rate(
                             trade.pair, refresh=False, side=closing_side)
                     except (ExchangeError, PricingError):

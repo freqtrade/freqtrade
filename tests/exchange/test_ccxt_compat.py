@@ -82,6 +82,13 @@ EXCHANGES = {
         'leverage_tiers_public': True,
         'leverage_in_spot_market': True,
     },
+    'huobi': {
+        'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+        'futures': False,
+    },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
@@ -198,7 +205,10 @@ class TestCCXTExchange():
             else:
                 next_limit = exchange.get_next_limit_in_list(
                     val, l2_limit_range, l2_limit_range_required)
-                if next_limit is None or next_limit > 200:
+                if next_limit is None:
+                    assert len(l2['asks']) > 100
+                    assert len(l2['asks']) > 100
+                elif next_limit > 200:
                     # Large orderbook sizes can be a problem for some exchanges (bitrex ...)
                     assert len(l2['asks']) > 200
                     assert len(l2['asks']) > 200
@@ -313,7 +323,7 @@ class TestCCXTExchange():
     def test_ccxt_get_max_leverage_spot(self, exchange):
         spot, spot_name = exchange
         if spot:
-            leverage_in_market_spot = EXCHANGES[spot_name]['leverage_in_spot_market']
+            leverage_in_market_spot = EXCHANGES[spot_name].get('leverage_in_spot_market')
             if leverage_in_market_spot:
                 spot_pair = EXCHANGES[spot_name].get('pair', EXCHANGES[spot_name]['pair'])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
@@ -323,7 +333,7 @@ class TestCCXTExchange():
     def test_ccxt_get_max_leverage_futures(self, exchange_futures):
         futures, futures_name = exchange_futures
         if futures:
-            leverage_tiers_public = EXCHANGES[futures_name]['leverage_tiers_public']
+            leverage_tiers_public = EXCHANGES[futures_name].get('leverage_tiers_public')
             if leverage_tiers_public:
                 futures_pair = EXCHANGES[futures_name].get(
                     'futures_pair',
@@ -346,7 +356,7 @@ class TestCCXTExchange():
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures):
         futures, futures_name = exchange_futures
-        if futures and EXCHANGES[futures_name]['leverage_tiers_public']:
+        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
             leverage_tiers = futures.load_leverage_tiers()
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
@@ -379,7 +389,7 @@ class TestCCXTExchange():
 
     def test_ccxt_dry_run_liquidation_price(self, exchange_futures):
         futures, futures_name = exchange_futures
-        if futures and EXCHANGES[futures_name]['leverage_tiers_public']:
+        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
 
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
