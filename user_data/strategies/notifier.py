@@ -23,7 +23,8 @@ def post_request(text, is_from_429_watcher=False):
     result = requests.post('https://api.telegram.org/bot' + executionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
                            '/sendMessage?chat_id=' + executionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' + text + '&parse_mode=Markdown')
     print(str(result))
-    if str(result) == "<Response [429]>":
+    if str(result) != "<Response [200]>":
+        delete_429_file(text)
         write_to_429_file(text)
     elif str(result) == "<Response [200]>" and is_from_429_watcher:
         delete_429_file(text)
