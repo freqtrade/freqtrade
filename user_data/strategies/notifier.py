@@ -18,7 +18,6 @@ def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_du
 
 
 def post_request(text, is_from_429_watcher=False):
-    # time.sleep(1)  # safer for parallel execution
     print("post_request: " + text)
     result = requests.post('https://api.telegram.org/bot' + executionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
                            '/sendMessage?chat_id=' + executionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' + text + '&parse_mode=Markdown')
