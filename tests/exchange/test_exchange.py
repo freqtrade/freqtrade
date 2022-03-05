@@ -1040,12 +1040,14 @@ def test_exchange_has(default_conf, mocker):
     assert not exchange.exchange_has("deadbeef")
 
 
-@pytest.mark.parametrize("side", [
-    ("buy"),
-    ("sell")
+@pytest.mark.parametrize("side,leverage", [
+    ("buy", 1),
+    ("buy", 5),
+    ("sell", 1.0),
+    ("sell", 5.0),
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
+def test_create_dry_run_order(default_conf, mocker, side, exchange_name, leverage):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
@@ -1055,7 +1057,7 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
         side=side,
         amount=1,
         rate=200,
-        leverage=1.0
+        leverage=leverage
     )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
@@ -1063,6 +1065,8 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
     assert order["type"] == "limit"
     assert order["symbol"] == "ETH/BTC"
     assert order["amount"] == 1
+    assert order["leverage"] == leverage
+    assert order["cost"] == 1 * 200 / leverage
 
 
 @pytest.mark.parametrize("side,startprice,endprice", [

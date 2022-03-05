@@ -102,8 +102,7 @@ class Wallets:
             for position in open_trades:
                 # size = self._exchange._contracts_to_amount(position.pair, position['contracts'])
                 size = position.amount
-                # TODO-lev: stake_amount in real trades does not include the leverage ...
-                collateral = position.stake_amount / position.leverage
+                collateral = position.stake_amount
                 leverage = position.leverage
                 tot_in_trades -= collateral
                 _positions[position.pair] = PositionWallet(

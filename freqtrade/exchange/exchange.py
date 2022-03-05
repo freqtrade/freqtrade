@@ -779,7 +779,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate,
+            'cost': _amount * rate / leverage,
             'type': ordertype,
             'side': side,
             'filled': 0,
