@@ -436,6 +436,19 @@ A full sample can be found [in the DataProvider section](#complete-data-provider
     It is however better to use resampling to longer timeframes whenever possible
     to avoid hammering the exchange with too many requests and risk being blocked.
 
+??? Note "Alternative candle types"
+    Informative_pairs can also provide a 3rd tuple element defining the candle type explicitly.
+    Availability of alternative candle-types will depend on the trading-mode and the exchange. Details about this can be found in the exchange documentation.
+
+    ``` python
+    def informative_pairs(self):
+        return [
+            ("ETH/USDT", "5m", ""),   # Uses default candletype, depends on trading_mode 
+            ("ETH/USDT", "5m", "spot"),   # Forces usage of spot candles
+            ("BTC/TUSD", "15m", "futures"),  # Uses futures candles
+            ("BTC/TUSD", "15m", "mark"),  # Uses mark candles
+        ]
+    ```
 ***
 
 ### Informative pairs decorator (`@informative()`)
