@@ -20,6 +20,7 @@ If you intend on using markets other than spot markets, please migrate your stra
 * Introduced new `leverage` callback
 * `@informative` decorator now takes an optional `candle_type` argument
 * helper methods `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
+* `INTERFACE_VERSION` should be set to 3.
 
 ## Extensive explanation
 

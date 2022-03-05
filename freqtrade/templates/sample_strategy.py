@@ -35,7 +35,7 @@ class SampleStrategy(IStrategy):
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Can this strategy go short?
     can_short: bool = False

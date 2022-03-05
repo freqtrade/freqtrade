@@ -35,7 +35,7 @@ The bot also include a sample strategy called `SampleStrategy` you can update: `
 You can test it with the parameter: `--strategy SampleStrategy`
 
 Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
-The current version is 2 - which is also the default when it's not set explicitly in the strategy.
+The current version is 3 - which is also the default when it's not set explicitly in the strategy.
 
 Future versions will require this to be set.
 
