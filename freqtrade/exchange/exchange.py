@@ -1011,6 +1011,11 @@ class Exchange:
     def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
 
         available_order_Types: Dict[str, str] = self._ft_has["stoploss_order_types"]
+        if self.trading_mode == TradingMode.FUTURES:
+            # Optionally use different order type for stop order
+            available_order_Types = self._ft_has.get('stoploss_order_types_futures',
+                                                     self._ft_has["stoploss_order_types"])
+
         if user_order_type in available_order_Types.keys():
             ordertype = available_order_Types[user_order_type]
         else:
