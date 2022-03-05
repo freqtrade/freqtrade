@@ -1221,7 +1221,8 @@ class FreqtradeBot(LoggingMixin):
         amount = sub_trade_amt or self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
 
-        if not sub_trade_amt and not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+        if not sub_trade_amt and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
                 current_time=datetime.now(timezone.utc)):
