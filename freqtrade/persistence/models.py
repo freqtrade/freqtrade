@@ -304,7 +304,7 @@ class LocalTrade():
     # absolute value of the initial stop loss
     initial_stop_loss: float = 0.0
     # percentage value of the initial stop loss
-    initial_stop_loss_pct: float = 0.0
+    initial_stop_loss_pct: Optional[float] = None
     # stoploss order id which is on exchange
     stoploss_order_id: Optional[str] = None
     # last update time of the stoploss order on exchange
@@ -446,7 +446,8 @@ class LocalTrade():
         new_loss = float(current_price * (1 - abs(stoploss)))
 
         # no stop loss assigned yet
-        if not self.stop_loss:
+        # if not self.stop_loss:
+        if self.initial_stop_loss_pct is None:
             logger.debug(f"{self.pair} - Assigning new stoploss...")
             self._set_new_stoploss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
@@ -786,6 +787,7 @@ class LocalTrade():
                 logger.info(f"Stoploss for {trade} needs adjustment...")
                 # Force reset of stoploss
                 trade.stop_loss = None
+                trade.initial_stop_loss_pct = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
 
