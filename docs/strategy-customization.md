@@ -908,7 +908,7 @@ In some situations it may be confusing to deal with stops relative to current ra
                             current_rate: float, current_profit: float, **kwargs) -> float:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             candle = dataframe.iloc[-1].squeeze()
-            return stoploss_from_absolute(current_rate - (candle['atr'] * 2, is_short=trade.is_short), current_rate)
+            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
 
     ```
 
