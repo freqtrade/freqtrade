@@ -2443,7 +2443,6 @@ def test_check_handle_timedout_buy_exception(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     is_short, fee, mocker
 ) -> None:
-    # TODO-lev: use is_short or remove it
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2457,6 +2456,7 @@ def test_check_handle_timedout_buy_exception(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
 
+    open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
@@ -2473,9 +2473,11 @@ def test_check_handle_timedout_sell_usercustom(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker,
     is_short, open_trade_usdt, caplog
 ) -> None:
-    # TODO-lev: use is_short or remove it
     default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
     limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+    if is_short:
+        limit_sell_order_old['side'] = 'buy'
+        open_trade_usdt.is_short = is_short
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2500,28 +2502,34 @@ def test_check_handle_timedout_sell_usercustom(
     assert cancel_order_mock.call_count == 0
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # Return false - No impact
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 0
     assert open_trade_usdt.is_open is False
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     freqtrade.strategy.check_sell_timeout = MagicMock(side_effect=KeyError)
+    freqtrade.strategy.check_buy_timeout = MagicMock(side_effect=KeyError)
     # Return Error - No impact
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 0
     assert open_trade_usdt.is_open is False
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     # Return True - sells!
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=True)
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert open_trade_usdt.is_open is True
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     # 2nd canceled trade - Fail execute sell
     caplog.clear()
@@ -2555,6 +2563,7 @@ def test_check_handle_timedout_sell(
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+    limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2568,10 +2577,12 @@ def test_check_handle_timedout_sell(
     open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
     open_trade_usdt.close_profit_abs = 0.001
     open_trade_usdt.is_open = False
+    open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
@@ -2579,6 +2590,7 @@ def test_check_handle_timedout_sell(
     assert open_trade_usdt.is_open is True
     # Custom user sell-timeout is never called
     assert freqtrade.strategy.check_sell_timeout.call_count == 0
+    assert freqtrade.strategy.check_buy_timeout.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2590,6 +2602,7 @@ def test_check_handle_cancelled_sell(
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     limit_sell_order_old.update({"status": "canceled", 'filled': 0.0})
+    limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2602,6 +2615,7 @@ def test_check_handle_cancelled_sell(
     open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
     open_trade_usdt.is_open = False
+    open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
 
@@ -2610,7 +2624,8 @@ def test_check_handle_cancelled_sell(
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
     assert open_trade_usdt.is_open is True
-    assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
+    exit_name = 'Buy' if is_short else 'Sell'
+    assert log_has_re(f"{exit_name} order cancelled on exchange for Trade.*", caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2620,8 +2635,10 @@ def test_check_handle_timedout_partial(
     open_trade, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
+    open_trade.is_short = is_short
     open_trade.leverage = leverage
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
     limit_buy_canceled['status'] = 'canceled'
 
@@ -2655,10 +2672,14 @@ def test_check_handle_timedout_partial_fee(
     limit_buy_order_old_partial, trades_for_order,
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
-    # TODO-lev: use is_short or remove it
+    open_trade.is_short = is_short
+    open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
     limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
+    limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
+    limit_buy_order_old_partial_canceled['side'] = 'sell' if is_short else 'buy'
+
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=0))
     patch_exchange(mocker)
@@ -2690,7 +2711,7 @@ def test_check_handle_timedout_partial_fee(
     assert trades[0].amount == (limit_buy_order_old_partial['amount'] -
                                 limit_buy_order_old_partial['remaining']) - 0.023
     assert trades[0].open_order_id is None
-    assert trades[0].fee_updated('buy')
+    assert trades[0].fee_updated(open_trade.enter_side)
     assert pytest.approx(trades[0].fee_open) == 0.001
 
 
@@ -2700,10 +2721,12 @@ def test_check_handle_timedout_partial_except(
     limit_buy_order_old_partial, trades_for_order,
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
-    # TODO-lev: use is_short or remove it
+    open_trade.is_short = is_short
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
+    if is_short:
+        limit_buy_order_old_partial['side'] = 'sell'
     cancel_order_mock = MagicMock(return_value=limit_buy_order_old_partial_canceled)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2826,7 +2849,6 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
                          indirect=['limit_buy_order_canceled_empty'])
 def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short,
                                        limit_buy_order_canceled_empty) -> None:
-    # TODO-lev: use is_short or remove it
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = mocker.patch(
@@ -2838,10 +2860,14 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_sho
     reason = CANCEL_REASON['TIMEOUT']
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
-    trade.enter_side = "buy"
+    trade.enter_side = "sell" if is_short else "buy"
     assert freqtrade.handle_cancel_enter(trade, limit_buy_order_canceled_empty, reason)
     assert cancel_order_mock.call_count == 0
-    assert log_has_re(r'Buy order fully cancelled. Removing .* from database\.', caplog)
+    assert log_has_re(
+        f'{trade.enter_side.capitalize()} order fully cancelled. '
+        r'Removing .* from database\.',
+        caplog
+    )
     assert nofiy_mock.call_count == 1
 
 
