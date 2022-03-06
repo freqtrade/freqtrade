@@ -9,9 +9,7 @@ from user_data.wao.notifier import post_request
 
 class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
 
-    def __init__(self, is_test_mode):
-        self.is_test_mode = is_test_mode
-        # Set the patterns for PatternMatchingEventHandler
+    def __init__(self):
         watchdog.events.PatternMatchingEventHandler.__init__(self,
                                                              ignore_directories=True, case_sensitive=False)
 

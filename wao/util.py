@@ -52,9 +52,9 @@ def _perform_back_test(date_time, coin, brain, romeo_pool):
     romeo.start()
 
 
-def create_429_watcher(is_test_mode):
+def create_429_watcher():
     print("create_429_watcher: watching:- " + str(ExecutionConfig._429_DIRECTORY))
-    event_handler = _429_Watcher(is_test_mode)
+    event_handler = _429_Watcher()
     observer = watchdog.observers.Observer()
     observer.schedule(event_handler, path=ExecutionConfig._429_DIRECTORY, recursive=True)
     observer.start()
@@ -66,5 +66,5 @@ def create_429_watcher(is_test_mode):
     observer.join()
 
 
-def create_429_watcher_thread(is_test_mode):
-    threading.Thread(target=create_429_watcher, args=(is_test_mode,)).start()
+def create_429_watcher_thread():
+    threading.Thread(target=create_429_watcher).start()
