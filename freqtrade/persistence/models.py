@@ -374,7 +374,7 @@ class LocalTrade():
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
-            'realized_profit': self.realized_profit,
+            'realized_profit': self.realized_profit or 0.0,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
             'close_profit': self.close_profit,  # Deprecated
