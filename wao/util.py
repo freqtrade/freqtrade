@@ -3,6 +3,7 @@ from wao.config import Config
 import sys
 import time
 import watchdog
+import threading
 
 from wao._429_watcher import _429_Watcher
 
@@ -63,3 +64,7 @@ def create_429_watcher(is_test_mode):
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+def create_429_watcher_thread(is_test_mode):
+    threading.Thread(target=create_429_watcher, args=(is_test_mode,)).start()

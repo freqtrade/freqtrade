@@ -12,7 +12,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from wao.util import execute, back_test, create_429_watcher
+from wao.util import execute, back_test, create_429_watcher_thread
 from wao._429_file_util import create_429_directory
 from wao.config import Config
 from wao.notifier import send_start_deliminator_message
@@ -25,7 +25,7 @@ class Strategy003(IStrategy):
     if Config.IS_BACKTEST:
         send_start_deliminator_message('Freq Strategy003 ', Config.BACKTEST_COIN, Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
         create_429_directory()
-        threading.Thread(target=create_429_watcher, args=(True,)).start()
+        create_429_watcher_thread(True)
     """
     Strategy 003
     author@: Gerald Lonlas
