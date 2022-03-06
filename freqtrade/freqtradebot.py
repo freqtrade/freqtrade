@@ -487,7 +487,7 @@ class FreqtradeBot(LoggingMixin):
                     'type': RPCMessageType.WARNING,
                     'status': 'bug open_order_id is None'
                 }
-                self.rpc.send_msg(msg)
+                # self.rpc.send_msg(msg)
                 return
             amount = -stake_amount / current_rate_sell
             if trade.amount - amount < min_stake_amount:
@@ -1523,7 +1523,7 @@ class FreqtradeBot(LoggingMixin):
                 'status': f"fees bug for {trade.id}"
             }
             if not self.rpc_msg.get(trade.id):
-                self.rpc.send_msg(msg)
+                # self.rpc.send_msg(msg)
                 self.rpc_msg[trade.id] = 1
             return order_amount
         fee_currency = None
