@@ -405,44 +405,6 @@ class LocalTrade():
             raise OperationalException(
                 f"{self.trading_mode.value} trading requires param interest_rate on trades")
 
-    def _set_stop_loss(self, stop_loss: float, percent: float):
-        """
-        Method you should use to set self.stop_loss.
-        Assures stop_loss is not passed the liquidation price
-        """
-        if self.isolated_liq is not None:
-            if self.is_short:
-                sl = min(stop_loss, self.isolated_liq)
-            else:
-                sl = max(stop_loss, self.isolated_liq)
-        else:
-            sl = stop_loss
-
-        if not self.stop_loss:
-            self.initial_stop_loss = sl
-        self.stop_loss = sl
-
-        self.stop_loss_pct = -1 * abs(percent)
-        self.stoploss_last_update = datetime.utcnow()
-
-    def set_isolated_liq(self, isolated_liq: Optional[float]):
-        """
-        Method you should use to set self.liquidation price.
-        Assures stop_loss is not passed the liquidation price
-        """
-        if not isolated_liq:
-            return
-        if self.stop_loss is not None:
-            if self.is_short:
-                self.stop_loss = min(self.stop_loss, isolated_liq)
-            else:
-                self.stop_loss = max(self.stop_loss, isolated_liq)
-        else:
-            self.initial_stop_loss = isolated_liq
-            self.stop_loss = isolated_liq
-
-        self.isolated_liq = isolated_liq
-
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
         leverage = self.leverage or 1.0
@@ -546,6 +508,44 @@ class LocalTrade():
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
+
+    def set_isolated_liq(self, isolated_liq: Optional[float]):
+        """
+        Method you should use to set self.liquidation price.
+        Assures stop_loss is not passed the liquidation price
+        """
+        if not isolated_liq:
+            return
+        if self.stop_loss is not None:
+            if self.is_short:
+                self.stop_loss = min(self.stop_loss, isolated_liq)
+            else:
+                self.stop_loss = max(self.stop_loss, isolated_liq)
+        else:
+            self.initial_stop_loss = isolated_liq
+            self.stop_loss = isolated_liq
+
+        self.isolated_liq = isolated_liq
+
+    def _set_stop_loss(self, stop_loss: float, percent: float):
+        """
+        Method you should use to set self.stop_loss.
+        Assures stop_loss is not passed the liquidation price
+        """
+        if self.isolated_liq is not None:
+            if self.is_short:
+                sl = min(stop_loss, self.isolated_liq)
+            else:
+                sl = max(stop_loss, self.isolated_liq)
+        else:
+            sl = stop_loss
+
+        if not self.stop_loss:
+            self.initial_stop_loss = sl
+        self.stop_loss = sl
+
+        self.stop_loss_pct = -1 * abs(percent)
+        self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False) -> None:
