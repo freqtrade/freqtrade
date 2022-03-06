@@ -944,7 +944,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
-    assert trade.isolated_liq == liq_price
+    assert trade.liquidation_price == liq_price
 
     # In case of too high stake amount
 

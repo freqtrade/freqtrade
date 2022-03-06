@@ -329,7 +329,7 @@ class LocalTrade():
     trading_mode: TradingMode = TradingMode.SPOT
 
     # Leverage trading properties
-    isolated_liq: Optional[float] = None
+    liquidation_price: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
 
@@ -483,7 +483,7 @@ class LocalTrade():
 
             'leverage': self.leverage,
             'interest_rate': self.interest_rate,
-            'isolated_liq': self.isolated_liq,
+            'liquidation_price': self.liquidation_price,
             'is_short': self.is_short,
             'trading_mode': self.trading_mode,
             'funding_fees': self.funding_fees,
@@ -507,25 +507,25 @@ class LocalTrade():
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
-    def set_isolated_liq(self, isolated_liq: Optional[float]):
+    def set_isolated_liq(self, liquidation_price: Optional[float]):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price
         """
-        if not isolated_liq:
+        if not liquidation_price:
             return
-        self.isolated_liq = isolated_liq
+        self.liquidation_price = liquidation_price
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
         Method you should use to set self.stop_loss.
         Assures stop_loss is not passed the liquidation price
         """
-        if self.isolated_liq is not None:
+        if self.liquidation_price is not None:
             if self.is_short:
-                sl = min(stop_loss, self.isolated_liq)
+                sl = min(stop_loss, self.liquidation_price)
             else:
-                sl = max(stop_loss, self.isolated_liq)
+                sl = max(stop_loss, self.liquidation_price)
         else:
             sl = stop_loss
 
@@ -553,13 +553,13 @@ class LocalTrade():
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss / leverage)))
             # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.isolated_liq:
-                new_loss = min(self.isolated_liq, new_loss)
+            if self.liquidation_price:
+                new_loss = min(self.liquidation_price, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss / leverage)))
             # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.isolated_liq:
-                new_loss = max(self.isolated_liq, new_loss)
+            if self.liquidation_price:
+                new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None:
@@ -1093,7 +1093,7 @@ class Trade(_DECL_BASE, LocalTrade):
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=False, default=False)
-    isolated_liq = Column(Float, nullable=True)
+    liquidation_price = Column(Float, nullable=True)
 
     # Margin Trading Properties
     interest_rate = Column(Float, nullable=False, default=0.0)
