@@ -2475,8 +2475,10 @@ def test_check_handle_timedout_sell_usercustom(
 ) -> None:
     default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
     limit_sell_order_old['id'] = open_trade_usdt.open_order_id
-    # TODO-lev:
-    # open_trade_usdt.is_short = is_short
+    if is_short:
+        limit_sell_order_old['side'] = 'buy'
+        open_trade_usdt.is_short = is_short
+
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -2500,28 +2502,34 @@ def test_check_handle_timedout_sell_usercustom(
     assert cancel_order_mock.call_count == 0
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # Return false - No impact
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 0
     assert open_trade_usdt.is_open is False
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     freqtrade.strategy.check_sell_timeout = MagicMock(side_effect=KeyError)
+    freqtrade.strategy.check_buy_timeout = MagicMock(side_effect=KeyError)
     # Return Error - No impact
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 0
     assert open_trade_usdt.is_open is False
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     # Return True - sells!
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=True)
+    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 1
     assert open_trade_usdt.is_open is True
-    assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    assert freqtrade.strategy.check_sell_timeout.call_count == (0 if is_short else 1)
+    assert freqtrade.strategy.check_buy_timeout.call_count == (1 if is_short else 0)
 
     # 2nd canceled trade - Fail execute sell
     caplog.clear()
