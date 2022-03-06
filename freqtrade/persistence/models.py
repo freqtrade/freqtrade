@@ -422,10 +422,7 @@ class LocalTrade():
             self.initial_stop_loss = sl
         self.stop_loss = sl
 
-        if self.is_short:
-            self.stop_loss_pct = abs(percent)
-        else:
-            self.stop_loss_pct = -1 * abs(percent)
+        self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
     def set_isolated_liq(self, isolated_liq: Optional[float]):
@@ -576,15 +573,11 @@ class LocalTrade():
                 new_loss = max(self.isolated_liq, new_loss)
 
         # no stop loss assigned yet
-        # if not self.stop_loss:
         if self.initial_stop_loss_pct is None:
             logger.debug(f"{self.pair} - Assigning new stoploss...")
             self._set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
-            if self.is_short:
-                self.initial_stop_loss_pct = abs(stoploss)
-            else:
-                self.initial_stop_loss_pct = -1 * abs(stoploss)
+            self.initial_stop_loss_pct = -1 * abs(stoploss)
 
         # evaluate if the stop loss needs to be updated
         else:

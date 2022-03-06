@@ -1434,39 +1434,39 @@ def test_adjust_stop_loss_short(fee):
     )
     trade.adjust_stop_loss(trade.open_rate, 0.05, True)
     assert trade.stop_loss == 1.05
-    assert trade.stop_loss_pct == 0.05
+    assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.initial_stop_loss_pct == -0.05
     # Get percent of profit with a lower rate
     trade.adjust_stop_loss(1.04, 0.05)
     assert trade.stop_loss == 1.05
-    assert trade.stop_loss_pct == 0.05
+    assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.initial_stop_loss_pct == -0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
     # If the price goes down to 0.7, with a trailing stop of 0.1,
     # the new stoploss at 0.1 above 0.7 would be 0.7*0.1 higher
     assert round(trade.stop_loss, 8) == 0.77
-    assert trade.stop_loss_pct == 0.1
+    assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.initial_stop_loss_pct == -0.05
     # current rate lower again ... should not change
     trade.adjust_stop_loss(0.8, -0.1)
     assert round(trade.stop_loss, 8) == 0.77
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.initial_stop_loss_pct == -0.05
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(0.6, -0.1)
     assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.initial_stop_loss_pct == -0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
     assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
-    assert trade.initial_stop_loss_pct == 0.05
-    assert trade.stop_loss_pct == 0.1
+    assert trade.initial_stop_loss_pct == -0.05
+    assert trade.stop_loss_pct == -0.1
     trade.set_isolated_liq(0.63)
     trade.adjust_stop_loss(0.59, -0.1)
     assert trade.stop_loss == 0.63
@@ -1825,9 +1825,9 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     )
     trade.adjust_stop_loss(trade.open_rate, -0.1, True)
     assert trade.stop_loss == 1.02
-    assert trade.stop_loss_pct == 0.1
+    assert trade.stop_loss_pct == -0.1
     assert trade.initial_stop_loss == 1.02
-    assert trade.initial_stop_loss_pct == 0.1
+    assert trade.initial_stop_loss_pct == -0.1
     Trade.query.session.add(trade)
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
@@ -1835,18 +1835,18 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert len(trades) == 1
     trade_adj = trades[0]
     assert trade_adj.stop_loss == 1.03
-    assert trade_adj.stop_loss_pct == 0.15
+    assert trade_adj.stop_loss_pct == -0.15
     assert trade_adj.initial_stop_loss == 1.03
-    assert trade_adj.initial_stop_loss_pct == 0.15
+    assert trade_adj.initial_stop_loss_pct == -0.15
     # Raise stoploss
     Trade.stoploss_reinitialization(-0.05)
     trades = Trade.get_open_trades()
     assert len(trades) == 1
     trade_adj = trades[0]
     assert trade_adj.stop_loss == 1.01
-    assert trade_adj.stop_loss_pct == 0.05
+    assert trade_adj.stop_loss_pct == -0.05
     assert trade_adj.initial_stop_loss == 1.01
-    assert trade_adj.initial_stop_loss_pct == 0.05
+    assert trade_adj.initial_stop_loss_pct == -0.05
     # Trailing stoploss
     trade.adjust_stop_loss(0.98, -0.05)
     assert trade_adj.stop_loss == 0.9898
@@ -1857,9 +1857,9 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     trade_adj = trades[0]
     # Stoploss should not change in this case.
     assert trade_adj.stop_loss == 0.9898
-    assert trade_adj.stop_loss_pct == 0.05
+    assert trade_adj.stop_loss_pct == -0.05
     assert trade_adj.initial_stop_loss == 1.01
-    assert trade_adj.initial_stop_loss_pct == 0.05
+    assert trade_adj.initial_stop_loss_pct == -0.05
     # Stoploss can't go above liquidation price
     trade_adj.set_isolated_liq(0.985)
     trade.adjust_stop_loss(0.9799, -0.05)
