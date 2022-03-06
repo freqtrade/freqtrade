@@ -3897,7 +3897,7 @@ def test_trailing_stop_loss_positive(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
     trade.update_trade(oobj)
     caplog.set_level(logging.DEBUG)

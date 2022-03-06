@@ -398,8 +398,6 @@ class LocalTrade():
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        if self.isolated_liq:
-            self.set_isolated_liq(isolated_liq=self.isolated_liq)
         self.recalc_open_trade_value()
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
             raise OperationalException(
@@ -516,15 +514,6 @@ class LocalTrade():
         """
         if not isolated_liq:
             return
-        if self.stop_loss is not None:
-            if self.is_short:
-                self.stop_loss = min(self.stop_loss, isolated_liq)
-            else:
-                self.stop_loss = max(self.stop_loss, isolated_liq)
-        else:
-            self.initial_stop_loss = isolated_liq
-            self.stop_loss = isolated_liq
-
         self.isolated_liq = isolated_liq
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
@@ -596,7 +585,7 @@ class LocalTrade():
 
         logger.debug(
             f"{self.pair} - Stoploss adjusted. current_price={current_price:.8f}, "
-            f"open_rate={self.open_rate:.8f}, max_rate={self.max_rate:.8f}, "
+            f"open_rate={self.open_rate:.8f}, max_rate={self.max_rate or self.open_rate:.8f}, "
             f"initial_stop_loss={self.initial_stop_loss:.8f}, "
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
