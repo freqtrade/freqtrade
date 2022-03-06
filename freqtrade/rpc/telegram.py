@@ -447,7 +447,7 @@ class Telegram(RPCHandler):
         return lines
 
     @authorized_only
-    def _status(self, update: Update, context: CallbackContext) -> None:
+    def _status(self, update: Update, context: CallbackContext) -> None: # noqa: max-complexity: 13
         """
         Handler for /status.
         Returns the current TradeThread status

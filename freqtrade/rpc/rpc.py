@@ -193,7 +193,6 @@ class RPC:
                 stoploss_current_dist_ratio = stoploss_current_dist / current_rate
 
                 trade_dict = trade.to_json()
-                import pprint;logger.info(pprint.pformat(trade_dict))
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if not trade.is_open else None,
