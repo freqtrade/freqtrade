@@ -374,6 +374,7 @@ class LocalTrade():
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
+            'realized_profit': self.realized_profit,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
             'close_profit': self.close_profit,  # Deprecated
@@ -880,7 +881,7 @@ class Trade(_DECL_BASE, LocalTrade):
     open_trade_value = Column(Float)
     close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
-    realized_profit = Column(Float)
+    realized_profit = Column(Float, default=0.0)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)

@@ -108,6 +108,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
+        'realized_profit': 0.0,
         'exchange': 'binance',
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
@@ -183,6 +184,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
+        'realized_profit': 0.0,
         'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
