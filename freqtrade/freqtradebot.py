@@ -483,10 +483,10 @@ class FreqtradeBot(LoggingMixin):
             # TODO : debug
             open_sell_order = trade.select_order('sell', True)
             if open_sell_order:
-                msg = {
-                    'type': RPCMessageType.WARNING,
-                    'status': 'bug open_order_id is None'
-                }
+                # msg = {
+                #     'type': RPCMessageType.WARNING,
+                #     'status': 'bug open_order_id is None'
+                # }
                 # self.rpc.send_msg(msg)
                 return
             amount = -stake_amount / current_rate_sell
@@ -1518,10 +1518,10 @@ class FreqtradeBot(LoggingMixin):
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
-            msg = {
-                'type': RPCMessageType.WARNING,
-                'status': f"fees bug for {trade.id}"
-            }
+            # msg = {
+            #     'type': RPCMessageType.WARNING,
+            #     'status': f"fees bug for {trade.id}"
+            # }
             if not self.rpc_msg.get(trade.id):
                 # self.rpc.send_msg(msg)
                 self.rpc_msg[trade.id] = 1
