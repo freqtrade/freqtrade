@@ -500,6 +500,7 @@ class Telegram(RPCHandler):
                 ])
 
                 if r['is_open']:
+                    lines.append("*Realized Prodir:* `{realized_profit:.8f}`")
                     if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                             and r['initial_stop_loss_ratio'] is not None):
                         # Adding initial stoploss only if it is different from stoploss

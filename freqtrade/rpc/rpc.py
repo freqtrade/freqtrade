@@ -195,8 +195,9 @@ class RPC:
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
                     base_currency=self._freqtrade.config['stake_currency'],
-                    close_profit=trade.close_profit if trade.close_profit is not None else None,
+                    close_profit=trade.close_profit if not trade.is_open else None,
                     current_rate=current_rate,
+                    realized_profit=trade.realized_profit,
                     current_profit=current_profit,  # Deprecated
                     current_profit_pct=round(current_profit * 100, 2),  # Deprecated
                     current_profit_abs=current_profit_abs,  # Deprecated

@@ -401,7 +401,6 @@ class Backtesting:
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = -stake_amount / current_rate
-            logger.info("partial_sell_bt")
             if amount > trade.amount:
                 logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
                 return trade

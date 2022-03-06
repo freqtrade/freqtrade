@@ -127,6 +127,7 @@ class Order(_DECL_BASE):
     side = Column(String(25), nullable=True)
     price = Column(Float, nullable=True)
     average = Column(Float, nullable=True)
+    initial_average = Column(Float, nullable=True)
     amount = Column(Float, nullable=True)
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
@@ -179,6 +180,7 @@ class Order(_DECL_BASE):
         self.amount = order.get('amount', self.amount)
         self.filled = order.get('filled', self.filled)
         self.average = order.get('average', self.average)
+        self.initial_average = order.get('average', self.initial_average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
@@ -269,6 +271,7 @@ class LocalTrade():
     trades: List['LocalTrade'] = []
     trades_open: List['LocalTrade'] = []
     total_profit: float = 0
+    realized_profit: float = 0
 
     id: int = 0
 
@@ -521,12 +524,14 @@ class LocalTrade():
                 if is_non_bt:
                     Trade.commit()
                 return
+        realized_profit = 0.0
         profit = 0.0
         idx = -1
         while sell_amount:
             b_order = orders[idx]
             buy_amount = b_order.safe_amount_after_fee
-            buy_rate = b_order.safe_price
+            avg_rate = b_order.safe_price
+            buy_rate = b_order.initial_average or b_order.price
             if sell_amount < buy_amount:
                 amount = sell_amount
             else:
@@ -536,7 +541,8 @@ class LocalTrade():
                 b_order.filled -= amount
                 b_order.order_update_date = datetime.now(timezone.utc)
             sell_amount -= amount
-            profit += self.calc_profit2(buy_rate, sell_rate, amount)
+            profit += self.calc_profit2(avg_rate, sell_rate, amount)
+            realized_profit += self.calc_profit2(buy_rate, sell_rate, amount)
         if is_closed:
             b_order2 = orders[idx]
             amount2 = b_order2.safe_amount_after_fee
@@ -545,6 +551,7 @@ class LocalTrade():
             if is_non_bt:
                 Order.query.session.commit()
             self.recalc_trade_from_orders()
+            self.realized_profit += realized_profit
 
         self.close_profit_abs = profit
         self.close_profit = sell_stake_amount / (sell_stake_amount - profit) - 1
@@ -873,6 +880,7 @@ class Trade(_DECL_BASE, LocalTrade):
     open_trade_value = Column(Float)
     close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
+    realized_profit = Column(Float)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
