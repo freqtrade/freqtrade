@@ -8,7 +8,7 @@ flake8==4.0.1
 flake8-tidy-imports==4.6.0
 mypy==0.931
 pytest==7.0.1
-pytest-asyncio==0.18.1
+pytest-asyncio==0.18.2
 pytest-cov==3.0.0
 pytest-mock==3.7.0
 pytest-random-order==1.0.4
@@ -20,7 +20,7 @@ time-machine==2.6.0
 nbconvert==6.4.2
 
 # mypy types
-types-cachetools==4.2.9
+types-cachetools==4.2.10
 types-filelock==3.2.5
 types-requests==2.27.11
 types-tabulate==0.8.5
