@@ -13,7 +13,7 @@ import numpy # noqa
 from datetime import datetime
 import threading
 
-from wao.util import execute, back_test, create_429_watcher_thread
+from wao.util import create_429_watcher_thread
 from wao._429_file_util import create_429_directory
 from wao.config import Config
 from wao.notifier import send_start_deliminator_message
