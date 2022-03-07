@@ -1883,6 +1883,31 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
            '*Open Rate:* `0.00001099`\n' \
            '*Total:* `(0.01465333 BTC, 180.895 USD)`'
 
+    msg_mock.reset_mock()
+    telegram.send_msg({
+        'type': RPCMessageType.BUY_FILL,
+        'trade_id': 1,
+        'buy_tag': 'buy_signal_01',
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'stake_amount': 0.01465333,
+        'sub_trade': True,
+        # 'stake_amount_fiat': 0.0,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+        'open_rate': 1.099e-05,
+        'amount': 1333.3333333333335,
+        'open_date': arrow.utcnow().shift(hours=-1)
+    })
+
+    assert msg_mock.call_args[0][0] \
+        == '\N{CHECK MARK} *Binance:* Bought ETH/BTC (#1)\n' \
+           '*Buy Tag:* `buy_signal_01`\n' \
+           '*Amount:* `1333.33333333`\n' \
+           '*Open Rate:* `0.00001099`\n' \
+           '*Total:* `(0.01465333 BTC, 180.895 USD)`\n' \
+           '*Balance:* `(0.01465333 BTC, 180.895 USD)`'
+
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
@@ -1920,6 +1945,41 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Current Rate:* `0.00003201`\n'
             '*Close Rate:* `0.00003201`\n'
             '*Duration:* `1:00:00 (60.0 min)`'
+            )
+
+    msg_mock.reset_mock()
+    telegram.send_msg({
+        'type': RPCMessageType.SELL,
+        'trade_id': 1,
+        'exchange': 'Binance',
+        'pair': 'KEY/ETH',
+        'gain': 'loss',
+        'limit': 3.201e-05,
+        'amount': 1333.3333333333335,
+        'order_type': 'market',
+        'open_rate': 7.5e-05,
+        'current_rate': 3.201e-05,
+        'profit_amount': -0.05746268,
+        'profit_ratio': -0.57405275,
+        'stake_currency': 'ETH',
+        'fiat_currency': 'USD',
+        'buy_tag': 'buy_signal1',
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
+        'close_date': arrow.utcnow(),
+        'stake_amount': 1234,
+        'sub_trade': True
+    })
+    assert msg_mock.call_args[0][0] \
+        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Buy Tag:* `buy_signal1`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
+            '*Current Rate:* `0.00003201`\n'
+            '*Close Rate:* `0.00003201`\n'
+            '*Remaining:* `(1234 ETH, -24.812 USD)`'
             )
 
     msg_mock.reset_mock()
