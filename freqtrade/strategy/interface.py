@@ -87,8 +87,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # Optional order types
     order_types: Dict = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
         'stoploss_on_exchange_interval': 60,

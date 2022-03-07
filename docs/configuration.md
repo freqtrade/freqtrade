@@ -392,11 +392,11 @@ Syntax for Strategy:
 
 ```python
 order_types = {
-    "buy": "limit",
-    "sell": "limit",
-    "emergencysell": "market",
-    "forcebuy": "market",
-    "forcesell": "market",
+    "entry": "limit",
+    "exit": "limit",
+    "emergencyexit": "market",
+    "forceentry": "market",
+    "forceexit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60,

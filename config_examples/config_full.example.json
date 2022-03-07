@@ -51,11 +51,11 @@
         "order_book_top": 1
     },
     "order_types": {
-        "buy": "limit",
-        "sell": "limit",
-        "emergencysell": "market",
-        "forcesell": "market",
-        "forcebuy": "market",
+        "entry": "limit",
+        "exit": "limit",
+        "emergencyexit": "market",
+        "forceexit": "market",
+        "forceentry": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60

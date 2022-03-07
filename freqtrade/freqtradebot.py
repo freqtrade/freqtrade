@@ -630,7 +630,7 @@ class FreqtradeBot(LoggingMixin):
                 f"{stake_amount} ...")
 
         amount = (stake_amount / enter_limit_requested) * leverage
-        order_type = ordertype or self.strategy.order_types['buy']
+        order_type = ordertype or self.strategy.order_types['entry']
 
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
@@ -1247,11 +1247,11 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
-            logger.info('Partial %s order timeout for %s.', trade.enter_side, trade)
+            logger.info(f'Partial {trade.enter_side} order timeout for {trade}.')
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        self._notify_enter_cancel(trade, order_type=self.strategy.order_types[trade.enter_side],
+        self._notify_enter_cancel(trade, order_type=self.strategy.order_types['entry'],
                                   reason=reason)
         return was_trade_fully_canceled
 
@@ -1296,7 +1296,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         self._notify_exit_cancel(
             trade,
-            order_type=self.strategy.order_types[trade.exit_side],
+            order_type=self.strategy.order_types['exit'],
             reason=reason
         )
         return cancelled
@@ -1376,10 +1376,10 @@ class FreqtradeBot(LoggingMixin):
         # First cancelling stoploss on exchange ...
         trade = self.cancel_stoploss_on_exchange(trade)
 
-        order_type = ordertype or self.strategy.order_types[exit_type]
+        order_type = ordertype or self.strategy.order_types['exit']
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
-            order_type = self.strategy.order_types.get("emergencysell", "market")
+            order_type = self.strategy.order_types.get("emergencyexit", "market")
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['exit']

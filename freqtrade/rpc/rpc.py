@@ -708,7 +708,7 @@ class RPC:
                     trade.pair, refresh=False, side=trade.exit_side)
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                    "forcesell", self._freqtrade.strategy.order_types["sell"])
+                    "forceexit", self._freqtrade.strategy.order_types["exit"])
 
                 self._freqtrade.execute_trade_exit(
                     trade, current_rate, sell_reason, ordertype=order_type)
@@ -731,7 +731,7 @@ class RPC:
                 trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
             ).first()
             if not trade:
-                logger.warning('forcesell: Invalid argument received')
+                logger.warning('forceexit: Invalid argument received')
                 raise RPCException('invalid argument')
 
             _exec_forcesell(trade)
@@ -780,7 +780,7 @@ class RPC:
         # execute buy
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
-                'forcebuy', self._freqtrade.strategy.order_types['buy'])
+                'forceentry', self._freqtrade.strategy.order_types['entry'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
                                          ordertype=order_type, trade=trade,
                                          is_short=is_short,
