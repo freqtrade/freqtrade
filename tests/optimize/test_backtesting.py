@@ -319,6 +319,7 @@ def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     del default_conf['timeframe']
     default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY,
                                      'SampleStrategy']
+    # TODO: This refers to the sampleStrategy in user_data if it exists...
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     with pytest.raises(OperationalException):

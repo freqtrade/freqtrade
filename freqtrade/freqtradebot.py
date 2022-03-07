@@ -595,7 +595,7 @@ class FreqtradeBot(LoggingMixin):
         :param leverage: amount of leverage applied to this trade
         :return: True if a buy order is created, false if it fails.
         """
-        time_in_force = self.strategy.order_time_in_force['buy']
+        time_in_force = self.strategy.order_time_in_force['entry']
 
         [side, name] = ['sell', 'Short'] if is_short else ['buy', 'Long']
         trade_side = 'short' if is_short else 'long'
@@ -659,13 +659,12 @@ class FreqtradeBot(LoggingMixin):
         amount_requested = amount
 
         if order_status == 'expired' or order_status == 'rejected':
-            order_tif = self.strategy.order_time_in_force['buy']
 
             # return false if the order is not filled
             if float(order['filled']) == 0:
-                logger.warning('%s %s order with time in force %s for %s is %s by %s.'
-                               ' zero amount is fulfilled.',
-                               name, order_tif, order_type, pair, order_status, self.exchange.name)
+                logger.warning(f'{name} {time_in_force} order with time in force {order_type} '
+                               f'for {pair} is {order_status} by {self.exchange.name}.'
+                               ' zero amount is fulfilled.')
                 return False
             else:
                 # the order is partially fulfilled
@@ -673,8 +672,9 @@ class FreqtradeBot(LoggingMixin):
                 # if the order is fulfilled fully or partially
                 logger.warning('%s %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
-                               name, order_tif, order_type, pair, order_status, self.exchange.name,
-                               order['filled'], order['amount'], order['remaining']
+                               name, time_in_force, order_type, pair, order_status,
+                               self.exchange.name, order['filled'], order['amount'],
+                               order['remaining']
                                )
                 stake_amount = order['cost']
                 amount = safe_value_fallback(order, 'filled', 'amount')
@@ -1382,7 +1382,7 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
-        time_in_force = self.strategy.order_time_in_force['sell']
+        time_in_force = self.strategy.order_time_in_force['exit']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,

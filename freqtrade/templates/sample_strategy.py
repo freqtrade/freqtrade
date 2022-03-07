@@ -85,8 +85,8 @@ class SampleStrategy(IStrategy):
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'entry': 'gtc',
+        'exit': 'gtc'
     }
 
     plot_config = {

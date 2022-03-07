@@ -61,8 +61,8 @@
         "stoploss_on_exchange_interval": 60
     },
     "order_time_in_force": {
-        "buy": "gtc",
-        "sell": "gtc"
+        "entry": "gtc",
+        "exit": "gtc"
     },
     "pairlists": [
         {"method": "StaticPairList"},

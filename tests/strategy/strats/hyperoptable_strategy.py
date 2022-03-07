@@ -45,8 +45,8 @@ class HyperoptableStrategy(IStrategy):
 
     # Optional time in force for orders
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'entry': 'gtc',
+        'exit': 'gtc',
     }
 
     buy_params = {

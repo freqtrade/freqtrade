@@ -47,8 +47,8 @@ class StrategyTestV2(IStrategy):
 
     # Optional time in force for orders
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'entry': 'gtc',
+        'exit': 'gtc',
     }
 
     # By default this strategy does not use Position Adjustments

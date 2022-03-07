@@ -96,8 +96,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # Optional time in force
     order_time_in_force: Dict = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'entry': 'gtc',
+        'exit': 'gtc',
     }
 
     # run "populate_indicators" only for new candle

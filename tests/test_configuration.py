@@ -941,6 +941,28 @@ def test_validate_ask_orderbook(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
+def test_validate_time_in_force(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['order_time_in_force'] = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for time_in_force is.*", caplog)
+    assert conf['order_time_in_force']['entry'] == 'gtc'
+    assert conf['order_time_in_force']['exit'] == 'gtc'
+
+    conf = deepcopy(default_conf)
+    conf['order_time_in_force'] = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your time_in_force settings .* 'entry' and 'exit'\."):
+        validate_config_consistency(conf)
+
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments

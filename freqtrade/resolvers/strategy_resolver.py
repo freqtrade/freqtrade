@@ -10,6 +10,7 @@ from inspect import getfullargspec
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
 from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
@@ -160,10 +161,12 @@ class StrategyResolver(IResolver):
 
     @staticmethod
     def _strategy_sanity_validations(strategy):
+        # Ensure necessary migrations are performed first.
+        validate_migrated_strategy_settings(strategy.config)
+
         if not all(k in strategy.order_types for k in REQUIRED_ORDERTYPES):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-types mapping is incomplete.")
-
         if not all(k in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
