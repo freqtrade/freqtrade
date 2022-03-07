@@ -6,7 +6,7 @@ import time
 from wao._429_file_util import delete_429_file, write_to_429_file
 
 sys.path.append(EXECUTION_PATH)
-from config import Config as executionConfig
+from config import Config as ExecutionConfig
 
 
 def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_dup):
@@ -19,8 +19,8 @@ def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_du
 
 def post_request(text, is_from_429_watcher=False):
     print("post_request: " + text)
-    result = requests.post('https://api.telegram.org/bot' + executionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
-                           '/sendMessage?chat_id=' + executionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' + text + '&parse_mode=Markdown')
+    result = requests.post('https://api.telegram.org/bot' + ExecutionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
+                           '/sendMessage?chat_id=' + ExecutionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' + text + '&parse_mode=Markdown')
     print(str(result))
     if str(result) != "<Response [200]>":
         delete_429_file(text)
