@@ -32,3 +32,4 @@ class StrategyController:
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             del self.romeo_pool[coin]
+            
