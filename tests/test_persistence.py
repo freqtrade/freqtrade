@@ -117,28 +117,30 @@ def test_set_stop_loss_isolated_liq(fee):
     )
     trade.set_isolated_liq(0.09)
     assert trade.isolated_liq == 0.09
-    assert trade.stop_loss == 0.09
-    assert trade.initial_stop_loss == 0.09
+    assert trade.stop_loss is None
+    assert trade.initial_stop_loss is None
 
     trade._set_stop_loss(0.1, (1.0/9.0))
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.1
 
     trade.set_isolated_liq(0.08)
     assert trade.isolated_liq == 0.08
     assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.1
 
     trade.set_isolated_liq(0.11)
-    assert trade.isolated_liq == 0.11
-    assert trade.stop_loss == 0.11
-    assert trade.initial_stop_loss == 0.09
-
     trade._set_stop_loss(0.1, 0)
     assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.1
+
+    # lower stop doesn't move stoploss
+    trade._set_stop_loss(0.1, 0)
+    assert trade.isolated_liq == 0.11
+    assert trade.stop_loss == 0.11
+    assert trade.initial_stop_loss == 0.1
 
     trade.stop_loss = None
     trade.isolated_liq = None
@@ -156,28 +158,30 @@ def test_set_stop_loss_isolated_liq(fee):
 
     trade.set_isolated_liq(0.09)
     assert trade.isolated_liq == 0.09
-    assert trade.stop_loss == 0.09
-    assert trade.initial_stop_loss == 0.09
+    assert trade.stop_loss is None
+    assert trade.initial_stop_loss is None
 
     trade._set_stop_loss(0.08, (1.0/9.0))
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.08
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.08
 
     trade.set_isolated_liq(0.1)
     assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.08
 
     trade.set_isolated_liq(0.07)
-    assert trade.isolated_liq == 0.07
-    assert trade.stop_loss == 0.07
-    assert trade.initial_stop_loss == 0.09
-
     trade._set_stop_loss(0.1, (1.0/8.0))
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
-    assert trade.initial_stop_loss == 0.09
+    assert trade.initial_stop_loss == 0.08
+
+    # Stop doesn't move stop higher
+    trade._set_stop_loss(0.1, (1.0/9.0))
+    assert trade.isolated_liq == 0.07
+    assert trade.stop_loss == 0.07
+    assert trade.initial_stop_loss == 0.08
 
 
 @pytest.mark.parametrize('exchange,is_short,lev,minutes,rate,interest,trading_mode', [

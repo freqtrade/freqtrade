@@ -1584,6 +1584,10 @@ class FreqtradeBot(LoggingMixin):
                     open_rate=trade.open_rate,
                     is_short=trade.is_short
                 ))
+                if not self.edge:
+                    # TODO: should shorting/leverage be supported by Edge,
+                    # then this will need to be fixed.
+                    trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
             # Updating wallets when order is closed
             self.wallets.update()
