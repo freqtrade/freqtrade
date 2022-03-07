@@ -725,7 +725,7 @@ class FreqtradeBot(LoggingMixin):
                 leverage=leverage,
                 is_short=is_short,
                 interest_rate=interest_rate,
-                isolated_liq=isolated_liq,
+                liquidation_price=isolated_liq,
                 trading_mode=self.trading_mode,
                 funding_fees=funding_fees
             )

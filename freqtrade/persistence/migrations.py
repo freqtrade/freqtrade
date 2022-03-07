@@ -82,7 +82,8 @@ def migrate_trades_and_orders_table(
 
     # Leverage Properties
     leverage = get_column_def(cols, 'leverage', '1.0')
-    isolated_liq = get_column_def(cols, 'isolated_liq', 'null')
+    liquidation_price = get_column_def(cols, 'liquidation_price',
+                                       get_column_def(cols, 'isolated_liq', 'null'))
     # sqlite does not support literals for booleans
     is_short = get_column_def(cols, 'is_short', '0')
 
@@ -137,7 +138,7 @@ def migrate_trades_and_orders_table(
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
-            trading_mode, leverage, isolated_liq, is_short,
+            trading_mode, leverage, liquidation_price, is_short,
             interest_rate, funding_fees
             )
         select id, lower(exchange), pair,
@@ -155,7 +156,7 @@ def migrate_trades_and_orders_table(
             {sell_order_status} sell_order_status,
             {strategy} strategy, {enter_tag} enter_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
-            {trading_mode} trading_mode, {leverage} leverage, {isolated_liq} isolated_liq,
+            {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
             {funding_fees} funding_fees
             from {trade_back_name}
@@ -233,10 +234,9 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    # if not has_column(cols, 'buy_tag'):
-    if ('orders' not in previous_tables
-            or not has_column(cols_orders, 'ft_fee_base')
-            or not has_column(cols_orders, 'leverage')):
+    # if ('orders' not in previous_tables
+    # or not has_column(cols_orders, 'leverage')):
+    if not has_column(cols, 'liquidation_price'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
