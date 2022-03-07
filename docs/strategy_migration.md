@@ -22,6 +22,8 @@ If you intend on using markets other than spot markets, please migrate your stra
 * `@informative` decorator now takes an optional `candle_type` argument
 * helper methods `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
 * `INTERFACE_VERSION` should be set to 3.
+* Strategy/Configuration settings
+  * `time_in_force` buy -> entry, sell -> exit
 
 ## Extensive explanation
 
@@ -166,3 +168,22 @@ This should be given the value of `trade.is_short`.
 
 ```
 
+### Strategy/Configuration settings
+
+#### `order_time_in_force`
+
+`order_time_in_force` attributes changed from `"buy"` to `"entry"` and `"sell"` to `"exit"`.
+
+``` python
+    order_time_in_force: Dict = {
+        "buy": "gtc",
+        "sell": "gtc",
+    }
+```
+
+``` python hl_lines="2 3"
+    order_time_in_force: Dict = {
+        "entry": "gtc",
+        "exit": "gtc",
+    }
+```
