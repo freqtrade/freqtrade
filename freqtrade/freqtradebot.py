@@ -480,15 +480,6 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            # TODO : debug
-            open_sell_order = trade.select_order('sell', True)
-            if open_sell_order:
-                # msg = {
-                #     'type': RPCMessageType.WARNING,
-                #     'status': 'bug open_order_id is None'
-                # }
-                # self.rpc.send_msg(msg)
-                return
             amount = -stake_amount / current_rate_sell
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
@@ -1218,7 +1209,7 @@ class FreqtradeBot(LoggingMixin):
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
-        amount = sub_trade_amt or self._safe_exit_amount(trade.pair, trade.amount)
+        amount = self._safe_exit_amount(trade.pair, sub_trade_amt or trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
 
         if not sub_trade_amt and not strategy_safe_wrapper(
@@ -1504,8 +1495,6 @@ class FreqtradeBot(LoggingMixin):
                 return order_amount
         return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
 
-    rpc_msg: Dict[Any, Any] = {}
-
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
                                   trades: List) -> float:
         """
@@ -1518,13 +1507,6 @@ class FreqtradeBot(LoggingMixin):
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
-            # msg = {
-            #     'type': RPCMessageType.WARNING,
-            #     'status': f"fees bug for {trade.id}"
-            # }
-            if not self.rpc_msg.get(trade.id):
-                # self.rpc.send_msg(msg)
-                self.rpc_msg[trade.id] = 1
             return order_amount
         fee_currency = None
         amount = 0
