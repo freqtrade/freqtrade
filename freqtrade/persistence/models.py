@@ -549,7 +549,6 @@ class LocalTrade():
             b_order2 = orders[idx]
             amount2 = b_order2.safe_amount_after_fee
             b_order2.average = (b_order2.average * amount2 - profit / (1 + self.fee_open)) / amount2
-            b_order2.order_update_date = datetime.now(timezone.utc)
             if is_non_bt:
                 Order.query.session.commit()
             self.recalc_trade_from_orders()
