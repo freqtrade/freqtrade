@@ -257,8 +257,8 @@ def test_strategy_override_order_tif(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     order_time_in_force = {
-        'buy': 'fok',
-        'sell': 'gtc',
+        'entry': 'fok',
+        'exit': 'gtc',
     }
 
     default_conf.update({
@@ -268,15 +268,15 @@ def test_strategy_override_order_tif(caplog, default_conf):
     strategy = StrategyResolver.load_strategy(default_conf)
 
     assert strategy.order_time_in_force
-    for method in ['buy', 'sell']:
+    for method in ['entry', 'exit']:
         assert strategy.order_time_in_force[method] == order_time_in_force[method]
 
     assert log_has("Override strategy 'order_time_in_force' with value in config file:"
-                   " {'buy': 'fok', 'sell': 'gtc'}.", caplog)
+                   " {'entry': 'fok', 'exit': 'gtc'}.", caplog)
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'order_time_in_force': {'buy': 'fok'}
+        'order_time_in_force': {'entry': 'fok'}
     })
     # Raise error for invalid configuration
     with pytest.raises(ImportError,

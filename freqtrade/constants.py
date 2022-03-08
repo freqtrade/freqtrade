@@ -19,7 +19,7 @@ DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
-REQUIRED_ORDERTIF = ['buy', 'sell']
+REQUIRED_ORDERTIF = ['entry', 'exit']
 REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
 ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
@@ -233,10 +233,10 @@ CONF_SCHEMA = {
         'order_time_in_force': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
-                'sell': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
+                'entry': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
+                'exit': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
             },
-            'required': ['buy', 'sell']
+            'required': REQUIRED_ORDERTIF
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
