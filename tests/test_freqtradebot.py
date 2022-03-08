@@ -4804,34 +4804,35 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.is_open is False
 
 
-def test_position_adjust3(mocker, default_conf_usdt, fee) -> None:
-
-    orders_list = [
-        (
+@pytest.mark.parametrize('orders, profit', [
+(
+(
             # side ampunt, price
             ('buy', 100, 10),
             ('buy', 100, 15),
             ('sell', 50, 12),
             ('sell', 100, 20),
             ('sell', 50, 5),
-        ),
-        (
+        ), 336.625),
+(
+(
             ('buy', 100, 3),
             ('buy', 100, 7),
             ('sell', 100, 11),
             ('buy', 150, 15),
             ('sell', 100, 19),
             ('sell', 150, 23),
-        )
-    ]
-    profits = [336.625, 3175.75]
+        ), 3175.75),
+])
+def test_position_adjust3(mocker, default_conf_usdt, fee) -> None:
+
     default_conf_usdt.update({
         "position_adjustment_enable": True,
         "dry_run": False,
         "stake_amount": 200.0,
         "dry_run_wallet": 1000.0,
     })
-    for idx, orders in enumerate(orders_list):
+    if 1:
         patch_RPCManager(mocker)
         patch_exchange(mocker)
         patch_wallet(mocker, free=10000)
@@ -4868,8 +4869,8 @@ def test_position_adjust3(mocker, default_conf_usdt, fee) -> None:
                 'amount': amount,
                 'filled': amount,
                 'ft_is_open': False,
-                'id': f'60{idx}{idx2}',
-                'order_id': f'60{idx}{idx2}'
+                'id': f'60{idx2}',
+                'order_id': f'60{idx2}'
             }
             mocker.patch('freqtrade.exchange.Exchange.create_order',
                          MagicMock(return_value=closed_successful_order))
@@ -4895,12 +4896,12 @@ def test_position_adjust3(mocker, default_conf_usdt, fee) -> None:
 
             # Make sure the closed order is found as the second order.
             order_obj = trade.select_order(order[0], False)
-            assert order_obj.order_id == f'60{idx}{idx2}'
+            assert order_obj.order_id == f'60{idx2}'
 
         trade = Trade.query.first()
         assert trade
         assert trade.open_order_id is None
-        assert trade.close_profit_abs == profits[idx]
+        assert trade.close_profit_abs == profit
         assert trade.is_open is False
 
 
