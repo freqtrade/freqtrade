@@ -319,6 +319,7 @@ def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     del default_conf['timeframe']
     default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY,
                                      'SampleStrategy']
+    # TODO: This refers to the sampleStrategy in user_data if it exists...
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     with pytest.raises(OperationalException):
@@ -613,7 +614,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     #   = 0.0008176703703703704
 
     trade = backtesting._enter_trade(pair, row=row, direction='long')
-    assert pytest.approx(trade.isolated_liq) == 0.00081767037
+    assert pytest.approx(trade.liquidation_price) == 0.00081767037
 
     # Binance, Short
     # liquidation_price
@@ -625,7 +626,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     #   = 0.0011787191419141915
 
     trade = backtesting._enter_trade(pair, row=row, direction='short')
-    assert pytest.approx(trade.isolated_liq) == 0.0011787191
+    assert pytest.approx(trade.liquidation_price) == 0.0011787191
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)

@@ -506,7 +506,7 @@ class Backtesting:
                     # freqtrade does not support this in live, and the order would fill immediately
                     closerate = max(closerate, sell_row[LOW_IDX])
             # Confirm trade exit:
-            time_in_force = self.strategy.order_time_in_force['sell']
+            time_in_force = self.strategy.order_time_in_force['exit']
 
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
@@ -642,7 +642,7 @@ class Backtesting:
             # If not pos adjust, trade is None
             return trade
         order_type = self.strategy.order_types['buy']
-        time_in_force = self.strategy.order_time_in_force['buy']
+        time_in_force = self.strategy.order_time_in_force['entry']
 
         if not pos_adjust:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)

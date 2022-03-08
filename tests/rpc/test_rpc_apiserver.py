@@ -633,9 +633,6 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
         cancel_order=cancel_mock,
         cancel_stoploss_order=stoploss_mock,
     )
-    rc = client_delete(client, f"{BASE_URI}/trades/1")
-    # Error - trade won't exist yet.
-    assert_response(rc, 502)
 
     create_mock_trades(fee, is_short=is_short)
 
@@ -663,6 +660,10 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     assert rc.json()['result_msg'] == 'Deleted trade 2. Closed 2 open orders.'
     assert len(trades) - 2 == len(Trade.query.all())
     assert stoploss_mock.call_count == 1
+
+    rc = client_delete(client, f"{BASE_URI}/trades/502")
+    # Error - trade won't exist.
+    assert_response(rc, 502)
 
 
 def test_api_logs(botclient):

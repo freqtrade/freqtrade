@@ -6,7 +6,7 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import constants
-from freqtrade.enums import RunMode
+from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 
 
@@ -80,6 +80,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     _validate_protections(conf)
     _validate_unlimited_amount(conf)
     _validate_ask_orderbook(conf)
+    validate_migrated_strategy_settings(conf)
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
@@ -207,3 +208,24 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
                 "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
                 "for your `ask_strategy` configuration."
             )
+
+
+def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
+
+    _validate_time_in_force(conf)
+
+
+def _validate_time_in_force(conf: Dict[str, Any]) -> None:
+
+    time_in_force = conf.get('order_time_in_force', {})
+    if 'buy' in time_in_force or 'sell' in time_in_force:
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your time_in_force settings to use 'entry' and 'exit'.")
+        else:
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for time_in_force is deprecated."
+                "Please migrate your time_in_force settings to use 'entry' and 'exit'."
+            )
+            time_in_force['entry'] = time_in_force.pop('buy')
+            time_in_force['exit'] = time_in_force.pop('sell')
