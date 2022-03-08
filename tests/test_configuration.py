@@ -1280,11 +1280,14 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # The value of the new setting shall have been set to the
     # value of the deprecated one
     assert default_conf['sectionA']['new_setting'] == 'valB'
+    # Old setting is removed
+    assert 'deprecated_setting' not in default_conf['sectionB']
 
     caplog.clear()
 
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')
@@ -1298,7 +1301,7 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Assign new setting
     default_conf['sectionA']['new_setting'] = 'valA'
     # Delete deprecated setting
-    del default_conf['sectionB']['deprecated_setting']
+    default_conf['sectionB'].pop('deprecated_setting', None)
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')
