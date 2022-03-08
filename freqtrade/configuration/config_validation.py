@@ -6,6 +6,7 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import constants
+from freqtrade.configuration.deprecated_settings import process_deprecated_setting
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 
@@ -102,11 +103,12 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     """
     When using market orders, price sides must be using the "other" side of the price
     """
-    if (conf.get('order_types', {}).get('buy') == 'market'
+    # TODO-lev: check this again when determining how to migrate pricing strategies!
+    if (conf.get('order_types', {}).get('entry') == 'market'
             and conf.get('bid_strategy', {}).get('price_side') != 'ask'):
         raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
 
-    if (conf.get('order_types', {}).get('sell') == 'market'
+    if (conf.get('order_types', {}).get('exit') == 'market'
             and conf.get('ask_strategy', {}).get('price_side') != 'bid'):
         raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
 
@@ -213,6 +215,7 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
 def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
 
     _validate_time_in_force(conf)
+    _validate_order_types(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -229,3 +232,31 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
             )
             time_in_force['entry'] = time_in_force.pop('buy')
             time_in_force['exit'] = time_in_force.pop('sell')
+
+
+def _validate_order_types(conf: Dict[str, Any]) -> None:
+
+    order_types = conf.get('order_types', {})
+    if any(x in order_types for x in ['buy', 'sell', 'emergencysell', 'forcebuy', 'forcesell']):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your order_types settings to use the new wording.")
+        else:
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for order_types is deprecated."
+                "Please migrate your time_in_force settings to use 'entry' and 'exit' wording."
+            )
+            for o, n in [
+                ('buy', 'entry'),
+                ('sell', 'exit'),
+                ('emergencysell', 'emergencyexit'),
+                ('forcesell', 'forceexit'),
+                ('forcebuy', 'forceentry'),
+            ]:
+
+                process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
+            # order_types['entry'] = order_types.pop('buy')
+            # order_types['exit'] = order_types.pop('sell')
+            # order_types['emergencyexit'] = order_types.pop('emergencysell')
+            # order_types['forceexit'] = order_types.pop('forceexit')
+            # order_types['forceentry'] = order_types.pop('forceentry')

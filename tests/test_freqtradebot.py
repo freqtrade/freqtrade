@@ -91,8 +91,8 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     conf = default_conf_usdt.copy()
     conf['runmode'] = runmode
     conf['order_types'] = {
-        'buy': 'market',
-        'sell': 'limit',
+        'entry': 'market',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
@@ -108,8 +108,8 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     conf = default_conf_usdt.copy()
     conf['runmode'] = runmode
     conf['order_types'] = {
-        'buy': 'market',
-        'sell': 'limit',
+        'entry': 'market',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
     }
@@ -3490,7 +3490,7 @@ def test_execute_trade_exit_market_order(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt_sell_up
     )
-    freqtrade.config['order_types']['sell'] = 'market'
+    freqtrade.config['order_types']['exit'] = 'market'
 
     freqtrade.execute_trade_exit(
         trade=trade,
