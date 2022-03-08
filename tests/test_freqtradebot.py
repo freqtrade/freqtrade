@@ -4804,7 +4804,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.is_open is False
 
 
-@pytest.mark.parametrize('orders, profit', [
+@pytest.mark.parametrize('orders, profit, res', [
 (
 (
             # side ampunt, price
@@ -4813,7 +4813,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
             ('sell', 50, 12),
             ('sell', 100, 20),
             ('sell', 50, 5),
-        ), 336.625),
+        ), 336.625, ()),
 (
 (
             ('buy', 100, 3),
@@ -4822,9 +4822,9 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
             ('buy', 150, 15),
             ('sell', 100, 19),
             ('sell', 150, 23),
-        ), 3175.75),
+        ), 3175.75, ()),
 ])
-def test_position_adjust3(mocker, default_conf_usdt, fee) -> None:
+def test_position_adjust3(mocker, default_conf_usdt, fee, orders, profit, res) -> None:
 
     default_conf_usdt.update({
         "position_adjustment_enable": True,
