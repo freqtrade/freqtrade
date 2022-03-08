@@ -355,6 +355,8 @@ class Backtesting:
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
                         trade_dur: int) -> float:
+        leverage = trade.leverage or 1.0
+        is_short = trade.is_short or False
         """
         Get close rate for backtesting result
         """
@@ -382,7 +384,7 @@ class Backtesting:
                                   abs(self.strategy.trailing_stop_positive)))
                 else:
                     # Worst case: price ticks tiny bit above open and dives down.
-                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct))
+                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct / leverage))
                     assert stop_rate < sell_row[HIGH_IDX]
                 # Limit lower-end to candle low to avoid sells below the low.
                 # This still remains "worst case" - but "worst realistic case".
@@ -400,7 +402,7 @@ class Backtesting:
                     return sell_row[OPEN_IDX]
 
                 # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
-                close_rate = - (trade.open_rate * roi + trade.open_rate *
+                close_rate = - (trade.open_rate * roi / leverage + trade.open_rate *
                                 (1 + trade.fee_open)) / (trade.fee_close - 1)
 
                 if (trade_dur > 0 and trade_dur == roi_entry
