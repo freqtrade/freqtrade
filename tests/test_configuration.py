@@ -963,6 +963,40 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
+def test_validate_order_types(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for order_types is.*", caplog)
+    assert conf['order_types']['entry'] == 'limit'
+    assert conf['order_types']['exit'] == 'market'
+    assert conf['order_types']['forceentry'] == 'limit'
+    assert 'buy' not in conf['order_types']
+    assert 'sell' not in conf['order_types']
+    assert 'forcebuy' not in conf['order_types']
+    assert 'forcesell' not in conf['order_types']
+
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your order_types settings to use the new wording\."):
+        validate_config_consistency(conf)
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments

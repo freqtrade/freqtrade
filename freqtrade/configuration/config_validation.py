@@ -244,7 +244,7 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
         else:
             logger.warning(
                 "DEPRECATED: Using 'buy' and 'sell' for order_types is deprecated."
-                "Please migrate your time_in_force settings to use 'entry' and 'exit' wording."
+                "Please migrate your order_types settings to use 'entry' and 'exit' wording."
             )
             for o, n in [
                 ('buy', 'entry'),
@@ -255,8 +255,3 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
             ]:
 
                 process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
-            # order_types['entry'] = order_types.pop('buy')
-            # order_types['exit'] = order_types.pop('sell')
-            # order_types['emergencyexit'] = order_types.pop('emergencysell')
-            # order_types['forceexit'] = order_types.pop('forceexit')
-            # order_types['forceentry'] = order_types.pop('forceentry')
