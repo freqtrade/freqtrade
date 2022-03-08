@@ -907,7 +907,9 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stop_loss)
+
+        if self.exchange.stoploss_adjust(stoploss_norm, order):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:

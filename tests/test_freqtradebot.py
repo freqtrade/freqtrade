@@ -1360,6 +1360,32 @@ def test_handle_stoploss_on_exchange_trailing_error(
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/USDT\..*", caplog)
 
 
+def test_stoploss_on_exchange_price_rounding(
+        mocker, default_conf_usdt, fee, open_trade_usdt) -> None:
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_fee=fee,
+    )
+    price_mock = MagicMock(side_effect=lambda p, s: int(s))
+    stoploss_mock = MagicMock(return_value={'id': '13434334'})
+    adjust_mock = MagicMock(return_value=False)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Binance',
+        stoploss=stoploss_mock,
+        stoploss_adjust=adjust_mock,
+        price_to_precision=price_mock,
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    open_trade_usdt.stoploss_order_id = '13434334'
+    open_trade_usdt.stop_loss = 222.55
+
+    freqtrade.handle_trailing_stoploss_on_exchange(open_trade_usdt, {})
+    assert price_mock.call_count == 1
+    assert adjust_mock.call_count == 1
+    assert adjust_mock.call_args_list[0][0][0] == 222
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_custom_stop(
         mocker, default_conf_usdt, fee, limit_buy_order_usdt, limit_sell_order_usdt) -> None:
