@@ -357,6 +357,7 @@ class Backtesting:
                         trade_dur: int) -> float:
         leverage = trade.leverage or 1.0
         is_short = trade.is_short or False
+        filled_dur = int((trade.close_date_utc - trade.buy_filled_date_utc).total_seconds() // 60)
         """
         Get close rate for backtesting result
         """
@@ -378,7 +379,7 @@ class Backtesting:
             # Special case: trailing triggers within same candle as trade opened. Assume most
             # pessimistic price movement, which is moving just enough to arm stoploss and
             # immediately going down to stop price.
-            if sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
+            if sell.sell_type == SellType.TRAILING_STOP_LOSS and (trade_dur == 0 or filled_dur == 0):
                 if (
                     not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                     and self.strategy.trailing_only_offset_is_reached
@@ -425,7 +426,7 @@ class Backtesting:
                 if is_short:
                     close_rate = (trade.open_rate *
                                 (1 - trade.fee_open) - trade.open_rate * roi / leverage) / (trade.fee_close + 1)
-                    if (trade_dur > 0 and trade_dur == roi_entry
+                    if (trade_dur > 0 and filled_dur > 0 and trade_dur == roi_entry
                             and roi_entry % self.timeframe_min == 0
                             and sell_row[OPEN_IDX] < close_rate):
                         # new ROI entry came into effect.
@@ -435,7 +436,7 @@ class Backtesting:
                     close_rate = - (trade.open_rate * roi / leverage + trade.open_rate *
                                 (1 + trade.fee_open)) / (trade.fee_close - 1)
 
-                    if (trade_dur > 0 and trade_dur == roi_entry
+                    if (trade_dur > 0 and filled_dur > 0 and trade_dur == roi_entry
                             and roi_entry % self.timeframe_min == 0
                             and sell_row[OPEN_IDX] > close_rate):
                         # new ROI entry came into effect.
@@ -444,7 +445,7 @@ class Backtesting:
 
                 if is_short:
                     if (
-                        trade_dur == 0
+                        (trade_dur == 0 or filled_dur == 0)
                         # Red candle (for longs), TODO: green candle (for shorts)
                         and sell_row[OPEN_IDX] < sell_row[CLOSE_IDX]  # Red candle
                         and trade.open_rate > sell_row[OPEN_IDX]  # trade-open below open_rate
@@ -457,7 +458,7 @@ class Backtesting:
                         raise ValueError("Opening candle ROI on red candles.")
                 else:
                     if (
-                        trade_dur == 0
+                        (trade_dur == 0 or filled_dur == 0)
                         # Red candle (for longs), TODO: green candle (for shorts)
                         and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # Red candle
                         and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
@@ -534,7 +535,7 @@ class Backtesting:
         if sell.sell_flag:
             trade.close_date = sell_candle_time
 
-            trade_dur = int((trade.close_date_utc - trade.buy_filled_date_utc).total_seconds() // 60)
+            trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
                 closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             except ValueError:
