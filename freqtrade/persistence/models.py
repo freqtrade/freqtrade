@@ -367,6 +367,10 @@ class LocalTrade():
             return self.amount
 
     @property
+    def filled_date_utc(self):
+        return self.select_order('buy', is_open=False).order_filled_date.replace(tzinfo=timezone.utc)
+
+    @property
     def open_date_utc(self):
         return self.open_date.replace(tzinfo=timezone.utc)
 
