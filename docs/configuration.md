@@ -121,7 +121,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `sell_profit_offset` | Sell-signal is only active above this value. Only active in combination with `sell_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
 | `ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
-| `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
+| `order_types` | Configure order-types depending on the action (`"entry"`, `"exit"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for entry and exit orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `custom_price_max_distance_ratio` | Configure maximum distance ratio between current and custom entry or exit price. <br>*Defaults to `0.02` 2%).*<br> **Datatype:** Positive float
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
@@ -374,19 +374,18 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`entry`, `exit`, `stoploss`, `emergencyexit`, `forceexit`, `forceentry`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
-    
+
 `order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
 
-If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
-`stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
+If this is configured, the following 4 values (`entry`, `exit`, `stoploss` and `stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
 
-For information on (`emergencysell`,`forcesell`, `forcebuy`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
+For information on (`emergencyexit`,`forceexit`, `forceentry`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
 
 Syntax for Strategy:
 
@@ -408,11 +407,11 @@ Configuration:
 
 ```json
 "order_types": {
-    "buy": "limit",
-    "sell": "limit",
-    "emergencysell": "market",
-    "forcebuy": "market",
-    "forcesell": "market",
+    "entry": "limit",
+    "exit": "limit",
+    "emergencyexit": "market",
+    "forceentry": "market",
+    "forceexit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -435,7 +434,7 @@ Configuration:
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
-    If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however, this is not advised.
+    If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencyexit` value in the `order_types` dictionary - however, this is not advised.
 
 ### Understand order_time_in_force
 

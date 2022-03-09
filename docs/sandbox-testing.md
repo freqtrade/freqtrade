@@ -104,8 +104,8 @@ To mitigate this, you can try to match the first order on the opposite orderbook
 
 ``` jsonc
   "order_types": {
-    "buy": "limit",
-    "sell": "limit"
+    "entry": "limit",
+    "exit": "limit"
     // ...
   },
   "bid_strategy": {

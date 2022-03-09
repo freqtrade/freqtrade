@@ -2551,7 +2551,7 @@ def test_check_handle_timedout_sell_usercustom(
         assert et_mock.call_count == 0
 
     freqtrade.check_handle_timedout()
-    assert log_has_re('Emergencyselling trade.*', caplog)
+    assert log_has_re('Emergency exiting trade.*', caplog)
     assert et_mock.call_count == 1
 
 

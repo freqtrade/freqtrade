@@ -1154,7 +1154,7 @@ class FreqtradeBot(LoggingMixin):
                     max_timeouts = self.config.get(
                         'unfilledtimeout', {}).get('exit_timeout_count', 0)
                     if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                        logger.warning(f'Emergencyselling trade {trade}, as the sell order '
+                        logger.warning(f'Emergency exiting trade {trade}, as the exit order '
                                        f'timed out {max_timeouts} times.')
                         try:
                             self.execute_trade_exit(

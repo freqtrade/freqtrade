@@ -17,8 +17,8 @@ def test_validate_order_types_gateio(default_conf, mocker):
     assert isinstance(exch, Gateio)
 
     default_conf['order_types'] = {
-        'buy': 'market',
-        'sell': 'limit',
+        'entry': 'market',
+        'exit': 'limit',
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
