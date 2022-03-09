@@ -3058,3 +3058,15 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_r
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
+
+
+@pytest.mark.parametrize('exchange_name', ['binance', 'gateio'])
+def test_stoploss_adjust(mocker, default_conf, exchange_name):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    order = {
+        'type': 'stop_loss_limit',
+        'price': 1500,
+        'stopPrice': 1500,
+    }
+    assert exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1499, order)
