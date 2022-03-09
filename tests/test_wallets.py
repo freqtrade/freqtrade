@@ -356,3 +356,9 @@ def test_sync_wallet_futures_dry(mocker, default_conf, fee):
     positions['ETC/BTC'].side == 'long'
     positions['XRP/BTC'].side == 'long'
     positions['LTC/BTC'].side == 'short'
+
+    assert freqtrade.wallets.get_starting_balance() == default_conf['dry_run_wallet']
+    total = freqtrade.wallets.get_total('BTC')
+    free = freqtrade.wallets.get_free('BTC')
+    used = freqtrade.wallets.get_used('BTC')
+    assert free + used == total
