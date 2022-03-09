@@ -31,4 +31,18 @@ class Gateio(Exchange):
 
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
-                    f'Exchange {self.name} does not support market orders.')
+                f'Exchange {self.name} does not support market orders.')
+
+    def fetch_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
+        return self.fetch_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )
+
+    def cancel_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
+        return self.cancel_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )
