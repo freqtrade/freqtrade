@@ -1352,7 +1352,7 @@ class FreqtradeBot(LoggingMixin):
             is_short=trade.is_short,
             open_date=trade.open_date,
         )
-        exit_type = 'sell'
+        exit_type = 'exit'
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
@@ -1376,7 +1376,7 @@ class FreqtradeBot(LoggingMixin):
         # First cancelling stoploss on exchange ...
         trade = self.cancel_stoploss_on_exchange(trade)
 
-        order_type = ordertype or self.strategy.order_types['exit']
+        order_type = ordertype or self.strategy.order_types[exit_type]
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencyexit", "market")
