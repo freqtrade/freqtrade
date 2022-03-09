@@ -3784,7 +3784,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
 
     assert freqtrade.handle_trade(trade) is False
 
-    # Test if buy-signal is absent (should sell due to roi = true)
+    # Test if entry-signal is absent (should sell due to roi = true)
     if is_short:
         patch_get_signal(freqtrade, enter_long=False, exit_short=False)
     else:
@@ -4001,7 +4001,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade) is True
 
-    # Test if buy-signal is absent
+    # Test if entry-signal is absent
     patch_get_signal(freqtrade)
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
