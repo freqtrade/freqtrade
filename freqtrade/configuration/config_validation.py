@@ -230,8 +230,11 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
                 "DEPRECATED: Using 'buy' and 'sell' for time_in_force is deprecated."
                 "Please migrate your time_in_force settings to use 'entry' and 'exit'."
             )
-            time_in_force['entry'] = time_in_force.pop('buy')
-            time_in_force['exit'] = time_in_force.pop('sell')
+            process_deprecated_setting(
+                conf, 'order_time_in_force', 'buy', 'order_time_in_force', 'entry')
+
+            process_deprecated_setting(
+                conf, 'order_time_in_force', 'sell', 'order_time_in_force', 'exit')
 
 
 def _validate_order_types(conf: Dict[str, Any]) -> None:

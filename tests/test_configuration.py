@@ -997,6 +997,7 @@ def test_validate_order_types(default_conf, caplog) -> None:
                        match=r"Please migrate your order_types settings to use the new wording\."):
         validate_config_consistency(conf)
 
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments
