@@ -259,12 +259,12 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
 
     buy = find_trace_in_fig_data(figure.data, "buy")
     assert isinstance(buy, go.Scatter)
-    # All buy-signals should be plotted
+    # All entry-signals should be plotted
     assert int(data['enter_long'].sum()) == len(buy.x)
 
     sell = find_trace_in_fig_data(figure.data, "sell")
     assert isinstance(sell, go.Scatter)
-    # All buy-signals should be plotted
+    # All entry-signals should be plotted
     assert int(data['exit_long'].sum()) == len(sell.x)
 
     assert find_trace_in_fig_data(figure.data, "Bollinger Band")

@@ -906,7 +906,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
         ['sine', 9],
         ['raise', 10],
     ]
-    # While buy-signals are unrealistic, running backtesting
+    # While entry-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     for [contour, numres] in tests:
         # Debug output for random test failure
@@ -935,7 +935,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    # While buy-signals are unrealistic, running backtesting
+    # While entry-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     assert len(simple_backtest(default_conf, contour, mocker, testdatadir)['results']) == expected
 

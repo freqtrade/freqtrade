@@ -206,7 +206,7 @@ Hyper-optimization will, for each epoch round, pick one trigger and possibly mul
 
 #### Sell optimization
 
-Similar to the buy-signal above, sell-signals can also be optimized.
+Similar to the entry-signal above, exit-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Define the parameters at the class level hyperopt shall be optimizing, either naming them `sell_*`, or by explicitly defining `space='sell'`.
