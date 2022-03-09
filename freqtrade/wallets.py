@@ -104,16 +104,16 @@ class Wallets:
                 size = position.amount
                 collateral = position.stake_amount
                 leverage = position.leverage
-                tot_in_trades -= collateral
+                tot_in_trades += collateral
                 _positions[position.pair] = PositionWallet(
                     position.pair, position=size,
                     leverage=leverage,
                     collateral=collateral,
                     side=position.trade_direction
                 )
-            current_stake = self.start_cap + tot_profit
+            current_stake = self.start_cap + tot_profit - tot_in_trades
             used_stake = tot_in_trades
-            total_stake = current_stake - tot_in_trades
+            total_stake = current_stake + tot_in_trades
 
         _wallets[self._config['stake_currency']] = Wallet(
             currency=self._config['stake_currency'],
