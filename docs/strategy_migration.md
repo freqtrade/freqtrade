@@ -23,7 +23,8 @@ If you intend on using markets other than spot markets, please migrate your stra
 * helper methods `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
 * `INTERFACE_VERSION` should be set to 3.
 * Strategy/Configuration settings
-  * `time_in_force` buy -> entry, sell -> exit
+  * `order_time_in_force` buy -> entry, sell -> exit
+  * `order_types` buy -> entry, sell -> exit
 
 ## Extensive explanation
 
@@ -186,4 +187,32 @@ This should be given the value of `trade.is_short`.
         "entry": "gtc",
         "exit": "gtc",
     }
+```
+
+#### `order_types`
+
+`order_types` have changed all wordings from `buy` to `entry` - and `sell` to `exit`.
+
+``` python hl_lines="2-6"
+    order_types = {
+        "buy": "limit",
+        "sell": "limit",
+        "emergencysell": "market",
+        "forcesell": "market",
+        "forcebuy": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_on_exchange_interval": 60
+```
+
+``` python hl_lines="2-6"
+    order_types = {
+        "entry": "limit",
+        "exit": "limit",
+        "emergencyexit": "market",
+        "forceexit": "market",
+        "forceentry": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_on_exchange_interval": 60
 ```
