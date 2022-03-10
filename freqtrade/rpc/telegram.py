@@ -292,7 +292,7 @@ class Telegram(RPCHandler):
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
-                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']})")
+                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']})"
             else:
                 cp_extra = ''
             cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} msg['stake_currency']{cp_extra}`\n"
@@ -303,7 +303,7 @@ class Telegram(RPCHandler):
             f"{'Sold' if is_fill else 'Selling'} {msg['pair']} (#{msg['trade_id']})\n"
             f"*{f'{profit__prefix} Profit' if is_fill else f'Unrealized {profit__prefix} Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
-            f"{cp_extra}
+            f"{cp_extra}"
             f"*Buy Tag:* `{msg['buy_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
             f"*Amount:* `{msg['amount']:.8f}`\n"
