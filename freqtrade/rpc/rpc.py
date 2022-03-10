@@ -586,6 +586,9 @@ class RPC:
             if coin == stake_currency:
                 rate = 1.0
                 est_stake = balance.total
+                if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+                    # in Futures, "total" includes the locked stake, and therefore all positions
+                    est_stake = balance.free
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
@@ -614,6 +617,7 @@ class RPC:
         symbol: str
         position: PositionWallet
         for symbol, position in self._freqtrade.wallets.get_all_positions().items():
+            total += position.collateral
 
             currencies.append({
                 'currency': symbol,
