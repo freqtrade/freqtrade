@@ -284,7 +284,7 @@ class Telegram(RPCHandler):
             msg['profit_extra'] = ''
         msg['profit_extra'] = (
                 f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-                f"{msg['profit_extra']}
+                f"{msg['profit_extra']}")
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
         is_sub_profit = msg['profit_amount'] != msg['cumulative_profit']
         profit__prefix = 'Sub' if is_sub_profit else 'Cumulative'
