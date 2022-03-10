@@ -19,9 +19,7 @@ from wao.strategy_controller import StrategyController
 class Strategy004(IStrategy):
     controller = StrategyController()
     setup_429()
-
-    if Config.IS_BACKTEST:
-        send_start_deliminator_message('Freq Strategy004 ', Config.BACKTEST_COIN, Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
+    controller.send_starter_message('Freq Strategy004 ')
 
     """
     Strategy 004
