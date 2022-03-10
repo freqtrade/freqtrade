@@ -507,7 +507,6 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        # TODO-lev: Check what changes are necessary for DCA in relation to shorts.
         if self.strategy.max_entry_position_adjustment > -1:
             count_of_buys = trade.nr_of_successful_entries
             if count_of_buys > self.strategy.max_entry_position_adjustment:
