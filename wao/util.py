@@ -52,19 +52,23 @@ def _perform_back_test(date_time, coin, brain, romeo_pool):
     romeo.start()
 
 
-def create_429_watcher():
-    print("create_429_watcher: watching:- " + str(ExecutionConfig._429_DIRECTORY))
-    event_handler = _429_Watcher()
-    observer = watchdog.observers.Observer()
-    observer.schedule(event_handler, path=ExecutionConfig._429_DIRECTORY, recursive=True)
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+class Create_Watcher:
 
+    def __init__(self):
+        pass
 
-def create_429_watcher_thread():
-    threading.Thread(target=create_429_watcher).start()
+    def __create_429_watcher(self):
+        print("create_429_watcher: watching:- " + str(ExecutionConfig._429_DIRECTORY))
+        event_handler = _429_Watcher()
+        observer = watchdog.observers.Observer()
+        observer.schedule(event_handler, path=ExecutionConfig._429_DIRECTORY, recursive=True)
+        observer.start()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
+
+    def create_429_watcher_thread(self):
+        threading.Thread(target=self.__create_429_watcher).start()

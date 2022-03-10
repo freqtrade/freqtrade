@@ -13,7 +13,7 @@ import numpy # noqa
 from datetime import datetime
 import threading
 
-from wao.util import create_429_watcher_thread
+from wao.util import Create_Watcher
 from wao._429_file_util import create_429_directory
 from wao.config import Config
 from wao.notifier import send_start_deliminator_message
@@ -26,7 +26,7 @@ class Strategy002(IStrategy):
     if Config.IS_BACKTEST:
         send_start_deliminator_message('Freq Strategy002 ', Config.BACKTEST_COIN, Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
         create_429_directory()
-        create_429_watcher_thread()
+        Create_Watcher.create_429_watcher_thread()
     """
     Strategy 002
     author@: Gerald Lonlas
