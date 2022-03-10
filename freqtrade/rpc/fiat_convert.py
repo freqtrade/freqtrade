@@ -23,6 +23,7 @@ coingecko_mapping = {
     'eth': 'ethereum',
     'bnb': 'binancecoin',
     'sol': 'solana',
+    'usdt': 'tether',
 }
 
 
