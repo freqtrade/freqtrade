@@ -279,16 +279,31 @@ class Telegram(RPCHandler):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
             msg['profit_extra'] = (
-                f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
                 f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']})")
         else:
             msg['profit_extra'] = ''
+        msg['profit_extra'] = (
+                f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
+                f"{msg['profit_extra']}
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
+        is_sub_profit = msg['profit_amount'] != msg['cumulative_profit']
+        profit__prefix = 'Sub' if is_sub_profit else 'Cumulative'
+        if is_sub_profit:
+            if self._rpc._fiat_converter:
+                cp_fiat = self._rpc._fiat_converter.convert_amount(
+                    msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
+                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']})")
+            else:
+                cp_extra = ''
+            cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} msg['stake_currency']{cp_extra}`\n"
+        else:
+            cp_extra = '' 
         message = (
             f"{msg['emoji']} *{msg['exchange']}:* "
             f"{'Sold' if is_fill else 'Selling'} {msg['pair']} (#{msg['trade_id']})\n"
-            f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
+            f"*{f'{profit__prefix} Profit' if is_fill else f'Unrealized {profit__prefix} Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"{cp_extra}
             f"*Buy Tag:* `{msg['buy_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
             f"*Amount:* `{msg['amount']:.8f}`\n"
