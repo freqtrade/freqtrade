@@ -32,10 +32,10 @@ def create_429_directory():
 
 
 def perform_create_429_watcher():
-    print("create_429_watcher: watching:- " + str(ExecutionConfig._429_DIRECTORY))
+    print("perform_create_429_watcher: watching:- " + str(Config._429_DIRECTORY))
     event_handler = _429_Watcher()
     observer = watchdog.observers.Observer()
-    observer.schedule(event_handler, path=ExecutionConfig._429_DIRECTORY, recursive=True)
+    observer.schedule(event_handler, path=Config._429_DIRECTORY, recursive=True)
     observer.start()
     try:
         while True:
