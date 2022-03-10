@@ -1297,7 +1297,6 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit,
             'profit_ratio': profit_ratio,
-            'cumulative_profit': trade.realized_profit,
             'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
@@ -1307,6 +1306,8 @@ class FreqtradeBot(LoggingMixin):
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'sub_trade': sub_trade,
         }
+       if sub_trade:
+         msg['cumulative_profit'] = trade.realized_profit,
 
         # Send the message
         self.rpc.send_msg(msg)
