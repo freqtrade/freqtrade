@@ -279,12 +279,12 @@ class Telegram(RPCHandler):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
             msg['profit_extra'] = (
-                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']})")
+                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}")
         else:
             msg['profit_extra'] = ''
         msg['profit_extra'] = (
                 f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-                f"{msg['profit_extra']}")
+                f"{msg['profit_extra']})")
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
