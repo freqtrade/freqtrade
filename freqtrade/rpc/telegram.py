@@ -289,7 +289,7 @@ class Telegram(RPCHandler):
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
         profit_prefix = ('Sub ' if is_sub_profit
-                         else 'Cumulative ') if is_sub_trade else '' 
+                         else 'Cumulative ') if is_sub_trade else ''
         if is_sub_profit and is_sub_trade:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
