@@ -1297,6 +1297,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit,
             'profit_ratio': profit_ratio,
+            'cumulative_profit': trade.realized_profit,
             'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
