@@ -2005,7 +2005,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH  / -24.812 USD)`\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Amount:* `1333.33333333`\n'
@@ -2076,7 +2076,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Sold KEY/ETH (#1)\n'
-            '*Profit:* `-57.41%`\n'
+            '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Amount:* `1333.33333333`\n'
