@@ -22,11 +22,12 @@ from wao.strategy_controller import StrategyController
 
 class Strategy002(IStrategy):
     controller = StrategyController()
+    create_watcher = Create_Watcher()
 
     if Config.IS_BACKTEST:
         send_start_deliminator_message('Freq Strategy002 ', Config.BACKTEST_COIN, Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX], Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP, Config.BACKTEST_MAX_COUNT_DUP)
         create_429_directory()
-        Create_Watcher.create_429_watcher_thread()
+        create_watcher.create_429_watcher_thread()
     """
     Strategy 002
     author@: Gerald Lonlas
