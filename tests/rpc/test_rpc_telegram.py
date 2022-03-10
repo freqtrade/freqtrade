@@ -1868,7 +1868,6 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'stake_amount': 0.01465333,
-        # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
@@ -1892,7 +1891,8 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
         'pair': 'ETH/BTC',
         'stake_amount': 0.01465333,
         'sub_trade': True,
-        # 'stake_amount_fiat': 0.0,
+
+
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
@@ -1959,6 +1959,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'order_type': 'market',
         'open_rate': 7.5e-05,
         'current_rate': 3.201e-05,
+        'cumulative_profit': -0.05746268,
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
@@ -1972,7 +1973,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Unrealized Cumulative Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Amount:* `1333.33333333`\n'
