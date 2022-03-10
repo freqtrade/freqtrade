@@ -19,8 +19,10 @@ def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_du
 
 def post_request(text, is_from_429_watcher=False):
     print("post_request: " + text)
-    result = requests.post('https://api.telegram.org/bot' + ExecutionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
-                           '/sendMessage?chat_id=' + ExecutionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' + text + '&parse_mode=Markdown')
+    result = requests.post('https://api.telegram.org/bot' + ExecutionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if
+                           is_from_429_watcher else ExecutionConfig.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST +
+                           '/sendMessage?chat_id=' + ExecutionConfig.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST + '&text=' +
+                            text + '&parse_mode=Markdown')
     print(str(result))
     if str(result) != "<Response [200]>":
         delete_429_file(text)
