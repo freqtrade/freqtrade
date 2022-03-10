@@ -15,7 +15,6 @@ import threading
 
 from wao._429_file_util import create_429_directory, setup_429
 from wao.config import Config
-from wao.notifier import send_start_deliminator_message
 from wao.strategy_controller import StrategyController
 
 

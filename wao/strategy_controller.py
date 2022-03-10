@@ -1,6 +1,7 @@
 from wao.util import _perform_execute, _perform_back_test
 import threading
 from wao.config import Config
+from wao.notifier import send_start_deliminator_message
 import time
 
 
