@@ -732,7 +732,7 @@ class FreqtradeBot(LoggingMixin):
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_CANCEL,
             'buy_tag': trade.buy_tag,
-            'exchange': self.exchange.name.capitalize(),
+            'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
             'order_type': order_type,
