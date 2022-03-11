@@ -7,9 +7,10 @@ import time
 
 class StrategyController:
     romeo_pool = {}
+    brain = ''
 
-    def __init__(self):
-        pass
+    def __init__(self, brain):
+        self.brain = brain
 
     def back_test(self, date_time, coin, brain):
         time.sleep(Config.BACKTEST_THROTTLE_SECOND)
@@ -34,9 +35,9 @@ class StrategyController:
         if romeo is not None:
             del self.romeo_pool[coin]
 
-    def send_starter_message(self, brain):
+    def send_starter_message(self):
         if Config.IS_BACKTEST:
-            send_start_deliminator_message(brain, Config.BACKTEST_COIN,
+            send_start_deliminator_message(self.brain, Config.BACKTEST_COIN,
                                            Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX],
                                            Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP,
                                            Config.BACKTEST_MAX_COUNT_DUP)
