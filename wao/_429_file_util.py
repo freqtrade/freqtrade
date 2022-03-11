@@ -1,6 +1,10 @@
+import threading
 import os
+import time
+import watchdog
 
 from wao.config import Config
+from wao._429_watcher import _429_Watcher
 
 
 def delete_429_file(text):
@@ -51,4 +55,4 @@ def create_429_watcher():
 
 def setup_429():
     create_429_directory()
-    create_429_watcher_thread()
+    create_429_watcher()
