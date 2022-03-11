@@ -1,12 +1,11 @@
 """ Freqtrade bot """
 __version__ = 'develop'
 
-if __version__ == 'develop':
-
+if __version__.endswith('develop'):
     try:
         import subprocess
 
-        __version__ = 'develop-' + subprocess.check_output(
+        __version__ = __version__ + '-' + subprocess.check_output(
             ['git', 'log', '--format="%h"', '-n 1'],
             stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
 
