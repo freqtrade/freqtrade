@@ -1,11 +1,5 @@
 EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
 from wao.config import Config
-import sys
-import time
-import watchdog
-import threading
-
-from wao._429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
 from config import Config as ExecutionConfig

@@ -4,7 +4,6 @@ from freqtrade.persistence import Trade
 
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
-import threading
 # --------------------------------
 
 import talib.abstract as ta
@@ -12,7 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from wao._429_file_util import create_429_directory, setup_429
+from wao._429_file_util import setup_429
 from wao.config import Config
 from wao.strategy_controller import StrategyController
 

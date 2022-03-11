@@ -8,9 +8,8 @@ from datetime import datetime
 
 import talib.abstract as ta
 
-import threading
 
-from wao._429_file_util import create_429_directory, setup_429
+from wao._429_file_util import setup_429
 from wao.config import Config
 from wao.strategy_controller import StrategyController
 
