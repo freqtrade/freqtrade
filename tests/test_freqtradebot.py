@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
-
 import logging
 import time
 from copy import deepcopy
@@ -1049,6 +1048,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog,
     trade.is_open = True
     trade.stoploss_last_update = arrow.utcnow().shift(hours=-1).datetime
     trade.stop_loss = 24
+    trade.amount = limit_buy_order_usdt['amount']
     freqtrade.config['trailing_stop'] = True
     stoploss = MagicMock(side_effect=InvalidOrderException())
 

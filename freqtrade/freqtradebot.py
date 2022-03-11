@@ -459,8 +459,9 @@ class FreqtradeBot(LoggingMixin):
                 return
         else:
             logger.debug("Max adjustment entries is set to unlimited.")
-        current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
-        current_rate_sell = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        current_entry_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
+        current_exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        current_rate = current_entry_rate  # backward compatibilty
         current_profit = trade.calc_profit_ratio(current_rate)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
@@ -472,7 +473,8 @@ class FreqtradeBot(LoggingMixin):
                                              default_retval=None)(
             trade=trade, current_time=datetime.now(timezone.utc), current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake_amount,
-            max_stake=max_stake_amount, current_rate_sell=current_rate_sell)
+            max_stake=max_stake_amount, current_entry_rate=current_entry_rate,
+            current_exit_rate=current_exit_rate)
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
@@ -480,7 +482,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            amount = -stake_amount / current_rate_sell
+            amount = -stake_amount / current_exit_rate
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
                 return
