@@ -1,7 +1,7 @@
 """ Freqtrade bot """
-__version__ = '2022.2.1-develop'
+__version__ = '2022.2.1-dev'
 
-if __version__.endswith('develop'):
+if __version__.endswith('dev'):
     try:
         import subprocess
 
