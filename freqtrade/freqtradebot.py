@@ -873,11 +873,15 @@ class FreqtradeBot(LoggingMixin):
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
+                # The above will return False if the placement failed and the trade was force-sold.
+                # in which case the trade will be closed - which we must check below.
                 trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it
-        if stoploss_order and stoploss_order['status'] in ('canceled', 'cancelled'):
+        if (trade.is_open
+                and stoploss_order
+                and stoploss_order['status'] in ('canceled', 'cancelled')):
             if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                 return False
             else:
@@ -887,7 +891,7 @@ class FreqtradeBot(LoggingMixin):
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         # Triggered Orders are now real orders - so don't replace stoploss anymore
         if (
-            stoploss_order
+            trade.is_open and stoploss_order
             and stoploss_order.get('status_stop') != 'triggered'
             and (self.config.get('trailing_stop', False)
                  or self.config.get('use_custom_stoploss', False))
@@ -907,7 +911,9 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stop_loss)
+
+        if self.exchange.stoploss_adjust(stoploss_norm, order):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
