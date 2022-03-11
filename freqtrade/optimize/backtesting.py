@@ -127,10 +127,9 @@ class Backtesting:
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        # TODO-lev: This should come from the configuration setting or better a
-        # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         self.margin_mode: MarginMode = config.get('margin_mode', MarginMode.NONE)
+        # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
 
         self.progress = BTProgress()
