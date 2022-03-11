@@ -759,7 +759,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         enter_long = latest[SignalType.ENTER_LONG.value] == 1
         exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
+        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0 == 1)
         exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
 
         enter_signal: Optional[SignalDirection] = None
@@ -768,6 +768,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             enter_signal = SignalDirection.LONG
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
         if (self.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
+                and self.can_short
                 and enter_short == 1 and not any([exit_short, enter_long])):
             enter_signal = SignalDirection.SHORT
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)

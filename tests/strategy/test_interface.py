@@ -78,6 +78,12 @@ def test_returns_latest_signal(ohlcv_history):
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
 
     _STRATEGY.config['trading_mode'] = 'futures'
+    # Short signal get's ignored as can_short is not set.
+    assert _STRATEGY.get_entry_signal(
+        'ETH/BTC', '5m', mocked_history) == (None, None)
+
+    _STRATEGY.can_short = True
+
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (SignalDirection.SHORT, 'sell_signal_01')
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
@@ -93,6 +99,7 @@ def test_returns_latest_signal(ohlcv_history):
     assert _STRATEGY.get_exit_signal(
         'ETH/BTC', '5m', mocked_history, True) == (False, True, 'sell_signal_02')
 
+    _STRATEGY.can_short = False
     _STRATEGY.config['trading_mode'] = 'spot'
 
 

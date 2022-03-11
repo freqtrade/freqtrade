@@ -177,7 +177,8 @@ class StrategyResolver(IResolver):
             raise ImportError(
                 "Short strategies cannot run in spot markets. Please make sure that this "
                 "is the correct strategy and that your trading mode configuration is correct. "
-                "You can run this strategy by setting `can_short=False` in your strategy."
+                "You can run this strategy in spot markets by setting `can_short=False`"
+                " in your strategy. Please note that short signals will be ignored in that case."
                 )
 
     @staticmethod
