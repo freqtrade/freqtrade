@@ -1,4 +1,6 @@
 EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
+import sys
+
 from wao.config import Config
 
 sys.path.append(EXECUTION_PATH)
