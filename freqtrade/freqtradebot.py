@@ -507,7 +507,6 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        # TODO-lev: Check what changes are necessary for DCA in relation to shorts.
         if self.strategy.max_entry_position_adjustment > -1:
             count_of_buys = trade.nr_of_successful_entries
             if count_of_buys > self.strategy.max_entry_position_adjustment:
@@ -1077,7 +1076,9 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order, side=trade.exit_side):
+        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stop_loss)
+
+        if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
