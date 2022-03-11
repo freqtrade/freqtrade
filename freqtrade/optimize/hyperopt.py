@@ -486,6 +486,7 @@ class Hyperopt:
 
                         if res.models and hasattr(res.models[-1], "kernel_"):
                             print(f'kernel: {res.models[-1].kernel_}') 
+                        print(datetime.now())
 
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
@@ -542,7 +543,6 @@ class Hyperopt:
         model.criterion = 'squared_error'
 
         r2 = cross_val_score(model, X=res.x_iters, y=res.func_vals, scoring='r2', cv=5, n_jobs=jobs).mean()
-        print(f'R2: {r2}')
         r2 = r2 if r2 > -5 else -5
         self.r2_list.append(r2)
             
