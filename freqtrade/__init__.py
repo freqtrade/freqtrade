@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = 'develop'
+__version__ = '2022.2.1-develop'
 
 if __version__.endswith('develop'):
     try:
@@ -29,5 +29,4 @@ if __version__.endswith('develop'):
             versionfile = Path('./freqtrade_commit')
             if versionfile.is_file():
                 __version__ = f"docker-{versionfile.read_text()[:8]}"
-        except Exception:
-            pass
+        except Exception: pass
