@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
 from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
 from freqtrade.strategy.interface import IStrategy
@@ -160,7 +161,7 @@ class StrategyResolver(IResolver):
         return strategy
 
     @staticmethod
-    def _strategy_sanity_validations(strategy):
+    def _strategy_sanity_validations(strategy: IStrategy):
         # Ensure necessary migrations are performed first.
         validate_migrated_strategy_settings(strategy.config)
 
@@ -170,6 +171,14 @@ class StrategyResolver(IResolver):
         if not all(k in strategy.order_time_in_force for k in REQUIRED_ORDERTIF):
             raise ImportError(f"Impossible to load Strategy '{strategy.__class__.__name__}'. "
                               f"Order-time-in-force mapping is incomplete.")
+        trading_mode = strategy.config.get('trading_mode', TradingMode.SPOT)
+
+        if (strategy.can_short and trading_mode == TradingMode.SPOT):
+            raise ImportError(
+                "Short strategies cannot run in spot markets. Please make sure that this "
+                "is the correct strategy and that your trading mode configuration is correct. "
+                "You can run this strategy by setting `can_short=False` in your strategy."
+                )
 
     @staticmethod
     def _load_strategy(strategy_name: str,

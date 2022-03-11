@@ -81,6 +81,8 @@ class IStrategy(ABC, HyperStrategyMixin):
     trailing_only_offset_is_reached = False
     use_custom_stoploss: bool = False
 
+    can_short: bool = False
+
     # associated timeframe
     ticker_interval: str  # DEPRECATED
     timeframe: str
