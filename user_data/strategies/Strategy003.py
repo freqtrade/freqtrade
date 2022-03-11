@@ -11,7 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from wao._429_file_util import setup_429
+from wao.util import setup_429
 from wao.config import Config
 from wao.strategy_controller import StrategyController
 
