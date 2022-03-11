@@ -1,5 +1,9 @@
 EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
 import sys
+import threading
+import watchdog
+import os
+import time
 
 from wao.config import Config
 
@@ -7,6 +11,7 @@ sys.path.append(EXECUTION_PATH)
 from config import Config as ExecutionConfig
 from util import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
 from romeo import Romeo
+from wao._429_watcher import _429_Watcher
 
 
 def _perform_execute(mode, coin, brain, romeo_pool):
@@ -46,3 +51,32 @@ def _perform_back_test(date_time, coin, brain, romeo_pool):
     romeo = Romeo.instance(True, True)
     romeo_pool[coin] = romeo
     romeo.start()
+
+
+def create_429_directory():
+    print("create_429_directory:..." + Config._429_DIRECTORY + "...")
+    if not os.path.exists(Config._429_DIRECTORY):
+        os.mkdir(Config._429_DIRECTORY)
+
+
+def perform_create_429_watcher():
+    print("perform_create_429_watcher: watching:- " + str(Config._429_DIRECTORY))
+    event_handler = _429_Watcher()
+    observer = watchdog.observers.Observer()
+    observer.schedule(event_handler, path=Config._429_DIRECTORY, recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+
+def create_429_watcher():
+    threading.Thread(target=perform_create_429_watcher).start()
+
+
+def setup_429():
+    create_429_directory()
+    create_429_watcher()

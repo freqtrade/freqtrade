@@ -1,10 +1,6 @@
-import threading
 import os
-import time
-import watchdog
 
 from wao.config import Config
-from wao._429_watcher import _429_Watcher
 
 
 def delete_429_file(text):
@@ -27,32 +23,3 @@ def write_to_429_file(text):
     file.close()
     print(
         "write_to_429_file: " + Config._429_DIRECTORY + execution_id + '_' + action_1 + '_' + action_2)
-
-
-def create_429_directory():
-    print("create_429_directory:..." + Config._429_DIRECTORY + "...")
-    if not os.path.exists(Config._429_DIRECTORY):
-        os.mkdir(Config._429_DIRECTORY)
-
-
-def perform_create_429_watcher():
-    print("perform_create_429_watcher: watching:- " + str(Config._429_DIRECTORY))
-    event_handler = _429_Watcher()
-    observer = watchdog.observers.Observer()
-    observer.schedule(event_handler, path=Config._429_DIRECTORY, recursive=True)
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-
-
-def create_429_watcher():
-    threading.Thread(target=perform_create_429_watcher).start()
-
-
-def setup_429():
-    create_429_directory()
-    create_429_watcher()
