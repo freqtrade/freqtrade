@@ -760,7 +760,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         enter_long = latest[SignalType.ENTER_LONG.value] == 1
         exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0 == 1)
+        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
         exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
 
         enter_signal: Optional[SignalDirection] = None
