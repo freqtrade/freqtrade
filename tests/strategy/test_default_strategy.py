@@ -13,8 +13,8 @@ def test_strategy_test_v3_structure():
     assert hasattr(StrategyTestV3, 'stoploss')
     assert hasattr(StrategyTestV3, 'timeframe')
     assert hasattr(StrategyTestV3, 'populate_indicators')
-    assert hasattr(StrategyTestV3, 'populate_buy_trend')
-    assert hasattr(StrategyTestV3, 'populate_sell_trend')
+    assert hasattr(StrategyTestV3, 'populate_entry_trend')
+    assert hasattr(StrategyTestV3, 'populate_exit_trend')
 
 
 @pytest.mark.parametrize('is_short,side', [

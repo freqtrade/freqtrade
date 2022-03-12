@@ -477,7 +477,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     strategy.custom_stoploss = original_stopvalue
 
 
-def test_custom_sell(default_conf, fee, caplog) -> None:
+def test_custom_exit(default_conf, fee, caplog) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
@@ -499,7 +499,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     assert res.sell_flag is False
     assert res.sell_type == SellType.NONE
 
-    strategy.custom_sell = MagicMock(return_value=True)
+    strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
@@ -507,7 +507,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_reason == 'custom_sell'
 
-    strategy.custom_sell = MagicMock(return_value='hello world')
+    strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
@@ -517,14 +517,14 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     assert res.sell_reason == 'hello world'
 
     caplog.clear()
-    strategy.custom_sell = MagicMock(return_value='h' * 100)
+    strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'h' * 64
-    assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
+    assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
 
 
 @pytest.mark.parametrize('side', TRADE_SIDES)

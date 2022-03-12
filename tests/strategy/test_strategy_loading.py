@@ -144,6 +144,16 @@ def test_strategy_can_short(caplog, default_conf):
     assert isinstance(strat, IStrategy)
 
 
+def test_strategy_implements_populate_entry(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': "StrategyTestV2",
+    })
+    default_conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException, match="`populate_entry_trend` must be implemented."):
+        StrategyResolver.load_strategy(default_conf)
+
+
 def test_strategy_override_minimal_roi(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
@@ -379,6 +389,40 @@ def test_deprecate_populate_indicators(result, default_conf):
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
             in str(w[-1].message)
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
+def test_missing_implements(default_conf):
+    default_location = Path(__file__).parent / "strats/broken_strats"
+    default_conf.update({'strategy': 'TestStrategyNoImplements',
+                         'strategy_path': default_location})
+    with pytest.raises(OperationalException,
+                       match=r"`populate_entry_trend` or `populate_buy_trend`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyNoImplementSell'
+
+    with pytest.raises(OperationalException,
+                       match=r"`populate_exit_trend` or `populate_sell_trend`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    # Futures mode is more strict ...
+    default_conf['trading_mode'] = 'futures'
+
+    with pytest.raises(OperationalException,
+                       match=r"`populate_exit_trend` must be implemented.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyNoImplements'
+    with pytest.raises(OperationalException,
+                       match=r"`populate_entry_trend` must be implemented.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyImplementCustomSell'
+
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your implementation of `custom_sell`.*"):
+        StrategyResolver.load_strategy(default_conf)
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
