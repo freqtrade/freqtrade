@@ -29,7 +29,7 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
-CUSTOM_SELL_MAX_LENGTH = 64
+CUSTOM_EXIT_MAX_LENGTH = 64
 
 
 class SellCheckTuple:
@@ -380,6 +380,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
+        DEPRECATED - please use custom_exit instead.
         Custom exit signal logic indicating that specified position should be sold. Returning a
         string or True from this method is equal to setting exit signal on a candle at specified
         time. This method is not called when exit signal is set.
@@ -400,6 +401,30 @@ class IStrategy(ABC, HyperStrategyMixin):
         None or False.
         """
         return None
+
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
+        """
+        Custom exit signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting exit signal on a candle at specified
+        time. This method is not called when exit signal is set.
+
+        This method should be overridden to create exit signals that depend on trade parameters. For
+        example you could implement an exit relative to the candle when the trade was opened,
+        or a custom 1:2 risk-reward ROI.
+
+        Custom exit reason max length is 64. Exceeding characters will be removed.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
+        None or False.
+        """
+        return self.custom_sell(pair, trade, current_time, current_rate, current_profit, **kwargs)
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
@@ -866,17 +891,17 @@ class IStrategy(ABC, HyperStrategyMixin):
                 sell_signal = SellType.SELL_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
-                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
-                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                        if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
-                                           f'custom_{trade_type} is too long and was trimmed'
-                                           f'to {CUSTOM_SELL_MAX_LENGTH} characters.')
-                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                                           f'custom_exit is too long and was trimmed'
+                                           f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
+                            custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
             if sell_signal in (SellType.CUSTOM_SELL, SellType.SELL_SIGNAL):

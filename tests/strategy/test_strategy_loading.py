@@ -392,7 +392,7 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_missing_implements(result, default_conf):
+def test_missing_implements(default_conf):
     default_location = Path(__file__).parent / "strats/broken_strats"
     default_conf.update({'strategy': 'TestStrategyNoImplements',
                          'strategy_path': default_location})
@@ -406,6 +406,7 @@ def test_missing_implements(result, default_conf):
                        match=r"`populate_exit_trend` or `populate_sell_trend`.*"):
         StrategyResolver.load_strategy(default_conf)
 
+    # Futures mode is more strict ...
     default_conf['trading_mode'] = 'futures'
 
     with pytest.raises(OperationalException,
@@ -415,6 +416,12 @@ def test_missing_implements(result, default_conf):
     default_conf['strategy'] = 'TestStrategyNoImplements'
     with pytest.raises(OperationalException,
                        match=r"`populate_entry_trend` must be implemented.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyImplementCustomSell'
+
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your implementation of `custom_sell`.*"):
         StrategyResolver.load_strategy(default_conf)
 
 

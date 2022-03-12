@@ -222,21 +222,25 @@ class StrategyResolver(IResolver):
         if strategy:
             if strategy.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
                 # Require new method
-                if check_override(strategy, IStrategy, 'populate_entry_trend'):
+                if not check_override(strategy, IStrategy, 'populate_entry_trend'):
                     raise OperationalException("`populate_entry_trend` must be implemented.")
-                if check_override(strategy, IStrategy, 'populate_exit_trend'):
+                if not check_override(strategy, IStrategy, 'populate_exit_trend'):
                     raise OperationalException("`populate_exit_trend` must be implemented.")
+                if check_override(strategy, IStrategy, 'custom_sell'):
+                    raise OperationalException(
+                        "Please migrate your implementation of `custom_sell` to `custom_exit`.")
             else:
-                # TODO: Implementing buy_trend and sell_trend should show a deprecation warning
+                # TODO: Implementing one of the following methods should show a deprecation warning
+                #  buy_trend and sell_trend, custom_sell
                 if (
-                    check_override(strategy, IStrategy, 'populate_buy_trend')
-                    and check_override(strategy, IStrategy, 'populate_entry_trend')
+                    not check_override(strategy, IStrategy, 'populate_buy_trend')
+                    and not check_override(strategy, IStrategy, 'populate_entry_trend')
                 ):
                     raise OperationalException(
                         "`populate_entry_trend` or `populate_buy_trend` must be implemented.")
                 if (
-                    check_override(strategy, IStrategy, 'populate_sell_trend')
-                    and check_override(strategy, IStrategy, 'populate_exit_trend')
+                    not check_override(strategy, IStrategy, 'populate_sell_trend')
+                    and not check_override(strategy, IStrategy, 'populate_exit_trend')
                 ):
                     raise OperationalException(
                         "`populate_exit_trend` or `populate_sell_trend` must be implemented.")
@@ -262,5 +266,6 @@ class StrategyResolver(IResolver):
 def check_override(object, parentclass, attribute):
     """
     Checks if a object overrides the parent class attribute.
+    :returns: True if the object is overridden.
     """
-    return getattr(type(object), attribute) == getattr(parentclass, attribute)
+    return getattr(type(object), attribute) != getattr(parentclass, attribute)
