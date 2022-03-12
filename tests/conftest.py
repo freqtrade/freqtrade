@@ -107,6 +107,8 @@ def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> No
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+        mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+                return_value=['5m', '15m', '1h', '1d']))
 
 
 def get_patched_exchange(mocker, config, api_mock=None, id='binance',
