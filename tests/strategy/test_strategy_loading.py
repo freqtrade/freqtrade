@@ -417,6 +417,7 @@ def test_missing_implements(result, default_conf):
                        match=r"`populate_entry_trend` must be implemented.*"):
         StrategyResolver.load_strategy(default_conf)
 
+
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_call_deprecated_function(result, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"

@@ -222,18 +222,22 @@ class StrategyResolver(IResolver):
         if strategy:
             if strategy.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
                 # Require new method
-                if type(strategy).populate_entry_trend == IStrategy.populate_entry_trend:
+                if check_override(strategy, IStrategy, 'populate_entry_trend'):
                     raise OperationalException("`populate_entry_trend` must be implemented.")
-                if type(strategy).populate_exit_trend == IStrategy.populate_exit_trend:
+                if check_override(strategy, IStrategy, 'populate_exit_trend'):
                     raise OperationalException("`populate_exit_trend` must be implemented.")
             else:
-                # TODO: Implementing buy_trend and sell_trend should raise a deprecation.
-                if (type(strategy).populate_buy_trend == IStrategy.populate_buy_trend
-                        and type(strategy).populate_entry_trend == IStrategy.populate_entry_trend):
+                # TODO: Implementing buy_trend and sell_trend should show a deprecation warning
+                if (
+                    check_override(strategy, IStrategy, 'populate_buy_trend')
+                    and check_override(strategy, IStrategy, 'populate_entry_trend')
+                ):
                     raise OperationalException(
                         "`populate_entry_trend` or `populate_buy_trend` must be implemented.")
-                if (type(strategy).populate_sell_trend == IStrategy.populate_sell_trend
-                        and type(strategy).populate_exit_trend == IStrategy.populate_exit_trend):
+                if (
+                    check_override(strategy, IStrategy, 'populate_sell_trend')
+                    and check_override(strategy, IStrategy, 'populate_exit_trend')
+                ):
                     raise OperationalException(
                         "`populate_exit_trend` or `populate_sell_trend` must be implemented.")
 
@@ -253,3 +257,10 @@ class StrategyResolver(IResolver):
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
             "or contains Python code errors."
         )
+
+
+def check_override(object, parentclass, attribute):
+    """
+    Checks if a object overrides the parent class attribute.
+    """
+    return getattr(type(object), attribute) == getattr(parentclass, attribute)
