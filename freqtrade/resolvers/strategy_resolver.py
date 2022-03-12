@@ -227,7 +227,16 @@ class StrategyResolver(IResolver):
                 if type(strategy).populate_exit_trend == IStrategy.populate_exit_trend:
                     raise OperationalException("`populate_exit_trend` must be implemented.")
             else:
-                # TODO: Verify if populate_buy and populate_sell are implemented
+
+                if (type(strategy).populate_buy_trend == IStrategy.populate_buy_trend
+                        and type(strategy).populate_entry_trend == IStrategy.populate_entry_trend):
+                    raise OperationalException(
+                        "`populate_entry_trend` or `populate_buy_trend` must be implemented.")
+                if (type(strategy).populate_sell_trend == IStrategy.populate_sell_trend
+                        and type(strategy).populate_exit_trend == IStrategy.populate_exit_trend):
+                    raise OperationalException(
+                        "`populate_exit_trend` or `populate_sell_trend` must be implemented.")
+
                 strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
                 strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
                 strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)

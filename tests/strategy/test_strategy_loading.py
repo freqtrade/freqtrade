@@ -144,6 +144,16 @@ def test_strategy_can_short(caplog, default_conf):
     assert isinstance(strat, IStrategy)
 
 
+def test_strategy_implements_populate_entry(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': "StrategyTestV2",
+    })
+    default_conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException, match="`populate_entry_trend` must be implemented."):
+        StrategyResolver.load_strategy(default_conf)
+
+
 def test_strategy_override_minimal_roi(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
