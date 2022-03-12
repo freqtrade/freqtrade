@@ -8,19 +8,14 @@ from datetime import datetime
 
 import talib.abstract as ta
 
+
 from wao.config import Config
-from wao.notifier import send_start_deliminator_message
 from wao.strategy_controller import StrategyController
 
 
 class Strategy004(IStrategy):
-    controller = StrategyController()
+    controller = StrategyController('Freq Strategy004')
 
-    if Config.IS_BACKTEST:
-        send_start_deliminator_message('Freq Strategy004 ', Config.BACKTEST_COIN,
-                                       Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX],
-                                       Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP,
-                                       Config.BACKTEST_MAX_COUNT_DUP)
     """
     Strategy 004
     author@: Gerald Lonlas
