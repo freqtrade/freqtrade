@@ -6,13 +6,14 @@ Freqtrade supports spot trading only.
 
 ### Can I open short positions?
 
-No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+Freqtrade can open short positions in futures markets.
+This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
 
-In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 
 ### Can I trade options or futures?
 
-No, options and futures trading are not supported.
+Futures trading is supported for selected exchanges.
 
 ## Beginner Tips & Tricks
 
