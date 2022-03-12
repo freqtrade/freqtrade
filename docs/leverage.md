@@ -28,25 +28,28 @@ Regular trading mode (low risk)
 
 ### Leverage trading modes
 
-With leverage, a trader borrows capital from the exchange. The capital must be repayed fully to the exchange(potentially with interest), and the trader keeps any profits, or pays any losses, from any trades made using the borrowed capital.
+With leverage, a trader borrows capital from the exchange. The capital must be re-payed fully to the exchange (potentially with interest), and the trader keeps any profits, or pays any losses, from any trades made using the borrowed capital.
 
-Because the capital must always be repayed, exchanges will **liquidate** a trade (forcefully sell the traders assets) made using borrowed capital when the total value of assets in a leverage account drops to a certain point(a point where the total value of losses is less than the value of the collateral that the trader actually owns in the leverage account), in order to ensure that the trader has enough capital to pay back the borrowed assets to the exchange. The exchange will also charge a **liquidation fee**, adding to the traders losses. For this reason, **DO NOT TRADE WITH LEVERAGE IF YOU DON'T KNOW EXACTLY WHAT YOUR DOING. LEVERAGE TRADING IS HIGH RISK, AND CAN RESULT IN THE VALUE OF YOUR ASSETS DROPPING TO 0 VERY QUICKLY, WITH NO CHANCE OF INCREASING IN VALUE AGAIN**
+Because the capital must always be re-payed, exchanges will **liquidate** (forcefully sell the traders assets) a trade made using borrowed capital when the total value of assets in the leverage account drops to a certain point (a point where the total value of losses is less than the value of the collateral that the trader actually owns in the leverage account), in order to ensure that the trader has enough capital to pay the borrowed assets back to the exchange. The exchange will also charge a **liquidation fee**, adding to the traders losses.
 
-#### Margin
+For this reason, **DO NOT TRADE WITH LEVERAGE IF YOU DON'T KNOW EXACTLY WHAT YOUR DOING. LEVERAGE TRADING IS HIGH RISK, AND CAN RESULT IN THE VALUE OF YOUR ASSETS DROPPING TO 0 VERY QUICKLY, WITH NO CHANCE OF INCREASING IN VALUE AGAIN.**
 
-*Currently unavailable*
-    Trading occurs on the spot market, but the exchange lends currency to you in an amount equal to the chosen leverage. You pay the amount lent to you back to the exchange with interest, and your profits/losses are multiplied by the leverage specified
+#### Margin (currently unavailable)
+
+Trading occurs on the spot market, but the exchange lends currency to you in an amount equal to the chosen leverage. You pay the amount lent to you back to the exchange with interest, and your profits/losses are multiplied by the leverage specified.
 
 #### Futures
 
-Perpetual swaps (also known as Perpetual Futures) are contracts traded at a price that is closely tied to the underlying asset they are based off of(ex. ). You are not trading the actual asset but instead are trading a derivative contract. Perpetual swap contracts can last indefinately, in contrast to futures or option contracts.
+Perpetual swaps (also known as Perpetual Futures) are contracts traded at a price that is closely tied to the underlying asset they are based off of (ex.). You are not trading the actual asset but instead are trading a derivative contract. Perpetual swap contracts can last indefinitely, in contrast to futures or option contracts.
 
-In addition to the gains/losses from the change in price of the contract, traders also exchange funding fees, which are gains/losses worth an amount that is derived from the difference in price between the contract and the underlying asset. The difference in price between a contract and the underlying asset varies between exchanges.
+In addition to the gains/losses from the change in price of the futures contract, traders also exchange _funding fees_, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.
 
-In addition to the gains/losses from the change in price of the futures contract, traders also exchange funding fees, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.
+To trade in futures markets, you'll have to set `trading_mode` to "futures".
+You will also have to pick a "margin mode" (explanation below) - with freqtrade currently only supporting isolated margin.
 
 ``` json
-"trading_mode": "futures"
+"trading_mode": "futures",
+"margin_mode": "isolated"
 ```
 
 ### Margin mode
@@ -61,9 +64,8 @@ Each market(trading pair), keeps collateral in a separate account
 "margin_mode": "isolated"
 ```
 
-#### Cross margin mode
+#### Cross margin mode (currently unavailable)
 
-*currently unavailable*
 One account is used to share collateral between markets (trading pairs). Margin is taken from total account balance to avoid liquidation when needed.
 
 ``` json
@@ -75,15 +77,16 @@ One account is used to share collateral between markets (trading pairs). Margin 
 *Defaults to `0.05`*
 
 A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price.
-This artificial liquidation price is calculated as 
+This artificial liquidation price is calculated as:
 
 `freqtrade_liquidation_price = liquidation_price ± (abs(open_rate - liquidation_price) * liquidation_buffer)`
+
 - `±` = `+` for long trades
 - `±` = `-` for short trades
 
 Possible values are any floats between 0.0 and 0.99
 
-**ex:** If a trade is entered at a price of 10 coin/USDT, and the liquidation price of this trade is 8 coin/USDT, then with `liquidation_buffer` set to `0.05` the minimum stoploss for this trade would be 8 + ((10 - 8) * 0.05) = 8 + 0.1 = 8.1
+**ex:** If a trade is entered at a price of 10 coin/USDT, and the liquidation price of this trade is 8 coin/USDT, then with `liquidation_buffer` set to `0.05` the minimum stoploss for this trade would be $8 + ((10 - 8) * 0.05) = 8 + 0.1 = 8.1$
 
 !!! Danger "A `liquidation_buffer` of 0.0, or a low `liquidation_buffer` is likely to result in liquidations, and liquidation fees"
     Currently Freqtrade is able to calculate liquidation prices, but does not calculate liquidation fees. Setting your `liquidation_buffer` to 0.0, or using a low `liquidation_buffer` could result in your positions being liquidated. Freqtrade does not track liquidation fees, so liquidations will result in inaccurate profit/loss results for your bot. If you use a low `liquidation_buffer`, it is recommended to use `stoploss_on_exchange` if your exchange supports this.
