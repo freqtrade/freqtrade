@@ -37,6 +37,9 @@ class SampleStrategy(IStrategy):
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 2
 
+    # Can this strategy go short?
+    can_short: bool = False
+
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
@@ -55,12 +58,6 @@ class SampleStrategy(IStrategy):
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
-    # Hyperoptable parameters
-    buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
-    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell', optimize=True, load=True)
-    short_rsi = IntParameter(low=51, high=100, default=70, space='sell', optimize=True, load=True)
-    exit_short_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
-
     # Optimal timeframe for the strategy.
     timeframe = '5m'
 
@@ -71,6 +68,12 @@ class SampleStrategy(IStrategy):
     use_sell_signal = True
     sell_profit_only = False
     ignore_roi_if_buy_signal = False
+
+    # Hyperoptable parameters
+    buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
+    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell', optimize=True, load=True)
+    short_rsi = IntParameter(low=51, high=100, default=70, space='sell', optimize=True, load=True)
+    exit_short_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30

@@ -187,3 +187,7 @@ class StrategyTestV3(IStrategy):
             return round(orders[0].cost, 0)
 
         return None
+
+
+class StrategyTestV3Futures(StrategyTestV3):
+    can_short = True

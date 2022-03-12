@@ -35,7 +35,7 @@ def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
-    assert len(strategies) == 5
+    assert len(strategies) == 6
     assert isinstance(strategies[0], dict)
 
 
@@ -43,10 +43,10 @@ def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
-    assert len(strategies) == 6
+    assert len(strategies) == 7
     # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
-    assert len([x for x in strategies if x['class'] is not None]) == 5
+    assert len([x for x in strategies if x['class'] is not None]) == 6
     assert len([x for x in strategies if x['class'] is None]) == 1
 
 
@@ -126,6 +126,22 @@ def test_strategy_pre_v3(result, default_conf, strategy_name):
     dataframe = strategy.advise_exit(df_indicators, metadata=metadata)
     assert 'sell' not in dataframe.columns
     assert 'exit_long' in dataframe.columns
+
+
+def test_strategy_can_short(caplog, default_conf):
+    caplog.set_level(logging.INFO)
+    default_conf.update({
+        'strategy': CURRENT_TEST_STRATEGY,
+    })
+    strat = StrategyResolver.load_strategy(default_conf)
+    assert isinstance(strat, IStrategy)
+    default_conf['strategy'] = 'StrategyTestV3Futures'
+    with pytest.raises(ImportError, match=""):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['trading_mode'] = 'futures'
+    strat = StrategyResolver.load_strategy(default_conf)
+    assert isinstance(strat, IStrategy)
 
 
 def test_strategy_override_minimal_roi(caplog, default_conf):

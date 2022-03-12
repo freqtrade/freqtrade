@@ -81,6 +81,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     trailing_only_offset_is_reached = False
     use_custom_stoploss: bool = False
 
+    # Can this strategy go short?
+    can_short: bool = False
+
     # associated timeframe
     ticker_interval: str  # DEPRECATED
     timeframe: str
@@ -766,6 +769,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             enter_signal = SignalDirection.LONG
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
         if (self.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
+                and self.can_short
                 and enter_short == 1 and not any([exit_short, enter_long])):
             enter_signal = SignalDirection.SHORT
             enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)

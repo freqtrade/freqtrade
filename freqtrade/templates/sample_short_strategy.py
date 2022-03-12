@@ -38,6 +38,9 @@ class SampleShortStrategy(IStrategy):
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 2
 
+    # Can this strategy go short?
+    can_short: bool = True
+
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
