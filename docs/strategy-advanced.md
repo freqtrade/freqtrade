@@ -83,7 +83,7 @@ When your strategy has multiple buy signals, you can name the signal that trigge
 Then you can access you buy signal on `custom_sell`
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (dataframe['rsi'] < 35) &

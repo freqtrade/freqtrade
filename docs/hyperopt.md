@@ -180,7 +180,7 @@ Hyperopt will first load your data into memory and will then run `populate_indic
 
 Hyperopt will then spawn into different processes (number of processors, or `-j <n>`), and run backtesting over and over again, changing the parameters that are part of the `--spaces` defined.
 
-For every new set of parameters, freqtrade will run first `populate_buy_trend()` followed by `populate_sell_trend()`, and then run the regular backtesting process to simulate trades.
+For every new set of parameters, freqtrade will run first `populate_entry_trend()` followed by `populate_sell_trend()`, and then run the regular backtesting process to simulate trades.
 
 After backtesting, the results are passed into the [loss function](#loss-functions), which will evaluate if this result was better or worse than previous results.  
 Based on the loss function result, hyperopt will determine the next set of parameters to try in the next round of backtesting.
@@ -190,7 +190,7 @@ Based on the loss function result, hyperopt will determine the next set of param
 There are two places you need to change in your strategy file to add a new buy hyperopt for testing:
 
 * Define the parameters at the class level hyperopt shall be optimizing.
-* Within `populate_buy_trend()` - use defined parameter values instead of raw constants.
+* Within `populate_entry_trend()` - use defined parameter values instead of raw constants.
 
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
@@ -274,7 +274,7 @@ The last one we call `trigger` and use it to decide which buy trigger we want to
 So let's write the buy strategy using these values:
 
 ```python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
         if self.buy_adx_enabled.value:
@@ -301,7 +301,7 @@ So let's write the buy strategy using these values:
         return dataframe
 ```
 
-Hyperopt will now call `populate_buy_trend()` many times (`epochs`) with different value combinations.  
+Hyperopt will now call `populate_entry_trend()` many times (`epochs`) with different value combinations.  
 It will use the given historical data and simulate buys based on the buy signals generated with the above function.  
 Based on the results, hyperopt will tell you which parameter combination produced the best results (based on the configured [loss function](#loss-functions)).
 
@@ -364,7 +364,7 @@ class MyAwesomeStrategy(IStrategy):
         
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_short_{self.buy_ema_short.value}'], dataframe[f'ema_long_{self.buy_ema_long.value}']

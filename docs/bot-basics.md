@@ -29,7 +29,7 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
 * Call `bot_loop_start()` strategy callback.
 * Analyze strategy per pair.
   * Call `populate_indicators()`
-  * Call `populate_buy_trend()`
+  * Call `populate_entry_trend()`
   * Call `populate_sell_trend()`
 * Check timeouts for open orders.
   * Calls `check_buy_timeout()` strategy callback for open buy orders.
@@ -55,7 +55,7 @@ This loop will be repeated again and again until the bot is stopped.
 * Load historic data for configured pairlist.
 * Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
-* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair).
+* Calculate buy / sell signals (calls `populate_entry_trend()` and `populate_sell_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
   * Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
   * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).

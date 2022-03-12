@@ -101,7 +101,7 @@ With this section, you have a new column in your dataframe, which has `1` assign
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
-You should only add the indicators used in either `populate_buy_trend()`, `populate_sell_trend()`, or to populate another indicator, otherwise performance may suffer.
+You should only add the indicators used in either `populate_entry_trend()`, `populate_sell_trend()`, or to populate another indicator, otherwise performance may suffer.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
@@ -201,7 +201,7 @@ If this data is available, indicators will be calculated with this extended time
 
 ### Entry signal rules
 
-Edit the method `populate_buy_trend()` in your strategy file to update your entry strategy.
+Edit the method `populate_entry_trend()` in your strategy file to update your entry strategy.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
@@ -210,7 +210,7 @@ This method will also define a new column, `"enter_long"`, which needs to contai
 Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
@@ -236,7 +236,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     Please make sure to set [`can_short`]() appropriately on your strategy if you intend to short.
 
     ```python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
@@ -397,7 +397,7 @@ Disabling of this will have short signals ignored (also in futures markets).
 
 ### Metadata dict
 
-The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
+The metadata-dict (available for `populate_entry_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
@@ -567,7 +567,7 @@ for more information.
     Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
 
     ``` python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         stake = self.config['stake_currency']
         dataframe.loc[
             (
@@ -782,7 +782,7 @@ class SampleStrategy(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (
@@ -1050,11 +1050,11 @@ if self.config['runmode'].value in ('live', 'dry_run'):
 
 ## Print created dataframe
 
-To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+To inspect the created dataframe, you can issue a print-statement in either `populate_entry_trend()` or `populate_sell_trend()`.
 You may also want to print the pair so it's clear what data is currently shown.
 
 ``` python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             #>> whatever condition<<<
