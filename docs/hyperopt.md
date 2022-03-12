@@ -180,7 +180,7 @@ Hyperopt will first load your data into memory and will then run `populate_indic
 
 Hyperopt will then spawn into different processes (number of processors, or `-j <n>`), and run backtesting over and over again, changing the parameters that are part of the `--spaces` defined.
 
-For every new set of parameters, freqtrade will run first `populate_entry_trend()` followed by `populate_sell_trend()`, and then run the regular backtesting process to simulate trades.
+For every new set of parameters, freqtrade will run first `populate_entry_trend()` followed by `populate_exit_trend()`, and then run the regular backtesting process to simulate trades.
 
 After backtesting, the results are passed into the [loss function](#loss-functions), which will evaluate if this result was better or worse than previous results.  
 Based on the loss function result, hyperopt will determine the next set of parameters to try in the next round of backtesting.
@@ -210,7 +210,7 @@ Similar to the entry-signal above, exit-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Define the parameters at the class level hyperopt shall be optimizing, either naming them `sell_*`, or by explicitly defining `space='sell'`.
-* Within `populate_sell_trend()` - use defined parameter values instead of raw constants.
+* Within `populate_exit_trend()` - use defined parameter values instead of raw constants.
 
 The configuration and rules are the same than for buy signals.
 
@@ -379,7 +379,7 @@ class MyAwesomeStrategy(IStrategy):
                 'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_long_{self.buy_ema_long.value}'], dataframe[f'ema_short_{self.buy_ema_short.value}']

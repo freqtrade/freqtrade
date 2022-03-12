@@ -1,6 +1,6 @@
 # Strategy Callbacks
 
-While the main strategy functions (`populate_indicators()`, `populate_buy_trend()`, `populate_sell_trend()`) should be used in a vectorized way, and are only called [once during backtesting](bot-basics.md#backtesting-hyperopt-execution-logic), callbacks are called "whenever needed".
+While the main strategy functions (`populate_indicators()`, `populate_entry_trend()`, `populate_exit_trend()`) should be used in a vectorized way, and are only called [once during backtesting](bot-basics.md#backtesting-hyperopt-execution-logic), callbacks are called "whenever needed".
 
 As such, you should avoid doing heavy calculations in callbacks to avoid delays during operations.
 Depending on the callback used, they may be called when entering / exiting a trade, or throughout the duration of a trade.

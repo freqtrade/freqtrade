@@ -101,7 +101,7 @@ With this section, you have a new column in your dataframe, which has `1` assign
 
 Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
-You should only add the indicators used in either `populate_entry_trend()`, `populate_sell_trend()`, or to populate another indicator, otherwise performance may suffer.
+You should only add the indicators used in either `populate_entry_trend()`, `populate_exit_trend()`, or to populate another indicator, otherwise performance may suffer.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
@@ -263,7 +263,7 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
 
 ### Exit signal rules
 
-Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
+Edit the method `populate_exit_trend()` into your strategy file to update your sell strategy.
 Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
@@ -273,7 +273,7 @@ This method will also define a new column, `"exit_long"`, which needs to contain
 Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Based on TA indicators, populates the sell signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
@@ -297,7 +297,7 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Short-trades need to be supported by your exchange and market configuration!
 
     ```python
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
                 (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
@@ -397,7 +397,7 @@ Disabling of this will have short signals ignored (also in futures markets).
 
 ### Metadata dict
 
-The metadata-dict (available for `populate_entry_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
+The metadata-dict (available for `populate_entry_trend`, `populate_exit_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
@@ -1050,7 +1050,7 @@ if self.config['runmode'].value in ('live', 'dry_run'):
 
 ## Print created dataframe
 
-To inspect the created dataframe, you can issue a print-statement in either `populate_entry_trend()` or `populate_sell_trend()`.
+To inspect the created dataframe, you can issue a print-statement in either `populate_entry_trend()` or `populate_exit_trend()`.
 You may also want to print the pair so it's clear what data is currently shown.
 
 ``` python

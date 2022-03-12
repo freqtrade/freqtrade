@@ -111,7 +111,7 @@ def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_r
 Similar to [Buy Tagging](#buy-tag), you can also specify a sell tag.
 
 ``` python
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (dataframe['rsi'] > 70) &
