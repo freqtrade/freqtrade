@@ -7,6 +7,9 @@ If you intend on using markets other than spot markets, please migrate your stra
 
 ## Quick summary / migration checklist
 
+* Strategy methods:
+  * `populate_buy_trend()` -> `populate_entry_trend()`
+  * `populate_sell_trend()` -> `populate_exit_trend()`
 * Dataframe columns:
   * `buy` -> `enter_long`
   * `sell` -> `exit_long`
@@ -16,23 +19,23 @@ If you intend on using markets other than spot markets, please migrate your stra
 * New `side` argument to callbacks without trade object
   * `custom_stake_amount`
   * `confirm_trade_entry`
-* Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries`.
-* Introduced new [`leverage` callback](strategy-callbacks.md#leverage-callback)
+* Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries` (mostly relevant for `adjust_trade_position()`).
+* Introduced new [`leverage` callback](strategy-callbacks.md#leverage-callback).
 * Informative pairs can now pass a 3rd element in the Tuple, defining the candle type.
-* `@informative` decorator now takes an optional `candle_type` argument
+* `@informative` decorator now takes an optional `candle_type` argument.
 * helper methods `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
 * `INTERFACE_VERSION` should be set to 3.
-* Strategy/Configuration settings
-  * `order_time_in_force` buy -> entry, sell -> exit
-  * `order_types` buy -> entry, sell -> exit
+* Strategy/Configuration settings.
+  * `order_time_in_force` buy -> entry, sell -> exit.
+  * `order_types` buy -> entry, sell -> exit.
 
 ## Extensive explanation
 
 ### `populate_buy_trend`
 
-In `populate_buy_trend()` - you will want to change the columns you assign from `'buy`' to `'enter_long`
+In `populate_buy_trend()` - you will want to change the columns you assign from `'buy`' to `'enter_long`, as well as the method name from `populate_buy_trend` to `populate_entry_trend`.
 
-```python hl_lines="9"
+```python hl_lines="1 9"
 def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
@@ -48,8 +51,8 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
 After:
 
-```python hl_lines="9"
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+```python hl_lines="1 9"
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
@@ -62,9 +65,14 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     return dataframe
 ```
 
+Please refer to the [Strategy documentation](strategy-customization.md#entry-signal-rules) on how to enter and exit short trades.
+
 ### `populate_sell_trend`
 
-``` python hl_lines="9"
+Similar to `populate_buy_trend`, `populate_sell_trend()` will be renamed to `populate_exit_trend()`.
+We'll also change the column from `"sell"` to `"exit_long"`.
+
+``` python hl_lines="1 9"
 def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
@@ -79,8 +87,8 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 After
 
-``` python hl_lines="9"
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+``` python hl_lines="1 9"
+def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
@@ -91,6 +99,8 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
         ['exit_long', 'exit_tag']] = (1, 'some_exit_tag')
     return dataframe
 ```
+
+Please refer to the [Strategy documentation](strategy-customization.md#exit-signal-rules) on how to enter and exit short trades.
 
 ### Custom-stake-amount
 
