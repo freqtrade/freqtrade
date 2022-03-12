@@ -81,6 +81,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     trailing_only_offset_is_reached = False
     use_custom_stoploss: bool = False
 
+    # Can this strategy go short?
     can_short: bool = False
 
     # associated timeframe
