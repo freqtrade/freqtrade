@@ -138,11 +138,11 @@ class UnfilledTimeout(BaseModel):
 
 
 class OrderTypes(BaseModel):
-    buy: OrderTypeValues
-    sell: OrderTypeValues
-    emergencysell: Optional[OrderTypeValues]
-    forcesell: Optional[OrderTypeValues]
-    forcebuy: Optional[OrderTypeValues]
+    entry: OrderTypeValues
+    exit: OrderTypeValues
+    emergencyexit: Optional[OrderTypeValues]
+    forceexit: Optional[OrderTypeValues]
+    forceentry: Optional[OrderTypeValues]
     stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]

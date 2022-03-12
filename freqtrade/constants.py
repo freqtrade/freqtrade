@@ -20,7 +20,7 @@ DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['entry', 'exit']
-REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+REQUIRED_ORDERTYPES = ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']
 ORDERBOOK_SIDES = ['ask', 'bid']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
@@ -214,11 +214,11 @@ CONF_SCHEMA = {
         'order_types': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {
+                'entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forceexit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forceentry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergencyexit': {
                     'type': 'string',
                     'enum': ORDERTYPE_POSSIBILITIES,
                     'default': 'market'},
@@ -228,7 +228,7 @@ CONF_SCHEMA = {
                 'stoploss_on_exchange_limit_ratio': {'type': 'number', 'minimum': 0.0,
                                                      'maximum': 1.0}
             },
-            'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+            'required': ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']
         },
         'order_time_in_force': {
             'type': 'object',

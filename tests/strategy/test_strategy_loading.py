@@ -239,8 +239,8 @@ def test_strategy_override_order_types(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     order_types = {
-        'buy': 'market',
-        'sell': 'limit',
+        'entry': 'market',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
@@ -251,16 +251,16 @@ def test_strategy_override_order_types(caplog, default_conf):
     strategy = StrategyResolver.load_strategy(default_conf)
 
     assert strategy.order_types
-    for method in ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']:
+    for method in ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']:
         assert strategy.order_types[method] == order_types[method]
 
     assert log_has("Override strategy 'order_types' with value in config file:"
-                   " {'buy': 'market', 'sell': 'limit', 'stoploss': 'limit',"
+                   " {'entry': 'market', 'exit': 'limit', 'stoploss': 'limit',"
                    " 'stoploss_on_exchange': True}.", caplog)
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'order_types': {'buy': 'market'}
+        'order_types': {'exit': 'market'}
     })
     # Raise error for invalid configuration
     with pytest.raises(ImportError,

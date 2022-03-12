@@ -64,6 +64,7 @@ def process_deprecated_setting(config: Dict[str, Any],
 
         section_new_config = config.get(section_new, {}) if section_new else config
         section_new_config[name_new] = section_old_config[name_old]
+        del section_old_config[name_old]
 
 
 def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:

@@ -32,14 +32,14 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re
 
 ORDER_TYPES = [
     {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
     },
     {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': True
     }]

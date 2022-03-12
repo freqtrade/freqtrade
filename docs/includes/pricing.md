@@ -101,8 +101,8 @@ Assuming both buy and sell are using market orders, a configuration similar to t
 
 ``` jsonc
   "order_types": {
-    "buy": "market",
-    "sell": "market"
+    "entry": "market",
+    "exit": "market"
     // ...
   },
   "bid_strategy": {

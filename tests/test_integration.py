@@ -80,7 +80,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Switch ordertype to market to close trade immediately
-    freqtrade.strategy.order_types['sell'] = 'market'
+    freqtrade.strategy.order_types['exit'] = 'market'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
     patch_get_signal(freqtrade)
@@ -173,7 +173,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     rpc = RPC(freqtrade)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Switch ordertype to market to close trade immediately
-    freqtrade.strategy.order_types['sell'] = 'market'
+    freqtrade.strategy.order_types['exit'] = 'market'
     patch_get_signal(freqtrade)
 
     # Create 4 trades

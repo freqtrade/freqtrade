@@ -944,7 +944,7 @@ class Telegram(RPCHandler):
             return
         try:
             msg = self._rpc._rpc_forceexit(trade_id)
-            self._send_msg('Forcesell Result: `{result}`'.format(**msg))
+            self._send_msg('Forceexit Result: `{result}`'.format(**msg))
 
         except RPCException as e:
             self._send_msg(str(e))

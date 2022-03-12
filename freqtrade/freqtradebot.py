@@ -629,7 +629,7 @@ class FreqtradeBot(LoggingMixin):
                 f"{stake_amount} ...")
 
         amount = (stake_amount / enter_limit_requested) * leverage
-        order_type = ordertype or self.strategy.order_types['buy']
+        order_type = ordertype or self.strategy.order_types['entry']
 
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
@@ -1155,7 +1155,7 @@ class FreqtradeBot(LoggingMixin):
                     max_timeouts = self.config.get(
                         'unfilledtimeout', {}).get('exit_timeout_count', 0)
                     if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                        logger.warning(f'Emergencyselling trade {trade}, as the sell order '
+                        logger.warning(f'Emergency exiting trade {trade}, as the exit order '
                                        f'timed out {max_timeouts} times.')
                         try:
                             self.execute_trade_exit(
@@ -1248,11 +1248,11 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
-            logger.info('Partial %s order timeout for %s.', trade.enter_side, trade)
+            logger.info(f'Partial {trade.enter_side} order timeout for {trade}.')
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        self._notify_enter_cancel(trade, order_type=self.strategy.order_types[trade.enter_side],
+        self._notify_enter_cancel(trade, order_type=self.strategy.order_types['entry'],
                                   reason=reason)
         return was_trade_fully_canceled
 
@@ -1297,7 +1297,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         self._notify_exit_cancel(
             trade,
-            order_type=self.strategy.order_types[trade.exit_side],
+            order_type=self.strategy.order_types['exit'],
             reason=reason
         )
         return cancelled
@@ -1353,7 +1353,7 @@ class FreqtradeBot(LoggingMixin):
             is_short=trade.is_short,
             open_date=trade.open_date,
         )
-        exit_type = 'sell'
+        exit_type = 'exit'
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
@@ -1380,7 +1380,7 @@ class FreqtradeBot(LoggingMixin):
         order_type = ordertype or self.strategy.order_types[exit_type]
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
-            order_type = self.strategy.order_types.get("emergencysell", "market")
+            order_type = self.strategy.order_types.get("emergencyexit", "market")
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['exit']

@@ -490,7 +490,7 @@ class Backtesting:
                 return None
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
-            order_type = self.strategy.order_types['sell']
+            order_type = self.strategy.order_types['exit']
             if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 if order_type == 'limit':
@@ -598,7 +598,7 @@ class Backtesting:
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
-        order_type = self.strategy.order_types['buy']
+        order_type = self.strategy.order_types['entry']
         propose_rate = row[OPEN_IDX]
         if order_type == 'limit':
             propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
@@ -638,7 +638,7 @@ class Backtesting:
             # In case of pos adjust, still return the original trade
             # If not pos adjust, trade is None
             return trade
-        order_type = self.strategy.order_types['buy']
+        order_type = self.strategy.order_types['entry']
         time_in_force = self.strategy.order_time_in_force['entry']
 
         if not pos_adjust:
