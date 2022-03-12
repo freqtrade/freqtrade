@@ -9,10 +9,10 @@ Currently available callbacks:
 
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#custom-stake-size)
-* [`custom_sell()`](#custom-sell-signal)
+* [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
-* [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)
+* [`check_buy_timeout()` and `check_sell_timeout()`](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -79,15 +79,15 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.
 
-## Custom sell signal
+## Custom exit signal
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
 Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
 
-For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
+For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using custom_exit() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a (none-empty) `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -96,7 +96,7 @@ An example of how we can use different indicators depending on the current profi
 
 ``` python
 class AwesomeStrategy(IStrategy):
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()

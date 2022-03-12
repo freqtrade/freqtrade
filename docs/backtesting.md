@@ -533,7 +533,7 @@ freqtrade backtesting --strategy AwesomeStrategy --timeframe 1h --timeframe-deta
 ```
 
 This will load 1h data as well as 5m data for the timeframe. The strategy will be analyzed with the 1h timeframe - and for every "open trade candle" (candles where a trade is open) the 5m data will be used to simulate intra-candle movements.
-All callback functions (`custom_sell()`, `custom_stoploss()`, ... ) will be running for each 5m candle once the trade is opened (so 12 times in the above example of 1h timeframe, and 5m detailed timeframe).
+All callback functions (`custom_exit()`, `custom_stoploss()`, ... ) will be running for each 5m candle once the trade is opened (so 12 times in the above example of 1h timeframe, and 5m detailed timeframe).
 
 `--timeframe-detail` must be smaller than the original timeframe, otherwise backtesting will fail to start.
 

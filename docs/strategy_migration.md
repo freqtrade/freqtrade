@@ -10,6 +10,7 @@ If you intend on using markets other than spot markets, please migrate your stra
 * Strategy methods:
   * `populate_buy_trend()` -> `populate_entry_trend()`
   * `populate_sell_trend()` -> `populate_exit_trend()`
+  * `custom_sell()` -> `custom_exit()`
 * Dataframe columns:
   * `buy` -> `enter_long`
   * `sell` -> `exit_long`
@@ -101,6 +102,26 @@ def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 ```
 
 Please refer to the [Strategy documentation](strategy-customization.md#exit-signal-rules) on how to enter and exit short trades.
+
+### `custom_sell`
+
+``` python hl_lines="2"
+class AwesomeStrategy(IStrategy):
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+        # ...
+```
+
+``` python hl_lines="2"
+class AwesomeStrategy(IStrategy):
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+        # ...
+```
 
 ### Custom-stake-amount
 

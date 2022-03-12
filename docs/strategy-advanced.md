@@ -80,7 +80,7 @@ class AwesomeStrategy(IStrategy):
 ## Enter Tag
 
 When your strategy has multiple buy signals, you can name the signal that triggered.
-Then you can access you buy signal on `custom_sell`
+Then you can access you buy signal on `custom_exit`
 
 ```python
 def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -93,8 +93,8 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
 
     return dataframe
 
-def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, **kwargs):
+def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                current_profit: float, **kwargs):
     dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
     last_candle = dataframe.iloc[-1].squeeze()
     if trade.enter_tag == 'buy_signal_rsi' and last_candle['rsi'] > 80:

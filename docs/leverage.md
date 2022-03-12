@@ -104,4 +104,3 @@ All Fees are included in `current_profit` calculations during the trade.
 #### Futures mode
 
 Funding fees are either added or subtracted from the total amount of a trade
-
