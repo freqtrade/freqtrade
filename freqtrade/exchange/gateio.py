@@ -22,6 +22,7 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
+        "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
     }
 
