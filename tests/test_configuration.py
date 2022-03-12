@@ -798,8 +798,8 @@ def test_validate_max_open_trades(default_conf):
 
 def test_validate_price_side(default_conf):
     default_conf['order_types'] = {
-        "buy": "limit",
-        "sell": "limit",
+        "entry": "limit",
+        "exit": "limit",
         "stoploss": "limit",
         "stoploss_on_exchange": False,
     }
@@ -807,21 +807,21 @@ def test_validate_price_side(default_conf):
     validate_config_consistency(default_conf)
 
     conf = deepcopy(default_conf)
-    conf['order_types']['buy'] = 'market'
+    conf['order_types']['entry'] = 'market'
     with pytest.raises(OperationalException,
                        match='Market buy orders require bid_strategy.price_side = "ask".'):
         validate_config_consistency(conf)
 
     conf = deepcopy(default_conf)
-    conf['order_types']['sell'] = 'market'
+    conf['order_types']['exit'] = 'market'
     with pytest.raises(OperationalException,
                        match='Market sell orders require ask_strategy.price_side = "bid".'):
         validate_config_consistency(conf)
 
     # Validate inversed case
     conf = deepcopy(default_conf)
-    conf['order_types']['sell'] = 'market'
-    conf['order_types']['buy'] = 'market'
+    conf['order_types']['exit'] = 'market'
+    conf['order_types']['entry'] = 'market'
     conf['ask_strategy']['price_side'] = 'bid'
     conf['bid_strategy']['price_side'] = 'ask'
 
@@ -960,6 +960,41 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
     conf['trading_mode'] = 'futures'
     with pytest.raises(OperationalException,
                        match=r"Please migrate your time_in_force settings .* 'entry' and 'exit'\."):
+        validate_config_consistency(conf)
+
+
+def test_validate_order_types(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for order_types is.*", caplog)
+    assert conf['order_types']['entry'] == 'limit'
+    assert conf['order_types']['exit'] == 'market'
+    assert conf['order_types']['forceentry'] == 'limit'
+    assert 'buy' not in conf['order_types']
+    assert 'sell' not in conf['order_types']
+    assert 'forcebuy' not in conf['order_types']
+    assert 'forcesell' not in conf['order_types']
+
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your order_types settings to use the new wording\."):
         validate_config_consistency(conf)
 
 
@@ -1280,11 +1315,14 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # The value of the new setting shall have been set to the
     # value of the deprecated one
     assert default_conf['sectionA']['new_setting'] == 'valB'
+    # Old setting is removed
+    assert 'deprecated_setting' not in default_conf['sectionB']
 
     caplog.clear()
 
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')
@@ -1298,7 +1336,7 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Assign new setting
     default_conf['sectionA']['new_setting'] = 'valA'
     # Delete deprecated setting
-    del default_conf['sectionB']['deprecated_setting']
+    default_conf['sectionB'].pop('deprecated_setting', None)
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')

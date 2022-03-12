@@ -77,7 +77,7 @@ You can use "current" market data by using the [dataprovider](strategy-customiza
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forcesell all` (sell all open trades).
+You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 
@@ -117,10 +117,10 @@ As the message says, your exchange does not support market orders and you have o
 
 To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
-```
+``` python
     order_types = {
         ...
-        'stoploss': 'limit',
+        "stoploss": "limit",
         ...
     }
 ```

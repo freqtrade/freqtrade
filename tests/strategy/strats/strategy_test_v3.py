@@ -37,8 +37,8 @@ class StrategyTestV3(IStrategy):
 
     # Optional order type mapping
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
     }
@@ -187,3 +187,7 @@ class StrategyTestV3(IStrategy):
             return round(orders[0].cost, 0)
 
         return None
+
+
+class StrategyTestV3Futures(StrategyTestV3):
+    can_short = True
