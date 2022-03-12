@@ -220,15 +220,23 @@ class StrategyResolver(IResolver):
         )
 
         if strategy:
-            strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
-            strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
-            strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-            if any(x == 2 for x in [
-                strategy._populate_fun_len,
-                strategy._buy_fun_len,
-                strategy._sell_fun_len
-            ]):
-                strategy.INTERFACE_VERSION = 1
+            if strategy.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+                # Require new method
+                if type(strategy).populate_entry_trend == IStrategy.populate_entry_trend:
+                    raise OperationalException("`populate_entry_trend` must be implemented.")
+                if type(strategy).populate_exit_trend == IStrategy.populate_exit_trend:
+                    raise OperationalException("`populate_exit_trend` must be implemented.")
+            else:
+                # TODO: Verify if populate_buy and populate_sell are implemented
+                strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
+                strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+                strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
+                if any(x == 2 for x in [
+                    strategy._populate_fun_len,
+                    strategy._buy_fun_len,
+                    strategy._sell_fun_len
+                ]):
+                    strategy.INTERFACE_VERSION = 1
 
             return strategy
 

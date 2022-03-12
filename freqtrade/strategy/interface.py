@@ -177,25 +177,42 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators, populates the buy signal for the given dataframe
+        DEPRECATED - please migrate to populate_entry_trend
         :param dataframe: DataFrame
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
         return dataframe
 
-    @abstractmethod
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the entry signal for the given dataframe
+        :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
+        :return: DataFrame with entry columns populated
+        """
+        return self.populate_buy_trend(dataframe, metadata)
+
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
+        DEPRECATED - please migrate to populate_exit_trend
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
         return dataframe
+
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the exit signal for the given dataframe
+        :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
+        :return: DataFrame with exit columns populated
+        """
+        return self.populate_sell_trend(dataframe, metadata)
 
     def bot_loop_start(self, **kwargs) -> None:
         """
@@ -1072,7 +1089,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                           "the current function headers!", DeprecationWarning)
             df = self.populate_buy_trend(dataframe)  # type: ignore
         else:
-            df = self.populate_buy_trend(dataframe, metadata)
+            df = self.populate_entry_trend(dataframe, metadata)
         if 'enter_long' not in df.columns:
             df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
 
@@ -1094,7 +1111,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                           "the current function headers!", DeprecationWarning)
             df = self.populate_sell_trend(dataframe)  # type: ignore
         else:
-            df = self.populate_sell_trend(dataframe, metadata)
+            df = self.populate_exit_trend(dataframe, metadata)
         if 'exit_long' not in df.columns:
             df = df.rename({'sell': 'exit_long'}, axis='columns')
         return df
