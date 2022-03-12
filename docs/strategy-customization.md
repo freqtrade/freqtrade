@@ -233,6 +233,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     Short-entries can be created by setting `enter_short` (corresponds to `enter_long` for long trades).
     The `enter_tag` column remains identical.
     Short-trades need to be supported by your exchange and market configuration!
+    Please make sure to set [`can_short`]() appropriately on your strategy if you intend to short.
 
     ```python
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -387,6 +388,12 @@ Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported 
 Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
 
 This setting is accessible within the strategy methods as the `self.timeframe` attribute.
+
+### Can short
+
+To use short signals in futures markets, you will have to let us know to do so by setting `can_short=True`.
+Strategies which enable this will fail to load on spot markets.
+Disabling of this will have short signals ignored (also in futures markets).
 
 ### Metadata dict
 

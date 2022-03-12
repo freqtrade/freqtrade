@@ -32,11 +32,12 @@ With leverage, a trader borrows capital from the exchange. The capital must be r
 
 Because the capital must always be repayed, exchanges will **liquidate** a trade (forcefully sell the traders assets) made using borrowed capital when the total value of assets in a leverage account drops to a certain point(a point where the total value of losses is less than the value of the collateral that the trader actually owns in the leverage account), in order to ensure that the trader has enough capital to pay back the borrowed assets to the exchange. The exchange will also charge a **liquidation fee**, adding to the traders losses. For this reason, **DO NOT TRADE WITH LEVERAGE IF YOU DON'T KNOW EXACTLY WHAT YOUR DOING. LEVERAGE TRADING IS HIGH RISK, AND CAN RESULT IN THE VALUE OF YOUR ASSETS DROPPING TO 0 VERY QUICKLY, WITH NO CHANCE OF INCREASING IN VALUE AGAIN**
 
-#### MARGIN
+#### Margin
+
 *Currently unavailable*
     Trading occurs on the spot market, but the exchange lends currency to you in an amount equal to the chosen leverage. You pay the amount lent to you back to the exchange with interest, and your profits/losses are multiplied by the leverage specified
-    
-#### FUTURES
+
+#### Futures
 
 Perpetual swaps (also known as Perpetual Futures) are contracts traded at a price that is closely tied to the underlying asset they are based off of(ex. ). You are not trading the actual asset but instead are trading a derivative contract. Perpetual swap contracts can last indefinately, in contrast to futures or option contracts.
 
@@ -52,7 +53,7 @@ In addition to the gains/losses from the change in price of the futures contract
 
 The possible values are: `isolated`, or `cross`(*currently unavailable*)
 
-#### ISOLATED
+#### Isolated margin mode
 
 Each market(trading pair), keeps collateral in a separate account
 
@@ -60,7 +61,7 @@ Each market(trading pair), keeps collateral in a separate account
 "margin_mode": "isolated"
 ```
 
-#### CROSS
+#### Cross margin mode
 
 *currently unavailable*
 One account is used to share collateral between markets (trading pairs). Margin is taken from total account balance to avoid liquidation when needed.
@@ -70,6 +71,7 @@ One account is used to share collateral between markets (trading pairs). Margin 
 ```
 
 ## Understand `liquidation_buffer`
+
 *Defaults to `0.05`*
 
 A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price.
@@ -84,7 +86,7 @@ Possible values are any floats between 0.0 and 0.99
 **ex:** If a trade is entered at a price of 10 coin/USDT, and the liquidation price of this trade is 8 coin/USDT, then with `liquidation_buffer` set to `0.05` the minimum stoploss for this trade would be 8 + ((10 - 8) * 0.05) = 8 + 0.1 = 8.1
 
 !!! Danger "A `liquidation_buffer` of 0.0, or a low `liquidation_buffer` is likely to result in liquidations, and liquidation fees"
-Currently Freqtrade is able to calculate liquidation prices, but does not calculate liquidation fees. Setting your `liquidation_buffer` to 0.0, or using a low `liquidation_buffer` could result in your positions being liquidated. Freqtrade does not track liquidation fees, so liquidations will result in inaccurate profit/loss results for your bot. If you use a low `liquidation_buffer`, it is recommended to use `stoploss_on_exchange` if your exchange supports this.
+    Currently Freqtrade is able to calculate liquidation prices, but does not calculate liquidation fees. Setting your `liquidation_buffer` to 0.0, or using a low `liquidation_buffer` could result in your positions being liquidated. Freqtrade does not track liquidation fees, so liquidations will result in inaccurate profit/loss results for your bot. If you use a low `liquidation_buffer`, it is recommended to use `stoploss_on_exchange` if your exchange supports this.
 
 ### Developer
 
@@ -96,7 +98,7 @@ For longs, the currency which pays the interest fee for the `borrowed` will alre
 
 All Fees are included in `current_profit` calculations during the trade.
 
-#### FUTURES MODE
+#### Futures mode
 
 Funding fees are either added or subtracted from the total amount of a trade
 
