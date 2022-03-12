@@ -1,6 +1,7 @@
 from wao.util import _perform_execute, _perform_back_test
 import threading
 from wao.config import Config
+from wao.util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
@@ -9,6 +10,7 @@ class StrategyController:
     romeo_pool = {}
 
     def __init__(self, brain):
+        setup_429()
         if Config.IS_BACKTEST:
             send_start_deliminator_message(brain, Config.BACKTEST_COIN,
                                            Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX],
