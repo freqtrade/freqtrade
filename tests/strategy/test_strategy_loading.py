@@ -392,6 +392,32 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
+def test_missing_implements(result, default_conf):
+    default_location = Path(__file__).parent / "strats/broken_strats"
+    default_conf.update({'strategy': 'TestStrategyNoImplements',
+                         'strategy_path': default_location})
+    with pytest.raises(OperationalException,
+                       match=r"`populate_entry_trend` or `populate_buy_trend`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyNoImplementSell'
+
+    with pytest.raises(OperationalException,
+                       match=r"`populate_exit_trend` or `populate_sell_trend`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['trading_mode'] = 'futures'
+
+    with pytest.raises(OperationalException,
+                       match=r"`populate_exit_trend` must be implemented.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyNoImplements'
+    with pytest.raises(OperationalException,
+                       match=r"`populate_entry_trend` must be implemented.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_call_deprecated_function(result, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"
     del default_conf['timeframe']

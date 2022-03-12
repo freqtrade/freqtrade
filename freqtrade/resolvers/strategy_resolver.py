@@ -227,7 +227,7 @@ class StrategyResolver(IResolver):
                 if type(strategy).populate_exit_trend == IStrategy.populate_exit_trend:
                     raise OperationalException("`populate_exit_trend` must be implemented.")
             else:
-
+                # TODO: Implementing buy_trend and sell_trend should raise a deprecation.
                 if (type(strategy).populate_buy_trend == IStrategy.populate_buy_trend
                         and type(strategy).populate_entry_trend == IStrategy.populate_entry_trend):
                     raise OperationalException(
