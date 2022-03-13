@@ -48,3 +48,10 @@ class Gateio(Exchange):
             pair=pair,
             params={'stop': True}
         )
+
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+        """
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        return stop_loss > float(order['stopPrice'])

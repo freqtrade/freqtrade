@@ -55,3 +55,13 @@ def test_cancel_stoploss_order_gateio(default_conf, mocker):
     assert cancel_order_mock.call_args_list[0][1]['order_id'] == '1234'
     assert cancel_order_mock.call_args_list[0][1]['pair'] == 'ETH/BTC'
     assert cancel_order_mock.call_args_list[0][1]['params'] == {'stop': True}
+
+
+def test_stoploss_adjust_gateio(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='gateio')
+    order = {
+        'price': 1500,
+        'stopPrice': 1500,
+    }
+    assert exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1499, order)
