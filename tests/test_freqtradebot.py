@@ -1588,7 +1588,9 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee,
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
-        'stopPrice': '2.178'
+        'info': {
+            'stopPrice': '2.178'
+        }
     })
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_hanging)
