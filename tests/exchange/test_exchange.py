@@ -1886,9 +1886,12 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
     caplog.clear()
     # Call with invalid timeframe
     res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '3m', candle_type)], cache=False)
-    assert not res
-    assert len(res) == 0
-    assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
+    if candle_type != CandleType.MARK:
+        assert not res
+        assert len(res) == 0
+        assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
+    else:
+        assert len(res) == 1
 
 
 @pytest.mark.asyncio
