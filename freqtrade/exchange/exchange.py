@@ -795,7 +795,7 @@ class Exchange:
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return stop_loss > float(order['stopPrice'])
+        raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()

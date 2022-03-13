@@ -23,6 +23,13 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
 
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+        """
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
+
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, is_new_pair: bool = False,
                                         raise_: bool = False
