@@ -1313,7 +1313,7 @@ class FreqtradeBot(LoggingMixin):
             'sub_trade': sub_trade,
         }
         if sub_trade:
-            msg['cumulative_profit'] = trade.realized_profit,
+            msg['cumulative_profit'] = trade.realized_profit
 
         # Send the message
         self.rpc.send_msg(msg)
