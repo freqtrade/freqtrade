@@ -1,12 +1,11 @@
 """ Freqtrade bot """
-__version__ = 'develop'
+__version__ = '2022.2.1-dev'
 
-if __version__ == 'develop':
-
+if __version__.endswith('dev'):
     try:
         import subprocess
 
-        __version__ = 'develop-' + subprocess.check_output(
+        __version__ = __version__ + '-' + subprocess.check_output(
             ['git', 'log', '--format="%h"', '-n 1'],
             stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
 
@@ -30,5 +29,4 @@ if __version__ == 'develop':
             versionfile = Path('./freqtrade_commit')
             if versionfile.is_file():
                 __version__ = f"docker-{versionfile.read_text()[:8]}"
-        except Exception:
-            pass
+        except Exception: pass
