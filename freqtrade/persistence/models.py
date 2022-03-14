@@ -302,7 +302,7 @@ class LocalTrade():
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
-    buy_filled_date: datetime
+    buy_filled_date: Optional[datetime] = None
     close_date: Optional[datetime] = None
     open_order_id: Optional[str] = None
     # absolute value of the stop loss
