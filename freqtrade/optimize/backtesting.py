@@ -960,7 +960,6 @@ class Backtesting:
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time)
                         trade.open_order_id = None
-                        trade.buy_filled_date = current_time
                         LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
 
