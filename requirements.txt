@@ -1,4 +1,4 @@
-numpy==1.22.2
+numpy==1.22.3
 pandas==1.4.1
 pandas-ta==0.3.14b
 
