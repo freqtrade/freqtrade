@@ -1882,6 +1882,16 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
     res = exchange.refresh_latest_ohlcv(pairlist, cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    caplog.clear()
+    # Call with invalid timeframe
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '3m', candle_type)], cache=False)
+    if candle_type != CandleType.MARK:
+        assert not res
+        assert len(res) == 0
+        assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
+    else:
+        assert len(res) == 1
 
 
 @pytest.mark.asyncio
@@ -3833,6 +3843,8 @@ def test__fetch_and_calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
+    mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+                return_value=['1h', '4h', '8h']))
     funding_fees = exchange._fetch_and_calculate_funding_fees(
         pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
@@ -3861,7 +3873,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
         return_value=funding_rate_history_octohourly)
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
-
+    mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(return_value=['4h', '8h']))
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
 

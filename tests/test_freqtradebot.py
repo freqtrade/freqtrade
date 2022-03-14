@@ -1043,12 +1043,9 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         }),
         create_order=MagicMock(side_effect=[
             {'id': enter_order['id']},
-            {'id': exit_order['id']},
+            exit_order,
         ]),
         get_fee=fee,
-    )
-    mocker.patch.multiple(
-        'freqtrade.exchange.Binance',
         stoploss=stoploss
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -1075,7 +1072,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.stoploss_order_id = 100
 
     hanging_stoploss_order = MagicMock(return_value={'status': 'open'})
-    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order', hanging_stoploss_order)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', hanging_stoploss_order)
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id == 100
@@ -1088,7 +1085,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.stoploss_order_id = 100
 
     canceled_stoploss_order = MagicMock(return_value={'status': 'canceled'})
-    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order', canceled_stoploss_order)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', canceled_stoploss_order)
     stoploss.reset_mock()
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
@@ -1121,7 +1118,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         'average': 2,
         'amount': enter_order['amount'],
     })
-    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order', stoploss_order_hit)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
     assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
     assert trade.stoploss_order_id is None
@@ -1129,7 +1126,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     caplog.clear()
 
     mocker.patch(
-        'freqtrade.exchange.Binance.stoploss',
+        'freqtrade.exchange.Exchange.stoploss',
         side_effect=ExchangeError()
     )
     trade.is_open = True
@@ -1141,9 +1138,9 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # It should try to add stoploss order
     trade.stoploss_order_id = 100
     stoploss.reset_mock()
-    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order',
                  side_effect=InvalidOrderException())
-    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss)
     freqtrade.handle_stoploss_on_exchange(trade)
     assert stoploss.call_count == 1
 
@@ -1153,9 +1150,36 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_open = False
     stoploss.reset_mock()
     mocker.patch('freqtrade.exchange.Exchange.fetch_order')
-    mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 0
+
+    # Seventh case: emergency exit triggered
+    # Trailing stop should not act anymore
+    stoploss_order_cancelled = MagicMock(side_effect=[{
+        'id': "100",
+        'status': 'canceled',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'amount': enter_order['amount'],
+        'info': {'stopPrice': 22},
+    }])
+    trade.stoploss_order_id = 100
+    trade.is_open = True
+    trade.stoploss_last_update = arrow.utcnow().shift(hours=-1).datetime
+    trade.stop_loss = 24
+    freqtrade.config['trailing_stop'] = True
+    stoploss = MagicMock(side_effect=InvalidOrderException())
+
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order_with_result',
+                 side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_cancelled)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss)
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert trade.stoploss_order_id is None
+    assert trade.is_open is False
+    assert trade.sell_reason == str(SellType.EMERGENCY_SELL)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
