@@ -449,8 +449,10 @@ class LocalTrade():
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
 
-            'buy_filled_date': self.buy_filled_date.strftime(DATETIME_PRINT_FORMAT),
-            'buy_filled_timestamp': int(self.buy_filled_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
+            'buy_filled_date': (self.buy_filled_date.strftime(DATETIME_PRINT_FORMAT)
+                           if self.buy_filled_date else None),
+            'buy_filled_timestamp': int(self.buy_filled_date.replace(
+                tzinfo=timezone.utc).timestamp() * 1000) if self.buy_filled_date else None,
 
             'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
