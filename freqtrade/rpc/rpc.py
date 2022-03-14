@@ -582,7 +582,7 @@ class RPC:
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                    rate = tickers.get(pair, {}).get('bid', None)
+                    rate = tickers.get(pair, {}).get('last', None)
                     if rate:
                         if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                             rate = 1.0 / rate
