@@ -354,26 +354,25 @@ class Backtesting:
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
                         trade_dur: int) -> float:
-        leverage = trade.leverage or 1.0
-        is_short = trade.is_short or False
-
         """
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
+        is_short = trade.is_short or False
+        if is_short:
+            return self._get_short_close_rate(sell_row, trade, sell, trade_dur)
+        else:
+            return self._get_long_close_rate(sell_row, trade, sell, trade_dur)
+
+    def _get_short_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+                              trade_dur: int) -> float:
+        leverage = trade.leverage or 1.0
         if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
-            if is_short:
-                if trade.stop_loss < sell_row[LOW_IDX]:
-                    # our stoploss was already lower than candle high,
-                    # possibly due to a cancelled trade exit.
-                    # sell at open price.
-                    return sell_row[OPEN_IDX]
-            else:
-                if trade.stop_loss > sell_row[HIGH_IDX]:
-                    # our stoploss was already higher than candle high,
-                    # possibly due to a cancelled trade exit.
-                    # sell at open price.
-                    return sell_row[OPEN_IDX]
+            if trade.stop_loss < sell_row[LOW_IDX]:
+                # our stoploss was already lower than candle high,
+                # possibly due to a cancelled trade exit.
+                # sell at open price.
+                return sell_row[OPEN_IDX]
 
             # Special case: trailing triggers within same candle as trade opened. Assume most
             # pessimistic price movement, which is moving just enough to arm stoploss and
@@ -386,29 +385,96 @@ class Backtesting:
                     and self.strategy.trailing_stop_positive
                 ):
                     # Worst case: price reaches stop_positive_offset and dives down.
-                    if is_short:
-                        stop_rate = (sell_row[OPEN_IDX] *
+                    stop_rate = (sell_row[OPEN_IDX] *
                                  (1 - abs(self.strategy.trailing_stop_positive_offset) +
-                                  abs(self.strategy.trailing_stop_positive)))
-                    else:
-                        stop_rate = (sell_row[OPEN_IDX] *
-                                 (1 + abs(self.strategy.trailing_stop_positive_offset) -
                                   abs(self.strategy.trailing_stop_positive)))
                 else:
                     # Worst case: price ticks tiny bit above open and dives down.
-                    if is_short:
-                        stop_rate = sell_row[OPEN_IDX] * (1 + abs(trade.stop_loss_pct / leverage))
-                        assert stop_rate > sell_row[HIGH_IDX]
-                    else:
-                        stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct / leverage))
-                        assert stop_rate < sell_row[HIGH_IDX]
+                    stop_rate = sell_row[OPEN_IDX] * (1 + abs(trade.stop_loss_pct / leverage))
+                    assert stop_rate > sell_row[HIGH_IDX]
 
                 # Limit lower-end to candle low to avoid sells below the low.
                 # This still remains "worst case" - but "worst realistic case".
-                if is_short:
-                    return min(sell_row[HIGH_IDX], stop_rate)
+                return min(sell_row[HIGH_IDX], stop_rate)
+
+            # Set close_rate to stoploss
+            return trade.stop_loss
+        elif sell.sell_type == (SellType.ROI):
+            roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
+            if roi is not None and roi_entry is not None:
+                if roi == -1 and roi_entry % self.timeframe_min == 0:
+                    # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
+                    # If that entry is a multiple of the timeframe (so on candle open)
+                    # - we'll use open instead of close
+                    return sell_row[OPEN_IDX]
+
+                # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
+                open_fee_rate = trade.open_rate * (1 - trade.fee_open)
+                roi_rate = trade.open_rate * roi / leverage
+                close_rate = (roi_rate - open_fee_rate) / (trade.fee_close + 1)
+                if (trade_dur > 0 and trade_dur == roi_entry
+                        and roi_entry % self.timeframe_min == 0
+                        and sell_row[OPEN_IDX] < close_rate):
+                    # new ROI entry came into effect.
+                    # use Open rate if open_rate > calculated sell rate
+                    return sell_row[OPEN_IDX]
+
+                if (
+                    trade_dur == 0
+                    # Red candle (for longs), TODO: green candle (for shorts)
+                    and sell_row[OPEN_IDX] < sell_row[CLOSE_IDX]  # Red candle
+                    and trade.open_rate > sell_row[OPEN_IDX]  # trade-open below open_rate
+                    and close_rate < sell_row[CLOSE_IDX]
+                ):
+                    # ROI on opening candles with custom pricing can only
+                    # trigger if the entry was at Open or lower.
+                    # details: https: // github.com/freqtrade/freqtrade/issues/6261
+                    # If open_rate is < open, only allow sells below the close on red candles.
+                    raise ValueError("Opening candle ROI on red candles.")
+
+                # Use the maximum between close_rate and low as we
+                # cannot sell outside of a candle.
+                # Applies when a new ROI setting comes in place and the whole candle is above that.
+                return max(min(close_rate, sell_row[HIGH_IDX]), sell_row[LOW_IDX])
+
+            else:
+                # This should not be reached...
+                return sell_row[OPEN_IDX]
+        else:
+            return sell_row[OPEN_IDX]
+
+    def _get_long_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+                             trade_dur: int) -> float:
+        leverage = trade.leverage or 1.0
+        if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+            if trade.stop_loss > sell_row[HIGH_IDX]:
+                # our stoploss was already higher than candle high,
+                # possibly due to a cancelled trade exit.
+                # sell at open price.
+                return sell_row[OPEN_IDX]
+
+            # Special case: trailing triggers within same candle as trade opened. Assume most
+            # pessimistic price movement, which is moving just enough to arm stoploss and
+            # immediately going down to stop price.
+            if sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
+                if (
+                    not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
+                    and self.strategy.trailing_only_offset_is_reached
+                    and self.strategy.trailing_stop_positive_offset is not None
+                    and self.strategy.trailing_stop_positive
+                ):
+                    # Worst case: price reaches stop_positive_offset and dives down.
+                    stop_rate = (sell_row[OPEN_IDX] *
+                                 (1 + abs(self.strategy.trailing_stop_positive_offset) -
+                                 abs(self.strategy.trailing_stop_positive)))
                 else:
-                    return max(sell_row[LOW_IDX], stop_rate)
+                    # Worst case: price ticks tiny bit above open and dives down.
+                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct / leverage))
+                    assert stop_rate < sell_row[HIGH_IDX]
+
+                # Limit lower-end to candle low to avoid sells below the low.
+                # This still remains "worst case" - but "worst realistic case".
+                return max(sell_row[LOW_IDX], stop_rate)
 
             # Set close_rate to stoploss
             return trade.stop_loss
@@ -422,60 +488,33 @@ class Backtesting:
                     return sell_row[OPEN_IDX]
 
                 # - (Expected abs profit + open_rate + open_fee) / (fee_close -1)
-                if is_short:
-                    close_rate = (trade.open_rate *
-                                (1 - trade.fee_open) - trade.open_rate * roi / leverage) / (trade.fee_close + 1)
-                    if (trade_dur > 0 and trade_dur == roi_entry
-                            and roi_entry % self.timeframe_min == 0
-                            and sell_row[OPEN_IDX] < close_rate):
-                        # new ROI entry came into effect.
-                        # use Open rate if open_rate > calculated sell rate
-                        return sell_row[OPEN_IDX]
-                else:
-                    close_rate = - (trade.open_rate * roi / leverage + trade.open_rate *
-                                (1 + trade.fee_open)) / (trade.fee_close - 1)
+                close_rate = -(trade.open_rate * roi / leverage + trade.open_rate *
+                               (1 + trade.fee_open)) / (trade.fee_close - 1)
 
-                    if (trade_dur > 0 and trade_dur == roi_entry
-                            and roi_entry % self.timeframe_min == 0
-                            and sell_row[OPEN_IDX] > close_rate):
-                        # new ROI entry came into effect.
-                        # use Open rate if open_rate > calculated sell rate
-                        return sell_row[OPEN_IDX]
+                if (trade_dur > 0 and trade_dur == roi_entry
+                        and roi_entry % self.timeframe_min == 0
+                        and sell_row[OPEN_IDX] > close_rate):
+                    # new ROI entry came into effect.
+                    # use Open rate if open_rate > calculated sell rate
+                    return sell_row[OPEN_IDX]
 
-                if is_short:
-                    if (
-                        trade_dur == 0
-                        # Red candle (for longs), TODO: green candle (for shorts)
-                        and sell_row[OPEN_IDX] < sell_row[CLOSE_IDX]  # Red candle
-                        and trade.open_rate > sell_row[OPEN_IDX]  # trade-open below open_rate
-                        and close_rate < sell_row[CLOSE_IDX]
-                    ):
-                        # ROI on opening candles with custom pricing can only
-                        # trigger if the entry was at Open or lower.
-                        # details: https: // github.com/freqtrade/freqtrade/issues/6261
-                        # If open_rate is < open, only allow sells below the close on red candles.
-                        raise ValueError("Opening candle ROI on red candles.")
-                else:
-                    if (
-                        trade_dur == 0
-                        # Red candle (for longs), TODO: green candle (for shorts)
-                        and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # Red candle
-                        and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
-                        and close_rate > sell_row[CLOSE_IDX]
-                    ):
-                        # ROI on opening candles with custom pricing can only
-                        # trigger if the entry was at Open or lower.
-                        # details: https: // github.com/freqtrade/freqtrade/issues/6261
-                        # If open_rate is < open, only allow sells below the close on red candles.
-                        raise ValueError("Opening candle ROI on red candles.")
+                if (
+                    trade_dur == 0
+                    # Red candle (for longs), TODO: green candle (for shorts)
+                    and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # Red candle
+                    and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
+                    and close_rate > sell_row[CLOSE_IDX]
+                ):
+                    # ROI on opening candles with custom pricing can only
+                    # trigger if the entry was at Open or lower.
+                    # details: https: // github.com/freqtrade/freqtrade/issues/6261
+                    # If open_rate is < open, only allow sells below the close on red candles.
+                    raise ValueError("Opening candle ROI on red candles.")
 
                 # Use the maximum between close_rate and low as we
                 # cannot sell outside of a candle.
                 # Applies when a new ROI setting comes in place and the whole candle is above that.
-                if is_short:
-                    return max(min(close_rate, sell_row[HIGH_IDX]), sell_row[LOW_IDX])
-                else:
-                    return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
+                return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
             else:
                 # This should not be reached...
