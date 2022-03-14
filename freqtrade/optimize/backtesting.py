@@ -751,13 +751,13 @@ class Backtesting:
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
-            # trade.set_isolated_liq(self.exchange.get_liquidation_price(
-            #     pair=pair,
-            #     open_rate=propose_rate,
-            #     amount=amount,
-            #     leverage=leverage,
-            #     is_short=is_short,
-            # ))
+            trade.set_isolated_liq(self.exchange.get_liquidation_price(
+                pair=pair,
+                open_rate=propose_rate,
+                amount=amount,
+                leverage=leverage,
+                is_short=is_short,
+            ))
 
             order = Order(
                 id=self.order_id_counter,
