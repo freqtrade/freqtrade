@@ -19,7 +19,7 @@ from freqtrade.persistence import LocalTrade, Trade, init_db
 logger = logging.getLogger(__name__)
 
 # Newest format
-BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'buy_filled_date', 'close_date',
+BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'open_rate', 'close_rate',
                    'fee_open', 'fee_close', 'trade_duration',
                    'profit_ratio', 'profit_abs', 'sell_reason',
@@ -316,7 +316,6 @@ def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
     if len(df) > 0:
         df.loc[:, 'close_date'] = pd.to_datetime(df['close_date'], utc=True)
         df.loc[:, 'open_date'] = pd.to_datetime(df['open_date'], utc=True)
-        df.loc[:, 'buy_filled_date'] = pd.to_datetime(df['buy_filled_date'], utc=True)
         df.loc[:, 'close_rate'] = df['close_rate'].astype('float64')
     return df
 

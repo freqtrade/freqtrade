@@ -302,7 +302,6 @@ class LocalTrade():
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
-    buy_filled_date: Optional[datetime] = None
     close_date: Optional[datetime] = None
     open_order_id: Optional[str] = None
     # absolute value of the stop loss
@@ -366,10 +365,6 @@ class LocalTrade():
             return (self.amount * self.open_rate) * ((self.leverage-1)/self.leverage)
         else:
             return self.amount
-
-    @property
-    def buy_filled_date_utc(self):
-        return self.buy_filled_date.replace(tzinfo=timezone.utc)
 
     @property
     def open_date_utc(self):
@@ -448,11 +443,6 @@ class LocalTrade():
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
-
-            'buy_filled_date': (self.buy_filled_date.strftime(DATETIME_PRINT_FORMAT)
-                           if self.buy_filled_date else None),
-            'buy_filled_timestamp': int(self.buy_filled_date.replace(
-                tzinfo=timezone.utc).timestamp() * 1000) if self.buy_filled_date else None,
 
             'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
