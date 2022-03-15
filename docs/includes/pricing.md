@@ -88,9 +88,9 @@ When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Fr
 
 #### Sell price without Orderbook enabled
 
-When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
+The following section uses `side` as the configured `ask_strategy.price_side`.
 
-When not using orderbook (`ask_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price.
+When not using orderbook (`ask_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's above the `last` traded price from the ticker. Otherwise (when the `side` price is below the `last` price), it calculates a rate between `side` and `last` price.
 
 The `ask_strategy.bid_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the last price and values between those interpolate between `side` and last price.
 
