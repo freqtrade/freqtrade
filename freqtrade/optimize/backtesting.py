@@ -467,10 +467,7 @@ class Backtesting:
             # Use the maximum between close_rate and low as we
             # cannot sell outside of a candle.
             # Applies when a new ROI setting comes in place and the whole candle is above that.
-            if is_short:
-                return max(min(close_rate, sell_row[HIGH_IDX]), sell_row[LOW_IDX])
-            else:
-                return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
+            return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
         else:
             # This should not be reached...
