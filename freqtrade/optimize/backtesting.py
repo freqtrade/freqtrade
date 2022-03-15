@@ -392,8 +392,8 @@ class Backtesting:
             ):
                 # Worst case: price reaches stop_positive_offset and dives down.
                 stop_rate = (sell_row[OPEN_IDX] *
-                             (1 + side_1 * abs(self.strategy.trailing_stop_positive_offset) +
-                              abs(self.strategy.trailing_stop_positive / leverage)))
+                             (1 + side_1 * abs(self.strategy.trailing_stop_positive_offset) -
+                              side_1 * abs(self.strategy.trailing_stop_positive / leverage)))
             else:
                 # Worst case: price ticks tiny bit above open and dives down.
                 stop_rate = sell_row[OPEN_IDX] * (1 -
