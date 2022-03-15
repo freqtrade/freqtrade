@@ -444,22 +444,22 @@ class Backtesting:
             if (trade_dur == 0 and (
                 (
                     is_short
-                    # Red candle (for longs), TODO: green candle (for shorts)
+                    # Red candle (for longs)
                     and sell_row[OPEN_IDX] < sell_row[CLOSE_IDX]  # Red candle
-                    and trade.open_rate > sell_row[OPEN_IDX]  # trade-open below open_rate
-                    and close_rate < sell_row[CLOSE_IDX]
+                    and trade.open_rate > sell_row[OPEN_IDX]  # trade-open above open_rate
+                    and close_rate < sell_row[CLOSE_IDX]  # closes below close
                 )
                 or
                 (
                     not is_short
-                    # Red candle (for longs), TODO: green candle (for shorts)
-                    and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # Red candle
+                    # green candle (for shorts)
+                    and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # green candle
                     and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
-                    and close_rate > sell_row[CLOSE_IDX]
+                    and close_rate > sell_row[CLOSE_IDX]  # closes above close
                 )
             )):
                 # ROI on opening candles with custom pricing can only
-                # trigger if the entry was at Open or lower.
+                # trigger if the entry was at Open or lower wick.
                 # details: https: // github.com/freqtrade/freqtrade/issues/6261
                 # If open_rate is < open, only allow sells below the close on red candles.
                 raise ValueError("Opening candle ROI on red candles.")
