@@ -575,8 +575,8 @@ class Backtesting:
                 ft_pair=trade.pair,
                 order_id=str(self.order_id_counter),
                 symbol=trade.pair,
-                ft_order_side="sell",
-                side="sell",
+                ft_order_side=trade.exit_side,
+                side=trade.exit_side,
                 order_type=order_type,
                 status="open",
                 price=closerate,
@@ -756,8 +756,8 @@ class Backtesting:
                 ft_pair=trade.pair,
                 order_id=str(self.order_id_counter),
                 symbol=trade.pair,
-                ft_order_side="buy",
-                side="buy",
+                ft_order_side=trade.enter_side,
+                side=trade.enter_side,
                 order_type=order_type,
                 status="open",
                 order_date=current_time,
@@ -839,17 +839,17 @@ class Backtesting:
 
             timedout = self.strategy.ft_check_timed_out(order.side, trade, order, current_time)
             if timedout:
-                if order.side == 'buy':
+                if order.side == trade.enter_side:
                     self.timedout_entry_orders += 1
                     if trade.nr_of_successful_entries == 0:
-                        # Remove trade due to buy timeout expiration.
+                        # Remove trade due to entry timeout expiration.
                         return True
                     else:
                         # Close additional buy order
                         del trade.orders[trade.orders.index(order)]
-                if order.side == 'sell':
+                if order.side == trade.exit_side:
                     self.timedout_exit_orders += 1
-                    # Close sell order and retry selling on next signal.
+                    # Close exit order and retry exiting on next signal.
                     del trade.orders[trade.orders.index(order)]
 
         return False
@@ -945,8 +945,8 @@ class Backtesting:
                         open_trades[pair].append(trade)
 
                 for trade in list(open_trades[pair]):
-                    # 2. Process buy orders.
-                    order = trade.select_order('buy', is_open=True)
+                    # 2. Process entry orders.
+                    order = trade.select_order(trade.enter_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time)
                         trade.open_order_id = None
@@ -958,7 +958,7 @@ class Backtesting:
                         self._get_sell_trade_entry(trade, row)  # Place sell order if necessary
 
                     # 4. Process sell orders.
-                    order = trade.select_order('sell', is_open=True)
+                    order = trade.select_order(trade.exit_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         trade.open_order_id = None
                         trade.close_date = current_time
