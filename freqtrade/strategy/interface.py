@@ -869,7 +869,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                               force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting sell
-        current_rate = high or rate
+        current_rate = (low if trade.is_short else high) or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
