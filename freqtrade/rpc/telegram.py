@@ -294,11 +294,11 @@ class Telegram(RPCHandler):
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
                     msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
-                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']})"
+                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
             else:
                 cp_extra = ''
             cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f}" \
-                       f"{msg['stake_currency']}{cp_extra}`)\n"
+                       f" {msg['stake_currency']}{cp_extra}`)\n"
         else:
             cp_extra = ''
         message = (

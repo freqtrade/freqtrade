@@ -1484,7 +1484,8 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
-    # Just to make sure sell orders are ignored, let's calculate one more time.
+    # Just to make sure non partial sell orders are ignored, let's calculate one more time.
+
     sell1 = Order(
         ft_order_side='sell',
         ft_pair=trade.pair,
@@ -1641,32 +1642,6 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_buys == 2
 
-    # Just to make sure sell orders are ignored, let's calculate one more time.
-    sell1 = Order(
-        ft_order_side='sell',
-        ft_pair=trade.pair,
-        ft_is_open=False,
-        status="closed",
-        symbol=trade.pair,
-        order_type="market",
-        side="sell",
-        price=4,
-        average=3,
-        filled=2,
-        remaining=1,
-        cost=5,
-        order_date=trade.open_date,
-        order_filled_date=trade.open_date,
-    )
-    trade.orders.append(sell1)
-    trade.recalc_trade_from_orders()
-
-    assert trade.amount == 2 * o1_amount
-    assert trade.stake_amount == 2 * o1_amount
-    assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
-    assert trade.open_trade_value == 2 * o1_trade_val
-    assert trade.nr_of_successful_buys == 2
     # Check with 1 order
     order_noavg = Order(
         ft_order_side='buy',

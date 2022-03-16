@@ -489,7 +489,7 @@ class FreqtradeBot(LoggingMixin):
             if amount > trade.amount:
                 logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
                 return
-            self.execute_trade_exit(trade, current_rate, sell_reason=SellCheckTuple(
+            self.execute_trade_exit(trade, current_exit_rate, sell_reason=SellCheckTuple(
                 sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
@@ -1409,9 +1409,6 @@ class FreqtradeBot(LoggingMixin):
         self.handle_order_fee(trade, order_obj, order)
 
         trade.update_trade(order_obj)
-        # TODO: is the below necessary? it's already done in update_trade for filled buys
-        trade.recalc_trade_from_orders()
-        Trade.commit()
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             # If a buy order was closed, force update on stoploss on exchange

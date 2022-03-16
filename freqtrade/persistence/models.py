@@ -180,7 +180,6 @@ class Order(_DECL_BASE):
         self.amount = order.get('amount', self.amount)
         self.filled = order.get('filled', self.filled)
         self.average = order.get('average', self.average)
-        self.initial_average = order.get('average', self.initial_average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
@@ -516,46 +515,24 @@ class LocalTrade():
 
     def process_sell_sub_trade(self, order: Order, is_closed: bool = True,
                                is_non_bt: bool = True) -> None:
-        orders = (self.select_filled_orders('buy'))
-        sell_amount = order.safe_filled
+        sell_amount = order.safe_amount_after_fee
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
-        if is_closed:
-            if sell_amount == self.amount:
+        if sell_amount == self.amount:
+            if is_closed:
                 self.close(sell_rate)
                 if is_non_bt:
                     Trade.commit()
                 return
-        realized_profit = 0.0
-        profit = 0.0
-        idx = -1
-        while sell_amount:
-            b_order = orders[idx]
-            buy_amount = b_order.safe_amount_after_fee
-            avg_rate = b_order.safe_price
-            buy_rate = b_order.initial_average or b_order.price
-            if sell_amount < buy_amount:
-                amount = sell_amount
-            else:
-                idx -= 1
-                amount = buy_amount
-            if is_closed:
-                b_order.filled -= amount
-                b_order.order_update_date = datetime.now(timezone.utc)
-            sell_amount -= amount
-            profit += self.calc_profit2(avg_rate, sell_rate, amount)
-            realized_profit += self.calc_profit2(buy_rate, sell_rate, amount)
+        profit = self.calc_profit2(self.open_rate, sell_rate, sell_amount)
         if is_closed:
-            b_order2 = orders[idx]
-            amount2 = b_order2.safe_amount_after_fee
-            b_order2.average = (b_order2.average * amount2 - profit / (1 + self.fee_open)) / amount2
-            if is_non_bt:
-                Order.query.session.commit()
-            self.recalc_trade_from_orders()
-            self.realized_profit += realized_profit
+            self.amount -= sell_amount
+            self.stake_amount = self.open_rate * self.amount
+            self.realized_profit += profit
 
         self.close_profit_abs = profit
         self.close_profit = sell_stake_amount / (sell_stake_amount - profit) - 1
+        self.recalc_open_trade_value()
         if is_non_bt:
             Trade.commit()
 
@@ -578,7 +555,7 @@ class LocalTrade():
         """
         self.close_rate = rate
         self.close_profit = self.calc_profit_ratio()
-        self.close_profit_abs = self.calc_profit()
+        self.close_profit_abs = self.calc_profit() + self.realized_profit
         self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
         self.sell_order_status = 'closed'
@@ -699,18 +676,21 @@ class LocalTrade():
     def recalc_trade_from_orders(self):
         total_amount = 0.0
         total_stake = 0.0
+        avg_price = None
+
         for o in self.orders:
-            if (o.ft_is_open or
-                    (o.ft_order_side != 'buy') or
-                    not o.filled or
-                    (o.status not in NON_OPEN_EXCHANGE_STATES)):
+            if o.ft_is_open or not o.filled:
                 continue
 
             tmp_amount = o.safe_amount_after_fee
             tmp_price = o.safe_price
+            is_sell = o.ft_order_side != 'buy'
+            side = [1, -1][is_sell]
             if tmp_amount > 0.0 and tmp_price is not None:
-                total_amount += tmp_amount
-                total_stake += tmp_price * tmp_amount
+                total_amount += tmp_amount * side
+                total_stake += [tmp_price, avg_price][is_sell] * tmp_amount * side
+                if total_amount > 0:
+                    avg_price = total_stake / total_amount
 
         if total_amount > 0:
             self.open_rate = total_stake / total_amount
@@ -915,6 +895,7 @@ class Trade(_DECL_BASE, LocalTrade):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.realized_profit = 0
         self.recalc_open_trade_value()
 
     def delete(self) -> None:

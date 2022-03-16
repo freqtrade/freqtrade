@@ -4588,7 +4588,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert trade.open_order_id is None
     assert pytest.approx(trade.open_rate) == 9.90909090909
     assert trade.amount == 22
-    assert trade.stake_amount == 218
+    assert pytest.approx(trade.stake_amount) == 218
 
     orders = Order.query.all()
     assert orders
@@ -4672,8 +4672,8 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert trade.open_order_id is None
     assert trade.is_open
     assert trade.amount == 22
-    assert trade.stake_amount == 203.59850374064837
-    assert pytest.approx(trade.open_rate) == 9.254477442756745
+    assert trade.stake_amount == 192.05405405405406
+    assert pytest.approx(trade.open_rate) == 8.729729729729
 
     orders = Order.query.all()
     assert orders
@@ -4804,6 +4804,11 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.query.first()
     assert trade
     assert trade.open_order_id is None
+    assert trade.amount == 50
+    assert trade.open_rate == 11
+    assert trade.stake_amount == 550
+    assert pytest.approx(trade.realized_profit) == -152.375
+    assert pytest.approx(trade.close_profit_abs) == -152.375
 
     orders = Order.query.all()
     assert orders
@@ -4843,8 +4848,11 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     trade = Trade.query.first()
     assert trade
     assert trade.open_order_id is None
-    assert trade.close_profit_abs == 94.25
-
+    assert trade.amount == 50
+    assert trade.open_rate == 11
+    assert trade.stake_amount == 550
+    assert pytest.approx(trade.realized_profit) == -152.375
+    assert pytest.approx(trade.close_profit_abs) == 94.25
     orders = Order.query.all()
     assert orders
     assert len(orders) == 3
@@ -4866,12 +4874,12 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
             ('sell', 50, 5),
         ),
         (
-            # amount, open_rate, stake_amount, realized_profit, unrealized_profit
-            (100.0, 10.0, 1000.0, 0.0, -5.0),
-            (200.0, 12.5, 2500.0, 0.0, 486.25),
-            (150.0, 12.686616791354945, 1902.9925187032418, -153.375, -112.25),
-            (50.0, -1.7406483790523748, -87.03241895261874, 588.5, 1084.75),
-            (50.0, -1.7406483790523748, -87.03241895261874, 588.5, 336.625),
+            # amount, open_rate, stake_amount, cumulative_profit, realized_profit
+            (100.0, 10.0, 1000.0, 0.0, None,),
+            (200.0, 12.5, 2500.0, 0.0, None,),
+            (150.0, 12.5, 1875.0, -28.0625, -28.0625,),
+            (50.0, 12.5, 625.0, 713.8125, 741.875,),
+            (50.0, 12.5, 625.0, 713.8125, 336.625,),
         )
     ),
     (
@@ -4884,17 +4892,16 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
             ('sell', 150, 23),
         ),
         (
-            (100.0, 3.0, 300.0, 0.0, -1.5),
-            (200.0, 5.0, 1000.0, 0.0, 394.0),
-            (100.0, -0.9451371571072332, -94.51371571072332, 395.5, 1192.0),
-            (250.0, 8.621945137157107, 2155.4862842892767, 395.5, 1579.75),
-            (150.0, 1.766417290108061, 264.96259351620915, 787.0, 2577.25),
-            (150.0, 1.766417290108061, 264.96259351620915, 787.0, 3175.75),
+            (100.0, 3.0, 300.0, 0.0, None,),
+            (200.0, 5.0, 1000.0, 0.0, None,),
+            (100.0, 5.0, 500.0, 596.0, 596.0,),
+            (250.0, 11.0, 2750.0, 596.0, 596.0,),
+            (150.0, 11.0, 1650.0, 1388.5, 792.5,),
+            (150.0, 11.0, 1650.0, 1388.5, 3175.75,),
         )
     ),
 ])
 def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
-
     default_conf_usdt.update({
         "position_adjustment_enable": True,
         "dry_run": False,
@@ -4965,7 +4972,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
         assert trade.open_rate == res[idx][1]
         assert trade.stake_amount == res[idx][2]
         assert pytest.approx(trade.realized_profit) == res[idx][3]
-        assert trade.calc_profit(order[2]) == res[idx][4]
+        assert pytest.approx(trade.close_profit_abs) == res[idx][4]
 
         order_obj = trade.select_order(order[0], False)
         assert order_obj.order_id == f'60{idx}'
@@ -4973,7 +4980,6 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
     trade = Trade.query.first()
     assert trade
     assert trade.open_order_id is None
-    assert trade.close_profit_abs == res[idx][4]
     assert trade.is_open is False
 
 
