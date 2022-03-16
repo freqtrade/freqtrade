@@ -361,6 +361,23 @@ tc22 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2)]
 )
 
+
+# Test 22s: trailing_stop Raises in candle 2 - but ROI applies at the same time.
+# applying a positive trailing stop of 3% - ROI should apply before trailing stop.
+# stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2
+tc22s = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+    [1, 5000, 5050, 4900, 4900, 6172, 0, 0, 0, 0],
+    [2, 4900, 4900, 4749, 4900, 6172, 0, 0, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.04}, profit_perc=0.04, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=2, is_short=True)]
+)
+
 # Test 23: trailing_stop Raises in candle 2 (does not trigger)
 # applying a positive trailing stop of 3% since stop_positive_offset is reached.
 # ROI is changed after this to 4%, dropping ROI below trailing_stop_positive, causing a sell
@@ -685,6 +702,7 @@ TESTS = [
     tc20,
     tc21,
     tc22,
+    tc22s,
     tc23,
     tc24,
     tc25,
