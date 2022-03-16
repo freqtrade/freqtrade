@@ -534,6 +534,27 @@ tc33 = BTContainer(data=[
         enter_tag='buy_signal_01'
     )]
 )
+# Test 33s: trailing_stop should be triggered immediately on trade open candle.
+# copy of Test33 using shorts.
+# stop-loss: 1%, ROI: 10% (should not apply)
+tc33s = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0, 'short_signal_01'],
+    [1, 5000, 5049, 4500, 5000, 6172, 0, 0, 0, 0, None],    # enter trade and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0, 0, 0, None],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 0, None],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0, None]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01, use_custom_stoploss=True,
+    trades=[BTrade(
+        sell_reason=SellType.TRAILING_STOP_LOSS,
+        open_tick=1,
+        close_tick=1,
+        enter_tag='short_signal_01',
+        is_short=True,
+    )]
+)
 
 # Test 34: Custom-entry-price below all candles should timeout - so no trade happens.
 tc34 = BTContainer(data=[
@@ -675,6 +696,7 @@ TESTS = [
     tc31,
     tc32,
     tc33,
+    tc33s,
     tc34,
     tc35,
     tc36,
@@ -709,6 +731,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
+    backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.required_startup = 0
     if data.leverage > 1.0:
@@ -740,8 +763,9 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
     for c, trade in enumerate(data.trades):
-        res = results.iloc[c]
+        res: BTrade = results.iloc[c]
         assert res.sell_reason == trade.sell_reason.value
         assert res.enter_tag == trade.enter_tag
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)
+        assert res.is_short == trade.is_short
