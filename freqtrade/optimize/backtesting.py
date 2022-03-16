@@ -64,7 +64,8 @@ class Backtesting:
         config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
-
+        self.processed_dfs: Dict[str, Dict] = {}
+        
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
         self.dataprovider = DataProvider(self.config, None)
 
@@ -135,6 +136,10 @@ class Backtesting:
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
+
+        self.enable_backtest_signal_candle_export = False
+        if self.config.get('enable_backtest_signal_candle_export', None) is not None:
+            self.enable_backtest_signal_candle_export = bool(self.config.get('enable_backtest_signal_candle_export'))
 
         self.progress = BTProgress()
         self.abort = False
@@ -635,6 +640,25 @@ class Backtesting:
             'backtest_end_time': int(backtest_end_time.timestamp()),
         })
         self.all_results[self.strategy.get_strategy_name()] = results
+
+        if self.enable_backtest_signal_candle_export:
+            signal_candles_only = {}
+            for pair in preprocessed_tmp.keys():
+                signal_candles_only_df = DataFrame()
+
+                pairdf = preprocessed_tmp[pair]
+                resdf = results['results']
+                pairresults = resdf.loc[(resdf["pair"] == pair)]
+
+                if pairdf.shape[0] > 0:
+                    for t, v in pairresults.open_date.items():
+                        allinds = pairdf.loc[(pairdf['date'] < v)]
+                        signal_inds = allinds.iloc[[-1]]
+                        signal_candles_only_df = signal_candles_only_df.append(signal_inds)
+
+                    signal_candles_only[pair] = signal_candles_only_df
+
+            self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
 
         return min_date, max_date
 
