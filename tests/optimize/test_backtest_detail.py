@@ -427,6 +427,39 @@ tc25 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
+# Test 25l: (copy of test25 with leverage)
+# Sell with signal sell in candle 3 (stoploss also triggers on this candle)
+# Stoploss at 1%.
+# Sell-signal wins over stoploss
+tc25l = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
+    [3, 5010, 5010, 4986, 5010, 6172, 0, 1],
+    [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
+    [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
+    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
+    leverage=5.0,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+)
+
+# Test 25s: (copy of test25 with leverage and as short)
+# Sell with signal sell in candle 3 (stoploss also triggers on this candle)
+# Stoploss at 1%.
+# Sell-signal wins over stoploss
+tc25s = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5025, 4975, 4987, 6172, 0, 0, 1, 0],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 0, 0, 0],  # enter trade (signal on last candle)
+    [2, 4987, 5012, 4986, 4986, 6172, 0, 0, 0, 0],
+    [3, 5010, 5010, 4986, 5010, 6172, 0, 0, 0, 1],
+    [4, 4990, 5010, 4855, 4995, 6172, 0, 0, 0, 0],  # Triggers stoploss + sellsignal acted on
+    [5, 4995, 4995, 4950, 4950, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
+    leverage=5.0,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
+)
 # Test 26: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger)
 # Sell-signal wins over stoploss
@@ -660,22 +693,7 @@ tc39 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
 
-# Test 40: (copy of test25 with leverage)
-# Sell with signal sell in candle 3 (stoploss also triggers on this candle)
-# Stoploss at 1%.
-# Sell-signal wins over stoploss
-tc40 = BTContainer(data=[
-    # D   O     H     L     C    V    EL XL ES Xs  BT
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
-    [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
-    [3, 5010, 5010, 4986, 5010, 6172, 0, 1],
-    [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
-    [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
-    leverage=5.0,
-    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
-)
+
 
 
 TESTS = [
@@ -706,6 +724,8 @@ TESTS = [
     tc23,
     tc24,
     tc25,
+    tc25l,
+    tc25s,
     tc26,
     tc27,
     tc28,
@@ -721,7 +741,6 @@ TESTS = [
     tc37,
     tc38,
     tc39,
-    tc40,
     # TODO-lev: Add tests for short here
 ]
 
@@ -749,12 +768,10 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
+    # TODO: Should we initialize this properly??
     backtesting._can_short = True
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.required_startup = 0
-    if data.leverage > 1.0:
-        # TODO: Should we initialize this properly??
-        backtesting._can_short = True
     backtesting.strategy.advise_entry = lambda a, m: frame
     backtesting.strategy.advise_exit = lambda a, m: frame
     if data.custom_entry_price:
