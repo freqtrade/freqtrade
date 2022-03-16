@@ -4043,7 +4043,6 @@ def test__trades_contracts_to_amount(
 def test__amount_to_contracts(
     mocker,
     default_conf,
-    markets,
     pair,
     param_amount,
     param_size
