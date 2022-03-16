@@ -520,7 +520,9 @@ tc28s = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.03, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3, is_short=True)]
+    trades=[
+        BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3, is_short=True)
+    ]
 )
 
 # Test 29: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
