@@ -684,7 +684,7 @@ tc39 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
-    [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
+    [2, 4950, 5250, 4900, 5100, 6172, 0, 1],  # exit - entry timeout
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
@@ -693,7 +693,33 @@ tc39 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
 
+# Test 39: Custom short exit price above below candles
+# causes sell signal timeout
+tc39a = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+    [1, 5000, 5000, 4951, 5000, 6172, 0, 0, 0, 0],
+    [2, 4910, 5150, 4910, 5100, 6172, 0, 0, 0, 1],  # exit - entry timeout
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    use_sell_signal=True,
+    custom_exit_price=4700,
+    trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4, is_short=True)]
+)
 
+# Test 40: Colliding long and short signal
+tc40 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0, 0, 0],
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 0, 0, 0],
+    [3, 5100, 5100, 4950, 4950, 6172, 0, 0, 0, 0],
+    [4, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
+    use_sell_signal=True,
+    trades=[]
+)
 
 
 TESTS = [
@@ -741,7 +767,8 @@ TESTS = [
     tc37,
     tc38,
     tc39,
-    # TODO-lev: Add tests for short here
+    tc39a,
+    tc40,
 ]
 
 
