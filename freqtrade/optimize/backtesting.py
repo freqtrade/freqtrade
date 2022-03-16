@@ -542,7 +542,10 @@ class Backtesting:
                         proposed_rate=closerate, current_profit=current_profit)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
-                    closerate = max(closerate, sell_row[LOW_IDX])
+                    if trade.is_short:
+                        closerate = min(closerate, sell_row[HIGH_IDX])
+                    else:
+                        closerate = max(closerate, sell_row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
