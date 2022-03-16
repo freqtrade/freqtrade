@@ -15,7 +15,7 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 # Test 0: Sell with signal sell in candle 3
 # Test with Stop-loss at 1%
 tc0 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],  # exit with stoploss hit
@@ -29,7 +29,7 @@ tc0 = BTContainer(data=[
 # Test 1: Stop-Loss Triggered 1% loss
 # Test with Stop-loss at 1%
 tc1 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4600, 4600, 6172, 0, 0],  # exit with stoploss hit
@@ -44,7 +44,7 @@ tc1 = BTContainer(data=[
 # Test 2: Minus 4% Low, minus 1% close
 # Test with Stop-Loss at 3%
 tc2 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4962, 4975, 6172, 0, 0],
@@ -63,7 +63,7 @@ tc2 = BTContainer(data=[
 #  Trade-A: Stop-Loss Triggered 2% Loss
 #           Trade-B: Stop-Loss Triggered 2% Loss
 tc3 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4800, 4975, 6172, 0, 0],  # exit with stoploss hit
@@ -81,7 +81,7 @@ tc3 = BTContainer(data=[
 # Test with Stop-loss at 2% ROI 6%
 # Stop-Loss Triggered 2% Loss
 tc4 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5750, 4850, 5750, 6172, 0, 0],  # Exit with stoploss hit
@@ -95,7 +95,7 @@ tc4 = BTContainer(data=[
 # Test 5: Drops 0.5% Closes +20%, ROI triggers 3% Gain
 # stop-loss: 1%, ROI: 3%
 tc5 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4980, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4980, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5025, 4975, 4987, 6172, 0, 0],
@@ -109,7 +109,7 @@ tc5 = BTContainer(data=[
 # Test 6: Drops 3% / Recovers 6% Positive / Closes 1% positve, Stop-Loss triggers 2% Loss
 # stop-loss: 2% ROI: 5%
 tc6 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5300, 4850, 5050, 6172, 0, 0],  # Exit with stoploss
@@ -123,7 +123,7 @@ tc6 = BTContainer(data=[
 # Test 7: 6% Positive / 1% Negative / Close 1% Positve, ROI Triggers 3% Gain
 # stop-loss: 2% ROI: 3%
 tc7 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
@@ -138,7 +138,7 @@ tc7 = BTContainer(data=[
 # Test 8: trailing_stop should raise so candle 3 causes a stoploss.
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted in candle 2
 tc8 = BTContainer(data=[
-    # D   O     H     L    C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
     [2, 5000, 5250, 4750, 4850, 6172, 0, 0],
@@ -152,7 +152,7 @@ tc8 = BTContainer(data=[
 # Test 9: trailing_stop should raise - high and low in same candle.
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted in candle 3
 tc9 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 4950, 5000, 6172, 0, 0],
     [2, 5000, 5050, 4950, 5000, 6172, 0, 0],
@@ -166,7 +166,7 @@ tc9 = BTContainer(data=[
 # without applying trailing_stop_positive since stoploss_offset is at 10%.
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
 tc10 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
@@ -182,7 +182,7 @@ tc10 = BTContainer(data=[
 # applying a positive trailing stop of 3% since stop_positive_offset is reached.
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
 tc11 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
@@ -198,7 +198,7 @@ tc11 = BTContainer(data=[
 # applying a positive trailing stop of 3% since stop_positive_offset is reached.
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
 tc12 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
@@ -213,7 +213,7 @@ tc12 = BTContainer(data=[
 # Test 13: Buy and sell ROI on same candle
 # stop-loss: 10% (should not apply), ROI: 1%
 tc13 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
@@ -226,7 +226,7 @@ tc13 = BTContainer(data=[
 # Test 14 - Buy and Stoploss on same candle
 # stop-loss: 5%, ROI: 10% (should not apply)
 tc14 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4600, 5100, 6172, 0, 0],
     [2, 5100, 5251, 4850, 5100, 6172, 0, 0],
@@ -240,7 +240,7 @@ tc14 = BTContainer(data=[
 # Test 15 - Buy and ROI on same candle, followed by buy and Stoploss on next candle
 # stop-loss: 5%, ROI: 10% (should not apply)
 tc15 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4900, 5100, 6172, 1, 0],
     [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
@@ -255,7 +255,7 @@ tc15 = BTContainer(data=[
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 65 minutes (limits trade duration)
 tc16 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
@@ -271,7 +271,7 @@ tc16 = BTContainer(data=[
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
 # Uses open as sell-rate (special case) - since the roi-time is a multiple of the timeframe.
 tc17 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
@@ -287,7 +287,7 @@ tc17 = BTContainer(data=[
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
 # uses open_rate as sell-price
 tc18 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
@@ -302,7 +302,7 @@ tc18 = BTContainer(data=[
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
 # uses calculated ROI (1%) as sell rate, otherwise identical to tc18
 tc19 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
@@ -317,7 +317,7 @@ tc19 = BTContainer(data=[
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
 # uses calculated ROI (1%) as sell rate, otherwise identical to tc18
 tc20 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5200, 6172, 0, 0],
@@ -333,7 +333,7 @@ tc20 = BTContainer(data=[
 # which cannot happen in reality
 # stop-loss: 10%, ROI: 4%, Trailing stop adjusted at the sell candle
 tc21 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 4650, 5100, 6172, 0, 0],
@@ -349,7 +349,7 @@ tc21 = BTContainer(data=[
 # applying a positive trailing stop of 3% - ROI should apply before trailing stop.
 # stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2
 tc22 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
@@ -368,7 +368,7 @@ tc22 = BTContainer(data=[
 # Stoploss would trigger in this candle too, but it's no longer relevant.
 # stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2, ROI adjusted in candle 3 (causing the sell)
 tc23 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
@@ -384,7 +384,7 @@ tc23 = BTContainer(data=[
 # Stoploss at 1%.
 # Stoploss wins over Sell-signal (because sell-signal is acted on in the next candle)
 tc24 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
@@ -399,7 +399,7 @@ tc24 = BTContainer(data=[
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
 tc25 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
@@ -414,7 +414,7 @@ tc25 = BTContainer(data=[
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger)
 # Sell-signal wins over stoploss
 tc26 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
@@ -428,7 +428,7 @@ tc26 = BTContainer(data=[
 # Test 27: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger) - Wins over Sell-signal
 tc27 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
@@ -444,7 +444,7 @@ tc27 = BTContainer(data=[
 # therefore "open" will be used
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
 tc28 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
@@ -460,7 +460,7 @@ tc28 = BTContainer(data=[
 # high of stoploss candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
 tc29 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 5000, 5000, 6172, 0, 0],    # enter trade (signal on last candle)
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],    # Triggers trailing-stoploss
@@ -474,7 +474,7 @@ tc29 = BTContainer(data=[
 # Test 30: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
 tc30 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4900, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -488,7 +488,7 @@ tc30 = BTContainer(data=[
 # Test 31: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
 tc31 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4900, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -503,7 +503,7 @@ tc31 = BTContainer(data=[
 # Test 32: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 1%, ROI: 10% (should not apply)
 tc32 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # enter trade and stop
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -537,7 +537,7 @@ tc33 = BTContainer(data=[
 
 # Test 34: Custom-entry-price below all candles should timeout - so no trade happens.
 tc34 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # timeout
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -549,7 +549,7 @@ tc34 = BTContainer(data=[
 
 # Test 35: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
 tc35 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Timeout
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -566,7 +566,7 @@ tc35 = BTContainer(data=[
 # below open, we treat this as cheating, and delay the sell by 1 candle.
 # details: https://github.com/freqtrade/freqtrade/issues/6261
 tc36 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S   BT
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 4999, 6172, 0, 0],    # Enter and immediate ROI
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -581,7 +581,7 @@ tc36 = BTContainer(data=[
 # Would cause immediate ROI exit below close
 # details: https://github.com/freqtrade/freqtrade/issues/6261
 tc37 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S   BT
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5400, 5500, 4951, 5100, 6172, 0, 0],    # Enter and immediate ROI
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
@@ -595,7 +595,7 @@ tc37 = BTContainer(data=[
 # Test 38: Custom exit price below all candles
 # Price adjusted to candle Low.
 tc38 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S   BT
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
     [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
@@ -610,7 +610,7 @@ tc38 = BTContainer(data=[
 # Test 39: Custom exit price above all candles
 # causes sell signal timeout
 tc39 = BTContainer(data=[
-    # D   O     H     L     C    V    B  S   BT
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
     [2, 4900, 5250, 4900, 5100, 6172, 0, 1],  # exit - but timeout
@@ -622,12 +622,12 @@ tc39 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
 
-# Test 39: (copy of test25 with leverage)
+# Test 40: (copy of test25 with leverage)
 # Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
-tc39 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
+tc40 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
@@ -681,6 +681,7 @@ TESTS = [
     tc37,
     tc38,
     tc39,
+    tc40,
     # TODO-lev: Add tests for short here
 ]
 
