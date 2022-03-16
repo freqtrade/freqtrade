@@ -629,7 +629,21 @@ tc35 = BTContainer(data=[
     stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01,
     custom_entry_price=7200, trades=[
         BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)
-]
+])
+
+# Test 35s: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
+tc35s = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0, 0, 0],    # Timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01,
+    custom_entry_price=4000,
+    trades=[
+        BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1, is_short=True)
+    ]
 )
 
 # Test 36: Custom-entry-price around candle low
@@ -763,6 +777,7 @@ TESTS = [
     tc33s,
     tc34,
     tc35,
+    tc35s,
     tc36,
     tc37,
     tc38,
