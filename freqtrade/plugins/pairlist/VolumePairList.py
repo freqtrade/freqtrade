@@ -71,7 +71,9 @@ class VolumePairList(IPairList):
                 f'to at least {self._tf_in_sec} and restart the bot.'
             )
 
-        if not self._use_range and not self._exchange.exchange_has('fetchTickers'):
+        if (not self._use_range and not (
+                self._exchange.exchange_has('fetchTickers')
+                and self._exchange._ft_has["tickers_has_quoteVolume"])):
             raise OperationalException(
                 "Exchange does not support dynamic whitelist in this configuration. "
                 "Please edit your config and either remove Volumepairlist, "
