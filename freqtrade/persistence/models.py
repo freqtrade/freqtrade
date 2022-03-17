@@ -529,9 +529,18 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
-        fees = sell_trade * Decimal(fee or self.fee_close)
-        return float(sell_trade - fees)
+        filled_exit_orders = self.select_filled_orders('sell')
+        filled_amount = 0
+        filled_exit_trade = 0
+        for order in filled_exit_orders:
+            filled_amount += order.filled
+            filled_exit_trade += (order.price * order.filled)
+
+        remaining_amount = self.amount - filled_amount
+        unfilled_exit_trade = Decimal(remaining_amount) * Decimal(rate or self.close_rate) # type: ignore
+        exit_trade = Decimal(filled_exit_trade) + unfilled_exit_trade
+        fees = exit_trade * Decimal(fee or self.fee_close)
+        return float(exit_trade - fees)
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None) -> float:
