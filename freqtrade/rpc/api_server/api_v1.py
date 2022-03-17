@@ -3,7 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
@@ -14,17 +14,26 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
                                                   DeleteLockRequest, DeleteTrade, ForceBuyPayload,
-                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version,
-                                                  WhitelistResponse)
-from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
+                                                  ForceBuyResponse, ForceSellPayload, Health, Locks,
+                                                  Logs, OpenTradeSchema, PairHistory,
+                                                  PerformanceEntry, Ping, PlotConfig, Profit,
+                                                  ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, SysInfo,
+                                                  Version, WhitelistResponse)
+from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
 
 logger = logging.getLogger(__name__)
+
+# API version
+# Pre-1.1, no version was provided
+# Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
+# 1.11: forcebuy and forcesell accept ordertype
+# 1.12: add blacklist delete endpoint
+# 1.13: forcebuy supports stake_amount
+# 1.14: Add entry/exit orders to trade response
+API_VERSION = 1.14
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -115,14 +124,22 @@ def edge(rpc: RPC = Depends(get_rpc)):
 @router.get('/show_config', response_model=ShowConfig, tags=['info'])
 def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(get_config)):
     state = ''
+    strategy_version = None
     if rpc:
         state = rpc._freqtrade.state
-    return RPC._rpc_show_config(config, state)
+        strategy_version = rpc._freqtrade.strategy.version()
+    resp = RPC._rpc_show_config(config, state, strategy_version)
+    resp['api_version'] = API_VERSION
+    return resp
 
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    stake_amount = payload.stakeamount if payload.stakeamount else None
+    entry_tag = payload.entry_tag if payload.entry_tag else None
+
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount, entry_tag)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
@@ -132,7 +149,8 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_forcesell(payload.tradeid)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    return rpc._rpc_forcesell(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
@@ -143,6 +161,13 @@ def blacklist(rpc: RPC = Depends(get_rpc)):
 @router.post('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
 def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_blacklist(payload.blacklist)
+
+
+@router.delete('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
+def blacklist_delete(pairs_to_delete: List[str] = Query([]), rpc: RPC = Depends(get_rpc)):
+    """Provide a list of pairs to delete from the blacklist"""
+
+    return rpc._rpc_blacklist_delete(pairs_to_delete)
 
 
 @router.get('/whitelist', response_model=WhitelistResponse, tags=['info', 'pairlist'])
@@ -191,18 +216,21 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
 
 
 @router.get('/pair_candles', response_model=PairHistory, tags=['candle data'])
-def pair_candles(pair: str, timeframe: str, limit: Optional[int], rpc: RPC = Depends(get_rpc)):
+def pair_candles(
+        pair: str, timeframe: str, limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_analysed_dataframe(pair, timeframe, limit)
 
 
 @router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
 def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
-                 config=Depends(get_config)):
+                 config=Depends(get_config), exchange=Depends(get_exchange)):
+    # The initial call to this endpoint can be slow, as it may need to initialize
+    # the exchange class.
     config = deepcopy(config)
     config.update({
         'strategy': strategy,
     })
-    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
+    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange, exchange)
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
@@ -265,3 +293,8 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
 @router.get('/sysinfo', response_model=SysInfo, tags=['info'])
 def sysinfo():
     return RPC._rpc_sysinfo()
+
+
+@router.get('/health', response_model=Health, tags=['info'])
+def health(rpc: RPC = Depends(get_rpc)):
+    return rpc._health()

@@ -12,6 +12,7 @@ from typing import List, Optional, Type
 
 from pandas import DataFrame
 
+from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
@@ -25,6 +26,13 @@ class IDataHandler(ABC):
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
+
+    @classmethod
+    def _get_file_extension(cls) -> str:
+        """
+        Get file extension for this particular datahandler
+        """
+        raise NotImplementedError()
 
     @abstractclassmethod
     def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
@@ -70,7 +78,6 @@ class IDataHandler(ABC):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
-    @abstractmethod
     def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
         """
         Remove data for this pair
@@ -78,6 +85,11 @@ class IDataHandler(ABC):
         :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
+        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        if filename.exists():
+            filename.unlink()
+            return True
+        return False
 
     @abstractmethod
     def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
@@ -123,13 +135,17 @@ class IDataHandler(ABC):
         :return: List of trades
         """
 
-    @abstractmethod
     def trades_purge(self, pair: str) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :return: True when deleted, false if file did not exist.
         """
+        filename = self._pair_trades_filename(self._datadir, pair)
+        if filename.exists():
+            filename.unlink()
+            return True
+        return False
 
     def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
@@ -140,6 +156,18 @@ class IDataHandler(ABC):
         :return: List of trades
         """
         return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+
+    @classmethod
+    def _pair_data_filename(cls, datadir: Path, pair: str, timeframe: str) -> Path:
+        pair_s = misc.pair_to_filename(pair)
+        filename = datadir.joinpath(f'{pair_s}-{timeframe}.{cls._get_file_extension()}')
+        return filename
+
+    @classmethod
+    def _pair_trades_filename(cls, datadir: Path, pair: str) -> Path:
+        pair_s = misc.pair_to_filename(pair)
+        filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
+        return filename
 
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,
@@ -173,7 +201,7 @@ class IDataHandler(ABC):
             enddate = pairdf.iloc[-1]['date']
 
             if timerange_startup:
-                self._validate_pairdata(pair, pairdf, timerange_startup)
+                self._validate_pairdata(pair, pairdf, timeframe, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
                 if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
                     return pairdf
@@ -200,7 +228,7 @@ class IDataHandler(ABC):
             return True
         return False
 
-    def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
+    def _validate_pairdata(self, pair, pairdata: DataFrame, timeframe: str, timerange: TimeRange):
         """
         Validates pairdata for missing data at start end end and logs warnings.
         :param pairdata: Dataframe to validate
@@ -210,12 +238,12 @@ class IDataHandler(ABC):
         if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
             if pairdata.iloc[0]['date'] > start:
-                logger.warning(f"Missing data at start for pair {pair}, "
+                logger.warning(f"Missing data at start for pair {pair} at {timeframe}, "
                                f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}")
         if timerange.stoptype == 'date':
             stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
             if pairdata.iloc[-1]['date'] < stop:
-                logger.warning(f"Missing data at end for pair {pair}, "
+                logger.warning(f"Missing data at end for pair {pair} at {timeframe}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
 
 

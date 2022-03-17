@@ -176,12 +176,15 @@ Log messages are send to `syslog` with the `user` facility. So you can see them 
 On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfile syslog` or `--logfile journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
 
 For `rsyslog` the messages from the bot can be redirected into a separate dedicated log file. To achieve this, add
+
 ```
 if $programname startswith "freqtrade" then -/var/log/freqtrade.log
 ```
+
 to one of the rsyslog configuration files, for example at the end of the `/etc/rsyslog.d/50-default.conf`.
 
 For `syslog` (`rsyslog`), the reduction mode can be switched on. This will reduce the number of repeating messages. For instance, multiple bot Heartbeat messages will be reduced to a single message when nothing else happens with the bot. To achieve this, set in `/etc/rsyslog.conf`:
+
 ```
 # Filter duplicated messages
 $RepeatedMsgReduction on

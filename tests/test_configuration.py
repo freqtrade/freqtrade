@@ -22,7 +22,7 @@ from freqtrade.configuration.load_config import load_config_file, load_file, log
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
+from freqtrade.loggers import FTBufferingHandler, _set_loggers, setup_logging, setup_logging_pre
 from tests.conftest import log_has, log_has_re, patched_configuration_load_config_file
 
 
@@ -686,7 +686,7 @@ def test_set_loggers_syslog():
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x) == logging.handlers.SysLogHandler]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
-    assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
     assert len(logger.handlers) == 3
@@ -709,7 +709,7 @@ def test_set_loggers_Filehandler(tmpdir):
     assert len(logger.handlers) == 3
     assert [x for x in logger.handlers if type(x) == logging.handlers.RotatingFileHandler]
     assert [x for x in logger.handlers if type(x) == logging.StreamHandler]
-    assert [x for x in logger.handlers if type(x) == logging.handlers.BufferingHandler]
+    assert [x for x in logger.handlers if type(x) == FTBufferingHandler]
     # setting up logging again should NOT cause the loggers to be added a second time.
     setup_logging(config)
     assert len(logger.handlers) == 3

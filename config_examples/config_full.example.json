@@ -8,6 +8,7 @@
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": true,
+    "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": false,
     "timeframe": "5m",
     "trailing_stop": false,
@@ -18,6 +19,7 @@
     "sell_profit_only": false,
     "sell_profit_offset": 0.0,
     "ignore_roi_if_buy_signal": false,
+    "ignore_buying_expired_candle_after": 300,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -27,7 +29,7 @@
     "stoploss": -0.10,
     "unfilledtimeout": {
         "buy": 10,
-        "sell": 30,
+        "sell": 10,
         "exit_timeout_count": 0,
         "unit": "minutes"
     },
@@ -54,7 +56,8 @@
         "forcebuy": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
-        "stoploss_on_exchange_interval": 60
+        "stoploss_on_exchange_interval": 60,
+        "stoploss_on_exchange_limit_ratio": 0.99
     },
     "order_time_in_force": {
         "buy": "gtc",
@@ -85,6 +88,7 @@
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "password": "",
+        "log_responses": false,
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [

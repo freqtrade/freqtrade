@@ -111,8 +111,9 @@ class Telegram(RPCHandler):
                                  r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
-                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
-                                 r'/forcebuy$', r'/help$', r'/version$']
+                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
+                                 r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
+                                 r'/forcebuy$', r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -169,8 +170,10 @@ class Telegram(RPCHandler):
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
+            CommandHandler(['blacklist_delete', 'bl_delete'], self._blacklist_delete),
             CommandHandler('logs', self._logs),
             CommandHandler('edge', self._edge),
+            CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -197,8 +200,8 @@ class Telegram(RPCHandler):
 
         self._updater.start_polling(
             bootstrap_retries=-1,
-            timeout=30,
-            read_latency=60,
+            timeout=20,
+            read_latency=60,  # Assumed transmission latency
             drop_pending_updates=True,
         )
         logger.info(
@@ -211,6 +214,7 @@ class Telegram(RPCHandler):
         Stops all running telegram threads.
         :return: None
         """
+        # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
     def _format_buy_msg(self, msg: Dict[str, Any]) -> str:
@@ -274,11 +278,11 @@ class Telegram(RPCHandler):
             f"*Buy Tag:* `{msg['buy_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
             f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
-            f"*Amount:* `{msg['amount']:.8f}`\n")
+            f"*Amount:* `{msg['amount']:.8f}`\n"
+            f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
 
         if msg['type'] == RPCMessageType.SELL:
-            message += (f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+            message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
@@ -366,6 +370,54 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
+    def _prepare_entry_details(self, filled_orders: List, base_currency: str, is_open: bool):
+        """
+        Prepare details of trade with entry adjustment enabled
+        """
+        lines: List[str] = []
+        if len(filled_orders) > 0:
+            first_avg = filled_orders[0]["safe_price"]
+
+        for x, order in enumerate(filled_orders):
+            if order['ft_order_side'] != 'buy':
+                continue
+            cur_entry_datetime = arrow.get(order["order_filled_date"])
+            cur_entry_amount = order["amount"]
+            cur_entry_average = order["safe_price"]
+            lines.append("  ")
+            if x == 0:
+                lines.append(f"*Entry #{x+1}:*")
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average}")
+            else:
+                sumA = 0
+                sumB = 0
+                for y in range(x):
+                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["safe_price"])
+                    sumB += filled_orders[y]["amount"]
+                prev_avg_price = sumA / sumB
+                price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
+                minus_on_entry = 0
+                if prev_avg_price:
+                    minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
+
+                dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
+                days = dur_entry.days
+                hours, remainder = divmod(dur_entry.seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                lines.append(f"*Entry #{x+1}:* at {minus_on_entry:.2%} avg profit")
+                if is_open:
+                    lines.append("({})".format(cur_entry_datetime
+                                               .humanize(granularity=["day", "hour", "minute"])))
+                lines.append(
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                lines.append(f"*Average Entry Price:* {cur_entry_average} "
+                             f"({price_to_1st_entry:.2%} from 1st entry rate)")
+                lines.append(f"*Order filled at:* {order['order_filled_date']}")
+                lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
+        return lines
+
     @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
         """
@@ -389,37 +441,57 @@ class Telegram(RPCHandler):
                 trade_ids = [int(i) for i in context.args if i.isnumeric()]
 
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
-
+            position_adjust = self._config.get('position_adjustment_enable', False)
+            max_entries = self._config.get('max_entry_position_adjustment', -1)
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
+                r['num_entries'] = len([o for o in r['orders'] if o['ft_order_side'] == 'buy'])
+                r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
-                    "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
+                    "*Trade ID:* `{trade_id}`" +
+                    ("` (since {open_date_hum})`" if r['is_open'] else ""),
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
-                    "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
+                    "*Entry Tag:* `{buy_tag}`" if r['buy_tag'] else "",
+                    "*Exit Reason:* `{sell_reason}`" if r['sell_reason'] else "",
+                ]
+
+                if position_adjust:
+                    max_buy_str = (f"/{max_entries + 1}" if (max_entries > 0) else "")
+                    lines.append("*Number of Entries:* `{num_entries}`" + max_buy_str)
+
+                lines.extend([
                     "*Open Rate:* `{open_rate:.8f}`",
-                    "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
-                    "*Current Rate:* `{current_rate:.8f}`",
+                    "*Close Rate:* `{close_rate:.8f}`" if r['close_rate'] else "",
+                    "*Open Date:* `{open_date}`",
+                    "*Close Date:* `{close_date}`" if r['close_date'] else "",
+                    "*Current Rate:* `{current_rate:.8f}`" if r['is_open'] else "",
                     ("*Current Profit:* " if r['is_open'] else "*Close Profit: *")
                     + "`{profit_ratio:.2%}`",
-                ]
-                if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
-                        and r['initial_stop_loss_ratio'] is not None):
-                    # Adding initial stoploss only if it is different from stoploss
-                    lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
-                                 "`({initial_stop_loss_ratio:.2%})`")
+                ])
 
-                # Adding stoploss and stoploss percentage only if it is not None
-                lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
-                             ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
-                lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
-                             "`({stoploss_current_dist_ratio:.2%})`")
-                if r['open_order']:
-                    if r['sell_order_status']:
-                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
-                    else:
-                        lines.append("*Open Order:* `{open_order}`")
+                if r['is_open']:
+                    if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
+                            and r['initial_stop_loss_ratio'] is not None):
+                        # Adding initial stoploss only if it is different from stoploss
+                        lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
+                                     "`({initial_stop_loss_ratio:.2%})`")
+
+                    # Adding stoploss and stoploss percentage only if it is not None
+                    lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
+                                 ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
+                    lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
+                                 "`({stoploss_current_dist_ratio:.2%})`")
+                    if r['open_order']:
+                        if r['sell_order_status']:
+                            lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
+                        else:
+                            lines.append("*Open Order:* `{open_order}`")
+
+                lines_detail = self._prepare_entry_details(
+                    r['orders'], r['base_currency'], r['is_open'])
+                lines.extend(lines_detail if lines_detail else "")
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))
@@ -700,9 +772,9 @@ class Telegram(RPCHandler):
         duration_msg = tabulate(
             [
                 ['Wins', str(timedelta(seconds=durations['wins']))
-                 if durations['wins'] != 'N/A' else 'N/A'],
+                 if durations['wins'] is not None else 'N/A'],
                 ['Losses', str(timedelta(seconds=durations['losses']))
-                 if durations['losses'] != 'N/A' else 'N/A']
+                 if durations['losses'] is not None else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )
@@ -724,12 +796,13 @@ class Telegram(RPCHandler):
             output = ''
             if self._config['dry_run']:
                 output += "*Warning:* Simulated balances in Dry Mode.\n"
-
-            output += ("Starting capital: "
-                       f"`{result['starting_capital']}` {self._config['stake_currency']}"
-                       )
-            output += (f" `{result['starting_capital_fiat']}` "
-                       f"{self._config['fiat_display_currency']}.\n"
+            starting_cap = round_coin_value(
+                result['starting_capital'], self._config['stake_currency'])
+            output += f"Starting capital: `{starting_cap}`"
+            starting_cap_fiat = round_coin_value(
+                result['starting_capital_fiat'], self._config['fiat_display_currency']
+            ) if result['starting_capital_fiat'] > 0 else ''
+            output += (f" `, {starting_cap_fiat}`.\n"
                        ) if result['starting_capital_fiat'] > 0 else '.\n'
 
             total_dust_balance = 0
@@ -762,14 +835,17 @@ class Telegram(RPCHandler):
                     f"(< {balance_dust_level} {result['stake']}):*\n"
                     f"\t`Est. {result['stake']}: "
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+            tc = result['trade_count'] > 0
+            stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
+            fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
 
             output += ("\n*Estimated Value*:\n"
                        f"\t`{result['stake']}: "
                        f"{round_coin_value(result['total'], result['stake'], False)}`"
-                       f" `({result['starting_capital_ratio']:.2%})`\n"
+                       f"{stake_improve}\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`"
-                       f" `({result['starting_capital_fiat_ratio']:.2%})`\n")
+                       f"{fiat_val}\n")
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
@@ -845,10 +921,11 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     def _forcebuy_action(self, pair, price=None):
-        try:
-            self._rpc._rpc_forcebuy(pair, price)
-        except RPCException as e:
-            self._send_msg(str(e))
+        if pair != 'cancel':
+            try:
+                self._rpc._rpc_forcebuy(pair, price)
+            except RPCException as e:
+                self._send_msg(str(e))
 
     def _forcebuy_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
@@ -878,10 +955,13 @@ class Telegram(RPCHandler):
             self._forcebuy_action(pair, price)
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
-            pairs = [InlineKeyboardButton(text=pair, callback_data=pair) for pair in whitelist]
+            pair_buttons = [
+                InlineKeyboardButton(text=pair, callback_data=pair) for pair in sorted(whitelist)]
+            buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which pair?",
-                           keyboard=self._layout_inline_keyboard(pairs))
+                           keyboard=buttons_aligned)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
@@ -1161,22 +1241,28 @@ class Telegram(RPCHandler):
         Handler for /blacklist
         Shows the currently active blacklist
         """
-        try:
+        self.send_blacklist_msg(self._rpc._rpc_blacklist(context.args))
 
-            blacklist = self._rpc._rpc_blacklist(context.args)
-            errmsgs = []
-            for pair, error in blacklist['errors'].items():
-                errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
-            if errmsgs:
-                self._send_msg('\n'.join(errmsgs))
+    def send_blacklist_msg(self, blacklist: Dict):
+        errmsgs = []
+        for pair, error in blacklist['errors'].items():
+            errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
+        if errmsgs:
+            self._send_msg('\n'.join(errmsgs))
 
-            message = f"Blacklist contains {blacklist['length']} pairs\n"
-            message += f"`{', '.join(blacklist['blacklist'])}`"
+        message = f"Blacklist contains {blacklist['length']} pairs\n"
+        message += f"`{', '.join(blacklist['blacklist'])}`"
 
-            logger.debug(message)
-            self._send_msg(message)
-        except RPCException as e:
-            self._send_msg(str(e))
+        logger.debug(message)
+        self._send_msg(message)
+
+    @authorized_only
+    def _blacklist_delete(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /bl_delete
+        Deletes pair(s) from current blacklist
+        """
+        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []))
 
     @authorized_only
     def _logs(self, update: Update, context: CallbackContext) -> None:
@@ -1257,6 +1343,8 @@ class Telegram(RPCHandler):
             "*/whitelist:* `Show current whitelist` \n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
             "to the blacklist.` \n"
+            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
+            "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
             "*/reload_config:* `Reload configuration file` \n"
             "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
 
@@ -1268,6 +1356,7 @@ class Telegram(RPCHandler):
             "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
+            "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
 
             "_Statistics_\n"
             "------------\n"
@@ -1296,6 +1385,19 @@ class Telegram(RPCHandler):
         self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
 
     @authorized_only
+    def _health(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /health
+        Shows the last process timestamp
+        """
+        try:
+            health = self._rpc._health()
+            message = f"Last process: `{health['last_process_loc']}`"
+            self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _version(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /version.
@@ -1304,7 +1406,12 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        self._send_msg('*Version:* `{}`'.format(__version__))
+        strategy_version = self._rpc._freqtrade.strategy.version()
+        version_string = f'*Version:* `{__version__}`'
+        if strategy_version is not None:
+            version_string += f', *Strategy version: * `{strategy_version}`'
+
+        self._send_msg(version_string)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:
@@ -1328,6 +1435,14 @@ class Telegram(RPCHandler):
         else:
             sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
 
+        if val['position_adjustment_enable']:
+            pa_info = (
+                f"*Position adjustment:* On\n"
+                f"*Max enter position adjustment:* `{val['max_entry_position_adjustment']}`\n"
+            )
+        else:
+            pa_info = "*Position adjustment:* Off\n"
+
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
@@ -1337,6 +1452,7 @@ class Telegram(RPCHandler):
             f"*Ask strategy:* ```\n{json.dumps(val['ask_strategy'])}```\n"
             f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
+            f"{pa_info}"
             f"*Timeframe:* `{val['timeframe']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"

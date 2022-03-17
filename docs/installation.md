@@ -24,7 +24,7 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
     The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
-    Python3.7 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
+    Python3.8 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
     Also, python headers (`python<yourversion>-dev` / `python<yourversion>-devel`) must be available for the installation to complete successfully.
 
 !!! Warning "Up-to-date clock"
@@ -36,9 +36,13 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 
 These requirements apply to both [Script Installation](#script-installation) and [Manual Installation](#manual-installation).
 
+!!! Note "ARM64 systems"
+    If you are running an ARM64 system (like a MacOS M1 or an Oracle VM), please use [docker](docker_quickstart.md) to run freqtrade.
+    While native installation is possible with some manual effort, this is not supported at the moment.
+
 ### Install guide
 
-* [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [Python >= 3.8.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
@@ -50,7 +54,7 @@ We've included/collected install instructions for Ubuntu, MacOS, and Windows. Th
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
 
 !!! Note
-    Python3.7 or higher and the corresponding pip are assumed to be available.
+    Python3.8 or higher and the corresponding pip are assumed to be available.
 
 === "Debian/Ubuntu"
     #### Install necessary dependencies
@@ -65,7 +69,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 
 === "RaspberryPi/Raspbian"
     The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/).
-    This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
+    This image comes with python3.9 preinstalled, making it easy to get freqtrade up and running.
 
     Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
 
@@ -165,7 +169,7 @@ You can as well update, configure and reset the codebase of your bot with `./scr
 ** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.7+ installed beforehand for this to work.
+You will need to have git and python3.8+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv under `.env/`
@@ -416,16 +420,3 @@ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10
 ```
 
 If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
-
-### MacOS installation error with python 3.9
-
-When using python 3.9 on macOS, it's currently necessary to install some os-level modules to allow dependencies to compile.
-The errors you'll see happen during installation and are related to the installation of `tables` or `blosc`.
-
-You can install the necessary libraries with the following command:
-
-```bash
-brew install hdf5 c-blosc
-```
-
-After this, please run the installation (script) again.

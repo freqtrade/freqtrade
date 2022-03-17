@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
+import pandas as pd
 import pytest
 import uvicorn
 from fastapi import FastAPI
@@ -533,11 +534,14 @@ def test_api_show_config(botclient):
     assert rc.json()['timeframe_min'] == 5
     assert rc.json()['state'] == 'running'
     assert rc.json()['bot_name'] == 'freqtrade'
+    assert rc.json()['strategy_version'] is None
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
     assert 'unfilledtimeout' in rc.json()
     assert 'version' in rc.json()
+    assert 'api_version' in rc.json()
+    assert 1.1 <= rc.json()['api_version'] <= 1.2
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -898,6 +902,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
+        'orders': [ANY],
+
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -948,6 +954,38 @@ def test_api_blacklist(botclient, mocker):
     assert rc.json() == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"],
                          "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
                          "length": 4,
+                         "method": ["StaticPairList"],
+                         "errors": {},
+                         }
+
+    rc = client_delete(client, f"{BASE_URI}/blacklist?pairs_to_delete=DOGE/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["HOT/BTC", "ETH/BTC", "XRP/.*"],
+                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
+                         "length": 3,
+                         "method": ["StaticPairList"],
+                         "errors": {},
+                         }
+
+    rc = client_delete(client, f"{BASE_URI}/blacklist?pairs_to_delete=NOTHING/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["HOT/BTC", "ETH/BTC", "XRP/.*"],
+                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
+                         "length": 3,
+                         "method": ["StaticPairList"],
+                         "errors": {
+                             "NOTHING/BTC": {
+                                 "error_msg": "Pair NOTHING/BTC is not in the current blacklist."
+                             }
+                             },
+                         }
+    rc = client_delete(
+        client,
+        f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["XRP/.*"],
+                         "blacklist_expanded": ["XRP/BTC", "XRP/USDT"],
+                         "length": 1,
                          "method": ["StaticPairList"],
                          "errors": {},
                          }
@@ -1053,6 +1091,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
+        'orders': [],
     }
 
 
@@ -1072,6 +1111,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
                      data='{"tradeid": "1"}')
     assert_response(rc, 502)
     assert rc.json() == {"error": "Error querying /api/v1/forcesell: invalid argument"}
+    Trade.query.session.rollback()
 
     ftbot.enter_positions()
 
@@ -1145,6 +1185,24 @@ def test_api_pair_candles(botclient, ohlcv_history):
              ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 0, 0, 1511686800000, None, None]
 
+             ])
+    ohlcv_history['sell'] = ohlcv_history['sell'].astype('float64')
+    ohlcv_history.at[0, 'sell'] = float('inf')
+    ohlcv_history['date1'] = ohlcv_history['date']
+    ohlcv_history.at[0, 'date1'] = pd.NaT
+
+    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
+    assert_response(rc)
+    assert (rc.json()['data'] ==
+            [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
+              None, 0, None, None, 1511686200000, None, None],
+             ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0.0, '2017-11-26 08:55:00',
+                 1511686500000, 8.893e-05, None],
+             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885e-05, 0, 0.0, '2017-11-26 09:00:00', 1511686800000, None, None]
              ])
 
 
@@ -1291,10 +1349,15 @@ def test_sysinfo(botclient):
     assert 'ram_pct' in result
 
 
-def test_api_backtesting(botclient, mocker, fee, caplog):
+def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     ftbot, client = botclient
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
 
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    # Backtest prevented in default mode
+    assert_response(rc, 502)
+
+    ftbot.config['runmode'] = RunMode.WEBSERVER
     # Backtesting not started yet
     rc = client_get(client, f"{BASE_URI}/backtest")
     assert_response(rc)
@@ -1312,6 +1375,11 @@ def test_api_backtesting(botclient, mocker, fee, caplog):
     assert result['status'] == 'reset'
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
+    ftbot.config['export'] = 'trades'
+    ftbot.config['backtest_cache'] = 'none'
+    ftbot.config['user_data_dir'] = Path(tmpdir)
+    ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
+    ftbot.config['exportfilename'].mkdir()
 
     # start backtesting
     data = {
@@ -1386,6 +1454,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog):
     rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
     assert log_has("Backtesting caused an error: ", caplog)
 
+    ftbot.config['backtest_cache'] = 'day'
+
+    # Rerun backtest (should get previous result)
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert_response(rc)
+    result = rc.json()
+    assert log_has_re('Reusing result of previous backtest.*', caplog)
+
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")
     assert_response(rc)
@@ -1394,3 +1470,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog):
     assert result['status'] == 'reset'
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
+
+
+def test_health(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/health")
+
+    assert_response(rc)
+    ret = rc.json()
+    assert ret['last_process_ts'] == 0
+    assert ret['last_process'] == '1970-01-01T00:00:00+00:00'

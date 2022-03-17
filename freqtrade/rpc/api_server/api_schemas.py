@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.enums import OrderTypeValues
 
 
 class Ping(BaseModel):
@@ -108,7 +109,7 @@ class SellReason(BaseModel):
 
 class Stats(BaseModel):
     sell_reasons: Dict[str, SellReason]
-    durations: Dict[str, Union[str, float]]
+    durations: Dict[str, Optional[float]]
 
 
 class DailyRecord(BaseModel):
@@ -125,28 +126,30 @@ class Daily(BaseModel):
 
 
 class UnfilledTimeout(BaseModel):
-    buy: int
-    sell: int
-    unit: str
+    buy: Optional[int]
+    sell: Optional[int]
+    unit: Optional[str]
     exit_timeout_count: Optional[int]
 
 
 class OrderTypes(BaseModel):
-    buy: str
-    sell: str
-    emergencysell: Optional[str]
-    forcesell: Optional[str]
-    forcebuy: Optional[str]
-    stoploss: str
+    buy: OrderTypeValues
+    sell: OrderTypeValues
+    emergencysell: Optional[OrderTypeValues]
+    forcesell: Optional[OrderTypeValues]
+    forcebuy: Optional[OrderTypeValues]
+    stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
 
 
 class ShowConfig(BaseModel):
     version: str
+    strategy_version: Optional[str]
+    api_version: float
     dry_run: bool
     stake_currency: str
-    stake_amount: Union[float, str]
+    stake_amount: str
     available_capital: Optional[float]
     stake_currency_decimals: int
     max_open_trades: int
@@ -157,7 +160,7 @@ class ShowConfig(BaseModel):
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
     unfilledtimeout: UnfilledTimeout
-    order_types: OrderTypes
+    order_types: Optional[OrderTypes]
     use_custom_stoploss: Optional[bool]
     timeframe: Optional[str]
     timeframe_ms: int
@@ -170,6 +173,24 @@ class ShowConfig(BaseModel):
     bot_name: str
     state: str
     runmode: str
+    position_adjustment_enable: bool
+    max_entry_position_adjustment: int
+
+
+class OrderSchema(BaseModel):
+    pair: str
+    order_id: str
+    status: str
+    remaining: float
+    amount: float
+    safe_price: float
+    cost: float
+    filled: float
+    ft_order_side: str
+    order_type: str
+    is_open: bool
+    order_timestamp: Optional[int]
+    order_filled_timestamp: Optional[int]
 
 
 class TradeSchema(BaseModel):
@@ -219,6 +240,7 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
+    orders: List[OrderSchema]
 
 
 class OpenTradeSchema(TradeSchema):
@@ -273,10 +295,14 @@ class Logs(BaseModel):
 class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
+    ordertype: Optional[OrderTypeValues]
+    stakeamount: Optional[float]
+    entry_tag: Optional[str]
 
 
 class ForceSellPayload(BaseModel):
     tradeid: str
+    ordertype: Optional[OrderTypeValues]
 
 
 class BlacklistPayload(BaseModel):
@@ -357,7 +383,7 @@ class BacktestRequest(BaseModel):
     timeframe_detail: Optional[str]
     timerange: Optional[str]
     max_open_trades: Optional[int]
-    stake_amount: Optional[Union[float, str]]
+    stake_amount: Optional[str]
     enable_protections: bool
     dry_run_wallet: Optional[float]
 
@@ -376,3 +402,8 @@ class BacktestResponse(BaseModel):
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float
+
+
+class Health(BaseModel):
+    last_process: datetime
+    last_process_ts: int

@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import arrow
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException
@@ -88,7 +88,7 @@ class RangeStabilityFilter(IPairList):
         """
         Validate trading range
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param daily_candles: Downloaded daily candles
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache

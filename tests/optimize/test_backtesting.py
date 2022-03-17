@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -10,6 +11,7 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
+from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
@@ -19,6 +21,8 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import RunMode, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exchange.exchange import timeframe_to_next_date
+from freqtrade.misc import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
@@ -46,6 +50,13 @@ def trim_dictlist(dict_list, num):
     for pair, pair_data in dict_list.items():
         new[pair] = pair_data[num:].reset_index()
     return new
+
+
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
 
 
 def load_data_test(what, testdatadir):
@@ -438,7 +449,8 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
         Backtesting(default_conf)
 
     default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
-    with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
+    with pytest.raises(OperationalException,
+                       match=r'VolumePairList not allowed for backtesting\..*StaticPairlist.*'):
         Backtesting(default_conf)
 
     default_conf.update({
@@ -470,7 +482,8 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     default_conf['timerange'] = '20180101-20180102'
 
     default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
-    with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
+    with pytest.raises(OperationalException,
+                       match=r'VolumePairList not allowed for backtesting\..*StaticPairlist.*'):
         Backtesting(default_conf)
 
     default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
@@ -515,6 +528,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     # Fake 2 trades, so there's not enough amount for the next trade left.
     LocalTrade.trades_open.append(trade)
     LocalTrade.trades_open.append(trade)
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
     LocalTrade.trades_open.pop()
@@ -522,6 +536,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is not None
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    backtesting.wallets.update()
     trade = backtesting._enter_trade(pair, row=row)
     assert trade
     assert trade.stake_amount == 123.5
@@ -544,8 +559,6 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
 
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
-
-    backtesting.cleanup()
 
 
 def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
@@ -629,7 +642,8 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     assert res.sell_reason == SellType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
-    assert round(res.close_rate, 3) == round(209.0225, 3)
+    sell_order = res.select_order('sell', True)
+    assert sell_order is not None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -645,8 +659,9 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
                              timerange=timerange)
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
+
     result = backtesting.backtest(
-        processed=processed,
+        processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
@@ -736,6 +751,46 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
         assert col in cols
 
 
+def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    timerange = TimeRange('date', None, 1517227800, 0)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    global count
+    count = 0
+
+    def tmp_confirm_entry(pair, current_time, **kwargs):
+        dp = backtesting.strategy.dp
+        df, _ = dp.get_analyzed_dataframe(pair, backtesting.strategy.timeframe)
+        current_candle = df.iloc[-1].squeeze()
+        assert current_candle['buy'] == 1
+
+        candle_date = timeframe_to_next_date(backtesting.strategy.timeframe, current_candle['date'])
+        assert candle_date == current_time
+        # These asserts don't properly raise as they are nested,
+        # therefore we increment count and assert for that.
+        global count
+        count = count + 1
+
+    backtesting.strategy.confirm_trade_entry = tmp_confirm_entry
+    backtesting.backtest(
+        processed=deepcopy(processed),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+        position_stacking=False,
+    )
+    assert count == 5
+
+
 def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
     # While this test IS a copy of test_backtest_pricecontours, it's needed to ensure
     # results do not carry-over to the next run, which is not given by using parametrize.
@@ -758,6 +813,8 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     # While buy-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     for [contour, numres] in tests:
+        # Debug output for random test failure
+        print(f"{contour}, {numres}")
         assert len(simple_backtest(default_conf, contour, mocker, testdatadir)['results']) == numres
 
 
@@ -885,7 +942,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     backtest_conf = {
-        'processed': processed,
+        'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
@@ -907,7 +964,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'NXT/BTC', '5m')[0]) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
 
     backtest_conf = {
-        'processed': processed,
+        'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,
@@ -971,6 +1028,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'config': default_conf,
         'locks': [],
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -1079,6 +1138,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1086,6 +1147,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1188,6 +1251,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1195,6 +1260,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'config': default_conf,
             'locks': [],
             'rejected_signals': 20,
+            'timedout_entry_orders': 0,
+            'timedout_exit_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1236,3 +1303,132 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
+@pytest.mark.parametrize('run_id', ['2', 'changed'])
+@pytest.mark.parametrize('start_delta', [{'days': 0}, {'days': 1}, {'weeks': 1}, {'weeks': 4}])
+@pytest.mark.parametrize('cache', constants.BACKTEST_CACHE_AGE)
+def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testdatadir, run_id,
+                                            start_delta, cache):
+    default_conf.update({
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+    })
+    patch_exchange(mocker)
+    backtestmock = MagicMock(return_value={
+        'results': pd.DataFrame(columns=BT_DATA_COLUMNS),
+        'config': default_conf,
+        'locks': [],
+        'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
+        'final_balance': 1000,
+    })
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+    mocker.patch('freqtrade.optimize.backtesting.show_backtest_results', MagicMock())
+
+    now = min_backtest_date = datetime.now(tz=timezone.utc)
+    start_time = now - timedelta(**start_delta) + timedelta(hours=1)
+    if cache == 'none':
+        min_backtest_date = now + timedelta(days=1)
+    elif cache == 'day':
+        min_backtest_date = now - timedelta(days=1)
+    elif cache == 'week':
+        min_backtest_date = now - timedelta(weeks=1)
+    elif cache == 'month':
+        min_backtest_date = now - timedelta(weeks=4)
+    load_backtest_metadata = MagicMock(return_value={
+        'StrategyTestV2': {'run_id': '1', 'backtest_start_time': now.timestamp()},
+        'TestStrategyLegacyV1': {'run_id': run_id, 'backtest_start_time': start_time.timestamp()}
+    })
+    load_backtest_stats = MagicMock(side_effect=[
+        {
+            'metadata': {'StrategyTestV2': {'run_id': '1'}},
+            'strategy': {'StrategyTestV2': {}},
+            'strategy_comparison': [{'key': 'StrategyTestV2'}]
+        },
+        {
+            'metadata': {'TestStrategyLegacyV1': {'run_id': '2'}},
+            'strategy': {'TestStrategyLegacyV1': {}},
+            'strategy_comparison': [{'key': 'TestStrategyLegacyV1'}]
+        }
+    ])
+    mocker.patch('pathlib.Path.glob', return_value=[
+        Path(datetime.strftime(datetime.now(), 'backtest-result-%Y-%m-%d_%H-%M-%S.json'))])
+    mocker.patch.multiple('freqtrade.data.btanalysis',
+                          load_backtest_metadata=load_backtest_metadata,
+                          load_backtest_stats=load_backtest_stats)
+    mocker.patch('freqtrade.optimize.backtesting.get_strategy_run_id', side_effect=['1', '2', '2'])
+
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '1m',
+        '--timerange', '1510694220-1510700340',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
+        '--cache', cache,
+        '--strategy-list',
+        'StrategyTestV2',
+        'TestStrategyLegacyV1',
+    ]
+    args = get_args(args)
+    start_backtesting(args)
+
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
+        f'Using data directory: {testdatadir} ...',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days).',
+        'Parameter --enable-position-stacking detected ...',
+    ]
+
+    for line in exists:
+        assert log_has(line, caplog)
+
+    if cache == 'none':
+        assert backtestmock.call_count == 2
+        exists = [
+            'Running backtesting for Strategy StrategyTestV2',
+            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+        ]
+    elif run_id == '2' and min_backtest_date < start_time:
+        assert backtestmock.call_count == 0
+        exists = [
+            'Reusing result of previous backtest for StrategyTestV2',
+            'Reusing result of previous backtest for TestStrategyLegacyV1',
+        ]
+    else:
+        exists = [
+            'Reusing result of previous backtest for StrategyTestV2',
+            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+        ]
+        assert backtestmock.call_count == 1
+
+    for line in exists:
+        assert log_has(line, caplog)
+
+
+def test_get_strategy_run_id(default_conf_usdt):
+    default_conf_usdt.update({
+        'strategy': 'StrategyTestV2',
+        'max_open_trades': float('inf')
+    })
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    x = get_strategy_run_id(strategy)
+    assert isinstance(x, str)

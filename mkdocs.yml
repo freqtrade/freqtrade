@@ -11,8 +11,9 @@ nav:
     - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
-    - Plugins: plugins.md
+    - Strategy Callbacks: strategy-callbacks.md
     - Stoploss: stoploss.md
+    - Plugins: plugins.md
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
@@ -80,8 +81,10 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: docs
       check_paths: true
-  - pymdownx.tabbed
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.tilde
   - mdx_truly_sane_lists
