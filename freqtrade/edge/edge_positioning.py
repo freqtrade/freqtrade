@@ -219,9 +219,11 @@ class Edge:
         """
         final = []
         for pair, info in self._cached_pairs.items():
-            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
-                info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)) and \
-                    pair in pairs:
+            if (
+                info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2))
+                and info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))
+                and pair in pairs
+            ):
                 final.append(pair)
 
         if self._final_pairs != final:
@@ -246,8 +248,8 @@ class Edge:
         """
         final = []
         for pair, info in self._cached_pairs.items():
-            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
-                    info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)):
+            if (info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and
+                    info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))):
                 final.append({
                     'Pair': pair,
                     'Winrate': info.winrate,
