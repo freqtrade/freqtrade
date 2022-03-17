@@ -164,6 +164,7 @@ class Strategy002(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
+        #current_time = 2021-09-09 18:20:00+00:00
         print("confirm_trade_entry: BUY --- "+str(current_time))
 
         mode = "test"
