@@ -598,7 +598,8 @@ class LocalTrade():
             filled_exit_trade += (order.price * order.filled)
 
         remaining_amount = self.amount - filled_amount
-        unfilled_exit_trade = Decimal(remaining_amount) * Decimal(rate or self.close_rate) # type: ignore
+        unfilled_exit_trade = (Decimal(remaining_amount) *
+                               Decimal(rate or self.close_rate))  # type: ignore
         exit_trade = Decimal(filled_exit_trade) + unfilled_exit_trade
         fees = exit_trade * Decimal(fee or self.fee_close)
         return float(exit_trade - fees)
