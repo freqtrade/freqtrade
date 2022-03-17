@@ -594,8 +594,8 @@ class LocalTrade():
         filled_amount = 0
         filled_exit_trade = 0
         for order in filled_exit_orders:
-            filled_amount += order.filled
-            filled_exit_trade += (order.price * order.filled)
+            filled_amount += order.safe_filled
+            filled_exit_trade += (order.safe_price * order.safe_filled)
 
         remaining_amount = self.amount - filled_amount
         unfilled_exit_trade = (Decimal(remaining_amount) *
