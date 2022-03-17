@@ -587,10 +587,10 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
      "BTC", "binance", ['LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC', 'HOT/BTC']),
-    # expecting pairs from default tickers, because 1h candles are not available
+    # expecting pairs as input, because 1h candles are not available
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
-     "BTC", "binance", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+     "BTC", "binance", ['ETH/BTC', 'LTC/BTC', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
     # ftx data is already in Quote currency, therefore won't require conversion
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],

@@ -71,10 +71,11 @@ class VolumePairList(IPairList):
                 f'to at least {self._tf_in_sec} and restart the bot.'
             )
 
-        if not self._exchange.exchange_has('fetchTickers'):
+        if not self._use_range and not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
-                'Exchange does not support dynamic whitelist. '
-                'Please edit your config and restart the bot.'
+                "Exchange does not support dynamic whitelist in this configuration. "
+                "Please edit your config and either remove Volumepairlist, "
+                "or switch to using candles. and restart the bot."
             )
 
         if not self._validate_keys(self._sort_key):
@@ -95,7 +96,7 @@ class VolumePairList(IPairList):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
-        return True
+        return not self._use_range
 
     def _validate_keys(self, key):
         return key in SORT_VALUES
@@ -126,13 +127,15 @@ class VolumePairList(IPairList):
                 tradable_only=True, active_only=True).keys()]
             # No point in testing for blacklisted pairs...
             _pairlist = self.verify_blacklist(_pairlist, logger.info)
-
-            filtered_tickers = [
-                v for k, v in tickers.items()
-                if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                    and (self._use_range or v[self._sort_key] is not None)
-                    and v['symbol'] in _pairlist)]
-            pairlist = [s['symbol'] for s in filtered_tickers]
+            if not self._use_range:
+                filtered_tickers = [
+                    v for k, v in tickers.items()
+                    if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+                        and (self._use_range or v[self._sort_key] is not None)
+                        and v['symbol'] in _pairlist)]
+                pairlist = [s['symbol'] for s in filtered_tickers]
+            else:
+                pairlist = _pairlist
 
             pairlist = self.filter_pairlist(pairlist, tickers)
             self._pair_cache['pairlist'] = pairlist.copy()
@@ -147,11 +150,11 @@ class VolumePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Use the incoming pairlist.
-        filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
-
-        # get lookback period in ms, for exchange ohlcv fetch
         if self._use_range:
+            # Create bare minimum from tickers structure.
+            filtered_tickers = [{'symbol': k} for k in pairlist]
+
+            # get lookback period in ms, for exchange ohlcv fetch
             since_ms = int(arrow.utcnow()
                            .floor('minute')
                            .shift(minutes=-(self._lookback_period * self._tf_in_min)
@@ -208,6 +211,9 @@ class VolumePairList(IPairList):
                     filtered_tickers[i]['quoteVolume'] = quoteVolume
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
+        else:
+            # Tickers mode - filter based on incomming pairlist.
+            filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
         if self._min_value > 0:
             filtered_tickers = [
