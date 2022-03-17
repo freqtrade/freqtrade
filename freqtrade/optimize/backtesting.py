@@ -429,7 +429,7 @@ class Backtesting:
             # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
             roi_rate = trade.open_rate * roi / leverage
             open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
-            close_rate = -side_1 * (roi_rate + open_fee_rate) / (trade.fee_close - side_1 * 1)
+            close_rate = -(roi_rate + open_fee_rate) / (trade.fee_close - side_1 * 1)
             if is_short:
                 is_new_roi = sell_row[OPEN_IDX] < close_rate
             else:
@@ -542,7 +542,10 @@ class Backtesting:
                         proposed_rate=closerate, current_profit=current_profit)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
-                    closerate = max(closerate, sell_row[LOW_IDX])
+                    if trade.is_short:
+                        closerate = min(closerate, sell_row[HIGH_IDX])
+                    else:
+                        closerate = max(closerate, sell_row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 

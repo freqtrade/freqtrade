@@ -869,7 +869,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                               force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting sell
-        current_rate = high or rate
+        current_rate = (low if trade.is_short else high) or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
@@ -961,9 +961,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        sl_lower_long = (trade.stop_loss < (low or current_rate) and not trade.is_short)
-        sl_higher_short = (trade.stop_loss > (high or current_rate) and trade.is_short)
-        if self.trailing_stop and (sl_lower_long or sl_higher_short):
+        sl_lower_short = (trade.stop_loss < (low or current_rate) and not trade.is_short)
+        sl_higher_long = (trade.stop_loss > (high or current_rate) and trade.is_short)
+        if self.trailing_stop and (sl_lower_short or sl_higher_long):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
@@ -981,12 +981,12 @@ class IStrategy(ABC, HyperStrategyMixin):
 
                 trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
 
-        sl_higher_short = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
-        sl_lower_long = ((trade.stop_loss <= (high or current_rate) and trade.is_short))
+        sl_higher_long = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
+        sl_lower_short = (trade.stop_loss <= (high or current_rate) and trade.is_short)
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        if ((sl_higher_short or sl_lower_long) and
+        if ((sl_higher_long or sl_lower_short) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
