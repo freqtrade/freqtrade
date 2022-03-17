@@ -22,7 +22,6 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "stoploss_order_types_futures": {"limit": "stop"},
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_candle_limit": 1000,
@@ -30,6 +29,9 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
         "ccxt_futures_name": "future"
+    }
+    _ft_has_futures: Dict = {
+        "stoploss_order_types": {"limit": "stop"},
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

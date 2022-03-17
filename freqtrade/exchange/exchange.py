@@ -76,6 +76,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
     }
     _ft_has: Dict = {}
+    _ft_has_futures: Dict = {}
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -122,8 +123,19 @@ class Exchange:
         exchange_config = config['exchange']
         self.log_responses = exchange_config.get('log_responses', False)
 
+        # Leverage properties
+        self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
+        self.margin_mode: Optional[MarginMode] = (
+            MarginMode(config.get('margin_mode'))
+            if config.get('margin_mode')
+            else None
+        )
+        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
+
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
+        if self.trading_mode == TradingMode.FUTURES:
+            self._ft_has = deep_merge_dicts(self._ft_has_futures, self._ft_has)
         if exchange_config.get('_ft_has_params'):
             self._ft_has = deep_merge_dicts(exchange_config.get('_ft_has_params'),
                                             self._ft_has)
@@ -134,15 +146,6 @@ class Exchange:
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
-
-        # Leverage properties
-        self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
-        self.margin_mode: Optional[MarginMode] = (
-            MarginMode(config.get('margin_mode'))
-            if config.get('margin_mode')
-            else None
-        )
-        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -1011,10 +1014,6 @@ class Exchange:
     def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
 
         available_order_Types: Dict[str, str] = self._ft_has["stoploss_order_types"]
-        if self.trading_mode == TradingMode.FUTURES:
-            # Optionally use different order type for stop order
-            available_order_Types = self._ft_has.get('stoploss_order_types_futures',
-                                                     self._ft_has["stoploss_order_types"])
 
         if user_order_type in available_order_Types.keys():
             ordertype = available_order_Types[user_order_type]
