@@ -591,8 +591,8 @@ class LocalTrade():
             return 0.0
 
         filled_exit_orders = self.select_filled_orders('sell')
-        filled_amount = 0
-        filled_exit_trade = 0
+        filled_amount = 0.0
+        filled_exit_trade = 0.0
         for order in filled_exit_orders:
             filled_amount += order.safe_filled
             filled_exit_trade += (order.safe_price * order.safe_filled)

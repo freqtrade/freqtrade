@@ -479,8 +479,10 @@ class FreqtradeBot(LoggingMixin):
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
             # TODO: Selling part of the trade not implemented yet.
-            logger.error(f"Unable to decrease trade position / sell partially"
-                         f" for pair {trade.pair}, feature not implemented.")
+            sell_reason = SellCheckTuple(sell_type=SellType.CUSTOM_SELL)
+            sell_amount = -1 * stake_amount / current_rate
+            self.execute_trade_exit(trade=trade, limit=current_rate, sell_reason=sell_reason,
+                                    exit_tag='Partial sell', amount=sell_amount)
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
@@ -1162,12 +1164,14 @@ class FreqtradeBot(LoggingMixin):
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
+            amount: Optional[float] = 0.0,
             ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sell_reason: Reason the sell was triggered
+        :param amount: amount to be sold
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
@@ -1199,7 +1203,18 @@ class FreqtradeBot(LoggingMixin):
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
-        amount = self._safe_exit_amount(trade.pair, trade.amount)
+        if amount <= 0:  # type: ignore
+            # Calculate unsold coin amount
+            amount = trade.amount
+            filled_exit_orders = trade.select_filled_orders('sell')
+            filled_amount = 0.0
+
+            for o in filled_exit_orders:
+                filled_amount += o.safe_filled
+
+            amount -= filled_amount  # type: ignore
+
+        amount = self._safe_exit_amount(trade.pair, amount)  # type: ignore
         time_in_force = self.strategy.order_time_in_force['sell']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
@@ -1234,7 +1249,7 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_exit(trade, order_type)
+        self._notify_exit(trade, order_type, amount=amount)
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1242,7 +1257,8 @@ class FreqtradeBot(LoggingMixin):
 
         return True
 
-    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False) -> None:
+    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False,
+                     amount: float = 0) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
@@ -1263,7 +1279,7 @@ class FreqtradeBot(LoggingMixin):
             'gain': gain,
             'limit': profit_rate,
             'order_type': order_type,
-            'amount': trade.amount,
+            'amount': amount if amount > 0 else trade.amount,
             'open_rate': trade.open_rate,
             'close_rate': trade.close_rate,
             'current_rate': current_rate,
