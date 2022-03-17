@@ -14,7 +14,7 @@ from romeo import Romeo
 from wao._429_watcher import _429_Watcher
 
 
-def _perform_execute(mode, coin, brain, romeo_pool):
+def perform_execute(mode, coin, brain, romeo_pool):
     is_test_mode = False
     if mode == ExecutionConfig.MODE_TEST:
         is_test_mode = True
@@ -29,7 +29,7 @@ def _perform_execute(mode, coin, brain, romeo_pool):
     romeo.start()
 
 
-def _perform_back_test(date_time, coin, brain, romeo_pool):
+def perform_back_test(date_time, coin, brain, romeo_pool):
     date = str(date_time)
     date = date.replace(" ", ", ")
     ExecutionConfig.COIN = coin

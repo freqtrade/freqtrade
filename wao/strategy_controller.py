@@ -1,4 +1,4 @@
-from wao.util import _perform_execute, _perform_back_test
+from wao.util import perform_execute, perform_back_test
 import threading
 from wao.config import Config
 from wao.util import setup_429
@@ -17,25 +17,41 @@ class StrategyController:
                                            Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP,
                                            Config.BACKTEST_MAX_COUNT_DUP)
 
-    def back_test(self, date_time, coin, brain):
+    def on_buy_signal(self, current_time, mode, coin, brain):
+        if Config.IS_BACKTEST:
+            self.__back_test(current_time, coin, brain)
+        else:
+            self.__execute(mode, coin, brain)
+
+    def on_sell_signal(self, sell_reason, current_time, mode, coin, brain):
+        if sell_reason == 'sell_signal':
+            if Config.IS_BACKTEST:
+                # todo: implement backtest adoption code with current_time
+                pass
+            else:
+                self.__perform_sell_signal(coin)
+
+        self.__remove_from_pool(coin)
+
+    def __back_test(self, date_time, coin, brain):
         time.sleep(Config.BACKTEST_THROTTLE_SECOND)
         if Config.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=_perform_back_test, args=(date_time, coin, brain, self.romeo_pool)).start()
+            threading.Thread(target=perform_back_test, args=(date_time, coin, brain, self.romeo_pool)).start()
         else:
-            _perform_back_test(date_time, coin, brain, self.romeo_pool)
+            perform_back_test(date_time, coin, brain, self.romeo_pool)
 
-    def execute(self, mode, coin, brain):
+    def __execute(self, mode, coin, brain):
         if Config.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=_perform_execute, args=(mode, coin, brain, self.romeo_pool)).start()
+            threading.Thread(target=perform_execute, args=(mode, coin, brain, self.romeo_pool)).start()
         else:
-            _perform_execute(mode, coin, brain, self.romeo_pool)
+            perform_execute(mode, coin, brain, self.romeo_pool)
 
-    def perform_sell_signal(self, coin):
+    def __perform_sell_signal(self, coin):
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             romeo.perform_sell_signal()
 
-    def remove_from_pool(self, coin):
+    def __remove_from_pool(self, coin):
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             del self.romeo_pool[coin]

@@ -16,7 +16,7 @@ from wao.strategy_controller import StrategyController
 
 
 class Strategy003(IStrategy):
-    controller = StrategyController('Freq Strategy003')
+    controller = StrategyController('Freq_Strategy003')
 
     """
     Strategy 003
@@ -184,10 +184,8 @@ class Strategy003(IStrategy):
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
-        if Config.IS_BACKTEST:
-            self.controller.back_test(current_time, coin, brain)
-        else:
-            self.controller.execute(mode, coin, brain)
+
+        self.controller.on_buy_signal(current_time, mode, coin, brain)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -218,15 +216,8 @@ class Strategy003(IStrategy):
         print("confirm_trade_exit: SELL --- " + sell_reason + " " + str(current_time))
 
         coin = pair.split("/")[0]
-        # brain = "Freq_" + self.__class__.__name__
+        brain = "Freq_" + self.__class__.__name__
+        mode = "test"
 
-        if sell_reason == 'sell_signal':
-            if Config.IS_BACKTEST:
-                # todo: implement backtest adoption code with current_time
-                pass
-            else:
-                self.controller.perform_sell_signal(coin)
-
-        self.controller.remove_from_pool(coin)
-
+        self.controller.on_sell_signal(sell_reason, current_time, mode, coin, brain)
         return True
