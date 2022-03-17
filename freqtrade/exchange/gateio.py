@@ -26,8 +26,6 @@ class Gateio(Exchange):
         "stoploss_on_exchange": True,
     }
 
-    _headers = {'X-Gate-Channel-Id': 'freqtrade'}
-
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
 
