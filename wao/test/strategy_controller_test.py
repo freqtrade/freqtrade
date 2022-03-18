@@ -12,7 +12,7 @@ controller = StrategyController(brain)
 
 controller.on_buy_signal(current_time, mode, coin, brain)
 
-time.sleep(5)
+time.sleep(10)
 
 current_time = str(datetime.datetime.now()).replace('.', '+')
 
