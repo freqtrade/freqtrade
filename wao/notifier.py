@@ -3,7 +3,7 @@ EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to brain_confi
 import requests
 import sys
 import time
-from wao._429_file_util import delete_429_file, write_to_429_file
+from _429_file_util import delete_429_file, write_to_429_file
 
 sys.path.append(EXECUTION_PATH)
 from config import Config

@@ -1,6 +1,6 @@
 import os
 
-from wao.brain_config import BrainConfig
+from brain_config import BrainConfig
 
 
 def delete_429_file(text):
