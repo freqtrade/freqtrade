@@ -57,11 +57,15 @@ def test_cancel_stoploss_order_gateio(default_conf, mocker):
     assert cancel_order_mock.call_args_list[0][1]['params'] == {'stop': True}
 
 
-def test_stoploss_adjust_gateio(mocker, default_conf):
+@pytest.mark.parametrize('sl1,sl2,sl3,side', [
+    (1501, 1499, 1501, "sell"),
+    (1499, 1501, 1499, "buy")
+])
+def test_stoploss_adjust_gateio(mocker, default_conf, sl1, sl2, sl3, side):
     exchange = get_patched_exchange(mocker, default_conf, id='gateio')
     order = {
         'price': 1500,
         'stopPrice': 1500,
     }
-    assert exchange.stoploss_adjust(1501, order)
-    assert not exchange.stoploss_adjust(1499, order)
+    assert exchange.stoploss_adjust(sl1, order, side)
+    assert not exchange.stoploss_adjust(sl2, order, side)

@@ -61,4 +61,5 @@ class Gateio(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return stop_loss > float(order['stopPrice'])
+        return ((side == "sell" and stop_loss > float(order['stopPrice'])) or
+                (side == "buy" and stop_loss < float(order['stopPrice'])))
