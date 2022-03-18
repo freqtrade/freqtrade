@@ -1,15 +1,16 @@
 # pragma pylint: disable=missing-docstring,C0103
 
 import datetime
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.misc import (decimals_per_coin, file_dump_json, file_load_json, format_ms_time,
-                            pair_to_filename, parse_db_uri_for_logging, plural, render_template,
-                            render_template_with_fallback, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2, shorten_date)
+from freqtrade.misc import (decimals_per_coin, deep_merge_dicts, file_dump_json, file_load_json,
+                            format_ms_time, pair_to_filename, parse_db_uri_for_logging, plural,
+                            render_template, render_template_with_fallback, round_coin_value,
+                            safe_value_fallback, safe_value_fallback2, shorten_date)
 
 
 def test_decimals_per_coin():
@@ -203,3 +204,16 @@ def test_render_template_fallback(mocker):
 def test_parse_db_uri_for_logging(conn_url, expected) -> None:
 
     assert parse_db_uri_for_logging(conn_url) == expected
+
+
+def test_deep_merge_dicts():
+    a = {'first': {'rows': {'pass': 'dog', 'number': '1', 'test': None}}}
+    b = {'first': {'rows': {'fail': 'cat', 'number': '5', 'test': 'asdf'}}}
+    res = {'first': {'rows': {'pass': 'dog', 'fail': 'cat', 'number': '5', 'test': 'asdf'}}}
+    res2 = {'first': {'rows': {'pass': 'dog', 'fail': 'cat', 'number': '1', 'test': None}}}
+    assert deep_merge_dicts(b, deepcopy(a)) == res
+
+    assert deep_merge_dicts(a, deepcopy(b)) == res2
+
+    res2['first']['rows']['test'] = 'asdf'
+    assert deep_merge_dicts(a, deepcopy(b), allow_null_overrides=False) == res2

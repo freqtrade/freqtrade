@@ -129,7 +129,7 @@ def format_ms_time(date: int) -> str:
     return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')
 
 
-def deep_merge_dicts(source, destination):
+def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
     """
     Values from Source override destination, destination is returned (and modified!!)
     Sample:
@@ -142,8 +142,8 @@ def deep_merge_dicts(source, destination):
         if isinstance(value, dict):
             # get node or create one
             node = destination.setdefault(key, {})
-            deep_merge_dicts(value, node)
-        else:
+            deep_merge_dicts(value, node, allow_null_overrides)
+        elif value is not None or allow_null_overrides:
             destination[key] = value
 
     return destination
