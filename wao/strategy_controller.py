@@ -18,12 +18,14 @@ class StrategyController:
                                            Config.BACKTEST_MAX_COUNT_DUP)
 
     def on_buy_signal(self, current_time, mode, coin, brain):
+        print("StrategyController: on_buy_signal: current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
         if Config.IS_BACKTEST:
             self.__back_test(current_time, coin, brain)
         else:
             self.__execute(mode, coin, brain)
 
     def on_sell_signal(self, sell_reason, current_time, mode, coin, brain):
+        print("StrategyController: on_sell_signal: sell_reason="+str(sell_reason)+", current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
         if sell_reason == 'sell_signal':
             if Config.IS_BACKTEST:
                 # todo: implement backtest adoption code with current_time
