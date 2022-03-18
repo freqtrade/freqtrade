@@ -154,7 +154,7 @@ class VolumePairList(IPairList):
         """
         if self._use_range:
             # Create bare minimum from tickers structure.
-            filtered_tickers = [{'symbol': k} for k in pairlist]
+            filtered_tickers: List[Dict[str, Any]] = [{'symbol': k} for k in pairlist]
 
             # get lookback period in ms, for exchange ohlcv fetch
             since_ms = int(arrow.utcnow()
