@@ -25,6 +25,9 @@ multi_line_output=0
 lines_after_imports=2
 skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*"]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]
 build-backend = "setuptools.build_meta"

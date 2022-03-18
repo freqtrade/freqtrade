@@ -1,6 +1,8 @@
 # Freqtrade rules
 
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 logfile.txt
 user_data/backtest_results/*
 user_data/logs/*
@@ -9,6 +11,9 @@ user_data/data/*
 freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
+
+# Macos related
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

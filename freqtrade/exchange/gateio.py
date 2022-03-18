@@ -22,13 +22,34 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
+        "stoploss_order_types": {"limit": "limit"},
+        "stoploss_on_exchange": True,
     }
-
-    _headers = {'X-Gate-Channel-Id': 'freqtrade'}
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
 
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
-                    f'Exchange {self.name} does not support market orders.')
+                f'Exchange {self.name} does not support market orders.')
+
+    def fetch_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
+        return self.fetch_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )
+
+    def cancel_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
+        return self.cancel_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )
+
+    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+        """
+        Verify stop_loss against stoploss-order value (limit or price)
+        Returns True if adjustment is necessary.
+        """
+        return stop_loss > float(order['stopPrice'])

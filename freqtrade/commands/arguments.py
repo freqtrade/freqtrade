@@ -24,7 +24,7 @@ ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "enable_protections", "dry_run_wallet", "timeframe_detail",
                                         "strategy_list", "export", "exportfilename",
-                                        "backtest_breakdown"]
+                                        "backtest_breakdown", "backtest_cache"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "use_max_market_positions",
@@ -51,7 +51,7 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
 ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
-                      "list_pairs_print_json"]
+                      "list_pairs_print_json", "exchange"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
@@ -75,7 +75,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "timerange", "timeframe", "no_trades"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
-                    "trade_source", "timeframe", "plot_auto_open"]
+                    "trade_source", "timeframe", "plot_auto_open", ]
 
 ARGS_INSTALL_UI = ["erase_ui_only", 'ui_version']
 

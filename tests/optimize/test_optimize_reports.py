@@ -82,8 +82,11 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'locks': [],
         'final_balance': 1000.02,
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'run_id': '123',
         }
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
@@ -130,8 +133,11 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'locks': [],
         'final_balance': 1000.02,
         'rejected_signals': 20,
+        'timedout_entry_orders': 0,
+        'timedout_exit_orders': 0,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
+        'run_id': '124',
         }
     }
 
@@ -178,16 +184,16 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
 
-    store_backtest_stats(testdatadir, {})
+    store_backtest_stats(testdatadir, {'metadata': {}})
 
-    assert dump_mock.call_count == 2
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir/'backtest-result'))
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'
-    store_backtest_stats(filename, {})
-    assert dump_mock.call_count == 2
+    store_backtest_stats(filename, {'metadata': {}})
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))

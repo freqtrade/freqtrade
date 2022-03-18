@@ -11,7 +11,8 @@ from tabulate import tabulate
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
-from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
+from freqtrade.misc import (decimals_per_coin, file_dump_json, get_backtest_metadata_filename,
+                            round_coin_value)
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,11 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
         ).with_suffix(recordfilename.suffix)
+
+    # Store metadata separately.
+    file_dump_json(get_backtest_metadata_filename(filename), stats['metadata'])
+    del stats['metadata']
+
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -430,6 +436,8 @@ def generate_strategy_stats(pairlist: List[str],
         'dry_run_wallet': starting_balance,
         'final_balance': content['final_balance'],
         'rejected_signals': content['rejected_signals'],
+        'timedout_entry_orders': content['timedout_entry_orders'],
+        'timedout_exit_orders': content['timedout_exit_orders'],
         'max_open_trades': max_open_trades,
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
@@ -509,16 +517,26 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
     :param max_date: Backtest end date
     :return: Dictionary containing results per strategy and a strategy summary.
     """
-    result: Dict[str, Any] = {'strategy': {}}
+    result: Dict[str, Any] = {
+        'metadata': {},
+        'strategy': {},
+        'strategy_comparison': [],
+    }
     market_change = calculate_market_change(btdata, 'close')
+    metadata = {}
     pairlist = list(btdata.keys())
     for strategy, content in all_results.items():
         strat_stats = generate_strategy_stats(pairlist, strategy, content,
                                               min_date, max_date, market_change=market_change)
+        metadata[strategy] = {
+            'run_id': content['run_id'],
+            'backtest_start_time': content['backtest_start_time'],
+        }
         result['strategy'][strategy] = strat_stats
 
     strategy_results = generate_strategy_comparison(bt_stats=result['strategy'])
 
+    result['metadata'] = metadata
     result['strategy_comparison'] = strategy_results
 
     return result
@@ -710,6 +728,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
+            ('Entry/Exit Timeouts',
+             f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
+             f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],

@@ -166,7 +166,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
-    exchange = ExchangeResolver.load_exchange('huobi', default_conf)
+    exchange = ExchangeResolver.load_exchange('zaif', default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
@@ -1018,6 +1018,7 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order_book_l2_usd.call_count == 1
     assert order_closed['status'] == 'open'
     assert not order['fee']
+    assert order_closed['filled'] == 0
 
     order_book_l2_usd.reset_mock()
     order_closed['price'] = endprice
@@ -1025,6 +1026,8 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     order_closed = exchange.fetch_dry_run_order(order['id'])
     assert order_closed['status'] == 'closed'
     assert order['fee']
+    assert order_closed['filled'] == 1
+    assert order_closed['filled'] == order_closed['amount']
 
     # Empty orderbook test
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
@@ -1064,6 +1067,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert order["type"] == "market"
     assert order["symbol"] == "LTC/USDT"
     assert order['status'] == 'closed'
+    assert order['filled'] == amount
     assert round(order["average"], 4) == round(endprice, 4)
 
 
@@ -1688,6 +1692,13 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
                                         cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    caplog.clear()
+    # Call with invalid timeframe
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '3m')], cache=False)
+    assert not res
+    assert len(res) == 0
+    assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
 
 
 @pytest.mark.asyncio

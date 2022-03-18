@@ -1,9 +1,12 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+from datetime import datetime
+
 import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -47,6 +50,9 @@ class StrategyTestV2(IStrategy):
         'buy': 'gtc',
         'sell': 'gtc',
     }
+
+    # By default this strategy does not use Position Adjustments
+    position_adjustment_enable = False
 
     def informative_pairs(self):
         """
@@ -154,3 +160,12 @@ class StrategyTestV2(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def adjust_trade_position(self, trade: Trade, current_time: datetime, current_rate: float,
+                              current_profit: float, min_stake: float, max_stake: float, **kwargs):
+
+        if current_profit < -0.0075:
+            orders = trade.select_filled_orders('buy')
+            return round(orders[0].cost, 0)
+
+        return None

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import arrow
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
@@ -208,7 +208,7 @@ def _download_pair_history(pair: str, *,
         else:
             # Run cleaning again to ensure there were no duplicate candles
             # Especially between existing and new data.
-            data = clean_ohlcv_dataframe(data.append(new_dataframe), timeframe, pair,
+            data = clean_ohlcv_dataframe(concat([data, new_dataframe], axis=0), timeframe, pair,
                                          fill_missing=False, drop_incomplete=False)
 
         logger.debug("New  Start: %s",

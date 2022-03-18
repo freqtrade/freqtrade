@@ -26,7 +26,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
                          'CalmarHyperOptLoss',
-                         'MaxDrawDownHyperOptLoss']
+                         'MaxDrawDownHyperOptLoss', 'ProfitDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
@@ -34,6 +34,8 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
+BACKTEST_CACHE_AGE = ['none', 'day', 'week', 'month']
+BACKTEST_CACHE_DEFAULT = 'day'
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
@@ -138,7 +140,7 @@ CONF_SCHEMA = {
             'minProperties': 1
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
-        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
+        'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True, 'minimum': -1},
         'trailing_stop': {'type': 'boolean'},
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
@@ -369,7 +371,9 @@ CONF_SCHEMA = {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
             'default': 'jsongz'
-        }
+        },
+        'position_adjustment_enable': {'type': 'boolean'},
+        'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
     },
     'definitions': {
         'exchange': {
@@ -436,7 +440,6 @@ SCHEMA_TRADE_REQUIRED = [
     'dry_run_wallet',
     'ask_strategy',
     'bid_strategy',
-    'unfilledtimeout',
     'stoploss',
     'minimal_roi',
     'internals',

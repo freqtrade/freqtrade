@@ -56,7 +56,7 @@ class Ftx(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, "sell", amount, stop_price, stop_loss=True)
             return dry_order
 
         try:
@@ -106,15 +106,18 @@ class Ftx(Exchange):
                 if order[0].get('status') == 'closed':
                     # Trigger order was triggered ...
                     real_order_id = order[0].get('info', {}).get('orderId')
+                    # OrderId may be None for stoploss-market orders
+                    # But contains "average" in these cases.
+                    if real_order_id:
+                        order1 = self._api.fetch_order(real_order_id, pair)
+                        self._log_exchange_response('fetch_stoploss_order1', order1)
+                        # Fake type to stop - as this was really a stop order.
+                        order1['id_stop'] = order1['id']
+                        order1['id'] = order_id
+                        order1['type'] = 'stop'
+                        order1['status_stop'] = 'triggered'
+                        return order1
 
-                    order1 = self._api.fetch_order(real_order_id, pair)
-                    self._log_exchange_response('fetch_stoploss_order1', order1)
-                    # Fake type to stop - as this was really a stop order.
-                    order1['id_stop'] = order1['id']
-                    order1['id'] = order_id
-                    order1['type'] = 'stop'
-                    order1['status_stop'] = 'triggered'
-                    return order1
                 return order[0]
             else:
                 raise InvalidOrderException(f"Could not get stoploss order for id {order_id}")
