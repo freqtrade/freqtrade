@@ -83,14 +83,14 @@ def setup_429():
 
 def __get_month_from_timestamp():
     print("__get_month_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(BrainConfig.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.month - 1 if date.month < 12 else 0
 
 
 def __get_year_from_timestamp():
     print("__get_year_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(BrainConfig.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.year
 
