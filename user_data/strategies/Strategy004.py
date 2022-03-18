@@ -9,7 +9,7 @@ from datetime import datetime
 import talib.abstract as ta
 
 
-from user_data.strategies.wao.strategy_controller import StrategyController
+from wao.strategy_controller import StrategyController
 
 
 class Strategy004(IStrategy):

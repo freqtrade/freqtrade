@@ -4,7 +4,7 @@ import watchdog.observers
 import os
 from pathlib import Path
 
-from user_data.strategies.wao.notifier import post_request
+from wao.notifier import post_request
 
 
 class _429_Watcher(watchdog.events.PatternMatchingEventHandler):

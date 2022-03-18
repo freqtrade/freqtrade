@@ -5,8 +5,8 @@ import watchdog
 import os
 import time
 import datetime
-from user_data.strategies.wao.brain_config import BrainConfig
-from user_data.strategies.wao._429_watcher import _429_Watcher
+from wao.brain_config import BrainConfig
+from wao._429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
 from config import Config

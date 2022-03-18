@@ -11,7 +11,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from user_data.strategies.wao.strategy_controller import StrategyController
+from wao.strategy_controller import StrategyController
 
 
 class Strategy003(IStrategy):
