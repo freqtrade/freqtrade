@@ -1426,7 +1426,7 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
-        if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
+        if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)
