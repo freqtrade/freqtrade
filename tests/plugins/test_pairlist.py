@@ -794,6 +794,7 @@ def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> N
                        match=r'Exchange does not support fetchTickers, .*'):
         get_patched_freqtradebot(mocker, default_conf)
 
+
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     whitelist_conf['pairlists'][0]['method'] = pairlist
