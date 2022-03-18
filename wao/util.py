@@ -5,11 +5,11 @@ import watchdog
 import os
 import time
 import datetime
-from wao.brain_config import BrainConfig
-from wao._429_watcher import _429_Watcher
+from brain_config import BrainConfig
+from _429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
-from brain_config import Config
+from config import Config
 from romeo import Romeo
 
 
