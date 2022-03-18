@@ -9,7 +9,6 @@ from datetime import datetime
 import talib.abstract as ta
 
 
-from wao.config import Config
 from wao.strategy_controller import StrategyController
 
 

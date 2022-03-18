@@ -1,4 +1,4 @@
-class Config:
+class BrainConfig:
 
     BACKTEST_DUP = '0.45'
     BACKTEST_MAX_COUNT_DUP = '3'

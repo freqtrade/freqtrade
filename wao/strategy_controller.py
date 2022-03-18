@@ -1,6 +1,6 @@
 from wao.util import perform_execute, perform_back_test
 import threading
-from wao.config import Config
+from wao.brain_config import BrainConfig
 from wao.util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
@@ -10,15 +10,15 @@ class StrategyController:
 
     def __init__(self, brain):
         setup_429()
-        if Config.IS_BACKTEST:
-            send_start_deliminator_message(brain, Config.BACKTEST_COIN,
-                                           Config.BACKTEST_MONTH_LIST[Config.BACKTEST_DATA_CLEANER_MONTH_INDEX],
-                                           Config.BACKTEST_DATA_CLEANER_YEAR, Config.BACKTEST_DUP,
-                                           Config.BACKTEST_MAX_COUNT_DUP)
+        if BrainConfig.IS_BACKTEST:
+            send_start_deliminator_message(brain, BrainConfig.BACKTEST_COIN,
+                                           BrainConfig.BACKTEST_MONTH_LIST[BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
+                                           BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
+                                           BrainConfig.BACKTEST_MAX_COUNT_DUP)
 
     def on_buy_signal(self, current_time, mode, coin, brain):
         print("StrategyController: on_buy_signal: current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
-        if Config.IS_BACKTEST:
+        if BrainConfig.IS_BACKTEST:
             self.__back_test(current_time, coin, brain)
         else:
             self.__execute(mode, coin, brain)
@@ -26,7 +26,7 @@ class StrategyController:
     def on_sell_signal(self, sell_reason, current_time, mode, coin, brain):
         print("StrategyController: on_sell_signal: sell_reason="+str(sell_reason)+", current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
         if sell_reason == 'sell_signal':
-            if Config.IS_BACKTEST:
+            if BrainConfig.IS_BACKTEST:
                 # todo: implement backtest adoption code with current_time
                 pass
             else:
@@ -35,14 +35,14 @@ class StrategyController:
         self.__remove_from_pool(coin)
 
     def __back_test(self, date_time, coin, brain):
-        time.sleep(Config.BACKTEST_THROTTLE_SECOND)
-        if Config.IS_PARALLEL_EXECUTION:
+        time.sleep(BrainConfig.BACKTEST_THROTTLE_SECOND)
+        if BrainConfig.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_back_test, args=(date_time, coin, brain, self.romeo_pool)).start()
         else:
             perform_back_test(date_time, coin, brain, self.romeo_pool)
 
     def __execute(self, mode, coin, brain):
-        if Config.IS_PARALLEL_EXECUTION:
+        if BrainConfig.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute, args=(mode, coin, brain, self.romeo_pool)).start()
         else:
             perform_execute(mode, coin, brain, self.romeo_pool)

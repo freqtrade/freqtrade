@@ -5,23 +5,23 @@ import watchdog
 import os
 import time
 import datetime
-from wao.config import Config
+from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
-from config import Config as ExecutionConfig
+from brain_config import Config
 from romeo import Romeo
 
 
 def perform_execute(mode, coin, brain, romeo_pool):
     is_test_mode = False
-    if mode == ExecutionConfig.MODE_TEST:
+    if mode == Config.MODE_TEST:
         is_test_mode = True
-    elif mode == ExecutionConfig.MODE_PROD:
+    elif mode == Config.MODE_PROD:
         is_test_mode = False
 
-    ExecutionConfig.COIN = coin
-    ExecutionConfig.BRAIN = brain
+    Config.COIN = coin
+    Config.BRAIN = brain
 
     romeo = Romeo.instance(is_test_mode, True)
     romeo_pool[coin] = romeo
@@ -31,21 +31,21 @@ def perform_execute(mode, coin, brain, romeo_pool):
 def perform_back_test(date_time, coin, brain, romeo_pool):
     date = str(date_time)
     date = date.replace(" ", ", ")
-    ExecutionConfig.COIN = coin
-    ExecutionConfig.BRAIN = brain
-    ExecutionConfig.ROMEO_D_UP_PERCENTAGE = float(Config.BACKTEST_DUP)
-    ExecutionConfig.ROMEO_D_UP_MAX = int(Config.BACKTEST_MAX_COUNT_DUP)
-    ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
-    ExecutionConfig.BACKTEST_MONTH_INDEX = __get_month_from_timestamp()
-    ExecutionConfig.BACKTEST_YEAR = __get_year_from_timestamp()
-    ExecutionConfig.IS_BACKTEST = True
-    print("_perform_back_test: ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = " + str(
-        ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP) + " ExecutionConfig.BACKTEST_MONTH_INDEX = " + str(
-        ExecutionConfig.BACKTEST_MONTH_INDEX) + " ExecutionConfig.COIN = " + str(
-        ExecutionConfig.COIN) + " ExecutionConfig.BRAIN = " + str(
-        ExecutionConfig.BRAIN) + " ExecutionConfig.ROMEO_D_UP_PERCENTAGE = " + str(
-        ExecutionConfig.ROMEO_D_UP_PERCENTAGE) + " ExecutionConfig.ROMEO_D_UP_MAX = " + str(
-        ExecutionConfig.ROMEO_D_UP_MAX))
+    Config.COIN = coin
+    Config.BRAIN = brain
+    Config.ROMEO_D_UP_PERCENTAGE = float(BrainConfig.BACKTEST_DUP)
+    Config.ROMEO_D_UP_MAX = int(BrainConfig.BACKTEST_MAX_COUNT_DUP)
+    Config.BACKTEST_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
+    Config.BACKTEST_MONTH_INDEX = __get_month_from_timestamp()
+    Config.BACKTEST_YEAR = __get_year_from_timestamp()
+    Config.IS_BACKTEST = True
+    print("_perform_back_test: Config.BACKTEST_SIGNAL_TIMESTAMP = " + str(
+        Config.BACKTEST_SIGNAL_TIMESTAMP) + " Config.BACKTEST_MONTH_INDEX = " + str(
+        Config.BACKTEST_MONTH_INDEX) + " Config.COIN = " + str(
+        Config.COIN) + " Config.BRAIN = " + str(
+        Config.BRAIN) + " Config.ROMEO_D_UP_PERCENTAGE = " + str(
+        Config.ROMEO_D_UP_PERCENTAGE) + " Config.ROMEO_D_UP_MAX = " + str(
+        Config.ROMEO_D_UP_MAX))
 
     romeo = Romeo.instance(True, True)
     romeo_pool[coin] = romeo
@@ -53,16 +53,16 @@ def perform_back_test(date_time, coin, brain, romeo_pool):
 
 
 def create_429_directory():
-    print("create_429_directory:..." + Config._429_DIRECTORY + "...")
-    if not os.path.exists(Config._429_DIRECTORY):
-        os.mkdir(Config._429_DIRECTORY)
+    print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
+    if not os.path.exists(BrainConfig._429_DIRECTORY):
+        os.mkdir(BrainConfig._429_DIRECTORY)
 
 
 def perform_create_429_watcher():
-    print("perform_create_429_watcher: watching:- " + str(Config._429_DIRECTORY))
+    print("perform_create_429_watcher: watching:- " + str(BrainConfig._429_DIRECTORY))
     event_handler = _429_Watcher()
     observer = watchdog.observers.Observer()
-    observer.schedule(event_handler, path=Config._429_DIRECTORY, recursive=True)
+    observer.schedule(event_handler, path=BrainConfig._429_DIRECTORY, recursive=True)
     observer.start()
     try:
         while True:
@@ -83,14 +83,14 @@ def setup_429():
 
 def __get_month_from_timestamp():
     print("__get_month_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(BrainConfig.BACKTEST_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.month - 1 if date.month < 12 else 0
 
 
 def __get_year_from_timestamp():
     print("__get_year_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(BrainConfig.BACKTEST_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.year
 
