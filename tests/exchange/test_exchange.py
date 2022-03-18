@@ -939,7 +939,45 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     Exchange(default_conf)
 
 
-def test_validate_order_types(default_conf, mocker):
+def test_validate_pricing(default_conf, mocker):
+    api_mock = MagicMock()
+    has = {
+        'fetchL2OrderBook': True,
+        'fetchTicker': True,
+    }
+    type(api_mock).has = PropertyMock(return_value=has)
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+    mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_margin_mode')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.name', 'Binance')
+    ExchangeResolver.load_exchange('binance', default_conf)
+    has.update({'fetchTicker': False})
+    with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
+        ExchangeResolver.load_exchange('binance', default_conf)
+
+    has.update({'fetchTicker': True})
+
+    default_conf['ask_strategy']['use_order_book'] = True
+    ExchangeResolver.load_exchange('binance', default_conf)
+    has.update({'fetchL2OrderBook': False})
+
+    with pytest.raises(OperationalException, match="Orderbook not available for .*"):
+        ExchangeResolver.load_exchange('binance', default_conf)
+
+    has.update({'fetchL2OrderBook': True})
+
+    # Binance has no tickers on futures
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    with pytest.raises(OperationalException, match="Ticker pricing not available for .*"):
+        ExchangeResolver.load_exchange('binance', default_conf)
+
+
+def test_validate_ordertypes(default_conf, mocker):
     api_mock = MagicMock()
 
     type(api_mock).has = PropertyMock(return_value={'createMarketOrder': True})

@@ -182,6 +182,8 @@ class Exchange:
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
             self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+            self.validate_pricing(config['ask_strategy'])
+            self.validate_pricing(config['bid_strategy'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -574,6 +576,14 @@ class Exchange:
             raise OperationalException(
                 f'On exchange stoploss is not supported for {self.name}.'
             )
+
+    def validate_pricing(self, pricing: Dict) -> None:
+        if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
+            raise OperationalException(f'Orderbook not available for {self.name}.')
+        if (not pricing.get('use_order_book', False) and not (
+                self.exchange_has('fetchTicker') and self._ft_has['tickers_have_price']
+                )):
+            raise OperationalException(f'Ticker pricing not available for {self.name}.')
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
         """
