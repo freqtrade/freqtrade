@@ -12,6 +12,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.misc import deep_merge_dicts
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,15 @@ class Binance(Exchange):
             (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
             (side == "buy" and stop_loss < float(order['info']['stopPrice']))
         )
+
+    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+        tickers = super().get_tickers(symbols=symbols, cached=cached)
+        if self.trading_mode == TradingMode.FUTURES:
+            # Binance's future result has no bid/ask values.
+            # Therefore we must fetch that from fetch_bids_asks and combine the two results.
+            bidsasks = self.fetch_bids_asks(symbols, cached)
+            tickers = deep_merge_dicts(bidsasks, tickers, allow_null_overrides=False)
+        return tickers
 
     @retrier
     def _set_leverage(

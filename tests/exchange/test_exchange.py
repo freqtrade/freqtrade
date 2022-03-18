@@ -1572,6 +1572,59 @@ def test_fetch_positions(default_conf, mocker, exchange_name):
                            "fetch_positions", "fetch_positions")
 
 
+def test_fetch_bids_asks(default_conf, mocker):
+    api_mock = MagicMock()
+    tick = {'ETH/BTC': {
+        'symbol': 'ETH/BTC',
+        'bid': 0.5,
+        'ask': 1,
+        'last': 42,
+    }, 'BCH/BTC': {
+        'symbol': 'BCH/BTC',
+        'bid': 0.6,
+        'ask': 0.5,
+        'last': 41,
+    }
+    }
+    exchange_name = 'binance'
+    api_mock.fetch_bids_asks = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    # retrieve original ticker
+    bidsasks = exchange.fetch_bids_asks()
+
+    assert 'ETH/BTC' in bidsasks
+    assert 'BCH/BTC' in bidsasks
+    assert bidsasks['ETH/BTC']['bid'] == 0.5
+    assert bidsasks['ETH/BTC']['ask'] == 1
+    assert bidsasks['BCH/BTC']['bid'] == 0.6
+    assert bidsasks['BCH/BTC']['ask'] == 0.5
+    assert api_mock.fetch_bids_asks.call_count == 1
+
+    api_mock.fetch_bids_asks.reset_mock()
+
+    # Cached ticker should not call api again
+    tickers2 = exchange.fetch_bids_asks(cached=True)
+    assert tickers2 == bidsasks
+    assert api_mock.fetch_bids_asks.call_count == 0
+    tickers2 = exchange.fetch_bids_asks(cached=False)
+    assert api_mock.fetch_bids_asks.call_count == 1
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_bids_asks", "fetch_bids_asks")
+
+    with pytest.raises(OperationalException):
+        api_mock.fetch_bids_asks = MagicMock(side_effect=ccxt.NotSupported("DeadBeef"))
+        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+        exchange.fetch_bids_asks()
+
+    api_mock.fetch_bids_asks = MagicMock(return_value={})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange.fetch_bids_asks()
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    assert exchange.fetch_bids_asks() == {}
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
@@ -1588,6 +1641,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     }
     }
     api_mock.fetch_tickers = MagicMock(return_value=tick)
+    api_mock.fetch_bids_asks = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     # retrieve original ticker
     tickers = exchange.get_tickers()
@@ -1599,6 +1653,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     assert tickers['BCH/BTC']['bid'] == 0.6
     assert tickers['BCH/BTC']['ask'] == 0.5
     assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_bids_asks.call_count == 0
 
     api_mock.fetch_tickers.reset_mock()
 
@@ -1606,8 +1661,10 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     tickers2 = exchange.get_tickers(cached=True)
     assert tickers2 == tickers
     assert api_mock.fetch_tickers.call_count == 0
+    assert api_mock.fetch_bids_asks.call_count == 0
     tickers2 = exchange.get_tickers(cached=False)
     assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_bids_asks.call_count == 0
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "get_tickers", "fetch_tickers")
@@ -1620,6 +1677,17 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     api_mock.fetch_tickers = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     exchange.get_tickers()
+
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+
+    exchange.get_tickers()
+    assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_bids_asks.call_count == (1 if exchange_name == 'binance' else 0)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
