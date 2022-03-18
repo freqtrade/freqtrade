@@ -33,6 +33,7 @@ class Binance(Exchange):
     }
     _ft_has_futures: Dict = {
         "stoploss_order_types": {"limit": "stop"},
+        "tickers_have_price": False,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

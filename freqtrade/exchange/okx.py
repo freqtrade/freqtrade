@@ -24,7 +24,7 @@ class Okx(Exchange):
         "funding_fee_timeframe": "8h",
     }
     _ft_has_futures: Dict = {
-        "tickers_has_quoteVolume": False,
+        "tickers_have_quoteVolume": False,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

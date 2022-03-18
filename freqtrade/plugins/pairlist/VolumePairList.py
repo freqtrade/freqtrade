@@ -73,7 +73,7 @@ class VolumePairList(IPairList):
 
         if (not self._use_range and not (
                 self._exchange.exchange_has('fetchTickers')
-                and self._exchange._ft_has["tickers_has_quoteVolume"])):
+                and self._exchange._ft_has["tickers_have_quoteVolume"])):
             raise OperationalException(
                 "Exchange does not support dynamic whitelist in this configuration. "
                 "Please edit your config and either remove Volumepairlist, "
