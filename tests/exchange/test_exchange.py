@@ -167,6 +167,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
 
     exchange = ExchangeResolver.load_exchange('zaif', default_conf)
     assert isinstance(exchange, Exchange)
@@ -570,6 +571,7 @@ def test__load_async_markets(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     exchange = Exchange(default_conf)
     exchange._api_async.load_markets = get_mock_coro(None)
     exchange._load_async_markets()
@@ -591,6 +593,7 @@ def test__load_markets(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     Exchange(default_conf)
     assert log_has('Unable to initialize markets.', caplog)
 
@@ -659,6 +662,7 @@ def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     Exchange(default_conf)
 
 
@@ -731,6 +735,7 @@ def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs d
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     Exchange(default_conf)
 
 
@@ -757,6 +762,7 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
 
     with pytest.raises(OperationalException, match=r'Pair ETH/BTC is not available on Binance'):
@@ -777,6 +783,7 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     Exchange(default_conf)
@@ -796,6 +803,7 @@ def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
 
     Exchange(default_conf)
 
@@ -812,6 +820,7 @@ def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, ca
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
 
     Exchange(default_conf)
     assert type(api_mock).load_markets.call_count == 1
@@ -852,6 +861,7 @@ def test_validate_timeframes(default_conf, mocker, timeframe):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     Exchange(default_conf)
 
 
@@ -936,6 +946,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     Exchange(default_conf)
 
 
@@ -986,6 +997,7 @@ def test_validate_ordertypes(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.name', 'Bittrex')
 
     default_conf['order_types'] = {
@@ -1026,6 +1038,7 @@ def test_validate_order_types_not_in_config(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     conf = copy.deepcopy(default_conf)
@@ -1040,6 +1053,7 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     default_conf['startup_candle_count'] = 20
@@ -3084,7 +3098,8 @@ def test_merge_ft_has_dict(default_conf, mocker):
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
                           validate_timeframes=MagicMock(),
-                          validate_stakecurrency=MagicMock()
+                          validate_stakecurrency=MagicMock(),
+                          validate_pricing=MagicMock(),
                           )
     ex = Exchange(default_conf)
     assert ex._ft_has == Exchange._ft_has_default
@@ -3118,6 +3133,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
                           validate_timeframes=MagicMock(),
+                          validate_pricing=MagicMock(),
                           markets=PropertyMock(return_value=markets))
     ex = Exchange(default_conf)
 
@@ -3209,6 +3225,7 @@ def test_get_markets(default_conf, mocker, markets_static,
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
                           validate_timeframes=MagicMock(),
+                          validate_pricing=MagicMock(),
                           markets=PropertyMock(return_value=markets_static))
     ex = Exchange(default_conf)
     pairs = ex.get_markets(base_currencies,

@@ -580,9 +580,9 @@ class Exchange:
     def validate_pricing(self, pricing: Dict) -> None:
         if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
             raise OperationalException(f'Orderbook not available for {self.name}.')
-        if (not pricing.get('use_order_book', False) and not (
-                self.exchange_has('fetchTicker') and self._ft_has['tickers_have_price']
-                )):
+        if (not pricing.get('use_order_book', False) and (
+                not self.exchange_has('fetchTicker')
+                or not self._ft_has['tickers_have_price'])):
             raise OperationalException(f'Ticker pricing not available for {self.name}.')
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
