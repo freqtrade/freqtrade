@@ -3,7 +3,7 @@ import datetime
 import time
 import os
 import sys
-from brain_config import BrainConfig
+from user_data.strategies.wao.brain_config import BrainConfig
 
 def clean_json():
     print("clean_json: json_path = " + BrainConfig.BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH)

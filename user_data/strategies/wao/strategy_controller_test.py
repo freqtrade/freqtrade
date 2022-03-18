@@ -1,4 +1,4 @@
-from strategy_controller import StrategyController
+from user_data.strategies.wao.strategy_controller import StrategyController
 import time
 import datetime
 brain = 'Freq_Strategy000'

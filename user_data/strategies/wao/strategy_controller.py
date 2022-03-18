@@ -1,8 +1,8 @@
-from brain_util import perform_execute, perform_back_test
+from user_data.strategies.wao.brain_util import perform_execute, perform_back_test
 import threading
-from brain_config import BrainConfig
-from brain_util import setup_429
-from notifier import send_start_deliminator_message
+from user_data.strategies.wao.brain_config import BrainConfig
+from user_data.strategies.wao.brain_util import setup_429
+from user_data.strategies.wao.notifier import send_start_deliminator_message
 import time
 
 class StrategyController:
