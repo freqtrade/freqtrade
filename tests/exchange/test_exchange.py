@@ -2720,37 +2720,36 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', return_value={'for': 123})
     mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order', return_value={'for': 123})
+    mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', return_value={'for': 123})
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
-    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
-                 return_value={'fee': {}, 'status': 'canceled', 'amount': 1234})
-    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
-                 return_value={'fee': {}, 'status': 'canceled', 'amount': 1234})
+    res = {'fee': {}, 'status': 'canceled', 'amount': 1234}
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value=res)
+    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', return_value=res)
+    mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value=res)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
-    assert co == {'fee': {}, 'status': 'canceled', 'amount': 1234}
+    assert co == res
 
-    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
-                 return_value='canceled')
-    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
-                 return_value='canceled')
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', return_value='canceled')
+    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', return_value='canceled')
+    mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', return_value='canceled')
     # Fall back to fetch_stoploss_order
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co == {'for': 123}
 
-    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order',
-                 side_effect=InvalidOrderException(""))
-    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order',
-                 side_effect=InvalidOrderException(""))
-
+    exc = InvalidOrderException("")
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', side_effect=exc)
+    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order', side_effect=exc)
+    mocker.patch('freqtrade.exchange.Gateio.fetch_stoploss_order', side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
     assert co['amount'] == 555
     assert co == {'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
 
     with pytest.raises(InvalidOrderException):
-        mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
-                     side_effect=InvalidOrderException("Did not find order"))
-        mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
-                     side_effect=InvalidOrderException("Did not find order"))
+        exc = InvalidOrderException("Did not find order")
+        mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', side_effect=exc)
+        mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order', side_effect=exc)
+        mocker.patch('freqtrade.exchange.Gateio.cancel_stoploss_order', side_effect=exc)
         exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 

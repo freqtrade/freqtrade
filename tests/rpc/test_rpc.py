@@ -650,8 +650,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     rpc._fiat_converter = CryptoToFiatConverter()
 
     result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
-    assert prec_satoshi(result['total'], 30.309096315)
-    assert prec_satoshi(result['value'], 454636.44472997)
+    assert prec_satoshi(result['total'], 30.30909624)
+    assert prec_satoshi(result['value'], 454636.44360691)
     assert tickers.call_count == 1
     assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
@@ -685,7 +685,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
             'free': 5.0,
             'balance': 10.0,
             'currency': 'USDT',
-            'est_stake': 0.0011563153318162476,
+            'est_stake': 0.0011562404610161968,
             'used': 5.0,
             'stake': 'BTC',
             'is_position': False,
