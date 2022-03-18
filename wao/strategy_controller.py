@@ -5,7 +5,6 @@ from wao.util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
-
 class StrategyController:
     romeo_pool = {}
 

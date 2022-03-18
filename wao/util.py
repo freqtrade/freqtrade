@@ -4,14 +4,13 @@ import threading
 import watchdog
 import os
 import time
-
+import datetime
 from wao.config import Config
+from wao._429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
 from config import Config as ExecutionConfig
-from util import get_unix_timestamp, get_month_from_timestamp, get_year_from_timestamp
 from romeo import Romeo
-from wao._429_watcher import _429_Watcher
 
 
 def perform_execute(mode, coin, brain, romeo_pool):
@@ -36,9 +35,9 @@ def perform_back_test(date_time, coin, brain, romeo_pool):
     ExecutionConfig.BRAIN = brain
     ExecutionConfig.ROMEO_D_UP_PERCENTAGE = float(Config.BACKTEST_DUP)
     ExecutionConfig.ROMEO_D_UP_MAX = int(Config.BACKTEST_MAX_COUNT_DUP)
-    ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = get_unix_timestamp(date.split("+", 1)[0])
-    ExecutionConfig.BACKTEST_MONTH_INDEX = get_month_from_timestamp()
-    ExecutionConfig.BACKTEST_YEAR = get_year_from_timestamp()
+    ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
+    ExecutionConfig.BACKTEST_MONTH_INDEX = __get_month_from_timestamp()
+    ExecutionConfig.BACKTEST_YEAR = __get_year_from_timestamp()
     ExecutionConfig.IS_BACKTEST = True
     print("_perform_back_test: ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP = " + str(
         ExecutionConfig.BACKTEST_SIGNAL_TIMESTAMP) + " ExecutionConfig.BACKTEST_MONTH_INDEX = " + str(
@@ -80,3 +79,25 @@ def create_429_watcher():
 def setup_429():
     create_429_directory()
     create_429_watcher()
+
+
+def __get_month_from_timestamp():
+    print("__get_month_from_timestamp")
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
+    return date.month - 1 if date.month < 12 else 0
+
+
+def __get_year_from_timestamp():
+    print("__get_year_from_timestamp")
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
+    return date.year
+
+
+def __get_unix_timestamp(date):
+    print("__get_unix_timestamp")
+    date_time = datetime.datetime.strptime(date,
+                                           "%Y-%m-%d, %H:%M:%S")
+    unix_time = datetime.datetime.timestamp(date_time)
+    return int(unix_time)
