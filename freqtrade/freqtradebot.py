@@ -7,6 +7,7 @@ import traceback
 from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade import __version__, constants
@@ -481,7 +482,8 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            amount = abs(stake_amount) / current_exit_rate
+            # Strategy should return value as Decimal.
+            amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
                 return
