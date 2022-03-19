@@ -582,13 +582,17 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     pair = 'UNITTEST/USDT:USDT'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
-        1,  # Buy
         0.001,  # Open
-        0.0011,  # Close
-        0,  # Sell
-        0.00099,  # Low
         0.0012,  # High
-        '',  # Buy Signal Name
+        0.00099,  # Low
+        0.0011,  # Close
+        1,  # enter_long
+        0,  # exit_long
+        1,  # enter_short
+        0,  # exit_hsort
+        '',  # Long Signal Name
+        '',  # Short Signal Name
+        '',  # Exit Signal Name
     ]
 
     backtesting.strategy.leverage = MagicMock(return_value=5.0)

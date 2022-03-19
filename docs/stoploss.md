@@ -24,7 +24,7 @@ These modes can be configured with these values:
 ```
 
 !!! Note
-    Stoploss on exchange is only supported for Binance (stop-loss-limit), Huobi (stop-limit), Kraken (stop-loss-market, stop-loss-limit), FTX (stop limit and stop-market) and kucoin (stop-limit and stop-market) as of now.  
+    Stoploss on exchange is only supported for Binance (stop-loss-limit), Huobi (stop-limit), Kraken (stop-loss-market, stop-loss-limit), FTX (stop limit and stop-market) Gateio (stop-limit), and Kucoin (stop-limit and stop-market) as of now.  
     <ins>Do not set too low/tight stoploss value if using stop loss on exchange!</ins>  
     If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work.
 

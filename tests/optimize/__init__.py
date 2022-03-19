@@ -19,6 +19,7 @@ class BTrade(NamedTuple):
     open_tick: int
     close_tick: int
     enter_tag: Optional[str] = None
+    is_short: bool = False
 
 
 class BTContainer(NamedTuple):
