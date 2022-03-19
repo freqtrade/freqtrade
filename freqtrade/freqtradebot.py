@@ -452,15 +452,8 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        if self.strategy.max_entry_position_adjustment > -1:
-            count_of_buys = trade.nr_of_successful_buys
-            if count_of_buys > self.strategy.max_entry_position_adjustment:
-                logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
-                return
-        else:
-            logger.debug("Max adjustment entries is set to unlimited.")
         current_entry_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
-        current_exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        current_exit_rate = current_entry_rate
         current_rate = current_entry_rate  # backward compatibilty
         current_profit = trade.calc_profit_ratio(current_rate)
 
@@ -478,11 +471,18 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
+            if self.strategy.max_entry_position_adjustment > -1:
+                count_of_buys = trade.nr_of_successful_buys
+                if count_of_buys > self.strategy.max_entry_position_adjustment:
+                    logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
+                    return
+                else:
+                    logger.debug("Max adjustment entries is set to unlimited.")
             self.execute_entry(trade.pair, stake_amount, trade=trade)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            amount = -stake_amount / current_exit_rate
+            amount = abs(stake_amount) / current_exit_rate
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
                 return
@@ -1270,6 +1270,8 @@ class FreqtradeBot(LoggingMixin):
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
         if sub_trade:
+
+            # for mypy only; order will always be passed during sub trade
             assert order is not None
             amount = order.safe_filled
             profit_rate = order.safe_price
@@ -1279,13 +1281,11 @@ class FreqtradeBot(LoggingMixin):
 
             profit_ratio = trade.close_profit
             profit = trade.close_profit_abs
-            open_rate = trade.get_open_rate(profit, profit_rate, amount)
         else:
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
             profit = trade.calc_profit(rate=profit_rate)
             profit_ratio = trade.calc_profit_ratio(profit_rate)
             amount = trade.amount
-            open_rate = trade.open_rate
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
@@ -1298,7 +1298,7 @@ class FreqtradeBot(LoggingMixin):
             'limit': profit_rate,
             'order_type': order_type,
             'amount': amount,
-            'open_rate': open_rate,
+            'open_rate': trade.open_rate,
             'close_rate': profit_rate,
             'current_rate': current_rate,
             'profit_amount': profit,
@@ -1409,6 +1409,7 @@ class FreqtradeBot(LoggingMixin):
         self.handle_order_fee(trade, order_obj, order)
 
         trade.update_trade(order_obj)
+        Trade.commit()
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             # If a buy order was closed, force update on stoploss on exchange

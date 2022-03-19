@@ -127,7 +127,6 @@ class Order(_DECL_BASE):
     side = Column(String(25), nullable=True)
     price = Column(Float, nullable=True)
     average = Column(Float, nullable=True)
-    initial_average = Column(Float, nullable=True)
     amount = Column(Float, nullable=True)
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
@@ -500,8 +499,10 @@ class LocalTrade():
             # condition to avoid reset value when updating fees
             if self.open_order_id == order.order_id:
                 self.open_order_id = None
-            self.process_sell_sub_trade(order)
-            return
+            if self.amount == order.safe_amount_after_fee:
+                self.close(order.safe_price)
+            else:
+                self.process_sell_sub_trade(order)
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -518,12 +519,6 @@ class LocalTrade():
         sell_amount = order.safe_amount_after_fee
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
-        if sell_amount == self.amount:
-            if is_closed:
-                self.close(sell_rate)
-                if is_non_bt:
-                    Trade.commit()
-                return
         profit = self.calc_profit2(self.open_rate, sell_rate, sell_amount)
         if is_closed:
             self.amount -= sell_amount
@@ -533,20 +528,12 @@ class LocalTrade():
         self.close_profit_abs = profit
         self.close_profit = sell_stake_amount / (sell_stake_amount - profit) - 1
         self.recalc_open_trade_value()
-        if is_non_bt:
-            Trade.commit()
 
     def calc_profit2(self, open_rate: float, close_rate: float,
                      amount: float) -> float:
         return float(Decimal(amount) *
                      (Decimal(1 - self.fee_close) * Decimal(close_rate) -
                       Decimal(1 + self.fee_open) * Decimal(open_rate)))
-
-    def get_open_rate(self, profit: float, close_rate: float,
-                      amount: float) -> float:
-        return float((Decimal(amount) *
-                     (Decimal(1 - self.fee_close) * Decimal(close_rate)) -
-                      Decimal(profit))/(Decimal(amount) * Decimal(1 + self.fee_open)))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
@@ -685,10 +672,11 @@ class LocalTrade():
             tmp_amount = o.safe_amount_after_fee
             tmp_price = o.safe_price
             is_sell = o.ft_order_side != 'buy'
-            side = [1, -1][is_sell]
+            side = -1 if is_sell else 1
             if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount * side
-                total_stake += [tmp_price, avg_price][is_sell] * tmp_amount * side
+                price = avg_price if is_sell else tmp_price
+                total_stake += price * tmp_amount * side
                 if total_amount > 0:
                     avg_price = total_stake / total_amount
 

@@ -4863,7 +4863,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.is_open is False
 
 
-@pytest.mark.parametrize('orders, res', [
+@pytest.mark.parametrize('orders, results', [
     (
         (
             # side ampunt, price
@@ -4901,7 +4901,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
         )
     ),
 ])
-def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
+def test_position_adjust3(mocker, default_conf_usdt, fee, orders, results) -> None:
     default_conf_usdt.update({
         "position_adjustment_enable": True,
         "dry_run": False,
@@ -4914,7 +4914,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
     freqtrade = FreqtradeBot(default_conf_usdt)
     trade = None
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
-    for idx, order in enumerate(orders):
+    for idx, (order, result) in enumerate(zip(orders, results)):
         amount = order[1]
         price = order[2]
         price_mock = MagicMock(return_value=price)
@@ -4968,11 +4968,11 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, orders, res) -> None:
         if idx < len(orders) - 1:
             assert trade.is_open is True
         assert trade.open_order_id is None
-        assert trade.amount == res[idx][0]
-        assert trade.open_rate == res[idx][1]
-        assert trade.stake_amount == res[idx][2]
-        assert pytest.approx(trade.realized_profit) == res[idx][3]
-        assert pytest.approx(trade.close_profit_abs) == res[idx][4]
+        assert trade.amount == result[0]
+        assert trade.open_rate == result[1]
+        assert trade.stake_amount == result[2]
+        assert pytest.approx(trade.realized_profit) == result[3]
+        assert pytest.approx(trade.close_profit_abs) == result[4]
 
         order_obj = trade.select_order(order[0], False)
         assert order_obj.order_id == f'60{idx}'
@@ -5004,9 +5004,20 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
         "max_entry_position_adjustment": 0,
     })
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-
+    buy_rate_mock = MagicMock(return_value=10)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=buy_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 10,
+            'ask': 12,
+            'last': 11
+        }),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
     create_mock_trades(fee)
     caplog.set_level(logging.DEBUG)
-
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=10)
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"Max adjustment entries for .* has been reached\.", caplog)
