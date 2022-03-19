@@ -22,7 +22,7 @@ from pandas import DataFrame
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
                                  ListPairsWithTimeframes, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import CandleType, MarginMode, TradingMode
+from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -46,8 +46,6 @@ http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Exchange:
-
-    _config: Dict = {}
 
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
@@ -93,6 +91,7 @@ class Exchange:
         self._leverage_tiers: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
+        self._config: Dict = {}
 
         self._config.update(config)
 
@@ -2480,7 +2479,9 @@ class Exchange:
         :return: (maintenance margin ratio, maintenance amount)
         """
 
-        if self.exchange_has('fetchLeverageTiers') or self.exchange_has('fetchMarketLeverageTiers'):
+        if (self._config.get('runmode') in OPTIMIZE_MODES
+                or self.exchange_has('fetchLeverageTiers')
+                or self.exchange_has('fetchMarketLeverageTiers')):
 
             if pair not in self._leverage_tiers:
                 raise InvalidOrderException(
