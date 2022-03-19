@@ -5,9 +5,9 @@ import copy
 import logging
 import traceback
 from datetime import datetime, timezone
+from decimal import Decimal
 from math import isclose
 from threading import Lock
-from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade import __version__, constants
