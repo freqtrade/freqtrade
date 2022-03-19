@@ -997,6 +997,36 @@ def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order
 
 
 @pytest.mark.parametrize("is_short", [False, True])
+def test_execute_entry_min_leverage(mocker, default_conf_usdt, fee, limit_order, is_short) -> None:
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=MagicMock(return_value=limit_order[enter_side(is_short)]),
+        get_rate=MagicMock(return_value=0.11),
+        # Minimum stake-amount is ~5$
+        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.0, 0.0)),
+        _fetch_and_calculate_funding_fees=MagicMock(return_value=0),
+        get_fee=fee,
+        get_max_leverage=MagicMock(return_value=5.0),
+    )
+    stake_amount = 2
+    pair = 'SOL/BUSD:BUSD'
+    freqtrade.strategy.leverage = MagicMock(return_value=5.0)
+
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
+    trade = Trade.query.first()
+    assert trade.leverage == 5.0
+    # assert trade.stake_amount == 2
+
+
+@pytest.mark.parametrize("is_short", [False, True])
 def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
