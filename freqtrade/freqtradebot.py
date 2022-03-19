@@ -452,8 +452,7 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        current_entry_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
-        current_exit_rate = current_entry_rate
+        current_entry_rate, current_exit_rate = self.exchange.get_rates(trade.pair, True)
         current_rate = current_entry_rate  # backward compatibilty
         current_profit = trade.calc_profit_ratio(current_rate)
 

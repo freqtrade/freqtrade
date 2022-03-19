@@ -1114,7 +1114,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_rate(self, pair: str, refresh: bool, side: str) -> float:
+    def get_rate(self, pair: str, refresh: bool, side: str,
+                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1141,23 +1142,25 @@ class Exchange:
         if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
-            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            if order_book is None:
+                order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
                 rate = order_book[f"{conf_strategy['price_side']}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    f"{name} Price at location {order_book_top} from orderbook could not be "
-                    f"determined. Orderbook: {order_book}"
+                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
+                    f"could not be determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
             price_side = {conf_strategy['price_side'].capitalize()}
-            logger.debug(f"{name} price from orderbook {price_side}"
+            logger.debug(f"{pair} - {name} price from orderbook {price_side}"
                          f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
             logger.debug(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
-            ticker = self.fetch_ticker(pair)
+            if ticker is None:
+                ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[conf_strategy['price_side']]
             if ticker['last'] and ticker_rate:
                 if side == 'buy' and ticker_rate > ticker['last']:
@@ -1173,6 +1176,28 @@ class Exchange:
         cache_rate[pair] = rate
 
         return rate
+
+    def get_rates(self, pair: str, refresh: bool) -> Tuple[float, float]:
+        buy_rate = sell_rate = None
+        if not refresh:
+            buy_rate, sell_rate = self._buy_rate_cache.get(pair), self._sell_rate_cache.get(pair)
+
+        bid_strategy = self._config.get('bid_strategy', {})
+        ask_strategy = self._config.get('ask_strategy', {})
+        order_book = ticker = None
+        if bid_strategy.get('use_order_book', False) and ('use_order_book' in bid_strategy):
+            order_book_top = max(bid_strategy.get('order_book_top', 1),
+                                 ask_strategy.get('order_book_top', 1))
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            if not buy_rate:
+                buy_rate = self.get_rate(pair, refresh, 'buy', order_book=order_book)
+        else:
+            ticker = self.fetch_ticker(pair)
+            if not buy_rate:
+                buy_rate = self.get_rate(pair, refresh, 'buy', ticker=ticker)
+        if not sell_rate:
+            sell_rate = self.get_rate(pair, refresh, 'sell', order_book=order_book, ticker=ticker)
+        return buy_rate, sell_rate
 
     # Fee handling
 

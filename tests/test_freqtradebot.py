@@ -3961,7 +3961,7 @@ def test_order_book_bid_strategy1(mocker, default_conf_usdt, order_book_l2, exce
         with pytest.raises(PricingError):
             freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy")
         assert log_has_re(
-            r'Buy Price at location 1 from orderbook could not be determined.', caplog)
+            r'ETH/USDT - Buy Price at location 1 from orderbook could not be determined.', caplog)
     else:
         assert freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy") == 0.043935
         assert ticker_usdt_mock.call_count == 0
@@ -4035,8 +4035,10 @@ def test_order_book_ask_strategy(
                  return_value={'bids': [[]], 'asks': [[]]})
     with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
-    assert log_has_re(r'Sell Price at location 1 from orderbook could not be determined\..*',
-                      caplog)
+    pair = limit_buy_order_usdt['symbol']
+    assert log_has_re(
+        rf"{pair} - Sell Price at location 1 from orderbook could not be determined\..*",
+        caplog)
 
 
 def test_startup_state(default_conf_usdt, mocker):
