@@ -1270,10 +1270,9 @@ class FreqtradeBot(LoggingMixin):
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
-        if sub_trade:
 
-            # for mypy only; order will always be passed during sub trade
-            assert order is not None
+        # second condtion is for mypy only; order will always be passed during sub trade
+        if sub_trade and order is not None:
             amount = order.safe_filled
             profit_rate = order.safe_price
 
