@@ -776,7 +776,7 @@ class FreqtradeBot(LoggingMixin):
         side: str, trade_side: str,
         entry_tag: Optional[str],
         trade: Optional[Trade],
-        leverage: Optional[float] = 1.0
+        leverage: float = 1.0
     ) -> Tuple[float, float]:
 
         if price:
