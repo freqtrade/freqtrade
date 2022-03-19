@@ -4035,7 +4035,7 @@ def test_order_book_ask_strategy(
                  return_value={'bids': [[]], 'asks': [[]]})
     with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
-    pair = limit_buy_order_usdt['symbol']
+    pair = 'ETH/USDT'
     assert log_has_re(
         rf"{pair} - Sell Price at location 1 from orderbook could not be determined\..*",
         caplog)
