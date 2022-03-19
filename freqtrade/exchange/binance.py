@@ -12,6 +12,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.misc import deep_merge_dicts
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,6 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "stoploss_order_types_futures": {"limit": "stop"},
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_candle_limit": 1000,
@@ -30,6 +30,10 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
         "ccxt_futures_name": "future"
+    }
+    _ft_has_futures: Dict = {
+        "stoploss_order_types": {"limit": "stop"},
+        "tickers_have_price": False,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -52,6 +56,15 @@ class Binance(Exchange):
             (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
             (side == "buy" and stop_loss < float(order['info']['stopPrice']))
         )
+
+    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+        tickers = super().get_tickers(symbols=symbols, cached=cached)
+        if self.trading_mode == TradingMode.FUTURES:
+            # Binance's future result has no bid/ask values.
+            # Therefore we must fetch that from fetch_bids_asks and combine the two results.
+            bidsasks = self.fetch_bids_asks(symbols, cached)
+            tickers = deep_merge_dicts(bidsasks, tickers, allow_null_overrides=False)
+        return tickers
 
     @retrier
     def _set_leverage(

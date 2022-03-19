@@ -65,6 +65,8 @@ class Exchange:
         "ohlcv_partial_candle": True,
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
         "ohlcv_volume_currency": "base",  # "base" or "quote"
+        "tickers_have_quoteVolume": True,
+        "tickers_have_price": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -74,6 +76,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
     }
     _ft_has: Dict = {}
+    _ft_has_futures: Dict = {}
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -101,7 +104,7 @@ class Exchange:
         self._last_markets_refresh: int = 0
 
         # Cache for 10 minutes ...
-        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
+        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=2, ttl=60 * 10)
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
@@ -121,8 +124,19 @@ class Exchange:
         exchange_config = config['exchange']
         self.log_responses = exchange_config.get('log_responses', False)
 
+        # Leverage properties
+        self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
+        self.margin_mode: Optional[MarginMode] = (
+            MarginMode(config.get('margin_mode'))
+            if config.get('margin_mode')
+            else None
+        )
+        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
+
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
+        if self.trading_mode == TradingMode.FUTURES:
+            self._ft_has = deep_merge_dicts(self._ft_has_futures, self._ft_has)
         if exchange_config.get('_ft_has_params'):
             self._ft_has = deep_merge_dicts(exchange_config.get('_ft_has_params'),
                                             self._ft_has)
@@ -133,15 +147,6 @@ class Exchange:
 
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
-
-        # Leverage properties
-        self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
-        self.margin_mode: Optional[MarginMode] = (
-            MarginMode(config.get('margin_mode'))
-            if config.get('margin_mode')
-            else None
-        )
-        self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -176,6 +181,8 @@ class Exchange:
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
             self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+            self.validate_pricing(config['ask_strategy'])
+            self.validate_pricing(config['bid_strategy'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -568,6 +575,14 @@ class Exchange:
             raise OperationalException(
                 f'On exchange stoploss is not supported for {self.name}.'
             )
+
+    def validate_pricing(self, pricing: Dict) -> None:
+        if pricing.get('use_order_book', False) and not self.exchange_has('fetchL2OrderBook'):
+            raise OperationalException(f'Orderbook not available for {self.name}.')
+        if (not pricing.get('use_order_book', False) and (
+                not self.exchange_has('fetchTicker')
+                or not self._ft_has['tickers_have_price'])):
+            raise OperationalException(f'Ticker pricing not available for {self.name}.')
 
     def validate_order_time_in_force(self, order_time_in_force: Dict) -> None:
         """
@@ -1010,10 +1025,6 @@ class Exchange:
     def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
 
         available_order_Types: Dict[str, str] = self._ft_has["stoploss_order_types"]
-        if self.trading_mode == TradingMode.FUTURES:
-            # Optionally use different order type for stop order
-            available_order_Types = self._ft_has.get('stoploss_order_types_futures',
-                                                     self._ft_has["stoploss_order_types"])
 
         if user_order_type in available_order_Types.keys():
             ordertype = available_order_Types[user_order_type]
@@ -1289,6 +1300,34 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
+    def fetch_bids_asks(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+        """
+        :param cached: Allow cached result
+        :return: fetch_tickers result
+        """
+        if not self.exchange_has('fetchBidsAsks'):
+            return {}
+        if cached:
+            tickers = self._fetch_tickers_cache.get('fetch_bids_asks')
+            if tickers:
+                return tickers
+        try:
+            tickers = self._api.fetch_bids_asks(symbols)
+            self._fetch_tickers_cache['fetch_bids_asks'] = tickers
+            return tickers
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching bids/asks in batch. '
+                f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not load bids/asks due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
     def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
         """
         :param cached: Allow cached result
@@ -1397,7 +1436,7 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
-        if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
+        if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)

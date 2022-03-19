@@ -23,6 +23,9 @@ class Okx(Exchange):
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }
+    _ft_has_futures: Dict = {
+        "tickers_have_quoteVolume": False,
+    }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
