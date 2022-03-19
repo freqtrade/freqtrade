@@ -656,11 +656,27 @@ class Backtesting:
             else:
                 propose_rate = min(propose_rate, row[HIGH_IDX])
 
-        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
-        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, propose_rate)
+        pos_adjust = trade is not None
+
+        if not pos_adjust:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=current_time,
+                current_rate=row[OPEN_IDX],
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=direction,
+            ) if self._can_short else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(
+            pair, propose_rate, -0.05, leverage=leverage) or 0
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(
+            pair, propose_rate, leverage=leverage)
         stake_available = self.wallets.get_available_stake_amount()
 
-        pos_adjust = trade is not None
         if not pos_adjust:
             try:
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None, update=False)
@@ -689,18 +705,6 @@ class Backtesting:
         time_in_force = self.strategy.order_time_in_force['entry']
 
         if not pos_adjust:
-            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-                pair=pair,
-                current_time=current_time,
-                current_rate=row[OPEN_IDX],
-                proposed_leverage=1.0,
-                max_leverage=max_leverage,
-                side=direction,
-            ) if self._can_short else 1.0
-            # Cap leverage between 1.0 and max_leverage.
-            leverage = min(max(leverage, 1.0), max_leverage)
-
             # Confirm trade entry:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
