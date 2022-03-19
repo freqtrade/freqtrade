@@ -52,12 +52,6 @@ def perform_back_test(date_time, coin, brain, romeo_pool):
     romeo.start()
 
 
-def create_429_directory():
-    print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
-    if not os.path.exists(BrainConfig._429_DIRECTORY):
-        os.mkdir(BrainConfig._429_DIRECTORY)
-
-
 def perform_create_429_watcher():
     print("perform_create_429_watcher: watching:- " + str(BrainConfig._429_DIRECTORY))
     event_handler = _429_Watcher()
@@ -72,13 +66,20 @@ def perform_create_429_watcher():
     observer.join()
 
 
-def create_429_watcher():
-    threading.Thread(target=perform_create_429_watcher).start()
-
-
 def setup_429():
-    create_429_directory()
-    create_429_watcher()
+    if BrainConfig.IS_429_FIX_ENABLED:
+        __create_429_directory()
+        __create_429_watcher()
+
+
+def __create_429_directory():
+    print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
+    if not os.path.exists(BrainConfig._429_DIRECTORY):
+        os.mkdir(BrainConfig._429_DIRECTORY)
+
+
+def __create_429_watcher():
+    threading.Thread(target=perform_create_429_watcher).start()
 
 
 def __get_month_from_timestamp():

@@ -4,6 +4,7 @@ import requests
 import sys
 import time
 from wao._429_file_util import delete_429_file, write_to_429_file
+from wao.brain_config import BrainConfig
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
@@ -27,8 +28,10 @@ def post_request(text, is_from_429_watcher=False):
                            '&text=' + text + '&parse_mode=Markdown')
 
     print(str(result))
-    if str(result) != TELEGRAM_RESPONSE_200:
-        delete_429_file(text)
-        write_to_429_file(text)
-    elif str(result) == TELEGRAM_RESPONSE_200 and is_from_429_watcher:
-        delete_429_file(text)
+
+    if BrainConfig.IS_429_FIX_ENABLED:
+        if str(result) != TELEGRAM_RESPONSE_200:
+            delete_429_file(text)
+            write_to_429_file(text)
+        elif str(result) == TELEGRAM_RESPONSE_200 and is_from_429_watcher:
+            delete_429_file(text)

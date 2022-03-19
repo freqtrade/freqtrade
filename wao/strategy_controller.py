@@ -5,6 +5,7 @@ from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
+
 class StrategyController:
     romeo_pool = {}
 
@@ -12,19 +13,22 @@ class StrategyController:
         setup_429()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(brain, BrainConfig.BACKTEST_COIN,
-                                           BrainConfig.BACKTEST_MONTH_LIST[BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
+                                           BrainConfig.BACKTEST_MONTH_LIST[
+                                               BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
                                            BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
 
     def on_buy_signal(self, current_time, mode, coin, brain):
-        print("StrategyController: on_buy_signal: current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
+        print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", mode=" + str(
+            mode) + ", coin=" + str(coin) + ", brain=" + str(brain))
         if BrainConfig.IS_BACKTEST:
             self.__back_test(current_time, coin, brain)
         else:
             self.__execute(mode, coin, brain)
 
     def on_sell_signal(self, sell_reason, current_time, mode, coin, brain):
-        print("StrategyController: on_sell_signal: sell_reason="+str(sell_reason)+", current_time="+str(current_time) +", mode=" + str(mode) + ", coin="+ str(coin) + ", brain="+str(brain))
+        print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
+            current_time) + ", mode=" + str(mode) + ", coin=" + str(coin) + ", brain=" + str(brain))
         if sell_reason == 'sell_signal':
             if BrainConfig.IS_BACKTEST:
                 # todo: implement backtest adoption code with current_time
@@ -56,7 +60,3 @@ class StrategyController:
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
             del self.romeo_pool[coin]
-
-
-
-            
