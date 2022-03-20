@@ -661,18 +661,15 @@ class FreqtradeBot(LoggingMixin):
                                self.exchange.name, order['filled'], order['amount'],
                                order['remaining']
                                )
-                stake_amount = order['cost']
                 amount = safe_value_fallback(order, 'filled', 'amount')
                 enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+                stake_amount = amount * enter_limit_filled_price / leverage
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
-            # TODO-lev: Evaluate this. Why is setting stake_amount here necessary?
-            # it should never change in theory - and in case of leveraged orders,
-            # may be the leveraged amount.
-            stake_amount = order['cost']
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+            stake_amount = amount * enter_limit_filled_price / leverage
 
         # TODO: this might be unnecessary, as we're calling it in update_trade_state.
         isolated_liq = self.exchange.get_liquidation_price(

@@ -842,7 +842,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.open_order_id is None
     assert trade.open_rate == 10
-    assert trade.stake_amount == 100
+    assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
 
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
@@ -860,7 +860,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
-    assert trade.stake_amount == 15.0
+    assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
 
     # Test with custom stake
     order['status'] = 'open'
