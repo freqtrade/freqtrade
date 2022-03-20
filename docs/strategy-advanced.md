@@ -164,15 +164,14 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
 Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.
 
 !!! Note "Parent-strategy in different files"
-    If you have the parent-strategy in a different file, you'll need to add the following to the top of your "child"-file to ensure proper loading, otherwise freqtrade may not be able to load the parent strategy correctly.
+    If you have the parent-strategy in a different file, you can still import the strategy.
+    Assuming `myawesomestrategy.py` is the filename, and `MyAwesomeStrategy` the strategy you need to import:
 
     ``` python
-    import sys
-    from pathlib import Path
-    sys.path.append(str(Path(__file__).parent))
-
     from myawesomestrategy import MyAwesomeStrategy
     ```
+
+    This is the recommended way to derive strategies to avoid problems with hyperopt parameter files.
 
 ## Embedding Strategies
 
