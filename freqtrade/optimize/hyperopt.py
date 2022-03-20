@@ -413,6 +413,31 @@ class Hyperopt:
                     f'({(self.max_date - self.min_date).days} days)..')
         # Store non-trimmed data - will be trimmed after signal generation.
         dump(preprocessed, self.data_pickle_file)
+    
+    def get_asked_points(self, n_points: int) -> List[Any]:
+        '''
+        Steps:
+        1. Try to get points using `self.opt.ask` first
+        2. Discard the points that have already been evaluated
+        3. Retry using `self.opt.ask` up to 3 times
+        4. If still some points are missing in respect to `n_points`, random sample some points
+        5. Repeat until at least `n_points` points in the `asked_non_tried` list
+        6. Return a list with legth truncated at `n_points`
+        '''
+        i = 0
+        asked_non_tried =  []
+        while i < 100:
+            if len(asked_non_tried) < n_points:
+                if i < 3:
+                    asked = self.opt.ask(n_points=n_points)
+                else:
+                    # use random sample if `self.opt.ask` returns points points already tried
+                    asked = self.opt.space.rvs(n_samples=n_points * 5)  
+                asked_non_tried += [x for x in asked if x not in self.opt.Xi and x not in asked_non_tried]
+                i += 1
+            else:
+                break
+        return asked_non_tried[:n_points]
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
@@ -478,11 +503,11 @@ class Hyperopt:
                         n_rest = (i + 1) * jobs - self.total_epochs
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                        asked = self.opt.ask(n_points=current_jobs)
+                        asked = self.get_asked_points(n_points=current_jobs)
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
                         res = self.opt.tell(asked, [v['loss'] for v in f_val])
 
-                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, r2=True, objective=True, jobs=jobs)
+                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, r2=False, objective=True, jobs=jobs)
 
                         if res.models and hasattr(res.models[-1], "kernel_"):
                             print(f'kernel: {res.models[-1].kernel_}') 
