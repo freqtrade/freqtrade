@@ -433,7 +433,10 @@ class Hyperopt:
                                 if x not in self.opt.Xi
                                 and x not in asked_non_tried]
             i += 1
-        return asked_non_tried[:n_points]
+        if asked_non_tried:
+            return asked_non_tried[:n_points]
+        else:
+            return self.opt.ask(n_points=n_points)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
