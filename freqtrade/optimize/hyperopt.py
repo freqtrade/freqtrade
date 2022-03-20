@@ -420,7 +420,7 @@ class Hyperopt:
         3. Retry using `self.opt.ask` up to 3 times
         4. If still some points are missing in respect to `n_points`, random sample some points
         5. Repeat until at least `n_points` points in the `asked_non_tried` list
-        6. Return a list with legth truncated at `n_points`
+        6. Return a list with length truncated at `n_points`
         '''
         i = 0
         asked_non_tried: List[List[Any]] = []
