@@ -277,6 +277,7 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 > **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
 Omitting the pair will open a query asking for the pair to buy (based on the current whitelist).
+Trades crated through `/forcebuy` will have the buy-tag of `forceentry`.
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 

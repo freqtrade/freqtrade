@@ -24,7 +24,7 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
 
 * Fetch open trades from persistence.
 * Calculate current list of tradable pairs.
-* Download ohlcv data for the pairlist including all [informative pairs](strategy-customization.md#get-data-for-non-tradeable-pairs)  
+* Download OHLCV data for the pairlist including all [informative pairs](strategy-customization.md#get-data-for-non-tradeable-pairs)  
   This step is only executed once per Candle to avoid unnecessary network traffic.
 * Call `bot_loop_start()` strategy callback.
 * Analyze strategy per pair.

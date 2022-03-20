@@ -51,7 +51,7 @@ class PrecisionFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
-        stop_price = ticker['ask'] * self._stoploss
+        stop_price = ticker['last'] * self._stoploss
 
         # Adjust stop-prices to precision
         sp = self._exchange.price_to_precision(pair, stop_price)

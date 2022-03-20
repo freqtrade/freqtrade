@@ -325,7 +325,7 @@ stoploss = -0.10
 
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
 
-### Timeframe (formerly ticker interval)
+### Timeframe
 
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.

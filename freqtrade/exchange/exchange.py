@@ -376,7 +376,7 @@ class Exchange:
             raise OperationalException(
                 'Could not load markets, therefore cannot start. '
                 'Please investigate the above error for more details.'
-                )
+            )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
@@ -882,11 +882,11 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params={}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
-            order = self._api.fetch_order(order_id, pair)
+            order = self._api.fetch_order(order_id, pair, params=params)
             self._log_exchange_response('fetch_order', order)
             return order
         except ccxt.OrderNotFound as e:
@@ -929,7 +929,7 @@ class Exchange:
                 and order.get('filled') == 0.0)
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str) -> Dict:
+    def cancel_order(self, order_id: str, pair: str, params={}) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self.fetch_dry_run_order(order_id)
@@ -940,7 +940,7 @@ class Exchange:
                 return {}
 
         try:
-            order = self._api.cancel_order(order_id, pair)
+            order = self._api.cancel_order(order_id, pair, params=params)
             self._log_exchange_response('cancel_order', order)
             return order
         except ccxt.InvalidOrder as e:
