@@ -1,6 +1,6 @@
 # Strategy Callbacks
 
-While the main strategy functions (`populate_indicators()`, `populate_buy_trend()`, `populate_sell_trend()`) should be used in a vectorized way, and are only called [once during backtesting](bot-basics.md#backtesting-hyperopt-execution-logic), callbacks are called "whenever needed".
+While the main strategy functions (`populate_indicators()`, `populate_entry_trend()`, `populate_exit_trend()`) should be used in a vectorized way, and are only called [once during backtesting](bot-basics.md#backtesting-hyperopt-execution-logic), callbacks are called "whenever needed".
 
 As such, you should avoid doing heavy calculations in callbacks to avoid delays during operations.
 Depending on the callback used, they may be called when entering / exiting a trade, or throughout the duration of a trade.
@@ -9,10 +9,10 @@ Currently available callbacks:
 
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#custom-stake-size)
-* [`custom_sell()`](#custom-sell-signal)
+* [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
-* [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)
+* [`check_buy_timeout()` and `check_sell_timeout()`](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -79,15 +79,15 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.
 
-## Custom sell signal
+## Custom exit signal
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
 Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
 
-For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
+For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using custom_exit() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a (none-empty) `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -96,7 +96,7 @@ An example of how we can use different indicators depending on the current profi
 
 ``` python
 class AwesomeStrategy(IStrategy):
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
@@ -630,7 +630,7 @@ class DigDeeperStrategy(IStrategy):
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            entry_tag: Optional[str], **kwargs) -> float:
+                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
@@ -664,7 +664,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        filled_buys = trade.select_filled_orders('buy')
+        filled_entries = trade.select_filled_orders(trade.enter_side)
         count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
@@ -676,7 +676,7 @@ class DigDeeperStrategy(IStrategy):
         # Hope you have a deep wallet!
         try:
             # This returns first order stake size
-            stake_amount = filled_buys[0].cost
+            stake_amount = filled_entries[0].cost
             # This then calculates current safety order size
             stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
             return stake_amount
@@ -713,3 +713,4 @@ class AwesomeStrategy(IStrategy):
         :return: A leverage amount, which is between 1.0 and max_leverage.
         """
         return 1.0
+```

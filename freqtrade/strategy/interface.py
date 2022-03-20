@@ -62,7 +62,8 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Default to version 2
     # Version 1 is the initial interface without metadata dict
     # Version 2 populate_* include metadata dict
-    INTERFACE_VERSION: int = 2
+    # Version 3 - First version with short and leverage support
+    INTERFACE_VERSION: int = 3
 
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
