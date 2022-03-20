@@ -600,26 +600,12 @@ class FreqtradeBot(LoggingMixin):
         trade_side = 'short' if is_short else 'long'
         pos_adjust = trade is not None
 
-        enter_limit_requested, stake_amount = self.get_valid_enter_price_and_stake(
+        enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
             pair, price, stake_amount, side, trade_side, enter_tag, trade)
 
         if not stake_amount:
             return False
-        if not pos_adjust:
-            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-                pair=pair,
-                current_time=datetime.now(timezone.utc),
-                current_rate=enter_limit_requested,
-                proposed_leverage=1.0,
-                max_leverage=max_leverage,
-                side=trade_side,
-            ) if self.trading_mode != TradingMode.SPOT else 1.0
-            # Cap leverage between 1.0 and max_leverage.
-            leverage = min(max(leverage, 1.0), max_leverage)
-        else:
-            # Changing leverage currently not possible
-            leverage = trade.leverage if trade else 1.0
+
         if pos_adjust:
             logger.info(f"Position adjust: about to create a new order for {pair} with stake: "
                         f"{stake_amount} for {trade}")
@@ -775,7 +761,7 @@ class FreqtradeBot(LoggingMixin):
         side: str, trade_side: str,
         entry_tag: Optional[str],
         trade: Optional[Trade]
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float, float]:
 
         if price:
             enter_limit_requested = price
@@ -792,13 +778,30 @@ class FreqtradeBot(LoggingMixin):
         if not enter_limit_requested:
             raise PricingError(f'Could not determine {side} price.')
 
+        if trade is None:
+            max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                pair=pair,
+                current_time=datetime.now(timezone.utc),
+                current_rate=enter_limit_requested,
+                proposed_leverage=1.0,
+                max_leverage=max_leverage,
+                side=trade_side,
+            ) if self.trading_mode != TradingMode.SPOT else 1.0
+            # Cap leverage between 1.0 and max_leverage.
+            leverage = min(max(leverage, 1.0), max_leverage)
+        else:
+            # Changing leverage currently not possible
+            leverage = trade.leverage if trade else 1.0
+
         # Min-stake-amount should actually include Leverage - this way our "minimal"
         # stake- amount might be higher than necessary.
         # We do however also need min-stake to determine leverage, therefore this is ignored as
         # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
-            pair, enter_limit_requested, self.strategy.stoploss)
-        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, enter_limit_requested)
+            pair, enter_limit_requested, self.strategy.stoploss, leverage)
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(
+            pair, enter_limit_requested, leverage)
 
         if not self.edge and trade is None:
             stake_available = self.wallets.get_available_stake_amount()
@@ -817,7 +820,7 @@ class FreqtradeBot(LoggingMixin):
             max_stake_amount=max_stake_amount,
         )
 
-        return enter_limit_requested, stake_amount
+        return enter_limit_requested, stake_amount, leverage
 
     def _notify_enter(self, trade: Trade, order: Dict, order_type: Optional[str] = None,
                       fill: bool = False) -> None:

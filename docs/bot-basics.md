@@ -42,8 +42,8 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
 * Check if trade-slots are still available (if `max_open_trades` is reached).
 * Verifies buy signal trying to enter new positions.
   * Determine buy-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
-  * Determine stake size by calling the `custom_stake_amount()` callback.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
+  * Determine stake size by calling the `custom_stake_amount()` callback.
   * Before a buy order is placed, `confirm_trade_entry()` strategy callback is called.
 
 This loop will be repeated again and again until the bot is stopped.
@@ -59,8 +59,8 @@ This loop will be repeated again and again until the bot is stopped.
 * Loops per candle simulating entry and exit points.
   * Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
   * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).
-  * Determine stake size by calling the `custom_stake_amount()` callback.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
+  * Determine stake size by calling the `custom_stake_amount()` callback.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
   * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
   * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).

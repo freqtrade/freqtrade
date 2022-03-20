@@ -635,18 +635,15 @@ class Backtesting:
         else:
             return self._get_sell_trade_entry_for_candle(trade, sell_row)
 
-    def _enter_trade(self, pair: str, row: Tuple, direction: str,
-                     stake_amount: Optional[float] = None,
-                     trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+    def get_valid_price_and_stake(
+        self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
+        direction: str, current_time: datetime, entry_tag: Optional[str],
+        trade: Optional[LocalTrade], order_type: str
+    ) -> Tuple[float, float, float, float]:
 
-        current_time = row[DATE_IDX].to_pydatetime()
-        entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
-        # let's call the custom entry price, using the open price as default price
-        order_type = self.strategy.order_types['entry']
-        propose_rate = row[OPEN_IDX]
         if order_type == 'limit':
             propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
-                                                 default_retval=row[OPEN_IDX])(
+                                                 default_retval=propose_rate)(
                 pair=pair, current_time=current_time,
                 proposed_rate=propose_rate, entry_tag=entry_tag)  # default value is the open rate
             # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
@@ -656,39 +653,14 @@ class Backtesting:
             else:
                 propose_rate = min(propose_rate, row[HIGH_IDX])
 
-        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
-        max_stake_amount = self.exchange.get_max_pair_stake_amount(pair, propose_rate)
-        stake_available = self.wallets.get_available_stake_amount()
-
         pos_adjust = trade is not None
+        leverage = trade.leverage if trade else 1.0
         if not pos_adjust:
             try:
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None, update=False)
             except DependencyException:
-                return None
+                return 0, 0, 0, 0
 
-            stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
-                                                 default_retval=stake_amount)(
-                pair=pair, current_time=current_time, current_rate=propose_rate,
-                proposed_stake=stake_amount, min_stake=min_stake_amount,
-                max_stake=min(stake_available, max_stake_amount),
-                entry_tag=entry_tag, side=direction)
-
-        stake_amount = self.wallets.validate_stake_amount(
-            pair=pair,
-            stake_amount=stake_amount,
-            min_stake_amount=min_stake_amount,
-            max_stake_amount=max_stake_amount,
-        )
-
-        if not stake_amount:
-            # In case of pos adjust, still return the original trade
-            # If not pos adjust, trade is None
-            return trade
-        order_type = self.strategy.order_types['entry']
-        time_in_force = self.strategy.order_time_in_force['entry']
-
-        if not pos_adjust:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
             leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
                 pair=pair,
@@ -701,14 +673,57 @@ class Backtesting:
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
 
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(
+            pair, propose_rate, -0.05, leverage=leverage) or 0
+        max_stake_amount = self.exchange.get_max_pair_stake_amount(
+            pair, propose_rate, leverage=leverage)
+        stake_available = self.wallets.get_available_stake_amount()
+
+        if not pos_adjust:
+            stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
+                                                 default_retval=stake_amount)(
+                pair=pair, current_time=current_time, current_rate=propose_rate,
+                proposed_stake=stake_amount, min_stake=min_stake_amount,
+                max_stake=min(stake_available, max_stake_amount),
+                entry_tag=entry_tag, side=direction)
+
+        stake_amount_val = self.wallets.validate_stake_amount(
+            pair=pair,
+            stake_amount=stake_amount,
+            min_stake_amount=min_stake_amount,
+            max_stake_amount=max_stake_amount,
+        )
+
+        return propose_rate, stake_amount_val, leverage, min_stake_amount
+
+    def _enter_trade(self, pair: str, row: Tuple, direction: str,
+                     stake_amount: Optional[float] = None,
+                     trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+
+        current_time = row[DATE_IDX].to_pydatetime()
+        entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
+        # let's call the custom entry price, using the open price as default price
+        order_type = self.strategy.order_types['entry']
+        pos_adjust = trade is not None
+
+        propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
+            pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
+            order_type
+        )
+
+        if not stake_amount:
+            # In case of pos adjust, still return the original trade
+            # If not pos adjust, trade is None
+            return trade
+        time_in_force = self.strategy.order_time_in_force['entry']
+
+        if not pos_adjust:
             # Confirm trade entry:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
                     time_in_force=time_in_force, current_time=current_time,
                     entry_tag=entry_tag, side=direction):
                 return trade
-        else:
-            leverage = trade.leverage if trade else 1.0
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
