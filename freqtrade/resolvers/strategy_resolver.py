@@ -45,14 +45,6 @@ class StrategyResolver(IResolver):
             strategy_name, config=config,
             extra_dir=config.get('strategy_path'))
 
-        if hasattr(strategy, 'ticker_interval') and not hasattr(strategy, 'timeframe'):
-            # Assign ticker_interval to timeframe to keep compatibility
-            if 'timeframe' not in config:
-                logger.warning(
-                    "DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'."
-                )
-                strategy.timeframe = strategy.ticker_interval
-
         if strategy._ft_params_from_file:
             # Set parameters from Hyperopt results file
             params = strategy._ft_params_from_file
