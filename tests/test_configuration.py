@@ -443,7 +443,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--strategy', 'StrategyTestV2',
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
@@ -494,7 +494,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--export', 'trades',
         '--strategy-list',
         'StrategyTestV2',
@@ -1320,22 +1320,14 @@ def test_process_removed_setting(mocker, default_conf, caplog):
 def test_process_deprecated_ticker_interval(default_conf, caplog):
     message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
     config = deepcopy(default_conf)
+
     process_temporary_deprecated_settings(config)
     assert not log_has(message, caplog)
 
     del config['timeframe']
     config['ticker_interval'] = '15m'
-    process_temporary_deprecated_settings(config)
-    assert log_has(message, caplog)
-    assert config['ticker_interval'] == '15m'
-
-    config = deepcopy(default_conf)
-    # Have both timeframe and ticker interval in config
-    # Can also happen when using ticker_interval in configuration, and --timeframe as cli argument
-    config['timeframe'] = '5m'
-    config['ticker_interval'] = '4h'
     with pytest.raises(OperationalException,
-                       match=r"Both 'timeframe' and 'ticker_interval' detected."):
+                       match=r"DEPRECATED: 'ticker_interval' detected. Please use.*"):
         process_temporary_deprecated_settings(config)
 
 

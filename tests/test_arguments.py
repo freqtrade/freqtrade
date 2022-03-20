@@ -111,17 +111,17 @@ def test_parse_args_strategy_path_invalid() -> None:
 
 def test_parse_args_backtesting_invalid() -> None:
     with pytest.raises(SystemExit, match=r'2'):
-        Arguments(['backtesting --ticker-interval']).get_parsed_arg()
+        Arguments(['backtesting --timeframe']).get_parsed_arg()
 
     with pytest.raises(SystemExit, match=r'2'):
-        Arguments(['backtesting --ticker-interval', 'abc']).get_parsed_arg()
+        Arguments(['backtesting --timeframe', 'abc']).get_parsed_arg()
 
 
 def test_parse_args_backtesting_custom() -> None:
     args = [
         'backtesting',
         '-c', 'test_conf.json',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--strategy-list',
         'StrategyTestV2',
         'SampleStrategy'

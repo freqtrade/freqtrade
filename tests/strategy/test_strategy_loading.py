@@ -111,7 +111,6 @@ def test_strategy(result, default_conf):
     assert default_conf['stoploss'] == -0.10
 
     assert strategy.timeframe == '5m'
-    assert strategy.ticker_interval == '5m'
     assert default_conf['timeframe'] == '5m'
 
     df_indicators = strategy.advise_indicators(result, metadata=metadata)
@@ -376,7 +375,6 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     assert strategy._sell_fun_len == 2
     assert strategy.INTERFACE_VERSION == 1
     assert strategy.timeframe == '5m'
-    assert strategy.ticker_interval == '5m'
 
     indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
