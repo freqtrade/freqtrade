@@ -145,10 +145,6 @@ class StrategyResolver(IResolver):
         """
         Normalize attributes to have the correct type.
         """
-        # Assign deprecated variable - to not break users code relying on this.
-        if hasattr(strategy, 'timeframe'):
-            strategy.ticker_interval = strategy.timeframe
-
         # Sort and apply type conversions
         if hasattr(strategy, 'minimal_roi'):
             strategy.minimal_roi = dict(sorted(

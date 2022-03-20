@@ -55,7 +55,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        timeframe -> str: value of the timeframe (ticker interval) to use with the strategy
+        timeframe -> str: value of the timeframe to use with the strategy
     """
     # Strategy interface version
     # Default to version 2
@@ -81,7 +81,6 @@ class IStrategy(ABC, HyperStrategyMixin):
     use_custom_stoploss: bool = False
 
     # associated timeframe
-    ticker_interval: str  # DEPRECATED
     timeframe: str
 
     # Optional order types
