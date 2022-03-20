@@ -630,7 +630,7 @@ class DigDeeperStrategy(IStrategy):
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            entry_tag: Optional[str], **kwargs) -> float:
+                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
