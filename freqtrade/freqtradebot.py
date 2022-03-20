@@ -663,13 +663,11 @@ class FreqtradeBot(LoggingMixin):
                                )
                 amount = safe_value_fallback(order, 'filled', 'amount')
                 enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
-                stake_amount = amount * enter_limit_filled_price / leverage
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
-            stake_amount = amount * enter_limit_filled_price / leverage
 
         # TODO: this might be unnecessary, as we're calling it in update_trade_state.
         isolated_liq = self.exchange.get_liquidation_price(

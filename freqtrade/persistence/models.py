@@ -847,7 +847,10 @@ class LocalTrade():
 
     def recalc_trade_from_orders(self):
         # We need at least 2 entry orders for averaging amounts and rates.
+        # TODO: this condition could probably be removed
         if len(self.select_filled_orders(self.enter_side)) < 2:
+            self.stake_amount = self.amount * self.open_rate / self.leverage
+
             # Just in case, still recalc open trade value
             self.recalc_open_trade_value()
             return
