@@ -146,7 +146,7 @@ def version(self) -> str:
 
 The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
 
-``` python
+``` python title="user_data/strategies/myawesomestrategy.py"
 class MyAwesomeStrategy(IStrategy):
     ...
     stoploss = 0.13
@@ -155,6 +155,10 @@ class MyAwesomeStrategy(IStrategy):
     # should be in any custom strategy...
     ...
 
+```
+
+``` python title="user_data/strategies/MyAwesomeStrategy2.py"
+from myawesomestrategy import MyAwesomeStrategy
 class MyAwesomeStrategy2(MyAwesomeStrategy):
     # Override something
     stoploss = 0.08
@@ -163,15 +167,14 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
 
 Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.
 
+While keeping the subclass in the same file is technically possible, it can lead to some problems with hyperopt parameter files.
+
 !!! Note "Parent-strategy in different files"
     If you have the parent-strategy in a different file, you can still import the strategy.
     Assuming `myawesomestrategy.py` is the filename, and `MyAwesomeStrategy` the strategy you need to import:
 
     ``` python
-    from myawesomestrategy import MyAwesomeStrategy
     ```
-
-    This is the recommended way to derive strategies to avoid problems with hyperopt parameter files.
 
 ## Embedding Strategies
 

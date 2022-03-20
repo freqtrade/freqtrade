@@ -75,8 +75,8 @@ class IResolver:
         # Generate spec based on absolute path
         # Pass object_name as first argument to have logging print a reasonable name.
         with PathModifier(module_path.parent):
-
-            spec = importlib.util.spec_from_file_location(module_path.stem or "", str(module_path))
+            module_name = module_path.stem or ""
+            spec = importlib.util.spec_from_file_location(module_name, str(module_path))
             if not spec:
                 return iter([None])
 
@@ -95,7 +95,7 @@ class IResolver:
                     module, inspect.isclass) if ((object_name is None or object_name == name)
                                                  and issubclass(obj, cls.object_type)
                                                  and obj is not cls.object_type
-                                                 and obj.__module__ == module_path.stem or ""
+                                                 and obj.__module__ == module_name
                                                  )
             )
             # The __module__ check ensures we only use strategies that are defined in this folder.
