@@ -424,19 +424,15 @@ class Hyperopt:
         '''
         i = 0
         asked_non_tried: List[List[Any]] = []
-        while i < 100:
-            if len(asked_non_tried) < n_points:
-                if i < 3:
-                    asked = self.opt.ask(n_points=n_points)
-                else:
-                    # use random sample if `self.opt.ask` returns points points already tried
-                    asked = self.opt.space.rvs(n_samples=n_points * 5)
-                asked_non_tried += [x for x in asked
-                                    if x not in self.opt.Xi
-                                    and x not in asked_non_tried]
-                i += 1
+        while i < 100 and len(asked_non_tried) < n_points:
+            if i < 3:
+                asked = self.opt.ask(n_points=n_points)
             else:
-                break
+                asked = self.opt.space.rvs(n_samples=n_points * 5)
+            asked_non_tried += [x for x in asked
+                                if x not in self.opt.Xi
+                                and x not in asked_non_tried]
+            i += 1
         return asked_non_tried[:n_points]
 
     def start(self) -> None:
