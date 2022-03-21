@@ -34,6 +34,6 @@ def post_request(text, is_from_429_watcher=False):
             delete_429_file(text)
             write_to_429_file(text)
         elif str(result) != TELEGRAM_RESPONSE_200:
-            print("notifier: post_request: " + str(result))
+            print("post_request: " + str(result))
         elif str(result) == TELEGRAM_RESPONSE_200 and is_from_429_watcher:
             delete_429_file(text)
