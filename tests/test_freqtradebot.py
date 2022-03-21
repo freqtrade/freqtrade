@@ -294,7 +294,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
     trade = Trade.query.first()
     trade.is_short = is_short
     assert trade is not None
-    assert trade.stake_amount == 60.0
+    assert pytest.approx(trade.stake_amount) == 60.0
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
@@ -551,7 +551,7 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert len(trades) == 1
     trade = trades[0]
     assert trade is not None
-    assert trade.stake_amount == default_conf_usdt['stake_amount']
+    assert pytest.approx(trade.stake_amount) == default_conf_usdt['stake_amount']
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
@@ -842,7 +842,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.open_order_id is None
     assert trade.open_rate == 10
-    assert trade.stake_amount == 100
+    assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
 
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
@@ -860,7 +860,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
-    assert trade.stake_amount == 15.0
+    assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
 
     # Test with custom stake
     order['status'] = 'open'
@@ -871,7 +871,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.query.all()[4]
     trade.is_short = is_short
     assert trade
-    assert trade.stake_amount == 150
+    assert pytest.approx(trade.stake_amount) == 150
 
     # Exception case
     order['id'] = '557'
@@ -880,7 +880,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade = Trade.query.all()[5]
     trade.is_short = is_short
     assert trade
-    assert trade.stake_amount == 2.0
+    assert pytest.approx(trade.stake_amount) == 2.0
 
     # In case of the order is rejected and not filled at all
     order['status'] = 'rejected'
@@ -960,7 +960,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert freqtrade.execute_entry(pair, 2000, is_short=is_short)
     trade = Trade.query.all()[9]
     trade.is_short = is_short
-    assert trade.stake_amount == 500
+    assert pytest.approx(trade.stake_amount) == 500
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1932,7 +1932,8 @@ def test_update_trade_state(
         open_date=arrow.utcnow().datetime,
         amount=11,
         exchange="binance",
-        is_short=is_short
+        is_short=is_short,
+        leverage=1,
     )
     trade.orders.append(Order(
         ft_order_side=enter_side(is_short),
@@ -2006,7 +2007,8 @@ def test_update_trade_state_withorderdict(
         fee_close=fee.return_value,
         open_order_id=order_id,
         is_open=True,
-        is_short=is_short
+        leverage=1,
+        is_short=is_short,
     )
     trade.orders.append(
         Order(
@@ -2088,7 +2090,8 @@ def test_update_trade_state_sell(
         open_order_id=open_order['id'],
         is_open=True,
         interest_rate=0.0005,
-        is_short=is_short
+        leverage=1,
+        is_short=is_short,
     )
     order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', exit_side(is_short))
     trade.orders.append(order)
@@ -4457,7 +4460,7 @@ def test_order_book_depth_of_market(
     else:
         trade.is_short = is_short
         assert trade is not None
-        assert trade.stake_amount == 60.0
+        assert pytest.approx(trade.stake_amount) == 60.0
         assert trade.is_open
         assert trade.open_date is not None
         assert trade.exchange == 'binance'
