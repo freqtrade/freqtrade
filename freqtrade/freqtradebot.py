@@ -570,6 +570,35 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
+    def get_fee(
+        self,
+        pair: str,
+        side: str,
+        is_short: bool = False,
+    ):
+        '''
+        :param pair: Unified CCXT symbol
+        :param side: One of entry, exit or stoploss
+        :param is_short: True for short trades
+        '''
+        order_type = self.config['order_types'][side]
+        if order_type == 'limit':
+            enter_side = 'ask' if is_short else 'bid'
+            exit_side = 'bid' if is_short else 'ask'
+            if (
+                side == 'entry' and self.config['bid_strategy']['price_side'] == enter_side or
+                side == 'exit' and self.config['ask_strategy']['price_side'] == exit_side
+            ):
+                taker_or_maker = 'maker'
+            else:
+                taker_or_maker = 'taker'
+        else:
+            taker_or_maker = 'taker'
+        return self.exchange.get_fee(
+            symbol=pair,
+            taker_or_maker=taker_or_maker
+        )
+
     def execute_entry(
         self,
         pair: str,
@@ -664,12 +693,10 @@ class FreqtradeBot(LoggingMixin):
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
-        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
         funding_fees = self.exchange.get_funding_fees(
             pair=pair, amount=amount, is_short=is_short, open_date=open_date)
-        # This is a new trade
         if trade is None:
             trade = Trade(
                 pair=pair,
@@ -679,8 +706,8 @@ class FreqtradeBot(LoggingMixin):
                 amount=amount,
                 is_open=True,
                 amount_requested=amount_requested,
-                fee_open=fee,
-                fee_close=fee,
+                fee_open=self.get_fee(pair, 'entry'),
+                fee_close=self.get_fee(pair, 'exit'),
                 open_rate=enter_limit_filled_price,
                 open_rate_requested=enter_limit_requested,
                 open_date=open_date,

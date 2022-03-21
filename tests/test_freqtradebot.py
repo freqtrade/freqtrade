@@ -769,6 +769,11 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     bid = 0.11
     enter_rate_mock = MagicMock(return_value=bid)
     enter_mm = MagicMock(return_value=open_order)
+    default_conf_usdt['order_types'] = {
+        'entry': 'limit',
+        'exit': 'market',
+        'stoploss': 'market',
+    }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_rate=enter_rate_mock,
@@ -780,15 +785,15 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         create_order=enter_mm,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_max_pair_stake_amount=MagicMock(return_value=500000),
-        get_fee=fee,
+        get_fee=MagicMock(side_effect=(
+            lambda symbol, taker_or_maker: fee if taker_or_maker == 'maker' else fee*2
+        )),
         get_funding_fees=MagicMock(return_value=0),
         name=exchange_name,
         get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
         get_max_leverage=MagicMock(return_value=10),
     )
     mocker.patch.multiple(
-        'freqtrade.exchange.Okx',
-        get_max_pair_stake_amount=MagicMock(return_value=500000),
     )
     pair = 'ETH/USDT'
 
@@ -816,6 +821,8 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade
     assert trade.is_open is True
     assert trade.open_order_id == '22'
+    assert trade.open_fee == fee
+    assert trade.close_fee == fee*2
 
     # Test calling with price
     open_order['id'] = '33'
@@ -836,6 +843,11 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     order['cost'] = 100
     order['id'] = '444'
 
+    default_conf_usdt['order_types'] = {
+        'entry': 'market',
+        'exit': 'limit',
+        'stoploss': 'market',
+    }
     mocker.patch('freqtrade.exchange.Exchange.create_order',
                  MagicMock(return_value=order))
     assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
@@ -846,6 +858,8 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
     assert pytest.approx(trade.liquidation_price) == liq_price
+    assert trade.open_fee == fee*2
+    assert trade.close_fee == fee
 
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
