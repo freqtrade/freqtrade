@@ -5,6 +5,9 @@ from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
+EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
+from romeo import Romeo, RomeoExitPrice
+
 
 class StrategyController:
     romeo_pool = {}
@@ -54,7 +57,7 @@ class StrategyController:
     def __perform_sell_signal(self, coin):
         romeo = self.romeo_pool.get(coin)
         if romeo is not None:
-            romeo.perform_sell_signal()
+            romeo.perform_sell_signal(RomeoExitPrice.SS)
 
     def __remove_from_pool(self, coin):
         romeo = self.romeo_pool.get(coin)
