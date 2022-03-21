@@ -2302,11 +2302,10 @@ class Exchange:
         timeframe = self._ft_has['mark_ohlcv_timeframe']
         timeframe_ff = self._ft_has.get('funding_fee_timeframe',
                                         self._ft_has['mark_ohlcv_timeframe'])
-        open_date = timeframe_to_prev_date(timeframe, open_date)
 
         if not close_date:
             close_date = datetime.now(timezone.utc)
-        open_timestamp = int(open_date.timestamp()) * 1000
+        open_timestamp = int(timeframe_to_prev_date(timeframe, open_date).timestamp()) * 1000
         # close_timestamp = int(close_date.timestamp()) * 1000
 
         mark_comb: PairWithTimeframe = (
