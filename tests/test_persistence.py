@@ -520,7 +520,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().datetime,
         exchange='binance',
-        trading_mode=margin
+        trading_mode=margin,
+        leverage=1.0,
     )
 
     trade.open_order_id = 'something'
@@ -649,7 +650,8 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-        trading_mode=margin
+        trading_mode=margin,
+        leverage=1.0,
     )
 
     trade.open_order_id = 'something'
@@ -2231,6 +2233,7 @@ def test_recalc_trade_from_orders(fee):
         exchange='binance',
         open_rate=o1_rate,
         max_rate=o1_rate,
+        leverage=1,
     )
 
     assert fee.return_value == 0.0025
@@ -2395,6 +2398,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         open_rate=o1_rate,
         max_rate=o1_rate,
         is_short=is_short,
+        leverage=1.0,
     )
     trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, enter_side)
     # Check with 1 order
