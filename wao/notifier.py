@@ -30,8 +30,10 @@ def post_request(text, is_from_429_watcher=False):
     print(str(result))
 
     if BrainConfig.IS_429_FIX_ENABLED:
-        if str(result) != TELEGRAM_RESPONSE_200:
+        if str(result) != TELEGRAM_RESPONSE_200 and is_from_429_watcher:
             delete_429_file(text)
+            write_to_429_file(text)
+        elif str(result) != TELEGRAM_RESPONSE_200:
             write_to_429_file(text)
         elif str(result) == TELEGRAM_RESPONSE_200 and is_from_429_watcher:
             delete_429_file(text)
