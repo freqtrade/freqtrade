@@ -19,7 +19,6 @@ under_score = "_"
 backtest_command = f"source ./.env/bin/activate; freqtrade backtesting -c {config_file_name} -s {brain_name}"
 json_file_content = Path(json_file_name).read_text()
 json_file_content = eval(json_file_content)
-list_of_rows = []
 
 
 def get_human_readable_time_from_timestamp(unix_time) -> str:
@@ -84,8 +83,9 @@ def write_to_json(counter):
     outfile.close()
 
 
-def parse_scalping_strategy_result():
+def parse_scalping_strategy_result() -> list:
     print("parse_scalping_strategy_result:... ")
+    list_of_rows = []
     counter = 0
     while counter < total_loop_time:
         list_of_row_items = []
@@ -104,8 +104,14 @@ def parse_scalping_strategy_result():
         list_of_row_items.append(total_percentage_per_day)
         list_of_rows.append(list_of_row_items)
         counter += minutes_per_day
+    return list_of_rows
+
+
+def test_scalping_strategy():
+    print("test_scalping_strategy:...")
+    list_of_rows = parse_scalping_strategy_result()
     write_to_csv(list_of_rows)
 
 
-parse_scalping_strategy_result()
+test_scalping_strategy()
 print("successfully executed")
