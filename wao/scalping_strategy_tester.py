@@ -13,7 +13,7 @@ brain_name = "Scalp"
 config_file_name = "config_scalp.json"
 json_file_name = f'/root/workspace2/freqtrade/user_data/data/binance/{coin}_USDT-{time_range}.json'
 freqtrade_directory = "/root/workspace2/freqtrade/"
-result_saved_directory = "wao/"
+result_saved_directory = "wao/_scalping_results_directory/"
 file_format = ".csv"
 under_score = "_"
 backtest_command = f"source ./.env/bin/activate; freqtrade backtesting -c {config_file_name} -s {brain_name}"
@@ -52,6 +52,8 @@ def write_to_csv(list_of_row):
     column_title = ['coin', 'Brain', 'human_readable_time', 'timeframe', 'number_of_trades_per_day',
                     'total_percentage_per_day']
     year_range = get_year_range()
+    if not os.path.exists(result_saved_directory):
+        os.makedirs(result_saved_directory)
     with open(result_saved_directory + brain_name + under_score + coin + under_score + time_range + under_score +
               year_range + file_format,
               "w") as outfile:
