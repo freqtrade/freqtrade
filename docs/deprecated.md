@@ -48,17 +48,12 @@ Please switch to the new [Parametrized Strategies](hyperopt.md) to benefit from 
 
 // TODO-lev: update version here
 
-## Strategy changes
+## Strategy changes between V2 and V3
 
-As strategies now have to support multiple different signal types, some things had to change.
+We have put a great effort into keeping compatibility with existing strategies, so if you just want to continue using freqtrade in spot markets, there are no changes necessary.
+While we may drop support for the current interface sometime in the future, we will announce this separately and have an appropriate transition period.
 
-Dataframe columns:
-
-* `buy` -> `enter_long`
-* `sell` -> `exit_long`
-* `buy_tag` -> `enter_tag`
-
-New columns are `enter_short` and `exit_short`, which will initiate short trades (requires additional configuration!)
+Please follow the [Strategy migration](strategy_migration.md) guide to migrate your strategy to the new format to start using the new functionalities.
 
 ### webhooks - `buy_tag` has been renamed to `enter_tag`
 
