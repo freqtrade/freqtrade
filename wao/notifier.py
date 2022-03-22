@@ -20,20 +20,16 @@ def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_du
     post_request(text)
 
 
-def post_request(text, is_from_429_watcher=False):
+def post_request(text):
     print("post_request: " + text)
-    telegram_bot_api_token = Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
-    result = requests.post('https://api.telegram.org/bot' + telegram_bot_api_token +
+    result = requests.post('https://api.telegram.org/bot' + Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 +
                            '/sendMessage?chat_id=' + Config.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST +
                            '&text=' + text + '&parse_mode=Markdown')
 
     print(str(result))
 
     if BrainConfig.IS_429_FIX_ENABLED:
-        if str(result) != TELEGRAM_RESPONSE_200 and is_from_429_watcher:
+        if str(result) == TELEGRAM_RESPONSE_200:
             delete_429_file(text)
-            write_to_429_file(text)
-        elif str(result) != TELEGRAM_RESPONSE_200:
-            print("post_request: " + str(result))
-        elif str(result) == TELEGRAM_RESPONSE_200 and is_from_429_watcher:
-            delete_429_file(text)
+        else:
+            print(str(result))
