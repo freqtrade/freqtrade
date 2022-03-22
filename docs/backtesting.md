@@ -287,43 +287,43 @@ A backtesting result will look like that:
 | ADA/BTC  |      1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
 | LTC/BTC  |      1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
 | TOTAL    |      2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
-=============== SUMMARY METRICS ===============
-| Metric                | Value               |
-|-----------------------+---------------------|
-| Backtesting from      | 2019-01-01 00:00:00 |
-| Backtesting to        | 2019-05-01 00:00:00 |
-| Max open trades       | 3                   |
-|                       |                     |
-| Total/Daily Avg Trades| 429 / 3.575         |
-| Starting balance      | 0.01000000 BTC      |
-| Final balance         | 0.01762792 BTC      |
-| Absolute profit       | 0.00762792 BTC      |
-| Total profit %        | 76.2%               |
-| Trades per day        | 3.575               |
-| Avg. stake amount     | 0.001      BTC      |
-| Total trade volume    | 0.429      BTC      |
-|                       |                     |
-| Best Pair             | LSK/BTC 26.26%      |
-| Worst Pair            | ZEC/BTC -10.18%     |
-| Best Trade            | LSK/BTC 4.25%       |
-| Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 0.00076 BTC         |
-| Worst day             | -0.00036 BTC        |
-| Days win/draw/lose    | 12 / 82 / 25        |
-| Avg. Duration Winners | 4:23:00             |
-| Avg. Duration Loser   | 6:55:00             |
-| Rejected Buy signals  | 3089                |
-| Entry/Exit Timeouts   | 0 / 0               |
-|                       |                     |
-| Min balance           | 0.00945123 BTC      |
-| Max balance           | 0.01846651 BTC      |
-| Drawdown (Account)    | 13.33%              |
-| Drawdown              | 0.0015 BTC          |
-| Drawdown high         | 0.0013 BTC          |
-| Drawdown low          | -0.0002 BTC         |
-| Drawdown Start        | 2019-02-15 14:10:00 |
-| Drawdown End          | 2019-04-11 18:15:00 |
-| Market change         | -5.88%              |
+================ SUMMARY METRICS ===============
+| Metric                 | Value               |
+|------------------------+---------------------|
+| Backtesting from       | 2019-01-01 00:00:00 |
+| Backtesting to         | 2019-05-01 00:00:00 |
+| Max open trades        | 3                   |
+|                        |                     |
+| Total/Daily Avg Trades | 429 / 3.575         |
+| Starting balance       | 0.01000000 BTC      |
+| Final balance          | 0.01762792 BTC      |
+| Absolute profit        | 0.00762792 BTC      |
+| Total profit %         | 76.2%               |
+| Trades per day         | 3.575               |
+| Avg. stake amount      | 0.001      BTC      |
+| Total trade volume     | 0.429      BTC      |
+|                        |                     |
+| Best Pair              | LSK/BTC 26.26%      |
+| Worst Pair             | ZEC/BTC -10.18%     |
+| Best Trade             | LSK/BTC 4.25%       |
+| Worst Trade            | ZEC/BTC -10.25%     |
+| Best day               | 0.00076 BTC         |
+| Worst day              | -0.00036 BTC        |
+| Days win/draw/lose     | 12 / 82 / 25        |
+| Avg. Duration Winners  | 4:23:00             |
+| Avg. Duration Loser    | 6:55:00             |
+| Rejected Entry signals | 3089                |
+| Entry/Exit Timeouts    | 0 / 0               |
+|                        |                     |
+| Min balance            | 0.00945123 BTC      |
+| Max balance            | 0.01846651 BTC      |
+| Drawdown (Account)     | 13.33%              |
+| Drawdown               | 0.0015 BTC          |
+| Drawdown high          | 0.0013 BTC          |
+| Drawdown low           | -0.0002 BTC         |
+| Drawdown Start         | 2019-02-15 14:10:00 |
+| Drawdown End           | 2019-04-11 18:15:00 |
+| Market change          | -5.88%              |
 ===============================================
 ```
 
@@ -406,7 +406,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Days win/draw/lose     | 12 / 82 / 25        |
 | Avg. Duration Winners  | 4:23:00             |
 | Avg. Duration Loser    | 6:55:00             |
-| Rejected Buy signals   | 3089                |
+| Rejected Entry signals | 3089                |
 | Entry/Exit Timeouts    | 0 / 0               |
 |                        |                     |
 | Min balance            | 0.00945123 BTC      |
@@ -436,7 +436,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
-- `Rejected Buy signals`: Buy signals that could not be acted upon due to max_open_trades being reached.
+- `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
 - `Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as $(Absolute Drawdown) / (DrawdownHigh + startingBalance)$.

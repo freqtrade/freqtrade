@@ -748,7 +748,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
-            ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
+            ('Rejected Entry signals', strat_results.get('rejected_signals', 'N/A')),
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
              f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
@@ -810,7 +810,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             stake_currency=stake_currency)
 
         if isinstance(table, str) and len(table) > 0:
-            print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
+            print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
     table = text_table_exit_reason(sell_reason_stats=results['sell_reason_summary'],
