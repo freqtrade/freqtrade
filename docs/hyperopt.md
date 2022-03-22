@@ -200,7 +200,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 !!! Hint "Guards and Triggers"
     Technically, there is no difference between Guards and Triggers.  
     However, this guide will make this distinction to make it clear that signals should not be "sticking".
-    Sticking signals are signals that are active for multiple candles. This can lead into buying a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
+    Sticking signals are signals that are active for multiple candles. This can lead into entering a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
 
 Hyper-optimization will, for each epoch round, pick one trigger and possibly multiple guards.
 
@@ -216,9 +216,9 @@ The configuration and rules are the same than for buy signals.
 
 ## Solving a Mystery
 
-Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your buys.
-And you also wonder should you use RSI or ADX to help with those buy decisions. 
-If you decide to use RSI or ADX, which values should I use for them? 
+Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your long entries.
+And you also wonder should you use RSI or ADX to help with those decisions.
+If you decide to use RSI or ADX, which values should I use for them?
 
 So let's use hyperparameter optimization to solve this mystery.
 
