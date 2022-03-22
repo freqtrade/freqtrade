@@ -21,7 +21,7 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_stats, text_table_bt_results,
-                                                 text_table_sell_reason, text_table_strategy)
+                                                 text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _backup_file, _clean_test_file
@@ -281,7 +281,7 @@ def test_text_table_sell_reason():
     )
 
     result_str = (
-        '|   Sell Reason |   Sells |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
+        '|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
         '   Tot Profit BTC |   Tot Profit % |\n'
         '|---------------+---------+--------------------------+----------------+----------------+'
         '------------------+----------------|\n'
@@ -293,7 +293,7 @@ def test_text_table_sell_reason():
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
                                                    results=results)
-    assert text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+    assert text_table_exit_reason(sell_reason_stats=sell_reason_stats,
                                   stake_currency='BTC') == result_str
 
 

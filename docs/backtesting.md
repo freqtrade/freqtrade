@@ -274,8 +274,8 @@ A backtesting result will look like that:
 | XRP/BTC  |     35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
 | ZEC/BTC  |     22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
 | TOTAL    |    429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
-========================================================= SELL REASON STATS ==========================================================
-| Sell Reason        |   Sells |  Wins |  Draws |  Losses |
+========================================================= EXIT REASON STATS ==========================================================
+| Exit Reason        |   Sells |  Wins |  Draws |  Losses |
 |:-------------------|--------:|------:|-------:|--------:|
 | trailing_stop_loss |     205 |   150 |      0 |      55 |
 | stop_loss          |     166 |     0 |      0 |     166 |
@@ -359,14 +359,14 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is almost no chance that the bot will ever reach this profit.
 Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
 
-### Sell reasons table
+### Exit reasons table
 
-The 2nd table contains a recap of sell reasons.
+The 2nd table contains a recap of exit reasons.
 This table can tell you which area needs some additional work (e.g. all or many of the `sell_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
 
 ### Left open trades table
 
-The 3rd table contains all trades the bot had to `forcesell` at the end of the backtesting period to present you the full picture.
+The 3rd table contains all trades the bot had to `forceexit` at the end of the backtesting period to present you the full picture.
 This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
 These trades are also included in the first table, but are also shown separately in this table for clarity.
 

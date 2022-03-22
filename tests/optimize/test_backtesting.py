@@ -1304,7 +1304,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'DAY BREAKDOWN' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
     assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
@@ -1413,7 +1413,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
 
 
@@ -1518,7 +1518,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
 
 

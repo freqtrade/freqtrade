@@ -382,7 +382,7 @@ def generate_strategy_stats(pairlist: List[str],
     enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
                                              results=results, skip_nan=False)
 
-    sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
+    exit_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
                                               starting_balance=start_balance,
@@ -406,7 +406,7 @@ def generate_strategy_stats(pairlist: List[str],
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
         'results_per_enter_tag': enter_tag_results,
-        'sell_reason_summary': sell_reason_stats,
+        'sell_reason_summary': exit_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
 
@@ -572,16 +572,16 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
-    :param sell_reason_stats: Sell reason metrics
+    :param sell_reason_stats: Exit reason metrics
     :param stake_currency: Stakecurrency used
     :return: pretty printed table with tabulate as string
     """
     headers = [
-        'Sell Reason',
-        'Sells',
+        'Exit Reason',
+        'Exits',
         'Win  Draws  Loss  Win%',
         'Avg Profit %',
         'Cum Profit %',
@@ -813,10 +813,10 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
+    table = text_table_exit_reason(sell_reason_stats=results['sell_reason_summary'],
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
-        print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+        print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
     print(table)
 
     table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
