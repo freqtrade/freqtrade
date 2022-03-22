@@ -14,6 +14,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.enums import RunMode, SellType
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -116,6 +117,7 @@ class Edge:
                 timeframe=self.strategy.timeframe,
                 timerange=timerange_startup,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
+                candle_type=self.config.get('candle_type_def', CandleType.SPOT),
             )
             # Download informative pairs too
             res = defaultdict(list)
@@ -132,6 +134,7 @@ class Edge:
                     timeframe=timeframe,
                     timerange=timerange_startup,
                     data_format=self.config.get('dataformat_ohlcv', 'json'),
+                    candle_type=self.config.get('candle_type_def', CandleType.SPOT),
                 )
 
         data = load_data(
@@ -141,6 +144,7 @@ class Edge:
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
+            candle_type=self.config.get('candle_type_def', CandleType.SPOT),
         )
 
         if not data:

@@ -144,7 +144,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
 
     # download a new pair if refresh_pairs is set
     refresh_data(datadir=tmpdir1, timeframe='1m', pairs=['MEME/BTC'],
-                 exchange=exchange)
+                 exchange=exchange, candle_type=CandleType.SPOT
+                 )
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert file.is_file()
     assert log_has_re(
@@ -222,14 +223,16 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     # timeframe starts earlier than the cached data
     # should fully update data
     timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
-    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+    data, start_ts = _load_cached_data_for_updating(
+        'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts == test_data[0][0] - 1000
 
     # timeframe starts in the center of the cached data
     # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+    data, start_ts = _load_cached_data_for_updating(
+        'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
 
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
@@ -237,20 +240,23 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     # timeframe starts after the cached data
     # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 100, 0)
-    data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
+    data, start_ts = _load_cached_data_for_updating(
+        'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
 
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = _load_cached_data_for_updating('NONEXIST/BTC', '1m', timerange, data_handler)
+    data, start_ts = _load_cached_data_for_updating(
+        'NONEXIST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts == (now_ts - 10000) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = _load_cached_data_for_updating('NONEXIST/BTC', '1m', None, data_handler)
+    data, start_ts = _load_cached_data_for_updating(
+        'NONEXIST/BTC', '1m', None, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts is None
 
@@ -322,9 +328,9 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
     _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
-                           timeframe='1m')
+                           timeframe='1m', candle_type='spot')
     _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
-                           timeframe='3m')
+                           timeframe='3m', candle_type='spot')
     _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/USDT",
                            timeframe='1h', candle_type='mark')
     assert json_dump_mock.call_count == 3
@@ -338,7 +344,7 @@ def test_download_backtesting_data_exception(mocker, caplog, default_conf, tmpdi
 
     assert not _download_pair_history(datadir=tmpdir1, exchange=exchange,
                                       pair='MEME/BTC',
-                                      timeframe='1m')
+                                      timeframe='1m', candle_type='spot')
     assert log_has('Failed to download history data for pair: "MEME/BTC", timeframe: 1m.', caplog)
 
 
@@ -389,7 +395,8 @@ def test_init_with_refresh(default_conf, mocker) -> None:
         datadir=Path(''),
         pairs=[],
         timeframe=default_conf['timeframe'],
-        exchange=exchange
+        exchange=exchange,
+        candle_type=CandleType.SPOT
     )
     assert {} == load_data(
         datadir=Path(''),
