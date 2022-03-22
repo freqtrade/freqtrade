@@ -167,14 +167,7 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
 
 Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.
 
-While keeping the subclass in the same file is technically possible, it can lead to some problems with hyperopt parameter files.
-
-!!! Note "Parent-strategy in different files"
-    If you have the parent-strategy in a different file, you can still import the strategy.
-    Assuming `myawesomestrategy.py` is the filename, and `MyAwesomeStrategy` the strategy you need to import:
-
-    ``` python
-    ```
+While keeping the subclass in the same file is technically possible, it can lead to some problems with hyperopt parameter files, we therefore recommend to use separate strategy files, and import the parent strategy as shown above.
 
 ## Embedding Strategies
 
