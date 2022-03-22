@@ -8,7 +8,7 @@ Depending on the callback used, they may be called when entering / exiting a tra
 Currently available callbacks:
 
 * [`bot_loop_start()`](#bot-loop-start)
-* [`custom_stake_amount()`](#custom-stake-size)
+* [`custom_stake_amount()`](#stake-size-management)
 * [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
@@ -16,6 +16,7 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
+* [`leverage()`](#leverage-callback)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
