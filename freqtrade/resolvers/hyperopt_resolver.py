@@ -44,7 +44,6 @@ class HyperOptLossResolver(IResolver):
                                                         extra_dir=config.get('hyperopt_path'))
 
         # Assign timeframe to be used in hyperopt
-        hyperoptloss.__class__.ticker_interval = str(config['timeframe'])
         hyperoptloss.__class__.timeframe = str(config['timeframe'])
 
         return hyperoptloss

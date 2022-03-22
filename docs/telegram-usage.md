@@ -274,15 +274,16 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 
 ### /forcesell <trade_id>
 
-> **BITTREX:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
+> **BINANCE:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
 
 ### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
 `/forcebuy <pair> [rate]` is also supported for longs but should be considered deprecated.
 
-> **BITTREX:** Long ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+> **BINANCE:** Long ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
 Omitting the pair will open a query asking for the pair to trade (based on the current whitelist).
+Trades crated through `/forceentry` will have the buy-tag of `forceentry`.
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 

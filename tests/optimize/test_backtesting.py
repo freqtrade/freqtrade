@@ -318,17 +318,15 @@ def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     del default_conf['timeframe']
     default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY,
-                                     'SampleStrategy']
-    # TODO: This refers to the sampleStrategy in user_data if it exists...
+                                     'HyperoptableStrategy']
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
-    with pytest.raises(OperationalException):
+    with pytest.raises(OperationalException,
+                       match=r"Timeframe needs to be set in either configuration"):
         Backtesting(default_conf)
-    log_has("Ticker-interval needs to be set in either configuration "
-            "or as cli argument `--ticker-interval 5m`", caplog)
 
 
-def test_data_with_fee(default_conf, mocker, testdatadir) -> None:
+def test_data_with_fee(default_conf, mocker) -> None:
     patch_exchange(mocker)
     default_conf['fee'] = 0.1234
 

@@ -113,7 +113,6 @@ def test_strategy_pre_v3(result, default_conf, strategy_name):
     assert default_conf['stoploss'] == -0.10
 
     assert strategy.timeframe == '5m'
-    assert strategy.ticker_interval == '5m'
     assert default_conf['timeframe'] == '5m'
 
     df_indicators = strategy.advise_indicators(result, metadata=metadata)
@@ -440,7 +439,6 @@ def test_call_deprecated_function(result, default_conf, caplog):
     assert strategy._sell_fun_len == 2
     assert strategy.INTERFACE_VERSION == 1
     assert strategy.timeframe == '5m'
-    assert strategy.ticker_interval == '5m'
 
     indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
@@ -453,9 +451,6 @@ def test_call_deprecated_function(result, default_conf, caplog):
     exitdf = strategy.advise_exit(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
     assert 'exit_long' in exitdf
-
-    assert log_has("DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'.",
-                   caplog)
 
 
 def test_strategy_interface_versioning(result, default_conf):

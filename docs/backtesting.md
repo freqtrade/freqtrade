@@ -26,7 +26,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+  -i TIMEFRAME, --timeframe TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
@@ -63,7 +63,7 @@ optional arguments:
                         `30m`, `1h`, `1d`).
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest. Please note that ticker-interval needs to be
+                        backtest. Please note that timeframe needs to be
                         set either in config or via command line. When using
                         this together with `--export trades`, the strategy-
                         name is injected into the filename (so `backtest-
