@@ -5034,9 +5034,9 @@ def test_update_funding_fees(
     default_conf['trading_mode'] = 'futures'
     default_conf['margin_mode'] = 'isolated'
 
-    date_midnight = arrow.get('2021-09-01 00:00:00')
-    date_eight = arrow.get('2021-09-01 08:00:00')
-    date_sixteen = arrow.get('2021-09-01 16:00:00')
+    date_midnight = arrow.get('2021-09-01 00:00:00').datetime
+    date_eight = arrow.get('2021-09-01 08:00:00').datetime
+    date_sixteen = arrow.get('2021-09-01 16:00:00').datetime
     columns = ['date', 'open', 'high', 'low', 'close', 'volume']
     # 16:00 entry is actually never used
     # But should be kept in the test to ensure we're filtering correctly.
@@ -5119,11 +5119,7 @@ def test_update_funding_fees(
     trades = Trade.get_open_trades()
     assert len(trades) == 3
     for trade in trades:
-        assert pytest.approx(trade.funding_fees) == (
-            trade.amount *
-            mark_prices[trade.pair].iloc[0]['open'] *
-            funding_rates[trade.pair].iloc[0]['open'] * multipl
-        )
+        assert pytest.approx(trade.funding_fees) == 0
     mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     if schedule_off:
@@ -5136,8 +5132,8 @@ def test_update_funding_fees(
             )
             assert trade.funding_fees == pytest.approx(sum(
                 trade.amount *
-                mark_prices[trade.pair].iloc[0:2]['open'] *
-                funding_rates[trade.pair].iloc[0:2]['open'] * multipl
+                mark_prices[trade.pair].iloc[1:2]['open'] *
+                funding_rates[trade.pair].iloc[1:2]['open'] * multipl
             ))
 
     else:
@@ -5147,8 +5143,8 @@ def test_update_funding_fees(
     for trade in trades:
         assert trade.funding_fees == pytest.approx(sum(
             trade.amount *
-            mark_prices[trade.pair].iloc[0:2]['open'] *
-            funding_rates[trade.pair].iloc[0:2]['open'] *
+            mark_prices[trade.pair].iloc[1:2]['open'] *
+            funding_rates[trade.pair].iloc[1:2]['open'] *
             multipl
         ))
 

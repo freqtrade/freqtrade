@@ -276,7 +276,7 @@ class FreqtradeBot(LoggingMixin):
                     pair=trade.pair,
                     amount=trade.amount,
                     is_short=trade.is_short,
-                    open_date=trade.open_date
+                    open_date=trade.open_date_utc
                 )
                 trade.funding_fees = funding_fees
         else:
@@ -1358,7 +1358,7 @@ class FreqtradeBot(LoggingMixin):
             pair=trade.pair,
             amount=trade.amount,
             is_short=trade.is_short,
-            open_date=trade.open_date,
+            open_date=trade.open_date_utc,
         )
         exit_type = 'exit'
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
