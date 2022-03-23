@@ -73,6 +73,9 @@ EXCHANGE_HAS_OPTIONAL = [
     'fetchTickers',  # For volumepairlist?
     'fetchTrades',  # Downloading trades data
     # 'fetchFundingRateHistory',  # Futures trading
+    # 'fetchPositions',  # Futures trading
+    # 'fetchLeverageTiers',  # Futures initialization
+    # 'fetchMarketLeverageTiers',  # Futures initialization
 ]
 
 
