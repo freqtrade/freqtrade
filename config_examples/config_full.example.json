@@ -21,7 +21,7 @@
     "ignore_roi_if_buy_signal": false,
     "ignore_buying_expired_candle_after": 300,
     "trading_mode": "spot",
-    // "margin_mode": "isolated",
+    "margin_mode": "",
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
