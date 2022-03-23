@@ -58,11 +58,7 @@ class Okx(Exchange):
         leverage: float,
         side: str  # buy or sell
     ):
-        if self.trading_mode != TradingMode.SPOT:
-            if self.margin_mode is None:
-                raise OperationalException(
-                    f"{self.name}.margin_mode must be set for {self.trading_mode.value}"
-                )
+        if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
             try:
                 # TODO-lev: Test me properly (check mgnMode passed)
                 self._api.set_leverage(
