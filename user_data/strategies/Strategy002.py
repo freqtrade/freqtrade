@@ -1,5 +1,7 @@
+
 # --- Do not remove these libs ---
 from freqtrade.persistence import Trade
+
 
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
@@ -28,10 +30,10 @@ class Strategy002(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "60": 0.01,
-        "30": 0.03,
-        "20": 0.04,
-        "0": 0.05
+        "60":  0.01,
+        "30":  0.03,
+        "20":  0.04,
+        "0":  0.05
     }
 
     # Optimal stoploss designed for the strategy
@@ -61,6 +63,7 @@ class Strategy002(IStrategy):
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
+
 
     def informative_pairs(self):
         """
@@ -115,10 +118,10 @@ class Strategy002(IStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['rsi'] < 30) &
-                    (dataframe['slowk'] < 20) &
-                    (dataframe['bb_lowerband'] > dataframe['close']) &
-                    (dataframe['CDLHAMMER'] == 100)
+                (dataframe['rsi'] < 30) &
+                (dataframe['slowk'] < 20) &
+                (dataframe['bb_lowerband'] > dataframe['close']) &
+                (dataframe['CDLHAMMER'] == 100)
             ),
             'buy'] = 1
 
@@ -132,11 +135,12 @@ class Strategy002(IStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['sar'] > dataframe['close']) &
-                    (dataframe['fisher_rsi'] > 0.3)
+                (dataframe['sar'] > dataframe['close']) &
+                (dataframe['fisher_rsi'] > 0.3)
             ),
             'sell'] = 1
         return dataframe
+
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
@@ -159,7 +163,7 @@ class Strategy002(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        # current_time = 2021-09-09 18:20:00+00:00
+        #current_time = 2021-09-09 18:20:00+00:00
 
         mode = "test"
         coin = pair.split("/")[0]
