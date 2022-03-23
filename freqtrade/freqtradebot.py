@@ -16,8 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (MarginMode, RPCMessageType, RunMode, SellType, SignalDirection, State,
-                             TradingMode)
+from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -104,9 +103,6 @@ class FreqtradeBot(LoggingMixin):
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
         self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
-        self.margin_mode_type: Optional[MarginMode] = None
-        if 'margin_mode' in self.config:
-            self.margin_mode = MarginMode(self.config['margin_mode'])
 
         self._schedule = Scheduler()
 
