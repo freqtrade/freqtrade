@@ -682,9 +682,10 @@ class LocalTrade():
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
             if fee_rate is not None:
+                current_rate_ratio = self.fee_close / self.fee_open
                 self.fee_open = fee_rate
-                # Assume close-fee will fall into the same fee category and take an educated guess
-                self.fee_close = fee_rate
+                # The new open/close fees will be as proportional as the old fees
+                self.fee_close = fee_rate * current_rate_ratio
         elif self.exit_side == side and self.fee_close_currency is None:
             self.fee_close_cost = fee_cost
             self.fee_close_currency = fee_currency
