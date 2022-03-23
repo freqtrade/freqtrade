@@ -309,8 +309,6 @@ class Exchange:
         """
         Return exchange ccxt markets, filtered out by base currency and quote currency
         if this was requested in parameters.
-
-        TODO: consider moving it to the Dataprovider
         """
         markets = self.markets
         if not markets:
