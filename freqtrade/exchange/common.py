@@ -39,6 +39,15 @@ MAP_EXCHANGE_CHILDCLASS = {
     'okex': 'okx',
 }
 
+SUPPORTED_EXCHANGES = [
+    'binance',
+    'bittrex',
+    'ftx',
+    'gateio',
+    'huobi',
+    'kraken',
+    'okx',
+]
 
 EXCHANGE_HAS_REQUIRED = [
     # Required / private

@@ -28,7 +28,8 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
-                                       remove_credentials, retrier, retrier_async)
+                                       SUPPORTED_EXCHANGES, remove_credentials, retrier,
+                                       retrier_async)
 from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
@@ -2543,7 +2544,7 @@ def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = Non
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
-    return exchange_name in ['binance', 'bittrex', 'ftx', 'gateio', 'huobi', 'kraken', 'okx']
+    return exchange_name in SUPPORTED_EXCHANGES
 
 
 def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
