@@ -170,7 +170,12 @@ class Kraken(Exchange):
         reduceOnly: bool,
         time_in_force: str = 'gtc'
     ) -> Dict:
-        params = super()._get_params(ordertype, leverage, reduceOnly, time_in_force)
+        params = super()._get_params(
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
         if leverage > 1.0:
             params['leverage'] = round(leverage)
         return params
