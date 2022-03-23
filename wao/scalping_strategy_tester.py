@@ -7,18 +7,18 @@ import os
 
 coin = 'LTC'
 time_range = '1m'
-total_loop_time = 525600 if time_range == '1m' else 315360
+json_file_name = f'/root/workspace2/freqtrade/user_data/data/binance/{coin}_USDT-{time_range}.json'
+json_file_content = Path(json_file_name).read_text()
+json_file_content = eval(json_file_content)
+total_loop_time = len(json_file_content)
 minutes_per_day = 1440 if time_range == '1m' else 288
 brain_name = "Scalp"
 config_file_name = "config_scalp.json"
-json_file_name = f'/root/workspace2/freqtrade/user_data/data/binance/{coin}_USDT-{time_range}.json'
-freqtrade_directory = "/root/workspace2/freqtrade/"
+freqtrade_directory = "/root/workspace2/Desktop/freqtrade/"
 result_saved_directory = "wao/_scalping_results_directory/"
 file_format = ".csv"
 under_score = "_"
 backtest_command = f"source ./.env/bin/activate; freqtrade backtesting -c {config_file_name} -s {brain_name}"
-json_file_content = Path(json_file_name).read_text()
-json_file_content = eval(json_file_content)
 
 
 def get_human_readable_time_from_timestamp(unix_time) -> str:

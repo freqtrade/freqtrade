@@ -7,7 +7,7 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-import numpy  # noqa
+import numpy # noqa
 from datetime import datetime
 
 from wao.strategy_controller import StrategyController

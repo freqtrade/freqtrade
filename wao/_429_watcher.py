@@ -19,7 +19,7 @@ class _429_Watcher(watchdog.events.PatternMatchingEventHandler):
             content = Path(file).read_text()
             time.sleep(1)  # this sleep makes the watcher wait to avoid overlapping
             print("sending message on: "+str(content))
-            post_request(str(content))
+            post_request(str(content), True)
 
     # def on_modified(self, event):
     #     print("_429_Watcher:on_modified: file name = " + str(event.src_path))

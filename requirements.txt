@@ -44,9 +44,3 @@ questionary==1.10.0
 prompt-toolkit==3.0.28
 # Extensions to datetime library
 python-dateutil==2.8.2
-
-watchdog~=2.1.6
-pathlib~=1.0.1
-setuptools~=60.10.0
-starlette~=0.17.1
-pydantic~=1.9.0
