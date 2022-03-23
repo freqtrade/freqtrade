@@ -121,19 +121,30 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
         @wraps(f)
         def wrapper(*args, **kwargs):
             count = kwargs.pop('count', retries)
+            kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
             try:
                 return f(*args, **kwargs)
             except (TemporaryError, RetryableOrderError) as ex:
                 msg = f'{f.__name__}() returned exception: "{ex}". '
                 if count > 0:
-                    logger.warning(msg + f'Retrying still for {count} times.')
+                    msg += f'Retrying still for {count} times.'
                     count -= 1
                     kwargs.update({'count': count})
                     if isinstance(ex, (DDosProtection, RetryableOrderError)):
-                        # increasing backoff
-                        backoff_delay = calculate_backoff(count + 1, retries)
-                        logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
-                        time.sleep(backoff_delay)
+                        if kucoin and "429000" in str(ex):
+                            # Temporary fix for 429000 error on kucoin
+                            # see https://github.com/freqtrade/freqtrade/issues/5700 for details.
+                            _get_logging_mixin().log_once(
+                                f"Kucoin 429 error, avoid triggering DDosProtection backoff delay. "
+                                f"{count} tries left before giving up", logmethod=logger.warning)
+                            # Reset msg to avoid logging too many times.
+                            msg = ''
+                        else:
+                            backoff_delay = calculate_backoff(count + 1, retries)
+                            logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                            time.sleep(backoff_delay)
+                    if msg:
+                        logger.warning(msg)
                     return wrapper(*args, **kwargs)
                 else:
                     logger.warning(msg + 'Giving up.')
