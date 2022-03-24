@@ -3,13 +3,11 @@ EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to brain_confi
 import requests
 import sys
 from wao._429_file_util import delete_429_file, write_to_429_file
-from wao.brain_config import BrainConfig
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
-TELEGRAM_RESPONSE_429 = "<Response [429]>"
 
 
 def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_dup):
