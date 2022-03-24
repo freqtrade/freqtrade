@@ -1219,6 +1219,7 @@ def test_rpc_forceentry(mocker, default_conf, ticker, fee, limit_buy_order_open)
     pair = 'LTC/BTC'
     trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
+    assert trade.buy_tag == 'forceentry'
 
     # Test not buying
     pair = 'XRP/BTC'

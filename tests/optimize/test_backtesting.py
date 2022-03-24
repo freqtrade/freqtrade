@@ -318,17 +318,15 @@ def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     del default_conf['timeframe']
     default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY,
-                                     'SampleStrategy']
-    # TODO: This refers to the sampleStrategy in user_data if it exists...
+                                     'HyperoptableStrategy']
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
-    with pytest.raises(OperationalException):
+    with pytest.raises(OperationalException,
+                       match=r"Timeframe needs to be set in either configuration"):
         Backtesting(default_conf)
-    log_has("Ticker-interval needs to be set in either configuration "
-            "or as cli argument `--ticker-interval 5m`", caplog)
 
 
-def test_data_with_fee(default_conf, mocker, testdatadir) -> None:
+def test_data_with_fee(default_conf, mocker) -> None:
     patch_exchange(mocker)
     default_conf['fee'] = 0.1234
 
@@ -1304,7 +1302,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'DAY BREAKDOWN' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
     assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
@@ -1413,7 +1411,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
 
 
@@ -1518,7 +1516,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
 
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
-    assert 'SELL REASON STATS' in captured.out
+    assert 'EXIT REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
 
 

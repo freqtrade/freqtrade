@@ -39,6 +39,15 @@ MAP_EXCHANGE_CHILDCLASS = {
     'okex': 'okx',
 }
 
+SUPPORTED_EXCHANGES = [
+    'binance',
+    'bittrex',
+    'ftx',
+    'gateio',
+    'huobi',
+    'kraken',
+    'okx',
+]
 
 EXCHANGE_HAS_REQUIRED = [
     # Required / private
@@ -64,6 +73,9 @@ EXCHANGE_HAS_OPTIONAL = [
     'fetchTickers',  # For volumepairlist?
     'fetchTrades',  # Downloading trades data
     # 'fetchFundingRateHistory',  # Futures trading
+    # 'fetchPositions',  # Futures trading
+    # 'fetchLeverageTiers',  # Futures initialization
+    # 'fetchMarketLeverageTiers',  # Futures initialization
 ]
 
 

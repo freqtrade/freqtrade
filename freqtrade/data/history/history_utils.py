@@ -106,13 +106,13 @@ def load_data(datadir: Path,
     return result
 
 
-def refresh_data(datadir: Path,
+def refresh_data(*, datadir: Path,
                  timeframe: str,
                  pairs: List[str],
                  exchange: Exchange,
                  data_format: str = None,
                  timerange: Optional[TimeRange] = None,
-                 candle_type: CandleType = CandleType.SPOT
+                 candle_type: CandleType,
                  ) -> None:
     """
     Refresh ohlcv history data for a list of pairs.
@@ -139,7 +139,7 @@ def _load_cached_data_for_updating(
     timeframe: str,
     timerange: Optional[TimeRange],
     data_handler: IDataHandler,
-    candle_type: CandleType = CandleType.SPOT
+    candle_type: CandleType
 ) -> Tuple[DataFrame, Optional[int]]:
     """
     Load cached data to download more data.
@@ -178,7 +178,7 @@ def _download_pair_history(pair: str, *,
                            new_pairs_days: int = 30,
                            data_handler: IDataHandler = None,
                            timerange: Optional[TimeRange] = None,
-                           candle_type: CandleType = CandleType.SPOT
+                           candle_type: CandleType,
                            ) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
@@ -202,7 +202,6 @@ def _download_pair_history(pair: str, *,
             f'candle type: {candle_type} and store in {datadir}.'
         )
 
-        # data, since_ms = _load_cached_data_for_updating_old(datadir, pair, timeframe, timerange)
         data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
                                                         data_handler=data_handler,
                                                         candle_type=candle_type)

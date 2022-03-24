@@ -31,9 +31,7 @@ class TestStrategyLegacyV1(IStrategy):
     # This attribute will be overridden if the config file contains "stoploss"
     stoploss = -0.10
 
-    # Optimal timeframe for the strategy
-    # Keep the legacy value here to test compatibility
-    ticker_interval = '5m'
+    timeframe = '5m'
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         """

@@ -718,7 +718,7 @@ class LocalTrade():
 
         zero = Decimal(0.0)
         # If nothing was borrowed
-        if self.has_no_leverage or self.trading_mode != TradingMode.MARGIN:
+        if self.trading_mode != TradingMode.MARGIN or self.has_no_leverage:
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
