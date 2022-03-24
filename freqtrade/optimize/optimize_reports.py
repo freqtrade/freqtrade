@@ -590,7 +590,7 @@ def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t['exit_reason'], t['trades'],
+        t.get('exit_reason', t['sell_reason']), t['trades'],
         _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
@@ -813,7 +813,8 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    table = text_table_exit_reason(exit_reason_stats=results['exit_reason_summary'],
+    exit_reasons = results.get('exit_reason_summary', results.get('sell_reason_summary'))
+    table = text_table_exit_reason(exit_reason_stats=exit_reasons,
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
         print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
