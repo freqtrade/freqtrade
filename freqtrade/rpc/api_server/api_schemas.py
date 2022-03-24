@@ -113,7 +113,7 @@ class SellReason(BaseModel):
 
 
 class Stats(BaseModel):
-    sell_reasons: Dict[str, SellReason]
+    exit_reasons: Dict[str, SellReason]
     durations: Dict[str, Optional[float]]
 
 
@@ -236,6 +236,7 @@ class TradeSchema(BaseModel):
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
     sell_reason: Optional[str]
+    exit_reason: Optional[str]
     sell_order_status: Optional[str]
     stop_loss_abs: Optional[float]
     stop_loss_ratio: Optional[float]

@@ -236,7 +236,7 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
     if not ignore_strat_sl:
         assert log_has_re('Exit for NEO/BTC detected. Reason: stop_loss.*', caplog)
-        assert trade.sell_reason == ExitType.STOP_LOSS.value
+        assert trade.exit_reason == ExitType.STOP_LOSS.value
 
 
 def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -> None:
@@ -1208,7 +1208,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
-    assert trade.sell_reason == str(ExitType.EMERGENCY_SELL)
+    assert trade.exit_reason == str(ExitType.EMERGENCY_SELL)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1291,7 +1291,7 @@ def test_create_stoploss_order_invalid_order(
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
-    assert trade.sell_reason == ExitType.EMERGENCY_SELL.value
+    assert trade.exit_reason == ExitType.EMERGENCY_SELL.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
     assert log_has("Exiting the trade forcefully", caplog)
 
@@ -2150,7 +2150,7 @@ def test_handle_trade(
     assert trade.close_profit == close_profit
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
-    assert trade.sell_reason == 'sell_signal1'
+    assert trade.exit_reason == 'sell_signal1'
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2995,7 +2995,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     assert cancel_order_mock.call_count == 1
     assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
-    assert trade.sell_reason is None
+    assert trade.exit_reason is None
 
     send_msg_mock.reset_mock()
 
@@ -3107,6 +3107,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': ExitType.ROI.value,
+        'exit_reason': ExitType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3166,6 +3167,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3246,6 +3248,7 @@ def test_execute_trade_exit_custom_exit_price(
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': ExitType.SELL_SIGNAL.value,
+        'exit_reason': ExitType.SELL_SIGNAL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3313,6 +3316,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3479,7 +3483,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     freqtrade.exit_positions(trades)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
-    assert trade.sell_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
+    assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
     if is_short:
         assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.SHORT
@@ -3576,6 +3580,7 @@ def test_execute_trade_exit_market_order(
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': ExitType.ROI.value,
+        'exit_reason': ExitType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3843,7 +3848,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     else:
         patch_get_signal(freqtrade, enter_long=False, exit_long=False)
     assert freqtrade.handle_trade(trade) is True
-    assert trade.sell_reason == ExitType.ROI.value
+    assert trade.exit_reason == ExitType.ROI.value
 
 
 @pytest.mark.parametrize("is_short,val1,val2", [
@@ -3905,7 +3910,7 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
                    f"stoploss is {(2.0 * val1 * stop_multi):6f}, "
                    f"initial stoploss was at {(2.0 * stop_multi):6f}, trade opened at 2.000000",
                    caplog)
-    assert trade.sell_reason == ExitType.TRAILING_STOP_LOSS.value
+    assert trade.exit_reason == ExitType.TRAILING_STOP_LOSS.value
 
 
 @pytest.mark.parametrize('offset,trail_if_reached,second_sl,is_short', [
@@ -4011,7 +4016,7 @@ def test_trailing_stop_loss_positive(
         f"initial stoploss was at {'2.42' if is_short else '1.80'}0000, "
         f"trade opened at {2.2 if is_short else 2.0}00000",
         caplog)
-    assert trade.sell_reason == ExitType.TRAILING_STOP_LOSS.value
+    assert trade.exit_reason == ExitType.TRAILING_STOP_LOSS.value
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -4057,7 +4062,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     # Test if entry-signal is absent
     patch_get_signal(freqtrade)
     assert freqtrade.handle_trade(trade) is True
-    assert trade.sell_reason == ExitType.ROI.value
+    assert trade.exit_reason == ExitType.ROI.value
 
 
 def test_get_real_amount_quote(default_conf_usdt, trades_for_order, buy_order_fee, fee, caplog,

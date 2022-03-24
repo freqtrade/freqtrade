@@ -15,7 +15,7 @@ class BTrade(NamedTuple):
     """
     Minimalistic Trade result used for functional backtesting
     """
-    sell_reason: ExitType
+    exit_reason: ExitType
     open_tick: int
     close_tick: int
     enter_tag: Optional[str] = None

@@ -1010,7 +1010,7 @@ class FreqtradeBot(LoggingMixin):
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
-            trade.sell_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
+            trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
@@ -1286,7 +1286,7 @@ class FreqtradeBot(LoggingMixin):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
-            trade.sell_reason = None
+            trade.exit_reason = None
             cancelled = True
         else:
             # TODO: figure out how to handle partially complete sell orders
@@ -1416,7 +1416,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = exit_tag or exit_check.exit_reason
+        trade.exit_reason = exit_tag or exit_check.sell_reason
 
         # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
@@ -1461,7 +1461,8 @@ class FreqtradeBot(LoggingMixin):
             'profit_ratio': profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
-            'sell_reason': trade.sell_reason,
+            'sell_reason': trade.exit_reason,  # Deprecated
+            'exit_reason': trade.exit_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
@@ -1509,7 +1510,8 @@ class FreqtradeBot(LoggingMixin):
             'profit_ratio': profit_ratio,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
-            'sell_reason': trade.sell_reason,
+            'sell_reason': trade.exit_reason,  # Deprecated
+            'exit_reason': trade.exit_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
             'stake_currency': self.config['stake_currency'],

@@ -178,7 +178,7 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`
@@ -203,7 +203,7 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`
@@ -228,7 +228,7 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`

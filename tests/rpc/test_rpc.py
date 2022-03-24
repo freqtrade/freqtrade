@@ -66,6 +66,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_trade_value': 0.0010025,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
+        'exit_reason': ANY,
         'sell_order_status': ANY,
         'min_rate': ANY,
         'max_rate': ANY,
@@ -148,6 +149,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_trade_value': ANY,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
+        'exit_reason': ANY,
         'sell_order_status': ANY,
         'min_rate': ANY,
         'max_rate': ANY,
@@ -1044,7 +1046,7 @@ def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, f
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
-    trade.sell_reason = "TEST1"
+    trade.exit_reason = "TEST1"
     res = rpc._rpc_sell_reason_performance(None)
 
     assert len(res) == 1
@@ -1119,7 +1121,7 @@ def test_mix_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
     trade.enter_tag = "TESTBUY"
-    trade.sell_reason = "TESTSELL"
+    trade.exit_reason = "TESTSELL"
     res = rpc._rpc_mix_tag_performance(None)
 
     assert len(res) == 1

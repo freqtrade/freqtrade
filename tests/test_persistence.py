@@ -1255,7 +1255,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.min_rate is None
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.sell_reason is None
+    assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
     assert trade.stoploss_order_id == 'stop_order_id222'
@@ -1590,6 +1590,7 @@ def test_to_json(fee):
                       'profit_pct': None,
                       'profit_abs': None,
                       'sell_reason': None,
+                      'exit_reason': None,
                       'sell_order_status': None,
                       'stop_loss_abs': None,
                       'stop_loss_ratio': None,
@@ -1676,6 +1677,7 @@ def test_to_json(fee):
                       'open_rate_requested': None,
                       'open_trade_value': 12.33075,
                       'sell_reason': None,
+                      'exit_reason': None,
                       'sell_order_status': None,
                       'strategy': None,
                       'buy_tag': 'buys_signal_001',

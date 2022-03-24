@@ -316,7 +316,7 @@ class LocalTrade():
     max_rate: float = 0.0
     # Lowest price reached
     min_rate: float = 0.0
-    sell_reason: str = ''
+    exit_reason: str = ''
     sell_order_status: str = ''
     strategy: str = ''
     enter_tag: Optional[str] = None
@@ -459,7 +459,8 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.sell_reason,
+            'sell_reason': self.exit_reason,  # Deprecated
+            'exit_reason': self.exit_reason,
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -618,7 +619,7 @@ class LocalTrade():
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.sell_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
+            self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
                 logger.info(f'{order.order_type.upper()} is hit for {self}.')
             self.close(order.safe_price)
@@ -947,6 +948,12 @@ class LocalTrade():
         """
         return len(self.select_filled_orders('sell'))
 
+    @property
+    def sell_reason(self) -> str:
+        """ DEPRECATED! Please use exit_reason instead."""
+        return self.exit_reason
+
+
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
@@ -1076,7 +1083,7 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)
+    exit_reason = Column(String(100), nullable=True)
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     enter_tag = Column(String(100), nullable=True)
@@ -1295,12 +1302,12 @@ class Trade(_DECL_BASE, LocalTrade):
             filters.append(Trade.pair == pair)
 
         sell_tag_perf = Trade.query.with_entities(
-            Trade.sell_reason,
+            Trade.exit_reason,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
         ).filter(*filters)\
-            .group_by(Trade.sell_reason) \
+            .group_by(Trade.exit_reason) \
             .order_by(desc('profit_sum_abs')) \
             .all()
 
@@ -1330,7 +1337,7 @@ class Trade(_DECL_BASE, LocalTrade):
         mix_tag_perf = Trade.query.with_entities(
             Trade.id,
             Trade.enter_tag,
-            Trade.sell_reason,
+            Trade.exit_reason,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')

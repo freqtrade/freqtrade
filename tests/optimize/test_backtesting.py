@@ -713,7 +713,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     # No data available.
     res = backtesting._get_sell_trade_entry(trade, row_sell)
     assert res is not None
-    assert res.sell_reason == ExitType.ROI.value
+    assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
 
     # Enter new trade
@@ -732,7 +732,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
     res = backtesting._get_sell_trade_entry(trade, row_sell)
     assert res is not None
-    assert res.sell_reason == ExitType.ROI.value
+    assert res.exit_reason == ExitType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
     sell_order = res.select_order('sell', True)
@@ -781,7 +781,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'trade_duration': [235, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'sell_reason': [ExitType.ROI.value, ExitType.ROI.value],
+         'exit_reason': [ExitType.ROI.value, ExitType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],
@@ -1178,7 +1178,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
                           text_table_bt_results=text_table_mock,
                           text_table_strategy=strattable_mock,
                           generate_pair_metrics=MagicMock(),
-                          generate_sell_reason_stats=sell_reason_mock,
+                          generate_exit_reason_stats=sell_reason_mock,
                           generate_strategy_comparison=strat_summary,
                           generate_daily_stats=MagicMock(),
                           )
@@ -1249,7 +1249,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'close_rate': [0.104969, 0.103541],
                             "is_short": [False, False],
 
-                            'sell_reason': [ExitType.ROI, ExitType.ROI]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                             'profit_ratio': [0.03, 0.01, 0.1],
@@ -1267,7 +1267,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
                             "is_short": [False, False, False],
-                            'sell_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
         {
@@ -1367,7 +1367,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
                             'stake_amount': [0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485],
                             'close_rate': [0.104969, 0.103541],
-                            'sell_reason': [ExitType.ROI, ExitType.ROI]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/USDT', 'XRP/USDT', 'XRP/USDT'],
                             'profit_ratio': [0.03, 0.01, 0.1],
@@ -1385,7 +1385,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
                             'stake_amount': [0.01, 0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
-                            'sell_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
         {
@@ -1470,7 +1470,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                             'stake_amount': [0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485],
                             'close_rate': [0.104969, 0.103541],
-                            'sell_reason': [ExitType.ROI, ExitType.ROI]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                             'profit_ratio': [0.03, 0.01, 0.1],
@@ -1488,7 +1488,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                             'stake_amount': [0.01, 0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
-                            'sell_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
         {
