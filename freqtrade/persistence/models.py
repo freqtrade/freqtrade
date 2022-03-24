@@ -514,8 +514,7 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
-    def process_sell_sub_trade(self, order: Order, is_closed: bool = True,
-                               is_non_bt: bool = True) -> None:
+    def process_sell_sub_trade(self, order: Order, is_closed: bool = True) -> None:
         sell_amount = order.safe_amount_after_fee
         sell_rate = order.safe_price
         sell_stake_amount = sell_rate * sell_amount * (1 - self.fee_close)
@@ -707,7 +706,7 @@ class LocalTrade():
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = [o for o in self.orders if o.filled or o.ft_is_open]
+        orders = self.orders
         if order_side:
             orders = [o for o in orders if o.ft_order_side == order_side]
         if is_open is not None:

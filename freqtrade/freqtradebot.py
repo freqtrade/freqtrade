@@ -482,13 +482,10 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            # Strategy should return value as Decimal.
+            # Strategy should return value as Decimal for accuracy.
             amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
-                return
-            if amount > trade.amount:
-                logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
                 return
             self.execute_trade_exit(trade, current_exit_rate, sell_reason=SellCheckTuple(
                 sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
