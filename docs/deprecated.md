@@ -24,6 +24,10 @@ Please refer to [pairlists](plugins.md#pairlists-and-pairlist-handlers) instead.
 Did only download the latest 500 candles, so was ineffective in getting good backtest data.
 Removed in 2019-7-dev (develop branch) and in freqtrade 2019.8.
 
+### `ticker_interval` (now `timeframe`)
+
+Support for `ticker_interval` terminology was deprecated in 2020.6 in favor of `timeframe` - and compatibility code was removed in 2022.3.
+
 ### Allow running multiple pairlists in sequence
 
 The former `"pairlist"` section in the configuration has been removed, and is replaced by `"pairlists"` - being a list to specify a sequence of pairlists.
