@@ -753,7 +753,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
 
     # In case of closed order
     limit_buy_order_usdt['status'] = 'closed'
-    limit_buy_order_usdt['price'] = 10
+    limit_buy_order_usdt['average'] = 10
     limit_buy_order_usdt['cost'] = 300
     limit_buy_order_usdt['id'] = '444'
 
@@ -771,7 +771,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     limit_buy_order_usdt['amount'] = 30.0
     limit_buy_order_usdt['filled'] = 20.0
     limit_buy_order_usdt['remaining'] = 10.00
-    limit_buy_order_usdt['price'] = 0.5
+    limit_buy_order_usdt['average'] = 0.5
     limit_buy_order_usdt['cost'] = 10.0
     limit_buy_order_usdt['id'] = '555'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
@@ -806,7 +806,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     limit_buy_order_usdt['amount'] = 30.0
     limit_buy_order_usdt['filled'] = 0.0
     limit_buy_order_usdt['remaining'] = 30.0
-    limit_buy_order_usdt['price'] = 0.5
+    limit_buy_order_usdt['average'] = 0.5
     limit_buy_order_usdt['cost'] = 0.0
     limit_buy_order_usdt['id'] = '66'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
