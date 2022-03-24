@@ -2,7 +2,7 @@ EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to brain_confi
 
 import requests
 import sys
-from wao._429_file_util import delete_429_file, write_to_429_file
+from wao._429_file_util import delete_429_file, write_to_429_file, is_response_from_romeo_200
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
@@ -27,7 +27,7 @@ def post_request(text, is_from_romeo=False):
 
     print(str(result))
 
-    if str(result) != TELEGRAM_RESPONSE_200 and is_from_romeo:
+    if is_response_from_romeo_200(str(result), is_from_romeo):
         delete_429_file(text)
         write_to_429_file(text)
     else:

@@ -32,3 +32,10 @@ def write_to_429_file(text):
         with open(file_name, 'w') as file:
             file.write(text)
         file.close()
+
+
+def is_response_from_romeo_200(text, is_from_romeo) -> bool:
+    if text == "<Response [200]>" and is_from_romeo:
+        return True
+    else:
+        return False
