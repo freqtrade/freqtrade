@@ -953,7 +953,6 @@ class LocalTrade():
         """ DEPRECATED! Please use exit_reason instead."""
         return self.exit_reason
 
-
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,

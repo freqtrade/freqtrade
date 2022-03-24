@@ -237,6 +237,8 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     if not ignore_strat_sl:
         assert log_has_re('Exit for NEO/BTC detected. Reason: stop_loss.*', caplog)
         assert trade.exit_reason == ExitType.STOP_LOSS.value
+        # Test compatibility ...
+        assert trade.sell_reason == ExitType.STOP_LOSS.value
 
 
 def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -> None:
@@ -2985,7 +2987,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         fee_close=fee.return_value,
         close_rate=0.555,
         close_date=arrow.utcnow().datetime,
-        sell_reason="sell_reason_whatever",
+        exit_reason="sell_reason_whatever",
     )
     order = {'remaining': 1,
              'amount': 1,

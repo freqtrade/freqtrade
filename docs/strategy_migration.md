@@ -24,8 +24,12 @@ You can use the quick summary as checklist. Please refer to the detailed section
   * [`sell` -> `exit_long`](#populate_sell_trend)
   * [`buy_tag` -> `enter_tag` (used for both long and short trades)](#populate_buy_trend)
   * [New column `enter_short` and corresponding new column `exit_short`](#populate_sell_trend)
-* trade-object now has the following new properties: `is_short`, `enter_side`, `exit_side` and `trade_direction`.
-  * `sell_reason` -> `exit_reason`
+* trade-object now has the following new properties:
+  * `is_short`
+  * `enter_side`
+  * `exit_side`
+  * `trade_direction`
+  * renamed: `sell_reason` -> `exit_reason`
 * [Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries` (mostly relevant for `adjust_trade_position()`)](#adjust-trade-position-changes)
 * Introduced new [`leverage` callback](strategy-callbacks.md#leverage-callback).
 * Informative pairs can now pass a 3rd element in the Tuple, defining the candle type.

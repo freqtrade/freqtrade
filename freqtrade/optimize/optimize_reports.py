@@ -590,7 +590,7 @@ def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t.get('exit_reason', t['sell_reason']), t['trades'],
+        t.get('exit_reason', t.get('sell_reason')), t['trades'],
         _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
