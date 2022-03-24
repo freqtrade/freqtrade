@@ -87,7 +87,7 @@ class Backtesting:
             validate_config_consistency(self.config)
 
         if "timeframe" not in self.config:
-            raise OperationalException("Timeframe (ticker interval) needs to be set in either "
+            raise OperationalException("Timeframe needs to be set in either "
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
