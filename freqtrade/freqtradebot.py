@@ -487,6 +487,10 @@ class FreqtradeBot(LoggingMixin):
             if trade.amount - amount < min_stake_amount:
                 logger.info('Remaining amount would be too small')
                 return
+            if amount > trade.amount:
+                logger.info(
+                    f"Adjusting amount to trade.amount as it is higher. {amount} > {trade.amount}")
+                amount = trade.amount
             self.execute_trade_exit(trade, current_exit_rate, sell_reason=SellCheckTuple(
                 sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
 
