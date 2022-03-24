@@ -5,8 +5,8 @@ from wao.brain_config import BrainConfig
 minimum_string_length = 80
 
 
-def parse_text(text):
-    print("parse_text:...")
+def parse_romeo_message_to_429_title(text):
+    print("parse_romeo_message_to_429_title:...")
     if len(text) > minimum_string_length:
         execution_id = text.split('\n')[3].split(':')[1].replace(" ", "").replace("*", "")
         action_1 = text.split('\n')[0].split(':')[1].replace(" ", "").replace("*", "")
@@ -19,7 +19,7 @@ def parse_text(text):
 
 def delete_429_file(text):
     print("delete_429_file:...")
-    file_name = parse_text(text)
+    file_name = parse_romeo_message_to_429_title(text)
     if file_name is not None:
         if os.path.isfile(file_name):
             os.remove(file_name)
@@ -27,7 +27,7 @@ def delete_429_file(text):
 
 def write_to_429_file(text):
     print("write_to_429_file:...")
-    file_name = parse_text(text)
+    file_name = parse_romeo_message_to_429_title(text)
     if file_name is not None:
         with open(file_name, 'w') as file:
             file.write(text)
