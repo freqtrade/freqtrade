@@ -156,7 +156,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+            trades: List[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
@@ -171,9 +171,8 @@ class RPC:
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
-                        closing_side = trade.exit_side
                         current_rate = self._freqtrade.exchange.get_rate(
-                            trade.pair, refresh=False, side=closing_side)
+                            trade.pair, refresh=False, side=trade.exit_side)
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -223,7 +222,7 @@ class RPC:
 
     def _rpc_status_table(self, stake_currency: str,
                           fiat_display_currency: str) -> Tuple[List, List, float]:
-        trades = Trade.get_open_trades()
+        trades: List[Trade] = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -232,9 +231,8 @@ class RPC:
             for trade in trades:
                 # calculate profit and send message to user
                 try:
-                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=closing_side)
+                        trade.pair, refresh=False, side=trade.exit_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
@@ -458,7 +456,7 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades = Trade.get_trades(trade_filter).order_by(Trade.id).all()
+        trades: List[Trade] = Trade.get_trades(trade_filter).order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_ratio = []
@@ -487,9 +485,8 @@ class RPC:
             else:
                 # Get current rate
                 try:
-                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=closing_side)
+                        trade.pair, refresh=False, side=trade.exit_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
