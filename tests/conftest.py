@@ -1145,7 +1145,7 @@ def limit_buy_order_canceled_empty(request):
             'id': '1234512345',
             'clientOrderId': None,
             'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1166,7 +1166,7 @@ def limit_buy_order_canceled_empty(request):
             'id': 'AZNPFF-4AC4N-7MKTAT',
             'clientOrderId': None,
             'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'status': 'canceled',
             'symbol': 'LTC/USDT',
@@ -1187,7 +1187,7 @@ def limit_buy_order_canceled_empty(request):
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
             'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1208,7 +1208,7 @@ def limit_buy_order_canceled_empty(request):
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
             'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
             'type': 'limit',
@@ -1232,7 +1232,7 @@ def limit_sell_order_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp,
+        'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001173,
         'amount': 90.99181073,
@@ -1279,6 +1279,7 @@ def order_book_l2():
             [0.04402, 37.64]
         ],
         'timestamp': None,
+        'datetime': None,
         'nonce': 288004540
     })
 
@@ -1312,6 +1313,7 @@ def order_book_l2_usd():
             [25.578, 78.614]
         ],
         'timestamp': None,
+        'datetime': None,
         'nonce': 2372149736
     })
 
@@ -1358,6 +1360,7 @@ def tickers():
         'ETH/BTC': {
             'symbol': 'ETH/BTC',
             'timestamp': 1522014806207,
+            'datetime': '2018-03-25T21:53:26.207Z',
             'high': 0.061697,
             'low': 0.060531,
             'bid': 0.061588,
@@ -1379,6 +1382,7 @@ def tickers():
         'TKN/BTC': {
             'symbol': 'TKN/BTC',
             'timestamp': 1522014806169,
+            'datetime': '2018-03-25T21:53:26.169Z',
             'high': 0.01885,
             'low': 0.018497,
             'bid': 0.018799,
@@ -1417,6 +1421,7 @@ def tickers():
         'LTC/BTC': {
             'symbol': 'LTC/BTC',
             'timestamp': 1523787258992,
+            'datetime': '2018-04-15T10:14:19.992Z',
             'high': 0.015978,
             'low': 0.0157,
             'bid': 0.015954,
@@ -1438,6 +1443,7 @@ def tickers():
         'BTT/BTC': {
             'symbol': 'BTT/BTC',
             'timestamp': 1550936557206,
+            'datetime': '2019-02-23T15:42:37.206Z',
             'high': 0.00000026,
             'low': 0.00000024,
             'bid': 0.00000024,
@@ -1459,6 +1465,7 @@ def tickers():
         'HOT/BTC': {
             'symbol': 'HOT/BTC',
             'timestamp': 1572273518661,
+            'datetime': '2019-10-28T14:38:38.661Z',
             'high': 0.00000011,
             'low': 0.00000009,
             'bid': 0.0000001,
@@ -1480,6 +1487,7 @@ def tickers():
         'FUEL/BTC': {
             'symbol': 'FUEL/BTC',
             'timestamp': 1572340250771,
+            'datetime': '2019-10-29T09:10:50.771Z',
             'high': 0.00000040,
             'low': 0.00000035,
             'bid': 0.00000036,
@@ -1501,6 +1509,7 @@ def tickers():
         'BTC/USDT': {
             'symbol': 'BTC/USDT',
             'timestamp': 1573758371399,
+            'datetime': '2019-11-14T19:06:11.399Z',
             'high': 8800.0,
             'low': 8582.6,
             'bid': 8648.16,
@@ -1522,6 +1531,7 @@ def tickers():
         'ETH/USDT': {
             'symbol': 'ETH/USDT',
             'timestamp': 1522014804118,
+            'datetime': '2018-03-25T21:53:24.118Z',
             'high': 530.88,
             'low': 512.0,
             'bid': 529.73,
@@ -1543,6 +1553,7 @@ def tickers():
         'TKN/USDT': {
             'symbol': 'TKN/USDT',
             'timestamp': 1522014806198,
+            'datetime': '2018-03-25T21:53:26.198Z',
             'high': 8718.0,
             'low': 8365.77,
             'bid': 8603.64,
@@ -1564,6 +1575,7 @@ def tickers():
         'BLK/USDT': {
             'symbol': 'BLK/USDT',
             'timestamp': 1522014806145,
+            'datetime': '2018-03-25T21:53:26.145Z',
             'high': 66.95,
             'low': 63.38,
             'bid': 66.473,
@@ -1585,6 +1597,7 @@ def tickers():
         'LTC/USDT': {
             'symbol': 'LTC/USDT',
             'timestamp': 1523787257812,
+            'datetime': '2018-04-15T10:14:18.812Z',
             'high': 129.94,
             'low': 124.0,
             'bid': 129.28,
@@ -1606,6 +1619,7 @@ def tickers():
         'XRP/BTC': {
             'symbol': 'XRP/BTC',
             'timestamp': 1573758257534,
+            'datetime': '2019-11-14T19:04:17.534Z',
             'high': 3.126e-05,
             'low': 3.061e-05,
             'bid': 3.093e-05,
@@ -1717,6 +1731,7 @@ def trades_for_order():
             'isBestMatch': True
         },
         'timestamp': 1521663363189,
+        'datetime': '2018-03-21T20:16:03.189Z',
         'symbol': 'LTC/USDT',
         'id': '34567',
         'order': '123456',
@@ -1752,6 +1767,7 @@ def fetch_trades_result():
                       'm': False,
                       'M': True},
              'timestamp': 1565798399463,
+             'datetime': '2019-08-14T15:59:59.463Z',
              'symbol': 'ETH/BTC',
              'id': '126181329',
              'order': None,
@@ -1771,6 +1787,7 @@ def fetch_trades_result():
                       'm': False,
                       'M': True},
              'timestamp': 1565798399629,
+             'datetime': '2019-08-14T15:59:59.629Z',
              'symbol': 'ETH/BTC',
              'id': '126181330',
              'order': None,
@@ -1790,6 +1807,7 @@ def fetch_trades_result():
                       'm': True,
                       'M': True},
              'timestamp': 1565798399752,
+             'datetime': '2019-08-14T15:59:59.752Z',
              'symbol': 'ETH/BTC',
              'id': '126181331',
              'order': None,
@@ -1809,6 +1827,7 @@ def fetch_trades_result():
                       'm': True,
                       'M': True},
              'timestamp': 1565798399862,
+             'datetime': '2019-08-14T15:59:59.862Z',
              'symbol': 'ETH/BTC',
              'id': '126181332',
              'order': None,
@@ -1828,6 +1847,7 @@ def fetch_trades_result():
                       'm': True,
                       'M': True},
              'timestamp': 1565798399872,
+             'datetime': '2019-08-14T15:59:59.872Z',
              'symbol': 'ETH/BTC',
              'id': '126181333',
              'order': None,
@@ -1844,6 +1864,7 @@ def fetch_trades_result():
 def trades_for_order2():
     return [{'info': {},
              'timestamp': 1521663363189,
+             'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
              'id': '34567',
              'order': '123456',
@@ -1855,6 +1876,7 @@ def trades_for_order2():
              'fee': {'cost': 0.004, 'currency': 'LTC'}},
             {'info': {},
              'timestamp': 1521663363189,
+             'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
              'id': '34567',
              'order': '123456',
@@ -2171,7 +2193,7 @@ def limit_buy_order_usdt_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp,
+        'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 2.00,
         'amount': 30.0,
@@ -2198,7 +2220,7 @@ def limit_sell_order_usdt_open():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp,
+        'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 2.20,
         'amount': 30.0,
@@ -2246,6 +2268,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
     ]
     order['trades'] = [{
         'timestamp': None,
+        'datetime': None,
         'symbol': 'ETH/USDT',
         'id': None,
         'order': '123',
@@ -2258,6 +2281,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
         'fee': {'cost': 0.00025125, 'currency': 'BNB'}
         }, {
         'timestamp': None,
+        'datetime': None,
         'symbol': 'ETH/USDT',
         'id': None,
         'order': '123',
