@@ -1,3 +1,5 @@
+import json
+import requests
 from pathlib import Path
 import subprocess
 import time
@@ -61,6 +63,27 @@ def write_to_csv(list_of_row):
         write.writerow(column_title)
         write.writerows(list_of_row)
     outfile.close()
+    upload_to_google_drive(csv_file_name)
+
+
+def upload_to_google_drive(csv_file_name):
+    print("upload_to_google_drive:...")
+    headers = {
+        "Authorization": "Bearer ya29.A0ARrdaM-x6vlmDbjBPx2SQhPYOoT1ym5ZwVQ-wcLsrjqQAKPFd0B15Ks7dGDNnyPCcPFXI4FU9BfUzb1g-gPpQ2UhjUXPn34kvKc5_pR1_UwCFsqWah1j9QqDTkKHyI1yT-qtz_k_WIcLJ0iTguFgLvZdwaEX"}
+    para = {
+        "name": csv_file_name,
+        "parents": ["1tHOq29-W2Sc4XPwjz2oxj8titeOXjiS_"]
+    }
+    files = {
+        'data': ('metadata', json.dumps(para), 'application/json; charset=UTF-8'),
+        'file': open(csv_file_name, "rb")
+    }
+    request = requests.post(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        headers=headers,
+        files=files
+    )
+    print(request)
 
 
 def run_scalping_strategy_command():
