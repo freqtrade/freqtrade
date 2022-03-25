@@ -553,7 +553,8 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_reason,
+                    sell_reason=sell.sell_reason,  # deprecated
+                    exit_reason=sell.sell_reason,
                     current_time=sell_candle_time):
                 return None
 

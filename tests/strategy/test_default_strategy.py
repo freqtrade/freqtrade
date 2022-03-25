@@ -46,7 +46,8 @@ def test_strategy_test_v3(result, fee, is_short, side):
                                         current_time=datetime.utcnow(),
                                         side=side, entry_tag=None) is True
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
-                                       rate=20000, time_in_force='gtc', sell_reason='roi',
+                                       rate=20000, time_in_force='gtc', exit_reason='roi',
+                                       sell_reason='roi',
                                        current_time=datetime.utcnow(),
                                        side=side) is True
 

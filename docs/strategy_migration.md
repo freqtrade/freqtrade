@@ -20,6 +20,7 @@ If you intend on using markets other than spot markets, please migrate your stra
 * New `side` argument to callbacks without trade object
   * `custom_stake_amount`
   * `confirm_trade_entry`
+* Changed argument name in `confirm_trade_exit`
 * Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries` (mostly relevant for `adjust_trade_position()`).
 * Introduced new [`leverage` callback](strategy-callbacks.md#leverage-callback).
 * Informative pairs can now pass a 3rd element in the Tuple, defining the candle type.
@@ -149,21 +150,45 @@ class AwesomeStrategy(IStrategy):
 
 New string argument `side` - which can be either `"long"` or `"short"`.
 
-``` python hl_lines="5"
+``` python hl_lines="4"
 class AwesomeStrategy(IStrategy):
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
                             **kwargs) -> bool:
       return True
 ```
+
 After: 
 
-``` python hl_lines="5"
+``` python hl_lines="4"
 class AwesomeStrategy(IStrategy):
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
                             side: str, **kwargs) -> bool:
       return True
+```
+
+### `confirm_trade_exit`
+
+Changed argument `sell_reason` to `exit_reason`.
+For compatibility, `sell_reason` will still be provided for a limited time.
+
+``` python hl_lines="3"
+class AwesomeStrategy(IStrategy):
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
+    return True
+```
+
+After:
+
+``` python hl_lines="3"
+class AwesomeStrategy(IStrategy):
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, exit_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
+    return True
 ```
 
 ### Adjust trade position changes

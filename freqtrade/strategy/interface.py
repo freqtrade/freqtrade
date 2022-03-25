@@ -290,7 +290,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular exit order.
@@ -307,7 +307,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Exit reason.
+        :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime

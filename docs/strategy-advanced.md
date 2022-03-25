@@ -49,7 +49,7 @@ from freqtrade.exchange import timeframe_to_prev_date
 
 class AwesomeStrategy(IStrategy):
     def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: 'datetime', **kwargs) -> bool:
         # Obtain pair dataframe.
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -125,7 +125,7 @@ def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 The provided exit-tag is then used as sell-reason - and shown as such in backtest results.
 
 !!! Note
-    `sell_reason` is limited to 100 characters, remaining data will be truncated.
+    `exit_reason` is limited to 100 characters, remaining data will be truncated.
 
 ## Strategy version
 

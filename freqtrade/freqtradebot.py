@@ -1385,7 +1385,8 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
+                time_in_force=time_in_force, exit_reason=sell_reason.sell_reason,
+                sell_reason=sell_reason.sell_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
