@@ -7,7 +7,7 @@ class BrainConfig:
     BACKTEST_MONTH_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
-    IS_BACKTEST = False
+    IS_BACKTEST = True
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     _429_DIRECTORY = "/root/" + WORKSPACE_PATH + "/freqtrade/_429_directory/"
     IS_PARALLEL_EXECUTION = True
