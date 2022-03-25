@@ -13,8 +13,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
-from freqtrade.enums import RunMode, ExitType
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
