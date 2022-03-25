@@ -13,8 +13,8 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, SellType, SignalDirection, SignalTagType, SignalType,
-                             TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, SellType, SignalDirection, SignalTagType,
+                             SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -30,22 +30,6 @@ from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 CUSTOM_EXIT_MAX_LENGTH = 64
-
-
-class ExitCheckTuple:
-    """
-    NamedTuple for Exit type + reason
-    """
-    exit_type: SellType
-    exit_reason: str = ''
-
-    def __init__(self, exit_type: SellType, exit_reason: str = ''):
-        self.exit_type = exit_type
-        self.exit_reason = exit_reason or exit_type.value
-
-    @property
-    def exit_flag(self):
-        return self.exit_type != SellType.NONE
 
 
 class IStrategy(ABC, HyperStrategyMixin):

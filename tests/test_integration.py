@@ -2,11 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitCheckTuple, SellType
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
-from freqtrade.strategy.interface import ExitCheckTuple
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
 
 

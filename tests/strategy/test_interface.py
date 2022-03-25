@@ -11,14 +11,13 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType, SignalDirection
+from freqtrade.enums import ExitCheckTuple, SellType, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
                                       DecimalParameter, IntParameter, RealParameter)
-from freqtrade.strategy.interface import ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
