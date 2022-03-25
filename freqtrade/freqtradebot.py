@@ -990,7 +990,8 @@ class FreqtradeBot(LoggingMixin):
         Check if trade is fulfilled in which case the stoploss
         on exchange should be added immediately if stoploss on exchange
         is enabled.
-        # TODO-lev: liquidation price always on exchange, even without stoploss_on_exchange
+        # TODO: liquidation price always on exchange, even without stoploss_on_exchange
+        # Therefore fetching account liquidations for open pairs may make sense.
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
