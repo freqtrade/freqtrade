@@ -15,8 +15,7 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
-from tests.conftest import (create_mock_trades,
-                            create_mock_trades_with_leverage, log_has, log_has_re)
+from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
 
 
 spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES
