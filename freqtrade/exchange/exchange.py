@@ -1103,11 +1103,12 @@ class Exchange:
             if self.trading_mode == TradingMode.FUTURES:
                 params['reduceOnly'] = True
 
-            amount = self.amount_to_precision(pair, amount)
+            amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
             self._lev_prep(pair, leverage, side)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, price=rate, params=params)
+            order = self._order_contracts_to_amount(order)
             logger.info(f"stoploss {user_order_type} order added for {pair}. "
                         f"stop price: {stop_price}. limit: {rate}")
             self._log_exchange_response('create_stoploss_order', order)
