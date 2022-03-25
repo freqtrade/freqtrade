@@ -4114,10 +4114,36 @@ def test__order_contracts_to_amount(
             'trades': None,
             'info': {},
         },
+        {
+            # Realistic stoploss order on gateio.
+            'id': '123456380',
+            'clientOrderId': '12345638203',
+            'timestamp': None,
+            'datetime': None,
+            'lastTradeTimestamp': None,
+            'status': None,
+            'symbol': None,
+            'type': None,
+            'timeInForce': None,
+            'postOnly': None,
+            'side': None,
+            'price': None,
+            'stopPrice': None,
+            'average': None,
+            'amount': None,
+            'cost': None,
+            'filled': None,
+            'remaining': None,
+            'fee': None,
+            'fees': [],
+            'trades': None,
+            'info': {},
+        },
     ]
 
     order1 = exchange._order_contracts_to_amount(orders[0])
     order2 = exchange._order_contracts_to_amount(orders[1])
+    exchange._order_contracts_to_amount(orders[2])
     assert order1['amount'] == 30.0 * contract_size
     assert order2['amount'] == 40.0 * contract_size
 
@@ -4790,3 +4816,46 @@ def test_get_liquidation_price(
         buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
         expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
         isclose(expected_liq, liq)
+
+
+@pytest.mark.parametrize('contract_size,order_amount', [
+    (10, 10),
+    (0.01, 10000),
+])
+def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amount):
+    api_mock = MagicMock()
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        },
+        'amount': order_amount,
+        'cost': order_amount,
+        'filled': order_amount,
+        'remaining': order_amount,
+        'symbol': 'ETH/BTC',
+    })
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange._get_contract_size = MagicMock(return_value=contract_size)
+
+    api_mock.create_order.reset_mock()
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=100,
+        stop_price=220,
+        order_types={},
+        side='buy',
+        leverage=1.0
+    )
+
+    assert api_mock.create_order.call_args_list[0][1]['amount'] == order_amount
+    assert order['amount'] == 100
+    assert order['cost'] == 100
+    assert order['filled'] == 100
+    assert order['remaining'] == 100
