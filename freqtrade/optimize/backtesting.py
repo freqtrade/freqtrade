@@ -31,7 +31,7 @@ from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple
+from freqtrade.strategy.interface import IStrategy, ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -352,20 +352,20 @@ class Backtesting:
             data[pair] = df_analyzed[headers].values.tolist()
         return data
 
-    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                         trade_dur: int) -> float:
         """
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell.exit_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             return self._get_close_rate_for_stoploss(sell_row, trade, sell, trade_dur)
-        elif sell.sell_type == (SellType.ROI):
+        elif sell.exit_type == (SellType.ROI):
             return self._get_close_rate_for_roi(sell_row, trade, sell, trade_dur)
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_close_rate_for_stoploss(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+    def _get_close_rate_for_stoploss(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                                      trade_dur: int) -> float:
         # our stoploss was already lower than candle high,
         # possibly due to a cancelled trade exit.
@@ -383,7 +383,7 @@ class Backtesting:
         # Special case: trailing triggers within same candle as trade opened. Assume most
         # pessimistic price movement, which is moving just enough to arm stoploss and
         # immediately going down to stop price.
-        if sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
+        if sell.exit_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
             if (
                 not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                 and self.strategy.trailing_only_offset_is_reached
@@ -413,7 +413,7 @@ class Backtesting:
         # Set close_rate to stoploss
         return trade.stop_loss
 
-    def _get_close_rate_for_roi(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+    def _get_close_rate_for_roi(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                                 trade_dur: int) -> float:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0
@@ -521,7 +521,7 @@ class Backtesting:
             low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
         )
 
-        if sell.sell_flag:
+        if sell.exit_flag:
             trade.close_date = sell_candle_time
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
@@ -532,7 +532,7 @@ class Backtesting:
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
             order_type = self.strategy.order_types['exit']
-            if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
+            if sell.exit_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 if order_type == 'limit':
                     closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
@@ -553,12 +553,12 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_reason,  # deprecated
-                    exit_reason=sell.sell_reason,
+                    sell_reason=sell.exit_reason,  # deprecated
+                    exit_reason=sell.exit_reason,
                     current_time=sell_candle_time):
                 return None
 
-            trade.sell_reason = sell.sell_reason
+            trade.sell_reason = sell.exit_reason
 
             # Checks and adds an exit tag, after checking that the length of the
             # sell_row has the length for an exit tag column

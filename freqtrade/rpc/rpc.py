@@ -27,7 +27,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -707,7 +707,7 @@ class RPC:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=trade.exit_side)
-                exit_check = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                exit_check = ExitCheckTuple(exit_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forceexit", self._freqtrade.strategy.order_types["exit"])
 

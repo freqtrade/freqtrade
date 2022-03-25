@@ -18,7 +18,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
                                       DecimalParameter, IntParameter, RealParameter)
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
@@ -455,23 +455,23 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     sl_flag = strategy.stop_loss_reached(current_rate=current_rate, trade=trade,
                                          current_time=now, current_profit=profit,
                                          force_stoploss=0, high=None)
-    assert isinstance(sl_flag, SellCheckTuple)
-    assert sl_flag.sell_type == expected
+    assert isinstance(sl_flag, ExitCheckTuple)
+    assert sl_flag.exit_type == expected
     if expected == SellType.NONE:
-        assert sl_flag.sell_flag is False
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted
     current_rate2 = trade.open_rate * (1 + profit2)
 
     sl_flag = strategy.stop_loss_reached(current_rate=current_rate2, trade=trade,
                                          current_time=now, current_profit=profit2,
                                          force_stoploss=0, high=None)
-    assert sl_flag.sell_type == expected2
+    assert sl_flag.exit_type == expected2
     if expected2 == SellType.NONE:
-        assert sl_flag.sell_flag is False
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
@@ -496,34 +496,34 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.sell_flag is False
-    assert res.sell_type == SellType.NONE
+    assert res.exit_flag is False
+    assert res.exit_type == SellType.NONE
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_flag is True
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_reason == 'custom_sell'
+    assert res.exit_flag is True
+    assert res.exit_type == SellType.CUSTOM_SELL
+    assert res.exit_reason == 'custom_sell'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_flag is True
-    assert res.sell_reason == 'hello world'
+    assert res.exit_type == SellType.CUSTOM_SELL
+    assert res.exit_flag is True
+    assert res.exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_flag is True
-    assert res.sell_reason == 'h' * 64
+    assert res.exit_type == SellType.CUSTOM_SELL
+    assert res.exit_flag is True
+    assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
 
 
