@@ -3966,7 +3966,7 @@ def test__fetch_and_calculate_funding_fees(
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
-                return_value=['1h', '4h', '8h']))
+        return_value=['1h', '4h', '8h']))
     funding_fees = exchange._fetch_and_calculate_funding_fees(
         pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
@@ -4787,3 +4787,46 @@ def test_get_liquidation_price(
         buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
         expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
         isclose(expected_liq, liq)
+
+
+@pytest.mark.parametrize('contract_size,order_amount', [
+    (10, 10),
+    (0.01, 10000),
+])
+def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amount):
+    api_mock = MagicMock()
+    order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
+
+    api_mock.create_order = MagicMock(return_value={
+        'id': order_id,
+        'info': {
+            'foo': 'bar'
+        },
+        'amount': order_amount,
+        'cost': order_amount,
+        'filled': order_amount,
+        'remaining': order_amount,
+        'symbol': 'ETH/BTC',
+    })
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
+    mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange._get_contract_size = MagicMock(return_value=contract_size)
+
+    api_mock.create_order.reset_mock()
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=100,
+        stop_price=220,
+        order_types={},
+        side='buy',
+        leverage=1.0
+    )
+
+    assert api_mock.create_order.call_args_list[0][1]['amount'] == order_amount
+    assert order['amount'] == 100
+    assert order['cost'] == 100
+    assert order['filled'] == 100
+    assert order['remaining'] == 100
