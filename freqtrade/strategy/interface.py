@@ -136,8 +136,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
                 continue
-            informative_data_list = getattr(
-                cls_method, '_ft_informative', None)
+            informative_data_list = getattr(cls_method, '_ft_informative', None)
             if not isinstance(informative_data_list, list):
                 # Type check is required because mocker would return a mock object that evaluates to
                 # True, confusing this code.
@@ -945,9 +944,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        sl_lower_short = (trade.stop_loss < (low or current_rate) and not trade.is_short)
-        sl_higher_long = (trade.stop_loss > (high or current_rate) and trade.is_short)
-        if self.trailing_stop and (sl_lower_short or sl_higher_long):
+        sl_lower_long = (trade.stop_loss < (low or current_rate) and not trade.is_short)
+        sl_higher_short = (trade.stop_loss > (high or current_rate) and trade.is_short)
+        if self.trailing_stop and (sl_lower_long or sl_higher_short):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
