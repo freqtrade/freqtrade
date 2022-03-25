@@ -19,7 +19,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, MarginMode, ExitType,
+from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, MarginMode,
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -129,12 +129,9 @@ class Backtesting:
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
-        self.margin_mode: MarginMode = config.get('margin_mode', MarginMode.NONE)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
 
-        self.progress = BTProgress()
-        self.abort = False
         self.init_backtest()
 
     def __del__(self):

@@ -1092,7 +1092,7 @@ When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are
 
 The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:
 
-- `enter_long` -> `exit_long`, `exit_short`
+- `enter_long` -> `exit_long`, `enter_short`
 - `enter_short` -> `exit_short`, `enter_long`
 
 ## Further strategy ideas
