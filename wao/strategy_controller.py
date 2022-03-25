@@ -5,7 +5,7 @@ from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
-EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
+EXECUTION_PATH = '/root/workspace/execution'  # do not move this to config
 from romeo import Romeo, RomeoExitPriceType
 
 

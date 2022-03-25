@@ -1,4 +1,4 @@
-EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
+EXECUTION_PATH = '/root/workspace/execution'  # do not move this to config
 import sys
 import threading
 import watchdog
