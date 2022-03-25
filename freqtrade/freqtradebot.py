@@ -1428,14 +1428,14 @@ class FreqtradeBot(LoggingMixin):
     def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> None:
         # Try update amount (binance-fix)
         try:
-            new_amount = self.get_real_amount(trade, order)
+            new_amount = self.get_real_amount(trade, order, order_obj)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order_obj.ft_fee_base = trade.amount - new_amount
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
-    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict, order_obj: Order) -> float:
         """
         Detect and update trade fee.
         Calls trade.update_fee() upon correct detection.
@@ -1453,7 +1453,7 @@ class FreqtradeBot(LoggingMixin):
         # use fee from order-dict if possible
         if self.exchange.order_has_fee(order):
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
-            logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
+            logger.info(f"Fee for Trade {trade} [{order_obj.ft_order_side}]: "
                         f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
             if fee_rate is None or fee_rate < 0.02:
                 # Reject all fees that report as > 2%.
@@ -1465,17 +1465,18 @@ class FreqtradeBot(LoggingMixin):
                     return self.apply_fee_conditional(trade, trade_base_currency,
                                                       amount=order_amount, fee_abs=fee_cost)
                 return order_amount
-        return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
+        return self.fee_detection_from_trades(
+            trade, order, order_obj, order_amount, order.get('trades', []))
 
-    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
-                                  trades: List) -> float:
+    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_obj: Order,
+                                  order_amount: float, trades: List) -> float:
         """
         fee-detection fallback to Trades.
         Either uses provided trades list or the result of fetch_my_trades to get correct fee.
         """
         if not trades:
             trades = self.exchange.get_trades_for_order(
-                self.exchange.get_order_id_conditional(order), trade.pair, trade.open_date)
+                self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)
