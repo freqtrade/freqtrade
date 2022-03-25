@@ -34,7 +34,7 @@ class StrategyController:
             current_time) + ", mode=" + str(mode) + ", coin=" + str(coin) + ", brain=" + str(brain))
         if sell_reason == 'sell_signal':
             if BrainConfig.IS_BACKTEST:
-                perform_back_test_sell(current_time, coin, self.romeo_pool)
+                perform_back_test_sell(current_time)
             else:
                 perform_execute_sell(coin, self.romeo_pool)
 
