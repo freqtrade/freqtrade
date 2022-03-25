@@ -688,7 +688,7 @@ class LocalTrade():
         Get amount of failed exiting orders
         assumes full exits.
         """
-        return len([o for o in self.orders if o.ft_order_side == 'sell'])
+        return len([o for o in self.orders if o.ft_order_side == self.exit_side])
 
     def _calc_open_trade_value(self) -> float:
         """
@@ -706,16 +706,14 @@ class LocalTrade():
         """
         Recalculate open_trade_value.
         Must be called whenever open_rate, fee_open or is_short is changed.
-
         """
         self.open_trade_value = self._calc_open_trade_value()
 
     def calculate_interest(self, interest_rate: Optional[float] = None) -> Decimal:
         """
-        : param interest_rate: interest_charge for borrowing this coin(optional).
+        :param interest_rate: interest_charge for borrowing this coin(optional).
         If interest_rate is not set self.interest_rate will be used
         """
-
         zero = Decimal(0.0)
         # If nothing was borrowed
         if self.trading_mode != TradingMode.MARGIN or self.has_no_leverage:
