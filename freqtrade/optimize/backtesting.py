@@ -853,7 +853,7 @@ class Backtesting:
         """
         for order in [o for o in trade.orders if o.ft_is_open]:
 
-            timedout = self.strategy.ft_check_timed_out(order.side, trade, order, current_time)
+            timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
             if timedout:
                 if order.side == trade.enter_side:
                     self.timedout_entry_orders += 1

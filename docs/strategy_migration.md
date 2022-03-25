@@ -11,6 +11,8 @@ If you intend on using markets other than spot markets, please migrate your stra
   * `populate_buy_trend()` -> `populate_entry_trend()`
   * `populate_sell_trend()` -> `populate_exit_trend()`
   * `custom_sell()` -> `custom_exit()`
+  * `check_buy_timeout()` -> `check_entry_timeout()`
+  * `check_sell_timeout()` -> `check_exit_timeout()`
 * Dataframe columns:
   * `buy` -> `enter_long`
   * `sell` -> `exit_long`
@@ -122,6 +124,32 @@ class AwesomeStrategy(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1].squeeze()
         # ...
+```
+
+### `custom_entry_timeout`
+
+`check_buy_timeout()` has been renamed to `check_entry_timeout()`, and `check_sell_timeout()` has been renamed to `check_exit_timeout()`.
+
+``` python hl_lines="2 6"
+class AwesomeStrategy(IStrategy):
+    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
+        return False
+
+    def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
+        return False 
+```
+
+``` python hl_lines="2 6"
+class AwesomeStrategy(IStrategy):
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
+        return False
+
+    def check_exit_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
+        return False 
 ```
 
 ### Custom-stake-amount

@@ -32,8 +32,8 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Call `populate_entry_trend()`
   * Call `populate_exit_trend()`
 * Check timeouts for open orders.
-  * Calls `check_buy_timeout()` strategy callback for open entry orders.
-  * Calls `check_sell_timeout()` strategy callback for open exit orders.
+  * Calls `check_entry_timeout()` strategy callback for open entry orders.
+  * Calls `check_exit_timeout()` strategy callback for open exit orders.
 * Verifies existing positions and eventually places exit orders.
   * Considers stoploss, ROI and exit-signal, `custom_exit()` and `custom_stoploss()`.
   * Determine exit-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
@@ -64,7 +64,7 @@ This loop will be repeated again and again until the bot is stopped.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
   * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
   * For exits based on exit-signal and custom-exit: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
-  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_buy_timeout()` / `check_sell_timeout()` strategy callbacks.
+  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
 * Generate backtest report output
 
 !!! Note
