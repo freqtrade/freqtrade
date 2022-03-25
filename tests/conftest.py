@@ -5,7 +5,7 @@ import re
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
 import arrow
@@ -358,10 +358,6 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
     add_trade(trade)
     if use_db:
         Trade.commit()
-
-
-def get_sides(is_short: bool) -> Tuple[str, str]:
-    return ("sell", "buy") if is_short else ("buy", "sell")
 
 
 @pytest.fixture(autouse=True)

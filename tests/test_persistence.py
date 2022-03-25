@@ -15,8 +15,8 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
-from tests.conftest import (create_mock_trades, create_mock_trades_usdt,
-                            create_mock_trades_with_leverage, get_sides, log_has, log_has_re)
+from tests.conftest import (create_mock_trades,
+                            create_mock_trades_with_leverage, log_has, log_has_re)
 
 
 spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES
@@ -77,7 +77,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
 @pytest.mark.parametrize('is_short', [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_enter_exit_side(fee, is_short):
-    enter_side, exit_side = get_sides(is_short)
+    enter_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -456,7 +456,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     enter_order = limit_sell_order_usdt if is_short else limit_buy_order_usdt
     exit_order = limit_buy_order_usdt if is_short else limit_sell_order_usdt
-    enter_side, exit_side = get_sides(is_short)
+    enter_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
 
     trade = Trade(
         id=2,
