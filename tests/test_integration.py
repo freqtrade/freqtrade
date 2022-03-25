@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.enums import ExitCheckTuple, SellType
+from freqtrade.enums import ExitCheckTuple, ExitType
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
@@ -52,8 +52,8 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
         side_effect=[stoploss_order_closed, stoploss_order_open, stoploss_order_open])
     # Sell 3rd trade (not called for the first trade)
     should_sell_mock = MagicMock(side_effect=[
-        ExitCheckTuple(exit_type=SellType.NONE),
-        ExitCheckTuple(exit_type=SellType.SELL_SIGNAL)]
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.SELL_SIGNAL)]
     )
     cancel_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
@@ -115,7 +115,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert wallets_mock.call_count == 4
 
     trade = trades[0]
-    assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
+    assert trade.sell_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert not trade.is_open
 
     trade = trades[1]
@@ -123,7 +123,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert trade.is_open
 
     trade = trades[2]
-    assert trade.sell_reason == SellType.SELL_SIGNAL.value
+    assert trade.sell_reason == ExitType.SELL_SIGNAL.value
     assert not trade.is_open
 
 
@@ -160,11 +160,11 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
         _notify_exit=MagicMock(),
     )
     should_sell_mock = MagicMock(side_effect=[
-        ExitCheckTuple(exit_type=SellType.NONE),
-        ExitCheckTuple(exit_type=SellType.SELL_SIGNAL),
-        ExitCheckTuple(exit_type=SellType.NONE),
-        ExitCheckTuple(exit_type=SellType.NONE),
-        ExitCheckTuple(exit_type=SellType.NONE)]
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.SELL_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.NONE)]
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_exit", should_sell_mock)
 

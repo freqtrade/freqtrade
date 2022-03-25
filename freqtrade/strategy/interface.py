@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, SellType, SignalDirection, SignalTagType,
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, SignalTagType,
                              SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -861,7 +861,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=current_time))
 
-        sell_signal = SellType.NONE
+        sell_signal = ExitType.NONE
         custom_reason = ''
         # use provided rate in backtesting, not high/low.
         current_rate = rate
@@ -872,14 +872,14 @@ class IStrategy(ABC, HyperStrategyMixin):
             pass
         elif self.use_sell_signal and not enter:
             if exit_:
-                sell_signal = SellType.SELL_SIGNAL
+                sell_signal = ExitType.SELL_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
-                    sell_signal = SellType.CUSTOM_SELL
+                    sell_signal = ExitType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
@@ -888,9 +888,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if sell_signal in (SellType.CUSTOM_SELL, SellType.SELL_SIGNAL):
+            if sell_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
-                             f"sell_type=SellType.{sell_signal.name}" +
+                             f"sell_type=ExitType.{sell_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
                 return ExitCheckTuple(exit_type=sell_signal, exit_reason=custom_reason)
 
@@ -898,9 +898,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Exit-signal
         # ROI (if not stoploss)
         # Stoploss
-        if roi_reached and stoplossflag.exit_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
-            return ExitCheckTuple(exit_type=SellType.ROI)
+        if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=ExitType.ROI")
+            return ExitCheckTuple(exit_type=ExitType.ROI)
 
         if stoplossflag.exit_flag:
 
@@ -909,7 +909,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No exit signal.")
-        return ExitCheckTuple(exit_type=SellType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
@@ -973,11 +973,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         if ((sl_higher_long or sl_lower_short) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
-            sell_type = SellType.STOP_LOSS
+            sell_type = ExitType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                sell_type = SellType.TRAILING_STOP_LOSS
+                sell_type = ExitType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at "
                     f"{((high if trade.is_short else low) or current_rate):.6f}, "
@@ -994,7 +994,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             return ExitCheckTuple(exit_type=sell_type)
 
-        return ExitCheckTuple(exit_type=SellType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """

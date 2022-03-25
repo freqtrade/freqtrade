@@ -13,7 +13,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import RunMode, ExitType
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange import timeframe_to_seconds
@@ -461,7 +461,7 @@ class Edge:
 
             if stop_index <= sell_index:
                 exit_index = open_trade_index + stop_index
-                exit_type = SellType.STOP_LOSS
+                exit_type = ExitType.STOP_LOSS
                 exit_price = stop_price
             elif stop_index > sell_index:
                 # If exit is SELL then we exit at the next candle
@@ -471,7 +471,7 @@ class Edge:
                 if len(ohlc_columns) - 1 < exit_index:
                     break
 
-                exit_type = SellType.SELL_SIGNAL
+                exit_type = ExitType.SELL_SIGNAL
                 exit_price = ohlc_columns[exit_index, 0]
 
             trade = {'pair': pair,

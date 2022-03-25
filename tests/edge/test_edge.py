@@ -12,7 +12,7 @@ from pandas import DataFrame, to_datetime
 
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
 from tests.conftest import get_patched_freqtradebot, log_has
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
@@ -95,8 +95,8 @@ tc1 = BTContainer(data=[
     [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
 ],
     stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
-    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=2),
-            BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=4, close_tick=6)]
+    trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=2),
+            BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=4, close_tick=6)]
 )
 
 # 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
@@ -107,7 +107,7 @@ tc2 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.01, roi={"0": float('inf')}, profit_perc=-0.01,
-    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
@@ -118,7 +118,7 @@ tc3 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
-    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # 5) Stoploss and sell are hit. should sell on stoploss
@@ -129,7 +129,7 @@ tc4 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
-    trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 TESTS = [

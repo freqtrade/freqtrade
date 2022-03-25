@@ -18,7 +18,7 @@ from telegram.error import BadRequest, NetworkError, TelegramError
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
-from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State
+from freqtrade.enums import RPCMessageType, RunMode, ExitType, SignalDirection, State
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
@@ -1059,7 +1059,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': SellType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1127,7 +1127,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': SellType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1185,7 +1185,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': SellType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1932,7 +1932,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
         'enter_tag': 'buy_signal1',
-        'sell_reason': SellType.STOP_LOSS.value,
+        'sell_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
     })
@@ -1966,7 +1966,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'enter_tag': 'buy_signal1',
-        'sell_reason': SellType.STOP_LOSS.value,
+        'sell_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
@@ -2045,7 +2045,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'enter_tag': enter_signal,
-        'sell_reason': SellType.STOP_LOSS.value,
+        'sell_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
@@ -2169,7 +2169,7 @@ def test_send_msg_sell_notification_no_fiat(
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
         'enter_tag': enter_signal,
-        'sell_reason': SellType.STOP_LOSS.value,
+        'sell_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })

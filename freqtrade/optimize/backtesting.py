@@ -19,7 +19,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, MarginMode, SellType,
+from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, MarginMode, ExitType,
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -359,9 +359,9 @@ class Backtesting:
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if sell.exit_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
             return self._get_close_rate_for_stoploss(sell_row, trade, sell, trade_dur)
-        elif sell.exit_type == (SellType.ROI):
+        elif sell.exit_type == (ExitType.ROI):
             return self._get_close_rate_for_roi(sell_row, trade, sell, trade_dur)
         else:
             return sell_row[OPEN_IDX]
@@ -384,7 +384,7 @@ class Backtesting:
         # Special case: trailing triggers within same candle as trade opened. Assume most
         # pessimistic price movement, which is moving just enough to arm stoploss and
         # immediately going down to stop price.
-        if sell.exit_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
+        if sell.exit_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
             if (
                 not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                 and self.strategy.trailing_only_offset_is_reached
@@ -533,7 +533,7 @@ class Backtesting:
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
             order_type = self.strategy.order_types['exit']
-            if sell.exit_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
+            if sell.exit_type in (ExitType.SELL_SIGNAL, ExitType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 if order_type == 'limit':
                     closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
@@ -814,7 +814,7 @@ class Backtesting:
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX].to_pydatetime()
-                    trade.sell_reason = SellType.FORCE_SELL.value
+                    trade.sell_reason = ExitType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
                     # Deepcopy object to have wallets update correctly
