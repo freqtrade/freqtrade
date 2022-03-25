@@ -1,5 +1,3 @@
-import json
-import requests
 from pathlib import Path
 import subprocess
 import time
