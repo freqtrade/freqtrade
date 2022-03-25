@@ -4111,10 +4111,36 @@ def test__order_contracts_to_amount(
             'trades': None,
             'info': {},
         },
+        {
+            # Realistic stoploss order on gateio.
+            'id': '123456380',
+            'clientOrderId': '12345638203',
+            'timestamp': None,
+            'datetime': None,
+            'lastTradeTimestamp': None,
+            'status': None,
+            'symbol': None,
+            'type': None,
+            'timeInForce': None,
+            'postOnly': None,
+            'side': None,
+            'price': None,
+            'stopPrice': None,
+            'average': None,
+            'amount': None,
+            'cost': None,
+            'filled': None,
+            'remaining': None,
+            'fee': None,
+            'fees': [],
+            'trades': None,
+            'info': {},
+        },
     ]
 
     order1 = exchange._order_contracts_to_amount(orders[0])
     order2 = exchange._order_contracts_to_amount(orders[1])
+    exchange._order_contracts_to_amount(orders[2])
     assert order1['amount'] == 30.0 * contract_size
     assert order2['amount'] == 40.0 * contract_size
 
