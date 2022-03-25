@@ -707,12 +707,12 @@ class RPC:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=trade.exit_side)
-                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                exit_check = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forceexit", self._freqtrade.strategy.order_types["exit"])
 
                 self._freqtrade.execute_trade_exit(
-                    trade, current_rate, sell_reason, ordertype=order_type)
+                    trade, current_rate, exit_check, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:

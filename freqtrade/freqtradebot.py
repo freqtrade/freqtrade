@@ -976,7 +976,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
-            self.execute_trade_exit(trade, trade.stop_loss, sell_reason=SellCheckTuple(
+            self.execute_trade_exit(trade, trade.stop_loss, exit_check=SellCheckTuple(
                 sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
@@ -1158,7 +1158,7 @@ class FreqtradeBot(LoggingMixin):
                         try:
                             self.execute_trade_exit(
                                 trade, order.get('price'),
-                                sell_reason=SellCheckTuple(sell_type=SellType.EMERGENCY_SELL))
+                                exit_check=SellCheckTuple(sell_type=SellType.EMERGENCY_SELL))
                         except DependencyException as exception:
                             logger.warning(
                                 f'Unable to emergency sell trade {trade.pair}: {exception}')
@@ -1333,7 +1333,7 @@ class FreqtradeBot(LoggingMixin):
             self,
             trade: Trade,
             limit: float,
-            sell_reason: SellCheckTuple,
+            exit_check: SellCheckTuple,
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
@@ -1342,7 +1342,7 @@ class FreqtradeBot(LoggingMixin):
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
-        :param sell_reason: Reason the sell was triggered
+        :param exit_check: CheckTuple with signal and reason
         :return: True if it succeeds (supported) False (not supported)
         """
         trade.funding_fees = self.exchange.get_funding_fees(
@@ -1352,7 +1352,7 @@ class FreqtradeBot(LoggingMixin):
             open_date=trade.open_date,
         )
         exit_type = 'exit'
-        if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if exit_check.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
@@ -1376,7 +1376,7 @@ class FreqtradeBot(LoggingMixin):
         trade = self.cancel_stoploss_on_exchange(trade)
 
         order_type = ordertype or self.strategy.order_types[exit_type]
-        if sell_reason.sell_type == SellType.EMERGENCY_SELL:
+        if exit_check.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencyexit", "market")
 
@@ -1385,8 +1385,8 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force, exit_reason=sell_reason.sell_reason,
-                sell_reason=sell_reason.sell_reason,  # sellreason -> compatibility
+                time_in_force=time_in_force, exit_reason=exit_check.sell_reason,
+                sell_reason=exit_check.sell_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
@@ -1415,7 +1415,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = exit_tag or sell_reason.sell_reason
+        trade.sell_reason = exit_tag or exit_check.sell_reason
 
         # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
