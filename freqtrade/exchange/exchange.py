@@ -1139,7 +1139,7 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
-        if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
+        if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             if order_book is None:
@@ -1178,14 +1178,15 @@ class Exchange:
         return rate
 
     def get_rates(self, pair: str, refresh: bool) -> Tuple[float, float]:
-        buy_rate = sell_rate = None
+        buy_rate = None
+        sell_rate = None
         if not refresh:
             buy_rate, sell_rate = self._buy_rate_cache.get(pair), self._sell_rate_cache.get(pair)
 
         bid_strategy = self._config.get('bid_strategy', {})
         ask_strategy = self._config.get('ask_strategy', {})
         order_book = ticker = None
-        if bid_strategy.get('use_order_book', False) and ('use_order_book' in bid_strategy):
+        if bid_strategy.get('use_order_book', False):
             order_book_top = max(bid_strategy.get('order_book_top', 1),
                                  ask_strategy.get('order_book_top', 1))
             order_book = self.fetch_l2_order_book(pair, order_book_top)
