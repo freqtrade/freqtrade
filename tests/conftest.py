@@ -1399,7 +1399,7 @@ def tickers():
         'BLK/BTC': {
             'symbol': 'BLK/BTC',
             'timestamp': 1522014806072,
-            'datetime': '2018-03-25T21:53:26.720Z',
+            'datetime': '2018-03-25T21:53:26.072Z',
             'high': 0.007745,
             'low': 0.007512,
             'bid': 0.007729,
