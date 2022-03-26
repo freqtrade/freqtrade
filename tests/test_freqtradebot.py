@@ -2378,8 +2378,7 @@ def test_check_handle_timedout_entry_usercustom(
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_order_id
 
-    default_conf_usdt["unfilledtimeout"] = {"entry": 30,
-                                            "exit": 1400} if is_short else {"entry": 1400, "exit": 30}
+    default_conf_usdt["unfilledtimeout"] = {"entry": 1400, "exit": 30}
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock(return_value=old_order)
@@ -2399,6 +2398,7 @@ def test_check_handle_timedout_entry_usercustom(
     freqtrade = FreqtradeBot(default_conf_usdt)
     open_trade.is_short = is_short
     open_trade.orders[0].side = 'sell' if is_short else 'buy'
+    open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     Trade.query.session.add(open_trade)
 
     # Ensure default is to return empty (so not mocked yet)
