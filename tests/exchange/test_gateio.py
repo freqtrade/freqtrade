@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -72,8 +73,13 @@ def test_stoploss_adjust_gateio(mocker, default_conf, sl1, sl2, sl3, side):
     assert exchange.stoploss_adjust(sl1, order, side)
     assert not exchange.stoploss_adjust(sl2, order, side)
 
+@pytest.mark.parametrize('takerormaker,rate,cost', [
+    ('taker', 0.0005, 0.0001554325),
+    ('maker', 0.0, 0.0),
 
-def test_fetch_order_gateio(mocker, default_conf):
+])
+def test_fetch_my_trades_gateio(mocker, default_conf, takerormaker, rate, cost):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     tick = {'ETH/USDT:USDT': {
         'info': {'user_id': '',
                  'taker_fee': '0.0018',
@@ -94,17 +100,19 @@ def test_fetch_order_gateio(mocker, default_conf):
     default_conf['margin_mode'] = MarginMode.ISOLATED
 
     api_mock = MagicMock()
-    api_mock.fetch_order = MagicMock(return_value={
-        'fee': None,
+    api_mock.fetch_my_trades = MagicMock(return_value=[{
+        'fee': {'cost': None},
         'price': 3108.65,
         'cost': 0.310865,
+        'order': '22255',
+        'takerOrMaker': takerormaker,
         'amount': 1,  # 1 contract
-    })
+    }])
     exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, id='gateio')
     exchange._trading_fees = tick
-    order = exchange.fetch_order('22255', 'ETH/USDT:USDT')
-
-    assert order['fee']
-    assert order['fee']['rate'] == 0.0005
-    assert order['fee']['currency'] == 'USDT'
-    assert order['fee']['cost'] == 0.0001554325
+    trades = exchange.get_trades_for_order('22255', 'ETH/USDT:USDT', datetime.now(timezone.utc))
+    trade = trades[0]
+    assert trade['fee']
+    assert trade['fee']['rate'] == rate
+    assert trade['fee']['currency'] == 'USDT'
+    assert trade['fee']['cost'] == cost

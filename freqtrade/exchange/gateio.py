@@ -1,6 +1,7 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -46,25 +47,29 @@ class Gateio(Exchange):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
 
-    def fetch_order(self, order_id: str, pair: str, params={}) -> Dict:
-        order = super().fetch_order(order_id, pair, params)
+    def get_trades_for_order(self, order_id: str, pair: str, since: datetime,
+                             params: Optional[Dict] = None) -> List:
+        trades = super().get_trades_for_order(order_id, pair, since, params)
 
-        if self.trading_mode == TradingMode.FUTURES and order.get('fee') is None:
+        if self.trading_mode == TradingMode.FUTURES:
             # Futures usually don't contain fees in the response.
             # As such, futures orders on gateio will not contain a fee, which causes
             # a repeated "update fee" cycle and wrong calculations.
             # Therefore we patch the response with fees if it's not available.
             # An alternative also contianing fees would be
             # privateFuturesGetSettleAccountBook({"settle": "usdt"})
-
             pair_fees = self._trading_fees.get(pair, {})
-            if pair_fees and pair_fees['taker'] is not None:
-                order['fee'] = {
-                    'currency': self.get_pair_quote_currency(pair),
-                    'cost': abs(order['cost']) * pair_fees['taker'],
-                    'rate': pair_fees['taker'],
-                }
-        return order
+            if pair_fees:
+                for idx, trade in enumerate(trades):
+                    if trade.get('fee', {}).get('cost') is None:
+                        takerOrMaker = trade.get('takerOrMaker', 'taker')
+                        if pair_fees.get(takerOrMaker) is not None:
+                            trades[idx]['fee'] = {
+                                'currency': self.get_pair_quote_currency(pair),
+                                'cost': abs(trade['cost']) * pair_fees[takerOrMaker],
+                                'rate': pair_fees[takerOrMaker],
+                            }
+        return trades
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
         return self.fetch_order(
