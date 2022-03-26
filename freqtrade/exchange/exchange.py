@@ -75,6 +75,7 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -451,6 +452,9 @@ class Exchange:
             self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
+            if self._ft_has['needs_trading_fees']:
+                self.trading_fees = self.fetch_trading_fees()
+
         except ccxt.BaseError:
             logger.exception('Unable to initialize markets.')
 

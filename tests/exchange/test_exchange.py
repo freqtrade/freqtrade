@@ -1663,11 +1663,9 @@ def test_fetch_trading_fees(default_conf, mocker):
     api_mock.fetch_trading_fees = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    # retrieve original ticker
-    tradingfees = exchange.fetch_trading_fees()
 
-    assert '1INCH/USDT:USDT' in tradingfees
-    assert 'ETH/USDT:USDT' in tradingfees
+    assert '1INCH/USDT:USDT' in exchange.trading_fees
+    assert 'ETH/USDT:USDT' in exchange.trading_fees
     assert api_mock.fetch_trading_fees.call_count == 1
 
     api_mock.fetch_trading_fees.reset_mock()

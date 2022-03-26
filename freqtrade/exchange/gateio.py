@@ -27,6 +27,10 @@ class Gateio(Exchange):
         "stoploss_on_exchange": True,
     }
 
+    _ft_has_futures: Dict = {
+        "needs_trading_fees": True
+    }
+
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
@@ -41,6 +45,26 @@ class Gateio(Exchange):
             if any(v == 'market' for k, v in order_types.items()):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+
+    def fetch_order(self, order_id: str, pair: str, params={}) -> Dict:
+        order = super().fetch_order(order_id, pair, params)
+
+        if self.trading_mode == TradingMode.FUTURES and order.get('fee') is None:
+            # Futures usually don't contain fees in the response.
+            # As such, futures orders on gateio will not contain a fee, which causes
+            # a repeated "update fee" cycle and wrong calculations.
+            # Therefore we patch the response with fees if it's not available.
+            # An alternative also contianing fees would be
+            # privateFuturesGetSettleAccountBook({"settle": "usdt"})
+
+            pair_fees = self.trading_fees.get(pair, {})
+            if pair_fees and pair_fees['taker'] is not None:
+                order['fee'] = {
+                    'currency': self.get_pair_quote_currency(pair),
+                    'cost': abs(order['cost']) * pair_fees['taker'],
+                    'rate': pair_fees['taker'],
+                }
+        return order
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
         return self.fetch_order(
