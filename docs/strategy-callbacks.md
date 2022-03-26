@@ -425,8 +425,8 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
     def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
@@ -466,8 +466,8 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
     def check_entry_timeout(self, pair: str, trade: Trade, order: dict,

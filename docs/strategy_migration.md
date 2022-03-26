@@ -32,6 +32,7 @@ If you intend on using markets other than spot markets, please migrate your stra
 * Strategy/Configuration settings.
   * `order_time_in_force` buy -> entry, sell -> exit.
   * `order_types` buy -> entry, sell -> exit.
+  * `unfilledtimeout` buy -> entry, sell -> exit.
 
 ## Extensive explanation
 
@@ -287,6 +288,7 @@ This should be given the value of `trade.is_short`.
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
+    }
 ```
 
 ``` python hl_lines="2-6"
@@ -299,4 +301,27 @@ This should be given the value of `trade.is_short`.
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
+    }
+```
+
+#### `unfilledtimeout`
+
+`unfilledtimeout` have changed all wordings from `buy` to `entry` - and `sell` to `exit`.
+
+``` python hl_lines="2-3"
+unfilledtimeout = {
+        "buy": 10,
+        "sell": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    }
+```
+
+``` python hl_lines="2-3"
+unfilledtimeout = {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    }
 ```

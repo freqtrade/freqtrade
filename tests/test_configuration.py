@@ -963,7 +963,7 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
-def test_validate_order_types(default_conf, caplog) -> None:
+def test__validate_order_types(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf['order_types'] = {
         'buy': 'limit',
@@ -995,6 +995,31 @@ def test_validate_order_types(default_conf, caplog) -> None:
     conf['trading_mode'] = 'futures'
     with pytest.raises(OperationalException,
                        match=r"Please migrate your order_types settings to use the new wording\."):
+        validate_config_consistency(conf)
+
+
+def test__validate_unfilledtimeout(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['unfilledtimeout'] = {
+        'buy': 30,
+        'sell': 35,
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is.*", caplog)
+    assert conf['unfilledtimeout']['entry'] == 30
+    assert conf['unfilledtimeout']['exit'] == 35
+    assert 'buy' not in conf['unfilledtimeout']
+    assert 'sell' not in conf['unfilledtimeout']
+
+    conf = deepcopy(default_conf)
+    conf['unfilledtimeout'] = {
+        'buy': 30,
+        'sell': 35,
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(
+            OperationalException,
+            match=r"Please migrate your unfilledtimeout settings to use the new wording\."):
         validate_config_consistency(conf)
 
 

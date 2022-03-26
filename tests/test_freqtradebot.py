@@ -2378,8 +2378,8 @@ def test_check_handle_timedout_entry_usercustom(
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_order_id
 
-    default_conf_usdt["unfilledtimeout"] = {"buy": 30,
-                                            "sell": 1400} if is_short else {"buy": 1400, "sell": 30}
+    default_conf_usdt["unfilledtimeout"] = {"entry": 30,
+                                            "exit": 1400} if is_short else {"entry": 1400, "exit": 30}
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock(return_value=old_order)
@@ -2543,7 +2543,7 @@ def test_check_handle_timedout_exit_usercustom(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker,
     is_short, open_trade_usdt, caplog
 ) -> None:
-    default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
+    default_conf_usdt["unfilledtimeout"] = {"entry": 1440, "exit": 1440, "exit_timeout_count": 1}
     limit_sell_order_old['id'] = open_trade_usdt.open_order_id
     if is_short:
         limit_sell_order_old['side'] = 'buy'

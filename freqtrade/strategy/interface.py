@@ -259,7 +259,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the (long)sell/(short)buy-order is cancelled.
         """
-        return self.check_exit_timeout(
+        return self.check_sell_timeout(
             pair=pair, trade=trade, order=order, current_time=current_time)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
@@ -1045,14 +1045,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
-        side = 'buy' if order.side == 'buy' else 'sell'
+        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)
-            timedout = (order.status == 'open' and order.side == side
-                        and order.order_date_utc < timeout_threshold)
+            timedout = (order.status == 'open' and order.order_date_utc < timeout_threshold)
             if timedout:
                 return True
         time_method = (self.check_exit_timeout if order.side == trade.exit_side
