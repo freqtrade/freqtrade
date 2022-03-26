@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Gateio
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
@@ -70,3 +71,40 @@ def test_stoploss_adjust_gateio(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side)
     assert not exchange.stoploss_adjust(sl2, order, side)
+
+
+def test_fetch_order_gateio(mocker, default_conf):
+    tick = {'ETH/USDT:USDT': {
+        'info': {'user_id': '',
+                 'taker_fee': '0.0018',
+                 'maker_fee': '0.0018',
+                 'gt_discount': False,
+                 'gt_taker_fee': '0',
+                 'gt_maker_fee': '0',
+                 'loan_fee': '0.18',
+                 'point_type': '1',
+                 'futures_taker_fee': '0.0005',
+                 'futures_maker_fee': '0'},
+            'symbol': 'ETH/USDT:USDT',
+            'maker': 0.0,
+            'taker': 0.0005}
+            }
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+
+    api_mock = MagicMock()
+    api_mock.fetch_order = MagicMock(return_value={
+        'fee': None,
+        'price': 3108.65,
+        'cost': 0.310865,
+        'amount': 1,  # 1 contract
+    })
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, id='gateio')
+    exchange.trading_fees = tick
+    order = exchange.fetch_order('22255', 'ETH/USDT:USDT')
+
+    assert order['fee']
+    assert order['fee']['rate'] == 0.0005
+    assert order['fee']['currency'] == 'USDT'
+    assert order['fee']['cost'] == 0.0001554325

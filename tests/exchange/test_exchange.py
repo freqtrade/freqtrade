@@ -1628,7 +1628,7 @@ def test_fetch_trading_fees(default_conf, mocker):
     api_mock = MagicMock()
     tick = {
         '1INCH/USDT:USDT': {
-            'info': {'user_id': '6266643',
+            'info': {'user_id': '',
                      'taker_fee': '0.0018',
                      'maker_fee': '0.0018',
                      'gt_discount': False,
@@ -1642,7 +1642,7 @@ def test_fetch_trading_fees(default_conf, mocker):
             'maker': 0.0,
             'taker': 0.0005},
         'ETH/USDT:USDT': {
-            'info': {'user_id': '6266643',
+            'info': {'user_id': '',
                      'taker_fee': '0.0018',
                      'maker_fee': '0.0018',
                      'gt_discount': False,
