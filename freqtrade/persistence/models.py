@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
-from freqtrade.enums import SellType, TradingMode
+from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.persistence.migrations import check_migrate
@@ -625,7 +625,7 @@ class LocalTrade():
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            self.sell_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
                 logger.info(f'{order.order_type.upper()} is hit for {self}.')
             self.close(order.safe_price)
@@ -688,7 +688,7 @@ class LocalTrade():
         Get amount of failed exiting orders
         assumes full exits.
         """
-        return len([o for o in self.orders if o.ft_order_side == 'sell'])
+        return len([o for o in self.orders if o.ft_order_side == self.exit_side])
 
     def _calc_open_trade_value(self) -> float:
         """
@@ -706,16 +706,14 @@ class LocalTrade():
         """
         Recalculate open_trade_value.
         Must be called whenever open_rate, fee_open or is_short is changed.
-
         """
         self.open_trade_value = self._calc_open_trade_value()
 
     def calculate_interest(self, interest_rate: Optional[float] = None) -> Decimal:
         """
-        : param interest_rate: interest_charge for borrowing this coin(optional).
+        :param interest_rate: interest_charge for borrowing this coin(optional).
         If interest_rate is not set self.interest_rate will be used
         """
-
         zero = Decimal(0.0)
         # If nothing was borrowed
         if self.trading_mode != TradingMode.MARGIN or self.has_no_leverage:

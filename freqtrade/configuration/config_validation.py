@@ -216,6 +216,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
 
     _validate_time_in_force(conf)
     _validate_order_types(conf)
+    _validate_unfilledtimeout(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -258,3 +259,23 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
             ]:
 
                 process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
+
+
+def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
+    unfilledtimeout = conf.get('unfilledtimeout', {})
+    if any(x in unfilledtimeout for x in ['buy', 'sell']):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your unfilledtimeout settings to use the new wording.")
+        else:
+
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is deprecated."
+                "Please migrate your unfilledtimeout settings to use 'entry' and 'exit' wording."
+            )
+            for o, n in [
+                ('buy', 'entry'),
+                ('sell', 'exit'),
+            ]:
+
+                process_deprecated_setting(conf, 'unfilledtimeout', o, 'unfilledtimeout', n)

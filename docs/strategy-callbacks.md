@@ -12,7 +12,7 @@ Currently available callbacks:
 * [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
-* [`check_buy_timeout()` and `check_sell_timeout()`](#custom-order-timeout-rules)
+* [`check_entry_timeout()` and `check_exit_timeout()`](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -408,7 +408,7 @@ However, freqtrade also offers a custom callback for both order types, which all
 ### Custom order timeout example
 
 Called for every open order until that order is either filled or cancelled.
-`check_buy_timeout()` is called for trade entries, while `check_sell_timeout()` is called for trade exit orders.
+`check_entry_timeout()` is called for trade entries, while `check_exit_timeout()` is called for trade exit orders.
 
 A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
 It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.
@@ -425,12 +425,12 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
-                          current_time: datetime, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
         elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
@@ -440,7 +440,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -466,12 +466,12 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
-                          current_time: datetime, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
@@ -480,7 +480,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
@@ -546,7 +546,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
@@ -562,7 +562,7 @@ class AwesomeStrategy(IStrategy):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Sell reason.
+        :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
@@ -570,7 +570,7 @@ class AwesomeStrategy(IStrategy):
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
         """
-        if sell_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
+        if exit_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)

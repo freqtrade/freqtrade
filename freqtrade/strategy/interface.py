@@ -13,8 +13,8 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, SellType, SignalDirection, SignalTagType, SignalType,
-                             TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, SignalTagType,
+                             SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -30,22 +30,6 @@ from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 CUSTOM_EXIT_MAX_LENGTH = 64
-
-
-class SellCheckTuple:
-    """
-    NamedTuple for Sell type + reason
-    """
-    sell_type: SellType
-    sell_reason: str = ''
-
-    def __init__(self, sell_type: SellType, sell_reason: str = ''):
-        self.sell_type = sell_type
-        self.sell_reason = sell_reason or sell_type.value
-
-    @property
-    def sell_flag(self):
-        return self.sell_type != SellType.NONE
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -152,8 +136,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
                 continue
-            informative_data_list = getattr(
-                cls_method, '_ft_informative', None)
+            informative_data_list = getattr(cls_method, '_ft_informative', None)
             if not isinstance(informative_data_list, list):
                 # Type check is required because mocker would return a mock object that evaluates to
                 # True, confusing this code.
@@ -226,7 +209,14 @@ class IStrategy(ABC, HyperStrategyMixin):
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
                           current_time: datetime, **kwargs) -> bool:
         """
-        Check buy timeout function callback.
+        DEPRECATED: Please use `check_entry_timeout` instead.
+        """
+        return False
+
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+                            current_time: datetime, **kwargs) -> bool:
+        """
+        Check entry timeout function callback.
         This method can be used to override the enter-timeout.
         It is called whenever a limit entry order has been created,
         and is not yet fully filled.
@@ -241,9 +231,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the entry order is cancelled.
         """
-        return False
+        return self.check_buy_timeout(
+            pair=pair, trade=trade, order=order, current_time=current_time)
 
     def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
+        """
+        DEPRECATED: Please use `check_exit_timeout` instead.
+        """
+        return False
+
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         """
         Check sell timeout function callback.
@@ -261,7 +259,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the (long)sell/(short)buy-order is cancelled.
         """
-        return False
+        return self.check_sell_timeout(
+            pair=pair, trade=trade, order=order, current_time=current_time)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
@@ -290,7 +289,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular exit order.
@@ -307,7 +306,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Exit reason.
+        :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
@@ -848,7 +847,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
                     low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> SellCheckTuple:
+                    force_stoploss: float = 0) -> ExitCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
@@ -877,7 +876,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=current_time))
 
-        sell_signal = SellType.NONE
+        sell_signal = ExitType.NONE
         custom_reason = ''
         # use provided rate in backtesting, not high/low.
         current_rate = rate
@@ -888,14 +887,14 @@ class IStrategy(ABC, HyperStrategyMixin):
             pass
         elif self.use_sell_signal and not enter:
             if exit_:
-                sell_signal = SellType.SELL_SIGNAL
+                sell_signal = ExitType.SELL_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
-                    sell_signal = SellType.CUSTOM_SELL
+                    sell_signal = ExitType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
@@ -904,33 +903,33 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if sell_signal in (SellType.CUSTOM_SELL, SellType.SELL_SIGNAL):
+            if sell_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
-                             f"sell_type=SellType.{sell_signal.name}" +
+                             f"sell_type=ExitType.{sell_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
-                return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
+                return ExitCheckTuple(exit_type=sell_signal, exit_reason=custom_reason)
 
         # Sequence:
         # Exit-signal
         # ROI (if not stoploss)
         # Stoploss
-        if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
-            return SellCheckTuple(sell_type=SellType.ROI)
+        if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=ExitType.ROI")
+            return ExitCheckTuple(exit_type=ExitType.ROI)
 
-        if stoplossflag.sell_flag:
+        if stoplossflag.exit_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.sell_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.exit_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No exit signal.")
-        return SellCheckTuple(sell_type=SellType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, low: float = None,
-                          high: float = None) -> SellCheckTuple:
+                          high: float = None) -> ExitCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to exit or not
@@ -961,9 +960,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        sl_lower_short = (trade.stop_loss < (low or current_rate) and not trade.is_short)
-        sl_higher_long = (trade.stop_loss > (high or current_rate) and trade.is_short)
-        if self.trailing_stop and (sl_lower_short or sl_higher_long):
+        sl_lower_long = (trade.stop_loss < (low or current_rate) and not trade.is_short)
+        sl_higher_short = (trade.stop_loss > (high or current_rate) and trade.is_short)
+        if self.trailing_stop and (sl_lower_long or sl_higher_short):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
@@ -989,11 +988,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         if ((sl_higher_long or sl_lower_short) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
-            sell_type = SellType.STOP_LOSS
+            sell_type = ExitType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                sell_type = SellType.TRAILING_STOP_LOSS
+                sell_type = ExitType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at "
                     f"{((high if trade.is_short else low) or current_rate):.6f}, "
@@ -1008,9 +1007,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{new_stoploss:.6f}")
 
-            return SellCheckTuple(sell_type=sell_type)
+            return ExitCheckTuple(exit_type=sell_type)
 
-        return SellCheckTuple(sell_type=SellType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
@@ -1040,22 +1039,24 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ft_check_timed_out(self, side: str, trade: LocalTrade, order: Order,
+    def ft_check_timed_out(self, trade: LocalTrade, order: Order,
                            current_time: datetime) -> bool:
         """
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
+        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)
-            timedout = (order.status == 'open' and order.side == side
-                        and order.order_date_utc < timeout_threshold)
+            timedout = (order.status == 'open' and order.order_date_utc < timeout_threshold)
             if timedout:
                 return True
-        time_method = self.check_sell_timeout if order.side == 'sell' else self.check_buy_timeout
+        time_method = (self.check_exit_timeout if order.side == trade.exit_side
+                       else self.check_entry_timeout)
 
         return strategy_safe_wrapper(time_method,
                                      default_retval=False)(

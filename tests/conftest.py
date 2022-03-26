@@ -5,7 +5,7 @@ import re
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
 import arrow
@@ -360,10 +360,6 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
         Trade.commit()
 
 
-def get_sides(is_short: bool) -> Tuple[str, str]:
-    return ("sell", "buy") if is_short else ("buy", "sell")
-
-
 @pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
     """
@@ -420,8 +416,8 @@ def get_default_conf(testdatadir):
         "dry_run_wallet": 1000,
         "stoploss": -0.10,
         "unfilledtimeout": {
-            "buy": 10,
-            "sell": 30
+            "entry": 10,
+            "exit": 30
         },
         "bid_strategy": {
             "ask_last_balance": 0.0,

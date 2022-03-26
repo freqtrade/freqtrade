@@ -10,7 +10,7 @@ from filelock import Timeout
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
@@ -357,8 +357,8 @@ def test_hyperopt_format_results(hyperopt):
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': hyperopt.config,
         'locks': [],
@@ -428,8 +428,8 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': hyperopt_conf,
         'locks': [],

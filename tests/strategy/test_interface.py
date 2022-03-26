@@ -11,14 +11,13 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType, SignalDirection
+from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
                                       DecimalParameter, IntParameter, RealParameter)
-from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
@@ -410,22 +409,22 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     'profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
         # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
-        (0.2, 0.9, SellType.NONE, False, False, 0.3, 0.9, SellType.NONE, None),
-        (0.2, 0.9, SellType.NONE, False, False, -0.2, 0.9, SellType.STOP_LOSS, None),
-        (0.2, 1.14, SellType.NONE, True, False, 0.05, 1.14, SellType.TRAILING_STOP_LOSS, None),
-        (0.01, 0.96, SellType.NONE, True, False, 0.05, 1, SellType.NONE, None),
-        (0.05, 1, SellType.NONE, True, False, -0.01, 1, SellType.TRAILING_STOP_LOSS, None),
+        (0.2, 0.9, ExitType.NONE, False, False, 0.3, 0.9, ExitType.NONE, None),
+        (0.2, 0.9, ExitType.NONE, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
+        (0.2, 1.14, ExitType.NONE, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS, None),
+        (0.01, 0.96, ExitType.NONE, True, False, 0.05, 1, ExitType.NONE, None),
+        (0.05, 1, ExitType.NONE, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
         # Default custom case - trails with 10%
-        (0.05, 0.95, SellType.NONE, False, True, -0.02, 0.95, SellType.NONE, None),
-        (0.05, 0.95, SellType.NONE, False, True, -0.06, 0.95, SellType.TRAILING_STOP_LOSS, None),
-        (0.05, 1, SellType.NONE, False, True, -0.06, 1, SellType.TRAILING_STOP_LOSS,
+        (0.05, 0.95, ExitType.NONE, False, True, -0.02, 0.95, ExitType.NONE, None),
+        (0.05, 0.95, ExitType.NONE, False, True, -0.06, 0.95, ExitType.TRAILING_STOP_LOSS, None),
+        (0.05, 1, ExitType.NONE, False, True, -0.06, 1, ExitType.TRAILING_STOP_LOSS,
          lambda **kwargs: -0.05),
-        (0.05, 1, SellType.NONE, False, True, 0.09, 1.04, SellType.NONE,
+        (0.05, 1, ExitType.NONE, False, True, 0.09, 1.04, ExitType.NONE,
          lambda **kwargs: -0.05),
-        (0.05, 0.95, SellType.NONE, False, True, 0.09, 0.98, SellType.NONE,
+        (0.05, 0.95, ExitType.NONE, False, True, 0.09, 0.98, ExitType.NONE,
          lambda current_profit, **kwargs: -0.1 if current_profit < 0.6 else -(current_profit * 2)),
         # Error case - static stoploss in place
-        (0.05, 0.9, SellType.NONE, False, True, 0.09, 0.9, SellType.NONE,
+        (0.05, 0.9, ExitType.NONE, False, True, 0.09, 0.9, ExitType.NONE,
          lambda **kwargs: None),
     ])
 def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
@@ -455,23 +454,23 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     sl_flag = strategy.stop_loss_reached(current_rate=current_rate, trade=trade,
                                          current_time=now, current_profit=profit,
                                          force_stoploss=0, high=None)
-    assert isinstance(sl_flag, SellCheckTuple)
-    assert sl_flag.sell_type == expected
-    if expected == SellType.NONE:
-        assert sl_flag.sell_flag is False
+    assert isinstance(sl_flag, ExitCheckTuple)
+    assert sl_flag.exit_type == expected
+    if expected == ExitType.NONE:
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted
     current_rate2 = trade.open_rate * (1 + profit2)
 
     sl_flag = strategy.stop_loss_reached(current_rate=current_rate2, trade=trade,
                                          current_time=now, current_profit=profit2,
                                          force_stoploss=0, high=None)
-    assert sl_flag.sell_type == expected2
-    if expected2 == SellType.NONE:
-        assert sl_flag.sell_flag is False
+    assert sl_flag.exit_type == expected2
+    if expected2 == ExitType.NONE:
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
@@ -496,34 +495,34 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.sell_flag is False
-    assert res.sell_type == SellType.NONE
+    assert res.exit_flag is False
+    assert res.exit_type == ExitType.NONE
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_flag is True
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_reason == 'custom_sell'
+    assert res.exit_flag is True
+    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_reason == 'custom_sell'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_flag is True
-    assert res.sell_reason == 'hello world'
+    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_flag is True
+    assert res.exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_flag is True
-    assert res.sell_reason == 'h' * 64
+    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_flag is True
+    assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
 
 

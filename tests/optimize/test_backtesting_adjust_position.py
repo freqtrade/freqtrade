@@ -8,7 +8,7 @@ from arrow import Arrow
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
 from tests.conftest import patch_exchange
 
@@ -60,7 +60,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'trade_duration': [200, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'sell_reason': [SellType.ROI.value, SellType.ROI.value],
+         'sell_reason': [ExitType.ROI.value, ExitType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],

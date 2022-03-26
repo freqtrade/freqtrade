@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from requests import RequestException
 
-from freqtrade.enums import RPCMessageType, SellType
+from freqtrade.enums import ExitType, RPCMessageType
 from freqtrade.rpc import RPC
 from freqtrade.rpc.webhook import Webhook
 from tests.conftest import get_patched_freqtradebot, log_has
@@ -244,7 +244,7 @@ def test_send_msg_webhook(default_conf, mocker):
         'profit_amount': 0.001,
         'profit_ratio': 0.20,
         'stake_currency': 'BTC',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': ExitType.STOP_LOSS.value
     }
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
@@ -269,7 +269,7 @@ def test_send_msg_webhook(default_conf, mocker):
         'profit_amount': 0.001,
         'profit_ratio': 0.20,
         'stake_currency': 'BTC',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': ExitType.STOP_LOSS.value
     }
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
@@ -294,7 +294,7 @@ def test_send_msg_webhook(default_conf, mocker):
         'profit_amount': 0.001,
         'profit_ratio': 0.20,
         'stake_currency': 'BTC',
-        'sell_reason': SellType.STOP_LOSS.value
+        'sell_reason': ExitType.STOP_LOSS.value
     }
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1

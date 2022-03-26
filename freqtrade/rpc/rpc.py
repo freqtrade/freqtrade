@@ -18,7 +18,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType, SignalDirection, State, TradingMode
+from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -27,7 +27,6 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.wallets import PositionWallet, Wallet
 
 
@@ -156,7 +155,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+            trades: List[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
@@ -171,9 +170,8 @@ class RPC:
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
-                        closing_side = trade.exit_side
                         current_rate = self._freqtrade.exchange.get_rate(
-                            trade.pair, refresh=False, side=closing_side)
+                            trade.pair, refresh=False, side=trade.exit_side)
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -223,7 +221,7 @@ class RPC:
 
     def _rpc_status_table(self, stake_currency: str,
                           fiat_display_currency: str) -> Tuple[List, List, float]:
-        trades = Trade.get_open_trades()
+        trades: List[Trade] = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -232,9 +230,8 @@ class RPC:
             for trade in trades:
                 # calculate profit and send message to user
                 try:
-                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=closing_side)
+                        trade.pair, refresh=False, side=trade.exit_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
@@ -458,7 +455,7 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades = Trade.get_trades(trade_filter).order_by(Trade.id).all()
+        trades: List[Trade] = Trade.get_trades(trade_filter).order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_ratio = []
@@ -487,9 +484,8 @@ class RPC:
             else:
                 # Get current rate
                 try:
-                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=closing_side)
+                        trade.pair, refresh=False, side=trade.exit_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
@@ -710,12 +706,12 @@ class RPC:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=trade.exit_side)
-                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forceexit", self._freqtrade.strategy.order_types["exit"])
 
                 self._freqtrade.execute_trade_exit(
-                    trade, current_rate, sell_reason, ordertype=order_type)
+                    trade, current_rate, exit_check, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:

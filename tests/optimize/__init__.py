@@ -3,7 +3,7 @@ from typing import Dict, List, NamedTuple, Optional
 import arrow
 from pandas import DataFrame
 
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.exchange import timeframe_to_minutes
 
 
@@ -15,7 +15,7 @@ class BTrade(NamedTuple):
     """
     Minimalistic Trade result used for functional backtesting
     """
-    sell_reason: SellType
+    sell_reason: ExitType
     open_tick: int
     close_tick: int
     enter_tag: Optional[str] = None

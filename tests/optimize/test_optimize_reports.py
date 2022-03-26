@@ -12,7 +12,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
 from freqtrade.edge import PairInfo
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
                                                  generate_daily_stats, generate_edge_table,
                                                  generate_pair_metrics,
@@ -77,8 +77,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': default_conf,
         'locks': [],
@@ -129,8 +129,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
              "is_open": [False, False, False, True],
              "is_short": [False, False, False, False],
              "stake_amount": [0.01, 0.01, 0.01, 0.01],
-             "sell_reason": [SellType.ROI, SellType.ROI,
-                             SellType.STOP_LOSS, SellType.FORCE_SELL]
+             "sell_reason": [ExitType.ROI, ExitType.ROI,
+                             ExitType.STOP_LOSS, ExitType.FORCE_SELL]
              }),
         'config': default_conf,
         'locks': [],
@@ -276,7 +276,7 @@ def test_text_table_sell_reason():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'sell_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
         }
     )
 
@@ -308,7 +308,7 @@ def test_generate_sell_reason_stats():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI.value, SellType.ROI.value, SellType.STOP_LOSS.value]
+            'sell_reason': [ExitType.ROI.value, ExitType.ROI.value, ExitType.STOP_LOSS.value]
         }
     )
 

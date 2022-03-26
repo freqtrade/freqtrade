@@ -908,7 +908,7 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current proce we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)`.
 
     ``` python
 
@@ -1092,7 +1092,7 @@ When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are
 
 The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:
 
-- `enter_long` -> `exit_long`, `exit_short`
+- `enter_long` -> `exit_long`, `enter_short`
 - `enter_short` -> `exit_short`, `enter_long`
 
 ## Further strategy ideas
