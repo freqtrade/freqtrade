@@ -491,7 +491,7 @@ class FreqtradeBot(LoggingMixin):
             # We should decrease our position
             # Strategy should return value as Decimal for accuracy.
             amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
-            if trade.amount - amount < min_exit_stake_amount:
+            if trade.amount - amount < min_exit_stake:
                 logger.info('Remaining amount would be too small')
                 return
             if amount > trade.amount:
