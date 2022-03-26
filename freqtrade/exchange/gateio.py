@@ -57,7 +57,7 @@ class Gateio(Exchange):
             # An alternative also contianing fees would be
             # privateFuturesGetSettleAccountBook({"settle": "usdt"})
 
-            pair_fees = self.trading_fees.get(pair, {})
+            pair_fees = self._trading_fees.get(pair, {})
             if pair_fees and pair_fees['taker'] is not None:
                 order['fee'] = {
                     'currency': self.get_pair_quote_currency(pair),

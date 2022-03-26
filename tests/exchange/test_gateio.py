@@ -101,7 +101,7 @@ def test_fetch_order_gateio(mocker, default_conf):
         'amount': 1,  # 1 contract
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, id='gateio')
-    exchange.trading_fees = tick
+    exchange._trading_fees = tick
     order = exchange.fetch_order('22255', 'ETH/USDT:USDT')
 
     assert order['fee']

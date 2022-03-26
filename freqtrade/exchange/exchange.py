@@ -93,6 +93,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -453,7 +454,7 @@ class Exchange:
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
             if self._ft_has['needs_trading_fees']:
-                self.trading_fees = self.fetch_trading_fees()
+                self._trading_fees = self.fetch_trading_fees()
 
         except ccxt.BaseError:
             logger.exception('Unable to initialize markets.')
