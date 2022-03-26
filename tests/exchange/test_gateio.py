@@ -73,10 +73,10 @@ def test_stoploss_adjust_gateio(mocker, default_conf, sl1, sl2, sl3, side):
     assert exchange.stoploss_adjust(sl1, order, side)
     assert not exchange.stoploss_adjust(sl2, order, side)
 
+
 @pytest.mark.parametrize('takerormaker,rate,cost', [
     ('taker', 0.0005, 0.0001554325),
     ('maker', 0.0, 0.0),
-
 ])
 def test_fetch_my_trades_gateio(mocker, default_conf, takerormaker, rate, cost):
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)

@@ -66,7 +66,7 @@ class Gateio(Exchange):
                         if pair_fees.get(takerOrMaker) is not None:
                             trades[idx]['fee'] = {
                                 'currency': self.get_pair_quote_currency(pair),
-                                'cost': abs(trade['cost']) * pair_fees[takerOrMaker],
+                                'cost': trade['cost'] * pair_fees[takerOrMaker],
                                 'rate': pair_fees[takerOrMaker],
                             }
         return trades
