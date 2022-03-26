@@ -1903,7 +1903,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
         exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
 
 
-@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
+get_buy_rate_data = [
     ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
     ('ask', 20, 19, 10, 1.0, 10),  # Full last side
     ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
@@ -1928,7 +1928,10 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
     ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
     ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
-])
+]
+
+
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_buy_rate_data)
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -1952,7 +1955,7 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
 
-@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', [
+get_sell_rate_data = [
     ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
     ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
     ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
@@ -1972,7 +1975,10 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
     ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
     ('ask', 0.006, 1.0, 11.0, None, 0.006),
-])
+]
+
+
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
 def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -1996,16 +2002,19 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
 
-@pytest.mark.parametrize("entry,side,ask,bid,last,last_ab,expected", [
-    ('buy', 'ask', None, 4, 4,  0, 4),  # ask not available
-    ('buy', 'ask', None, None, 4,  0, 4),  # ask not available
-    ('buy', 'bid', 6, None, 4,  0, 5),  # bid not available
-    ('buy', 'bid', None, None, 4,  0, 5),  # No rate available
-    ('sell', 'ask', None, 4, 4,  0, 4),  # ask not available
-    ('sell', 'ask', None, None, 4,  0, 4),  # ask not available
-    ('sell', 'bid', 6, None, 4,  0, 5),  # bid not available
-    ('sell', 'bid', None, None, 4,  0, 5),  # bid not available
-])
+get_ticker_rate_error = [
+    ('buy', 'ask', None, 4, 4, 0, 4),  # ask not available
+    ('buy', 'ask', None, None, 4, 0, 4),  # ask not available
+    ('buy', 'bid', 6, None, 4, 0, 5),  # bid not available
+    ('buy', 'bid', None, None, 4, 0, 5),  # No rate available
+    ('sell', 'ask', None, 4, 4, 0, 4),  # ask not available
+    ('sell', 'ask', None, None, 4, 0, 4),  # ask not available
+    ('sell', 'bid', 6, None, 4, 0, 5),  # bid not available
+    ('sell', 'bid', None, None, 4, 0, 5),  # bid not available
+]
+
+
+@pytest.mark.parametrize("entry,side,ask,bid,last,last_ab,expected", get_ticker_rate_error)
 def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, bid,
                                last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -2022,8 +2031,8 @@ def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, b
 
 
 @pytest.mark.parametrize('side,expected', [
-    ('bid', 0.043936),  # Value from order_book_l2 fiture - bids side
-    ('ask', 0.043949),  # Value from order_book_l2 fiture - asks side
+    ('bid', 0.043936),  # Value from order_book_l2 fixture - bids side
+    ('ask', 0.043949),  # Value from order_book_l2 fixture - asks side
 ])
 def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, order_book_l2):
     caplog.set_level(logging.DEBUG)
@@ -2080,6 +2089,76 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
 
     exchange._config['ask_strategy']['price_side'] = 'ask'
     assert exchange.get_rate(pair, refresh=True, side="sell") == 0.13
+
+
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_buy_rate_data)
+@pytest.mark.parametrize("side2", ['bid', 'ask'])
+@pytest.mark.parametrize("use_order_book", [True, False])
+def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
+                               last, last_ab, expected,
+                               side2, use_order_book, order_book_l2) -> None:
+    caplog.set_level(logging.DEBUG)
+    if last_ab is None:
+        del default_conf['bid_strategy']['ask_last_balance']
+    else:
+        default_conf['bid_strategy']['ask_last_balance'] = last_ab
+    default_conf['bid_strategy']['price_side'] = side
+    default_conf['ask_strategy']['price_side'] = side2
+    default_conf['ask_strategy']['use_order_book'] = use_order_book
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    api_mock.fetch_ticker = MagicMock(
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    assert exchange.get_rates('ETH/BTC', refresh=True)[0] == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    assert exchange.get_rates('ETH/BTC', refresh=False)[0] == expected
+    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    # Running a 2nd time with Refresh on!
+    caplog.clear()
+    assert exchange.get_rates('ETH/BTC', refresh=True)[0] == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    api_mock.fetch_l2_order_book.call_count = int(use_order_book)
+    api_mock.fetch_ticker.call_count = 1
+
+
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
+@pytest.mark.parametrize("side2", ['bid', 'ask'])
+@pytest.mark.parametrize("use_order_book", [True, False])
+def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
+                                last, last_ab, expected,
+                                side2, use_order_book, order_book_l2) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    default_conf['ask_strategy']['price_side'] = side
+    if last_ab is not None:
+        default_conf['ask_strategy']['bid_last_balance'] = last_ab
+
+    default_conf['bid_strategy']['price_side'] = side2
+    default_conf['bid_strategy']['use_order_book'] = use_order_book
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    api_mock.fetch_ticker = MagicMock(
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    pair = "ETH/BTC"
+
+    # Test regular mode
+    rate = exchange.get_rate(pair, refresh=True, side="sell")
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
+    assert isinstance(rate, float)
+    assert rate == expected
+    # Use caching
+    rate = exchange.get_rate(pair, refresh=False, side="sell")
+    assert rate == expected
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+    api_mock.fetch_l2_order_book.call_count = int(use_order_book)
+    api_mock.fetch_ticker.call_count = 1
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
