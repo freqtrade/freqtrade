@@ -1300,6 +1300,27 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
+    def fetch_trading_fees(self) -> Dict[str, Any]:
+        """
+        Fetch user account trading fees
+        Can be cached, should not update often.
+        """
+        if (self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES
+                or not self.exchange_has('fetchTradingFees')):
+            return {}
+        try:
+            trading_fees: Dict[str, Any] = self._api.fetch_trading_fees()
+            self._log_exchange_response('fetch_trading_fees', trading_fees)
+            return trading_fees
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not fetch trading fees due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
     def fetch_bids_asks(self, symbols: List[str] = None, cached: bool = False) -> Dict:
         """
         :param cached: Allow cached result
