@@ -30,8 +30,8 @@
     },
     "stoploss": -0.10,
     "unfilledtimeout": {
-        "buy": 10,
-        "sell": 10,
+        "entry": 10,
+        "exit": 10,
         "exit_timeout_count": 0,
         "unit": "minutes"
     },

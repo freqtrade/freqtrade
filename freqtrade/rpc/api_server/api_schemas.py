@@ -131,8 +131,8 @@ class Daily(BaseModel):
 
 
 class UnfilledTimeout(BaseModel):
-    buy: Optional[int]
-    sell: Optional[int]
+    entry: Optional[int]
+    exit: Optional[int]
     unit: Optional[str]
     exit_timeout_count: Optional[int]
 

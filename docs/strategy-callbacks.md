@@ -12,7 +12,7 @@ Currently available callbacks:
 * [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
-* [`check_buy_timeout()` and `check_sell_timeout()`](#custom-order-timeout-rules)
+* [`check_entry_timeout()` and `check_exit_timeout()`](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -408,7 +408,7 @@ However, freqtrade also offers a custom callback for both order types, which all
 ### Custom order timeout example
 
 Called for every open order until that order is either filled or cancelled.
-`check_buy_timeout()` is called for trade entries, while `check_sell_timeout()` is called for trade exit orders.
+`check_entry_timeout()` is called for trade entries, while `check_exit_timeout()` is called for trade exit orders.
 
 A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
 It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.
@@ -425,12 +425,12 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
-                          current_time: datetime, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
         elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
@@ -440,7 +440,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -466,12 +466,12 @@ class AwesomeStrategy(IStrategy):
 
     # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
-        'buy': 60 * 25,
-        'sell': 60 * 25
+        'entry': 60 * 25,
+        'exit': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
-                          current_time: datetime, **kwargs) -> bool:
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
@@ -480,7 +480,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]

@@ -418,9 +418,18 @@ def test_missing_implements(default_conf):
         StrategyResolver.load_strategy(default_conf)
 
     default_conf['strategy'] = 'TestStrategyImplementCustomSell'
-
     with pytest.raises(OperationalException,
                        match=r"Please migrate your implementation of `custom_sell`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyImplementBuyTimeout'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your implementation of `check_buy_timeout`.*"):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['strategy'] = 'TestStrategyImplementSellTimeout'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your implementation of `check_sell_timeout`.*"):
         StrategyResolver.load_strategy(default_conf)
 
 

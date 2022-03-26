@@ -209,7 +209,14 @@ class IStrategy(ABC, HyperStrategyMixin):
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
                           current_time: datetime, **kwargs) -> bool:
         """
-        Check buy timeout function callback.
+        DEPRECATED: Please use `check_entry_timeout` instead.
+        """
+        return False
+
+    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+                            current_time: datetime, **kwargs) -> bool:
+        """
+        Check entry timeout function callback.
         This method can be used to override the enter-timeout.
         It is called whenever a limit entry order has been created,
         and is not yet fully filled.
@@ -224,9 +231,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the entry order is cancelled.
         """
-        return False
+        return self.check_buy_timeout(
+            pair=pair, trade=trade, order=order, current_time=current_time)
 
     def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
+        """
+        DEPRECATED: Please use `check_exit_timeout` instead.
+        """
+        return False
+
+    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
                            current_time: datetime, **kwargs) -> bool:
         """
         Check sell timeout function callback.
@@ -244,7 +259,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the (long)sell/(short)buy-order is cancelled.
         """
-        return False
+        return self.check_sell_timeout(
+            pair=pair, trade=trade, order=order, current_time=current_time)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
@@ -1023,22 +1039,24 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ft_check_timed_out(self, side: str, trade: LocalTrade, order: Order,
+    def ft_check_timed_out(self, trade: LocalTrade, order: Order,
                            current_time: datetime) -> bool:
         """
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
+        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)
-            timedout = (order.status == 'open' and order.side == side
-                        and order.order_date_utc < timeout_threshold)
+            timedout = (order.status == 'open' and order.order_date_utc < timeout_threshold)
             if timedout:
                 return True
-        time_method = self.check_sell_timeout if order.side == 'sell' else self.check_buy_timeout
+        time_method = (self.check_exit_timeout if order.side == trade.exit_side
+                       else self.check_entry_timeout)
 
         return strategy_safe_wrapper(time_method,
                                      default_retval=False)(
