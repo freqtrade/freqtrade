@@ -88,7 +88,7 @@ def upload_to_google_drive(csv_file_name):
 
 
 def run_scalping_strategy_command():
-    print("run_scalping_strategy_command:... ")
+    print("run_scalping_strategy_command_for_daily:... ")
     os.chdir(freqtrade_directory)
     result = subprocess.Popen([backtest_command],
                               stdout=subprocess.PIPE,
@@ -115,10 +115,10 @@ def parse_scalping_strategy_result() -> list:
     counter = 0
     while counter < total_loop_time:
         list_of_row_items = []
-        win_rate_percentage = run_scalping_strategy_command()
+        win_rate_percentage = run_scalping_strategy_command()  # running to get the win rate percentage for yearly data
         win_rate_percentage_per_year = win_rate_percentage.split("|")[19].split(" ")[11].replace(" ", "")
         write_to_json(counter)
-        out_put_to_be_parsed = run_scalping_strategy_command()
+        out_put_to_be_parsed = run_scalping_strategy_command()  # running to get the win rate percentage for daily data
         number_of_trades_per_day = out_put_to_be_parsed.split("|")[13].replace(" ", "")
         average_percentage_per_trade = out_put_to_be_parsed.split("|")[14].replace(" ", "")
         cumulative_percentage_per_day = out_put_to_be_parsed.split("|")[15].replace(" ", "")
