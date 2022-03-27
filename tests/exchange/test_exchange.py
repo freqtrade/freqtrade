@@ -1624,6 +1624,62 @@ def test_fetch_positions(default_conf, mocker, exchange_name):
                            "fetch_positions", "fetch_positions")
 
 
+def test_fetch_trading_fees(default_conf, mocker):
+    api_mock = MagicMock()
+    tick = {
+        '1INCH/USDT:USDT': {
+            'info': {'user_id': '',
+                     'taker_fee': '0.0018',
+                     'maker_fee': '0.0018',
+                     'gt_discount': False,
+                     'gt_taker_fee': '0',
+                     'gt_maker_fee': '0',
+                     'loan_fee': '0.18',
+                     'point_type': '1',
+                     'futures_taker_fee': '0.0005',
+                     'futures_maker_fee': '0'},
+            'symbol': '1INCH/USDT:USDT',
+            'maker': 0.0,
+            'taker': 0.0005},
+        'ETH/USDT:USDT': {
+            'info': {'user_id': '',
+                     'taker_fee': '0.0018',
+                     'maker_fee': '0.0018',
+                     'gt_discount': False,
+                     'gt_taker_fee': '0',
+                     'gt_maker_fee': '0',
+                     'loan_fee': '0.18',
+                     'point_type': '1',
+                     'futures_taker_fee': '0.0005',
+                     'futures_maker_fee': '0'},
+            'symbol': 'ETH/USDT:USDT',
+            'maker': 0.0,
+            'taker': 0.0005}
+    }
+    exchange_name = 'gateio'
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    api_mock.fetch_trading_fees = MagicMock(return_value=tick)
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+
+    assert '1INCH/USDT:USDT' in exchange._trading_fees
+    assert 'ETH/USDT:USDT' in exchange._trading_fees
+    assert api_mock.fetch_trading_fees.call_count == 1
+
+    api_mock.fetch_trading_fees.reset_mock()
+
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
+                           "fetch_trading_fees", "fetch_trading_fees")
+
+    api_mock.fetch_trading_fees = MagicMock(return_value={})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange.fetch_trading_fees()
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    assert exchange.fetch_trading_fees() == {}
+
+
 def test_fetch_bids_asks(default_conf, mocker):
     api_mock = MagicMock()
     tick = {'ETH/BTC': {

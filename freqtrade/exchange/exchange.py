@@ -75,6 +75,7 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -92,6 +93,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -451,6 +453,9 @@ class Exchange:
             self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
+            if self._ft_has['needs_trading_fees']:
+                self._trading_fees = self.fetch_trading_fees()
+
         except ccxt.BaseError:
             logger.exception('Unable to initialize markets.')
 
@@ -1296,6 +1301,27 @@ class Exchange:
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get positions due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def fetch_trading_fees(self) -> Dict[str, Any]:
+        """
+        Fetch user account trading fees
+        Can be cached, should not update often.
+        """
+        if (self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES
+                or not self.exchange_has('fetchTradingFees')):
+            return {}
+        try:
+            trading_fees: Dict[str, Any] = self._api.fetch_trading_fees()
+            self._log_exchange_response('fetch_trading_fees', trading_fees)
+            return trading_fees
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not fetch trading fees due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
