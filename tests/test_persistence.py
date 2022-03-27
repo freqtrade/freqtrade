@@ -153,7 +153,6 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
     trade.open_order_id = 'mocked_market_buy'
     oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
-    print(market_buy_order_usdt)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.0
