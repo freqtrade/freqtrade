@@ -143,7 +143,6 @@ def parse_scalping_strategy_result() -> list:
 
 def test_scalping_strategy():
     print("test_scalping_strategy:...")
-    win_rate_percentage_per_year = get_win_rate_percentage_per_year()
     list_of_rows = parse_scalping_strategy_result()
     write_to_csv(list_of_rows, win_rate_percentage_per_year)
 
