@@ -215,7 +215,7 @@ def test_set_stop_loss_isolated_liq(fee):
 
 ])
 @pytest.mark.usefixtures("init_persistence")
-def test_interest(market_buy_order_usdt, fee, exchange, is_short, lev, minutes, rate, interest,
+def test_interest(fee, exchange, is_short, lev, minutes, rate, interest,
                   trading_mode):
     """
         10min, 5hr limit trade on Binance/Kraken at 3x,5x leverage
@@ -790,7 +790,7 @@ def test_calc_open_trade_value(
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price(
-    limit_buy_order_usdt, limit_sell_order_usdt, open_rate, exchange, is_short,
+    open_rate, exchange, is_short,
     lev, close_rate, fee_rate, result, trading_mode, funding_fees
 ):
     trade = Trade(
@@ -883,9 +883,6 @@ def test_calc_close_trade_price(
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(
-    limit_buy_order_usdt,
-    limit_sell_order_usdt,
-    fee,
     exchange,
     is_short,
     lev,
