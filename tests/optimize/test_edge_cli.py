@@ -6,8 +6,7 @@ from unittest.mock import MagicMock
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
 from freqtrade.enums import RunMode
 from freqtrade.optimize.edge_cli import EdgeCli
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-                            patched_configuration_load_config_file)
+from tests.conftest import get_args, log_has, patch_exchange, patched_configuration_load_config_file
 
 
 def test_setup_optimize_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -30,7 +29,6 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'timeframe' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'timerange' not in config
     assert 'stoploss_range' not in config

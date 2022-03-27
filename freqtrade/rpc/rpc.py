@@ -582,7 +582,7 @@ class RPC:
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                    rate = tickers.get(pair, {}).get('bid', None)
+                    rate = tickers.get(pair, {}).get('last', None)
                     if rate:
                         if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                             rate = 1.0 / rate
@@ -713,7 +713,7 @@ class RPC:
 
     def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
                       stake_amount: Optional[float] = None,
-                      buy_tag: Optional[str] = None) -> Optional[Trade]:
+                      buy_tag: Optional[str] = 'forceentry') -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price

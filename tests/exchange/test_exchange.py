@@ -166,7 +166,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
-    exchange = ExchangeResolver.load_exchange('huobi', default_conf)
+    exchange = ExchangeResolver.load_exchange('zaif', default_conf)
     assert isinstance(exchange, Exchange)
     assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
     caplog.clear()
@@ -1692,6 +1692,13 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
                                         cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    caplog.clear()
+    # Call with invalid timeframe
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '3m')], cache=False)
+    assert not res
+    assert len(res) == 0
+    assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
 
 
 @pytest.mark.asyncio

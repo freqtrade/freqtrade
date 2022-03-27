@@ -517,20 +517,25 @@ Requires a configuration with specified `pairlists` attribute.
 Can be used to generate static pairlists to be used during backtesting / hyperopt.
 
 ```
-usage: freqtrade test-pairlist [-h] [-c PATH]
+usage: freqtrade test-pairlist [-h] [-v] [-c PATH]
                                [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
-                               [-1] [--print-json]
+                               [-1] [--print-json] [--exchange EXCHANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
                         Specify quote currency(-ies). Space-separated list.
   -1, --one-column      Print output in one column.
   --print-json          Print list of pairs or market symbols in JSON format.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+
 ```
 
 ### Examples

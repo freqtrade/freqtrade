@@ -542,7 +542,6 @@ class FreqtradeBot(LoggingMixin):
                 entry_tag=buy_tag):
             logger.info(f"User requested abortion of buying {pair}")
             return False
-        amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
@@ -874,11 +873,15 @@ class FreqtradeBot(LoggingMixin):
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
+                # The above will return False if the placement failed and the trade was force-sold.
+                # in which case the trade will be closed - which we must check below.
                 trade.stoploss_last_update = datetime.utcnow()
                 return False
 
         # If stoploss order is canceled for some reason we add it
-        if stoploss_order and stoploss_order['status'] in ('canceled', 'cancelled'):
+        if (trade.is_open
+                and stoploss_order
+                and stoploss_order['status'] in ('canceled', 'cancelled')):
             if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                 return False
             else:
@@ -888,7 +891,7 @@ class FreqtradeBot(LoggingMixin):
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         # Triggered Orders are now real orders - so don't replace stoploss anymore
         if (
-            stoploss_order
+            trade.is_open and stoploss_order
             and stoploss_order.get('status_stop') != 'triggered'
             and (self.config.get('trailing_stop', False)
                  or self.config.get('use_custom_stoploss', False))
@@ -900,7 +903,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: Dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -908,7 +911,9 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stop_loss)
+
+        if self.exchange.stoploss_adjust(stoploss_norm, order):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
@@ -1109,6 +1114,7 @@ class FreqtradeBot(LoggingMixin):
             trade.close_date = None
             trade.is_open = True
             trade.open_order_id = None
+            trade.sell_reason = None
             cancelled = True
         else:
             # TODO: figure out how to handle partially complete sell orders
@@ -1170,8 +1176,8 @@ class FreqtradeBot(LoggingMixin):
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and sell_type == 'stoploss' \
-           and self.strategy.order_types['stoploss_on_exchange']:
+        if (self.config['dry_run'] and sell_type == 'stoploss'
+                and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available
@@ -1422,14 +1428,14 @@ class FreqtradeBot(LoggingMixin):
     def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> None:
         # Try update amount (binance-fix)
         try:
-            new_amount = self.get_real_amount(trade, order)
+            new_amount = self.get_real_amount(trade, order, order_obj)
             if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order_obj.ft_fee_base = trade.amount - new_amount
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
-    def get_real_amount(self, trade: Trade, order: Dict) -> float:
+    def get_real_amount(self, trade: Trade, order: Dict, order_obj: Order) -> float:
         """
         Detect and update trade fee.
         Calls trade.update_fee() upon correct detection.
@@ -1447,7 +1453,7 @@ class FreqtradeBot(LoggingMixin):
         # use fee from order-dict if possible
         if self.exchange.order_has_fee(order):
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(order)
-            logger.info(f"Fee for Trade {trade} [{order.get('side')}]: "
+            logger.info(f"Fee for Trade {trade} [{order_obj.ft_order_side}]: "
                         f"{fee_cost:.8g} {fee_currency} - rate: {fee_rate}")
             if fee_rate is None or fee_rate < 0.02:
                 # Reject all fees that report as > 2%.
@@ -1459,17 +1465,18 @@ class FreqtradeBot(LoggingMixin):
                     return self.apply_fee_conditional(trade, trade_base_currency,
                                                       amount=order_amount, fee_abs=fee_cost)
                 return order_amount
-        return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
+        return self.fee_detection_from_trades(
+            trade, order, order_obj, order_amount, order.get('trades', []))
 
-    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
-                                  trades: List) -> float:
+    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_obj: Order,
+                                  order_amount: float, trades: List) -> float:
         """
         fee-detection fallback to Trades.
         Either uses provided trades list or the result of fetch_my_trades to get correct fee.
         """
         if not trades:
             trades = self.exchange.get_trades_for_order(
-                self.exchange.get_order_id_conditional(order), trade.pair, trade.open_date)
+                self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)

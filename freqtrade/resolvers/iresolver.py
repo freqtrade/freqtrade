@@ -6,6 +6,7 @@ This module load custom objects
 import importlib.util
 import inspect
 import logging
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
@@ -13,6 +14,22 @@ from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
+
+
+class PathModifier:
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __enter__(self):
+        """Inject path to allow importing with relative imports."""
+        sys.path.insert(0, str(self.path))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Undo insertion of local path."""
+        str_path = str(self.path)
+        if str_path in sys.path:
+            sys.path.remove(str_path)
 
 
 class IResolver:
@@ -57,27 +74,32 @@ class IResolver:
 
         # Generate spec based on absolute path
         # Pass object_name as first argument to have logging print a reasonable name.
-        spec = importlib.util.spec_from_file_location(object_name or "", str(module_path))
-        if not spec:
-            return iter([None])
-
-        module = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
-        except (ModuleNotFoundError, SyntaxError, ImportError, NameError) as err:
-            # Catch errors in case a specific module is not installed
-            logger.warning(f"Could not import {module_path} due to '{err}'")
-            if enum_failed:
+        with PathModifier(module_path.parent):
+            module_name = module_path.stem or ""
+            spec = importlib.util.spec_from_file_location(module_name, str(module_path))
+            if not spec:
                 return iter([None])
 
-        valid_objects_gen = (
-            (obj, inspect.getsource(module)) for
-            name, obj in inspect.getmembers(
-                module, inspect.isclass) if ((object_name is None or object_name == name)
-                                             and issubclass(obj, cls.object_type)
-                                             and obj is not cls.object_type)
-        )
-        return valid_objects_gen
+            module = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
+            except (ModuleNotFoundError, SyntaxError, ImportError, NameError) as err:
+                # Catch errors in case a specific module is not installed
+                logger.warning(f"Could not import {module_path} due to '{err}'")
+                if enum_failed:
+                    return iter([None])
+
+            valid_objects_gen = (
+                (obj, inspect.getsource(module)) for
+                name, obj in inspect.getmembers(
+                    module, inspect.isclass) if ((object_name is None or object_name == name)
+                                                 and issubclass(obj, cls.object_type)
+                                                 and obj is not cls.object_type
+                                                 and obj.__module__ == module_name
+                                                 )
+            )
+            # The __module__ check ensures we only use strategies that are defined in this folder.
+            return valid_objects_gen
 
     @classmethod
     def _search_object(cls, directory: Path, *, object_name: str, add_source: bool = False

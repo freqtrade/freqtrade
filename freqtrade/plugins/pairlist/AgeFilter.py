@@ -98,7 +98,7 @@ class AgeFilter(IPairList):
         """
         Validate age for the ticker
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param daily_candles: Downloaded daily candles
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache

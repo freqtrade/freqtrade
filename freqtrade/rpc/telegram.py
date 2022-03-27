@@ -379,6 +379,8 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
+            if order['ft_order_side'] != 'buy':
+                continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
             cur_entry_average = order["safe_price"]
@@ -444,7 +446,7 @@ class Telegram(RPCHandler):
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
-                r['num_entries'] = len(r['filled_entry_orders'])
+                r['num_entries'] = len([o for o in r['orders'] if o['ft_order_side'] == 'buy'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
                     "*Trade ID:* `{trade_id}`" +
@@ -488,8 +490,8 @@ class Telegram(RPCHandler):
                             lines.append("*Open Order:* `{open_order}`")
 
                 lines_detail = self._prepare_entry_details(
-                    r['filled_entry_orders'], r['base_currency'], r['is_open'])
-                lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
+                    r['orders'], r['base_currency'], r['is_open'])
+                lines.extend(lines_detail if lines_detail else "")
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))

@@ -782,6 +782,19 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
         get_patched_freqtradebot(mocker, default_conf)
 
 
+def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> None:
+    default_conf['pairlists'] = [{'method': 'StaticPairList'}, {'method': 'SpreadFilter'}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          get_tickers=tickers,
+                          exchange_has=MagicMock(return_value=False),
+                          )
+
+    with pytest.raises(OperationalException,
+                       match=r'Exchange does not support fetchTickers, .*'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+
 @pytest.mark.parametrize("pairlist", AVAILABLE_PAIRLISTS)
 def test_pairlist_class(mocker, whitelist_conf, markets, pairlist):
     whitelist_conf['pairlists'][0]['method'] = pairlist

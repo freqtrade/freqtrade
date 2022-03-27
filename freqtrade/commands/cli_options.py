@@ -117,7 +117,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # Optimize common
     "timeframe": Arg(
-        '-i', '--timeframe', '--ticker-interval',
+        '-i', '--timeframe',
         help='Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
@@ -169,7 +169,7 @@ AVAILABLE_CLI_OPTIONS = {
     "strategy_list": Arg(
         '--strategy-list',
         help='Provide a space-separated list of strategies to backtest. '
-        'Please note that ticker-interval needs to be set either in config '
+        'Please note that timeframe needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
         '(so `backtest-data.json` becomes `backtest-data-SampleStrategy.json`',

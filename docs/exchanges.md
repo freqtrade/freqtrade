@@ -57,7 +57,7 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"
-    Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    Binance supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange..
 
 ### Binance Blacklist
 
@@ -177,12 +177,21 @@ Kucoin requires a passphrase for each api key, you will therefore need to add th
 
 Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force).
 
+!!! Tip "Stoploss on Exchange"
+    Kucoin supports `stoploss_on_exchange` and can use both stop-loss-market and stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
+    You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type of stoploss shall be used.
+
 ### Kucoin Blacklists
 
 For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
 Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
 
-## OKX
+## Huobi
+
+!!! Tip "Stoploss on Exchange"
+    Huobi supports `stoploss_on_exchange` and uses `stop-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+
+## OKX (former OKEX)
 
 OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
 
@@ -200,6 +209,9 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
     OKX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
 
 ## Gate.io
+
+!!! Tip "Stoploss on Exchange"
+    Gate.io supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange..
 
 Gate.io allows the use of `POINT` to pay for fees. As this is not a tradable currency (no regular market available), automatic fee calculations will fail (and default to a fee of 0).
 The configuration parameter `exchange.unknown_fee_rate` can be used to specify the exchange rate between Point and the stake currency. Obviously, changing the stake-currency will also require changes to this value.

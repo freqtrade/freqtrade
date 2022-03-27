@@ -51,7 +51,7 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
 ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
-                      "list_pairs_print_json"]
+                      "list_pairs_print_json", "exchange"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 

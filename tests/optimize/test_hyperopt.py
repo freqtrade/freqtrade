@@ -63,7 +63,6 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'timeframe' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'position_stacking' not in config
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)

@@ -79,7 +79,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'close_rate': None,
         'current_rate': 1.099e-05,
         'amount': 91.07468123,
-        'amount_requested': 91.07468123,
+        'amount_requested': 91.07468124,
         'stake_amount': 0.001,
         'trade_duration': None,
         'trade_duration_s': None,
@@ -109,14 +109,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-        'filled_entry_orders': [{
+        'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
-            'is_open': False, 'pair': 'ETH/BTC',
+            'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
             'remaining': ANY, 'status': ANY}],
-        'filled_exit_orders': []
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -154,7 +153,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'close_rate': None,
         'current_rate': ANY,
         'amount': 91.07468123,
-        'amount_requested': 91.07468123,
+        'amount_requested': 91.07468124,
         'trade_duration': ANY,
         'trade_duration_s': ANY,
         'stake_amount': 0.001,
@@ -184,14 +183,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-        'filled_entry_orders': [{
+        'orders': [{
             'amount': 91.07468123, 'average': 1.098e-05, 'safe_price': 1.098e-05,
             'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
             'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
             'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
-            'is_open': False, 'pair': 'ETH/BTC',
+            'is_open': False, 'pair': 'ETH/BTC', 'order_id': ANY,
             'remaining': ANY, 'status': ANY}],
-        'filled_exit_orders': []
     }
 
 
@@ -607,8 +605,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     rpc._fiat_converter = CryptoToFiatConverter()
 
     result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
-    assert prec_satoshi(result['total'], 12.309096315)
-    assert prec_satoshi(result['value'], 184636.44472997)
+    assert prec_satoshi(result['total'], 12.30909624)
+    assert prec_satoshi(result['value'], 184636.443606915)
     assert tickers.call_count == 1
     assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
@@ -626,17 +624,16 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
          'est_stake': 0.30794,
          'used': 4.0,
          'stake': 'BTC',
-
          },
         {'free': 5.0,
          'balance': 10.0,
          'currency': 'USDT',
-         'est_stake': 0.0011563153318162476,
+         'est_stake': 0.0011562404610161968,
          'used': 5.0,
          'stake': 'BTC',
          }
     ]
-    assert result['total'] == 12.309096315331816
+    assert result['total'] == 12.309096240461017
 
 
 def test_rpc_start(mocker, default_conf) -> None:
@@ -1150,6 +1147,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     pair = 'LTC/BTC'
     trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
+    assert trade.buy_tag == 'forceentry'
 
     # Test not buying
     pair = 'XRP/BTC'

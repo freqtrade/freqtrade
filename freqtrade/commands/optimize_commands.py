@@ -25,12 +25,16 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
         RunMode.HYPEROPT: 'hyperoptimization',
     }
     if method in no_unlimited_runmodes.keys():
+        wallet_size = config['dry_run_wallet'] * config['tradable_balance_ratio']
+        # tradable_balance_ratio
         if (config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT
-                and config['stake_amount'] > config['dry_run_wallet']):
-            wallet = round_coin_value(config['dry_run_wallet'], config['stake_currency'])
+                and config['stake_amount'] > wallet_size):
+            wallet = round_coin_value(wallet_size, config['stake_currency'])
             stake = round_coin_value(config['stake_amount'], config['stake_currency'])
-            raise OperationalException(f"Starting balance ({wallet}) "
-                                       f"is smaller than stake_amount {stake}.")
+            raise OperationalException(
+                f"Starting balance ({wallet}) is smaller than stake_amount {stake}. "
+                f"Wallet is calculated as `dry_run_wallet * tradable_balance_ratio`."
+                )
 
     return config
 
