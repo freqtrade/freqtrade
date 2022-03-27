@@ -683,7 +683,7 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
     assert set(pairs) == {'XRP/USDT'}
 
     pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
-    assert set(pairs) == {'UNITTEST/USDT'}
+    assert set(pairs) == {'UNITTEST/USDT:USDT'}
 
 
 @pytest.mark.parametrize('filename,pair,timeframe,candletype', [
@@ -914,7 +914,7 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
     # Data goes from 2018-01-10 - 2018-01-30
     ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
     # Mark data goes from to 2021-11-15 2021-11-19
-    ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
+    ('UNITTEST/USDT:USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])
 def test_hdf5datahandler_ohlcv_load_and_resave(
     testdatadir,
