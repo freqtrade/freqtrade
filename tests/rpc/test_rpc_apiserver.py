@@ -543,8 +543,8 @@ def test_api_show_config(botclient):
     assert response['trading_mode'] == 'spot'
     assert response['strategy_version'] is None
     assert not response['trailing_stop']
-    assert 'bid_strategy' in response
-    assert 'ask_strategy' in response
+    assert 'entry_pricing' in response
+    assert 'exit_pricing' in response
     assert 'unfilledtimeout' in response
     assert 'version' in response
     assert 'api_version' in response

@@ -809,21 +809,21 @@ def test_validate_price_side(default_conf):
     conf = deepcopy(default_conf)
     conf['order_types']['entry'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market buy orders require bid_strategy.price_side = "ask".'):
+                       match='Market buy orders require entry_pricing.price_side = "ask".'):
         validate_config_consistency(conf)
 
     conf = deepcopy(default_conf)
     conf['order_types']['exit'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market sell orders require ask_strategy.price_side = "bid".'):
+                       match='Market sell orders require exit_pricing.price_side = "bid".'):
         validate_config_consistency(conf)
 
     # Validate inversed case
     conf = deepcopy(default_conf)
     conf['order_types']['exit'] = 'market'
     conf['order_types']['entry'] = 'market'
-    conf['ask_strategy']['price_side'] = 'bid'
-    conf['bid_strategy']['price_side'] = 'ask'
+    conf['exit_pricing']['price_side'] = 'bid'
+    conf['entry_pricing']['price_side'] = 'ask'
 
     validate_config_consistency(conf)
 
@@ -926,18 +926,18 @@ def test_validate_protections(default_conf, protconf, expected):
 
 def test_validate_ask_orderbook(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
-    conf['ask_strategy']['use_order_book'] = True
-    conf['ask_strategy']['order_book_min'] = 2
-    conf['ask_strategy']['order_book_max'] = 2
+    conf['exit_pricing']['use_order_book'] = True
+    conf['exit_pricing']['order_book_min'] = 2
+    conf['exit_pricing']['order_book_max'] = 2
 
     validate_config_consistency(conf)
     assert log_has_re(r"DEPRECATED: Please use `order_book_top` instead of.*", caplog)
-    assert conf['ask_strategy']['order_book_top'] == 2
+    assert conf['exit_pricing']['order_book_top'] == 2
 
-    conf['ask_strategy']['order_book_max'] = 5
+    conf['exit_pricing']['order_book_max'] = 5
 
     with pytest.raises(OperationalException,
-                       match=r"Using order_book_max != order_book_min in ask_strategy.*"):
+                       match=r"Using order_book_max != order_book_min in exit_pricing.*"):
         validate_config_consistency(conf)
 
 
@@ -1200,15 +1200,15 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-    ("ask_strategy", "use_sell_signal", True,
+    ("exit_pricing", "use_sell_signal", True,
      None, "use_sell_signal", False),
-    ("ask_strategy", "sell_profit_only", True,
+    ("exit_pricing", "sell_profit_only", True,
      None, "sell_profit_only", False),
-    ("ask_strategy", "sell_profit_offset", 0.1,
+    ("exit_pricing", "sell_profit_offset", 0.1,
      None, "sell_profit_offset", 0.01),
-    ("ask_strategy", "ignore_roi_if_buy_signal", True,
+    ("exit_pricing", "ignore_roi_if_buy_signal", True,
      None, "ignore_roi_if_buy_signal", False),
-    ("ask_strategy", "ignore_buying_expired_candle_after", 5,
+    ("exit_pricing", "ignore_buying_expired_candle_after", 5,
      None, "ignore_buying_expired_candle_after", 6),
 ])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
@@ -1434,15 +1434,15 @@ def test_flat_vars_to_nested_dict(caplog):
         'FREQTRADE__EXCHANGE__SOME_SETTING': 'true',
         'FREQTRADE__EXCHANGE__SOME_FALSE_SETTING': 'false',
         'FREQTRADE__EXCHANGE__CONFIG__whatever': 'sometime',
-        'FREQTRADE__ASK_STRATEGY__PRICE_SIDE': 'bid',
-        'FREQTRADE__ASK_STRATEGY__cccc': '500',
+        'FREQTRADE__EXIT_PRICING__PRICE_SIDE': 'bid',
+        'FREQTRADE__EXIT_PRICING__cccc': '500',
         'FREQTRADE__STAKE_AMOUNT': '200.05',
         'FREQTRADE__TELEGRAM__CHAT_ID': '2151',
         'NOT_RELEVANT': '200.0',  # Will be ignored
     }
     expected = {
         'stake_amount': 200.05,
-        'ask_strategy': {
+        'exit_pricing': {
             'price_side': 'bid',
             'cccc': 500,
         },

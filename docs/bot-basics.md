@@ -36,12 +36,12 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Calls `check_exit_timeout()` strategy callback for open exit orders.
 * Verifies existing positions and eventually places exit orders.
   * Considers stoploss, ROI and exit-signal, `custom_exit()` and `custom_stoploss()`.
-  * Determine exit-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
+  * Determine exit-price based on `exit_pricing` configuration setting or by using the `custom_exit_price()` callback.
   * Before a exit order is placed, `confirm_trade_exit()` strategy callback is called.
 * Check position adjustments for open trades if enabled by calling `adjust_trade_position()` and place additional order if required.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
 * Verifies entry signal trying to enter new positions.
-  * Determine entry-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
+  * Determine entry-price based on `entry_pricing` configuration setting, or by using the `custom_entry_price()` callback.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Before an entry order is placed, `confirm_trade_entry()` strategy callback is called.

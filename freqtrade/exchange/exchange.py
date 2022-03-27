@@ -184,8 +184,8 @@ class Exchange:
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
             self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['ask_strategy'])
-            self.validate_pricing(config['bid_strategy'])
+            self.validate_pricing(config['exit_pricing'])
+            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(

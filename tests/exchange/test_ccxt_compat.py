@@ -107,8 +107,8 @@ def exchange_conf():
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
     config['dry_run'] = False
-    config['bid_strategy']['use_order_book'] = True
-    config['ask_strategy']['use_order_book'] = True
+    config['entry_pricing']['use_order_book'] = True
+    config['exit_pricing']['use_order_book'] = True
     return config
 
 

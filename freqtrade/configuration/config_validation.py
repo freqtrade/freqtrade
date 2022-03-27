@@ -105,8 +105,8 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     """
     # TODO-lev: check this again when determining how to migrate pricing strategies!
     if (conf.get('order_types', {}).get('entry') == 'market'
-            and conf.get('bid_strategy', {}).get('price_side') != 'ask'):
-        raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
+            and conf.get('entry_pricing', {}).get('price_side') != 'ask'):
+        raise OperationalException('Market buy orders require entry_pricing.price_side = "ask".')
 
     if (conf.get('order_types', {}).get('exit') == 'market'
             and conf.get('ask_strategy', {}).get('price_side') != 'bid'):

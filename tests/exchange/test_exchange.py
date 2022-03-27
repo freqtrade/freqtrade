@@ -971,7 +971,7 @@ def test_validate_pricing(default_conf, mocker):
 
     has.update({'fetchTicker': True})
 
-    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['exit_pricing']['use_order_book'] = True
     ExchangeResolver.load_exchange('binance', default_conf)
     has.update({'fetchL2OrderBook': False})
 
@@ -2305,10 +2305,10 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
     if last_ab is None:
-        del default_conf['bid_strategy']['ask_last_balance']
+        del default_conf['entry_pricing']['ask_last_balance']
     else:
-        default_conf['bid_strategy']['ask_last_balance'] = last_ab
-    default_conf['bid_strategy']['price_side'] = side
+        default_conf['entry_pricing']['ask_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
@@ -2349,9 +2349,9 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
 
-    default_conf['ask_strategy']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side
     if last_ab is not None:
-        default_conf['ask_strategy']['bid_last_balance'] = last_ab
+        default_conf['exit_pricing']['bid_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
@@ -2381,10 +2381,10 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
 def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, bid,
                                last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf['bid_strategy']['ask_last_balance'] = last_ab
-    default_conf['bid_strategy']['price_side'] = side
-    default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['ask_last_balance'] = last_ab
+    default_conf['entry_pricing']['ask_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side
+    default_conf['exit_pricing']['ask_last_balance'] = last_ab
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
@@ -2400,9 +2400,9 @@ def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, b
 def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, order_book_l2):
     caplog.set_level(logging.DEBUG)
     # Test orderbook mode
-    default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_top'] = 1
+    default_conf['exit_pricing']['price_side'] = side
+    default_conf['exit_pricing']['use_order_book'] = True
+    default_conf['exit_pricing']['order_book_top'] = 1
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -2417,9 +2417,9 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
 
 def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     # Test orderbook mode
-    default_conf['ask_strategy']['price_side'] = 'ask'
-    default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_top'] = 1
+    default_conf['exit_pricing']['price_side'] = 'ask'
+    default_conf['exit_pricing']['use_order_book'] = True
+    default_conf['exit_pricing']['order_book_top'] = 1
     pair = "ETH/BTC"
     # Test What happens if the exchange returns an empty orderbook.
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
@@ -2433,7 +2433,7 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
 
 def test_get_sell_rate_exception(default_conf, mocker, caplog):
     # Ticker on one side can be empty in certain circumstances.
-    default_conf['ask_strategy']['price_side'] = 'ask'
+    default_conf['exit_pricing']['price_side'] = 'ask'
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': None, 'bid': 0.12, 'last': None})
@@ -2441,7 +2441,7 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
         exchange.get_rate(pair, refresh=True, side="sell")
 
-    exchange._config['ask_strategy']['price_side'] = 'bid'
+    exchange._config['exit_pricing']['price_side'] = 'bid'
     assert exchange.get_rate(pair, refresh=True, side="sell") == 0.12
     # Reverse sides
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -2449,7 +2449,7 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
         exchange.get_rate(pair, refresh=True, side="sell")
 
-    exchange._config['ask_strategy']['price_side'] = 'ask'
+    exchange._config['exit_pricing']['price_side'] = 'ask'
     assert exchange.get_rate(pair, refresh=True, side="sell") == 0.13
 
 

@@ -459,7 +459,7 @@ class FreqtradeBot(LoggingMixin):
         if signal:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
-            bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
+            bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market(pair, bid_check_dom, side=signal):

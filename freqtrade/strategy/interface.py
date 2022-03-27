@@ -331,7 +331,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New stoploss value, relative to the current_rate
@@ -349,7 +349,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
-        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New entry price value if provided
@@ -369,7 +369,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New exit price value if provided
@@ -393,7 +393,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return: To execute exit, return a string with custom sell reason or True. Otherwise return
@@ -417,7 +417,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return: To execute exit, return a string with custom sell reason or True. Otherwise return
@@ -433,7 +433,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param proposed_stake: A stake amount proposed by the bot.
         :param min_stake: Minimal stake size allowed by exchange.
         :param max_stake: Balance available for trading.
@@ -474,7 +474,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param proposed_leverage: A leverage proposed by the bot.
         :param max_leverage: Max leverage allowed on this pair
         :param side: 'long' or 'short' - indicating the direction of the proposed trade

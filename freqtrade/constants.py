@@ -21,7 +21,7 @@ UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
 REQUIRED_ORDERTIF = ['entry', 'exit']
 REQUIRED_ORDERTYPES = ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']
-ORDERBOOK_SIDES = ['ask', 'bid']
+PRICING_SIDES = ['ask', 'bid', 'same', 'other']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
@@ -171,7 +171,7 @@ CONF_SCHEMA = {
                 'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },
-        'bid_strategy': {
+        'entry_pricing': {
             'type': 'object',
             'properties': {
                 'ask_last_balance': {
@@ -180,7 +180,7 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                 },
-                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'bid'},
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'bid'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
                 'check_depth_of_market': {
@@ -193,10 +193,10 @@ CONF_SCHEMA = {
             },
             'required': ['price_side']
         },
-        'ask_strategy': {
+        'exit_pricing': {
             'type': 'object',
             'properties': {
-                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'ask'},
                 'bid_last_balance': {
                     'type': 'number',
                     'minimum': 0,
@@ -445,8 +445,8 @@ SCHEMA_TRADE_REQUIRED = [
     'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
-    'ask_strategy',
-    'bid_strategy',
+    'exit_pricing',
+    'entry_pricing',
     'stoploss',
     'minimal_roi',
     'internals',
