@@ -37,12 +37,6 @@ def get_year_from_timestamp(unix_time) -> str:
     return str(date.year)
 
 
-def get_win_rate_percentage_per_year() -> str:
-    out_put_to_be_parsed = run_scalping_strategy_command()
-    win_rate_percentage = out_put_to_be_parsed.split("|")[19].split(" ")[11].replace(" ", "")
-    return win_rate_percentage
-
-
 def get_year_range() -> str:
     print("get_year_range:...")
     beginning_year = json_file_content[0]
@@ -58,7 +52,8 @@ def get_year_range() -> str:
 def write_to_csv(list_of_row, win_rate_percentage_per_year):
     print("write_to_csv:... ")
     column_title = ['coin', 'Brain', 'human_readable_time', 'timeframe', 'win_rate_percentage_per_day',
-                    'number_of_trades_per_day', 'average_percentage_per_trade', 'cumulative_percentage_per_day']
+                    'number_of_trades_per_day', 'average_percentage_per_trade', 'cumulative_percentage_per_day',
+                    'win_rate_percentage_per_year']
     year_range = get_year_range()
     if not os.path.exists(result_saved_directory):
         os.makedirs(result_saved_directory)
@@ -120,6 +115,8 @@ def parse_scalping_strategy_result() -> list:
     counter = 0
     while counter < total_loop_time:
         list_of_row_items = []
+        win_rate_percentage = run_scalping_strategy_command()
+        win_rate_percentage_per_year = win_rate_percentage.split("|")[19].split(" ")[11].replace(" ", "")
         write_to_json(counter)
         out_put_to_be_parsed = run_scalping_strategy_command()
         number_of_trades_per_day = out_put_to_be_parsed.split("|")[13].replace(" ", "")
@@ -138,6 +135,7 @@ def parse_scalping_strategy_result() -> list:
         list_of_row_items.append(number_of_trades_per_day)
         list_of_row_items.append(average_percentage_per_trade)
         list_of_row_items.append(cumulative_percentage_per_day)
+        list_of_row_items.append(win_rate_percentage_per_year)
         list_of_rows.append(list_of_row_items)
         counter += minutes_per_day
     return list_of_rows
