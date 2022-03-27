@@ -88,7 +88,7 @@ def upload_to_google_drive(csv_file_name):
 
 
 def run_scalping_strategy_command():
-    print("run_scalping_strategy_command_for_daily:... ")
+    print("run_scalping_strategy_command:... ")
     os.chdir(freqtrade_directory)
     result = subprocess.Popen([backtest_command],
                               stdout=subprocess.PIPE,
