@@ -49,7 +49,7 @@ def get_year_range() -> str:
     return date_to_be_used
 
 
-def write_to_csv(list_of_row, win_rate_percentage_per_year):
+def write_to_csv(list_of_row):
     print("write_to_csv:... ")
     column_title = ['coin', 'Brain', 'human_readable_time', 'timeframe', 'win_rate_percentage_per_day',
                     'number_of_trades_per_day', 'average_percentage_per_trade', 'cumulative_percentage_per_day',
@@ -58,7 +58,7 @@ def write_to_csv(list_of_row, win_rate_percentage_per_year):
     if not os.path.exists(result_saved_directory):
         os.makedirs(result_saved_directory)
     csv_file_name = result_saved_directory + brain_name + under_score + coin + under_score + \
-                    time_range + under_score + year_range + file_format + under_score + win_rate_percentage_per_year
+                    time_range + under_score + year_range + file_format
     with open(csv_file_name, "w") as outfile:
         write = csv.writer(outfile)
         write.writerow(column_title)
@@ -144,7 +144,7 @@ def parse_scalping_strategy_result() -> list:
 def test_scalping_strategy():
     print("test_scalping_strategy:...")
     list_of_rows = parse_scalping_strategy_result()
-    write_to_csv(list_of_rows, win_rate_percentage_per_year)
+    write_to_csv(list_of_rows)
 
 
 test_scalping_strategy()
