@@ -53,7 +53,7 @@ def write_to_csv(list_of_row):
     print("write_to_csv:... ")
     column_title = ['coin', 'Brain', 'human_readable_time', 'timeframe', 'win_rate_percentage_per_day',
                     'number_of_trades_per_day', 'average_percentage_per_trade', 'cumulative_percentage_per_day',
-                    'win_rate_percentage_per_year' if time_range == '1m' else 'win_rate_percentage_per_three_years']
+                    'win_rate_percentage_per_year_or_two_or_three']
     year_range = get_year_range()
     if not os.path.exists(result_saved_directory):
         os.makedirs(result_saved_directory)
