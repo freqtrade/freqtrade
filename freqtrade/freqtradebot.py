@@ -511,7 +511,7 @@ class FreqtradeBot(LoggingMixin):
                 return
         else:
             logger.debug("Max adjustment entries is set to unlimited.")
-        current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
+        current_rate = self.exchange.get_rate(trade.pair, refresh=True, side=trade.enter_side)
         current_profit = trade.calc_profit_ratio(current_rate)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
@@ -536,12 +536,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f"Unable to decrease trade position / sell partially"
                          f" for pair {trade.pair}, feature not implemented.")
 
-    def _check_depth_of_market(
-        self,
-        pair: str,
-        conf: Dict,
-        side: SignalDirection
-    ) -> bool:
+    def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
         """
         Checks depth of market before executing a buy
         """
