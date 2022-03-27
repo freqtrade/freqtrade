@@ -217,6 +217,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
     _validate_time_in_force(conf)
     _validate_order_types(conf)
     _validate_unfilledtimeout(conf)
+    _validate_pricing_rules(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -279,3 +280,25 @@ def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
             ]:
 
                 process_deprecated_setting(conf, 'unfilledtimeout', o, 'unfilledtimeout', n)
+
+
+def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
+
+    if conf.get('ask_strategy') or conf.get('bid_strategy'):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your pricing settings to use the new wording.")
+        else:
+
+            logger.warning(
+                "DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is deprecated."
+                "Please migrate your settings to use 'entry_pricing' and 'exit_pricing'."
+            )
+            conf['entry_pricing'] = {}
+            for obj in list(conf.get('bid_strategy').keys()):
+                process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
+            del conf['bid_strategy']
+            conf['exit_pricing'] = {}
+            for obj in list(conf.get('ask_strategy').keys()):
+                process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
+            del conf['ask_strategy']

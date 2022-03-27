@@ -1023,6 +1023,40 @@ def test__validate_unfilledtimeout(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
+def test__validate_pricing_rules(default_conf, caplog) -> None:
+    def_conf = deepcopy(default_conf)
+    del def_conf['entry_pricing']
+    del def_conf['exit_pricing']
+
+    def_conf['ask_strategy'] = {
+        'price_side': 'ask',
+        'use_order_book': True,
+    }
+    def_conf['bid_strategy'] = {
+        'price_side': 'bid',
+        'use_order_book': False,
+    }
+    conf = deepcopy(def_conf)
+
+    validate_config_consistency(conf)
+    assert log_has_re(
+        r"DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is.*", caplog)
+    assert conf['exit_pricing']['price_side'] == 'ask'
+    assert conf['exit_pricing']['use_order_book'] is True
+    assert conf['entry_pricing']['price_side'] == 'bid'
+    assert conf['entry_pricing']['use_order_book'] is False
+    assert 'ask_strategy' not in conf
+    assert 'bid_strategy' not in conf
+
+    conf = deepcopy(def_conf)
+
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(
+            OperationalException,
+            match=r"Please migrate your pricing settings to use the new wording\."):
+        validate_config_consistency(conf)
+
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments
