@@ -32,7 +32,7 @@ class StrategyController:
     def on_sell_signal(self, sell_reason, current_time, mode, coin, brain):
         print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", mode=" + str(mode) + ", coin=" + str(coin) + ", brain=" + str(brain))
-        if sell_reason == 'sell_signal':
+        if sell_reason == 'sell_signal' or sell_reason == 'roi':
             if BrainConfig.IS_BACKTEST:
                 perform_back_test_sell(current_time)
             else:
