@@ -2313,14 +2313,14 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
 
-    assert exchange.get_rate('ETH/BTC', refresh=True, side="entry") == expected
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
     assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
-    assert exchange.get_rate('ETH/BTC', refresh=False, side="entry") == expected
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
     assert log_has("Using cached entry rate for ETH/BTC.", caplog)
     # Running a 2nd time with Refresh on!
     caplog.clear()
-    assert exchange.get_rate('ETH/BTC', refresh=True, side="entry") == expected
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
     assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
 
@@ -2358,14 +2358,14 @@ def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
 
     # Test regular mode
     exchange = get_patched_exchange(mocker, default_conf)
-    rate = exchange.get_rate(pair, refresh=True, side="sell")
-    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
+    rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=True)
+    assert not log_has("Using cached exit rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_rate(pair, refresh=False, side="sell")
+    rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=False)
     assert rate == expected
-    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+    assert log_has("Using cached exit rate for ETH/BTC.", caplog)
 
 
 @pytest.mark.parametrize("entry,is_short,side,ask,bid,last,last_ab,expected", [

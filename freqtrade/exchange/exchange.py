@@ -1502,10 +1502,10 @@ class Exchange:
             ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[price_side]
             if ticker['last'] and ticker_rate:
-                if side == 'buy' and ticker_rate > ticker['last']:
+                if side == 'entry' and ticker_rate > ticker['last']:
                     balance = conf_strategy.get('ask_last_balance', 0.0)
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
-                elif side == 'sell' and ticker_rate < ticker['last']:
+                elif side == 'exit' and ticker_rate < ticker['last']:
                     balance = conf_strategy.get('bid_last_balance', 0.0)
                     ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
