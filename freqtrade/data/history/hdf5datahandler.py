@@ -206,7 +206,9 @@ class HDF5DataHandler(IDataHandler):
 
     @classmethod
     def _pair_ohlcv_key(cls, pair: str, timeframe: str) -> str:
-        return f"{pair}/ohlcv/tf_{timeframe}"
+        # Escape futures pairs to avoid warnings
+        pair_esc = pair.replace(':', '_')
+        return f"{pair_esc}/ohlcv/tf_{timeframe}"
 
     @classmethod
     def _pair_trades_key(cls, pair: str) -> str:
