@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime, time, timezone
 from math import isclose
 from threading import Lock
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from schedule import Scheduler
 
@@ -511,7 +511,8 @@ class FreqtradeBot(LoggingMixin):
                 return
         else:
             logger.debug("Max adjustment entries is set to unlimited.")
-        current_rate = self.exchange.get_rate(trade.pair, refresh=True, side=trade.enter_side)
+        current_rate = self.exchange.get_rate(
+            trade.pair, side='entry', is_short=trade.is_short, refresh=True)
         current_profit = trade.calc_profit_ratio(current_rate)
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
@@ -589,11 +590,11 @@ class FreqtradeBot(LoggingMixin):
         time_in_force = self.strategy.order_time_in_force['entry']
 
         [side, name] = ['sell', 'Short'] if is_short else ['buy', 'Long']
-        trade_side = 'short' if is_short else 'long'
+        trade_side: Literal['long', 'short'] = 'short' if is_short else 'long'
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, side, trade_side, enter_tag, trade)
+            pair, price, stake_amount, trade_side, enter_tag, trade)
 
         if not stake_amount:
             return False
@@ -745,7 +746,7 @@ class FreqtradeBot(LoggingMixin):
 
     def get_valid_enter_price_and_stake(
         self, pair: str, price: Optional[float], stake_amount: float,
-        side: str, trade_side: str,
+        trade_side: Literal['long', 'short'],
         entry_tag: Optional[str],
         trade: Optional[Trade]
     ) -> Tuple[float, float, float]:
@@ -754,7 +755,8 @@ class FreqtradeBot(LoggingMixin):
             enter_limit_requested = price
         else:
             # Calculate price
-            proposed_enter_rate = self.exchange.get_rate(pair, refresh=True, side=side)
+            proposed_enter_rate = self.exchange.get_rate(
+                pair, side='entry', is_short=(trade_side == 'short'), refresh=True)
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=proposed_enter_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
@@ -763,7 +765,7 @@ class FreqtradeBot(LoggingMixin):
             enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
 
         if not enter_limit_requested:
-            raise PricingError(f'Could not determine {side} price.')
+            raise PricingError('Could not determine entry price.')
 
         if trade is None:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
@@ -824,7 +826,8 @@ class FreqtradeBot(LoggingMixin):
 
         current_rate = trade.open_rate_requested
         if self.dataprovider.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.enter_side)
+            current_rate = self.exchange.get_rate(
+                trade.pair, side='entry', is_short=trade.is_short, refresh=False)
 
         msg = {
             'trade_id': trade.id,
@@ -853,7 +856,8 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a entry order cancel occurred.
         """
-        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.enter_side)
+        current_rate = self.exchange.get_rate(
+            trade.pair, side='entry', is_short=trade.is_short, refresh=False)
         msg_type = RPCMessageType.SHORT_CANCEL if trade.is_short else RPCMessageType.BUY_CANCEL
         msg = {
             'trade_id': trade.id,
@@ -935,7 +939,8 @@ class FreqtradeBot(LoggingMixin):
             )
 
         logger.debug('checking exit')
-        exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side=trade.exit_side)
+        exit_rate = self.exchange.get_rate(
+            trade.pair, side='exit', is_short=trade.is_short, refresh=True)
         if self._check_and_execute_exit(trade, exit_rate, enter, exit_, exit_tag):
             return True
 
@@ -1433,7 +1438,7 @@ class FreqtradeBot(LoggingMixin):
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
-            trade.pair, refresh=False, side=trade.exit_side) if not fill else None
+            trade.pair, side='exit', is_short=trade.is_short, refresh=False) if not fill else None
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1482,7 +1487,8 @@ class FreqtradeBot(LoggingMixin):
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.exit_side)
+        current_rate = self.exchange.get_rate(
+            trade.pair, side='exit', is_short=trade.is_short, refresh=False)
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 

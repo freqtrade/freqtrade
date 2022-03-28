@@ -193,13 +193,13 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
 
 
 def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
-    ask_strategy = conf.get('ask_strategy', {})
+    ask_strategy = conf.get('exit_pricing', {})
     ob_min = ask_strategy.get('order_book_min')
     ob_max = ask_strategy.get('order_book_max')
     if ob_min is not None and ob_max is not None and ask_strategy.get('use_order_book'):
         if ob_min != ob_max:
             raise OperationalException(
-                "Using order_book_max != order_book_min in ask_strategy is no longer supported."
+                "Using order_book_max != order_book_min in exit_pricing is no longer supported."
                 "Please pick one value and use `order_book_top` in the future."
             )
         else:
@@ -208,7 +208,7 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
             logger.warning(
                 "DEPRECATED: "
                 "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
-                "for your `ask_strategy` configuration."
+                "for your `exit_pricing` configuration."
             )
 
 
@@ -295,10 +295,10 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
                 "Please migrate your settings to use 'entry_pricing' and 'exit_pricing'."
             )
             conf['entry_pricing'] = {}
-            for obj in list(conf.get('bid_strategy').keys()):
+            for obj in list(conf.get('bid_strategy', {}).keys()):
                 process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
             del conf['bid_strategy']
             conf['exit_pricing'] = {}
-            for obj in list(conf.get('ask_strategy').keys()):
+            for obj in list(conf.get('ask_strategy', {}).keys()):
                 process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']
