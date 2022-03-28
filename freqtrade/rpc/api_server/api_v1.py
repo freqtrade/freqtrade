@@ -137,7 +137,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
-    entry_tag = payload.entry_tag if payload.entry_tag else None
+    entry_tag = payload.entry_tag if payload.entry_tag else 'forceentry'
 
     trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount, entry_tag)
 

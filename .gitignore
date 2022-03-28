@@ -11,6 +11,7 @@ user_data/data/*
 freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
+ScreenLog*
 
 # Macos related
 .DS_Store

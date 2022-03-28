@@ -1,4 +1,4 @@
-EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to brain_config.py
+EXECUTION_PATH = '/root/workspace/execution'  # do not move this to brain_config.py
 
 import requests
 import sys

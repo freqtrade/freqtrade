@@ -1,4 +1,4 @@
-EXECUTION_PATH = '/root/workspace2/execution'  # do not move this to config
+EXECUTION_PATH = '/root/workspace/execution'  # do not move this to config
 import sys
 import threading
 import watchdog
@@ -13,7 +13,7 @@ from config import Config
 from romeo import Romeo
 
 
-def perform_execute(mode, coin, brain, romeo_pool):
+def perform_execute_buy(mode, coin, brain, romeo_pool):
     is_test_mode = False
     if mode == Config.MODE_TEST:
         is_test_mode = True
@@ -28,19 +28,29 @@ def perform_execute(mode, coin, brain, romeo_pool):
     romeo.start()
 
 
-def perform_back_test(date_time, coin, brain, romeo_pool):
-    date = str(date_time)
-    date = date.replace(" ", ", ")
+def perform_execute_sell(coin, romeo_pool):
+    romeo = romeo_pool.get(coin)
+    if romeo is not None:
+        romeo.perform_sell_signal(RomeoExitPriceType.SS)
+
+
+def perform_back_test_sell(date_time):
+    date = str(date_time).replace(" ", ", ")
+    Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
+
+
+def perform_back_test_buy(date_time, coin, brain, romeo_pool):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_D_UP_PERCENTAGE = float(BrainConfig.BACKTEST_DUP)
     Config.ROMEO_D_UP_MAX = int(BrainConfig.BACKTEST_MAX_COUNT_DUP)
-    Config.BACKTEST_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
+    date = str(date_time).replace(" ", ", ")
+    Config.BACKTEST_BUY_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
     Config.BACKTEST_MONTH_INDEX = __get_month_from_timestamp()
     Config.BACKTEST_YEAR = __get_year_from_timestamp()
     Config.IS_BACKTEST = True
-    print("_perform_back_test: Config.BACKTEST_SIGNAL_TIMESTAMP = " + str(
-        Config.BACKTEST_SIGNAL_TIMESTAMP) + " Config.BACKTEST_MONTH_INDEX = " + str(
+    print("_perform_back_test: Config.BACKTEST_BUY_SIGNAL_TIMESTAMP = " + str(
+        Config.BACKTEST_BUY_SIGNAL_TIMESTAMP) + " Config.BACKTEST_MONTH_INDEX = " + str(
         Config.BACKTEST_MONTH_INDEX) + " Config.COIN = " + str(
         Config.COIN) + " Config.BRAIN = " + str(
         Config.BRAIN) + " Config.ROMEO_D_UP_PERCENTAGE = " + str(
@@ -83,14 +93,14 @@ def __create_429_watcher():
 
 def __get_month_from_timestamp():
     print("__get_month_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_BUY_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.month - 1 if date.month < 12 else 0
 
 
 def __get_year_from_timestamp():
     print("__get_year_from_timestamp")
-    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_SIGNAL_TIMESTAMP)))
+    date = str(time.strftime("%Y-%m-%d", time.localtime(Config.BACKTEST_BUY_SIGNAL_TIMESTAMP)))
     date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
     return date.year
 

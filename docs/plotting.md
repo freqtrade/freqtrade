@@ -65,7 +65,7 @@ optional arguments:
                         _today.json`
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+  -i TIMEFRAME, --timeframe TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --no-trades           Skip using trades from backtesting file and DB.
 
@@ -330,7 +330,7 @@ optional arguments:
   --trade-source {DB,file}
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
-  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+  -i TIMEFRAME, --timeframe TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --auto-open           Automatically open generated plot.
 
