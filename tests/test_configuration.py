@@ -809,13 +809,13 @@ def test_validate_price_side(default_conf):
     conf = deepcopy(default_conf)
     conf['order_types']['entry'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market buy orders require entry_pricing.price_side = "ask".'):
+                       match='Market entry orders require entry_pricing.price_side = "other".'):
         validate_config_consistency(conf)
 
     conf = deepcopy(default_conf)
     conf['order_types']['exit'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market sell orders require exit_pricing.price_side = "bid".'):
+                       match='Market exit orders require exit_pricing.price_side = "other".'):
         validate_config_consistency(conf)
 
     # Validate inversed case
@@ -1234,15 +1234,15 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-    ("exit_pricing", "use_sell_signal", True,
+    ("ask_strategy", "use_sell_signal", True,
      None, "use_sell_signal", False),
-    ("exit_pricing", "sell_profit_only", True,
+    ("ask_strategy", "sell_profit_only", True,
      None, "sell_profit_only", False),
-    ("exit_pricing", "sell_profit_offset", 0.1,
+    ("ask_strategy", "sell_profit_offset", 0.1,
      None, "sell_profit_offset", 0.01),
-    ("exit_pricing", "ignore_roi_if_buy_signal", True,
+    ("ask_strategy", "ignore_roi_if_buy_signal", True,
      None, "ignore_roi_if_buy_signal", False),
-    ("exit_pricing", "ignore_buying_expired_candle_after", 5,
+    ("ask_strategy", "ignore_buying_expired_candle_after", 5,
      None, "ignore_buying_expired_candle_after", 6),
 ])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):

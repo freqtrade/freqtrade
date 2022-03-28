@@ -103,14 +103,15 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     """
     When using market orders, price sides must be using the "other" side of the price
     """
-    # TODO-lev: check this again when determining how to migrate pricing strategies!
+    # TODO: The below could be an enforced setting when using market orders
     if (conf.get('order_types', {}).get('entry') == 'market'
-            and conf.get('entry_pricing', {}).get('price_side') != 'ask'):
-        raise OperationalException('Market buy orders require entry_pricing.price_side = "ask".')
+            and conf.get('entry_pricing', {}).get('price_side') not in ('ask', 'other')):
+        raise OperationalException(
+            'Market entry orders require entry_pricing.price_side = "other".')
 
     if (conf.get('order_types', {}).get('exit') == 'market'
-            and conf.get('ask_strategy', {}).get('price_side') != 'bid'):
-        raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
+            and conf.get('exit_pricing', {}).get('price_side') not in ('bid', 'other')):
+        raise OperationalException('Market exit orders require exit_pricing.price_side = "other".')
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
