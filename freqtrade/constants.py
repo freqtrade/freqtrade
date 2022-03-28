@@ -180,7 +180,7 @@ CONF_SCHEMA = {
                     'maximum': 1,
                     'exclusiveMaximum': False,
                 },
-                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'bid'},
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'same'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
                 'check_depth_of_market': {
@@ -196,7 +196,7 @@ CONF_SCHEMA = {
         'exit_pricing': {
             'type': 'object',
             'properties': {
-                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'ask'},
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'same'},
                 'bid_last_balance': {
                     'type': 'number',
                     'minimum': 0,

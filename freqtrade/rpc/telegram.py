@@ -1491,7 +1491,7 @@ class Telegram(RPCHandler):
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
             f"*Minimum ROI:* `{val['minimal_roi']}`\n"
             f"*Entry strategy:* ```\n{json.dumps(val['entry_pricing'])}```\n"
-            f"*Exit strategy:* ```\n{json.dumps(val['exit_strategy'])}```\n"
+            f"*Exit strategy:* ```\n{json.dumps(val['exit_pricing'])}```\n"
             f"{sl_info}"
             f"{pa_info}"
             f"*Timeframe:* `{val['timeframe']}`\n"

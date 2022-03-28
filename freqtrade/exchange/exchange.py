@@ -1468,10 +1468,10 @@ class Exchange:
 
         if price_side in ('same', 'other'):
             price_map = {
-                ('enter', 'long', 'same'): 'bid',
-                ('enter', 'long', 'other'): 'ask',
-                ('enter', 'short', 'same'): 'ask',
-                ('enter', 'short', 'other'): 'bid',
+                ('entry', 'long', 'same'): 'bid',
+                ('entry', 'long', 'other'): 'ask',
+                ('entry', 'short', 'same'): 'ask',
+                ('entry', 'short', 'other'): 'bid',
                 ('exit', 'long', 'same'): 'ask',
                 ('exit', 'long', 'other'): 'bid',
                 ('exit', 'short', 'same'): 'bid',
@@ -1481,7 +1481,7 @@ class Exchange:
 
         price_side_word = price_side.capitalize()
 
-        if conf_strategy.get('use_order_book', True):
+        if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)

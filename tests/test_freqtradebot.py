@@ -898,7 +898,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     # Fail to get price...
     mocker.patch('freqtrade.exchange.Exchange.get_rate', MagicMock(return_value=0.0))
 
-    with pytest.raises(PricingError, match=f"Could not determine {enter_side(is_short)} price."):
+    with pytest.raises(PricingError, match="Could not determine entry price."):
         freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
 
     # In case of custom entry price
@@ -4497,11 +4497,12 @@ def test_order_book_entry_pricing1(mocker, default_conf_usdt, order_book_l2, exc
     freqtrade = FreqtradeBot(default_conf_usdt)
     if exception_thrown:
         with pytest.raises(PricingError):
-            freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy")
+            freqtrade.exchange.get_rate('ETH/USDT', side="entry", is_short=False, refresh=True)
         assert log_has_re(
-            r'Buy Price at location 1 from orderbook could not be determined.', caplog)
+            r'Entry Price at location 1 from orderbook could not be determined.', caplog)
     else:
-        assert freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy") == 0.043935
+        assert freqtrade.exchange.get_rate(
+            'ETH/USDT', side="entry", is_short=False, refresh=True) == 0.043935
         assert ticker_usdt_mock.call_count == 0
 
 
@@ -4577,7 +4578,7 @@ def test_order_book_exit_pricing(
                  return_value={'bids': [[]], 'asks': [[]]})
     with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
-    assert log_has_re(r'Sell Price at location 1 from orderbook could not be determined\..*',
+    assert log_has_re(r'Exit Price at location 1 from orderbook could not be determined\..*',
                       caplog)
 
 
