@@ -2276,6 +2276,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
+    ('other', 20, 19, 10, 0.0, 20),  # Full ask side
     ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
     ('ask', 20, 19, 10, 1.0, 10),  # Full last side
     ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
@@ -2288,6 +2289,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
+    ('same', 21, 20, 10, 0.0, 20),  # Full bid side
     ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
     ('bid', 21, 20, 10, 1.0, 10),  # Full last side
     ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
