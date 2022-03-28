@@ -174,7 +174,7 @@ CONF_SCHEMA = {
         'entry_pricing': {
             'type': 'object',
             'properties': {
-                'ask_last_balance': {
+                'price_last_balance': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,
@@ -197,7 +197,7 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'same'},
-                'bid_last_balance': {
+                'price_last_balance': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,

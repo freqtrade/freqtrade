@@ -1031,10 +1031,12 @@ def test__validate_pricing_rules(default_conf, caplog) -> None:
     def_conf['ask_strategy'] = {
         'price_side': 'ask',
         'use_order_book': True,
+        'bid_last_balance': 0.5
     }
     def_conf['bid_strategy'] = {
         'price_side': 'bid',
         'use_order_book': False,
+        'ask_last_balance': 0.7
     }
     conf = deepcopy(def_conf)
 
@@ -1043,8 +1045,10 @@ def test__validate_pricing_rules(default_conf, caplog) -> None:
         r"DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is.*", caplog)
     assert conf['exit_pricing']['price_side'] == 'ask'
     assert conf['exit_pricing']['use_order_book'] is True
+    assert conf['exit_pricing']['price_last_balance'] == 0.5
     assert conf['entry_pricing']['price_side'] == 'bid'
     assert conf['entry_pricing']['use_order_book'] is False
+    assert conf['entry_pricing']['price_last_balance'] == 0.7
     assert 'ask_strategy' not in conf
     assert 'bid_strategy' not in conf
 

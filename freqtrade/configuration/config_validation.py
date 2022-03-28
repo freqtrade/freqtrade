@@ -297,9 +297,18 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
             )
             conf['entry_pricing'] = {}
             for obj in list(conf.get('bid_strategy', {}).keys()):
-                process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
+                if obj == 'ask_last_balance':
+                    process_deprecated_setting(conf, 'bid_strategy', obj,
+                                               'entry_pricing', 'price_last_balance')
+                else:
+                    process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
             del conf['bid_strategy']
+
             conf['exit_pricing'] = {}
             for obj in list(conf.get('ask_strategy', {}).keys()):
-                process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
+                if obj == 'bid_last_balance':
+                    process_deprecated_setting(conf, 'ask_strategy', obj,
+                                               'exit_pricing', 'price_last_balance')
+                else:
+                    process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']

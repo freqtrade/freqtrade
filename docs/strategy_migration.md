@@ -337,10 +337,11 @@ unfilledtimeout = {
 #### `order pricing`
 
 Order pricing changed in 2 ways. `bid_strategy` was renamed to `entry_strategy` and `ask_strategy` was renamed to `exit_strategy`.
+The attributes `ask_last_balance` -> `price_last_balance` and `bid_last_balance` -> `price_last_balance` were renamed as well.
 Also, price-side can now be defined as `ask`, `bid`, `same` or `other`.
 Please refer to the [pricing documentation](configuration.md) for more information.
 
-``` json hl_lines="2-3 12-13"
+``` json hl_lines="2-3 6 12-13 16"
 {
     "bid_strategy": {
         "price_side": "bid",
@@ -355,20 +356,21 @@ Please refer to the [pricing documentation](configuration.md) for more informati
     "ask_strategy":{
         "price_side": "ask",
         "use_order_book": true,
-        "order_book_top": 1
+        "order_book_top": 1,
+        "bid_last_balance": 0.0
     }
 }
 ```
 
 after:
 
-``` json  hl_lines="2-3 12-13"
+``` json  hl_lines="2-3 6 12-13 16"
 {
     "entry_pricing": {
         "price_side": "same",
         "use_order_book": true,
         "order_book_top": 1,
-        "ask_last_balance": 0.0,
+        "price_last_balance": 0.0,
         "check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
@@ -377,7 +379,8 @@ after:
     "exit_pricing":{
         "price_side": "same",
         "use_order_book": true,
-        "order_book_top": 1
+        "order_book_top": 1,
+        "price_last_balance": 0.0
     }
 }
 ```

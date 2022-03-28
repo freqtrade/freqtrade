@@ -4491,7 +4491,7 @@ def test_order_book_entry_pricing1(mocker, default_conf_usdt, order_book_l2, exc
     default_conf_usdt['exchange']['name'] = 'binance'
     default_conf_usdt['entry_pricing']['use_order_book'] = True
     default_conf_usdt['entry_pricing']['order_book_top'] = order_book_top
-    default_conf_usdt['entry_pricing']['ask_last_balance'] = 0
+    default_conf_usdt['entry_pricing']['price_last_balance'] = 0
     default_conf_usdt['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf_usdt)

@@ -53,9 +53,9 @@ When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Fre
 
 The following section uses `side` as the configured `bid_strategy.price_side` (defaults to `"bid"`).
 
-When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price based on `bid_strategy.ask_last_balance`..
+When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price based on `bid_strategy.price_last_balance`..
 
-The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
+The `bid_strategy.price_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
 
 ### Sell price
 
@@ -90,9 +90,9 @@ When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Fr
 
 The following section uses `side` as the configured `ask_strategy.price_side` (defaults to `"ask"`).
 
-When not using orderbook (`ask_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's above the `last` traded price from the ticker. Otherwise (when the `side` price is below the `last` price), it calculates a rate between `side` and `last` price based on `ask_strategy.bid_last_balance`.
+When not using orderbook (`ask_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's above the `last` traded price from the ticker. Otherwise (when the `side` price is below the `last` price), it calculates a rate between `side` and `last` price based on `ask_strategy.price_last_balance`.
 
-The `ask_strategy.bid_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the last price and values between those interpolate between `side` and last price.
+The `ask_strategy.price_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the last price and values between those interpolate between `side` and last price.
 
 ### Market order pricing
 

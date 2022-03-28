@@ -2283,7 +2283,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
     ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
     ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
-    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
+    ('ask', 20, 19, 10, None, 20),  # price_last_balance missing
     ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
@@ -2294,7 +2294,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
     ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
     ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
+    ('bid', 21, 20, 10, None, 20),  # price_last_balance missing
     ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
     ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
     ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
@@ -2305,9 +2305,9 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
                         last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
     if last_ab is None:
-        del default_conf['entry_pricing']['ask_last_balance']
+        del default_conf['entry_pricing']['price_last_balance']
     else:
-        default_conf['entry_pricing']['ask_last_balance'] = last_ab
+        default_conf['entry_pricing']['price_last_balance'] = last_ab
     default_conf['entry_pricing']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -2351,7 +2351,7 @@ def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
 
     default_conf['exit_pricing']['price_side'] = side
     if last_ab is not None:
-        default_conf['exit_pricing']['bid_last_balance'] = last_ab
+        default_conf['exit_pricing']['price_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
@@ -2381,10 +2381,10 @@ def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
 def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, is_short, ask, bid,
                                last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf['entry_pricing']['ask_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_last_balance'] = last_ab
     default_conf['entry_pricing']['price_side'] = side
     default_conf['exit_pricing']['price_side'] = side
-    default_conf['exit_pricing']['ask_last_balance'] = last_ab
+    default_conf['exit_pricing']['price_last_balance'] = last_ab
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})

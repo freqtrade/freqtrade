@@ -420,7 +420,7 @@ def get_default_conf(testdatadir):
             "exit": 30
         },
         "entry_pricing": {
-            "ask_last_balance": 0.0,
+            "price_last_balance": 0.0,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {
