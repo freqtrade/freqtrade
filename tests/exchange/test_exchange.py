@@ -26,6 +26,54 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
 
+get_buy_rate_data = [
+    ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
+    ('ask', 20, 19, 10, 1.0, 10),  # Full last side
+    ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
+    ('ask', 20, 19, 10, 0.7, 13),  # Between ask and last
+    ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
+    ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
+    ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
+    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
+    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
+    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
+    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
+    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
+    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
+    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
+    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
+]
+
+get_sell_rate_data = [
+    ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
+    ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
+    ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
+    ('bid', 12.0, 11.2, 10.5, 0.0, 11.2),  # Last smaller than bid
+    ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
+    ('bid', 0.003, 0.002, 0.005, None, 0.002),
+    ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
+    ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
+    ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
+    ('ask', 12.2, 11.2, 10.5, 0.0, 12.2),  # Last smaller than ask
+    ('ask', 12.0, 11.0, 10.5, 1.0, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 12.0, 11.2, 10.5, 0.5, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 10.0, 11.0, 11.0, 0.0, 10.0),
+    ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
+    ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
+    ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
+    ('ask', 0.006, 1.0, 11.0, None, 0.006),
+]
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            fun, mock_ccxt_fun, retries=API_RETRY_COUNT + 1, **kwargs):
@@ -1903,33 +1951,6 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
         exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
 
 
-get_buy_rate_data = [
-    ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
-    ('ask', 20, 19, 10, 1.0, 10),  # Full last side
-    ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
-    ('ask', 20, 19, 10, 0.7, 13),  # Between ask and last
-    ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
-    ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
-    ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
-    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
-    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
-    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
-    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
-    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
-    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
-    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
-    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
-    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
-    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
-    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
-    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
-    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
-    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
-    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
-    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
-]
-
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_buy_rate_data)
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
@@ -1953,29 +1974,6 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     caplog.clear()
     assert exchange.get_rate('ETH/BTC', refresh=True, side="buy") == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
-
-
-get_sell_rate_data = [
-    ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
-    ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
-    ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
-    ('bid', 12.0, 11.2, 10.5, 0.0, 11.2),  # Last smaller than bid
-    ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
-    ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
-    ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
-    ('bid', 0.003, 0.002, 0.005, None, 0.002),
-    ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
-    ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
-    ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
-    ('ask', 12.2, 11.2, 10.5, 0.0, 12.2),  # Last smaller than ask
-    ('ask', 12.0, 11.0, 10.5, 1.0, 12.0),  # Last smaller than ask - uses ask
-    ('ask', 12.0, 11.2, 10.5, 0.5, 12.0),  # Last smaller than ask - uses ask
-    ('ask', 10.0, 11.0, 11.0, 0.0, 10.0),
-    ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
-    ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
-    ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
-    ('ask', 0.006, 1.0, 11.0, None, 0.006),
-]
 
 
 @pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
@@ -2108,7 +2106,7 @@ def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
     api_mock = MagicMock()
     api_mock.fetch_l2_order_book = order_book_l2
     api_mock.fetch_ticker = MagicMock(
-                 return_value={'ask': ask, 'last': last, 'bid': bid})
+        return_value={'ask': ask, 'last': last, 'bid': bid})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
     assert exchange.get_rates('ETH/BTC', refresh=True)[0] == expected
@@ -2148,12 +2146,12 @@ def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
     pair = "ETH/BTC"
 
     # Test regular mode
-    rate = exchange.get_rate(pair, refresh=True, side="sell")
+    rate = exchange.get_rates(pair, refresh=True)[1]
     assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_rate(pair, refresh=False, side="sell")
+    rate = exchange.get_rates(pair, refresh=False)[1]
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 

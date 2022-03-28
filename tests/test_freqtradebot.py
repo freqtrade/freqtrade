@@ -2075,9 +2075,9 @@ def test_check_handle_timedout_buy_usercustom(default_conf_usdt, ticker_usdt, li
     default_conf_usdt["unfilledtimeout"] = {"buy": 1400, "sell": 30}
     limit_buy_order_old['id'] = open_trade.open_order_id
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
     cancel_buy_order = deepcopy(limit_buy_order_old)
     cancel_buy_order['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
     cancel_order_wr_mock = MagicMock(return_value=cancel_buy_order)
 
     patch_exchange(mocker)
@@ -2085,8 +2085,8 @@ def test_check_handle_timedout_buy_usercustom(default_conf_usdt, ticker_usdt, li
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         fetch_order=MagicMock(return_value=limit_buy_order_old),
-        cancel_order_with_result=cancel_order_wr_mock,
         cancel_order=cancel_order_mock,
+        cancel_order_with_result=cancel_order_wr_mock,
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -2129,7 +2129,9 @@ def test_check_handle_timedout_buy_usercustom(default_conf_usdt, ticker_usdt, li
 def test_check_handle_timedout_buy(default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    limit_buy_order_old['id'] = open_trade.open_order_id
+    open_trade.open_order_id = limit_buy_order_old['id']	
+    order = Order.parse_from_ccxt_object(limit_buy_order_old, 'mocked', 'buy')
+    open_trade.orders[0] = order
     limit_buy_cancel = deepcopy(limit_buy_order_old)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
@@ -2214,8 +2216,9 @@ def test_check_handle_timedout_buy_exception(default_conf_usdt, ticker_usdt,
 def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, limit_sell_order_old,
                                                mocker, open_trade, caplog) -> None:
     default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
-    limit_sell_order_old['id'] = open_trade.open_order_id
-
+    open_trade.open_order_id = limit_sell_order_old['id']
+    order = Order.parse_from_ccxt_object(limit_sell_order_old, 'mocked', 'sell')
+    open_trade.orders[0] = order
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
@@ -4877,45 +4880,26 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.is_open is False
 
 
-@pytest.mark.parametrize('orders, results', [
+@pytest.mark.parametrize('data', [
     (
-        (
-            # side ampunt, price
-            ('buy', 100, 10),
-            ('buy', 100, 15),
-            ('sell', 50, 12),
-            ('sell', 100, 20),
-            ('sell', 50, 5),
-        ),
-        (
-            # amount, open_rate, stake_amount, cumulative_profit, realized_profit
-            (100.0, 10.0, 1000.0, 0.0, None,),
-            (200.0, 12.5, 2500.0, 0.0, None,),
-            (150.0, 12.5, 1875.0, -28.0625, -28.0625,),
-            (50.0, 12.5, 625.0, 713.8125, 741.875,),
-            (50.0, 12.5, 625.0, 713.8125, 336.625,),
-        )
+        # tuple 1 - side amount, price
+        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit
+        (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
+        (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
+        (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625)),
+        (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875)),
+        (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, 336.625)),
     ),
     (
-        (
-            ('buy', 100, 3),
-            ('buy', 100, 7),
-            ('sell', 100, 11),
-            ('buy', 150, 15),
-            ('sell', 100, 19),
-            ('sell', 150, 23),
-        ),
-        (
-            (100.0, 3.0, 300.0, 0.0, None,),
-            (200.0, 5.0, 1000.0, 0.0, None,),
-            (100.0, 5.0, 500.0, 596.0, 596.0,),
-            (250.0, 11.0, 2750.0, 596.0, 596.0,),
-            (150.0, 11.0, 1650.0, 1388.5, 792.5,),
-            (150.0, 11.0, 1650.0, 1388.5, 3175.75,),
-        )
-    ),
+        (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None)),
+        (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None)),
+        (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0)),
+        (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0)),
+        (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5)),
+        (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 3175.75)),
+    )
 ])
-def test_position_adjust3(mocker, default_conf_usdt, fee, orders, results) -> None:
+def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
     default_conf_usdt.update({
         "position_adjustment_enable": True,
         "dry_run": False,
@@ -4928,7 +4912,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, orders, results) -> No
     freqtrade = FreqtradeBot(default_conf_usdt)
     trade = None
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
-    for idx, (order, result) in enumerate(zip(orders, results)):
+    for idx, (order, result) in enumerate(data):
         amount = order[1]
         price = order[2]
         price_mock = MagicMock(return_value=price)

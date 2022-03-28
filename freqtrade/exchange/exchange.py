@@ -1181,7 +1181,8 @@ class Exchange:
         buy_rate = None
         sell_rate = None
         if not refresh:
-            buy_rate, sell_rate = self._buy_rate_cache.get(pair), self._sell_rate_cache.get(pair)
+            buy_rate = self._buy_rate_cache.get(pair)
+            sell_rate = self._sell_rate_cache.get(pair)
             if buy_rate:
                 logger.debug(f"Using cached buy rate for {pair}.")
             if sell_rate:

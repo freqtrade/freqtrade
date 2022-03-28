@@ -485,7 +485,7 @@ class FreqtradeBot(LoggingMixin):
                     return
                 else:
                     logger.debug("Max adjustment entries is set to unlimited.")
-            self.execute_entry(trade.pair, stake_amount, trade=trade)
+            self.execute_entry(trade.pair, stake_amount, current_entry_rate, trade=trade)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -631,10 +631,6 @@ class FreqtradeBot(LoggingMixin):
             trade.open_order_id = order_id
 
         trade.orders.append(order_obj)
-        if pos_adjust:
-            trade.recalc_trade_from_orders()
-        else:
-            trade.recalc_open_trade_value()
         Trade.query.session.add(trade)
         Trade.commit()
 
@@ -1142,16 +1138,18 @@ class FreqtradeBot(LoggingMixin):
             trade.open_order_id = None
             trade.sell_reason = None
             cancelled = True
+            self.wallets.update()
         else:
             # TODO: figure out how to handle partially complete sell orders
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
             cancelled = False
 
-        self.wallets.update()
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+        sub_trade = order_obj.amount != trade.amount
         self._notify_exit_cancel(
             trade,
             order_type=self.strategy.order_types['sell'],
-            reason=reason
+            reason=reason, sub_trade=sub_trade, order=order_obj
         )
         return cancelled
 
@@ -1189,7 +1187,7 @@ class FreqtradeBot(LoggingMixin):
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
             sub_trade_amt: float = None,
-            ) -> bool:
+    ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
@@ -1279,7 +1277,7 @@ class FreqtradeBot(LoggingMixin):
         current_rate = self.exchange.get_rate(
             trade.pair, refresh=False, side="sell") if not fill else None
 
-        # second condtion is for mypy only; order will always be passed during sub trade
+        # second condition is for mypy only; order will always be passed during sub trade
         if sub_trade and order is not None:
             amount = order.safe_filled
             profit_rate = order.safe_price
@@ -1327,7 +1325,7 @@ class FreqtradeBot(LoggingMixin):
         self.rpc.send_msg(msg)
 
     def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str,
-                            sub_trade: bool = False) -> None:
+                            sub_trade: bool = False, order: Order=None) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
@@ -1350,7 +1348,7 @@ class FreqtradeBot(LoggingMixin):
             'gain': gain,
             'limit': profit_rate or 0,
             'order_type': order_type,
-            'amount': trade.amount,
+            'amount': order.safe_amount_after_fee,
             'open_rate': trade.open_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
@@ -1419,7 +1417,7 @@ class FreqtradeBot(LoggingMixin):
         trade.update_trade(order_obj)
         Trade.commit()
 
-        if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
+        if order.get('status') in constants.NON_OPEN_EXCHANGE_STATES:
             # If a buy order was closed, force update on stoploss on exchange
             if order.get('side', None) == 'buy':
                 trade = self.cancel_stoploss_on_exchange(trade)

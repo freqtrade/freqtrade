@@ -383,8 +383,7 @@ class Backtesting:
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
-        current_entry_rate = current_exit_rate = row[OPEN_IDX]
-        current_rate = current_entry_rate
+        current_rate = row[OPEN_IDX]
 
         current_profit = trade.calc_profit_ratio(current_rate)
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
@@ -393,7 +392,7 @@ class Backtesting:
                                              default_retval=None)(
             trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake, max_stake=max_stake,
-            current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate)
+            current_entry_rate=current_rate, current_exit_rate=current_rate)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
@@ -403,9 +402,8 @@ class Backtesting:
                 return pos_trade
 
         if stake_amount is not None and stake_amount < 0.0:
-            amount = -stake_amount / current_rate
+            amount = abs(stake_amount) / current_rate
             if amount > trade.amount:
-                logger.info(f"Amount is higher than available. {amount} > {trade.amount}")
                 return trade
             pos_trade = self._exit_trade(trade, row, current_rate, amount)
             if pos_trade is not None:
@@ -441,29 +439,29 @@ class Backtesting:
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
-                closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+                close_rate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             except ValueError:
                 return None
-            # call the custom exit price,with default value as previous closerate
-            current_profit = trade.calc_profit_ratio(closerate)
+            # call the custom exit price,with default value as previous close_rate
+            current_profit = trade.calc_profit_ratio(close_rate)
             order_type = self.strategy.order_types['sell']
             if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 if order_type == 'limit':
-                    closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                      default_retval=closerate)(
+                    close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                      default_retval=close_rate)(
                         pair=trade.pair, trade=trade,
                         current_time=sell_candle_time,
-                        proposed_rate=closerate, current_profit=current_profit)
+                        proposed_rate=close_rate, current_profit=current_profit)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
-                    closerate = max(closerate, sell_row[LOW_IDX])
+                    close_rate = max(close_rate, sell_row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
 
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
-                    rate=closerate,
+                    rate=close_rate,
                     time_in_force=time_in_force,
                     sell_reason=sell.sell_reason,
                     current_time=sell_candle_time):
@@ -480,15 +478,16 @@ class Backtesting:
             ):
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
-            return self._exit_trade(trade, sell_row, closerate)
+            return self._exit_trade(trade, sell_row, close_rate)
 
         return None
 
     def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
-                    closerate: float, amount: float = None) -> Optional[LocalTrade]:
+                    close_rate: float, amount: float = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         order_type = self.strategy.order_types['sell']
+        amount = amount or trade.amount
         order = Order(
             id=self.order_id_counter,
             ft_trade_id=trade.id,
@@ -502,12 +501,12 @@ class Backtesting:
             side="sell",
             order_type=order_type,
             status="open",
-            price=closerate,
-            average=closerate,
-            amount=amount or trade.amount,
+            price=close_rate,
+            average=close_rate,
+            amount=amount,
             filled=0,
-            remaining=trade.amount,
-            cost=trade.amount * closerate,
+            remaining=amount,
+            cost=amount * close_rate,
         )
         trade.orders.append(order)
         return trade

@@ -467,9 +467,8 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.open_rate = oobj.safe_price
-        trade.amount = oobj.safe_amount_after_fee
-        trade.recalc_open_trade_value()
+        trade.orders[0] = oobj
+        trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
@@ -586,9 +585,8 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.open_rate = oobj.safe_price
-        trade.amount = oobj.safe_amount_after_fee
-        trade.recalc_open_trade_value()
+        trade.orders[0] = oobj
+        trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False
@@ -708,9 +706,8 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.open_rate = oobj.safe_price
-        trade.amount = oobj.safe_amount_after_fee
-        trade.recalc_open_trade_value()
+        trade.orders[0] = oobj
+        trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
         trade.is_open = False

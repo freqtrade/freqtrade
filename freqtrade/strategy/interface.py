@@ -882,8 +882,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return strategy_safe_wrapper(time_method,
                                      default_retval=False)(
-                                        pair=trade.pair, trade=trade, order=order,
-                                        current_time=current_time)
+            pair=trade.pair, trade=trade, order=order,
+            current_time=current_time)
 
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """

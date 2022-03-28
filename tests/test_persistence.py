@@ -1215,7 +1215,7 @@ def test_update_order_from_ccxt(caplog):
         'symbol': 'ETH/BTC',
         'type': 'limit',
         'price': 1234.5,
-        'amount':  20.0,
+        'amount': 20.0,
         'filled': 9,
         'remaining': 11,
         'status': 'open',
@@ -1641,7 +1641,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_buys == 2
 
-    # Just to make sure sell orders are ignored, let's calculate one more time.
+    # Just to make sure non partial sell orders are ignored, let's calculate one more time.
     sell1 = Order(
         ft_order_side='sell',
         ft_pair=trade.pair,
