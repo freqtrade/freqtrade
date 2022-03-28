@@ -938,12 +938,12 @@ class Backtesting:
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
 
-                for trade in list(open_trades[pair]):
+                for t in list(open_trades[pair]):
                     # 1. Cancel expired buy/sell orders.
-                    if self.check_order_cancel(trade, current_time):
+                    if self.check_order_cancel(t, current_time):
                         # Close trade due to buy timeout expiration.
                         open_trade_count -= 1
-                        open_trades[pair].remove(trade)
+                        open_trades[pair].remove(t)
                         self.wallets.update()
 
                 # 2. Process buys.
