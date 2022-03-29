@@ -424,10 +424,10 @@ class Hyperopt:
         '''
         i = 0
         asked_non_tried: List[List[Any]] = []
-        while i < 100 and len(asked_non_tried) < n_points:
+        while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
-                asked = self.opt.ask(n_points=n_points)
+                asked = self.opt.ask(n_points=n_points * 5)
             else:
                 asked = self.opt.space.rvs(n_samples=n_points * 5)
             asked_non_tried += [x for x in asked
