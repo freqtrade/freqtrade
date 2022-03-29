@@ -236,24 +236,24 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
     Please make sure to set [`can_short`]() appropriately on your strategy if you intend to short.
 
     ```python
-        def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe.loc[
-                (
-                    (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
-                    (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
-                    (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
-                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
-                ),
-                ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
-            dataframe.loc[
-                (
-                    (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
-                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
-                    (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
-                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
-                ),
-                ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
 
             return dataframe
     ```
