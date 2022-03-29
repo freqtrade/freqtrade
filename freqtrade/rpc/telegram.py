@@ -190,7 +190,8 @@ class Telegram(RPCHandler):
                                  pattern='update_sell_reason_performance'),
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
-            CallbackQueryHandler(self._forcebuy_inline),
+            CallbackQueryHandler(self._forcebuy_inline, pattern="\S+\/\S+"),
+            CallbackQueryHandler(self._forcesell_inline, pattern="[0-9]+\s\S+\/\S+")
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -379,8 +380,6 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if order['ft_order_side'] != 'buy':
-                continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
             cur_entry_average = order["safe_price"]
@@ -446,7 +445,7 @@ class Telegram(RPCHandler):
             messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
-                r['num_entries'] = len([o for o in r['orders'] if o['ft_order_side'] == 'buy'])
+                r['num_entries'] = len(r['filled_entry_orders'])
                 r['sell_reason'] = r.get('sell_reason', "")
                 lines = [
                     "*Trade ID:* `{trade_id}`" +
@@ -490,8 +489,8 @@ class Telegram(RPCHandler):
                             lines.append("*Open Order:* `{open_order}`")
 
                 lines_detail = self._prepare_entry_details(
-                    r['orders'], r['base_currency'], r['is_open'])
-                lines.extend(lines_detail if lines_detail else "")
+                    r['filled_entry_orders'], r['base_currency'], r['is_open'])
+                lines.extend((lines_detail if (len(r['filled_entry_orders']) > 1) else ""))
 
                 # Filter empty lines using list-comprehension
                 messages.append("\n".join([line for line in lines if line]).format(**r))
@@ -909,16 +908,44 @@ class Telegram(RPCHandler):
         :return: None
         """
 
-        trade_id = context.args[0] if context.args and len(context.args) > 0 else None
-        if not trade_id:
-            self._send_msg("You must specify a trade-id or 'all'.")
-            return
-        try:
-            msg = self._rpc._rpc_forcesell(trade_id)
-            self._send_msg('Forcesell Result: `{result}`'.format(**msg))
+        if context.args:
+            trade_id = context.args[0]
+            self._forcesell_action(trade_id)
+        else:
+            try:
+                fiat_currency = self._config.get('fiat_display_currency', '')
+                statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
+                    self._config['stake_currency'], fiat_currency)
 
-        except RPCException as e:
-            self._send_msg(str(e))
+                trades = []
+                for trade in statlist:
+                    trades.append(f"{trade[0]} {trade[1]} {trade[3]}")
+
+                trade_buttons = [
+                    InlineKeyboardButton(text=trade, callback_data=trade) for trade in trades]
+                buttons_aligned = self._layout_inline_keyboard_onecol(trade_buttons)
+
+                buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
+                self._send_msg(msg="Which trade?",
+                            keyboard=buttons_aligned)
+
+            except RPCException as e:
+                self._send_msg(str(e))
+ 
+    def _forcesell_action(self, trade_id):
+        if trade_id != 'cancel':
+            try:
+                self._rpc._rpc_forcesell(trade_id)
+            except RPCException as e:
+                self._send_msg(str(e))
+
+    def _forcesell_inline(self, update: Update, _: CallbackContext) -> None:
+        if update.callback_query:
+            query = update.callback_query
+            trade_id = query.data.split(" ")[0]
+            query.answer()
+            query.edit_message_text(text=f"Force Selling: {query.data}")
+            self._forcesell_action(trade_id)
 
     def _forcebuy_action(self, pair, price=None):
         if pair != 'cancel':
@@ -940,6 +967,11 @@ class Telegram(RPCHandler):
                                 cols=3) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
+    @staticmethod
+    def _layout_inline_keyboard_onecol(buttons: List[InlineKeyboardButton],
+                                cols=1) -> List[List[InlineKeyboardButton]]:
+        return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
+
     @authorized_only
     def _forcebuy(self, update: Update, context: CallbackContext) -> None:
         """
@@ -949,6 +981,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
+
         if context.args:
             pair = context.args[0]
             price = float(context.args[1]) if len(context.args) > 1 else None
@@ -961,7 +994,7 @@ class Telegram(RPCHandler):
 
             buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which pair?",
-                           keyboard=buttons_aligned)
+                            keyboard=buttons_aligned)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
