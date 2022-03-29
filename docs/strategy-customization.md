@@ -255,7 +255,7 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
             ),
             ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
 
-            return dataframe
+        return dataframe
     ```
 
 !!! Note
