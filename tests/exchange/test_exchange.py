@@ -1098,7 +1098,7 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
 
     order = exchange.create_order(
-        pair='ETH/BTC', ordertype=ordertype, side=side, amount=1, rate=200)
+        pair='ETH/BTC', ordertype=ordertype, side=side, amount=1, rate=rate)
 
     assert 'id' in order
     assert 'info' in order
