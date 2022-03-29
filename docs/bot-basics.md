@@ -57,6 +57,8 @@ This loop will be repeated again and again until the bot is stopped.
 * Calculate indicators (calls `populate_indicators()` once per pair).
 * Calculate entry / exit signals (calls `populate_entry_trend()` and `populate_exit_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
+  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
+  * Check for trade entry signals (`enter_long` / `enter_short` columns).
   * Confirm trade entry / exits (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
   * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
@@ -64,7 +66,6 @@ This loop will be repeated again and again until the bot is stopped.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
   * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
   * For exits based on exit-signal and custom-exit: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
-  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
 * Generate backtest report output
 
 !!! Note
