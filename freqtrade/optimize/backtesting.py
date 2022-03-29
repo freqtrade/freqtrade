@@ -938,7 +938,15 @@ class Backtesting:
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
 
-                # 1. Process buys.
+                for t in list(open_trades[pair]):
+                    # 1. Cancel expired buy/sell orders.
+                    if self.check_order_cancel(t, current_time):
+                        # Close trade due to buy timeout expiration.
+                        open_trade_count -= 1
+                        open_trades[pair].remove(t)
+                        self.wallets.update()
+
+                # 2. Process buys.
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
@@ -961,7 +969,7 @@ class Backtesting:
                         open_trades[pair].append(trade)
 
                 for trade in list(open_trades[pair]):
-                    # 2. Process entry orders.
+                    # 3. Process entry orders.
                     order = trade.select_order(trade.enter_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time)
@@ -969,11 +977,11 @@ class Backtesting:
                         LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
 
-                    # 3. Create sell orders (if any)
+                    # 4. Create sell orders (if any)
                     if not trade.open_order_id:
                         self._get_sell_trade_entry(trade, row)  # Place sell order if necessary
 
-                    # 4. Process sell orders.
+                    # 5. Process sell orders.
                     order = trade.select_order(trade.exit_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         trade.open_order_id = None
@@ -987,13 +995,6 @@ class Backtesting:
                         trades.append(trade)
                         self.wallets.update()
                         self.run_protections(enable_protections, pair, current_time)
-
-                    # 5. Cancel expired buy/sell orders.
-                    if self.check_order_cancel(trade, current_time):
-                        # Close trade due to buy timeout expiration.
-                        open_trade_count -= 1
-                        open_trades[pair].remove(trade)
-                        self.wallets.update()
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
