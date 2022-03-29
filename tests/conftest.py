@@ -2053,6 +2053,7 @@ def saved_hyperopt_results():
             'total_profit': -0.00125625,
             'current_epoch': 1,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': True,
 
         }, {
@@ -2069,6 +2070,7 @@ def saved_hyperopt_results():
             'total_profit': 6.185e-05,
             'current_epoch': 2,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 14.241196856510731,
@@ -2079,6 +2081,7 @@ def saved_hyperopt_results():
             'total_profit': -0.13639474,
             'current_epoch': 3,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 100000,
@@ -2086,7 +2089,7 @@ def saved_hyperopt_results():
             'params_details': {'buy': {'mfi-value': 13, 'fastd-value': 35, 'adx-value': 39, 'rsi-value': 29, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 54, 'sell-adx-value': 63, 'sell-rsi-value': 93, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.411946348378729, 215: 0.2052334363683207, 891: 0.06264755784937427, 2293: 0}, 'stoploss': {'stoploss': -0.11818343570194478}},  # noqa: E501
             'results_metrics': {'total_trades': 0, 'wins': 0, 'draws': 0, 'losses': 0, 'profit_mean': None, 'profit_median': None, 'profit_total': 0, 'profit': 0.0, 'holding_avg': timedelta()},  # noqa: E501
             'results_explanation': '     0 trades. Avg profit    nan%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration   nan min.',  # noqa: E501
-            'total_profit': 0, 'current_epoch': 4, 'is_initial_point': True, 'is_best': False
+            'total_profit': 0, 'current_epoch': 4, 'is_initial_point': True, 'is_random': False, 'is_best': False
         }, {
             'loss': 0.22195522184191518,
             'params_dict': {'mfi-value': 17, 'fastd-value': 21, 'adx-value': 38, 'rsi-value': 33, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 87, 'sell-fastd-value': 82, 'sell-adx-value': 78, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 1269, 'roi_t2': 601, 'roi_t3': 444, 'roi_p1': 0.07280999507931168, 'roi_p2': 0.08946698095898986, 'roi_p3': 0.1454876733325284, 'stoploss': -0.18181041180901014},   # noqa: E501
@@ -2096,6 +2099,7 @@ def saved_hyperopt_results():
             'total_profit': -0.002480140000000001,
             'current_epoch': 5,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': True
         }, {
             'loss': 0.545315889154162,
@@ -2106,6 +2110,7 @@ def saved_hyperopt_results():
             'total_profit': -0.0041773,
             'current_epoch': 6,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 4.713497421432944,
@@ -2118,6 +2123,7 @@ def saved_hyperopt_results():
             'total_profit': -0.06339929,
             'current_epoch': 7,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 20.0,  # noqa: E501
@@ -2128,6 +2134,7 @@ def saved_hyperopt_results():
             'total_profit': 0.0,
             'current_epoch': 8,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 2.4731817780991223,
@@ -2138,6 +2145,7 @@ def saved_hyperopt_results():
             'total_profit': -0.044050070000000004,  # noqa: E501
             'current_epoch': 9,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': -0.2604606005845212,  # noqa: E501
@@ -2148,6 +2156,7 @@ def saved_hyperopt_results():
             'total_profit': 0.00021629,
             'current_epoch': 10,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': True
         }, {
             'loss': 4.876465945994304,  # noqa: E501
@@ -2159,6 +2168,7 @@ def saved_hyperopt_results():
             'total_profit': -0.07436117,
             'current_epoch': 11,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
         }, {
             'loss': 100000,
@@ -2169,6 +2179,7 @@ def saved_hyperopt_results():
             'total_profit': 0,
             'current_epoch': 12,
             'is_initial_point': True,
+            'is_random': False,
             'is_best': False
             }
     ]
