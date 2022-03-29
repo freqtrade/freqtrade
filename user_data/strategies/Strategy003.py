@@ -15,7 +15,7 @@ from wao.strategy_controller import StrategyController
 
 
 class Strategy003(IStrategy):
-    controller = StrategyController('Freq-Strategy003')
+    controller = StrategyController('Freq_Strategy003')
 
     """
     Strategy 003

@@ -23,7 +23,7 @@ def post_request(text, is_from_romeo=False):
     telegram_bot_api_token = Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_romeo else Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
     result = requests.post('https://api.telegram.org/bot' + telegram_bot_api_token +
                            '/sendMessage?chat_id=' + Config.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST +
-                           '&text=' + text + '&parse_mode=Markdown')
+                           '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
     print(str(result))
 
