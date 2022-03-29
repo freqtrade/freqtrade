@@ -18,7 +18,6 @@ If you intend on using markets other than spot markets, please migrate your stra
   * `sell` -> `exit_long`
   * `buy_tag` -> `enter_tag` (used for both long and short trades)
   * New column `enter_short` and corresponding new column `exit_short`
-  * `enter_long` MUST be set even if the strategy is a shorting strategy.
 * trade-object now has the following new properties: `is_short`, `enter_side`, `exit_side` and `trade_direction`.
 * New `side` argument to callbacks without trade object
   * `custom_stake_amount`

@@ -205,7 +205,7 @@ Edit the method `populate_entry_trend()` in your strategy file to update your en
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"enter_long"`, which needs to contain 1 for entries, and 0 for "no action".
+This method will also define a new column, `"enter_long"`, which needs to contain 1 for entries, and 0 for "no action". `enter_long` column is a mandatory column that must be set even if the strategy is shorting only.
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
@@ -235,47 +235,28 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
     Short-trades need to be supported by your exchange and market configuration!
     Please make sure to set [`can_short`]() appropriately on your strategy if you intend to short.
 
-```python
-    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[
-            (
-                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
-                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
-                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
-            ),
-            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
+    ```python
+        def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe.loc[
+                (
+                    (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                    (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                ),
+                ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
-        dataframe.loc[
-            (
-                (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
-                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
-            ),
-            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
+            dataframe.loc[
+                (
+                    (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
+                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                    (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                ),
+                ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
 
-        return dataframe
-```
-
-!!! Note
-    `enter_long` column must be set, even when your strategy is a shorting-only strategy. On other hand, enter_short is an optional column and don't need to be set if the strategy is a long-only strategy
-    
-```python
-    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[: ,'enter_long'] = 0
-
-        dataframe.loc[
-            (
-                (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
-                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
-            ),
-            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
-
-        return dataframe
-```
+            return dataframe
+    ```
 
 !!! Note
     Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the bot does not buy/sell in no-activity periods.
