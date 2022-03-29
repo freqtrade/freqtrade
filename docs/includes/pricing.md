@@ -116,3 +116,23 @@ Assuming both buy and sell are using market orders, a configuration similar to t
 ```
 
 Obviously, if only one side is using limit orders, different pricing combinations can be used.
+
+### Futures market's order pricing
+
+When trading on futures market. orderbook must be used because there is no ticker data for futures.
+
+``` jsonc
+  "bid_strategy": {
+      "ask_last_balance": 0.0,
+      "use_order_book": true,
+      "order_book_top": 1,
+      "check_depth_of_market": {
+          "enabled": false,
+          "bids_to_ask_delta": 1
+      }
+  },
+  "ask_strategy": {
+      "use_order_book": true,
+      "order_book_top": 1
+  },
+```
