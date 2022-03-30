@@ -2,7 +2,11 @@ numpy==1.22.3
 pandas==1.4.1
 pandas-ta==0.3.14b
 
+<<<<<<< opt-ask-force-new-points -- Incoming Change
 ccxt==1.76.5
+=======
+ccxt==1.77.45
+>>>>>>> develop -- Current Change
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==36.0.1
 aiohttp==3.8.1
