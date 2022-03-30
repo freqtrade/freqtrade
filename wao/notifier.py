@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
-from _429_file_util import delete_429_file, write_to_429_file, is_response_from_romeo_200
+from _429_file_util import delete_429_file, write_to_429_file
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
 
@@ -27,7 +27,9 @@ def post_request(text, is_from_romeo=False):
 
     print(str(result))
 
-    if is_response_from_romeo_200(str(result), is_from_romeo):
+    if str(result) == TELEGRAM_RESPONSE_200 and is_from_romeo:
+        delete_429_file(text)
+    elif str(result) != TELEGRAM_RESPONSE_200:
         delete_429_file(text)
         write_to_429_file(text)
     else:
