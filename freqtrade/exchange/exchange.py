@@ -129,10 +129,10 @@ class Exchange:
 
         # Leverage properties
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
-        self.margin_mode: Optional[MarginMode] = (
+        self.margin_mode: MarginMode = (
             MarginMode(config.get('margin_mode'))
             if config.get('margin_mode')
-            else None
+            else MarginMode.NONE
         )
         self.liquidation_buffer = config.get('liquidation_buffer', 0.05)
 
@@ -372,9 +372,9 @@ class Exchange:
         return (
             market.get('quote', None) is not None
             and market.get('base', None) is not None
-            and (self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
-            or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
-            or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market))
+            and ((self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
+                 or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
+                 or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market)))
         )
 
     def klines(self, pair_interval: PairWithTimeframe, copy: bool = True) -> DataFrame:
@@ -411,7 +411,7 @@ class Exchange:
                         order[prop] = order[prop] * contract_size
         return order
 
-    def _amount_to_contracts(self, pair: str, amount: float):
+    def _amount_to_contracts(self, pair: str, amount: float) -> float:
 
         contract_size = self._get_contract_size(pair)
         if contract_size and contract_size != 1:
@@ -419,7 +419,7 @@ class Exchange:
         else:
             return amount
 
-    def _contracts_to_amount(self, pair: str, num_contracts: float):
+    def _contracts_to_amount(self, pair: str, num_contracts: float) -> float:
 
         contract_size = self._get_contract_size(pair)
         if contract_size and contract_size != 1:
@@ -708,12 +708,7 @@ class Exchange:
     ) -> Optional[float]:
         return self._get_stake_amount_limit(pair, price, stoploss, 'min', leverage)
 
-    def get_max_pair_stake_amount(
-        self,
-        pair: str,
-        price: float,
-        leverage: float = 1.0
-    ) -> float:
+    def get_max_pair_stake_amount(self, pair: str, price: float, leverage: float = 1.0) -> float:
         max_stake_amount = self._get_stake_amount_limit(pair, price, 0.0, 'max')
         if max_stake_amount is None:
             # * Should never be executed
@@ -775,7 +770,7 @@ class Exchange:
             leverage or 1.0
         ) if isMin else min(stake_limits)
 
-    def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
+    def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float) -> float:
         """
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered
@@ -936,12 +931,7 @@ class Exchange:
 
     # Order handling
 
-    def _lev_prep(
-        self,
-        pair: str,
-        leverage: float,
-        side: str  # buy or sell
-    ):
+    def _lev_prep(self, pair: str, leverage: float, side: str):
         if self.trading_mode != TradingMode.SPOT:
             self.set_margin_mode(pair, self.margin_mode)
             self._set_leverage(leverage, pair)
@@ -1042,17 +1032,17 @@ class Exchange:
         # Limit price threshold: As limit price should always be below stop-price
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         if side == "sell":
-            # TODO: Name limit_rate in other exchange subclasses
-            rate = stop_price * limit_price_pct
+            limit_rate = stop_price * limit_price_pct
         else:
-            rate = stop_price * (2 - limit_price_pct)
+            limit_rate = stop_price * (2 - limit_price_pct)
 
-        bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
+        bad_stop_price = ((stop_price <= limit_rate) if side ==
+                          "sell" else (stop_price >= limit_rate))
         # Ensure rate is less than stop price
         if bad_stop_price:
             raise OperationalException(
                 'In stoploss limit order, stop price should be more than limit price')
-        return rate
+        return limit_rate
 
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()
@@ -1085,10 +1075,10 @@ class Exchange:
         ordertype, user_order_type = self._get_stop_order_type(user_order_type)
 
         stop_price_norm = self.price_to_precision(pair, stop_price)
-        rate = None
+        limit_rate = None
         if user_order_type == 'limit':
-            rate = self._get_stop_limit_rate(stop_price, order_types, side)
-            rate = self.price_to_precision(pair, rate)
+            limit_rate = self._get_stop_limit_rate(stop_price, order_types, side)
+            limit_rate = self.price_to_precision(pair, limit_rate)
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
@@ -1111,23 +1101,23 @@ class Exchange:
 
             self._lev_prep(pair, leverage, side)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=rate, params=params)
+                                           amount=amount, price=limit_rate, params=params)
             self._log_exchange_response('create_stoploss_order', order)
             order = self._order_contracts_to_amount(order)
             logger.info(f"stoploss {user_order_type} order added for {pair}. "
-                        f"stop price: {stop_price}. limit: {rate}")
+                        f"stop price: {stop_price}. limit: {limit_rate}")
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Tried to sell amount {amount} at rate {limit_rate}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             # Errors:
             # `Order would trigger immediately.`
             raise InvalidOrderException(
                 f'Could not create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Tried to sell amount {amount} at rate {limit_rate}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -2451,8 +2441,6 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.margin_mode is None):
-            raise OperationalException(f'{self.name}.margin_mode must be set for liquidation_price')
         elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
             raise OperationalException(
                 f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")

@@ -52,12 +52,7 @@ class Okx(Exchange):
         return params
 
     @retrier
-    def _lev_prep(
-        self,
-        pair: str,
-        leverage: float,
-        side: str  # buy or sell
-    ):
+    def _lev_prep(self, pair: str, leverage: float, side: str):
         if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
             try:
                 # TODO-lev: Test me properly (check mgnMode passed)
