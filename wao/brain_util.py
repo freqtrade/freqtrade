@@ -10,7 +10,7 @@ from wao._429_watcher import _429_Watcher
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
-from romeo import Romeo
+from romeo import Romeo, RomeoExitPriceType
 
 
 def perform_execute_buy(mode, coin, brain, romeo_pool):
