@@ -32,24 +32,20 @@ from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
-import matplotlib.pyplot as plt
-import numpy as np
-import random
+
 
 # Suppress scikit-learn FutureWarnings from skopt
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     from skopt import Optimizer
     from skopt.space import Dimension
-    from sklearn.model_selection import cross_val_score  
-    from skopt.plots import plot_convergence, plot_regret, plot_evaluations, plot_objective 
 
 progressbar.streams.wrap_stderr()
 progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
-INITIAL_POINTS = 32
+INITIAL_POINTS = 30
 
 # Keep no more than SKOPT_MODEL_QUEUE_SIZE models
 # in the skopt model queue, to optimize memory consumption
@@ -413,35 +409,6 @@ class Hyperopt:
                     f'({(self.max_date - self.min_date).days} days)..')
         # Store non-trimmed data - will be trimmed after signal generation.
         dump(preprocessed, self.data_pickle_file)
-    
-    def get_asked_points(self, n_points: int) -> List[List[Any]]:
-        '''
-        Enforce points returned from `self.opt.ask` have not been already evaluated
-
-        Steps:
-        1. Try to get points using `self.opt.ask` first
-        2. Discard the points that have already been evaluated
-        3. Retry using `self.opt.ask` up to 3 times
-        4. If still some points are missing in respect to `n_points`, random sample some points
-        5. Repeat until at least `n_points` points in the `asked_non_tried` list
-        6. Return a list with length truncated at `n_points`
-        '''
-        i = 0
-        asked_non_tried: List[List[Any]] = []
-        while i < 100 and len(asked_non_tried) < n_points:
-            if i < 3:
-                self.opt.cache_ = {}
-                asked = self.opt.ask(n_points=n_points * 5)
-            else:
-                asked = self.opt.space.rvs(n_samples=n_points * 5)
-            asked_non_tried += [x for x in asked
-                                if x not in self.opt.Xi
-                                and x not in asked_non_tried]
-            i += 1
-        if asked_non_tried:
-            return asked_non_tried[:min(len(asked_non_tried), n_points)]
-        else:
-            return self.opt.ask(n_points=n_points)
 
     def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
         '''
@@ -548,13 +515,7 @@ class Hyperopt:
 
                         asked, is_random = self.get_asked_points(n_points=current_jobs)
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
-                        res = self.opt.tell(asked, [v['loss'] for v in f_val])
-
-                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, r2=False, objective=True, jobs=jobs)
-
-                        if res.models and hasattr(res.models[-1], "kernel_"):
-                            print(f'kernel: {res.models[-1].kernel_}') 
-                        print(datetime.now())
+                        self.opt.tell(asked, [v['loss'] for v in f_val])
 
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
@@ -600,47 +561,3 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
-
-    def plot_r2(self, res, ax, jobs):    
-        if len(res.x_iters) < 10:
-            return                  
-
-        if not hasattr(self, 'r2_list'):
-            self.r2_list = []
-
-        model = res.models[-1]
-        model.criterion = 'squared_error'
-
-        r2 = cross_val_score(model, X=res.x_iters, y=res.func_vals, scoring='r2', cv=5, n_jobs=jobs).mean()
-        r2 = r2 if r2 > -5 else -5
-        self.r2_list.append(r2)
-            
-        ax.plot(range(INITIAL_POINTS, INITIAL_POINTS + jobs * len(self.r2_list), jobs), self.r2_list, label='R2', marker=".", markersize=12, lw=2)
-
-    def plot_optimizer(self, res, path, jobs, convergence=True, regret=True, evaluations=True, objective=True, r2=True):
-        path = Path(path)
-        if convergence:
-            ax = plot_convergence(res)
-            ax.flatten()[0].figure.savefig(path / 'convergence.png')
-
-        if regret:
-            ax = plot_regret(res)
-            ax.flatten()[0].figure.savefig(path / 'regret.png')
-
-        if evaluations:
-#             print('evaluations')
-            ax = plot_evaluations(res)
-            ax.flatten()[0].figure.savefig(path / 'evaluations.png')
-
-        if objective and res.models:
-#             print('objective')
-            ax = plot_objective(res, sample_source='result', n_samples=50, n_points=10)
-            ax.flatten()[0].figure.savefig(path / 'objective.png')
-
-        if r2 and res.models:
-            fig, ax = plt.subplots()
-            ax.set_ylabel('R2')
-            ax.set_xlabel('Epoch')
-            ax.set_title('R2')        
-            ax = self.plot_r2(res, ax, jobs)
-            fig.savefig(path / 'r2.png')
