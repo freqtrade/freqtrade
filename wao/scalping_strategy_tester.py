@@ -11,8 +11,7 @@ coin = 'LTC'
 time_range = '1m'
 json_file_name = f'/root/workspace2/freqtrade/user_data/data/binance/{coin}_USDT-{time_range}.json'
 json_file_content = Path(json_file_name).read_text()
-json_file_content = eval(json_file_content)
-total_loop_time = len(json_file_content)
+total_loop_time = json_file_content.count(']') - 1
 minutes_per_day = 1440 if time_range == '1m' else 288
 brain_name = "Scalp"
 config_file_name = "config_scalp.json"
@@ -21,6 +20,7 @@ result_saved_directory = "wao/_scalping_results_directory/"
 file_format = ".csv"
 under_score = "_"
 backtest_command = f"source ./.env/bin/activate; freqtrade backtesting -c {config_file_name} -s {brain_name}"
+split_character = "]"
 
 
 def get_human_readable_time_from_timestamp(unix_time) -> str:
@@ -39,10 +39,10 @@ def get_year_from_timestamp(unix_time) -> str:
 
 def get_year_range() -> str:
     print("get_year_range:...")
-    beginning_year = json_file_content[0]
+    beginning_year = eval(str([e + split_character for e in json_file_content.split(split_character) if e][0]).replace("[[", "[").replace(" ", "").replace(",[", "["))
     beginning_year = beginning_year[0]
     beginning_year = get_year_from_timestamp(beginning_year)
-    end_year = json_file_content[-1]
+    end_year = eval(str([e + split_character for e in json_file_content.split(split_character) if e][-1]).replace("[[", "[").replace(" ", "").replace(",[", "["))
     end_year = end_year[0]
     end_year = get_year_from_timestamp(end_year)
     date_to_be_used = str(beginning_year) if beginning_year == end_year else str(beginning_year) + "-" + str(end_year)
@@ -103,9 +103,13 @@ def run_scalping_strategy_command():
 
 def write_to_json(counter):
     print("write_to_json:... ")
+    json_content_list = []
+    json_content = eval(str([e + split_character for e in json_file_content.split(split_character) if e][counter:counter + minutes_per_day]).replace("[[", "[").replace(" ", "").replace(",[", "["))
+    for content in json_content:
+        converted_value = eval(content)
+        json_content_list.append(converted_value)
     with open(json_file_name, 'w') as outfile:
-        writable_file = json_file_content[counter:counter + minutes_per_day]
-        outfile.write(str(writable_file))
+        outfile.write(str(json_content_list))
     outfile.close()
 
 
@@ -123,12 +127,14 @@ def parse_scalping_strategy_result() -> list:
         average_percentage_per_trade = out_put_to_be_parsed.split("|")[14].replace(" ", "")
         cumulative_percentage_per_day = out_put_to_be_parsed.split("|")[15].replace(" ", "")
         win_rate_percentage_per_day = out_put_to_be_parsed.split("|")[19].split(" ")[17].replace(" ", "") if \
-            out_put_to_be_parsed.split("|")[19].split(" ")[17] != " " else out_put_to_be_parsed.split("|")[19].split(" ")[11].replace(" ", "")
+            out_put_to_be_parsed.split("|")[19].split(" ")[17] != " " else \
+        out_put_to_be_parsed.split("|")[19].split(" ")[11].replace(" ", "")
         list_of_row_items.append(coin)
         list_of_row_items.append(brain_name)
-        unix_time = json_file_content[counter]
+        unix_time = eval(str([e + split_character for e in json_file_content.split(split_character) if e][counter]).replace("[[", "[").replace(" ", "").replace(",[", "["))
         unix_time = unix_time[0]
         readable_time = get_human_readable_time_from_timestamp(unix_time)
+        print(readable_time)
         list_of_row_items.append(str(readable_time))
         list_of_row_items.append(time_range)
         list_of_row_items.append(win_rate_percentage_per_day)
