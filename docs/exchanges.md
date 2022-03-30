@@ -66,11 +66,10 @@ Accounts having BNB accounts use this to pay for fees - if your first trade happ
 
 ### Binance Futures' order pricing
 
-When trading on Binance Futures market. orderbook must be used because there is no price ticker data for futures.
+When trading on Binance Futures market, orderbook must be used because there is no price ticker data for futures.
 
 ``` jsonc
-  "bid_strategy": {
-      "ask_last_balance": 0.0,
+  "entry_pricing": {
       "use_order_book": true,
       "order_book_top": 1,
       "check_depth_of_market": {
@@ -78,7 +77,7 @@ When trading on Binance Futures market. orderbook must be used because there is 
           "bids_to_ask_delta": 1
       }
   },
-  "ask_strategy": {
+  "exit_pricing": {
       "use_order_book": true,
       "order_book_top": 1
   },

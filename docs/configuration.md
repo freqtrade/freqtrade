@@ -203,7 +203,6 @@ Values set in the configuration file always overwrite values set in the strategy
 * `ignore_buying_expired_candle_after`
 * `position_adjustment_enable`
 * `max_entry_position_adjustment`
-* `can_short`
 
 ### Configuring amount per trade
 
