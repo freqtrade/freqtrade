@@ -1149,7 +1149,7 @@ class FreqtradeBot(LoggingMixin):
         self._notify_exit_cancel(
             trade,
             order_type=self.strategy.order_types['sell'],
-            reason=reason, sub_trade=sub_trade, order=order_obj
+            reason=reason, order=order_obj, sub_trade=sub_trade
         )
         return cancelled
 
@@ -1325,7 +1325,7 @@ class FreqtradeBot(LoggingMixin):
         self.rpc.send_msg(msg)
 
     def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str,
-                            sub_trade: bool = False, order: Order = None) -> None:
+                            order: Order, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
