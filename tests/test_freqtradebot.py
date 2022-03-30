@@ -1089,7 +1089,6 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = None
-    trade.is_short = is_short
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
@@ -1310,8 +1309,7 @@ def test_create_stoploss_order_invalid_order(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_create_stoploss_order_insufficient_funds(
-    mocker, default_conf_usdt, caplog, fee, limit_order_open,
-    limit_order, is_short
+    mocker, default_conf_usdt, caplog, fee, limit_order, is_short
 ):
     exit_order = limit_order[exit_side(is_short)]['id']
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -1855,9 +1853,7 @@ def test_enter_positions(mocker, default_conf_usdt, return_value, side_effect,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_exit_positions(
-    mocker, default_conf_usdt, limit_order, is_short, caplog
-) -> None:
+def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
@@ -1886,9 +1882,7 @@ def test_exit_positions(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_exit_positions_exception(
-    mocker, default_conf_usdt, limit_order, caplog, is_short
-) -> None:
+def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog, is_short) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order = limit_order[enter_side(is_short)]
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
@@ -1911,9 +1905,7 @@ def test_exit_positions_exception(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_update_trade_state(
-    mocker, default_conf_usdt, limit_order, is_short, caplog
-) -> None:
+def test_update_trade_state(mocker, default_conf_usdt, limit_order, is_short, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order = limit_order[enter_side(is_short)]
 
@@ -2322,8 +2314,7 @@ def test_handle_trade_use_sell_signal(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_close_trade(
-    default_conf_usdt, ticker_usdt, limit_order_open,
-    limit_order, fee, mocker, is_short
+    default_conf_usdt, ticker_usdt, limit_order_open, limit_order, fee, mocker, is_short
 ) -> None:
     open_order = limit_order_open[exit_side(is_short)]
     enter_order = limit_order[exit_side(is_short)]
@@ -2434,7 +2425,7 @@ def test_check_handle_timedout_entry_usercustom(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_check_handle_timedout_buy(
+def test_check_handle_timedout_entry(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, is_short
 ) -> None:
@@ -2457,10 +2448,7 @@ def test_check_handle_timedout_buy(
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
 
-    if is_short:
-        freqtrade.strategy.check_exit_timeout = MagicMock(return_value=False)
-    else:
-        freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
+    freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
@@ -2469,10 +2457,7 @@ def test_check_handle_timedout_buy(
     nb_trades = len(trades)
     assert nb_trades == 0
     # Custom user buy-timeout is never called
-    if is_short:
-        assert freqtrade.strategy.check_exit_timeout.call_count == 0
-    else:
-        assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2510,8 +2495,7 @@ def test_check_handle_cancelled_buy(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy_exception(
-    default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
-    is_short, fee, mocker
+    default_conf_usdt, ticker_usdt, open_trade, is_short, fee, mocker
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2626,9 +2610,8 @@ def test_check_handle_timedout_exit_usercustom(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_check_handle_timedout_sell(
-    default_conf_usdt, ticker_usdt, limit_sell_order_old,
-    mocker, is_short, open_trade_usdt
+def test_check_handle_timedout_exit(
+    default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker, is_short, open_trade_usdt
 ) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2664,7 +2647,7 @@ def test_check_handle_timedout_sell(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_check_handle_cancelled_sell(
+def test_check_handle_cancelled_exit(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, open_trade_usdt,
     is_short, mocker, caplog
 ) -> None:
