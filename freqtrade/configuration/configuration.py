@@ -81,8 +81,6 @@ class Configuration:
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
-        if 'ask_strategy' not in config:
-            config['ask_strategy'] = {}
 
         if 'pairlists' not in config:
             config['pairlists'] = []

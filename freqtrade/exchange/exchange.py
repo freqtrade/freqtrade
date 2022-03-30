@@ -111,8 +111,8 @@ class Exchange:
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
         # refreshed once every iteration.
-        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
-        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._exit_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._entry_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         # Holds candles
         self._klines: Dict[PairWithTimeframe, DataFrame] = {}
@@ -184,8 +184,8 @@ class Exchange:
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
             self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['ask_strategy'])
-            self.validate_pricing(config['bid_strategy'])
+            self.validate_pricing(config['exit_pricing'])
+            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -1438,7 +1438,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_rate(self, pair: str, refresh: bool, side: str) -> float:
+    def get_rate(self, pair: str, refresh: bool,
+                 side: Literal['entry', 'exit'], is_short: bool) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1450,9 +1451,10 @@ class Exchange:
         :return: float: Price
         :raises PricingError if orderbook price could not be determined.
         """
-        cache_rate: TTLCache = self._buy_rate_cache if side == "buy" else self._sell_rate_cache
-        [strat_name, name] = ['bid_strategy', 'Buy'] if side == "buy" else ['ask_strategy', 'Sell']
+        name = side.capitalize()
+        strat_name = 'entry_pricing' if side == "entry" else 'exit_pricing'
 
+        cache_rate: TTLCache = self._entry_rate_cache if side == "entry" else self._exit_rate_cache
         if not refresh:
             rate = cache_rate.get(pair)
             # Check if cache has been invalidated
@@ -1462,6 +1464,23 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
+        price_side = conf_strategy['price_side']
+
+        if price_side in ('same', 'other'):
+            price_map = {
+                ('entry', 'long', 'same'): 'bid',
+                ('entry', 'long', 'other'): 'ask',
+                ('entry', 'short', 'same'): 'ask',
+                ('entry', 'short', 'other'): 'bid',
+                ('exit', 'long', 'same'): 'ask',
+                ('exit', 'long', 'other'): 'bid',
+                ('exit', 'short', 'same'): 'bid',
+                ('exit', 'short', 'other'): 'ask',
+            }
+            price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
+
+        price_side_word = price_side.capitalize()
+
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
@@ -1469,26 +1488,25 @@ class Exchange:
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
-                rate = order_book[f"{conf_strategy['price_side']}s"][order_book_top - 1][0]
+                rate = order_book[f"{price_side}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
                     f"{name} Price at location {order_book_top} from orderbook could not be "
                     f"determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
-            price_side = {conf_strategy['price_side'].capitalize()}
-            logger.debug(f"{name} price from orderbook {price_side}"
+            logger.debug(f"{name} price from orderbook {price_side_word}"
                          f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
-            logger.debug(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
+            logger.debug(f"Using Last {price_side_word} / Last Price")
             ticker = self.fetch_ticker(pair)
-            ticker_rate = ticker[conf_strategy['price_side']]
+            ticker_rate = ticker[price_side]
             if ticker['last'] and ticker_rate:
-                if side == 'buy' and ticker_rate > ticker['last']:
-                    balance = conf_strategy.get('ask_last_balance', 0.0)
+                if side == 'entry' and ticker_rate > ticker['last']:
+                    balance = conf_strategy.get('price_last_balance', 0.0)
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
-                elif side == 'sell' and ticker_rate < ticker['last']:
-                    balance = conf_strategy.get('bid_last_balance', 0.0)
+                elif side == 'exit' and ticker_rate < ticker['last']:
+                    balance = conf_strategy.get('price_last_balance', 0.0)
                     ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
 

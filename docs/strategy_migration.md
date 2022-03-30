@@ -242,6 +242,8 @@ This should be given the value of `trade.is_short`.
 
 ```
 
+After:
+
 ``` python hl_lines="5 7"
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -267,6 +269,8 @@ This should be given the value of `trade.is_short`.
     }
 ```
 
+After:
+
 ``` python hl_lines="2 3"
     order_time_in_force: Dict = {
         "entry": "gtc",
@@ -290,6 +294,8 @@ This should be given the value of `trade.is_short`.
         "stoploss_on_exchange_interval": 60
     }
 ```
+
+After:
 
 ``` python hl_lines="2-6"
     order_types = {
@@ -317,6 +323,8 @@ unfilledtimeout = {
     }
 ```
 
+After:
+
 ``` python hl_lines="2-3"
 unfilledtimeout = {
         "entry": 10,
@@ -324,4 +332,55 @@ unfilledtimeout = {
         "exit_timeout_count": 0,
         "unit": "minutes"
     }
+```
+
+#### `order pricing`
+
+Order pricing changed in 2 ways. `bid_strategy` was renamed to `entry_strategy` and `ask_strategy` was renamed to `exit_strategy`.
+The attributes `ask_last_balance` -> `price_last_balance` and `bid_last_balance` -> `price_last_balance` were renamed as well.
+Also, price-side can now be defined as `ask`, `bid`, `same` or `other`.
+Please refer to the [pricing documentation](configuration.md) for more information.
+
+``` json hl_lines="2-3 6 12-13 16"
+{
+    "bid_strategy": {
+        "price_side": "bid",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "ask_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "ask_strategy":{
+        "price_side": "ask",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "bid_last_balance": 0.0
+    }
+}
+```
+
+after:
+
+``` json  hl_lines="2-3 6 12-13 16"
+{
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing":{
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0
+    }
+}
 ```

@@ -419,8 +419,8 @@ def get_default_conf(testdatadir):
             "entry": 10,
             "exit": 30
         },
-        "bid_strategy": {
-            "ask_last_balance": 0.0,
+        "entry_pricing": {
+            "price_last_balance": 0.0,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {
@@ -428,7 +428,7 @@ def get_default_conf(testdatadir):
                 "bids_to_ask_delta": 1
             }
         },
-        "ask_strategy": {
+        "exit_pricing": {
             "use_order_book": False,
             "order_book_top": 1,
         },

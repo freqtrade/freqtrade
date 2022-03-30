@@ -971,7 +971,7 @@ def test_validate_pricing(default_conf, mocker):
 
     has.update({'fetchTicker': True})
 
-    default_conf['ask_strategy']['use_order_book'] = True
+    default_conf['exit_pricing']['use_order_book'] = True
     ExchangeResolver.load_exchange('binance', default_conf)
     has.update({'fetchL2OrderBook': False})
 
@@ -2276,6 +2276,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
+    ('other', 20, 19, 10, 0.0, 20),  # Full ask side
     ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
     ('ask', 20, 19, 10, 1.0, 10),  # Full last side
     ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
@@ -2283,45 +2284,46 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
     ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
     ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
-    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
+    ('ask', 20, 19, 10, None, 20),  # price_last_balance missing
     ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
+    ('same', 21, 20, 10, 0.0, 20),  # Full bid side
     ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
     ('bid', 21, 20, 10, 1.0, 10),  # Full last side
     ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
     ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
     ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
     ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
+    ('bid', 21, 20, 10, None, 20),  # price_last_balance missing
     ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
     ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
     ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
     ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
     ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
 ])
-def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
-                      last, last_ab, expected) -> None:
+def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
+                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
     if last_ab is None:
-        del default_conf['bid_strategy']['ask_last_balance']
+        del default_conf['entry_pricing']['price_last_balance']
     else:
-        default_conf['bid_strategy']['ask_last_balance'] = last_ab
-    default_conf['bid_strategy']['price_side'] = side
+        default_conf['entry_pricing']['price_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
 
-    assert exchange.get_rate('ETH/BTC', refresh=True, side="buy") == expected
-    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
+    assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
-    assert exchange.get_rate('ETH/BTC', refresh=False, side="buy") == expected
-    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=False) == expected
+    assert log_has("Using cached entry rate for ETH/BTC.", caplog)
     # Running a 2nd time with Refresh on!
     caplog.clear()
-    assert exchange.get_rate('ETH/BTC', refresh=True, side="buy") == expected
-    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+    assert exchange.get_rate('ETH/BTC', side="entry", is_short=False, refresh=True) == expected
+    assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
 
 @pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', [
@@ -2345,112 +2347,120 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
     ('ask', 0.006, 1.0, 11.0, None, 0.006),
 ])
-def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
+def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
 
-    default_conf['ask_strategy']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side
     if last_ab is not None:
-        default_conf['ask_strategy']['bid_last_balance'] = last_ab
+        default_conf['exit_pricing']['price_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
 
     # Test regular mode
     exchange = get_patched_exchange(mocker, default_conf)
-    rate = exchange.get_rate(pair, refresh=True, side="sell")
-    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
+    rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=True)
+    assert not log_has("Using cached exit rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_rate(pair, refresh=False, side="sell")
+    rate = exchange.get_rate(pair, side="exit", is_short=False, refresh=False)
     assert rate == expected
-    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+    assert log_has("Using cached exit rate for ETH/BTC.", caplog)
 
 
-@pytest.mark.parametrize("entry,side,ask,bid,last,last_ab,expected", [
-    ('buy', 'ask', None, 4, 4,  0, 4),  # ask not available
-    ('buy', 'ask', None, None, 4,  0, 4),  # ask not available
-    ('buy', 'bid', 6, None, 4,  0, 5),  # bid not available
-    ('buy', 'bid', None, None, 4,  0, 5),  # No rate available
-    ('sell', 'ask', None, 4, 4,  0, 4),  # ask not available
-    ('sell', 'ask', None, None, 4,  0, 4),  # ask not available
-    ('sell', 'bid', 6, None, 4,  0, 5),  # bid not available
-    ('sell', 'bid', None, None, 4,  0, 5),  # bid not available
+@pytest.mark.parametrize("entry,is_short,side,ask,bid,last,last_ab,expected", [
+    ('entry', False, 'ask', None, 4, 4,  0, 4),  # ask not available
+    ('entry', False, 'ask', None, None, 4,  0, 4),  # ask not available
+    ('entry', False, 'bid', 6, None, 4,  0, 5),  # bid not available
+    ('entry', False, 'bid', None, None, 4,  0, 5),  # No rate available
+    ('exit', False, 'ask', None, 4, 4,  0, 4),  # ask not available
+    ('exit', False, 'ask', None, None, 4,  0, 4),  # ask not available
+    ('exit', False, 'bid', 6, None, 4,  0, 5),  # bid not available
+    ('exit', False, 'bid', None, None, 4,  0, 5),  # bid not available
 ])
-def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, bid,
+def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, is_short, ask, bid,
                                last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf['bid_strategy']['ask_last_balance'] = last_ab
-    default_conf['bid_strategy']['price_side'] = side
-    default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['ask_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side
+    default_conf['exit_pricing']['price_last_balance'] = last_ab
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
 
     with pytest.raises(PricingError):
-        exchange.get_rate('ETH/BTC', refresh=True, side=entry)
+        exchange.get_rate('ETH/BTC', refresh=True, side=entry, is_short=is_short)
 
 
-@pytest.mark.parametrize('side,expected', [
-    ('bid', 0.043936),  # Value from order_book_l2 fiture - bids side
-    ('ask', 0.043949),  # Value from order_book_l2 fiture - asks side
+@pytest.mark.parametrize('is_short,side,expected', [
+    (False, 'bid', 0.043936),  # Value from order_book_l2 fitxure - bids side
+    (False, 'ask', 0.043949),  # Value from order_book_l2 fitxure - asks side
+    (False, 'other', 0.043936),  # Value from order_book_l2 fitxure - bids side
+    (False, 'same', 0.043949),  # Value from order_book_l2 fitxure - asks side
+    (True, 'bid', 0.043936),  # Value from order_book_l2 fitxure - bids side
+    (True, 'ask', 0.043949),  # Value from order_book_l2 fitxure - asks side
+    (True, 'other', 0.043949),  # Value from order_book_l2 fitxure - asks side
+    (True, 'same', 0.043936),  # Value from order_book_l2 fitxure - bids side
 ])
-def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, order_book_l2):
+def test_get_exit_rate_orderbook(
+        default_conf, mocker, caplog, is_short, side, expected, order_book_l2):
     caplog.set_level(logging.DEBUG)
     # Test orderbook mode
-    default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_top'] = 1
+    default_conf['exit_pricing']['price_side'] = side
+    default_conf['exit_pricing']['use_order_book'] = True
+    default_conf['exit_pricing']['order_book_top'] = 1
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     exchange = get_patched_exchange(mocker, default_conf)
-    rate = exchange.get_rate(pair, refresh=True, side="sell")
-    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
+    rate = exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short)
+    assert not log_has("Using cached exit rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
-    rate = exchange.get_rate(pair, refresh=False, side="sell")
+    rate = exchange.get_rate(pair, refresh=False, side="exit", is_short=is_short)
     assert rate == expected
-    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+    assert log_has("Using cached exit rate for ETH/BTC.", caplog)
 
 
-def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
+def test_get_exit_rate_orderbook_exception(default_conf, mocker, caplog):
     # Test orderbook mode
-    default_conf['ask_strategy']['price_side'] = 'ask'
-    default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_top'] = 1
+    default_conf['exit_pricing']['price_side'] = 'ask'
+    default_conf['exit_pricing']['use_order_book'] = True
+    default_conf['exit_pricing']['order_book_top'] = 1
     pair = "ETH/BTC"
     # Test What happens if the exchange returns an empty orderbook.
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
                  return_value={'bids': [[]], 'asks': [[]]})
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError):
-        exchange.get_rate(pair, refresh=True, side="sell")
-    assert log_has_re(r"Sell Price at location 1 from orderbook could not be determined\..*",
+        exchange.get_rate(pair, refresh=True, side="exit", is_short=False)
+    assert log_has_re(r"Exit Price at location 1 from orderbook could not be determined\..*",
                       caplog)
 
 
-def test_get_sell_rate_exception(default_conf, mocker, caplog):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_get_exit_rate_exception(default_conf, mocker, is_short):
     # Ticker on one side can be empty in certain circumstances.
-    default_conf['ask_strategy']['price_side'] = 'ask'
+    default_conf['exit_pricing']['price_side'] = 'ask'
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': None, 'bid': 0.12, 'last': None})
     exchange = get_patched_exchange(mocker, default_conf)
-    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
-        exchange.get_rate(pair, refresh=True, side="sell")
+    with pytest.raises(PricingError, match=r"Exit-Rate for ETH/BTC was empty."):
+        exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short)
 
-    exchange._config['ask_strategy']['price_side'] = 'bid'
-    assert exchange.get_rate(pair, refresh=True, side="sell") == 0.12
+    exchange._config['exit_pricing']['price_side'] = 'bid'
+    assert exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short) == 0.12
     # Reverse sides
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': 0.13, 'bid': None, 'last': None})
-    with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
-        exchange.get_rate(pair, refresh=True, side="sell")
+    with pytest.raises(PricingError, match=r"Exit-Rate for ETH/BTC was empty."):
+        exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short)
 
-    exchange._config['ask_strategy']['price_side'] = 'ask'
-    assert exchange.get_rate(pair, refresh=True, side="sell") == 0.13
+    exchange._config['exit_pricing']['price_side'] = 'ask'
+    assert exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short) == 0.13
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

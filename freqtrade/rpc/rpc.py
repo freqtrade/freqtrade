@@ -136,8 +136,8 @@ class RPC:
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
-            'ask_strategy': config.get('ask_strategy', {}),
-            'bid_strategy': config.get('bid_strategy', {}),
+            'exit_pricing': config.get('exit_pricing', {}),
+            'entry_pricing': config.get('entry_pricing', {}),
             'state': str(botstate),
             'runmode': config['runmode'].value,
             'position_adjustment_enable': config.get('position_adjustment_enable', False),
@@ -171,7 +171,7 @@ class RPC:
                 if trade.is_open:
                     try:
                         current_rate = self._freqtrade.exchange.get_rate(
-                            trade.pair, refresh=False, side=trade.exit_side)
+                            trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -231,7 +231,7 @@ class RPC:
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=trade.exit_side)
+                        trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
@@ -485,7 +485,7 @@ class RPC:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side=trade.exit_side)
+                        trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
@@ -705,7 +705,7 @@ class RPC:
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, refresh=False, side=trade.exit_side)
+                    trade.pair, side='exit', is_short=trade.is_short, refresh=True)
                 exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forceexit", self._freqtrade.strategy.order_types["exit"])

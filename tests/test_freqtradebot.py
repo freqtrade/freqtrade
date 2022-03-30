@@ -96,7 +96,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
-    conf['bid_strategy']['price_side'] = 'ask'
+    conf['entry_pricing']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
     if runmode == RunMode.LIVE:
@@ -898,7 +898,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     # Fail to get price...
     mocker.patch('freqtrade.exchange.Exchange.get_rate', MagicMock(return_value=0.0))
 
-    with pytest.raises(PricingError, match=f"Could not determine {enter_side(is_short)} price."):
+    with pytest.raises(PricingError, match="Could not determine entry price."):
         freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
 
     # In case of custom entry price
@@ -4052,7 +4052,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
         get_fee=fee,
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
-    default_conf_usdt['ask_strategy'] = {
+    default_conf_usdt['exit_pricing'] = {
         'ignore_roi_if_buy_signal': False
     }
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -4432,8 +4432,8 @@ def test_order_book_depth_of_market(
 ):
     ticker_side = 'ask' if is_short else 'bid'
 
-    default_conf_usdt['bid_strategy']['check_depth_of_market']['enabled'] = True
-    default_conf_usdt['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = delta
+    default_conf_usdt['entry_pricing']['check_depth_of_market']['enabled'] = True
+    default_conf_usdt['entry_pricing']['check_depth_of_market']['bids_to_ask_delta'] = delta
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
@@ -4476,8 +4476,8 @@ def test_order_book_depth_of_market(
     (False, 0.045, 0.046, 2, None),
     (True,  0.042, 0.046, 1, {'bids': [[]], 'asks': [[]]})
 ])
-def test_order_book_bid_strategy1(mocker, default_conf_usdt, order_book_l2, exception_thrown,
-                                  ask, last, order_book_top, order_book, caplog) -> None:
+def test_order_book_entry_pricing1(mocker, default_conf_usdt, order_book_l2, exception_thrown,
+                                   ask, last, order_book_top, order_book, caplog) -> None:
     """
     test if function get_rate will return the order book price instead of the ask rate
     """
@@ -4489,19 +4489,20 @@ def test_order_book_bid_strategy1(mocker, default_conf_usdt, order_book_l2, exce
         fetch_ticker=ticker_usdt_mock,
     )
     default_conf_usdt['exchange']['name'] = 'binance'
-    default_conf_usdt['bid_strategy']['use_order_book'] = True
-    default_conf_usdt['bid_strategy']['order_book_top'] = order_book_top
-    default_conf_usdt['bid_strategy']['ask_last_balance'] = 0
+    default_conf_usdt['entry_pricing']['use_order_book'] = True
+    default_conf_usdt['entry_pricing']['order_book_top'] = order_book_top
+    default_conf_usdt['entry_pricing']['price_last_balance'] = 0
     default_conf_usdt['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     if exception_thrown:
         with pytest.raises(PricingError):
-            freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy")
+            freqtrade.exchange.get_rate('ETH/USDT', side="entry", is_short=False, refresh=True)
         assert log_has_re(
-            r'Buy Price at location 1 from orderbook could not be determined.', caplog)
+            r'Entry Price at location 1 from orderbook could not be determined.', caplog)
     else:
-        assert freqtrade.exchange.get_rate('ETH/USDT', refresh=True, side="buy") == 0.043935
+        assert freqtrade.exchange.get_rate(
+            'ETH/USDT', side="entry", is_short=False, refresh=True) == 0.043935
         assert ticker_usdt_mock.call_count == 0
 
 
@@ -4516,17 +4517,17 @@ def test_check_depth_of_market(default_conf_usdt, mocker, order_book_l2) -> None
     )
     default_conf_usdt['telegram']['enabled'] = False
     default_conf_usdt['exchange']['name'] = 'binance'
-    default_conf_usdt['bid_strategy']['check_depth_of_market']['enabled'] = True
+    default_conf_usdt['entry_pricing']['check_depth_of_market']['enabled'] = True
     # delta is 100 which is impossible to reach. hence function will return false
-    default_conf_usdt['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
+    default_conf_usdt['entry_pricing']['check_depth_of_market']['bids_to_ask_delta'] = 100
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    conf = default_conf_usdt['bid_strategy']['check_depth_of_market']
+    conf = default_conf_usdt['entry_pricing']['check_depth_of_market']
     assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
 @pytest.mark.parametrize('is_short', [False, True])
-def test_order_book_ask_strategy(
+def test_order_book_exit_pricing(
         default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt, fee, is_short,
         limit_sell_order_usdt_open, mocker, order_book_l2, caplog) -> None:
     """
@@ -4534,8 +4535,8 @@ def test_order_book_ask_strategy(
     """
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     default_conf_usdt['exchange']['name'] = 'binance'
-    default_conf_usdt['ask_strategy']['use_order_book'] = True
-    default_conf_usdt['ask_strategy']['order_book_top'] = 1
+    default_conf_usdt['exit_pricing']['use_order_book'] = True
+    default_conf_usdt['exit_pricing']['order_book_top'] = 1
     default_conf_usdt['telegram']['enabled'] = False
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -4577,7 +4578,7 @@ def test_order_book_ask_strategy(
                  return_value={'bids': [[]], 'asks': [[]]})
     with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
-    assert log_has_re(r'Sell Price at location 1 from orderbook could not be determined\..*',
+    assert log_has_re(r'Exit Price at location 1 from orderbook could not be determined\..*',
                       caplog)
 
 

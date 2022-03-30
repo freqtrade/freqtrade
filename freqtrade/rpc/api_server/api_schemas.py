@@ -175,8 +175,8 @@ class ShowConfig(BaseModel):
     exchange: str
     strategy: Optional[str]
     forcebuy_enabled: bool
-    ask_strategy: Dict[str, Any]
-    bid_strategy: Dict[str, Any]
+    exit_pricing: Dict[str, Any]
+    entry_pricing: Dict[str, Any]
     bot_name: str
     state: str
     runmode: str

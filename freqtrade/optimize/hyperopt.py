@@ -115,9 +115,9 @@ class Hyperopt:
 
         if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_sell_signal is enabled
-            if 'ask_strategy' not in self.config:
-                self.config['ask_strategy'] = {}
-            self.config['ask_strategy']['use_sell_signal'] = True
+            if 'exit_pricing' not in self.config:
+                self.config['exit_pricing'] = {}
+            self.config['exit_pricing']['use_sell_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
         self.hyperopt_table_header = 0
