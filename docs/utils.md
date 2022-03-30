@@ -439,14 +439,15 @@ usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                               [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
-                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
-                              [-a]
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
+                              [--trading-mode {spot,margin,futures}]
 
 usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                             [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                             [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
+                            [--trading-mode {spot,margin,futures}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -463,6 +464,8 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
