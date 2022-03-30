@@ -1222,7 +1222,7 @@ def test_forcesell_no_tradeid(default_conf, update, mocker) -> None:
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = '1 XRP/USDT 1h 2.20% (1.20)'
-    telegram._forcsell_inline(update, None)
+    telegram._forcesell_inline(update, None)
     assert fsell_mock.call_count == 1
 
 
