@@ -75,6 +75,7 @@ get_sell_rate_data = [
     ('ask', 0.006, 1.0, 11.0, None, 0.006),
 ]
 
+
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            fun, mock_ccxt_fun, retries=API_RETRY_COUNT + 1, **kwargs):
 
@@ -1949,7 +1950,6 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
         api_mock.fetch_l2_order_book = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
         exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
-
 
 
 @pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_buy_rate_data)

@@ -2129,7 +2129,7 @@ def test_check_handle_timedout_buy_usercustom(default_conf_usdt, ticker_usdt, li
 def test_check_handle_timedout_buy(default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
                                    fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
-    open_trade.open_order_id = limit_buy_order_old['id']	
+    open_trade.open_order_id = limit_buy_order_old['id']
     order = Order.parse_from_ccxt_object(limit_buy_order_old, 'mocked', 'buy')
     open_trade.orders[0] = order
     limit_buy_cancel = deepcopy(limit_buy_order_old)
