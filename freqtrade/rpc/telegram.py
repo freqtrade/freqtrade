@@ -229,7 +229,7 @@ class Telegram(RPCHandler):
         message = (
             f"{emoji} *{msg['exchange']}:* {'Bought' if is_fill else 'Buying'} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
-            )
+        )
         message += f"*Buy Tag:* `{msg['buy_tag']}`\n" if msg.get('buy_tag', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
 
@@ -283,8 +283,8 @@ class Telegram(RPCHandler):
         else:
             msg['profit_extra'] = ''
         msg['profit_extra'] = (
-                f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-                f"{msg['profit_extra']})")
+            f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
+            f"{msg['profit_extra']})")
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
         is_sub_trade = msg.get('sub_trade')
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
@@ -297,8 +297,8 @@ class Telegram(RPCHandler):
                 cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
             else:
                 cp_extra = ''
-            cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f}" \
-                       f" {msg['stake_currency']}{cp_extra}`)\n"
+            cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} " \
+                       f"{msg['stake_currency']}{cp_extra}`)\n"
         else:
             cp_extra = ''
         message = (

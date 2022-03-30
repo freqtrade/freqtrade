@@ -823,7 +823,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
             'side': 'sell',
             'amount': amount,
             'remaining': amount,
-            'filled': 0.0
+            'filled': 0.0,
+            'id': trade.orders[0].order_id
         }
     )
     msg = rpc._rpc_forcesell('3')

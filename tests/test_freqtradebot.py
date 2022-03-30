@@ -2617,7 +2617,8 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         close_date=arrow.utcnow().datetime,
         sell_reason="sell_reason_whatever",
     )
-    order = {'remaining': 1,
+    order = {'id': "123456",
+             'remaining': 1,
              'amount': 1,
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
@@ -4963,7 +4964,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
 
         trade = Trade.query.first()
         assert trade
-        if idx < len(orders) - 1:
+        if idx < len(data) - 1:
             assert trade.is_open is True
         assert trade.open_order_id is None
         assert trade.amount == result[0]
