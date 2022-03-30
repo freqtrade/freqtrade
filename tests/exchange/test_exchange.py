@@ -1247,7 +1247,7 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         ordertype=ordertype,
         side=side,
         amount=1,
-        rate=200,
+        rate=rate,
         leverage=1.0
     )
 
