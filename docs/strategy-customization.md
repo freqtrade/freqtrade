@@ -205,7 +205,7 @@ Edit the method `populate_entry_trend()` in your strategy file to update your en
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"enter_long"`, which needs to contain 1 for entries, and 0 for "no action".
+This method will also define a new column, `"enter_long"`, which needs to contain 1 for entries, and 0 for "no action". `enter_long` column is a mandatory column that must be set even if the strategy is shorting only.
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
