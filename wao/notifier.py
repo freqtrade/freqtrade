@@ -2,10 +2,10 @@ EXECUTION_PATH = '/root/workspace/execution'  # do not move this to brain_config
 
 import requests
 import sys
-from wao._429_file_util import delete_429_file, write_to_429_file, is_response_from_romeo_200
 
 sys.path.append(EXECUTION_PATH)
 from config import Config
+from _429_file_util import delete_429_file, write_to_429_file, is_response_from_romeo_200
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
 
