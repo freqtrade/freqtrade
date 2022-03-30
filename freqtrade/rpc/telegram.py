@@ -919,7 +919,7 @@ class Telegram(RPCHandler):
 
                 trades = []
                 for trade in statlist:
-                    trades.append(f"{trade[0]} {trade[1]} {trade[3]}")
+                    trades.append(f"{trade[0]} {trade[1]} {trade[2]} {trade[3]}")
 
                 trade_buttons = [
                     InlineKeyboardButton(text=trade, callback_data=trade) for trade in trades]
@@ -994,7 +994,7 @@ class Telegram(RPCHandler):
 
             buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which pair?",
-                           keyboard=buttons_aligned)
+                            keyboard=buttons_aligned)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
