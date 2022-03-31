@@ -269,7 +269,7 @@ class Configuration:
 
         self._args_to_config(
             config,
-            argname='recursive',
+            argname='recursive_strategy_search',
             logstring='Recursively searching for a strategy in the strategies folder.',
         )
 
