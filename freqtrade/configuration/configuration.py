@@ -267,6 +267,12 @@ class Configuration:
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
+        self._args_to_config(
+            config,
+            argname='recursive',
+            logstring='Recursively searching for a strategy in the strategies folder.',
+        )
+
         self._args_to_config(config, argname='timeframe',
                              logstring='Overriding timeframe with Command line argument')
 
