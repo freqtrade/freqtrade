@@ -1199,33 +1199,6 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcesell_no_tradeid(default_conf, update, mocker) -> None:
-
-    fsell_mock = MagicMock(return_value=None)
-    mocker.patch('freqtrade.rpc.RPC._rpc_forcesell', fsell_mock)
-
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
-
-    patch_get_signal(freqtradebot)
-
-    context = MagicMock()
-    context.args = []
-    telegram._forcesell(update=update, context=context)
-
-    assert fsell_mock.call_count == 0
-    assert msg_mock.call_count == 1
-    assert msg_mock.call_args_list[0][1]['msg'] == 'Which trade?'
-    # assert msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcesell'
-    keyboard = msg_mock.call_args_list[0][1]['keyboard']
-    # One additional button - cancel
-    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
-    update = MagicMock()
-    update.callback_query = MagicMock()
-    update.callback_query.data = '1 XRP/USDT 1h 2.20% (1.20)'
-    telegram._forcesell_inline(update, None)
-    assert fsell_mock.call_count == 1
-
-
 def test_forcebuy_handle(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 

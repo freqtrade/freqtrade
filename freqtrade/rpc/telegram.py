@@ -914,25 +914,21 @@ class Telegram(RPCHandler):
             trade_id = context.args[0]
             self._forcesell_action(trade_id)
         else:
-            try:
-                fiat_currency = self._config.get('fiat_display_currency', '')
-                statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
-                    self._config['stake_currency'], fiat_currency)
+            fiat_currency = self._config.get('fiat_display_currency', '')
+            statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
+                self._config['stake_currency'], fiat_currency)
 
-                trades = []
-                for trade in statlist:
-                    trades.append(f"{trade[0]} {trade[1]} {trade[2]} {trade[3]}")
+            trades = []
+            for trade in statlist:
+                trades.append(f"{trade[0]} {trade[1]} {trade[2]} {trade[3]}")
 
-                trade_buttons = [
-                    InlineKeyboardButton(text=trade, callback_data=trade) for trade in trades]
-                buttons_aligned = self._layout_inline_keyboard_onecol(trade_buttons)
+            trade_buttons = [
+                InlineKeyboardButton(text=trade, callback_data=trade) for trade in trades]
+            buttons_aligned = self._layout_inline_keyboard_onecol(trade_buttons)
 
-                buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
-                self._send_msg(msg="Which trade?",
-                            keyboard=buttons_aligned)
-
-            except RPCException as e:
-                self._send_msg(str(e))
+            buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
+            self._send_msg(msg="Which trade?",
+                        keyboard=buttons_aligned)
  
     def _forcesell_action(self, trade_id):
         if trade_id != 'cancel':
