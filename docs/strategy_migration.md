@@ -338,7 +338,7 @@ unfilledtimeout = {
 
 #### `order pricing`
 
-Order pricing changed in 2 ways. `bid_strategy` was renamed to `entry_strategy` and `ask_strategy` was renamed to `exit_strategy`.
+Order pricing changed in 2 ways. `bid_strategy` was renamed to `entry_pricing` and `ask_strategy` was renamed to `exit_pricing`.
 The attributes `ask_last_balance` -> `price_last_balance` and `bid_last_balance` -> `price_last_balance` were renamed as well.
 Also, price-side can now be defined as `ask`, `bid`, `same` or `other`.
 Please refer to the [pricing documentation](configuration.md#prices-used-for-orders) for more information.
