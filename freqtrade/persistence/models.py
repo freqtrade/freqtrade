@@ -135,7 +135,6 @@ class Order(_DECL_BASE):
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
-    leverage = Column(Float, nullable=True, default=1.0)
 
     ft_fee_base = Column(Float, nullable=True)
 
@@ -183,9 +182,6 @@ class Order(_DECL_BASE):
         self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
-        # TODO-lev: ccxt order objects don't contain leverage.
-        # Therefore the below will always be 1.0 - which is wrong.
-        self.leverage = order.get('leverage', self.leverage)
 
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
@@ -608,9 +604,6 @@ class LocalTrade():
             # Update open rate and actual amount
             self.open_rate = order.safe_price
             self.amount = order.safe_amount_after_fee
-            # if 'leverage' in order:
-            # TODO-lev: order.leverage is not properly filled on the order object!
-            # self.leverage = order.leverage
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
