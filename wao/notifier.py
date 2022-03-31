@@ -8,6 +8,7 @@ from config import Config
 from _429_file_util import delete_429_file, write_to_429_file
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
+TELEGRAM_RESPONSE_429 = "<Response [429]>"
 
 
 def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_dup):
@@ -27,10 +28,10 @@ def post_request(text, is_from_romeo=False):
 
     print(str(result))
 
-    if str(result) == TELEGRAM_RESPONSE_200 and is_from_romeo:
-        delete_429_file(text)
-    elif str(result) != TELEGRAM_RESPONSE_200:
+    if str(result) == TELEGRAM_RESPONSE_429 and is_from_romeo:
         delete_429_file(text)
         write_to_429_file(text)
+    elif str(result) == TELEGRAM_RESPONSE_200 and is_from_romeo:
+        delete_429_file(text)
     else:
         print(str(result))
