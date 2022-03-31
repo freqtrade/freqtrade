@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
@@ -44,8 +44,8 @@ class StoplossGuard(IProtection):
         # filters = [
         #     Trade.is_open.is_(False),
         #     Trade.close_date > look_back_until,
-        #     or_(Trade.sell_reason == SellType.STOP_LOSS.value,
-        #         and_(Trade.sell_reason == SellType.TRAILING_STOP_LOSS.value,
+        #     or_(Trade.sell_reason == ExitType.STOP_LOSS.value,
+        #         and_(Trade.sell_reason == ExitType.TRAILING_STOP_LOSS.value,
         #              Trade.close_profit < 0))
         # ]
         # if pair:
@@ -54,8 +54,8 @@ class StoplossGuard(IProtection):
 
         trades1 = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
         trades = [trade for trade in trades1 if (str(trade.sell_reason) in (
-            SellType.TRAILING_STOP_LOSS.value, SellType.STOP_LOSS.value,
-            SellType.STOPLOSS_ON_EXCHANGE.value)
+            ExitType.TRAILING_STOP_LOSS.value, ExitType.STOP_LOSS.value,
+            ExitType.STOPLOSS_ON_EXCHANGE.value)
             and trade.close_profit and trade.close_profit < 0)]
 
         if len(trades) < self._trade_limit:

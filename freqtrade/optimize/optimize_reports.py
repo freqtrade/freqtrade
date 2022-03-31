@@ -372,20 +372,20 @@ def generate_strategy_stats(pairlist: List[str],
         return {}
     config = content['config']
     max_open_trades = min(config['max_open_trades'], len(pairlist))
-    starting_balance = config['dry_run_wallet']
+    start_balance = config['dry_run_wallet']
     stake_currency = config['stake_currency']
 
     pair_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
-                                         starting_balance=starting_balance,
+                                         starting_balance=start_balance,
                                          results=results, skip_nan=False)
 
-    buy_tag_results = generate_tag_metrics("buy_tag", starting_balance=starting_balance,
-                                           results=results, skip_nan=False)
+    enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
+                                             results=results, skip_nan=False)
 
-    sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
+    exit_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
-                                              starting_balance=starting_balance,
+                                              starting_balance=start_balance,
                                               results=results.loc[results['is_open']],
                                               skip_nan=True)
     daily_stats = generate_daily_stats(results)
@@ -405,18 +405,24 @@ def generate_strategy_stats(pairlist: List[str],
         'best_pair': best_pair,
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
-        'results_per_buy_tag': buy_tag_results,
-        'sell_reason_summary': sell_reason_stats,
+        'results_per_enter_tag': enter_tag_results,
+        'sell_reason_summary': exit_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
 
         'total_trades': len(results),
+        'trade_count_long': len(results.loc[~results['is_short']]),
+        'trade_count_short': len(results.loc[results['is_short']]),
         'total_volume': float(results['stake_amount'].sum()),
         'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
         'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
         'profit_median': results['profit_ratio'].median() if len(results) > 0 else 0,
-        'profit_total': results['profit_abs'].sum() / starting_balance,
+        'profit_total': results['profit_abs'].sum() / start_balance,
+        'profit_total_long': results.loc[~results['is_short'], 'profit_abs'].sum() / start_balance,
+        'profit_total_short': results.loc[results['is_short'], 'profit_abs'].sum() / start_balance,
         'profit_total_abs': results['profit_abs'].sum(),
+        'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
+        'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'backtest_start': min_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_start_ts': int(min_date.timestamp() * 1000),
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
@@ -432,8 +438,8 @@ def generate_strategy_stats(pairlist: List[str],
         'stake_amount': config['stake_amount'],
         'stake_currency': config['stake_currency'],
         'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
-        'starting_balance': starting_balance,
-        'dry_run_wallet': starting_balance,
+        'starting_balance': start_balance,
+        'dry_run_wallet': start_balance,
         'final_balance': content['final_balance'],
         'rejected_signals': content['rejected_signals'],
         'timedout_entry_orders': content['timedout_entry_orders'],
@@ -467,7 +473,7 @@ def generate_strategy_stats(pairlist: List[str],
             results, value_col='profit_ratio')
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
-             results, value_col='profit_abs', starting_balance=starting_balance)
+             results, value_col='profit_abs', starting_balance=start_balance)
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
@@ -481,7 +487,7 @@ def generate_strategy_stats(pairlist: List[str],
             'max_drawdown_high': high_val,
         })
 
-        csum_min, csum_max = calculate_csum(results, starting_balance)
+        csum_min, csum_max = calculate_csum(results, start_balance)
         strat_stats.update({
             'csum_min': csum_min,
             'csum_max': csum_max
@@ -566,16 +572,16 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
-    :param sell_reason_stats: Sell reason metrics
+    :param sell_reason_stats: Exit reason metrics
     :param stake_currency: Stakecurrency used
     :return: pretty printed table with tabulate as string
     """
     headers = [
-        'Sell Reason',
-        'Sells',
+        'Exit Reason',
+        'Exits',
         'Win  Draws  Loss  Win%',
         'Avg Profit %',
         'Cum Profit %',
@@ -600,7 +606,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-    if(tag_type == "buy_tag"):
+    if(tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
         headers = _get_line_header("TAG", stake_currency, 'Sells')
@@ -686,6 +692,19 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
 
+        short_metrics = [
+            ('', ''),  # Empty line to improve readability
+            ('Long / Short',
+             f"{strat_results.get('trade_count_long', 'total_trades')} / "
+             f"{strat_results.get('trade_count_short', 0)}"),
+            ('Total profit Long %', f"{strat_results['profit_total_long']:.2%}"),
+            ('Total profit Short %', f"{strat_results['profit_total_short']:.2%}"),
+            ('Absolute profit Long', round_coin_value(strat_results['profit_total_long_abs'],
+                                                      strat_results['stake_currency'])),
+            ('Absolute profit Short', round_coin_value(strat_results['profit_total_short_abs'],
+                                                       strat_results['stake_currency'])),
+        ] if strat_results.get('trade_count_short', 0) > 0 else []
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
@@ -696,6 +715,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('', ''),  # Empty line to improve readability
             ('Total/Daily Avg Trades',
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
+
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],
@@ -710,6 +730,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
                                                     strat_results['stake_currency'])),
+            *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
                           f"{strat_results['best_pair']['profit_sum']:.2%}"),
@@ -727,7 +748,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
-            ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
+            ('Rejected Entry signals', strat_results.get('rejected_signals', 'N/A')),
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
              f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
@@ -780,20 +801,22 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if results.get('results_per_buy_tag') is not None:
+    if (results.get('results_per_enter_tag') is not None
+            or results.get('results_per_buy_tag') is not None):
+        # results_per_buy_tag is deprecated and should be removed 2 versions after short golive.
         table = text_table_tags(
-            "buy_tag",
-            results['results_per_buy_tag'],
+            "enter_tag",
+            results.get('results_per_enter_tag', results.get('results_per_buy_tag')),
             stake_currency=stake_currency)
 
         if isinstance(table, str) and len(table) > 0:
-            print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
+            print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
+    table = text_table_exit_reason(sell_reason_stats=results['sell_reason_summary'],
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
-        print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+        print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
     print(table)
 
     table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)

@@ -90,8 +90,7 @@ class PriceFilter(IPairList):
             price = ticker['last']
             market = self._exchange.markets[pair]
             limits = market['limits']
-            if ('amount' in limits and 'min' in limits['amount']
-                    and limits['amount']['min'] is not None):
+            if (limits['amount']['min'] is not None):
                 min_amount = limits['amount']['min']
                 min_precision = market['precision']['amount']
 

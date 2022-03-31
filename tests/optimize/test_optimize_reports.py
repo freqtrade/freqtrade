@@ -12,7 +12,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
                                        load_backtest_stats)
 from freqtrade.edge import PairInfo
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
                                                  generate_daily_stats, generate_edge_table,
                                                  generate_pair_metrics,
@@ -21,8 +21,9 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_stats, text_table_bt_results,
-                                                 text_table_sell_reason, text_table_strategy)
+                                                 text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
+from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
@@ -54,7 +55,7 @@ def test_text_table_bt_results():
 
 
 def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
-    default_conf.update({'strategy': 'StrategyTestV2'})
+    default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     StrategyResolver.load_strategy(default_conf)
 
     results = {'DefStrat': {
@@ -74,9 +75,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
                                  "is_open": [False, False, False, True],
+                                 "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': default_conf,
         'locks': [],
@@ -125,9 +127,10 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
              "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
              "trade_duration": [123, 34, 31, 14],
              "is_open": [False, False, False, True],
+             "is_short": [False, False, False, False],
              "stake_amount": [0.01, 0.01, 0.01, 0.01],
-             "sell_reason": [SellType.ROI, SellType.ROI,
-                             SellType.STOP_LOSS, SellType.FORCE_SELL]
+             "sell_reason": [ExitType.ROI, ExitType.ROI,
+                             ExitType.STOP_LOSS, ExitType.FORCE_SELL]
              }),
         'config': default_conf,
         'locks': [],
@@ -273,12 +276,12 @@ def test_text_table_sell_reason():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'sell_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
         }
     )
 
     result_str = (
-        '|   Sell Reason |   Sells |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
+        '|   Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
         '   Tot Profit BTC |   Tot Profit % |\n'
         '|---------------+---------+--------------------------+----------------+----------------+'
         '------------------+----------------|\n'
@@ -290,7 +293,7 @@ def test_text_table_sell_reason():
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
                                                    results=results)
-    assert text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+    assert text_table_exit_reason(sell_reason_stats=sell_reason_stats,
                                   stake_currency='BTC') == result_str
 
 
@@ -305,7 +308,7 @@ def test_generate_sell_reason_stats():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI.value, SellType.ROI.value, SellType.STOP_LOSS.value]
+            'sell_reason': [ExitType.ROI.value, ExitType.ROI.value, ExitType.STOP_LOSS.value]
         }
     )
 
@@ -397,6 +400,6 @@ def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
     show_sorted_pairlist(default_conf, bt_data)
 
     out, err = capsys.readouterr()
-    assert 'Pairs for Strategy StrategyTestV2: \n[' in out
+    assert 'Pairs for Strategy StrategyTestV3: \n[' in out
     assert 'TOTAL' not in out
     assert '"ETH/BTC",  // ' in out

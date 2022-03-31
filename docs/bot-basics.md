@@ -29,21 +29,22 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
 * Call `bot_loop_start()` strategy callback.
 * Analyze strategy per pair.
   * Call `populate_indicators()`
-  * Call `populate_buy_trend()`
-  * Call `populate_sell_trend()`
+  * Call `populate_entry_trend()`
+  * Call `populate_exit_trend()`
 * Check timeouts for open orders.
-  * Calls `check_buy_timeout()` strategy callback for open buy orders.
-  * Calls `check_sell_timeout()` strategy callback for open sell orders.
-* Verifies existing positions and eventually places sell orders.
-  * Considers stoploss, ROI and sell-signal, `custom_sell()` and `custom_stoploss()`.
-  * Determine sell-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
-  * Before a sell order is placed, `confirm_trade_exit()` strategy callback is called.
+  * Calls `check_entry_timeout()` strategy callback for open entry orders.
+  * Calls `check_exit_timeout()` strategy callback for open exit orders.
+* Verifies existing positions and eventually places exit orders.
+  * Considers stoploss, ROI and exit-signal, `custom_exit()` and `custom_stoploss()`.
+  * Determine exit-price based on `exit_pricing` configuration setting or by using the `custom_exit_price()` callback.
+  * Before a exit order is placed, `confirm_trade_exit()` strategy callback is called.
 * Check position adjustments for open trades if enabled by calling `adjust_trade_position()` and place additional order if required.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
-* Verifies buy signal trying to enter new positions.
-  * Determine buy-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
+* Verifies entry signal trying to enter new positions.
+  * Determine entry-price based on `entry_pricing` configuration setting, or by using the `custom_entry_price()` callback.
+  * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.
-  * Before a buy order is placed, `confirm_trade_entry()` strategy callback is called.
+  * Before an entry order is placed, `confirm_trade_entry()` strategy callback is called.
 
 This loop will be repeated again and again until the bot is stopped.
 
@@ -54,15 +55,17 @@ This loop will be repeated again and again until the bot is stopped.
 * Load historic data for configured pairlist.
 * Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
-* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair).
+* Calculate entry / exit signals (calls `populate_entry_trend()` and `populate_exit_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
-  * Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
+  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_entry_timeout()` / `check_exit_timeout()` strategy callbacks.
+  * Check for trade entry signals (`enter_long` / `enter_short` columns).
+  * Confirm trade entry / exits (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
   * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).
+  * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
-  * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
-  * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
-  * Check for Order timeouts, either via the `unfilledtimeout` configuration, or via `check_buy_timeout()` / `check_sell_timeout()` strategy callbacks.
+  * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
+  * For exits based on exit-signal and custom-exit: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
 * Generate backtest report output
 
 !!! Note

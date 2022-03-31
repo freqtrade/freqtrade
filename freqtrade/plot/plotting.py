@@ -237,7 +237,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         # Create description for sell summarizing the trade
         trades['desc'] = trades.apply(
             lambda row: f"{row['profit_ratio']:.2%}, " +
-            (f"{row['buy_tag']}, " if row['buy_tag'] is not None else "") +
+            (f"{row['enter_tag']}, " if row['enter_tag'] is not None else "") +
             f"{row['sell_reason']}, " +
             f"{row['trade_duration']} min",
             axis=1)
@@ -431,8 +431,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
-    if 'buy' in data.columns:
-        df_buy = data[data['buy'] == 1]
+    if 'enter_long' in data.columns:
+        df_buy = data[data['enter_long'] == 1]
         if len(df_buy) > 0:
             buys = go.Scatter(
                 x=df_buy.date,
@@ -450,8 +450,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No buy-signals found.")
 
-    if 'sell' in data.columns:
-        df_sell = data[data['sell'] == 1]
+    if 'exit_long' in data.columns:
+        df_sell = data[data['exit_long'] == 1]
         if len(df_sell) > 0:
             sells = go.Scatter(
                 x=df_sell.date,
@@ -536,7 +536,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                             "Profit per pair",
                             "Parallelism",
                             "Underwater",
-                            ])
+                        ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')

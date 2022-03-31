@@ -24,7 +24,9 @@ BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'fee_open', 'fee_close', 'trade_duration',
                    'profit_ratio', 'profit_abs', 'sell_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
-                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'buy_tag']
+                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'enter_tag',
+                   'is_short'
+                   ]
 
 
 def get_latest_optimize_filename(directory: Union[Path, str], variant: str) -> str:
@@ -250,6 +252,13 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                               utc=True,
                                               infer_datetime_format=True
                                               )
+            # Compatibility support for pre short Columns
+            if 'is_short' not in df.columns:
+                df['is_short'] = 0
+            if 'enter_tag' not in df.columns:
+                df['enter_tag'] = df['buy_tag']
+                df = df.drop(['buy_tag'], axis=1)
+
     else:
         # old format - only with lists.
         raise OperationalException(

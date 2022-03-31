@@ -10,7 +10,7 @@ hyperopt = [
     'filelock',
     'joblib',
     'progressbar2',
-    ]
+]
 
 develop = [
     'coveralls',
@@ -29,7 +29,7 @@ jupyter = [
     'nbstripout',
     'ipykernel',
     'nbconvert',
-    ]
+]
 
 all_extra = plot + develop + jupyter + hyperopt
 
@@ -39,10 +39,10 @@ setup(
         'pytest-asyncio',
         'pytest-cov',
         'pytest-mock',
-        ],
+    ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=1.76.5',
+        'ccxt>=1.77.29',
         'SQLAlchemy',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
@@ -70,7 +70,8 @@ setup(
         'uvicorn',
         'psutil',
         'pyjwt',
-        'aiofiles'
+        'aiofiles',
+        'schedule'
     ],
     extras_require={
         'dev': all_extra,
