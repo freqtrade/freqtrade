@@ -378,11 +378,11 @@ def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
 
 
 @pytest.mark.parametrize('is_short,open_rate,close_rate,lev,profit,trading_mode', [
-    (False, 2.0, 2.2, 1.0, round(0.0945137157107232, 8), spot),
-    (True, 2.2, 2.0, 3.0, round(0.2589996297562085, 8), margin),
+    (False, 2.0, 2.2, 1.0, 0.09451372, spot),
+    (True, 2.2, 2.0, 3.0, 0.25894253, margin),
 ])
 @pytest.mark.usefixtures("init_persistence")
-def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_usdt,
+def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_usdt, time_machine,
                             is_short, open_rate, close_rate, lev, profit, trading_mode):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
@@ -452,6 +452,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
             total_profit_ratio: (1-(60.151253125/65.835)) * 3 = 0.2589996297562085
 
     """
+    time_machine.move_to("2022-03-31 20:45:00 +00:00")
 
     enter_order = limit_sell_order_usdt if is_short else limit_buy_order_usdt
     exit_order = limit_buy_order_usdt if is_short else limit_sell_order_usdt
@@ -492,8 +493,10 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     caplog.clear()
     trade.open_order_id = 'something'
+    time_machine.move_to("2022-03-31 21:45:00 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
     trade.update_trade(oobj)
+
     assert trade.open_order_id is None
     assert trade.close_rate == close_rate
     assert trade.close_profit == profit
