@@ -22,8 +22,7 @@ nav:
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Leverage: leverage.md
-    - Strategy migration: strategy_migration.md
+    - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
     - Exchange-specific Notes: exchanges.md
@@ -38,6 +37,7 @@ nav:
         - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md
+    - Strategy migration: strategy_migration.md
     - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md

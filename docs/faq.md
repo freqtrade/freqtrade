@@ -8,6 +8,7 @@ Freqtrade supports spot trading only.
 
 Freqtrade can open short positions in futures markets.
 This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
+Please make sure to read the [relevant documentation page](leverage.md) first.
 
 In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 

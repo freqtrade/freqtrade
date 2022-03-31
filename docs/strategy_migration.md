@@ -1,35 +1,37 @@
 # Strategy Migration between V2 and V3
 
-We have put a great effort into keeping compatibility with existing strategies, so if you just want to continue using freqtrade in spot markets, there should be no changes necessary for now.
-
 To support new markets and trade-types (namely short trades / trades with leverage), some things had to change in the interface.
 If you intend on using markets other than spot markets, please migrate your strategy to the new format.
+
+We have put a great effort into keeping compatibility with existing strategies, so if you just want to continue using freqtrade in __spot markets__, there should be no changes necessary for now.
+
+You can use the quick summary as checklist. Please refer to the detailed sections below for full migration details.
 
 ## Quick summary / migration checklist
 
 * Strategy methods:
-  * `populate_buy_trend()` -> `populate_entry_trend()`
-  * `populate_sell_trend()` -> `populate_exit_trend()`
-  * `custom_sell()` -> `custom_exit()`
-  * `check_buy_timeout()` -> `check_entry_timeout()`
-  * `check_sell_timeout()` -> `check_exit_timeout()`
+  * [`populate_buy_trend()` -> `populate_entry_trend()`](#populate_buy_trend)
+  * [`populate_sell_trend()` -> `populate_exit_trend()`](#populate_sell_trend)
+  * [`custom_sell()` -> `custom_exit()`](#custom_sell)
+  * [`check_buy_timeout()` -> `check_entry_timeout()`](#custom_entry_timeout)
+  * [`check_sell_timeout()` -> `check_exit_timeout()`](#custom_entry_timeout)
+  * New `side` argument to callbacks without trade object
+    * [`custom_stake_amount`](#custom-stake-amount)
+    * [`confirm_trade_entry`](#confirm_trade_entry)
+  * [Changed argument name in `confirm_trade_exit`](#confirm_trade_exit)
 * Dataframe columns:
-  * `buy` -> `enter_long`
-  * `sell` -> `exit_long`
-  * `buy_tag` -> `enter_tag` (used for both long and short trades)
-  * New column `enter_short` and corresponding new column `exit_short`
+  * [`buy` -> `enter_long`](#populate_buy_trend)
+  * [`sell` -> `exit_long`](#populate_sell_trend)
+  * [`buy_tag` -> `enter_tag` (used for both long and short trades)](#populate_buy_trend)
+  * [New column `enter_short` and corresponding new column `exit_short`](#populate_sell_trend)
 * trade-object now has the following new properties: `is_short`, `enter_side`, `exit_side` and `trade_direction`.
-* New `side` argument to callbacks without trade object
-  * `custom_stake_amount`
-  * `confirm_trade_entry`
-* Changed argument name in `confirm_trade_exit`
-* Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries` (mostly relevant for `adjust_trade_position()`).
+* [Renamed `trade.nr_of_successful_buys` to `trade.nr_of_successful_entries` (mostly relevant for `adjust_trade_position()`)](#adjust-trade-position-changes)
 * Introduced new [`leverage` callback](strategy-callbacks.md#leverage-callback).
 * Informative pairs can now pass a 3rd element in the Tuple, defining the candle type.
 * `@informative` decorator now takes an optional `candle_type` argument.
-* helper methods `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
+* [helper methods](#helper-methods) `stoploss_from_open` and `stoploss_from_absolute` now take `is_short` as additional argument.
 * `INTERFACE_VERSION` should be set to 3.
-* Strategy/Configuration settings.
+* [Strategy/Configuration settings](#strategyconfiguration-settings).
   * `order_time_in_force` buy -> entry, sell -> exit.
   * `order_types` buy -> entry, sell -> exit.
   * `unfilledtimeout` buy -> entry, sell -> exit.
@@ -339,7 +341,7 @@ unfilledtimeout = {
 Order pricing changed in 2 ways. `bid_strategy` was renamed to `entry_strategy` and `ask_strategy` was renamed to `exit_strategy`.
 The attributes `ask_last_balance` -> `price_last_balance` and `bid_last_balance` -> `price_last_balance` were renamed as well.
 Also, price-side can now be defined as `ask`, `bid`, `same` or `other`.
-Please refer to the [pricing documentation](configuration.md) for more information.
+Please refer to the [pricing documentation](configuration.md#prices-used-for-orders) for more information.
 
 ``` json hl_lines="2-3 6 12-13 16"
 {

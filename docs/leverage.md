@@ -1,4 +1,4 @@
-# Leverage
+# Trading with Leverage
 
 !!! Warning "Beta feature"
     This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.
@@ -7,7 +7,7 @@
     You can't run 2 bots on the same account with leverage. For leveraged / margin trading, freqtrade assumes it's the only user of the account, and all liquidation levels are calculated based on this assumption.
 
 !!! Danger "Trading with leverage is very risky"
-    Do not trade with a leverage > 1 using a strategy that hasn't shown positive results in a live run using the spot market. Check the stoploss of your strategy. With a leverage of 2, a stoploss of 0.5 would be too low, and these trades would be liquidated before reaching that stoploss.
+    Do not trade with a leverage > 1 using a strategy that hasn't shown positive results in a live run using the spot market. Check the stoploss of your strategy. With a leverage of 2, a stoploss of 0.5 (50%) would be too low, and these trades would be liquidated before reaching that stoploss.
     We do not assume any responsibility for eventual losses that occur from using this software or this mode.
 
     Please only use advanced trading modes when you know how freqtrade (and your strategy) works.
