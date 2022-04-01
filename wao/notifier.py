@@ -28,10 +28,11 @@ def post_request(text, is_from_romeo=False):
 
     print(str(result))
 
-    if str(result) == TELEGRAM_RESPONSE_429 and is_from_romeo:
-        delete_429_file(text)
-        write_to_429_file(text)
-    elif str(result) == TELEGRAM_RESPONSE_200 and is_from_romeo:
-        delete_429_file(text)
+    if is_from_romeo:
+        if str(result) == TELEGRAM_RESPONSE_429:
+            delete_429_file(text)
+            write_to_429_file(text)
+        elif str(result) == TELEGRAM_RESPONSE_200:
+            delete_429_file(text)
     else:
         print(str(result))
