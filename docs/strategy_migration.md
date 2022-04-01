@@ -40,7 +40,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
 
 ### `populate_buy_trend`
 
-In `populate_buy_trend()` - you will want to change the columns you assign from `'buy`' to `'enter_long`, as well as the method name from `populate_buy_trend` to `populate_entry_trend`.
+In `populate_buy_trend()` - you will want to change the columns you assign from `'buy`' to `'enter_long'`, as well as the method name from `populate_buy_trend` to `populate_entry_trend`.
 
 ```python hl_lines="1 9"
 def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -77,7 +77,7 @@ Please refer to the [Strategy documentation](strategy-customization.md#entry-sig
 ### `populate_sell_trend`
 
 Similar to `populate_buy_trend`, `populate_sell_trend()` will be renamed to `populate_exit_trend()`.
-We'll also change the column from `"sell"` to `"exit_long"`.
+We'll also change the column from `'sell'` to `'exit_long'`.
 
 ``` python hl_lines="1 9"
 def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
