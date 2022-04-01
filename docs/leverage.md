@@ -13,8 +13,7 @@
     Please only use advanced trading modes when you know how freqtrade (and your strategy) works.
     Also, never risk more than what you can afford to lose.
 
-
-Please read the [strategy migration guide](https://www.freqtrade.io/en/latest/strategy_migration/#strategy-migration-between-v2-and-v3) to migrate your strategy from a freqtrade v2 strategy, to v3 strategy that can short and trade futures
+Please read the [strategy migration guide](strategy_migration.md#strategy-migration-between-v2-and-v3) to migrate your strategy from a freqtrade v2 strategy, to v3 strategy that can short and trade futures.
 
 ## Shorting
 
@@ -22,7 +21,7 @@ Shorting is not possible when trading with [`trading_mode`](#understand-tradingm
 
 For a strategy to short, the strategy class must set the class variable `can_short = True`
 
-Please read [strategy customization](https://www.freqtrade.io/en/latest/strategy-customization/#entry-signal-rules) for instructions on how to set signals to enter and exit short trades
+Please read [strategy customization](strategy-customization.md#entry-signal-rules) for instructions on how to set signals to enter and exit short trades.
 
 ## Understand `trading_mode`
 
