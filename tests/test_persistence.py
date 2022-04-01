@@ -493,7 +493,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     caplog.clear()
     trade.open_order_id = 'something'
-    time_machine.move_to("2022-03-31 21:45:00 +00:00")
+    time_machine.move_to("2022-03-31 21:45:05 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
     trade.update_trade(oobj)
 
