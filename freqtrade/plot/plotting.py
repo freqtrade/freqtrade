@@ -11,6 +11,7 @@ from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename
@@ -52,6 +53,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         timerange=timerange,
         startup_candles=startup_candles,
         data_format=config.get('dataformat_ohlcv', 'json'),
+        candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
     if startup_candles and data:
