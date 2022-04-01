@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -11,6 +11,7 @@ from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename
@@ -52,6 +53,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         timerange=timerange,
         startup_candles=startup_candles,
         data_format=config.get('dataformat_ohlcv', 'json'),
+        candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
     if startup_candles and data:
@@ -385,6 +387,35 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
     return fig
 
 
+def create_scatter(
+    data,
+    column_name,
+    color,
+    direction
+) -> Optional[go.Scatter]:
+
+    if column_name in data.columns:
+        df_short = data[data[column_name] == 1]
+        if len(df_short) > 0:
+            shorts = go.Scatter(
+                x=df_short.date,
+                y=df_short.close,
+                mode='markers',
+                name=column_name,
+                marker=dict(
+                    symbol=f"triangle-{direction}-dot",
+                    size=9,
+                    line=dict(width=1),
+                    color=color,
+                )
+            )
+            return shorts
+        else:
+            logger.warning(f"No {column_name}-signals found.")
+
+    return None
+
+
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
                                indicators2: List[str] = [],
@@ -431,43 +462,15 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
-    if 'enter_long' in data.columns:
-        df_buy = data[data['enter_long'] == 1]
-        if len(df_buy) > 0:
-            buys = go.Scatter(
-                x=df_buy.date,
-                y=df_buy.close,
-                mode='markers',
-                name='buy',
-                marker=dict(
-                    symbol='triangle-up-dot',
-                    size=9,
-                    line=dict(width=1),
-                    color='green',
-                )
-            )
-            fig.add_trace(buys, 1, 1)
-        else:
-            logger.warning("No buy-signals found.")
+    longs = create_scatter(data, 'enter_long', 'green', 'up')
+    exit_longs = create_scatter(data, 'exit_long', 'red', 'down')
+    shorts = create_scatter(data, 'enter_short', 'blue', 'down')
+    exit_shorts = create_scatter(data, 'exit_short', 'violet', 'up')
 
-    if 'exit_long' in data.columns:
-        df_sell = data[data['exit_long'] == 1]
-        if len(df_sell) > 0:
-            sells = go.Scatter(
-                x=df_sell.date,
-                y=df_sell.close,
-                mode='markers',
-                name='sell',
-                marker=dict(
-                    symbol='triangle-down-dot',
-                    size=9,
-                    line=dict(width=1),
-                    color='red',
-                )
-            )
-            fig.add_trace(sells, 1, 1)
-        else:
-            logger.warning("No sell-signals found.")
+    for scatter in [longs, exit_longs, shorts, exit_shorts]:
+        if scatter:
+            fig.add_trace(scatter, 1, 1)
+
     # Add Bollinger Bands
     fig = plot_area(fig, 1, data, 'bb_lowerband', 'bb_upperband',
                     label="Bollinger Band")
