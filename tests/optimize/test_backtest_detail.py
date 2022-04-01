@@ -362,10 +362,10 @@ tc22 = BTContainer(data=[
 )
 
 
-# Test 22s: trailing_stop Raises in candle 2 - but ROI applies at the same time.
+# Test 23: trailing_stop Raises in candle 2 - but ROI applies at the same time.
 # applying a positive trailing stop of 3% - ROI should apply before trailing stop.
 # stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2
-tc22s = BTContainer(data=[
+tc23 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
     [1, 5000, 5050, 4900, 4900, 6172, 0, 0, 0, 0],
@@ -378,13 +378,13 @@ tc22s = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.ROI, open_tick=1, close_tick=2, is_short=True)]
 )
 
-# Test 23: trailing_stop Raises in candle 2 (does not trigger)
+# Test 24: trailing_stop Raises in candle 2 (does not trigger)
 # applying a positive trailing stop of 3% since stop_positive_offset is reached.
 # ROI is changed after this to 4%, dropping ROI below trailing_stop_positive, causing a sell
 # in the candle after the raised stoploss candle with ROI reason.
 # Stoploss would trigger in this candle too, but it's no longer relevant.
 # stop-loss: 10%, ROI: 4%, stoploss adjusted candle 2, ROI adjusted in candle 3 (causing the sell)
-tc23 = BTContainer(data=[
+tc24 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
@@ -397,10 +397,10 @@ tc23 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
-# Test 24: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
+# Test 25: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Stoploss wins over Sell-signal (because sell-signal is acted on in the next candle)
-tc24 = BTContainer(data=[
+tc25 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -412,10 +412,10 @@ tc24 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
-# Test 25: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
+# Test 26: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
-tc25 = BTContainer(data=[
+tc26 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -427,11 +427,11 @@ tc25 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
-# Test 25l: (copy of test25 with leverage)
+# Test 27: (copy of test26 with leverage)
 # Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
-tc25l = BTContainer(data=[
+tc27 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -444,11 +444,11 @@ tc25l = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
-# Test 25s: (copy of test25 with leverage and as short)
+# Test 28: (copy of test26 with leverage and as short)
 # Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
 # Sell-signal wins over stoploss
-tc25s = BTContainer(data=[
+tc28 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 0, 0, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0, 0, 0],  # enter trade (signal on last candle)
@@ -460,10 +460,10 @@ tc25s = BTContainer(data=[
     leverage=5.0,
     trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
 )
-# Test 26: Sell with signal sell in candle 3 (ROI at signal candle)
+# Test 29: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger)
 # Sell-signal wins over stoploss
-tc26 = BTContainer(data=[
+tc29 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -475,9 +475,9 @@ tc26 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
-# Test 27: Sell with signal sell in candle 3 (ROI at signal candle)
+# Test 30: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger) - Wins over Sell-signal
-tc27 = BTContainer(data=[
+tc30 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
@@ -489,11 +489,11 @@ tc27 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
-# Test 28: trailing_stop should raise so candle 3 causes a stoploss
+# Test 31: trailing_stop should raise so candle 3 causes a stoploss
 # Same case than tc11 - but candle 3 "gaps down" - the stoploss will be above the candle,
 # therefore "open" will be used
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
-tc28 = BTContainer(data=[
+tc31 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5100, 4950, 5100, 6172, 0, 0],
@@ -506,11 +506,11 @@ tc28 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
-# Test 28s: trailing_stop should raise so candle 3 causes a stoploss
+# Test 32: (Short of test 31) trailing_stop should raise so candle 3 causes a stoploss
 # Same case than tc11 - but candle 3 "gaps down" - the stoploss will be above the candle,
 # therefore "open" will be used
 # stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
-tc28s = BTContainer(data=[
+tc32 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
     [1, 5000, 5050, 4890, 4890, 6172, 0, 0, 0, 0],
@@ -525,10 +525,10 @@ tc28s = BTContainer(data=[
     ]
 )
 
-# Test 29: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
+# Test 33: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
 # high of stoploss candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
-tc29 = BTContainer(data=[
+tc33 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 5000, 5000, 6172, 0, 0],    # enter trade (signal on last candle)
@@ -540,9 +540,9 @@ tc29 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
-# Test 30: trailing_stop should be triggered immediately on trade open candle.
+# Test 34: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
-tc30 = BTContainer(data=[
+tc34 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4900, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
@@ -554,9 +554,9 @@ tc30 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
-# Test 31: trailing_stop should be triggered immediately on trade open candle.
+# Test 35: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 10%, ROI: 10% (should not apply)
-tc31 = BTContainer(data=[
+tc35 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4900, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
@@ -569,9 +569,9 @@ tc31 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
-# Test 32: trailing_stop should be triggered immediately on trade open candle.
+# Test 36: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 1%, ROI: 10% (should not apply)
-tc32 = BTContainer(data=[
+tc36 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # enter trade and stop
@@ -584,9 +584,9 @@ tc32 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
-# Test 33: trailing_stop should be triggered immediately on trade open candle.
+# Test 37: trailing_stop should be triggered immediately on trade open candle.
 # stop-loss: 1%, ROI: 10% (should not apply)
-tc33 = BTContainer(data=[
+tc37 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 0, 0, 'buy_signal_01'],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0, 0, 0, None],    # enter trade and stop
@@ -603,10 +603,10 @@ tc33 = BTContainer(data=[
         enter_tag='buy_signal_01'
     )]
 )
-# Test 33s: trailing_stop should be triggered immediately on trade open candle.
-# copy of Test33 using shorts.
+# Test 38: trailing_stop should be triggered immediately on trade open candle.
+# copy of Test37 using shorts.
 # stop-loss: 1%, ROI: 10% (should not apply)
-tc33s = BTContainer(data=[
+tc38 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0, 'short_signal_01'],
     [1, 5000, 5049, 4500, 5000, 6172, 0, 0, 0, 0, None],    # enter trade and stop
@@ -625,8 +625,8 @@ tc33s = BTContainer(data=[
     )]
 )
 
-# Test 34: Custom-entry-price below all candles should timeout - so no trade happens.
-tc34 = BTContainer(data=[
+# Test 39: Custom-entry-price below all candles should timeout - so no trade happens.
+tc39 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # timeout
@@ -637,8 +637,8 @@ tc34 = BTContainer(data=[
     custom_entry_price=4200, trades=[]
 )
 
-# Test 35: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
-tc35 = BTContainer(data=[
+# Test 40: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
+tc40 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],    # Timeout
@@ -650,8 +650,8 @@ tc35 = BTContainer(data=[
         BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)
 ])
 
-# Test 35s: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
-tc35s = BTContainer(data=[
+# Test 41: Custom-entry-price above all candles should have rate adjusted to "entry candle high"
+tc41 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0, 0, 0],    # Timeout
@@ -665,11 +665,11 @@ tc35s = BTContainer(data=[
     ]
 )
 
-# Test 36: Custom-entry-price around candle low
+# Test 42: Custom-entry-price around candle low
 # Would cause immediate ROI exit, but since the trade was entered
 # below open, we treat this as cheating, and delay the sell by 1 candle.
 # details: https://github.com/freqtrade/freqtrade/issues/6261
-tc36 = BTContainer(data=[
+tc42 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 4999, 6172, 0, 0],    # Enter and immediate ROI
@@ -681,10 +681,10 @@ tc36 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.ROI, open_tick=1, close_tick=2)]
 )
 
-# Test 37: Custom-entry-price around candle low
+# Test 43: Custom-entry-price around candle low
 # Would cause immediate ROI exit below close
 # details: https://github.com/freqtrade/freqtrade/issues/6261
-tc37 = BTContainer(data=[
+tc43 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5400, 5500, 4951, 5100, 6172, 0, 0],    # Enter and immediate ROI
@@ -696,9 +696,9 @@ tc37 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.ROI, open_tick=1, close_tick=1)]
 )
 
-# Test 38: Custom exit price below all candles
+# Test 44: Custom exit price below all candles
 # Price adjusted to candle Low.
-tc38 = BTContainer(data=[
+tc44 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
@@ -711,9 +711,9 @@ tc38 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=3)]
 )
 
-# Test 39: Custom exit price above all candles
+# Test 45: Custom exit price above all candles
 # causes sell signal timeout
-tc39 = BTContainer(data=[
+tc45 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0],
@@ -726,9 +726,9 @@ tc39 = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
 
-# Test 39: Custom short exit price above below candles
+# Test 46: (Short of tc45) Custom short exit price above below candles
 # causes sell signal timeout
-tc39a = BTContainer(data=[
+tc46 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
     [1, 5000, 5000, 4951, 5000, 6172, 0, 0, 0, 0],
@@ -741,8 +741,8 @@ tc39a = BTContainer(data=[
     trades=[BTrade(sell_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4, is_short=True)]
 )
 
-# Test 40: Colliding long and short signal
-tc40 = BTContainer(data=[
+# Test 47: Colliding long and short signal
+tc47 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 1, 0],
     [1, 5000, 5500, 4951, 5000, 6172, 0, 0, 0, 0],
@@ -779,31 +779,31 @@ TESTS = [
     tc20,
     tc21,
     tc22,
-    tc22s,
     tc23,
     tc24,
     tc25,
-    tc25l,
-    tc25s,
     tc26,
     tc27,
     tc28,
-    tc28s,
     tc29,
     tc30,
     tc31,
     tc32,
     tc33,
-    tc33s,
     tc34,
     tc35,
-    tc35s,
     tc36,
     tc37,
     tc38,
     tc39,
-    tc39a,
     tc40,
+    tc41,
+    tc42,
+    tc43,
+    tc44,
+    tc45,
+    tc46,
+    tc47,
 ]
 
 
