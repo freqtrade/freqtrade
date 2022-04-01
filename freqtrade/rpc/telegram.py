@@ -113,7 +113,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcesell$', r'/edge$', r'/health$', r'/help$', r'/version$']
+                                 r'/forcebuy$', r'/forcesell$', r'/edge$', r'/health$', r'/help$',
+                                 r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -927,9 +928,8 @@ class Telegram(RPCHandler):
             buttons_aligned = self._layout_inline_keyboard_onecol(trade_buttons)
 
             buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
-            self._send_msg(msg="Which trade?",
-                        keyboard=buttons_aligned)
- 
+            self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
+
     def _forcesell_action(self, trade_id):
         if trade_id != 'cancel':
             try:
@@ -962,12 +962,12 @@ class Telegram(RPCHandler):
 
     @staticmethod
     def _layout_inline_keyboard(buttons: List[InlineKeyboardButton],
-                                cols=3) -> List[List[InlineKeyboardButton]]:
+                cols=3) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @staticmethod
     def _layout_inline_keyboard_onecol(buttons: List[InlineKeyboardButton],
-                                cols=1) -> List[List[InlineKeyboardButton]]:
+                cols=1) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only
@@ -991,8 +991,7 @@ class Telegram(RPCHandler):
             buttons_aligned = self._layout_inline_keyboard(pair_buttons)
 
             buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
-            self._send_msg(msg="Which pair?",
-                            keyboard=buttons_aligned)
+            self._send_msg(msg="Which pair?", keyboard=buttons_aligned)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
