@@ -11,7 +11,7 @@ from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename

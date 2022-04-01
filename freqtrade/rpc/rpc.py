@@ -18,7 +18,8 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
-from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection, State, TradingMode
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
+                             TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -1057,6 +1058,7 @@ class RPC:
             timeframe=timeframe,
             timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
+            candle_type=config.get('candle_type_def', CandleType.SPOT)
         )
         if pair not in _data:
             raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
