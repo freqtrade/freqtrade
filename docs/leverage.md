@@ -13,6 +13,12 @@
     Please only use advanced trading modes when you know how freqtrade (and your strategy) works.
     Also, never risk more than what you can afford to lose.
 
+## Shorting
+
+Shorting is not possible when trading with [`trading_mode`](#understand-tradingmode) set to `spot`. To short trade, `trading_mode` must be set to `margin`(currently unavailable) or [`futures`](#futures), with [`margin_mode`](#margin-mode) set to `cross`(currently unavailable) or [`isolated`](#isolated-margin-mode)
+
+For a strategy to short, the strategy class must set the class variable `can_short = True`
+
 ## Understand `trading_mode`
 
 The possible values are: `spot` (default), `margin`(*Currently unavailable*) or `futures`.
