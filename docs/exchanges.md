@@ -87,7 +87,7 @@ When trading on Binance Futures market, orderbook must be used because there is 
 
 Binance has been split into 2, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
 
-* [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance` for spot market, and use `binanceusdm` or `binancecoinm` for Futures market.
+* [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance`.
 * [binance.us](https://www.binance.us/) - US based users. Use exchange id: `binanceus`.
 
 ## Kraken
