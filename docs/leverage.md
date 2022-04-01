@@ -22,6 +22,8 @@ Shorting is not possible when trading with [`trading_mode`](#understand-tradingm
 
 For a strategy to short, the strategy class must set the class variable `can_short = True`
 
+Please read [strategy customization](https://www.freqtrade.io/en/latest/strategy-customization/#entry-signal-rules) for instructions on how to set signals to enter and exit short trades
+
 ## Understand `trading_mode`
 
 The possible values are: `spot` (default), `margin`(*Currently unavailable*) or `futures`.
