@@ -85,7 +85,7 @@ def calculate_backoff(retrycount, max_retries):
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
-        kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
+        kucoin = args[0].name.lower() == "kucoin"  # Check if the exchange is KuCoin.
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:
@@ -121,7 +121,7 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
         @wraps(f)
         def wrapper(*args, **kwargs):
             count = kwargs.pop('count', retries)
-            kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
+            kucoin = args[0].name.lower() == "kucoin"  # Check if the exchange is KuCoin.
             try:
                 return f(*args, **kwargs)
             except (TemporaryError, RetryableOrderError) as ex:
