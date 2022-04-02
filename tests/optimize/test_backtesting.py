@@ -832,6 +832,36 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     assert len(results['results']) == 1
 
 
+def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    timerange = TimeRange('date', None, 1517227800, 0)
+    backtesting.required_startup = 100
+    backtesting.timerange = timerange
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    df = data['UNITTEST/BTC']
+    df.loc[:, 'date'] = df.loc[:, 'date'] - timedelta(days=1)
+    # Trimming 100 candles, so after 2nd trimming, no candle is left.
+    df = df.iloc[:100]
+    data['XRP/USDT'] = df
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+
+    backtesting.backtest(
+        processed=deepcopy(processed),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+        position_stacking=False,
+    )
+
+
 def test_processed(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
