@@ -339,14 +339,14 @@ class Backtesting:
                 if col in df_analyzed.columns:
                     df_analyzed.loc[:, col] = df_analyzed.loc[:, col].replace(
                         [nan], [0 if not tag_col else None]).shift(1)
-                else:
+                elif not df_analyzed.empty:
                     df_analyzed.loc[:, col] = 0 if not tag_col else None
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = df_analyzed[headers].values.tolist()
+            data[pair] = df_analyzed[headers].values.tolist() if not df_analyzed.empty else []
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
