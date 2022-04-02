@@ -34,5 +34,3 @@ def post_request(text, is_from_429_watcher=False):
             write_to_429_file(text)
         elif str(result) == TELEGRAM_RESPONSE_200:
             delete_429_file(text)
-    else:
-        print(str(result))
