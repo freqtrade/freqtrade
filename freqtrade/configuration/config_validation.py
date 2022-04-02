@@ -6,7 +6,8 @@ from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
 from freqtrade import constants
-from freqtrade.enums import RunMode
+from freqtrade.configuration.deprecated_settings import process_deprecated_setting
+from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 
 
@@ -80,6 +81,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     _validate_protections(conf)
     _validate_unlimited_amount(conf)
     _validate_ask_orderbook(conf)
+    validate_migrated_strategy_settings(conf)
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
@@ -101,13 +103,15 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     """
     When using market orders, price sides must be using the "other" side of the price
     """
-    if (conf.get('order_types', {}).get('buy') == 'market'
-            and conf.get('bid_strategy', {}).get('price_side') != 'ask'):
-        raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
+    # TODO: The below could be an enforced setting when using market orders
+    if (conf.get('order_types', {}).get('entry') == 'market'
+            and conf.get('entry_pricing', {}).get('price_side') not in ('ask', 'other')):
+        raise OperationalException(
+            'Market entry orders require entry_pricing.price_side = "other".')
 
-    if (conf.get('order_types', {}).get('sell') == 'market'
-            and conf.get('ask_strategy', {}).get('price_side') != 'bid'):
-        raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
+    if (conf.get('order_types', {}).get('exit') == 'market'
+            and conf.get('exit_pricing', {}).get('price_side') not in ('bid', 'other')):
+        raise OperationalException('Market exit orders require exit_pricing.price_side = "other".')
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
@@ -190,13 +194,13 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
 
 
 def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
-    ask_strategy = conf.get('ask_strategy', {})
+    ask_strategy = conf.get('exit_pricing', {})
     ob_min = ask_strategy.get('order_book_min')
     ob_max = ask_strategy.get('order_book_max')
     if ob_min is not None and ob_max is not None and ask_strategy.get('use_order_book'):
         if ob_min != ob_max:
             raise OperationalException(
-                "Using order_book_max != order_book_min in ask_strategy is no longer supported."
+                "Using order_book_max != order_book_min in exit_pricing is no longer supported."
                 "Please pick one value and use `order_book_top` in the future."
             )
         else:
@@ -205,5 +209,106 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
             logger.warning(
                 "DEPRECATED: "
                 "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
-                "for your `ask_strategy` configuration."
+                "for your `exit_pricing` configuration."
             )
+
+
+def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
+
+    _validate_time_in_force(conf)
+    _validate_order_types(conf)
+    _validate_unfilledtimeout(conf)
+    _validate_pricing_rules(conf)
+
+
+def _validate_time_in_force(conf: Dict[str, Any]) -> None:
+
+    time_in_force = conf.get('order_time_in_force', {})
+    if 'buy' in time_in_force or 'sell' in time_in_force:
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your time_in_force settings to use 'entry' and 'exit'.")
+        else:
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for time_in_force is deprecated."
+                "Please migrate your time_in_force settings to use 'entry' and 'exit'."
+            )
+            process_deprecated_setting(
+                conf, 'order_time_in_force', 'buy', 'order_time_in_force', 'entry')
+
+            process_deprecated_setting(
+                conf, 'order_time_in_force', 'sell', 'order_time_in_force', 'exit')
+
+
+def _validate_order_types(conf: Dict[str, Any]) -> None:
+
+    order_types = conf.get('order_types', {})
+    if any(x in order_types for x in ['buy', 'sell', 'emergencysell', 'forcebuy', 'forcesell']):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your order_types settings to use the new wording.")
+        else:
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for order_types is deprecated."
+                "Please migrate your order_types settings to use 'entry' and 'exit' wording."
+            )
+            for o, n in [
+                ('buy', 'entry'),
+                ('sell', 'exit'),
+                ('emergencysell', 'emergencyexit'),
+                ('forcesell', 'forceexit'),
+                ('forcebuy', 'forceentry'),
+            ]:
+
+                process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
+
+
+def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
+    unfilledtimeout = conf.get('unfilledtimeout', {})
+    if any(x in unfilledtimeout for x in ['buy', 'sell']):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your unfilledtimeout settings to use the new wording.")
+        else:
+
+            logger.warning(
+                "DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is deprecated."
+                "Please migrate your unfilledtimeout settings to use 'entry' and 'exit' wording."
+            )
+            for o, n in [
+                ('buy', 'entry'),
+                ('sell', 'exit'),
+            ]:
+
+                process_deprecated_setting(conf, 'unfilledtimeout', o, 'unfilledtimeout', n)
+
+
+def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
+
+    if conf.get('ask_strategy') or conf.get('bid_strategy'):
+        if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+            raise OperationalException(
+                "Please migrate your pricing settings to use the new wording.")
+        else:
+
+            logger.warning(
+                "DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is deprecated."
+                "Please migrate your settings to use 'entry_pricing' and 'exit_pricing'."
+            )
+            conf['entry_pricing'] = {}
+            for obj in list(conf.get('bid_strategy', {}).keys()):
+                if obj == 'ask_last_balance':
+                    process_deprecated_setting(conf, 'bid_strategy', obj,
+                                               'entry_pricing', 'price_last_balance')
+                else:
+                    process_deprecated_setting(conf, 'bid_strategy', obj, 'entry_pricing', obj)
+            del conf['bid_strategy']
+
+            conf['exit_pricing'] = {}
+            for obj in list(conf.get('ask_strategy', {}).keys()):
+                if obj == 'bid_last_balance':
+                    process_deprecated_setting(conf, 'ask_strategy', obj,
+                                               'exit_pricing', 'price_last_balance')
+                else:
+                    process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
+            del conf['ask_strategy']

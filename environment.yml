@@ -30,6 +30,7 @@ dependencies:
     - colorama
     - questionary
     - prompt-toolkit
+    - schedule
     - python-dateutil
 
 

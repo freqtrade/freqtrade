@@ -22,7 +22,7 @@ class Huobi(Exchange):
         "l2_limit_range_required": False,
     }
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.

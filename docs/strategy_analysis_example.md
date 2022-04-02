@@ -73,7 +73,7 @@ df.tail()
 
 ```python
 # Report results
-print(f"Generated {df['buy'].sum()} buy signals")
+print(f"Generated {df['enter_long'].sum()} entry signals")
 data = df.set_index('date', drop=False)
 data.tail()
 ```
@@ -244,7 +244,7 @@ import plotly.figure_factory as ff
 hist_data = [trades.profit_ratio]
 group_labels = ['profit_ratio']  # name of the dataset
 
-fig = ff.create_distplot(hist_data, group_labels,bin_size=0.01)
+fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)
 fig.show()
 
 ```

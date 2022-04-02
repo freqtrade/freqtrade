@@ -12,6 +12,8 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
+from freqtrade.data.history.idatahandler import IDataHandler
+from freqtrade.enums import CandleType
 from tests.conftest import log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
@@ -75,7 +77,8 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
 
 def test_ohlcv_fill_up_missing_data2(caplog):
     timeframe = '5m'
-    ticks = [[
+    ticks = [
+        [
             1511686200000,  # 8:50:00
             8.794e-05,  # open
             8.948e-05,  # high
@@ -106,7 +109,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
             8.895e-05,
             8.817e-05,
             123551
-    ]
+        ]
     ]
 
     # Generate test-data without filling missing
@@ -133,7 +136,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
 def test_ohlcv_drop_incomplete(caplog):
     timeframe = '1d'
-    ticks = [[
+    ticks = [
+        [
             1559750400000,  # 2019-06-04
             8.794e-05,  # open
             8.948e-05,  # high
@@ -164,7 +168,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.895e-05,
             8.817e-05,
             123551
-     ]
+        ]
     ]
     caplog.set_level(logging.DEBUG)
     data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
@@ -287,42 +291,56 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
             file['new'].unlink()
 
 
-def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir):
+@pytest.mark.parametrize('file_base,candletype', [
+    (['XRP_ETH-5m', 'XRP_ETH-1m'], CandleType.SPOT),
+    (['UNITTEST_USDT-1h-mark', 'XRP_USDT-1h-mark'], CandleType.MARK),
+    (['XRP_USDT-1h-futures'], CandleType.FUTURES),
+])
+def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
     tmpdir1 = Path(tmpdir)
+    prependix = '' if candletype == CandleType.SPOT else 'futures/'
+    files_orig = []
+    files_temp = []
+    files_new = []
+    for file in file_base:
+        file_orig = testdatadir / f"{prependix}{file}.json"
+        file_temp = tmpdir1 / f"{prependix}{file}.json"
+        file_new = tmpdir1 / f"{prependix}{file}.json.gz"
+        IDataHandler.create_dir_if_needed(file_temp)
+        copyfile(file_orig, file_temp)
 
-    file1_orig = testdatadir / "XRP_ETH-5m.json"
-    file1 = tmpdir1 / "XRP_ETH-5m.json"
-    file1_new = tmpdir1 / "XRP_ETH-5m.json.gz"
-    file2_orig = testdatadir / "XRP_ETH-1m.json"
-    file2 = tmpdir1 / "XRP_ETH-1m.json"
-    file2_new = tmpdir1 / "XRP_ETH-1m.json.gz"
-
-    copyfile(file1_orig, file1)
-    copyfile(file2_orig, file2)
+        files_orig.append(file_orig)
+        files_temp.append(file_temp)
+        files_new.append(file_new)
 
     default_conf['datadir'] = tmpdir1
-    default_conf['pairs'] = ['XRP_ETH']
-    default_conf['timeframes'] = ['1m', '5m']
+    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT', 'UNITTEST_USDT']
+    default_conf['timeframes'] = ['1m', '5m', '1h']
 
-    assert not file1_new.exists()
-    assert not file2_new.exists()
+    assert not file_new.exists()
 
-    convert_ohlcv_format(default_conf, convert_from='json',
-                         convert_to='jsongz', erase=False)
-
-    assert file1_new.exists()
-    assert file2_new.exists()
-    assert file1.exists()
-    assert file2.exists()
+    convert_ohlcv_format(
+        default_conf,
+        convert_from='json',
+        convert_to='jsongz',
+        erase=False,
+        candle_type=candletype
+    )
+    for file in (files_temp + files_new):
+        assert file.exists()
 
     # Remove original files
-    file1.unlink()
-    file2.unlink()
+    for file in (files_temp):
+        file.unlink()
     # Convert back
-    convert_ohlcv_format(default_conf, convert_from='jsongz',
-                         convert_to='json', erase=True)
-
-    assert file1.exists()
-    assert file2.exists()
-    assert not file1_new.exists()
-    assert not file2_new.exists()
+    convert_ohlcv_format(
+        default_conf,
+        convert_from='jsongz',
+        convert_to='json',
+        erase=True,
+        candle_type=candletype
+    )
+    for file in (files_temp):
+        assert file.exists()
+    for file in (files_new):
+        assert not file.exists()

@@ -171,9 +171,10 @@ official commands. You can ask at any moment for help with `/help`.
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
-| `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
+| `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
+| `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`forcebuy_enable` must be set to True)
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
@@ -216,11 +217,14 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 ### /status
 
 For each open trade, the bot will send you the following message.
+Enter Tag is configurable via Strategy.
 
 > **Trade ID:** `123` `(since 1 days ago)`  
 > **Current Pair:** CVC/BTC  
-> **Open Since:** `1 days ago`  
+> **Direction:** Long
+> **Leverage:** 1.0
 > **Amount:** `26.64180098`  
+> **Enter Tag:** Awesome Long Signal
 > **Open Rate:** `0.00007489`  
 > **Current Rate:** `0.00007489`  
 > **Current Profit:** `12.95%`  
@@ -231,10 +235,10 @@ For each open trade, the bot will send you the following message.
 Return the status of all open trades in a table format.
 
 ```
-   ID  Pair      Since    Profit
-----  --------  -------  --------
-  67  SC/BTC    1 d      13.33%
- 123  CVC/BTC   1 h      12.95%
+ID L/S    Pair     Since   Profit
+----    --------  -------  --------
+  67 L   SC/BTC    1 d      13.33%
+ 123 S   CVC/BTC   1 h      12.95%
 ```
 
 ### /count
@@ -270,14 +274,16 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 
 ### /forcesell <trade_id>
 
-> **BITTREX:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
+> **BINANCE:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
 
-### /forcebuy <pair> [rate]
+### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
-> **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+`/forcebuy <pair> [rate]` is also supported for longs but should be considered deprecated.
 
-Omitting the pair will open a query asking for the pair to buy (based on the current whitelist).
-Trades crated through `/forcebuy` will have the buy-tag of `forceentry`.
+> **BINANCE:** Long ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+
+Omitting the pair will open a query asking for the pair to trade (based on the current whitelist).
+Trades crated through `/forceentry` will have the buy-tag of `forceentry`.
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 

@@ -5,14 +5,16 @@ However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
 """
 
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
+from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_default_conf
+from tests.conftest import get_default_conf_usdt
 
 
 # Exchanges that should be tested
@@ -22,65 +24,91 @@ EXCHANGES = {
         'stake_currency': 'USDT',
         'hasQuoteVolume': False,
         'timeframe': '1h',
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
     'binance': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures': True,
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
     'kraken': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': True,
     },
     'ftx': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
+        'pair': 'BTC/USD',
+        'stake_currency': 'USD',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures_pair': 'BTC/USD:USD',
+        'futures': False,
+        'leverage_tiers_public': False,  # TODO: Set to True once implemented on CCXT
+        'leverage_in_spot_market': True,
     },
     'kucoin': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': True,
     },
     'gateio': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures': True,
+        'futures_pair': 'BTC/USDT:USDT',
+        'leverage_tiers_public': True,
+        'leverage_in_spot_market': True,
     },
     'okx': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures_pair': 'BTC/USDT:USDT',
+        'futures': True,
+        'leverage_tiers_public': True,
+        'leverage_in_spot_market': True,
     },
     'huobi': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures': False,
     },
     'bitvavo': {
         'pair': 'BTC/EUR',
         'stake_currency': 'EUR',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'leverage_tiers_public': False,
+        'leverage_in_spot_market': False,
     },
 }
 
 
 @pytest.fixture(scope="class")
 def exchange_conf():
-    config = get_default_conf((Path(__file__).parent / "testdata").resolve())
+    config = get_default_conf_usdt((Path(__file__).parent / "testdata").resolve())
     config['exchange']['pair_whitelist'] = []
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
     config['dry_run'] = False
+    config['entry_pricing']['use_order_book'] = True
+    config['exit_pricing']['use_order_book'] = True
     return config
 
 
@@ -93,6 +121,25 @@ def exchange(request, exchange_conf):
     yield exchange, request.param
 
 
+@pytest.fixture(params=EXCHANGES, scope="class")
+def exchange_futures(request, exchange_conf, class_mocker):
+    if not EXCHANGES[request.param].get('futures') is True:
+        yield None, request.param
+    else:
+        exchange_conf = deepcopy(exchange_conf)
+        exchange_conf['exchange']['name'] = request.param
+        exchange_conf['trading_mode'] = 'futures'
+        exchange_conf['margin_mode'] = 'isolated'
+        exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
+
+        class_mocker.patch(
+            'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
+        class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
+        exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+
+        yield exchange, request.param
+
+
 @pytest.mark.longrun
 class TestCCXTExchange():
 
@@ -102,6 +149,20 @@ class TestCCXTExchange():
         markets = exchange.markets
         assert pair in markets
         assert isinstance(markets[pair], dict)
+        assert exchange.market_is_spot(markets[pair])
+
+    def test_load_markets_futures(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename]['pair']
+        pair = EXCHANGES[exchangename].get('futures_pair', pair)
+        markets = exchange.markets
+        assert pair in markets
+        assert isinstance(markets[pair], dict)
+
+        assert exchange.market_is_future(markets[pair])
 
     def test_ccxt_fetch_tickers(self, exchange):
         exchange, exchangename = exchange
@@ -161,7 +222,9 @@ class TestCCXTExchange():
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']
-        pair_tf = (pair, timeframe)
+
+        pair_tf = (pair, timeframe, CandleType.SPOT)
+
         ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
         assert isinstance(ohlcv, dict)
         assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
@@ -171,6 +234,82 @@ class TestCCXTExchange():
         # Check if last-timeframe is within the last 2 intervals
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
+
+    def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+        timeframe_ff = exchange._ft_has.get('funding_fee_timeframe',
+                                            exchange._ft_has['mark_ohlcv_timeframe'])
+        pair_tf = (pair, timeframe_ff, CandleType.FUNDING_RATE)
+
+        funding_ohlcv = exchange.refresh_latest_ohlcv(
+            [pair_tf],
+            since_ms=since,
+            drop_incomplete=False)
+
+        assert isinstance(funding_ohlcv, dict)
+        rate = funding_ohlcv[pair_tf]
+
+        this_hour = timeframe_to_prev_date(timeframe_ff)
+        hour1 = timeframe_to_prev_date(timeframe_ff, this_hour - timedelta(minutes=1))
+        hour2 = timeframe_to_prev_date(timeframe_ff, hour1 - timedelta(minutes=1))
+        hour3 = timeframe_to_prev_date(timeframe_ff, hour2 - timedelta(minutes=1))
+        val0 = rate[rate['date'] == this_hour].iloc[0]['open']
+        val1 = rate[rate['date'] == hour1].iloc[0]['open']
+        val2 = rate[rate['date'] == hour2].iloc[0]['open']
+        val3 = rate[rate['date'] == hour3].iloc[0]['open']
+
+        # Test For last 4 hours
+        # Avoids random test-failure when funding-fees are 0 for a few hours.
+        assert val0 != 0.0 or val1 != 0.0 or val2 != 0.0 or val3 != 0.0
+        # We expect funding rates to be different from 0.0 - or moving around.
+        assert (
+            rate['open'].max() != 0.0 or rate['open'].min() != 0.0 or
+            (rate['open'].min() != rate['open'].max())
+        )
+
+    def test_ccxt_fetch_mark_price_history(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+        pair_tf = (pair, '1h', CandleType.MARK)
+
+        mark_ohlcv = exchange.refresh_latest_ohlcv(
+            [pair_tf],
+            since_ms=since,
+            drop_incomplete=False)
+
+        assert isinstance(mark_ohlcv, dict)
+        expected_tf = '1h'
+        mark_candles = mark_ohlcv[pair_tf]
+
+        this_hour = timeframe_to_prev_date(expected_tf)
+        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
+
+        assert mark_candles[mark_candles['date'] == prev_hour].iloc[0]['open'] != 0.0
+        assert mark_candles[mark_candles['date'] == this_hour].iloc[0]['open'] != 0.0
+
+    def test_ccxt__calculate_funding_fees(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = datetime.now(timezone.utc) - timedelta(days=5)
+
+        funding_fee = exchange._fetch_and_calculate_funding_fees(
+            pair, 20, is_short=False, open_date=since)
+
+        assert isinstance(funding_fee, float)
+        # assert funding_fee > 0
 
     # TODO: tests fetch_trades (?)
 
@@ -182,3 +321,110 @@ class TestCCXTExchange():
         assert 0 < exchange.get_fee(pair, 'limit', 'sell') < threshold
         assert 0 < exchange.get_fee(pair, 'market', 'buy') < threshold
         assert 0 < exchange.get_fee(pair, 'market', 'sell') < threshold
+
+    def test_ccxt_get_max_leverage_spot(self, exchange):
+        spot, spot_name = exchange
+        if spot:
+            leverage_in_market_spot = EXCHANGES[spot_name].get('leverage_in_spot_market')
+            if leverage_in_market_spot:
+                spot_pair = EXCHANGES[spot_name].get('pair', EXCHANGES[spot_name]['pair'])
+                spot_leverage = spot.get_max_leverage(spot_pair, 20)
+                assert (isinstance(spot_leverage, float) or isinstance(spot_leverage, int))
+                assert spot_leverage >= 1.0
+
+    def test_ccxt_get_max_leverage_futures(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            leverage_tiers_public = EXCHANGES[futures_name].get('leverage_tiers_public')
+            if leverage_tiers_public:
+                futures_pair = EXCHANGES[futures_name].get(
+                    'futures_pair',
+                    EXCHANGES[futures_name]['pair']
+                )
+                futures_leverage = futures.get_max_leverage(futures_pair, 20)
+                assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
+                assert futures_leverage >= 1.0
+
+    def test_ccxt__get_contract_size(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            contract_size = futures._get_contract_size(futures_pair)
+            assert (isinstance(contract_size, float) or isinstance(contract_size, int))
+            assert contract_size >= 0.0
+
+    def test_ccxt_load_leverage_tiers(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
+            leverage_tiers = futures.load_leverage_tiers()
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            assert (isinstance(leverage_tiers, dict))
+            assert futures_pair in leverage_tiers
+            pair_tiers = leverage_tiers[futures_pair]
+            assert len(pair_tiers) > 0
+            oldLeverage = float('inf')
+            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = -1
+            for tier in pair_tiers:
+                for key in [
+                    'maintenanceMarginRate',
+                    'notionalFloor',
+                    'notionalCap',
+                    'maxLeverage'
+                ]:
+                    assert key in tier
+                    assert tier[key] >= 0.0
+                assert tier['notionalCap'] > tier['notionalFloor']
+                assert tier['maxLeverage'] <= oldLeverage
+                assert tier['maintenanceMarginRate'] >= oldMaintenanceMarginRate
+                assert tier['notionalFloor'] > oldNotionalFloor
+                assert tier['notionalCap'] > oldNotionalCap
+                oldLeverage = tier['maxLeverage']
+                oldMaintenanceMarginRate = tier['maintenanceMarginRate']
+                oldNotionalFloor = tier['notionalFloor']
+                oldNotionalCap = tier['notionalCap']
+
+    def test_ccxt_dry_run_liquidation_price(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures and EXCHANGES[futures_name].get('leverage_tiers_public'):
+
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
+
+            liquidation_price = futures.dry_run_liquidation_price(
+                futures_pair,
+                40000,
+                False,
+                100,
+                100,
+            )
+            assert (isinstance(liquidation_price, float))
+            assert liquidation_price >= 0.0
+
+    def test_ccxt_get_max_pair_stake_amount(self, exchange_futures):
+        futures, futures_name = exchange_futures
+        if futures:
+            futures_pair = EXCHANGES[futures_name].get(
+                'futures_pair',
+                EXCHANGES[futures_name]['pair']
+            )
+            max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
+            assert (isinstance(max_stake_amount, float))
+            assert max_stake_amount >= 0.0

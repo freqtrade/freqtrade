@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class SellType(Enum):
+class ExitType(Enum):
     """
     Enum to distinguish between sell reasons
     """

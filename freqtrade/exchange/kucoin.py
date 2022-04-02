@@ -25,9 +25,10 @@ class Kucoin(Exchange):
         "l2_limit_range_required": False,
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
+        "ohlcv_candle_limit": 1500,
     }
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.

@@ -14,7 +14,7 @@ pip install -U -r requirements-plot.txt
 
 The `freqtrade plot-dataframe` subcommand shows an interactive graph with three subplots:
 
-* Main plot with candlestics and indicators following price (sma/ema)
+* Main plot with candlesticks and indicators following price (sma/ema)
 * Volume bars
 * Additional indicators as specified by `--indicators2`
 
