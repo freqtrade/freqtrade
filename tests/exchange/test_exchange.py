@@ -2130,7 +2130,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
         "kucoin GET https://openapi-v2.kucoin.com/api/v1/market/candles?"
         "symbol=ETH-BTC&type=5min&startAt=1640268735&endAt=1640418735"
         "429 Too Many Requests" '{"code":"429000","msg":"Too Many Requests"}'))
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="KuCoin")
+    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='KuCoin'))
 
     msg = "Kucoin 429 error, avoid triggering DDosProtection backoff delay"
     assert not num_log_has_re(msg, caplog)
