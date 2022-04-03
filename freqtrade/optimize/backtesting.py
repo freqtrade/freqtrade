@@ -182,6 +182,7 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        self.strategy.bot_start()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
