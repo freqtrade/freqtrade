@@ -44,7 +44,7 @@ def hyperopt_results():
             'profit_abs': [-0.2, 0.4, -0.2, 0.6],
             'trade_duration': [10, 30, 10, 10],
             'amount': [0.1, 0.1, 0.1, 0.1],
-            'sell_reason': [ExitType.STOP_LOSS, ExitType.ROI, ExitType.STOP_LOSS, ExitType.ROI],
+            'exit_reason': [ExitType.STOP_LOSS, ExitType.ROI, ExitType.STOP_LOSS, ExitType.ROI],
             'open_date':
             [
                 datetime(2019, 1, 1, 9, 15, 0),

@@ -115,15 +115,15 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert wallets_mock.call_count == 4
 
     trade = trades[0]
-    assert trade.sell_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
+    assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert not trade.is_open
 
     trade = trades[1]
-    assert not trade.sell_reason
+    assert not trade.exit_reason
     assert trade.is_open
 
     trade = trades[2]
-    assert trade.sell_reason == ExitType.SELL_SIGNAL.value
+    assert trade.exit_reason == ExitType.SELL_SIGNAL.value
     assert not trade.is_open
 
 

@@ -97,7 +97,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['balance'], ['start'], ['stop'], "
                    "['forcesell', 'forceexit'], ['forcebuy', 'forcelong'], ['forceshort'], "
                    "['trades'], ['delete'], ['performance'], "
-                   "['buys', 'entries'], ['sells'], ['mix_tags'], "
+                   "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
@@ -837,7 +837,7 @@ def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
 
     telegram._stats(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert 'Sell Reason' in msg_mock.call_args_list[-1][0][0]
+    assert 'Exit Reason' in msg_mock.call_args_list[-1][0][0]
     assert 'ROI' in msg_mock.call_args_list[-1][0][0]
     assert 'Avg. Duration' in msg_mock.call_args_list[-1][0][0]
     msg_mock.reset_mock()
@@ -1060,6 +1060,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'buy_tag': ANY,
         'enter_tag': ANY,
         'sell_reason': ExitType.FORCE_SELL.value,
+        'exit_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1128,6 +1129,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'buy_tag': ANY,
         'enter_tag': ANY,
         'sell_reason': ExitType.FORCE_SELL.value,
+        'exit_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1186,6 +1188,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'buy_tag': ANY,
         'enter_tag': ANY,
         'sell_reason': ExitType.FORCE_SELL.value,
+        'exit_reason': ExitType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1334,8 +1337,8 @@ def test_telegram_performance_handle(default_conf, update, ticker, fee,
     assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
-                                             limit_buy_order, limit_sell_order, mocker) -> None:
+def test_telegram_entry_tag_performance_handle(
+        default_conf, update, ticker, fee, limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -1363,7 +1366,7 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
     context = MagicMock()
     telegram._enter_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert 'Buy Tag Performance' in msg_mock.call_args_list[0][0][0]
+    assert 'Entry Tag Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTBUY\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
     context.args = [trade.pair]
@@ -1379,7 +1382,7 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
     assert "Error" in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, fee,
+def test_telegram_exit_reason_performance_handle(default_conf, update, ticker, fee,
                                                  limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1393,7 +1396,7 @@ def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, f
     freqtradebot.enter_positions()
     trade = Trade.query.first()
     assert trade
-    trade.sell_reason = 'TESTSELL'
+    trade.exit_reason = 'TESTSELL'
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
     trade.update_trade(oobj)
@@ -1405,19 +1408,19 @@ def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, f
     trade.close_date = datetime.utcnow()
     trade.is_open = False
     context = MagicMock()
-    telegram._sell_reason_performance(update=update, context=context)
+    telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert 'Sell Reason Performance' in msg_mock.call_args_list[0][0][0]
+    assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTSELL\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
     context.args = [trade.pair]
 
-    telegram._sell_reason_performance(update=update, context=context)
+    telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 2
 
     msg_mock.reset_mock()
-    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_sell_reason_performance',
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_exit_reason_performance',
                  side_effect=RPCException('Error'))
-    telegram._sell_reason_performance(update=update, context=MagicMock())
+    telegram._exit_reason_performance(update=update, context=MagicMock())
 
     assert msg_mock.call_count == 1
     assert "Error" in msg_mock.call_args_list[0][0][0]
@@ -1439,7 +1442,7 @@ def test_telegram_mix_tag_performance_handle(default_conf, update, ticker, fee,
     assert trade
 
     trade.enter_tag = "TESTBUY"
-    trade.sell_reason = "TESTSELL"
+    trade.exit_reason = "TESTSELL"
 
     # Simulate fulfilled LIMIT_BUY order for trade
     oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
@@ -1932,7 +1935,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
         'enter_tag': 'buy_signal1',
-        'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
     })
@@ -1966,7 +1969,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'enter_tag': 'buy_signal1',
-        'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
@@ -2045,7 +2048,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'enter_tag': enter_signal,
-        'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
@@ -2169,7 +2172,7 @@ def test_send_msg_sell_notification_no_fiat(
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
         'enter_tag': enter_signal,
-        'sell_reason': ExitType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })
@@ -2191,13 +2194,13 @@ def test_send_msg_sell_notification_no_fiat(
 
 
 @pytest.mark.parametrize('msg,expected', [
-    ({'profit_percent': 20.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
-    ({'profit_percent': 5.1, 'sell_reason': 'roi'}, "\N{ROCKET}"),
-    ({'profit_percent': 2.56, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': 1.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': 0.0, 'sell_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
-    ({'profit_percent': -5.0, 'sell_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
-    ({'profit_percent': -2.0, 'sell_reason': 'sell_signal'}, "\N{CROSS MARK}"),
+    ({'profit_percent': 20.1, 'exit_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 5.1, 'exit_reason': 'roi'}, "\N{ROCKET}"),
+    ({'profit_percent': 2.56, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 1.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': 0.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
+    ({'profit_percent': -5.0, 'exit_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
+    ({'profit_percent': -2.0, 'exit_reason': 'sell_signal'}, "\N{CROSS MARK}"),
 ])
 def test__sell_emoji(default_conf, mocker, msg, expected):
     del default_conf['fiat_display_currency']

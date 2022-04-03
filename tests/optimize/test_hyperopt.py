@@ -357,7 +357,7 @@ def test_hyperopt_format_results(hyperopt):
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                 "exit_reason": [ExitType.ROI, ExitType.STOP_LOSS,
                                                  ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': hyperopt.config,
@@ -428,7 +428,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                 "exit_reason": [ExitType.ROI, ExitType.STOP_LOSS,
                                                  ExitType.ROI, ExitType.FORCE_SELL]
                                  }),
         'config': hyperopt_conf,

@@ -95,8 +95,8 @@ tc1 = BTContainer(data=[
     [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
 ],
     stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
-    trades=[BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=2),
-            BTrade(sell_reason=ExitType.SELL_SIGNAL, open_tick=4, close_tick=6)]
+    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=2),
+            BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=4, close_tick=6)]
 )
 
 # 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
@@ -107,7 +107,7 @@ tc2 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.01, roi={"0": float('inf')}, profit_perc=-0.01,
-    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
@@ -118,7 +118,7 @@ tc3 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
-    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # 5) Stoploss and sell are hit. should sell on stoploss
@@ -129,7 +129,7 @@ tc4 = BTContainer(data=[
     [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
-    trades=[BTrade(sell_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 TESTS = [
@@ -162,7 +162,7 @@ def test_edge_results(edge_conf, mocker, caplog, data) -> None:
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
-        assert res.exit_type == trade.sell_reason
+        assert res.exit_type == trade.exit_reason
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick).replace(tzinfo=None)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick).replace(tzinfo=None)
 

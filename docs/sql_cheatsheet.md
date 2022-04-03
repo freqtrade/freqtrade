@@ -65,7 +65,7 @@ SET is_open=0,
   close_rate=<close_rate>,
   close_profit = close_rate / open_rate - 1,
   close_profit_abs = (amount * <close_rate> * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
-  sell_reason=<sell_reason>
+  exit_reason=<exit_reason>
 WHERE id=<trade_ID_to_update>;
 ```
 
@@ -78,7 +78,7 @@ SET is_open=0,
   close_rate=0.19638016,
   close_profit=0.0496,
   close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
-  sell_reason='force_sell'  
+  exit_reason='force_sell'  
 WHERE id=31;
 ```
 

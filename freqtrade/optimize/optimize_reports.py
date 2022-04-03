@@ -166,7 +166,7 @@ def generate_tag_metrics(tag_type: str,
         return []
 
 
-def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
+def generate_exit_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param max_open_trades: Max_open_trades parameter
@@ -175,8 +175,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
     """
     tabular_data = []
 
-    for reason, count in results['sell_reason'].value_counts().iteritems():
-        result = results.loc[results['sell_reason'] == reason]
+    for reason, count in results['exit_reason'].value_counts().iteritems():
+        result = results.loc[results['exit_reason'] == reason]
 
         profit_mean = result['profit_ratio'].mean()
         profit_sum = result['profit_ratio'].sum()
@@ -184,7 +184,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 
         tabular_data.append(
             {
-                'sell_reason': reason,
+                'exit_reason': reason,
                 'trades': count,
                 'wins': len(result[result['profit_abs'] > 0]),
                 'draws': len(result[result['profit_abs'] == 0]),
@@ -382,7 +382,7 @@ def generate_strategy_stats(pairlist: List[str],
     enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
                                              results=results, skip_nan=False)
 
-    exit_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
+    exit_reason_stats = generate_exit_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
                                               starting_balance=start_balance,
@@ -406,7 +406,7 @@ def generate_strategy_stats(pairlist: List[str],
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
         'results_per_enter_tag': enter_tag_results,
-        'sell_reason_summary': exit_reason_stats,
+        'exit_reason_summary': exit_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
 
@@ -572,7 +572,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param sell_reason_stats: Exit reason metrics
@@ -590,12 +590,12 @@ def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t['sell_reason'], t['trades'],
+        t.get('exit_reason', t.get('sell_reason')), t['trades'],
         _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
-    ] for t in sell_reason_stats]
+    ] for t in exit_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
@@ -813,7 +813,8 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    table = text_table_exit_reason(sell_reason_stats=results['sell_reason_summary'],
+    exit_reasons = results.get('exit_reason_summary', results.get('sell_reason_summary'))
+    table = text_table_exit_reason(exit_reason_stats=exit_reasons,
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
         print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))
