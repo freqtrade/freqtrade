@@ -707,9 +707,9 @@ class Exchange:
             if self.precisionMode == TICK_SIZE:
                 precision = Precise(str(self.markets[pair]['precision']['price']))
                 price_str = Precise(str(price))
-                missing = price_str.mod(precision)
-                if not missing.equals(Precise("0")):
-                    price = round(float(str(price_str.sub(missing).add(precision))), 14)
+                missing = price_str % precision
+                if not missing == Precise("0"):
+                    price = round(float(str(price_str - missing + precision)), 14)
             else:
                 symbol_prec = self.markets[pair]['precision']['price']
                 big_price = price * pow(10, symbol_prec)
