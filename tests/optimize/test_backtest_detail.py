@@ -22,7 +22,7 @@ tc0 = BTContainer(data=[
     [3, 5010, 5010, 4980, 5010, 6172, 0, 1],
     [4, 5010, 5011, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_sell_signal=True,
+    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
@@ -408,7 +408,7 @@ tc25 = BTContainer(data=[
     [3, 5010, 5010, 4855, 5010, 6172, 0, 1],  # Triggers stoploss + sellsignal
     [4, 5010, 5010, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 1}, profit_perc=-0.01, use_sell_signal=True,
+    stop_loss=-0.01, roi={"0": 1}, profit_perc=-0.01, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
@@ -423,7 +423,7 @@ tc26 = BTContainer(data=[
     [3, 5010, 5010, 4986, 5010, 6172, 0, 1],
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_sell_signal=True,
+    stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
@@ -439,7 +439,7 @@ tc27 = BTContainer(data=[
     [3, 5010, 5010, 4986, 5010, 6172, 0, 1],
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
+    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
@@ -456,7 +456,7 @@ tc28 = BTContainer(data=[
     [3, 5010, 5010, 4986, 5010, 6172, 0, 0, 0, 1],
     [4, 4990, 5010, 4855, 4995, 6172, 0, 0, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0, 0, 0]],
-    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_sell_signal=True,
+    stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
 )
@@ -471,7 +471,7 @@ tc29 = BTContainer(data=[
     [3, 5010, 5251, 4986, 5010, 6172, 0, 1],  # Triggers ROI, sell-signal
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.05, use_sell_signal=True,
+    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.05, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
@@ -485,7 +485,7 @@ tc30 = BTContainer(data=[
     [3, 5010, 5012, 4986, 5010, 6172, 0, 1],  # sell-signal
     [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_sell_signal=True,
+    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
@@ -706,7 +706,7 @@ tc44 = BTContainer(data=[
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01,
-    use_sell_signal=True,
+    use_exit_signal=True,
     custom_exit_price=4552,
     trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=3)]
 )
@@ -721,7 +721,7 @@ tc45 = BTContainer(data=[
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
-    use_sell_signal=True,
+    use_exit_signal=True,
     custom_exit_price=6052,
     trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4)]
 )
@@ -736,7 +736,7 @@ tc46 = BTContainer(data=[
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
-    use_sell_signal=True,
+    use_exit_signal=True,
     custom_exit_price=4700,
     trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4, is_short=True)]
 )
@@ -750,7 +750,7 @@ tc47 = BTContainer(data=[
     [3, 5100, 5100, 4950, 4950, 6172, 0, 0, 0, 0],
     [4, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
-    use_sell_signal=True,
+    use_exit_signal=True,
     trades=[]
 )
 
@@ -808,7 +808,7 @@ TESTS = [
 
 
 @pytest.mark.parametrize("data", TESTS)
-def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
+def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) -> None:
     """
     run functional tests
     """
@@ -821,7 +821,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
-    default_conf["use_sell_signal"] = data.use_sell_signal
+    default_conf["use_sell_signal"] = data.use_exit_signal
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)

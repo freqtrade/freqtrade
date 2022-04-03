@@ -35,7 +35,7 @@ class BTContainer(NamedTuple):
     trailing_only_offset_is_reached: bool = False
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
-    use_sell_signal: bool = False
+    use_exit_signal: bool = False
     use_custom_stoploss: bool = False
     custom_entry_price: Optional[float] = None
     custom_exit_price: Optional[float] = None
