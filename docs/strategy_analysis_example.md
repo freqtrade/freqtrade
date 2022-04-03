@@ -129,7 +129,7 @@ print(stats['strategy_comparison'])
 trades = load_backtest_data(backtest_dir)
 
 # Show value-counts per pair
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["exit_reason"].value_counts()
 ```
 
 ## Plotting daily profit / equity line
