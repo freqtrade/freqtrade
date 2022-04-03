@@ -878,7 +878,7 @@ class Exchange:
         return rate
 
     def _fill_dry_limit_order(self, pair: str, side: str,  # noqa: max-complexity: 13
-                                    limit: float, given_amount: float) -> Tuple[Optional[float], float]:
+                              limit: float, given_amount: float) -> Tuple[Optional[float], float]:
         """
         Returns average price and filled amount
         """
@@ -927,7 +927,7 @@ class Exchange:
             average_price, filled_amount = self._fill_dry_limit_order(
                 pair, order['side'], order['price'], order['remaining'])
 
-            if filled_amount:
+            if average_price:
                 order['remaining'] -= filled_amount
                 order_cost = order['average'] * order['filled'] + average_price * filled_amount
                 order['filled'] += filled_amount
