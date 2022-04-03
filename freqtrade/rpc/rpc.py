@@ -848,12 +848,12 @@ class RPC:
         """
         return Trade.get_enter_tag_performance(pair)
 
-    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for sell reason performance.
         Shows a performance statistic from finished trades
         """
-        return Trade.get_sell_reason_performance(pair)
+        return Trade.get_exit_reason_performance(pair)
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """

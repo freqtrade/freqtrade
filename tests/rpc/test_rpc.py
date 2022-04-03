@@ -1010,7 +1010,7 @@ def test_enter_tag_performance_handle_2(mocker, default_conf, markets, fee):
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 
-def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, fee,
+def test_exit_reason_performance_handle(default_conf, ticker, limit_buy_order, fee,
                                         limit_sell_order, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -1039,23 +1039,23 @@ def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, f
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
-    res = rpc._rpc_sell_reason_performance(None)
+    res = rpc._rpc_exit_reason_performance(None)
 
     assert len(res) == 1
-    assert res[0]['sell_reason'] == 'Other'
+    assert res[0]['exit_reason'] == 'Other'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
     trade.exit_reason = "TEST1"
-    res = rpc._rpc_sell_reason_performance(None)
+    res = rpc._rpc_exit_reason_performance(None)
 
     assert len(res) == 1
-    assert res[0]['sell_reason'] == 'TEST1'
+    assert res[0]['exit_reason'] == 'TEST1'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
-def test_sell_reason_performance_handle_2(mocker, default_conf, markets, fee):
+def test_exit_reason_performance_handle_2(mocker, default_conf, markets, fee):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1066,21 +1066,21 @@ def test_sell_reason_performance_handle_2(mocker, default_conf, markets, fee):
     create_mock_trades(fee)
     rpc = RPC(freqtradebot)
 
-    res = rpc._rpc_sell_reason_performance(None)
+    res = rpc._rpc_exit_reason_performance(None)
 
     assert len(res) == 2
-    assert res[0]['sell_reason'] == 'sell_signal'
+    assert res[0]['exit_reason'] == 'sell_signal'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
-    assert res[1]['sell_reason'] == 'roi'
+    assert res[1]['exit_reason'] == 'roi'
     assert res[1]['count'] == 1
     assert prec_satoshi(res[1]['profit_pct'], 1.0)
 
     # Test for a specific pair
-    res = rpc._rpc_sell_reason_performance('ETC/BTC')
+    res = rpc._rpc_exit_reason_performance('ETC/BTC')
     assert len(res) == 1
     assert res[0]['count'] == 1
-    assert res[0]['sell_reason'] == 'sell_signal'
+    assert res[0]['exit_reason'] == 'sell_signal'
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 

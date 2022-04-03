@@ -108,7 +108,8 @@ class Telegram(RPCHandler):
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
-                                 r'/trades$', r'/performance$', r'/buys', r'/sells', r'/mix_tags',
+                                 r'/trades$', r'/performance$', r'/buys', r'/entries',
+                                 r'/sells', r'/exits', r'/mix_tags',
                                  r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
@@ -161,7 +162,7 @@ class Telegram(RPCHandler):
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
             CommandHandler(['buys', 'entries'], self._enter_tag_performance),
-            CommandHandler('sells', self._sell_reason_performance),
+            CommandHandler(['sells', 'exits'], self._exit_reason_performance),
             CommandHandler('mix_tags', self._mix_tag_performance),
             CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
@@ -192,8 +193,8 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._performance, pattern='update_performance'),
             CallbackQueryHandler(self._enter_tag_performance,
                                  pattern='update_enter_tag_performance'),
-            CallbackQueryHandler(self._sell_reason_performance,
-                                 pattern='update_sell_reason_performance'),
+            CallbackQueryHandler(self._exit_reason_performance,
+                                 pattern='update_exit_reason_performance'),
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._forceenter_inline),
@@ -1101,7 +1102,7 @@ class Telegram(RPCHandler):
                 pair = context.args[0]
 
             trades = self._rpc._rpc_enter_tag_performance(pair)
-            output = "<b>Buy Tag Performance:</b>\n"
+            output = "<b>Entry Tag Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
                     f"{i+1}.\t <code>{trade['enter_tag']}\t"
@@ -1122,7 +1123,7 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
-    def _sell_reason_performance(self, update: Update, context: CallbackContext) -> None:
+    def _exit_reason_performance(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /sells.
         Shows a performance statistic from finished trades
@@ -1135,11 +1136,11 @@ class Telegram(RPCHandler):
             if context.args and isinstance(context.args[0], str):
                 pair = context.args[0]
 
-            trades = self._rpc._rpc_sell_reason_performance(pair)
-            output = "<b>Sell Reason Performance:</b>\n"
+            trades = self._rpc._rpc_exit_reason_performance(pair)
+            output = "<b>Exit Reason Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i+1}.\t <code>{trade['sell_reason']}\t"
+                    f"{i+1}.\t <code>{trade['exit_reason']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
@@ -1151,7 +1152,7 @@ class Telegram(RPCHandler):
                     output += stat_line
 
             self._send_msg(output, parse_mode=ParseMode.HTML,
-                           reload_able=True, callback_path="update_sell_reason_performance",
+                           reload_able=True, callback_path="update_exit_reason_performance",
                            query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))

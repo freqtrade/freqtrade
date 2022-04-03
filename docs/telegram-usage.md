@@ -180,7 +180,9 @@ official commands. You can ask at any moment for help with `/help`.
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
 | `/weekly <n>` | Shows profit or loss per week, over the last n weeks (n defaults to 8)
 | `/monthly <n>` | Shows profit or loss per month, over the last n months (n defaults to 6)
-| `/stats` | Shows Wins / losses by Sell reason as well as Avg. holding durations for buys and sells
+| `/stats` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
+| `/exits` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
+| `/entries` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
 | `/whitelist` | Show the current whitelist
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.

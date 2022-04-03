@@ -1289,7 +1289,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_sell_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
+    def get_exit_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, based on sell reason performance
         Can either be average for all pairs or a specific pair provided
@@ -1312,13 +1312,13 @@ class Trade(_DECL_BASE, LocalTrade):
 
         return [
             {
-                'sell_reason': sell_reason if sell_reason is not None else "Other",
+                'exit_reason': exit_reason if exit_reason is not None else "Other",
                 'profit_ratio': profit,
                 'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for sell_reason, profit, profit_abs, count in sell_tag_perf
+            for exit_reason, profit, profit_abs, count in sell_tag_perf
         ]
 
     @staticmethod

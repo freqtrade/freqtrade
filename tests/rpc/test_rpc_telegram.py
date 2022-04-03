@@ -97,7 +97,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['balance'], ['start'], ['stop'], "
                    "['forcesell', 'forceexit'], ['forcebuy', 'forcelong'], ['forceshort'], "
                    "['trades'], ['delete'], ['performance'], "
-                   "['buys', 'entries'], ['sells'], ['mix_tags'], "
+                   "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
@@ -1337,8 +1337,8 @@ def test_telegram_performance_handle(default_conf, update, ticker, fee,
     assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
-                                             limit_buy_order, limit_sell_order, mocker) -> None:
+def test_telegram_entry_tag_performance_handle(
+        default_conf, update, ticker, fee, limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -1366,7 +1366,7 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
     context = MagicMock()
     telegram._enter_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert 'Buy Tag Performance' in msg_mock.call_args_list[0][0][0]
+    assert 'Entry Tag Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTBUY\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
     context.args = [trade.pair]
@@ -1382,7 +1382,7 @@ def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
     assert "Error" in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, fee,
+def test_telegram_exit_reason_performance_handle(default_conf, update, ticker, fee,
                                                  limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1408,19 +1408,19 @@ def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, f
     trade.close_date = datetime.utcnow()
     trade.is_open = False
     context = MagicMock()
-    telegram._sell_reason_performance(update=update, context=context)
+    telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert 'Sell Reason Performance' in msg_mock.call_args_list[0][0][0]
+    assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTSELL\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
     context.args = [trade.pair]
 
-    telegram._sell_reason_performance(update=update, context=context)
+    telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 2
 
     msg_mock.reset_mock()
-    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_sell_reason_performance',
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_exit_reason_performance',
                  side_effect=RPCException('Error'))
-    telegram._sell_reason_performance(update=update, context=MagicMock())
+    telegram._exit_reason_performance(update=update, context=MagicMock())
 
     assert msg_mock.call_count == 1
     assert "Error" in msg_mock.call_args_list[0][0][0]

@@ -234,7 +234,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols, 'liquidation_price'):
+    if not has_column(cols, 'exit_reason'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
