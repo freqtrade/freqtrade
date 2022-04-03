@@ -1324,7 +1324,7 @@ class Trade(_DECL_BASE, LocalTrade):
     @staticmethod
     def get_mix_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on buy_tag + sell_reason performance
+        Returns List of dicts containing all Trades, based on entry_tag + exit_reason performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
@@ -1346,12 +1346,12 @@ class Trade(_DECL_BASE, LocalTrade):
             .all()
 
         return_list: List[Dict] = []
-        for id, enter_tag, sell_reason, profit, profit_abs, count in mix_tag_perf:
+        for id, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
             enter_tag = enter_tag if enter_tag is not None else "Other"
-            sell_reason = sell_reason if sell_reason is not None else "Other"
+            exit_reason = exit_reason if exit_reason is not None else "Other"
 
-            if(sell_reason is not None and enter_tag is not None):
-                mix_tag = enter_tag + " " + sell_reason
+            if(exit_reason is not None and enter_tag is not None):
+                mix_tag = enter_tag + " " + exit_reason
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,

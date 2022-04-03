@@ -857,7 +857,7 @@ class RPC:
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for mix tag (enter_tag + sell_reason) performance.
+        Handler for mix tag (enter_tag + exit_reason) performance.
         Shows a performance statistic from finished trades
         """
         mix_tags = Trade.get_mix_tag_performance(pair)

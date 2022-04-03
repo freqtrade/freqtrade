@@ -182,7 +182,7 @@ from freqtrade.data.btanalysis import load_trades_from_db
 trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
 # Display results
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["exit_reason"].value_counts()
 ```
 
 ## Analyze the loaded trades for trade parallelism
