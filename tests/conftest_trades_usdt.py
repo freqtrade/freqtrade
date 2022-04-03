@@ -89,7 +89,7 @@ def mock_trade_usdt_2(fee):
         open_order_id='dry_run_sell_12345',
         strategy='StrategyTestV2',
         timeframe=5,
-        sell_reason='sell_signal',
+        exit_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
     )
@@ -148,7 +148,7 @@ def mock_trade_usdt_3(fee):
         is_open=False,
         strategy='StrategyTestV2',
         timeframe=5,
-        sell_reason='roi',
+        exit_reason='roi',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         close_date=datetime.now(tz=timezone.utc),
     )

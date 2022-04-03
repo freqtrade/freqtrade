@@ -35,9 +35,19 @@ BAD_EXCHANGES = {
 MAP_EXCHANGE_CHILDCLASS = {
     'binanceus': 'binance',
     'binanceje': 'binance',
+    'binanceusdm': 'binance',
     'okex': 'okx',
 }
 
+SUPPORTED_EXCHANGES = [
+    'binance',
+    'bittrex',
+    'ftx',
+    'gateio',
+    'huobi',
+    'kraken',
+    'okx',
+]
 
 EXCHANGE_HAS_REQUIRED = [
     # Required / private
@@ -55,10 +65,17 @@ EXCHANGE_HAS_REQUIRED = [
 EXCHANGE_HAS_OPTIONAL = [
     # Private
     'fetchMyTrades',  # Trades for order - fee detection
+    # 'setLeverage',  # Margin/Futures trading
+    # 'setMarginMode',  # Margin/Futures trading
+    # 'fetchFundingHistory', # Futures trading
     # Public
     'fetchOrderBook', 'fetchL2OrderBook', 'fetchTicker',  # OR for pricing
     'fetchTickers',  # For volumepairlist?
     'fetchTrades',  # Downloading trades data
+    # 'fetchFundingRateHistory',  # Futures trading
+    # 'fetchPositions',  # Futures trading
+    # 'fetchLeverageTiers',  # Futures initialization
+    # 'fetchMarketLeverageTiers',  # Futures initialization
 ]
 
 
@@ -85,7 +102,7 @@ def calculate_backoff(retrycount, max_retries):
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
-        kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
+        kucoin = args[0].name == "KuCoin"  # Check if the exchange is KuCoin.
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:

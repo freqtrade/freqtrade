@@ -17,7 +17,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelis
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.exceptions import OperationalException
-from tests.conftest import create_mock_trades
+from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -108,7 +108,8 @@ def test_load_backtest_data_multi(testdatadir):
     for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
-        assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
+        assert set(bt_data.columns) == set(
+            BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
@@ -123,9 +124,10 @@ def test_load_backtest_data_multi(testdatadir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_load_trades_from_db(default_conf, fee, mocker):
+@pytest.mark.parametrize('is_short', [False, True])
+def test_load_trades_from_db(default_conf, fee, is_short, mocker):
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     # remove init so it does not init again
     init_mock = mocker.patch('freqtrade.data.btanalysis.init_db', MagicMock())
 
@@ -140,7 +142,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:
             assert col in trades.columns
-    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='StrategyTestV2')
+    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy=CURRENT_TEST_STRATEGY)
     assert len(trades) == 4
     trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='NoneStrategy')
     assert len(trades) == 0
@@ -198,7 +200,7 @@ def test_load_trades(default_conf, mocker):
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
                 no_trades=False,
-                strategy="StrategyTestV2",
+                strategy=CURRENT_TEST_STRATEGY,
                 )
 
     assert db_mock.call_count == 1

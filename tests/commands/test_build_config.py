@@ -44,6 +44,8 @@ def test_start_new_config(mocker, caplog, exchange):
         'fiat_display_currency': 'EUR',
         'timeframe': '15m',
         'dry_run': True,
+        'trading_mode': 'spot',
+        'margin_mode': '',
         'exchange_name': exchange,
         'exchange_key': 'sampleKey',
         'exchange_secret': 'Samplesecret',

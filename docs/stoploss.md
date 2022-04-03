@@ -17,7 +17,7 @@ Those stoploss modes can be *on exchange* or *off exchange*.
 These modes can be configured with these values:
 
 ``` python
-    'emergencysell': 'market',
+    'emergencyexit': 'market',
     'stoploss_on_exchange': False
     'stoploss_on_exchange_interval': 60,
     'stoploss_on_exchange_limit_ratio': 0.99
@@ -52,30 +52,30 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
-### forcesell
+### forceexit
 
-`forcesell` is an optional value, which defaults to the same value as `sell` and is used when sending a `/forcesell` command from Telegram or from the Rest API.
+`forceexit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.
 
-### forcebuy
+### forceentry
 
-`forcebuy` is an optional value, which defaults to the same value as `buy` and is used when sending a `/forcebuy` command from Telegram or from the Rest API.
+`forceentry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/forceentry` command from Telegram or from the Rest API.
 
-### emergencysell
+### emergencyexit
 
-`emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
+`emergencyexit` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if not changed in strategy or configuration file.
 
 Example from strategy file:
 
 ``` python
 order_types = {
-    'buy': 'limit',
-    'sell': 'limit',
-    'emergencysell': 'market',
-    'stoploss': 'market',
-    'stoploss_on_exchange': True,
-    'stoploss_on_exchange_interval': 60,
-    'stoploss_on_exchange_limit_ratio': 0.99
+    "entry": "limit",
+    "exit": "limit",
+    "emergencyexit": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": True,
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_on_exchange_limit_ratio": 0.99
 }
 ```
 
