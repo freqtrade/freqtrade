@@ -143,8 +143,14 @@ class StrategyResolver(IResolver):
         # Sort and apply type conversions
         if hasattr(strategy, 'minimal_roi'):
             strategy.minimal_roi = dict(sorted(
-                {int(key): value for (key, value) in strategy.minimal_roi.items()}.items(),
-                key=lambda t: t[0]))
+                {
+                    {int(k): v for (k, v) in value.items()}
+                    if type(value is dict)
+                    else int(key): value
+                    for (key, value) in strategy.minimal_roi.items()
+                }.items(),
+                key=lambda t: t[0]
+            ))
         if hasattr(strategy, 'stoploss'):
             strategy.stoploss = float(strategy.stoploss)
         return strategy

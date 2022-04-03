@@ -138,7 +138,7 @@ CONF_SCHEMA = {
         'minimal_roi': {
             'type': 'object',
             'patternProperties': {
-                '^[0-9.]+$': {'type': 'number'}
+                '^[0-9a-zA-Z.]+$': {'type': ['number', 'dict']}
             },
             'minProperties': 1
         },

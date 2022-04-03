@@ -932,7 +932,16 @@ class FreqtradeBot(LoggingMixin):
         logger.debug('checking exit')
         exit_rate = self.exchange.get_rate(
             trade.pair, side='exit', is_short=trade.is_short, refresh=True)
-        if self._check_and_execute_exit(trade, exit_rate, enter, exit_, exit_tag):
+
+        enter_tag = # TODO
+        if self._check_and_execute_exit(
+            trade=trade,
+            exit_rate=exit_rate,
+            enter=enter,
+            exit_=exit_,
+            enter_tag=enter_tag,
+            exit_tag=exit_tag,
+        ):
             return True
 
         logger.debug(f'Found no {exit_signal_type} signal for %s.', trade)
@@ -1089,8 +1098,15 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                enter: bool, exit_: bool, exit_tag: Optional[str]) -> bool:
+    def _check_and_execute_exit(
+        self,
+        trade: Trade,
+        exit_rate: float,
+        enter: bool,
+        exit_: bool,
+        enter_tag: Optional[str],
+        exit_tag: Optional[str],
+    ) -> bool:
         """
         Check and execute trade exit
         """
@@ -1100,7 +1116,8 @@ class FreqtradeBot(LoggingMixin):
             datetime.now(timezone.utc),
             enter=enter,
             exit_=exit_,
-            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0,
+            enter_tag=enter_tag,
         )
 
         if should_exit.exit_flag:

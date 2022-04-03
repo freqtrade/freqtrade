@@ -160,7 +160,7 @@ class ShowConfig(BaseModel):
     available_capital: Optional[float]
     stake_currency_decimals: int
     max_open_trades: int
-    minimal_roi: Dict[str, Any]
+    minimal_roi: Dict[str, Union[Dict[str, float], float]]
     stoploss: Optional[float]
     trailing_stop: Optional[bool]
     trailing_stop_positive: Optional[float]

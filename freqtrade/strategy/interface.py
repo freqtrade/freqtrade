@@ -843,7 +843,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
                     low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> ExitCheckTuple:
+                    force_stoploss: float = 0, enter_tag: Optional[str] = None) -> ExitCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
@@ -868,9 +868,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (enter and self.ignore_roi_if_entry_signal)
-                       and self.min_roi_reached(trade=trade, current_profit=current_profit,
-                                                current_time=current_time))
+        roi_reached = (
+            not (enter and self.ignore_roi_if_entry_signal) and
+            self.min_roi_reached(
+                trade=trade,
+                current_profit=current_profit,
+                current_time=current_time,
+                enter_tag=enter_tag,
+            )
+        )
 
         exit_signal = ExitType.NONE
         custom_reason = ''
@@ -1007,20 +1013,31 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return ExitCheckTuple(exit_type=ExitType.NONE)
 
-    def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
+    def min_roi_reached_entry(
+        self,
+        trade_dur: int,
+        enter_tag: Optional[str] = None,
+    ) -> Tuple[Optional[int], Optional[float]]:
         """
         Based on trade duration defines the ROI entry that may have been reached.
         :param trade_dur: trade duration in minutes
         :return: minimal ROI entry value or None if none proper ROI entry was found.
         """
+        minimal_roi = self.minimal_roi[enter_tag] if enter_tag else self.minimal_roi
         # Get highest entry in ROI dict where key <= trade-duration
-        roi_list = list(filter(lambda x: x <= trade_dur, self.minimal_roi.keys()))
+        roi_list = list(filter(lambda x: x <= trade_dur, minimal_roi.keys()))
         if not roi_list:
             return None, None
         roi_entry = max(roi_list)
-        return roi_entry, self.minimal_roi[roi_entry]
+        return roi_entry, minimal_roi[roi_entry]
 
-    def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
+    def min_roi_reached(
+        self,
+        trade: Trade,
+        current_profit: float,
+        current_time: datetime,
+        enter_tag: Optional[str] = None,
+    ) -> bool:
         """
         Based on trade duration, current profit of the trade and ROI configuration,
         decides whether bot should exit.
@@ -1029,7 +1046,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         # Check if time matches and current rate is above threshold
         trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
-        _, roi = self.min_roi_reached_entry(trade_dur)
+        _, roi = self.min_roi_reached_entry(trade_dur, enter_tag)
         if roi is None:
             return False
         else:
