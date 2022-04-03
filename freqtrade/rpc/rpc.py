@@ -850,7 +850,7 @@ class RPC:
 
     def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for sell reason performance.
+        Handler for exit reason performance.
         Shows a performance statistic from finished trades
         """
         return Trade.get_exit_reason_performance(pair)

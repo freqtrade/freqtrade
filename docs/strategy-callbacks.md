@@ -393,7 +393,7 @@ class AwesomeStrategy(IStrategy):
 !!! Warning "Backtesting"
     Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
     Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
-    `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
+    `custom_exit_price()` is only called for sells of type Sell_signal and Custom exit. All other exit-types will use regular backtesting prices.
 
 ## Custom order timeout rules
 

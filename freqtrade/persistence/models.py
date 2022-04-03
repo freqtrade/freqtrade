@@ -1291,7 +1291,7 @@ class Trade(_DECL_BASE, LocalTrade):
     @staticmethod
     def get_exit_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on sell reason performance
+        Returns List of dicts containing all Trades, based on exit reason performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
