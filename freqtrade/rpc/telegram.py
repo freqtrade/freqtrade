@@ -198,7 +198,7 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._forcebuy_inline, pattern=r"\S+\/\S+"),
-            CallbackQueryHandler(self._forcesell_inline, pattern=r"[0-9]+\s\S+\/\S+")
+            CallbackQueryHandler(self._forcesell_inline, pattern=r"[0-9]+\s\S+\/\S+"),
             CallbackQueryHandler(self._forceenter_inline),
         ]
         for handle in handles:
