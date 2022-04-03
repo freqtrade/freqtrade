@@ -209,13 +209,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pass
 
-    def on_whitelist_update(self, **kwargs) -> None:
-        """
-        Called every time the whitelist updates
-        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        """
-        pass
-
     def check_buy_timeout(self, pair: str, trade: Trade, order: Order,
                           current_time: datetime, **kwargs) -> bool:
         """

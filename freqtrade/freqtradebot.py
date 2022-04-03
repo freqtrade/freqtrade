@@ -179,7 +179,6 @@ class FreqtradeBot(LoggingMixin):
         # Query trades from persistence layer
         trades = Trade.get_open_trades()
 
-        current_pair_whitelist = self.active_pair_whitelist
         self.active_pair_whitelist = self._refresh_active_whitelist(trades)
 
         # Refreshing candles
@@ -214,9 +213,6 @@ class FreqtradeBot(LoggingMixin):
             self._schedule.run_pending()
         Trade.commit()
         self.last_process = datetime.now(timezone.utc)
-
-        if current_pair_whitelist != self.active_pair_whitelist:
-            self.strategy.on_whitelist_update()
 
     def process_stopped(self) -> None:
         """
