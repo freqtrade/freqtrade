@@ -936,6 +936,7 @@ class Exchange:
 
             if order['remaining'] == 0:
                 order['status'] = 'closed'
+                order['cost'] /= order['leverage']
                 self.add_dry_order_fee(pair, order)
         return order
 
