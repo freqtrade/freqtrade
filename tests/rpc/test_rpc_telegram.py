@@ -199,7 +199,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'profit_ratio': -0.0059,
             'initial_stop_loss_abs': 1.098e-05,
             'stop_loss_abs': 1.099e-05,
-            'sell_order_status': None,
+            'exit_order_status': None,
             'initial_stop_loss_ratio': -0.0005,
             'stoploss_current_dist': 1e-08,
             'stoploss_current_dist_ratio': -0.0002,

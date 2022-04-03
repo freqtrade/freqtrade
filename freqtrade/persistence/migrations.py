@@ -104,7 +104,8 @@ def migrate_trades_and_orders_table(
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
-    sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
+    exit_order_status = get_column_def(cols, 'exit_order_status',
+                                       get_column_def(cols, 'sell_order_status', 'null'))
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
@@ -136,7 +137,7 @@ def migrate_trades_and_orders_table(
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, exit_reason, sell_order_status, strategy, enter_tag,
+            max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
             interest_rate, funding_fees
@@ -153,7 +154,7 @@ def migrate_trades_and_orders_table(
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate, {exit_reason} exit_reason,
-            {sell_order_status} sell_order_status,
+            {exit_order_status} exit_order_status,
             {strategy} strategy, {enter_tag} enter_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
@@ -234,7 +235,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols, 'exit_reason'):
+    if not has_column(cols, 'exit_order_status'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(

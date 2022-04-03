@@ -3014,7 +3014,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     send_msg_mock.call_args_list[0][0][0]['reason'] = CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
 
     # Message should not be iterated again
-    assert trade.sell_order_status == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert trade.exit_order_status == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
     assert send_msg_mock.call_count == 1
 
 
