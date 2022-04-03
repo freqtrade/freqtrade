@@ -905,7 +905,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                         custom_reason = None
             if sell_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
-                             f"sell_type=ExitType.{sell_signal.name}" +
+                             f"exit_type=ExitType.{sell_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
                 return ExitCheckTuple(exit_type=sell_signal, exit_reason=custom_reason)
 
@@ -914,12 +914,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         # ROI (if not stoploss)
         # Stoploss
         if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_type=ExitType.ROI")
+            logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
             return ExitCheckTuple(exit_type=ExitType.ROI)
 
         if stoplossflag.exit_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.exit_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
@@ -988,11 +988,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         if ((sl_higher_long or sl_lower_short) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
-            sell_type = ExitType.STOP_LOSS
+            exit_type = ExitType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                sell_type = ExitType.TRAILING_STOP_LOSS
+                exit_type = ExitType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at "
                     f"{((high if trade.is_short else low) or current_rate):.6f}, "
@@ -1007,7 +1007,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{new_stoploss:.6f}")
 
-            return ExitCheckTuple(exit_type=sell_type)
+            return ExitCheckTuple(exit_type=exit_type)
 
         return ExitCheckTuple(exit_type=ExitType.NONE)
 

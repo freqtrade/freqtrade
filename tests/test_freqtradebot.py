@@ -2268,7 +2268,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
     caplog.clear()
     patch_get_signal(freqtrade)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Required profit reached. sell_type=ExitType.ROI",
+    assert log_has("ETH/USDT - Required profit reached. exit_type=ExitType.ROI",
                    caplog)
 
 
@@ -2310,7 +2310,7 @@ def test_handle_trade_use_sell_signal(
     else:
         patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Sell signal received. sell_type=ExitType.SELL_SIGNAL",
+    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.SELL_SIGNAL",
                    caplog)
 
 
@@ -3628,7 +3628,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     assert mock_insuf.call_count == 1
 
 
-@pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type,is_short', [
+@pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,exit_type,is_short', [
     # Enable profit
     (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, False),
     (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, True),
@@ -3645,7 +3645,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
-        fee, mocker, profit_only, bid, ask, handle_first, handle_second, sell_type) -> None:
+        fee, mocker, profit_only, bid, ask, handle_first, handle_second, exit_type) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     eside = enter_side(is_short)
@@ -3669,7 +3669,7 @@ def test_sell_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    if sell_type == ExitType.SELL_SIGNAL.value:
+    if exit_type == ExitType.SELL_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
         freqtrade.strategy.stop_loss_reached = MagicMock(return_value=ExitCheckTuple(
