@@ -114,8 +114,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcesell$', r'/edge$', r'/health$', r'/help$',
-                                 r'/version$']
+                                 r'/forcelong$', r'/forceshort$', r'/forcebuy$', r'/forcesell$',
+                                 r'/edge$', r'/health$', r'/help$', r'/version$']
 
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -197,9 +197,8 @@ class Telegram(RPCHandler):
                                  pattern='update_sell_reason_performance'),
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
-            CallbackQueryHandler(self._forcebuy_inline, pattern=r"\S+\/\S+"),
-            CallbackQueryHandler(self._forcesell_inline, pattern=r"[0-9]+\s\S+\/\S+"),
-            CallbackQueryHandler(self._forceenter_inline),
+            CallbackQueryHandler(self._forceenter_inline, pattern=r"\S+\/\S+"),
+            CallbackQueryHandler(self._forceexit_inline, pattern=r"[0-9]+\s\S+\/\S+")
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -943,7 +942,7 @@ class Telegram(RPCHandler):
 
         if context.args:
             trade_id = context.args[0]
-            self._forcesell_action(trade_id)
+            self._forceexit_action(trade_id)
         else:
             fiat_currency = self._config.get('fiat_display_currency', '')
             statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
@@ -960,20 +959,20 @@ class Telegram(RPCHandler):
             buttons_aligned.append([InlineKeyboardButton(text='Cancel', callback_data='cancel')])
             self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
 
-    def _forcesell_action(self, trade_id):
+    def _forceexit_action(self, trade_id):
         if trade_id != 'cancel':
             try:
-                self._rpc._rpc_forcesell(trade_id)
+                self._rpc._rpc_forceexit(trade_id)
             except RPCException as e:
                 self._send_msg(str(e))
 
-    def _forcesell_inline(self, update: Update, _: CallbackContext) -> None:
+    def _forceexit_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
             trade_id = query.data.split(" ")[0]
             query.answer()
-            query.edit_message_text(text=f"Force Selling: {query.data}")
-            self._forcesell_action(trade_id)
+            query.edit_message_text(text=f"Manually exiting: {query.data}")
+            self._forceexit_action(trade_id)
 
     def _forceenter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
