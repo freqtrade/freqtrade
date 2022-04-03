@@ -1,0 +1,15 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pycqa/flake8
+    rev: '4.0.1'
+    hooks:
+    -   id: flake8
+        args: 
+        -   max-line-length = 100,
+        -   max-complexity = 12
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.942'
+    hooks:
+    -   id: mypy
+        args: [--ignore-missing-imports]
