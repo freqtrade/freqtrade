@@ -996,17 +996,20 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice, endprice,
-                                         exchange_name, order_book_l2_usd):
+                                         exchange_name, order_book_l2_usd, caplog):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           exchange_has=MagicMock(return_value=True),
                           fetch_l2_order_book=order_book_l2_usd,
                           )
-
+    pair = 'LTC/USDT'
+    caplog.set_level(logging.DEBUG)
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='limit', side=side, amount=1, rate=startprice)
-    assert order_book_l2_usd.call_count == 1
+        pair=pair, ordertype='limit', side=side, amount=1, rate=startprice)
+
+    extra_check = log_has_re(rf"{pair} checking dry {side}-order: .* order_book_top=1000", caplog)
+    assert order_book_l2_usd.call_count == 1 + int(extra_check)
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -1014,14 +1017,29 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order["symbol"] == "LTC/USDT"
     order_book_l2_usd.reset_mock()
 
-    order_closed = exchange.fetch_dry_run_order(order['id'])
-    assert order_book_l2_usd.call_count == 1
-    assert order_closed['status'] == 'open'
+    order = exchange.fetch_dry_run_order(order['id'])
+    extra_check = log_has_re(rf"{pair} checking dry {side}-order: .* order_book_top=1000", caplog)
+    assert order_book_l2_usd.call_count == 1 + int(extra_check)
+    assert order['status'] == 'open'
     assert not order['fee']
-    assert order_closed['filled'] == 0
+    ob_side = 'asks' if side == 'buy' else 'bids'
+    assert order['filled'] == 0
 
     order_book_l2_usd.reset_mock()
-    order_closed['price'] = endprice
+    order['price'] = endprice
+    order['amount'] = 50
+    order['remaining'] = 50
+
+    order = exchange.fetch_dry_run_order(order['id'])
+    assert order['status'] == 'open'
+    assert not order['fee']
+    assert order['filled'] == min(order_book_l2_usd.return_value[ob_side][0][1], order['amount'])
+
+    order_book_l2_usd.reset_mock()
+    order['price'] = endprice
+    order['amount'] = 1
+    order['remaining'] = 1
+    order['filled'] = 0
 
     order_closed = exchange.fetch_dry_run_order(order['id'])
     assert order_closed['status'] == 'closed'
@@ -2359,7 +2377,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._fill_dry_limit_order', side_effect=lambda *_: _[-2:])
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 

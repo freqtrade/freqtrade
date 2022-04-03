@@ -694,42 +694,66 @@ class Exchange:
 
         return rate
 
-    def _is_dry_limit_order_filled(self, pair: str, side: str, limit: float) -> bool:
+    def _fill_dry_limit_order(self, pair: str, side: str,  # noqa: max-complexity: 13
+                                    limit: float, given_amount: float) -> Tuple[Optional[float], float]:
+        """
+        Returns average price and filled amount
+        """
         if not self.exchange_has('fetchL2OrderBook'):
-            return True
-        ob = self.fetch_l2_order_book(pair, 1)
-        try:
+            return limit, given_amount
+        for order_book_top in (None, 1000):
+            ob = self.fetch_l2_order_book(pair, order_book_top)
             if side == 'buy':
-                price = ob['asks'][0][0]
-                logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
-                if limit >= price:
-                    return True
+                obd = ob['asks']
             else:
-                price = ob['bids'][0][0]
-                logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
-                if limit <= price:
-                    return True
-        except IndexError:
-            # Ignore empty orderbooks when filling - can be filled with the next iteration.
-            pass
-        return False
+                obd = ob['bids']
+            try:
+                logger.debug(
+                    f"{pair} checking dry {side}-order: "
+                    f"{limit=}, {given_amount=}, {order_book_top=}")
+                cost = 0
+                total_filled_amount = 0
+                remaining_amount = given_amount
+                for price, amount in obd:
+                    if (side == 'buy' and limit < price
+                            or side == 'sell' and limit > price):
+                        break
+                    filled_amount = min(amount, remaining_amount)
+                    cost += price * filled_amount
+                    total_filled_amount += filled_amount
+                    remaining_amount -= filled_amount
+                    if total_filled_amount == given_amount:
+                        break
+                else:
+                    continue
+                break
+            except IndexError:
+                # Ignore empty orderbooks when filling - can be filled with the next iteration.
+                pass
+        average_price = cost / total_filled_amount if total_filled_amount else None
+        return average_price, total_filled_amount
 
     def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Check dry-run limit order fill and update fee (if it filled).
+        Check dry-run limit order fill and update fee (if it is filled).
         """
         if (order['status'] != "closed"
                 and order['type'] in ["limit"]
                 and not order.get('ft_order_type')):
             pair = order['symbol']
-            if self._is_dry_limit_order_filled(pair, order['side'], order['price']):
-                order.update({
-                    'status': 'closed',
-                    'filled': order['amount'],
-                    'remaining': 0,
-                })
-                self.add_dry_order_fee(pair, order)
+            average_price, filled_amount = self._fill_dry_limit_order(
+                pair, order['side'], order['price'], order['remaining'])
 
+            if filled_amount:
+                order['remaining'] -= filled_amount
+                order_cost = order['average'] * order['filled'] + average_price * filled_amount
+                order['filled'] += filled_amount
+                order['average'] = order_cost / order['filled']
+                order['cost'] = order_cost
+
+            if order['remaining'] == 0:
+                order['status'] = 'closed'
+                self.add_dry_order_fee(pair, order)
         return order
 
     def fetch_dry_run_order(self, order_id) -> Dict[str, Any]:
@@ -740,6 +764,7 @@ class Exchange:
         try:
             order = self._dry_run_open_orders[order_id]
             order = self.check_dry_limit_order_filled(order)
+            logger.debug(order)
             return order
         except KeyError as e:
             # Gracefully handle errors with dry-run orders.
@@ -1528,7 +1553,7 @@ class Exchange:
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
-                    pair,  since,
+                    pair, since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
