@@ -396,7 +396,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom exit reason or True. Otherwise return
         None or False.
         """
         return None
@@ -420,7 +420,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom exit reason or True. Otherwise return
         None or False.
         """
         return self.custom_sell(pair, trade, current_time, current_rate, current_profit, **kwargs)

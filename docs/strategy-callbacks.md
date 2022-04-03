@@ -84,7 +84,7 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
-Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
+Allows to define custom exit signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
 
 For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
