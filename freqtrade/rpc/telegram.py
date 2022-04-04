@@ -233,8 +233,7 @@ class Telegram(RPCHandler):
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['type']
-                      in [RPCMessageType.ENTRY_FILL, RPCMessageType.ENTRY]
+        enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
                       else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
             f"{emoji} *{msg['exchange']}:*"

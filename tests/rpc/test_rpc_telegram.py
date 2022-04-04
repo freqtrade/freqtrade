@@ -1787,6 +1787,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
         'leverage': leverage,
         'limit': 1.099e-05,
         'order_type': 'limit',
+        'direction': enter,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1875,9 +1876,9 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
 
 
 @pytest.mark.parametrize('message_type,entered,enter_signal,leverage', [
-    (RPCMessageType.ENTRY_FILL, 'Longed', 'long_signal_01', 1.0),
-    (RPCMessageType.ENTRY_FILL, 'Longed', 'long_signal_02', 2.0),
-    (RPCMessageType.ENTRY_FILL, 'Shorted', 'short_signal_01', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Long', 'long_signal_01', 1.0),
+    (RPCMessageType.ENTRY_FILL, 'Long', 'long_signal_02', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Short', 'short_signal_01', 2.0),
 ])
 def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, entered,
                                           enter_signal, leverage) -> None:
@@ -1893,6 +1894,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'pair': 'ETH/BTC',
         'leverage': leverage,
         'stake_amount': 0.01465333,
+        'direction': entered,
         # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1902,7 +1904,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
     })
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n'
+        f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
@@ -2122,6 +2124,7 @@ def test_send_msg_buy_notification_no_fiat(
         'leverage': leverage,
         'limit': 1.099e-05,
         'order_type': 'limit',
+        'direction': enter,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
