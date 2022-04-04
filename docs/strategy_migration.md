@@ -42,7 +42,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
   * `order_types` buy -> entry, sell -> exit.
   * `unfilledtimeout` buy -> entry, sell -> exit.
 * Terminology changes
-  * Sell reasons changed to reflect the new naming of "exit" instead of sells. Be careful in your strategy if you're using `exit_reason` checks.
+  * Sell reasons changed to reflect the new naming of "exit" instead of sells. Be careful in your strategy if you're using `exit_reason` checks and eventually update your strategy.
     * `sell_signal` -> `exit_signal`
     * `custom_sell` -> `custom_exit`
     * `force_sell` -> `force_exit`
