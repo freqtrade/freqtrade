@@ -47,7 +47,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
     * `custom_sell` -> `custom_exit`
     * `force_sell` -> `force_exit`
     * `emergency_sell` -> `emergency_exit`
-  * Webhook terminology changed from "sell" to "exit".
+  * Webhook terminology changed from "sell" to "exit", and from "buy" to entry
     * `webhookbuy` -> `webhookentry`
     * `webhookbuyfill` -> `webhookentryfill`
     * `webhookbuycancel` -> `webhookentrycancel`
