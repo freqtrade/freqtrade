@@ -149,7 +149,7 @@
                 "trailing_stop_loss": "off",
                 "stop_loss": "off",
                 "stoploss_on_exchange": "off",
-                "custom_sell": "off"
+                "custom_exit": "off"
             },
             "sell_fill": "on",
             "buy_cancel": "on",

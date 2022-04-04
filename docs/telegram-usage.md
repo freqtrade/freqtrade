@@ -90,7 +90,7 @@ Example configuration showing the different settings:
             "trailing_stop_loss": "on",
             "stop_loss": "on",
             "stoploss_on_exchange": "on",
-            "custom_sell": "silent"
+            "custom_exit": "silent"
         },
         "buy_cancel": "silent",
         "sell_cancel": "on",

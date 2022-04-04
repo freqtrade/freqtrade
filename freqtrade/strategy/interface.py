@@ -895,7 +895,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
-                    exit_signal = ExitType.CUSTOM_SELL
+                    exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
@@ -904,7 +904,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if exit_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
+            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.SELL_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
