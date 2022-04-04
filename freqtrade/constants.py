@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 from freqtrade.enums import CandleType
 
@@ -487,3 +487,6 @@ ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
 TradeList = List[List]
+
+LongShort = Literal['long', 'short']
+EntryExit = Literal['entry', 'exit']

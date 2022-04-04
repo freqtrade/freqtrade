@@ -17,12 +17,12 @@ isort==5.10.1
 time-machine==2.6.0
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.4.4
+nbconvert==6.4.5
 
 # mypy types
 types-cachetools==5.0.0
 types-filelock==3.2.5
-types-requests==2.27.15
+types-requests==2.27.16
 types-tabulate==0.8.6
 
 # Extensions to datetime library
