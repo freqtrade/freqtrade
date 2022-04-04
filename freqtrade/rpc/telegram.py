@@ -224,7 +224,7 @@ class Telegram(RPCHandler):
         # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
-    def _format_buy_msg(self, msg: Dict[str, Any]) -> str:
+    def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
         if self._rpc._fiat_converter:
             msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
@@ -260,7 +260,7 @@ class Telegram(RPCHandler):
         message += ")`"
         return message
 
-    def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
+    def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
         msg['amount'] = round(msg['amount'], 8)
         msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
         msg['duration'] = msg['close_date'].replace(
@@ -310,10 +310,10 @@ class Telegram(RPCHandler):
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
         if msg_type in [RPCMessageType.BUY, RPCMessageType.BUY_FILL, RPCMessageType.SHORT,
                         RPCMessageType.SHORT_FILL]:
-            message = self._format_buy_msg(msg)
+            message = self._format_entry_msg(msg)
 
         elif msg_type in [RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]:
-            message = self._format_sell_msg(msg)
+            message = self._format_exit_msg(msg)
 
         elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,
                           RPCMessageType.EXIT_CANCEL):
