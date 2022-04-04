@@ -1,5 +1,5 @@
 numpy==1.22.3
-pandas==1.4.1
+pandas==1.4.2
 pandas-ta==0.3.14b
 
 ccxt==1.77.98
