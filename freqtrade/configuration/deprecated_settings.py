@@ -90,6 +90,12 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                    'notification_settings', 'exit_fill')
         process_deprecated_setting(config['telegram'], 'notification_settings', 'sell_cancel',
                                    'notification_settings', 'exit_cancel')
+    if config.get('webhook'):
+        process_deprecated_setting(config, 'webhook', 'webhooksell', 'webhook', 'webhookexit')
+        process_deprecated_setting(config, 'webhook', 'webhooksellcancel',
+                                   'webhook', 'webhookexitcancel')
+        process_deprecated_setting(config, 'webhook', 'webhooksellfill',
+                                   'webhook', 'webhookexitfill')
 
     # Legacy way - having them in experimental ...
     process_removed_setting(config, 'experimental', 'use_sell_signal',

@@ -44,7 +44,6 @@ class Webhook(RPCHandler):
         """ Send a message to telegram channel """
         try:
             whconfig = self._config['webhook']
-            # DEPRECATED: Sell terminology
             if msg['type'] in [RPCMessageType.BUY, RPCMessageType.SHORT]:
                 valuedict = whconfig.get('webhookbuy', None)
             elif msg['type'] in [RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL]:
@@ -52,12 +51,11 @@ class Webhook(RPCHandler):
             elif msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]:
                 valuedict = whconfig.get('webhookbuyfill', None)
             elif msg['type'] == RPCMessageType.EXIT:
-                valuedict = whconfig.get('webhookexit', whconfig.get('webhooksell', None))
+                valuedict = whconfig.get('webhookexit', None)
             elif msg['type'] == RPCMessageType.EXIT_FILL:
-                valuedict = whconfig.get('webhookexitfill', whconfig.get('webhookexitfill', None))
+                valuedict = whconfig.get('webhookexitfill', None)
             elif msg['type'] == RPCMessageType.EXIT_CANCEL:
-                valuedict = whconfig.get('webhookexitcancel',
-                                         whconfig.get('webhooksellcancel', None))
+                valuedict = whconfig.get('webhookexitcancel', None)
             elif msg['type'] in (RPCMessageType.STATUS,
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):

@@ -274,11 +274,11 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhooksellcancel"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookexitcancel"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhooksellcancel"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookexitcancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhooksellcancel"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookexitcancel"]["value3"].format(**msg))
     # Test Sell fill
     msg_mock.reset_mock()
     msg = {
