@@ -1996,7 +1996,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL,
+        'type': RPCMessageType.EXIT_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -2008,7 +2008,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL,
+        'type': RPCMessageType.EXIT_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

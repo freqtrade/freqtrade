@@ -298,7 +298,7 @@ CONF_SCHEMA = {
                                 'enum': TELEGRAM_SETTING_OPTIONS
                             }
                         },
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'sell_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,

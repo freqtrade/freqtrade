@@ -55,7 +55,7 @@ class Webhook(RPCHandler):
                 valuedict = whconfig.get('webhookexit', whconfig.get('webhooksell', None))
             elif msg['type'] == RPCMessageType.SELL_FILL:
                 valuedict = whconfig.get('webhookexitfill', whconfig.get('webhookexitfill', None))
-            elif msg['type'] == RPCMessageType.SELL_CANCEL:
+            elif msg['type'] == RPCMessageType.EXIT_CANCEL:
                 valuedict = whconfig.get('webhookexitcancel',
                                          whconfig.get('webhooksellcancel', None))
             elif msg['type'] in (RPCMessageType.STATUS,

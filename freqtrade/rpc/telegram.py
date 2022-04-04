@@ -316,7 +316,7 @@ class Telegram(RPCHandler):
             message = self._format_sell_msg(msg)
 
         elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,
-                          RPCMessageType.SELL_CANCEL):
+                          RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.BUY_CANCEL,
                                                           RPCMessageType.SHORT_CANCEL] else 'exit'
             message = ("\N{WARNING SIGN} *{exchange}:* "

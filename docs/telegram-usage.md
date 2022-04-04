@@ -93,7 +93,7 @@ Example configuration showing the different settings:
             "custom_exit": "silent"
         },
         "buy_cancel": "silent",
-        "sell_cancel": "on",
+        "exit_cancel": "on",
         "buy_fill": "off",
         "sell_fill": "off",
         "protection_trigger": "off",

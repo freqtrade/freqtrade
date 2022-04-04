@@ -153,7 +153,7 @@
             },
             "sell_fill": "on",
             "buy_cancel": "on",
-            "sell_cancel": "on",
+            "exit_cancel": "on",
             "protection_trigger": "off",
             "protection_trigger_global": "on"
         },
