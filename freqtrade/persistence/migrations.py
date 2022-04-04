@@ -153,7 +153,13 @@ def migrate_trades_and_orders_table(
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
-            {max_rate} max_rate, {min_rate} min_rate, {exit_reason} exit_reason,
+            {max_rate} max_rate, {min_rate} min_rate,
+            case when {exit_reason} == 'sell_signal' then 'exit_signal'
+                 when {exit_reason} == 'custom_sell' then 'custom_exit'
+                 when {exit_reason} == 'force_sell' then 'force_exit'
+                 when {exit_reason} == 'emergency_sell' then 'emergency_exit'
+                 else {exit_reason}
+            end exit_reason,
             {exit_order_status} exit_order_status,
             {strategy} strategy, {enter_tag} enter_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
