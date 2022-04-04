@@ -48,6 +48,9 @@ You can use the quick summary as checklist. Please refer to the detailed section
     * `force_sell` -> `force_exit`
     * `emergency_sell` -> `emergency_exit`
   * Webhook terminology changed from "sell" to "exit".
+    * `webhookbuy` -> `webhookentry`
+    * `webhookbuyfill` -> `webhookentryfill`
+    * `webhookbuycancel` -> `webhookentrycancel`
     * `webhooksell` -> `webhookexit`
     * `webhooksellfill` -> `webhookexitfill`
     * `webhooksellcancel` -> `webhookexitcancel`

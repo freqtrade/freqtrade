@@ -10,17 +10,17 @@ Sample configuration (tested using IFTTT).
   "webhook": {
         "enabled": true,
         "url": "https://maker.ifttt.com/trigger/<YOUREVENT>/with/key/<YOURKEY>/",
-        "webhookbuy": {
+        "webhookentry": {
             "value1": "Buying {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-        "webhookbuycancel": {
+        "webhookentrycancel": {
             "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-         "webhookbuyfill": {
+         "webhookentryfill": {
             "value1": "Buy Order for {pair} filled",
             "value2": "at {open_rate:8f}",
             "value3": ""
@@ -96,9 +96,9 @@ Optional parameters are available to enable automatic retries for webhook messag
 
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
-### Webhookbuy
+### Webhookentry
 
-The fields in `webhook.webhookbuy` are filled when the bot executes a long/short. Parameters are filled using string.format.
+The fields in `webhook.webhookentry` are filled when the bot executes a long/short. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -118,9 +118,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhookbuycancel
+### Webhookentrycancel
 
-The fields in `webhook.webhookbuycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
+The fields in `webhook.webhookentrycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -139,9 +139,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhookbuyfill
+### Webhookentryfill
 
-The fields in `webhook.webhookbuyfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
+The fields in `webhook.webhookentryfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`

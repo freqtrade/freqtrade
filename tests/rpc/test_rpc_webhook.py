@@ -15,21 +15,21 @@ def get_webhook_dict() -> dict:
     return {
         "enabled": True,
         "url": "https://maker.ifttt.com/trigger/freqtrade_test/with/key/c764udvJ5jfSlswVRukZZ2/",
-        "webhookbuy": {
+        "webhookentry": {
             "value1": "Buying {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}",
             "value4": "leverage {leverage:.1f}",
             "value5": "direction {direction}"
         },
-        "webhookbuycancel": {
+        "webhookentrycancel": {
             "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}",
             "value4": "leverage {leverage:.1f}",
             "value5": "direction {direction}"
         },
-        "webhookbuyfill": {
+        "webhookentryfill": {
             "value1": "Buy Order for {pair} filled",
             "value2": "at {open_rate:8f}",
             "value3": "{stake_amount:8f} {stake_currency}",
@@ -88,15 +88,15 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuy"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuy"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value3"].format(**msg))
     assert (msg_mock.call_args[0][0]["value4"] ==
-            default_conf["webhook"]["webhookbuy"]["value4"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value4"].format(**msg))
     assert (msg_mock.call_args[0][0]["value5"] ==
-            default_conf["webhook"]["webhookbuy"]["value5"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value5"].format(**msg))
     # Test short
     msg_mock.reset_mock()
 
@@ -115,15 +115,15 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuy"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuy"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value3"].format(**msg))
     assert (msg_mock.call_args[0][0]["value4"] ==
-            default_conf["webhook"]["webhookbuy"]["value4"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value4"].format(**msg))
     assert (msg_mock.call_args[0][0]["value5"] ==
-            default_conf["webhook"]["webhookbuy"]["value5"].format(**msg))
+            default_conf["webhook"]["webhookentry"]["value5"].format(**msg))
     # Test buy cancel
     msg_mock.reset_mock()
 
@@ -142,11 +142,11 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value3"].format(**msg))
     # Test short cancel
     msg_mock.reset_mock()
 
@@ -165,15 +165,15 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value3"].format(**msg))
     assert (msg_mock.call_args[0][0]["value4"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value4"].format(**msg))
     assert (msg_mock.call_args[0][0]["value5"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value5"].format(**msg))
     # Test buy fill
     msg_mock.reset_mock()
 
@@ -192,15 +192,15 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value3"].format(**msg))
     assert (msg_mock.call_args[0][0]["value4"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value4"].format(**msg))
     assert (msg_mock.call_args[0][0]["value5"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value5"].format(**msg))
     # Test short fill
     msg_mock.reset_mock()
 
@@ -219,15 +219,15 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhookbuyfill"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookentryfill"]["value3"].format(**msg))
     assert (msg_mock.call_args[0][0]["value4"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value4"].format(**msg))
     assert (msg_mock.call_args[0][0]["value5"] ==
-            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
+            default_conf["webhook"]["webhookentrycancel"]["value5"].format(**msg))
     # Test sell
     msg_mock.reset_mock()
 
@@ -327,7 +327,7 @@ def test_send_msg_webhook(default_conf, mocker):
 
 def test_exception_send_msg(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
-    del default_conf["webhook"]["webhookbuy"]
+    del default_conf["webhook"]["webhookentry"]
 
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     webhook.send_msg({'type': RPCMessageType.ENTRY})
@@ -335,7 +335,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
                    caplog)
 
     default_conf["webhook"] = get_webhook_dict()
-    default_conf["webhook"]["webhookbuy"]["value1"] = "{DEADBEEF:8f}"
+    default_conf["webhook"]["webhookentry"]["value1"] = "{DEADBEEF:8f}"
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)

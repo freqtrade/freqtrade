@@ -1880,7 +1880,7 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
     (RPCMessageType.ENTRY_FILL, 'Shorted', 'short_signal_01', 2.0),
 ])
 def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, entered,
-                                        enter_signal, leverage) -> None:
+                                          enter_signal, leverage) -> None:
 
     default_conf['telegram']['notification_settings']['entry_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)

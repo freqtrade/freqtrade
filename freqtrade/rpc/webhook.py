@@ -45,11 +45,11 @@ class Webhook(RPCHandler):
         try:
             whconfig = self._config['webhook']
             if msg['type'] in [RPCMessageType.ENTRY]:
-                valuedict = whconfig.get('webhookbuy', None)
+                valuedict = whconfig.get('webhookentry', None)
             elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
-                valuedict = whconfig.get('webhookbuycancel', None)
+                valuedict = whconfig.get('webhookentrycancel', None)
             elif msg['type'] in [RPCMessageType.ENTRY_FILL]:
-                valuedict = whconfig.get('webhookbuyfill', None)
+                valuedict = whconfig.get('webhookentryfill', None)
             elif msg['type'] == RPCMessageType.EXIT:
                 valuedict = whconfig.get('webhookexit', None)
             elif msg['type'] == RPCMessageType.EXIT_FILL:

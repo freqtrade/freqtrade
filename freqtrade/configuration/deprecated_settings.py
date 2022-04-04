@@ -97,6 +97,11 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
         process_deprecated_setting(config['telegram'], 'notification_settings', 'buy_cancel',
                                    'notification_settings', 'entry_cancel')
     if config.get('webhook'):
+        process_deprecated_setting(config, 'webhook', 'webhookbuy', 'webhook', 'webhookentry')
+        process_deprecated_setting(config, 'webhook', 'webhookbuycancel',
+                                   'webhook', 'webhookentrycancel')
+        process_deprecated_setting(config, 'webhook', 'webhookbuyfill',
+                                   'webhook', 'webhookentryfill')
         process_deprecated_setting(config, 'webhook', 'webhooksell', 'webhook', 'webhookexit')
         process_deprecated_setting(config, 'webhook', 'webhooksellcancel',
                                    'webhook', 'webhookexitcancel')
