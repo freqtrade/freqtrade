@@ -86,7 +86,7 @@ Example configuration showing the different settings:
             "roi": "silent",
             "emergency_exit": "on",
             "force_exit": "on",
-            "sell_signal": "silent",
+            "exit_signal": "silent",
             "trailing_stop_loss": "on",
             "stop_loss": "on",
             "stoploss_on_exchange": "on",

@@ -9,7 +9,7 @@ class ExitType(Enum):
     STOP_LOSS = "stop_loss"
     STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
     TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
+    EXIT_SIGNAL = "exit_signal"
     FORCE_EXIT = "force_exit"
     EMERGENCY_EXIT = "emergency_exit"
     CUSTOM_EXIT = "custom_exit"

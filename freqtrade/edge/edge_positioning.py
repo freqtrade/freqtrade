@@ -470,7 +470,7 @@ class Edge:
                 if len(ohlc_columns) - 1 < exit_index:
                     break
 
-                exit_type = ExitType.SELL_SIGNAL
+                exit_type = ExitType.EXIT_SIGNAL
                 exit_price = ohlc_columns[exit_index, 0]
 
             trade = {'pair': pair,

@@ -145,7 +145,7 @@
                 "roi": "off",
                 "emergency_exit": "off",
                 "force_exit": "off",
-                "sell_signal": "off",
+                "exit_signal": "off",
                 "trailing_stop_loss": "off",
                 "stop_loss": "off",
                 "stoploss_on_exchange": "off",

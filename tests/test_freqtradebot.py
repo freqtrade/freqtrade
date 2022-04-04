@@ -2310,7 +2310,7 @@ def test_handle_trade_use_sell_signal(
     else:
         patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.SELL_SIGNAL",
+    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.EXIT_SIGNAL",
                    caplog)
 
 
@@ -3221,7 +3221,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_check=ExitCheckTuple(exit_type=ExitType.SELL_SIGNAL)
+        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)
     )
 
     # Sell price must be different to default bid price
@@ -3249,8 +3249,8 @@ def test_execute_trade_exit_custom_exit_price(
         'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.SELL_SIGNAL.value,
-        'exit_reason': ExitType.SELL_SIGNAL.value,
+        'sell_reason': ExitType.EXIT_SIGNAL.value,
+        'exit_reason': ExitType.EXIT_SIGNAL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3630,18 +3630,18 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
 
 @pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,exit_type,is_short', [
     # Enable profit
-    (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, False),
-    (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, True),
+    (True, 2.18, 2.2, False, True, ExitType.EXIT_SIGNAL.value, False),
+    (True, 2.18, 2.2, False, True, ExitType.EXIT_SIGNAL.value, True),
     # # Disable profit
-    (False, 3.19, 3.2, True,  False, ExitType.SELL_SIGNAL.value, False),
-    (False, 3.19, 3.2, True,  False, ExitType.SELL_SIGNAL.value, True),
+    (False, 3.19, 3.2, True,  False, ExitType.EXIT_SIGNAL.value, False),
+    (False, 3.19, 3.2, True,  False, ExitType.EXIT_SIGNAL.value, True),
     # # Enable loss
     # # * Shouldn't this be ExitType.STOP_LOSS.value
     (True, 0.21, 0.22, False, False, None, False),
     (True, 2.41, 2.42, False, False, None, True),
     # Disable loss
-    (False, 0.10, 0.22, True, False, ExitType.SELL_SIGNAL.value, False),
-    (False, 0.10, 0.22, True, False, ExitType.SELL_SIGNAL.value, True),
+    (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, False),
+    (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, True),
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
@@ -3669,7 +3669,7 @@ def test_sell_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    if exit_type == ExitType.SELL_SIGNAL.value:
+    if exit_type == ExitType.EXIT_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
         freqtrade.strategy.stop_loss_reached = MagicMock(return_value=ExitCheckTuple(

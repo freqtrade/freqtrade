@@ -308,7 +308,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_exit', 'emergency_exit']
+                           'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True, then the exit-order is placed on the exchange.
@@ -888,7 +888,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             pass
         elif self.use_sell_signal and not enter:
             if exit_:
-                exit_signal = ExitType.SELL_SIGNAL
+                exit_signal = ExitType.EXIT_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
@@ -904,7 +904,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.SELL_SIGNAL):
+            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.EXIT_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
