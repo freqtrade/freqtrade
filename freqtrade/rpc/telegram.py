@@ -284,7 +284,7 @@ class Telegram(RPCHandler):
                 f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']})")
         else:
             msg['profit_extra'] = ''
-        is_fill = msg['type'] == RPCMessageType.SELL_FILL
+        is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         message = (
             f"{msg['emoji']} *{msg['exchange']}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
@@ -302,7 +302,7 @@ class Telegram(RPCHandler):
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")
 
-        elif msg['type'] == RPCMessageType.SELL_FILL:
+        elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
 
         return message
@@ -312,7 +312,7 @@ class Telegram(RPCHandler):
                         RPCMessageType.SHORT_FILL]:
             message = self._format_buy_msg(msg)
 
-        elif msg_type in [RPCMessageType.SELL, RPCMessageType.SELL_FILL]:
+        elif msg_type in [RPCMessageType.SELL, RPCMessageType.EXIT_FILL]:
             message = self._format_sell_msg(msg)
 
         elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,

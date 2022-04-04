@@ -299,7 +299,7 @@ CONF_SCHEMA = {
                             }
                         },
                         'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_fill': {
+                        'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'

@@ -15,7 +15,7 @@ class RPCMessageType(Enum):
     SHORT_CANCEL = 'short_cancel'
 
     SELL = 'sell'
-    SELL_FILL = 'sell_fill'
+    EXIT_FILL = 'exit_fill'
     EXIT_CANCEL = 'exit_cancel'
 
     PROTECTION_TRIGGER = 'protection_trigger'

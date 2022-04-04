@@ -2028,11 +2028,11 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
                                          enter_signal, leverage) -> None:
 
-    default_conf['telegram']['notification_settings']['sell_fill'] = 'on'
+    default_conf['telegram']['notification_settings']['exit_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.SELL_FILL,
+        'type': RPCMessageType.EXIT_FILL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

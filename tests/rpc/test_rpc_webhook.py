@@ -282,7 +282,7 @@ def test_send_msg_webhook(default_conf, mocker):
     # Test Sell fill
     msg_mock.reset_mock()
     msg = {
-        'type': RPCMessageType.SELL_FILL,
+        'type': RPCMessageType.EXIT_FILL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",

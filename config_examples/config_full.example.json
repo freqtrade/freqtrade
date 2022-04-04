@@ -151,7 +151,7 @@
                 "stoploss_on_exchange": "off",
                 "custom_exit": "off"
             },
-            "sell_fill": "on",
+            "exit_fill": "on",
             "buy_cancel": "on",
             "exit_cancel": "on",
             "protection_trigger": "off",

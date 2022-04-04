@@ -1446,7 +1446,7 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': (RPCMessageType.SELL_FILL if fill
+            'type': (RPCMessageType.EXIT_FILL if fill
                      else RPCMessageType.SELL),
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
