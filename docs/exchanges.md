@@ -1,6 +1,6 @@
 # Exchange-specific Notes
 
-This page combines common gotchas and informations which are exchange-specific and most likely don't apply to other exchanges.
+This page combines common gotchas and Information which are exchange-specific and most likely don't apply to other exchanges.
 
 ## Exchange configuration
 
@@ -63,6 +63,25 @@ Binance supports [time_in_force](configuration.md#understand-order_time_in_force
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
 Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
+
+### Binance Futures' order pricing
+
+When trading on Binance Futures market, orderbook must be used because there is no price ticker data for futures.
+
+``` jsonc
+  "entry_pricing": {
+      "use_order_book": true,
+      "order_book_top": 1,
+      "check_depth_of_market": {
+          "enabled": false,
+          "bids_to_ask_delta": 1
+      }
+  },
+  "exit_pricing": {
+      "use_order_book": true,
+      "order_book_top": 1
+  },
+```
 
 ### Binance sites
 

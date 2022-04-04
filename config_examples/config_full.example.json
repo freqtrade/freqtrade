@@ -20,6 +20,8 @@
     "sell_profit_offset": 0.0,
     "ignore_roi_if_buy_signal": false,
     "ignore_buying_expired_candle_after": 300,
+    "trading_mode": "spot",
+    "margin_mode": "",
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -28,40 +30,41 @@
     },
     "stoploss": -0.10,
     "unfilledtimeout": {
-        "buy": 10,
-        "sell": 10,
+        "entry": 10,
+        "exit": 10,
         "exit_timeout_count": 0,
         "unit": "minutes"
     },
-    "bid_strategy": {
-        "price_side": "bid",
+    "entry_pricing": {
+        "price_side": "same",
         "use_order_book": true,
-        "ask_last_balance": 0.0,
         "order_book_top": 1,
+        "price_last_balance": 0.0,
         "check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy":{
-        "price_side": "ask",
+    "exit_pricing":{
+        "price_side": "same",
         "use_order_book": true,
-        "order_book_top": 1
+        "order_book_top": 1,
+        "price_last_balance": 0.0
     },
     "order_types": {
-        "buy": "limit",
-        "sell": "limit",
-        "emergencysell": "market",
-        "forcesell": "market",
-        "forcebuy": "market",
+        "entry": "limit",
+        "exit": "limit",
+        "emergencyexit": "market",
+        "forceexit": "market",
+        "forceentry": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60,
         "stoploss_on_exchange_limit_ratio": 0.99
     },
     "order_time_in_force": {
-        "buy": "gtc",
-        "sell": "gtc"
+        "entry": "gtc",
+        "exit": "gtc"
     },
     "pairlists": [
         {"method": "StaticPairList"},

@@ -1,9 +1,9 @@
 from enum import Enum
 
 
-class SellType(Enum):
+class ExitType(Enum):
     """
-    Enum to distinguish between sell reasons
+    Enum to distinguish between exit reasons
     """
     ROI = "roi"
     STOP_LOSS = "stop_loss"

@@ -99,27 +99,30 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> **Datatype:** Float
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `fee` | Fee used during backtesting / dry-runs. Should normally not be configured, which has freqtrade fall back to the exchange default fee. Set as ratio (e.g. 0.001 = 0.1%). Fee is applied twice for each trade, once when buying, once when selling. <br> **Datatype:** Float (as ratio)
-| `unfilledtimeout.buy` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
-| `unfilledtimeout.sell` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
+| `trading_mode` | Specifies if you want to trade regularly, trade with leverage, or trade contracts whose prices are derived from matching cryptocurrency prices. [leverage documentation](leverage.md). <br>*Defaults to `"spot"`.*  <br> **Datatype:** String
+| `margin_mode` | When trading with leverage, this determines if the collateral owned by the trader will be shared or isolated to each trading pair [leverage documentation](leverage.md). <br> **Datatype:** String
+| `liquidation_buffer` | A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price [leverage documentation](leverage.md). <br>*Defaults to `0.05`.*  <br> **Datatype:** Float
+| `unfilledtimeout.entry` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled entry order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
+| `unfilledtimeout.exit` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled exit order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.unit` | Unit to use in unfilledtimeout setting. Note: If you set unfilledtimeout.unit to "seconds", "internals.process_throttle_secs" must be inferior or equal to timeout [Strategy Override](#parameters-in-the-strategy). <br> *Defaults to `minutes`.* <br> **Datatype:** String
 | `unfilledtimeout.exit_timeout_count` | How many times can exit orders time out. Once this number of timeouts is reached, an emergency sell is triggered. 0 to disable and allow unlimited order cancels. [Strategy Override](#parameters-in-the-strategy).<br>*Defaults to `0`.* <br> **Datatype:** Integer
-| `bid_strategy.price_side` | Select the side of the spread the bot should look at to get the buy rate. [More information below](#buy-price-side).<br> *Defaults to `bid`.* <br> **Datatype:** String (either `ask` or `bid`).
-| `bid_strategy.ask_last_balance` | **Required.** Interpolate the bidding price. More information [below](#buy-price-without-orderbook-enabled).
-| `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> **Datatype:** Boolean
-| `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book "price_side" to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
-| `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
-| `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
-| `ask_strategy.price_side` | Select the side of the spread the bot should look at to get the sell rate. [More information below](#sell-price-side).<br> *Defaults to `ask`.* <br> **Datatype:** String (either `ask` or `bid`).
-| `ask_strategy.bid_last_balance` | Interpolate the selling price. More information [below](#sell-price-without-orderbook-enabled).
-| `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> **Datatype:** Boolean
-| `ask_strategy.order_book_top` | Bot will use the top N rate in Order Book "price_side" to sell. I.e. a value of 2 will allow the bot to pick the 2nd ask rate in [Order Book Asks](#sell-price-with-orderbook-enabled)<br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
+| `entry_pricing.price_side` | Select the side of the spread the bot should look at to get the entry rate. [More information below](#buy-price-side).<br> *Defaults to `same`.* <br> **Datatype:** String (either `ask`, `bid`, `same` or `other`).
+| `entry_pricing.price_last_balance` | **Required.** Interpolate the bidding price. More information [below](#entry-price-without-orderbook-enabled).
+| `entry_pricing.use_order_book` | Enable entering using the rates in [Order Book Entry](#entry-price-with-orderbook-enabled). <br> *Defaults to `True`.*<br> **Datatype:** Boolean
+| `entry_pricing.order_book_top` | Bot will use the top N rate in Order Book "price_side" to enter a trade. I.e. a value of 2 will allow the bot to pick the 2nd entry in [Order Book Entry](#entry-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
+| `entry_pricing. check_depth_of_market.enabled` | Do not enter if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `entry_pricing. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
+| `exit_pricing.price_side` | Select the side of the spread the bot should look at to get the exit rate. [More information below](#exit-price-side).<br> *Defaults to `same`.* <br> **Datatype:** String (either `ask`, `bid`, `same` or `other`).
+| `exit_pricing.price_last_balance` | Interpolate the exiting price. More information [below](#exit-price-without-orderbook-enabled).
+| `exit_pricing.use_order_book` | Enable exiting of open trades using [Order Book Exit](#exit-price-with-orderbook-enabled). <br> *Defaults to `True`.*<br> **Datatype:** Boolean
+| `exit_pricing.order_book_top` | Bot will use the top N rate in Order Book "price_side" to sell. I.e. a value of 2 will allow the bot to pick the 2nd ask rate in [Order Book Exit](#exit-price-with-orderbook-enabled)<br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
 | `use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `sell_profit_only` | Wait until the bot reaches `sell_profit_offset` before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `sell_profit_offset` | Sell-signal is only active above this value. Only active in combination with `sell_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
 | `ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
-| `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
-| `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `order_types` | Configure order-types depending on the action (`"entry"`, `"exit"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
+| `order_time_in_force` | Configure time in force for entry and exit orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `custom_price_max_distance_ratio` | Configure maximum distance ratio between current and custom entry or exit price. <br>*Defaults to `0.02` 2%).*<br> **Datatype:** Positive float
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> **Datatype:** Boolean
@@ -371,29 +374,28 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`entry`, `exit`, `stoploss`, `emergencyexit`, `forceexit`, `forceentry`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
-    
+
 `order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
 
-If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
-`stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
+If this is configured, the following 4 values (`entry`, `exit`, `stoploss` and `stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
 
-For information on (`emergencysell`,`forcesell`, `forcebuy`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
+For information on (`emergencyexit`,`forceexit`, `forceentry`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
 
 Syntax for Strategy:
 
 ```python
 order_types = {
-    "buy": "limit",
-    "sell": "limit",
-    "emergencysell": "market",
-    "forcebuy": "market",
-    "forcesell": "market",
+    "entry": "limit",
+    "exit": "limit",
+    "emergencyexit": "market",
+    "forceentry": "market",
+    "forceexit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60,
@@ -405,11 +407,11 @@ Configuration:
 
 ```json
 "order_types": {
-    "buy": "limit",
-    "sell": "limit",
-    "emergencysell": "market",
-    "forcebuy": "market",
-    "forcesell": "market",
+    "entry": "limit",
+    "exit": "limit",
+    "emergencyexit": "market",
+    "forceentry": "market",
+    "forceexit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -432,7 +434,7 @@ Configuration:
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
-    If stoploss on exchange creation fails for some reason, then an "emergency sell" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencysell` value in the `order_types` dictionary - however, this is not advised.
+    If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencyexit` value in the `order_types` dictionary - however, this is not advised.
 
 ### Understand order_time_in_force
 
@@ -462,8 +464,8 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 
 ``` python
 "order_time_in_force": {
-    "buy": "gtc",
-    "sell": "gtc"
+    "entry": "gtc",
+    "exit": "gtc"
 },
 ```
 
@@ -509,10 +511,10 @@ creating trades on the exchange.
 
 ```json
 "exchange": {
-        "name": "bittrex",
-        "key": "key",
-        "secret": "secret",
-        ...
+    "name": "bittrex",
+    "key": "key",
+    "secret": "secret",
+    ...
 }
 ```
 

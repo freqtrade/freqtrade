@@ -23,7 +23,8 @@ from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import FTBufferingHandler, _set_loggers, setup_logging, setup_logging_pre
-from tests.conftest import log_has, log_has_re, patched_configuration_load_config_file
+from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
+                            patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope="function")
@@ -403,7 +404,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -440,7 +441,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
         '--timeframe', '1m',
@@ -497,7 +498,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         '--timeframe', '1m',
         '--export', 'trades',
         '--strategy-list',
-        'StrategyTestV2',
+        CURRENT_TEST_STRATEGY,
         'TestStrategy'
     ]
 
@@ -797,8 +798,8 @@ def test_validate_max_open_trades(default_conf):
 
 def test_validate_price_side(default_conf):
     default_conf['order_types'] = {
-        "buy": "limit",
-        "sell": "limit",
+        "entry": "limit",
+        "exit": "limit",
         "stoploss": "limit",
         "stoploss_on_exchange": False,
     }
@@ -806,23 +807,23 @@ def test_validate_price_side(default_conf):
     validate_config_consistency(default_conf)
 
     conf = deepcopy(default_conf)
-    conf['order_types']['buy'] = 'market'
+    conf['order_types']['entry'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market buy orders require bid_strategy.price_side = "ask".'):
+                       match='Market entry orders require entry_pricing.price_side = "other".'):
         validate_config_consistency(conf)
 
     conf = deepcopy(default_conf)
-    conf['order_types']['sell'] = 'market'
+    conf['order_types']['exit'] = 'market'
     with pytest.raises(OperationalException,
-                       match='Market sell orders require ask_strategy.price_side = "bid".'):
+                       match='Market exit orders require exit_pricing.price_side = "other".'):
         validate_config_consistency(conf)
 
     # Validate inversed case
     conf = deepcopy(default_conf)
-    conf['order_types']['sell'] = 'market'
-    conf['order_types']['buy'] = 'market'
-    conf['ask_strategy']['price_side'] = 'bid'
-    conf['bid_strategy']['price_side'] = 'ask'
+    conf['order_types']['exit'] = 'market'
+    conf['order_types']['entry'] = 'market'
+    conf['exit_pricing']['price_side'] = 'bid'
+    conf['entry_pricing']['price_side'] = 'ask'
 
     validate_config_consistency(conf)
 
@@ -925,18 +926,138 @@ def test_validate_protections(default_conf, protconf, expected):
 
 def test_validate_ask_orderbook(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
-    conf['ask_strategy']['use_order_book'] = True
-    conf['ask_strategy']['order_book_min'] = 2
-    conf['ask_strategy']['order_book_max'] = 2
+    conf['exit_pricing']['use_order_book'] = True
+    conf['exit_pricing']['order_book_min'] = 2
+    conf['exit_pricing']['order_book_max'] = 2
 
     validate_config_consistency(conf)
     assert log_has_re(r"DEPRECATED: Please use `order_book_top` instead of.*", caplog)
-    assert conf['ask_strategy']['order_book_top'] == 2
+    assert conf['exit_pricing']['order_book_top'] == 2
 
-    conf['ask_strategy']['order_book_max'] = 5
+    conf['exit_pricing']['order_book_max'] = 5
 
     with pytest.raises(OperationalException,
-                       match=r"Using order_book_max != order_book_min in ask_strategy.*"):
+                       match=r"Using order_book_max != order_book_min in exit_pricing.*"):
+        validate_config_consistency(conf)
+
+
+def test_validate_time_in_force(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['order_time_in_force'] = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for time_in_force is.*", caplog)
+    assert conf['order_time_in_force']['entry'] == 'gtc'
+    assert conf['order_time_in_force']['exit'] == 'gtc'
+
+    conf = deepcopy(default_conf)
+    conf['order_time_in_force'] = {
+        'buy': 'gtc',
+        'sell': 'gtc',
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your time_in_force settings .* 'entry' and 'exit'\."):
+        validate_config_consistency(conf)
+
+
+def test__validate_order_types(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for order_types is.*", caplog)
+    assert conf['order_types']['entry'] == 'limit'
+    assert conf['order_types']['exit'] == 'market'
+    assert conf['order_types']['forceentry'] == 'limit'
+    assert 'buy' not in conf['order_types']
+    assert 'sell' not in conf['order_types']
+    assert 'forcebuy' not in conf['order_types']
+    assert 'forcesell' not in conf['order_types']
+
+    conf = deepcopy(default_conf)
+    conf['order_types'] = {
+        'buy': 'limit',
+        'sell': 'market',
+        'forcesell': 'market',
+        'forcebuy': 'limit',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False,
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"Please migrate your order_types settings to use the new wording\."):
+        validate_config_consistency(conf)
+
+
+def test__validate_unfilledtimeout(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['unfilledtimeout'] = {
+        'buy': 30,
+        'sell': 35,
+    }
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for unfilledtimeout is.*", caplog)
+    assert conf['unfilledtimeout']['entry'] == 30
+    assert conf['unfilledtimeout']['exit'] == 35
+    assert 'buy' not in conf['unfilledtimeout']
+    assert 'sell' not in conf['unfilledtimeout']
+
+    conf = deepcopy(default_conf)
+    conf['unfilledtimeout'] = {
+        'buy': 30,
+        'sell': 35,
+    }
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(
+            OperationalException,
+            match=r"Please migrate your unfilledtimeout settings to use the new wording\."):
+        validate_config_consistency(conf)
+
+
+def test__validate_pricing_rules(default_conf, caplog) -> None:
+    def_conf = deepcopy(default_conf)
+    del def_conf['entry_pricing']
+    del def_conf['exit_pricing']
+
+    def_conf['ask_strategy'] = {
+        'price_side': 'ask',
+        'use_order_book': True,
+        'bid_last_balance': 0.5
+    }
+    def_conf['bid_strategy'] = {
+        'price_side': 'bid',
+        'use_order_book': False,
+        'ask_last_balance': 0.7
+    }
+    conf = deepcopy(def_conf)
+
+    validate_config_consistency(conf)
+    assert log_has_re(
+        r"DEPRECATED: Using 'ask_strategy' and 'bid_strategy' is.*", caplog)
+    assert conf['exit_pricing']['price_side'] == 'ask'
+    assert conf['exit_pricing']['use_order_book'] is True
+    assert conf['exit_pricing']['price_last_balance'] == 0.5
+    assert conf['entry_pricing']['price_side'] == 'bid'
+    assert conf['entry_pricing']['use_order_book'] is False
+    assert conf['entry_pricing']['price_last_balance'] == 0.7
+    assert 'ask_strategy' not in conf
+    assert 'bid_strategy' not in conf
+
+    conf = deepcopy(def_conf)
+
+    conf['trading_mode'] = 'futures'
+    with pytest.raises(
+            OperationalException,
+            match=r"Please migrate your pricing settings to use the new wording\."):
         validate_config_consistency(conf)
 
 
@@ -1257,11 +1378,14 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # The value of the new setting shall have been set to the
     # value of the deprecated one
     assert default_conf['sectionA']['new_setting'] == 'valB'
+    # Old setting is removed
+    assert 'deprecated_setting' not in default_conf['sectionB']
 
     caplog.clear()
 
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
+    default_conf['sectionB']['deprecated_setting'] = 'valB'
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')
@@ -1275,7 +1399,7 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Assign new setting
     default_conf['sectionA']['new_setting'] = 'valA'
     # Delete deprecated setting
-    del default_conf['sectionB']['deprecated_setting']
+    default_conf['sectionB'].pop('deprecated_setting', None)
     process_deprecated_setting(default_conf,
                                'sectionB', 'deprecated_setting',
                                'sectionA', 'new_setting')
@@ -1348,15 +1472,15 @@ def test_flat_vars_to_nested_dict(caplog):
         'FREQTRADE__EXCHANGE__SOME_SETTING': 'true',
         'FREQTRADE__EXCHANGE__SOME_FALSE_SETTING': 'false',
         'FREQTRADE__EXCHANGE__CONFIG__whatever': 'sometime',
-        'FREQTRADE__ASK_STRATEGY__PRICE_SIDE': 'bid',
-        'FREQTRADE__ASK_STRATEGY__cccc': '500',
+        'FREQTRADE__EXIT_PRICING__PRICE_SIDE': 'bid',
+        'FREQTRADE__EXIT_PRICING__cccc': '500',
         'FREQTRADE__STAKE_AMOUNT': '200.05',
         'FREQTRADE__TELEGRAM__CHAT_ID': '2151',
         'NOT_RELEVANT': '200.0',  # Will be ignored
     }
     expected = {
         'stake_amount': 200.05,
-        'ask_strategy': {
+        'exit_pricing': {
             'price_side': 'bid',
             'cccc': 500,
         },
