@@ -633,8 +633,6 @@ class LocalTrade():
                        self.amount, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)
             else:
-                logger.info((self.amount, self.to_json(), order.to_json(
-                    self.enter_side), order.safe_amount_after_fee))
                 self.process_exit_sub_trade(order)
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
@@ -663,7 +661,7 @@ class LocalTrade():
                 self
             )
         self.close_profit_abs = profit
-        if self.short:
+        if self.is_short:
             self.close_profit = (exit_stake_amount - profit) / exit_stake_amount - 1
         else:
             self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
