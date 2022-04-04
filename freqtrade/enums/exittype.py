@@ -11,7 +11,7 @@ class ExitType(Enum):
     TRAILING_STOP_LOSS = "trailing_stop_loss"
     SELL_SIGNAL = "sell_signal"
     FORCE_EXIT = "force_exit"
-    EMERGENCY_SELL = "emergency_sell"
+    EMERGENCY_EXIT = "emergency_exit"
     CUSTOM_SELL = "custom_sell"
     NONE = ""
 
