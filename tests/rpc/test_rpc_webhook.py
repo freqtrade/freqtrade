@@ -36,17 +36,17 @@ def get_webhook_dict() -> dict:
             "value4": "leverage {leverage:.1f}",
             "value5": "direction {direction}"
         },
-        "webhooksell": {
+        "webhookexit": {
             "value1": "Selling {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellcancel": {
+        "webhookexitcancel": {
             "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellfill": {
+        "webhookexitfill": {
             "value1": "Sell Order for {pair} filled",
             "value2": "at {close_rate:8f}",
             "value3": ""
@@ -249,11 +249,11 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhooksell"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookexit"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhooksell"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookexit"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhooksell"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookexit"]["value3"].format(**msg))
     # Test sell cancel
     msg_mock.reset_mock()
     msg = {
@@ -299,11 +299,11 @@ def test_send_msg_webhook(default_conf, mocker):
     webhook.send_msg(msg=msg)
     assert msg_mock.call_count == 1
     assert (msg_mock.call_args[0][0]["value1"] ==
-            default_conf["webhook"]["webhooksellfill"]["value1"].format(**msg))
+            default_conf["webhook"]["webhookexitfill"]["value1"].format(**msg))
     assert (msg_mock.call_args[0][0]["value2"] ==
-            default_conf["webhook"]["webhooksellfill"]["value2"].format(**msg))
+            default_conf["webhook"]["webhookexitfill"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
-            default_conf["webhook"]["webhooksellfill"]["value3"].format(**msg))
+            default_conf["webhook"]["webhookexitfill"]["value3"].format(**msg))
 
     for msgtype in [RPCMessageType.STATUS,
                     RPCMessageType.WARNING,

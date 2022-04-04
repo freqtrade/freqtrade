@@ -43,23 +43,25 @@ class Webhook(RPCHandler):
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
         try:
-
+            whconfig = self._config['webhook']
+            # DEPRECATED: Sell terminology
             if msg['type'] in [RPCMessageType.BUY, RPCMessageType.SHORT]:
-                valuedict = self._config['webhook'].get('webhookbuy', None)
+                valuedict = whconfig.get('webhookbuy', None)
             elif msg['type'] in [RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL]:
-                valuedict = self._config['webhook'].get('webhookbuycancel', None)
+                valuedict = whconfig.get('webhookbuycancel', None)
             elif msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]:
-                valuedict = self._config['webhook'].get('webhookbuyfill', None)
+                valuedict = whconfig.get('webhookbuyfill', None)
             elif msg['type'] == RPCMessageType.SELL:
-                valuedict = self._config['webhook'].get('webhooksell', None)
+                valuedict = whconfig.get('webhookexit', whconfig.get('webhooksell', None))
             elif msg['type'] == RPCMessageType.SELL_FILL:
-                valuedict = self._config['webhook'].get('webhooksellfill', None)
+                valuedict = whconfig.get('webhookexitfill', whconfig.get('webhookexitfill', None))
             elif msg['type'] == RPCMessageType.SELL_CANCEL:
-                valuedict = self._config['webhook'].get('webhooksellcancel', None)
+                valuedict = whconfig.get('webhookexitcancel',
+                                         whconfig.get('webhooksellcancel', None))
             elif msg['type'] in (RPCMessageType.STATUS,
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):
-                valuedict = self._config['webhook'].get('webhookstatus', None)
+                valuedict = whconfig.get('webhookstatus', None)
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:

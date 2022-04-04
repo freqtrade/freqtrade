@@ -25,18 +25,18 @@ Sample configuration (tested using IFTTT).
             "value2": "at {open_rate:8f}",
             "value3": ""
         },
-        "webhooksell": {
-            "value1": "Selling {pair}",
+        "webhookexit": {
+            "value1": "Exiting {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellcancel": {
-            "value1": "Cancelling Open Sell Order for {pair}",
+        "webhookexitcancel": {
+            "value1": "Cancelling Open Exit Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellfill": {
-            "value1": "Sell Order for {pair} filled",
+        "webhookexitfill": {
+            "value1": "Exit Order for {pair} filled",
             "value2": "at {close_rate:8f}.",
             "value3": ""
         },
@@ -160,8 +160,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhooksell
-The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
+### Webhookexit
+
+The fields in `webhook.webhookexit` are filled when the bot exits a trade. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -183,9 +184,9 @@ Possible parameters are:
 * `open_date`
 * `close_date`
 
-### Webhooksellfill
+### Webhookexitfill
 
-The fields in `webhook.webhooksellfill` are filled when the bot fills a sell order (closes a Trae). Parameters are filled using string.format.
+The fields in `webhook.webhookexitfill` are filled when the bot fills a exit order (closes a Trade). Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -208,9 +209,9 @@ Possible parameters are:
 * `open_date`
 * `close_date`
 
-### Webhooksellcancel
+### Webhookexitcancel
 
-The fields in `webhook.webhooksellcancel` are filled when the bot cancels a sell order. Parameters are filled using string.format.
+The fields in `webhook.webhookexitcancel` are filled when the bot cancels a exit order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`

@@ -57,7 +57,14 @@ While we may drop support for the current interface sometime in the future, we w
 
 Please follow the [Strategy migration](strategy_migration.md) guide to migrate your strategy to the new format to start using the new functionalities.
 
-### webhooks - `buy_tag` has been renamed to `enter_tag`
+### webhooks - changes with 2022.4
+
+#### `buy_tag` has been renamed to `enter_tag`
 
 This should apply only to your strategy and potentially to webhooks.
 We will keep a compatibility layer for 1-2 versions (so both `buy_tag` and `enter_tag` will still work), but support for this in webhooks will disappear after that.
+
+#### Naming changes
+
+All "sell" occurances in webhook context have been replaced with "exit" configurations.
+As a result `webhooksell` became `webhookexit`, `webhooksellfill` became `webhookexitfill` and `webhooksellcancel` became `webhookexitcancel`
