@@ -291,7 +291,7 @@ CONF_SCHEMA = {
                                      'enum': TELEGRAM_SETTING_OPTIONS,
                                      'default': 'off'
                                      },
-                        'sell': {
+                        'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {
                                 'type': 'string',

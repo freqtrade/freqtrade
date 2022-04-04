@@ -141,7 +141,7 @@
             "startup": "on",
             "buy": "on",
             "buy_fill": "on",
-            "sell": {
+            "exit": {
                 "roi": "off",
                 "emergency_exit": "off",
                 "force_exit": "off",

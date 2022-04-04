@@ -1447,7 +1447,7 @@ class FreqtradeBot(LoggingMixin):
 
         msg = {
             'type': (RPCMessageType.EXIT_FILL if fill
-                     else RPCMessageType.SELL),
+                     else RPCMessageType.EXIT),
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,

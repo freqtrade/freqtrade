@@ -51,6 +51,10 @@ You can use the quick summary as checklist. Please refer to the detailed section
     * `webhooksell` -> `webhookexit`
     * `webhooksellfill` -> `webhookexitfill`
     * `webhooksellcancel` -> `webhookexitcancel`
+  * Telegram notification settings
+    * `sell` -> `exit`
+    * `sell_fill` -> `exit_fill`
+    * `sell_cancel` -> `exit_cancel`
 
 
 

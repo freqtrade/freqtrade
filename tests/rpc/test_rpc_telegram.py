@@ -1040,7 +1040,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1109,7 +1109,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1168,7 +1168,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     assert msg_mock.call_count == 8
     msg = msg_mock.call_args_list[0][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1918,7 +1918,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1954,7 +1954,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -2155,7 +2155,7 @@ def test_send_msg_sell_notification_no_fiat(
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

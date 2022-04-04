@@ -3091,7 +3091,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'trade_id': 1,
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
@@ -3150,7 +3150,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
@@ -3232,7 +3232,7 @@ def test_execute_trade_exit_custom_exit_price(
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'trade_id': 1,
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'direction': 'Short' if trade.is_short else 'Long',
@@ -3299,7 +3299,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
@@ -3490,12 +3490,12 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     if is_short:
         assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.SHORT
         assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.SHORT_FILL
-        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT
 
     else:
         assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
         assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
-        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT
 
 
 @pytest.mark.parametrize(
@@ -3563,7 +3563,7 @@ def test_execute_trade_exit_market_order(
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',

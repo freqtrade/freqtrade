@@ -298,7 +298,7 @@ class Telegram(RPCHandler):
             f"*Amount:* `{msg['amount']:.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
-        if msg['type'] == RPCMessageType.SELL:
+        if msg['type'] == RPCMessageType.EXIT:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")
 
@@ -312,7 +312,7 @@ class Telegram(RPCHandler):
                         RPCMessageType.SHORT_FILL]:
             message = self._format_buy_msg(msg)
 
-        elif msg_type in [RPCMessageType.SELL, RPCMessageType.EXIT_FILL]:
+        elif msg_type in [RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]:
             message = self._format_sell_msg(msg)
 
         elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,
@@ -355,7 +355,7 @@ class Telegram(RPCHandler):
 
         msg_type = msg['type']
         noti = ''
-        if msg_type == RPCMessageType.SELL:
+        if msg_type == RPCMessageType.EXIT:
             sell_noti = self._config['telegram'] \
                 .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still can be string
