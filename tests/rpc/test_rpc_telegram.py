@@ -1581,7 +1581,7 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     default_conf['pairlists'] = [{'method': 'VolumePairList',
-                                 'number_assets': 4
+                                  'number_assets': 4
                                   }]
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -2057,7 +2057,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'enter_tag': 'buy_signal1',
-        'exit_reason': SellType.STOP_LOSS.value,
+        'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
@@ -2072,7 +2072,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Current Rate:* `0.00003201`\n'
             '*Close Rate:* `0.00003201`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
-    )
+            )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -2144,7 +2144,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance:* Exited KEY/ETH (#1)\n'
-        '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\`\n'
+        '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
         f"*Direction:* `{direction}`\n"

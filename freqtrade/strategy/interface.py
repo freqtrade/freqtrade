@@ -969,7 +969,12 @@ class IStrategy(ABC, HyperStrategyMixin):
             # Make sure current_profit is calculated using high for backtesting.
             bound = low if trade.is_short else high
             bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
-
+            from pprint import pformat
+            logger.info(pformat(trade.to_json()))
+            logger.info((self.trailing_only_offset_is_reached,
+                         self.trailing_stop_positive, bound_profit, sl_offset))
+            logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
+                         f"offset: {sl_offset:.4g} profit: {current_profit:.2%}")
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and bound_profit < sl_offset):
                 # Specific handling for trailing_stop_positive

@@ -2442,7 +2442,7 @@ def test_get_exit_rate_orderbook_exception(default_conf, mocker, caplog):
     with pytest.raises(PricingError):
         exchange.get_rate(pair, refresh=True, side="exit", is_short=False)
     assert log_has_re(rf"{pair} - Exit Price at location 1 from orderbook "
-        rf"could not be determined\..*",
+                      rf"could not be determined\..*",
                       caplog)
 
 
@@ -2469,7 +2469,7 @@ def test_get_exit_rate_exception(default_conf, mocker, is_short):
     assert exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short) == 0.13
 
 
-@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_buy_rate_data)
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_entry_rate_data)
 @pytest.mark.parametrize("side2", ['bid', 'ask'])
 @pytest.mark.parametrize("use_order_book", [True, False])
 def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
@@ -2477,26 +2477,26 @@ def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
                                side2, use_order_book, order_book_l2) -> None:
     caplog.set_level(logging.DEBUG)
     if last_ab is None:
-        del default_conf['bid_strategy']['ask_last_balance']
+        del default_conf['entry_pricing']['price_last_balance']
     else:
-        default_conf['bid_strategy']['ask_last_balance'] = last_ab
-    default_conf['bid_strategy']['price_side'] = side
-    default_conf['ask_strategy']['price_side'] = side2
-    default_conf['ask_strategy']['use_order_book'] = use_order_book
+        default_conf['entry_pricing']['price_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side2
+    default_conf['exit_pricing']['use_order_book'] = use_order_book
     api_mock = MagicMock()
     api_mock.fetch_l2_order_book = order_book_l2
     api_mock.fetch_ticker = MagicMock(
         return_value={'ask': ask, 'last': last, 'bid': bid})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
-    assert exchange.get_rates('ETH/BTC', refresh=True)[0] == expected
+    assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
-    assert exchange.get_rates('ETH/BTC', refresh=False)[0] == expected
+    assert exchange.get_rates('ETH/BTC', refresh=False, is_short=False)[0] == expected
     assert log_has("Using cached buy rate for ETH/BTC.", caplog)
     # Running a 2nd time with Refresh on!
     caplog.clear()
-    assert exchange.get_rates('ETH/BTC', refresh=True)[0] == expected
+    assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
     api_mock.fetch_l2_order_book.call_count = int(use_order_book)
@@ -2511,27 +2511,27 @@ def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
                                 side2, use_order_book, order_book_l2) -> None:
     caplog.set_level(logging.DEBUG)
 
-    default_conf['ask_strategy']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side
     if last_ab is not None:
-        default_conf['ask_strategy']['bid_last_balance'] = last_ab
+        default_conf['exit_pricing']['price_last_balance'] = last_ab
 
-    default_conf['bid_strategy']['price_side'] = side2
-    default_conf['bid_strategy']['use_order_book'] = use_order_book
+    default_conf['entry_pricing']['price_side'] = side2
+    default_conf['entry_pricing']['use_order_book'] = use_order_book
     api_mock = MagicMock()
     api_mock.fetch_l2_order_book = order_book_l2
     api_mock.fetch_ticker = MagicMock(
-                 return_value={'ask': ask, 'last': last, 'bid': bid})
+                return_value={'ask': ask, 'last': last, 'bid': bid})
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
     pair = "ETH/BTC"
 
     # Test regular mode
-    rate = exchange.get_rates(pair, refresh=True)[1]
+    rate = exchange.get_rates(pair, refresh=True, is_short=False)[1]
     assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_rates(pair, refresh=False)[1]
+    rate = exchange.get_rates(pair, refresh=False, is_short=False)[1]
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 

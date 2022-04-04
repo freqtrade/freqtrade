@@ -478,7 +478,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    trade.open_order_id = 'mocked_limit_buy_usdt'
+    trade.open_order_id = enter_order['id']
     oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', enter_side)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
@@ -492,7 +492,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
                       caplog)
 
     caplog.clear()
-    trade.open_order_id = 'mocked_limit_sell_usdt'
+    trade.open_order_id = enter_order['id']
     time_machine.move_to("2022-03-31 21:45:05 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
     trade.update_trade(oobj)
@@ -2542,7 +2542,6 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_entries == 2
-
 
     # Check with 1 order
     order_noavg = Order(

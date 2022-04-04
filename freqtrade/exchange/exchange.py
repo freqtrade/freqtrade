@@ -1428,8 +1428,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_rate(self, pair: str, refresh: bool,
-                 side: Literal['entry', 'exit'], is_short: bool, order_book: Optional[dict] = None, ticker: Optional[dict] = Non) -> float:
+    def get_rate(self, pair: str, refresh: bool,  # noqa: max-complexity: 13
+                 side: Literal['entry', 'exit'], is_short: bool,
+                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1533,7 +1534,8 @@ class Exchange:
             if not entry_rate:
                 entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
         if not exit_rate:
-            exit_rate = self.get_rate(pair, refresh, 'exit', order_book=order_book, ticker=ticker)
+            exit_rate = self.get_rate(pair, refresh, 'exit',
+                                      is_short, order_book=order_book, ticker=ticker)
         return entry_rate, exit_rate
 
     # Fee handling

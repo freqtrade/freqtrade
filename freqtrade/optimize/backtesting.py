@@ -480,10 +480,11 @@ class Backtesting:
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
-            current_profit=current_profit, min_stake=min_stake, max_stake=min(max_stake, stake_available),
+            current_profit=current_profit, min_stake=min_stake,
+            max_stake=min(max_stake, stake_available),
             current_entry_rate=current_rate, current_exit_rate=current_rate,
-max_entry_stake=min(max_stake, stake_available),
-max_exit_stake=min(max_stake, stake_available))
+            max_entry_stake=min(max_stake, stake_available),
+            max_exit_stake=min(max_stake, stake_available))
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
@@ -586,7 +587,7 @@ max_exit_stake=min(max_stake, stake_available))
                     close_rate: float, amount: float = None) -> Optional[LocalTrade]:
         self.order_id_counter += 1
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
-        order_type = self.strategy.order_types['sell']
+        order_type = self.strategy.order_types['exit']
         amount = amount or trade.amount
         order = Order(
             id=self.order_id_counter,
@@ -905,7 +906,7 @@ max_exit_stake=min(max_stake, stake_available))
             return None
         return row
 
-    def backtest(self, processed: Dict,
+    def backtest(self, processed: Dict,  # noqa: max-complexity: 13
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
                  enable_protections: bool = False) -> Dict[str, Any]:
@@ -1007,7 +1008,7 @@ max_exit_stake=min(max_stake, stake_available))
                         sub_trade = order.safe_amount_after_fee != trade.amount
                         if sub_trade:
                             order.close_bt_order(current_time)
-                            trade.process_sell_sub_trade(order)
+                            trade.process_exit_sub_trade(order)
                             trade.recalc_trade_from_orders()
                         else:
                             trade.close_date = current_time

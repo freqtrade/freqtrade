@@ -459,7 +459,6 @@ class FreqtradeBot(LoggingMixin):
 
         if signal:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
-
             bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
@@ -505,7 +504,8 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        current_entry_rate, current_exit_rate = self.exchange.get_rates(trade.pair, True, is_short)
+        current_entry_rate, current_exit_rate = self.exchange.get_rates(
+            trade.pair, True, trade.is_short)
 
         current_entry_profit = trade.calc_profit_ratio(current_entry_rate)
         current_exit_profit = trade.calc_profit_ratio(current_exit_rate)
@@ -528,7 +528,8 @@ class FreqtradeBot(LoggingMixin):
             current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate,
             current_entry_profit=current_entry_profit, current_exit_profit=current_exit_profit,
             min_entry_stake=min_entry_stake, min_exit_stake=min_exit_stake,
-max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_exit_stake, stake_available),
+            max_entry_stake=min(max_entry_stake, stake_available),
+            max_exit_stake=min(max_exit_stake, stake_available)
         )
 
         if stake_amount is not None and stake_amount > 0.0:
@@ -540,7 +541,8 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
                     return
                 else:
                     logger.debug("Max adjustment entries is set to unlimited.")
-            self.execute_entry(trade.pair, stake_amount, current_entry_rate, trade=trade, is_short=trade.is_short)
+            self.execute_entry(trade.pair, stake_amount, current_entry_rate,
+                               trade=trade, is_short=trade.is_short)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -553,8 +555,8 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
                 logger.info(
                     f"Adjusting amount to trade.amount as it is higher. {amount} > {trade.amount}")
                 amount = trade.amount
-            self.execute_trade_exit(trade, current_exit_rate, sell_reason=SellCheckTuple(
-                sell_type=SellType.CUSTOM_SELL), sub_trade_amt=amount)
+            self.execute_trade_exit(trade, current_exit_rate, exit_check=ExitCheckTuple(
+                exit_type=ExitType.PARTIAL_SELL), sub_trade_amt=amount)
 
     def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
         """
@@ -628,7 +630,6 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
 
         amount = (stake_amount / enter_limit_requested) * leverage
         order_type = ordertype or self.strategy.order_types['entry']
-
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
@@ -648,7 +649,7 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
         )
         order_obj = Order.parse_from_ccxt_object(order, pair, side)
         order_id = order['id']
-        order_status = order.get('status', None)
+        order_status = order.get('status')
         logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
 
         # we assume the order is executed at the price requested
@@ -744,8 +745,8 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
             else:
                 logger.info(f"DCA order {order_status}, will wait for resolution: {trade}")
 
-        # Update fees if order is closed
-        if order_status == 'closed':
+        # Update fees if order is non-opened
+        if order_status in constants.NON_OPEN_EXCHANGE_STATES:
             self.update_trade_state(trade, order_id, order)
 
         return True
@@ -1384,7 +1385,7 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
         if (self.config['dry_run'] and exit_type == 'stoploss'
-           and self.strategy.order_types['stoploss_on_exchange']):
+                and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available
@@ -1471,7 +1472,7 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
             profit_rate = order.safe_price
 
             if not fill:
-                trade.process_sell_sub_trade(order, is_closed=False)
+                trade.process_exit_sub_trade(order, is_closed=False)
 
             profit_ratio = trade.close_profit
             profit = trade.close_profit_abs
@@ -1637,12 +1638,12 @@ max_entry_stake=min(max_entry_stake, stake_available), max_exit_stake=min(max_ex
             # Updating wallets when order is closed
             self.wallets.update()
 
+        sub_trade = not isclose(order_obj.safe_amount_after_fee,
+                                trade.amount, abs_tol=constants.MATH_CLOSE_PREC)
         if not trade.is_open:
-            self.handle_protections(trade.pair)
-        sub_trade = order_obj.safe_amount_after_fee != trade.amount
-        if order.get('side', None) == 'sell':
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order_obj)
+            self.handle_protections(trade.pair)
         elif send_msg and not trade.open_order_id:
             # Enter fill
             self._notify_enter(trade, order_obj, fill=True, sub_trade=sub_trade)
