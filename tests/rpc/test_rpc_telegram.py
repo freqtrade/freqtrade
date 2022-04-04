@@ -1937,15 +1937,14 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.BUY_FILL,
+        'type': message_type,
         'trade_id': 1,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': enter_signal,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
+        'leverage': leverage,
         'stake_amount': 0.01465333,
         'sub_trade': True,
-
-
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
@@ -1954,9 +1953,10 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
     })
 
     assert msg_mock.call_args[0][0] \
-        == '\N{CHECK MARK} *Binance:* Bought ETH/BTC (#1)\n' \
-           '*Buy Tag:* `buy_signal_01`\n' \
+        == f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n' \
+           f'*Enter Tag:* `{enter_signal}`\n' \
            '*Amount:* `1333.33333333`\n' \
+           f"{leverage_text}" \
            '*Open Rate:* `0.00001099`\n' \
            '*Total:* `(0.01465333 BTC, 180.895 USD)`\n' \
            '*Balance:* `(0.01465333 BTC, 180.895 USD)`'
@@ -2029,10 +2029,11 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'sub_trade': True
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+        == ('\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
             '*Unrealized Cumulative Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Buy Tag:* `buy_signal1`\n'
-            '*Sell Reason:* `stop_loss`\n'
+            '*Enter Tag:* `buy_signal1`\n'
+            '*Exit Reason:* `stop_loss`\n'
+            '*Direction:* `Long`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -2152,7 +2153,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Close Rate:* `0.00003201`\n'
-        '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
     )
 
 
@@ -2277,7 +2278,7 @@ def test_send_msg_sell_notification_no_fiat(
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
         '*Close Rate:* `0.00003201`\n'
-        '*Duration:* `2:35:03 (155.1 min)`\n'
+        '*Duration:* `2:35:03 (155.1 min)`'
     )
 
 
