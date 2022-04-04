@@ -651,7 +651,9 @@ class LocalTrade():
         exit_amount = order.safe_amount_after_fee
         exit_rate = order.safe_price
         exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
-        profit = self.calc_profit2(self.open_rate, exit_rate, exit_amount)
+        profit = self.calc_profit2(self.open_rate, exit_rate, exit_amount) * int(self.leverage)
+        if self.is_short:
+            profit *= -1
         if is_closed:
             self.amount -= exit_amount
             self.stake_amount = self.open_rate * self.amount
@@ -660,9 +662,12 @@ class LocalTrade():
                 'Processed exit sub trade for %s',
                 self
             )
-
         self.close_profit_abs = profit
-        self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
+        if self.short:
+            self.close_profit = (exit_stake_amount - profit) / exit_stake_amount - 1
+        else:
+            self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
+
         self.recalc_open_trade_value()
 
     def calc_profit2(self, open_rate: float, close_rate: float,
