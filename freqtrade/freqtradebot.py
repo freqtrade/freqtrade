@@ -760,7 +760,9 @@ class FreqtradeBot(LoggingMixin):
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=proposed_enter_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_enter_rate, entry_tag=entry_tag)
+                proposed_rate=proposed_enter_rate, entry_tag=entry_tag,
+                side=trade_side,
+            )
 
             enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
 

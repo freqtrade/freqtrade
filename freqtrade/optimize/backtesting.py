@@ -643,7 +643,9 @@ class Backtesting:
             propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                  default_retval=propose_rate)(
                 pair=pair, current_time=current_time,
-                proposed_rate=propose_rate, entry_tag=entry_tag)  # default value is the open rate
+                proposed_rate=propose_rate, entry_tag=entry_tag,
+                side=direction,
+            )  # default value is the open rate
             # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
             # which freqtrade does not support in live.
             if direction == "short":

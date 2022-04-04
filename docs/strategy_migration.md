@@ -18,6 +18,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
   * New `side` argument to callbacks without trade object
     * [`custom_stake_amount`](#custom-stake-amount)
     * [`confirm_trade_entry`](#confirm_trade_entry)
+    * [`custom_entry_price`](#custom_entry_price)
   * [Changed argument name in `confirm_trade_exit`](#confirm_trade_exit)
 * Dataframe columns:
   * [`buy` -> `enter_long`](#populate_buy_trend)
@@ -225,6 +226,26 @@ class AwesomeStrategy(IStrategy):
                            rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
     return True
+```
+
+### `custom_entry_price`
+
+New string argument `side` - which can be either `"long"` or `"short"`.
+
+``` python hl_lines="3"
+class AwesomeStrategy(IStrategy):
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           entry_tag: Optional[str], **kwargs) -> float:
+      return proposed_rate
+```
+
+After:
+
+``` python hl_lines="3"
+class AwesomeStrategy(IStrategy):
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+      return proposed_rate
 ```
 
 ### Adjust trade position changes
