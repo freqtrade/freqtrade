@@ -14,7 +14,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, LongShort
 from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
@@ -635,7 +635,7 @@ class Backtesting:
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
-        direction: str, current_time: datetime, entry_tag: Optional[str],
+        direction: LongShort, current_time: datetime, entry_tag: Optional[str],
         trade: Optional[LocalTrade], order_type: str
     ) -> Tuple[float, float, float, float]:
 
@@ -696,7 +696,7 @@ class Backtesting:
 
         return propose_rate, stake_amount_val, leverage, min_stake_amount
 
-    def _enter_trade(self, pair: str, row: Tuple, direction: str,
+    def _enter_trade(self, pair: str, row: Tuple, direction: LongShort,
                      stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
 
@@ -829,7 +829,7 @@ class Backtesting:
         self.rejected_trades += 1
         return False
 
-    def check_for_trade_entry(self, row) -> Optional[str]:
+    def check_for_trade_entry(self, row) -> Optional[LongShort]:
         enter_long = row[LONG_IDX] == 1
         exit_long = row[ELONG_IDX] == 1
         enter_short = self._can_short and row[SHORT_IDX] == 1

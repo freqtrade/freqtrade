@@ -7,12 +7,13 @@ import traceback
 from datetime import datetime, time, timezone
 from math import isclose
 from threading import Lock
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from schedule import Scheduler
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
+from freqtrade.constants import LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -590,7 +591,7 @@ class FreqtradeBot(LoggingMixin):
         time_in_force = self.strategy.order_time_in_force['entry']
 
         [side, name] = ['sell', 'Short'] if is_short else ['buy', 'Long']
-        trade_side: Literal['long', 'short'] = 'short' if is_short else 'long'
+        trade_side: LongShort = 'short' if is_short else 'long'
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
@@ -746,7 +747,7 @@ class FreqtradeBot(LoggingMixin):
 
     def get_valid_enter_price_and_stake(
         self, pair: str, price: Optional[float], stake_amount: float,
-        trade_side: Literal['long', 'short'],
+        trade_side: LongShort,
         entry_tag: Optional[str],
         trade: Optional[Trade]
     ) -> Tuple[float, float, float]:
