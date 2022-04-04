@@ -285,12 +285,12 @@ CONF_SCHEMA = {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_fill': {'type': 'string',
-                                     'enum': TELEGRAM_SETTING_OPTIONS,
-                                     'default': 'off'
-                                     },
+                        'entry': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_fill': {'type': 'string',
+                                       'enum': TELEGRAM_SETTING_OPTIONS,
+                                       'default': 'off'
+                                       },
                         'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {

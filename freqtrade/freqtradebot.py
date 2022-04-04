@@ -819,10 +819,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a entry order occurred.
         """
-        if fill:
-            msg_type = RPCMessageType.SHORT_FILL if trade.is_short else RPCMessageType.BUY_FILL
-        else:
-            msg_type = RPCMessageType.SHORT if trade.is_short else RPCMessageType.BUY
+        msg_type = RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY
         open_rate = safe_value_fallback(order, 'average', 'price')
         if open_rate is None:
             open_rate = trade.open_rate
@@ -861,10 +858,10 @@ class FreqtradeBot(LoggingMixin):
         """
         current_rate = self.exchange.get_rate(
             trade.pair, side='entry', is_short=trade.is_short, refresh=False)
-        msg_type = RPCMessageType.SHORT_CANCEL if trade.is_short else RPCMessageType.BUY_CANCEL
+
         msg = {
             'trade_id': trade.id,
-            'type': msg_type,
+            'type': RPCMessageType.ENTRY_CANCEL,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'exchange': self.exchange.name.capitalize(),

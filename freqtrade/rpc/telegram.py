@@ -230,11 +230,11 @@ class Telegram(RPCHandler):
                 msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
         else:
             msg['stake_amount_fiat'] = 0
-        is_fill = msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]
+        is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
         enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['type']
-                      in [RPCMessageType.BUY_FILL, RPCMessageType.BUY]
+                      in [RPCMessageType.ENTRY_FILL, RPCMessageType.ENTRY]
                       else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
             f"{emoji} *{msg['exchange']}:*"
@@ -246,9 +246,9 @@ class Telegram(RPCHandler):
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
             message += f"*Leverage:* `{msg['leverage']}`\n"
 
-        if msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]:
+        if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-        elif msg['type'] in [RPCMessageType.BUY, RPCMessageType.SHORT]:
+        elif msg['type'] in [RPCMessageType.ENTRY]:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
@@ -308,17 +308,14 @@ class Telegram(RPCHandler):
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
-        if msg_type in [RPCMessageType.BUY, RPCMessageType.BUY_FILL, RPCMessageType.SHORT,
-                        RPCMessageType.SHORT_FILL]:
+        if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
             message = self._format_entry_msg(msg)
 
         elif msg_type in [RPCMessageType.EXIT, RPCMessageType.EXIT_FILL]:
             message = self._format_exit_msg(msg)
 
-        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,
-                          RPCMessageType.EXIT_CANCEL):
-            msg['message_side'] = 'enter' if msg_type in [RPCMessageType.BUY_CANCEL,
-                                                          RPCMessageType.SHORT_CANCEL] else 'exit'
+        elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
+            msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
             message = ("\N{WARNING SIGN} *{exchange}:* "
                        "Cancelling {message_side} Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))

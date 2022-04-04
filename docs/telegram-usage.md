@@ -81,7 +81,7 @@ Example configuration showing the different settings:
         "status": "silent",
         "warning": "on",
         "startup": "off",
-        "buy": "silent",
+        "entry": "silent",
         "exit": {
             "roi": "silent",
             "emergency_exit": "on",
@@ -92,9 +92,9 @@ Example configuration showing the different settings:
             "stoploss_on_exchange": "on",
             "custom_exit": "silent"
         },
-        "buy_cancel": "silent",
+        "entry_cancel": "silent",
         "exit_cancel": "on",
-        "buy_fill": "off",
+        "entry_fill": "off",
         "exit_fill": "off",
         "protection_trigger": "off",
         "protection_trigger_global": "on"
@@ -104,7 +104,7 @@ Example configuration showing the different settings:
 },
 ```
 
-`buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
+`entry` notifications are sent when the order is placed, while `entry_fill` notifications are sent when the order is filled on the exchange.
 `exit` notifications are sent when the order is placed, while `exit_fill` notifications are sent when the order is filled on the exchange.
 `*_fill` notifications are off by default and must be explicitly enabled.
 `protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.

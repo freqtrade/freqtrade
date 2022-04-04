@@ -1771,10 +1771,10 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 1.0),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 5.0),
-    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 1.0),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 5.0),
+    (RPCMessageType.ENTRY, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
                                    enter, enter_signal, leverage) -> None:
 
@@ -1827,8 +1827,8 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
 
 
 @pytest.mark.parametrize('message_type,enter_signal', [
-    (RPCMessageType.BUY_CANCEL, 'long_signal_01'),
-    (RPCMessageType.SHORT_CANCEL, 'short_signal_01')])
+    (RPCMessageType.ENTRY_CANCEL, 'long_signal_01'),
+    (RPCMessageType.ENTRY_CANCEL, 'short_signal_01')])
 def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type, enter_signal) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -1875,14 +1875,14 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
 
 
 @pytest.mark.parametrize('message_type,entered,enter_signal,leverage', [
-    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', 1.0),
-    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_02', 2.0),
-    (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Longed', 'long_signal_01', 1.0),
+    (RPCMessageType.ENTRY_FILL, 'Longed', 'long_signal_02', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Shorted', 'short_signal_01', 2.0),
 ])
-def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, entered,
+def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, entered,
                                         enter_signal, leverage) -> None:
 
-    default_conf['telegram']['notification_settings']['buy_fill'] = 'on'
+    default_conf['telegram']['notification_settings']['entry_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
@@ -2105,9 +2105,9 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 2.0),
-    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 2.0),
+    (RPCMessageType.ENTRY, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification_no_fiat(
         default_conf, mocker, message_type, enter, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']

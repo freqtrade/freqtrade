@@ -139,8 +139,8 @@
             "status": "on",
             "warning": "on",
             "startup": "on",
-            "buy": "on",
-            "buy_fill": "on",
+            "entry": "on",
+            "entry_fill": "on",
             "exit": {
                 "roi": "off",
                 "emergency_exit": "off",
@@ -152,7 +152,7 @@
                 "custom_exit": "off"
             },
             "exit_fill": "on",
-            "buy_cancel": "on",
+            "entry_cancel": "on",
             "exit_cancel": "on",
             "protection_trigger": "off",
             "protection_trigger_global": "on"

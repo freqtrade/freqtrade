@@ -6,13 +6,9 @@ class RPCMessageType(Enum):
     WARNING = 'warning'
     STARTUP = 'startup'
 
-    BUY = 'buy'
-    BUY_FILL = 'buy_fill'
-    BUY_CANCEL = 'buy_cancel'
-
-    SHORT = 'short'
-    SHORT_FILL = 'short_fill'
-    SHORT_CANCEL = 'short_cancel'
+    ENTRY = 'entry'
+    ENTRY_FILL = 'entry_fill'
+    ENTRY_CANCEL = 'entry_cancel'
 
     EXIT = 'exit'
     EXIT_FILL = 'exit_fill'
