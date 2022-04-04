@@ -723,7 +723,7 @@ tc45 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
     use_exit_signal=True,
     custom_exit_price=6052,
-    trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.FORCE_EXIT, open_tick=1, close_tick=4)]
 )
 
 # Test 46: (Short of tc45) Custom short exit price above below candles
@@ -738,7 +738,7 @@ tc46 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
     use_exit_signal=True,
     custom_exit_price=4700,
-    trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4, is_short=True)]
+    trades=[BTrade(exit_reason=ExitType.FORCE_EXIT, open_tick=1, close_tick=4, is_short=True)]
 )
 
 # Test 47: Colliding long and short signal

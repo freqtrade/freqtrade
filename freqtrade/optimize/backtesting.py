@@ -812,7 +812,7 @@ class Backtesting:
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX].to_pydatetime()
-                    trade.exit_reason = ExitType.FORCE_SELL.value
+                    trade.exit_reason = ExitType.FORCE_EXIT.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
                     # Deepcopy object to have wallets update correctly

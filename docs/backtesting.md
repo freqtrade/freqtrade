@@ -280,7 +280,7 @@ A backtesting result will look like that:
 | trailing_stop_loss |     205 |   150 |      0 |      55 |
 | stop_loss          |     166 |     0 |      0 |     166 |
 | sell_signal        |      56 |    36 |      0 |      20 |
-| force_sell         |       2 |     0 |      0 |       2 |
+| force_exit         |       2 |     0 |      0 |       2 |
 ====================================================== LEFT OPEN TRADES REPORT ======================================================
 | Pair     |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
 |:---------|-------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|

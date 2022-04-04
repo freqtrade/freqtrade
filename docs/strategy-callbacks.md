@@ -564,13 +564,13 @@ class AwesomeStrategy(IStrategy):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_sell', 'emergency_sell']
+                           'sell_signal', 'force_exit', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the sell-order is placed on the exchange.
+        :return bool: When True is returned, then the exit-order is placed on the exchange.
             False aborts the process
         """
-        if exit_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
+        if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)

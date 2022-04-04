@@ -478,7 +478,7 @@ CANCEL_REASON = {
     "FULLY_CANCELLED": "fully cancelled",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
-    "FORCE_SELL": "forcesold",
+    "FORCE_EXIT": "forcesold",
 }
 
 # List of pairs with their timeframes

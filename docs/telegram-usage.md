@@ -85,7 +85,7 @@ Example configuration showing the different settings:
         "sell": {
             "roi": "silent",
             "emergency_sell": "on",
-            "force_sell": "on",
+            "force_exit": "on",
             "sell_signal": "silent",
             "trailing_stop_loss": "on",
             "stop_loss": "on",
