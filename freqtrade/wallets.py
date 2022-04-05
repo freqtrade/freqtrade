@@ -214,6 +214,18 @@ class Wallets:
                                 self._config['tradable_balance_ratio'])
         return available_amount
 
+    def get_reserved_stake_amount(self):
+        """
+        Return the total currently reserved balance in stake currency.
+        Calculated as
+        (<open_trade stakes> + free amount) - tot_profit - available_capital
+        """
+        available_capital = self._config.get('available_capital') or 0
+        tot_profit = Trade.get_total_closed_profit()
+        open_stakes = Trade.total_open_trades_stakes()
+        available_balance = self.get_free(self._config['stake_currency'])
+        return available_balance + open_stakes - tot_profit - available_capital
+
     def get_available_stake_amount(self) -> float:
         """
         Return the total currently available balance in stake currency,

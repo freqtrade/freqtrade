@@ -597,20 +597,25 @@ class RPC:
                 except (ExchangeError):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
-            total = total + (est_stake or 0)
-            currencies.append({
+            total = total + est_stake
+            currency = {
                 'currency': coin,
                 # TODO: The below can be simplified if we don't assign None to values.
-                'free': balance.free if balance.free is not None else 0,
-                'balance': balance.total if balance.total is not None else 0,
-                'used': balance.used if balance.used is not None else 0,
-                'est_stake': est_stake or 0,
+                'free': balance.free or 0,
+                'balance': balance.total or 0,
+                'used': balance.used or 0,
+                'est_stake': est_stake,
                 'stake': stake_currency,
                 'side': 'long',
                 'leverage': 1,
                 'position': 0,
                 'is_position': False,
-            })
+            }
+            if coin == stake_currency:
+                currencies.insert(0, currency)
+            else:
+                currencies.append(currency)
+
         symbol: str
         position: PositionWallet
         for symbol, position in self._freqtrade.wallets.get_all_positions().items():
@@ -633,7 +638,6 @@ class RPC:
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
         trade_count = len(Trade.get_trades_proxy())
-        starting_capital_ratio = 0.0
         starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
@@ -921,7 +925,7 @@ class RPC:
             else:
                 errors[pair] = {
                     'error_msg': f"Pair {pair} is not in the current blacklist."
-                    }
+                }
         resp = self._rpc_blacklist()
         resp['errors'] = errors
         return resp
@@ -959,8 +963,8 @@ class RPC:
         else:
             buffer = bufferHandler.buffer
         records = [[datetime.fromtimestamp(r.created).strftime(DATETIME_PRINT_FORMAT),
-                   r.created * 1000, r.name, r.levelname,
-                   r.message + ('\n' + r.exc_text if r.exc_text else '')]
+                    r.created * 1000, r.name, r.levelname,
+                    r.message + ('\n' + r.exc_text if r.exc_text else '')]
                    for r in buffer]
 
         # Log format:

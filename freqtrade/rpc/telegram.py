@@ -239,7 +239,7 @@ class Telegram(RPCHandler):
             f"{emoji} *{msg['exchange']}:*"
             f" {enter_side['entered'] if is_fill else enter_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
-            )
+        )
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
@@ -418,7 +418,8 @@ class Telegram(RPCHandler):
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                dur_entry = cur_entry_datetime - arrow.get(filled_orders[x-1]["order_filled_date"])
+                dur_entry = cur_entry_datetime - \
+                    arrow.get(filled_orders[x - 1]["order_filled_date"])
                 days = dur_entry.days
                 hours, remainder = divmod(dur_entry.seconds, 3600)
                 minutes, seconds = divmod(remainder, 60)
@@ -840,14 +841,20 @@ class Telegram(RPCHandler):
                             f"*{curr['currency']}:*\n"
                             f"\t`Available: {curr['free']:.8f}`\n"
                             f"\t`Balance: {curr['balance']:.8f}`\n"
-                            f"\t`Pending: {curr['used']:.8f}`\n"
-                            f"\t`Est. {curr['stake']}: "
-                            f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
+                            f"\t`Pending: {curr['used']:.8f}`\n")
+                        if curr['stake'] == curr['stake']:
+                            reserved = self._rpc._freqtrade.wallets.get_reserved_stake_amount()
+                            curr_output += f"\t`Reserved: {reserved}`\n"
+                        else:
+                            curr_output += (
+                                f"\t`Est. {curr['stake']}: "
+                                f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 elif curr['est_stake'] <= balance_dust_level:
                     total_dust_balance += curr['est_stake']
                     total_dust_currencies += 1
 
                 # Handle overflowing message length
+                output = output.replace('\t', ' ' * 4)
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     self._send_msg(output)
                     output = curr_output
@@ -872,6 +879,7 @@ class Telegram(RPCHandler):
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`"
                        f"{fiat_val}\n")
+            output = output.replace('\t', ' ' * 4)
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
@@ -1417,7 +1425,7 @@ class Telegram(RPCHandler):
             "Avg. holding durationsfor buys and sells.`\n"
             "*/help:* `This help message`\n"
             "*/version:* `Show version`"
-            )
+        )
 
         self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
 
