@@ -611,10 +611,8 @@ class RPC:
                 'position': 0,
                 'is_position': False,
             }
-            if coin == stake_currency:
-                currencies.insert(0, currency)
-            else:
-                currencies.append(currency)
+            currencies.insert(
+                0, currency) if coin == stake_currency else currencies.append(currency)
 
         symbol: str
         position: PositionWallet
