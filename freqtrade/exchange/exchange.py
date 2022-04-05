@@ -877,7 +877,7 @@ class Exchange:
 
         return rate
 
-    def _fill_dry_limit_order(self, pair: str, side: str,  # noqa: max-complexity: 13
+    def _fill_dry_limit_order(self, pair: str, side: str,
                               limit: float, given_amount: float) -> Tuple[Optional[float], float]:
         """
         Returns average price and filled amount
