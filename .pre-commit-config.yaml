@@ -5,11 +5,30 @@ repos:
     rev: '4.0.1'
     hooks:
     -   id: flake8
-        args: 
-        -   max-line-length = 100,
-        -   max-complexity = 12
+        stages: [push]
+
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v0.942'
     hooks:
     -   id: mypy
-        args: [--ignore-missing-imports]
+        stages: [push]
+
+-   repo: https://github.com/pycqa/isort
+    rev: '5.10.1'
+    hooks:
+      - id: isort
+        name: isort (python)
+        stages: [push]
+
+# https://github.com/pre-commit/pre-commit/issues/761#issuecomment-394167542
+-   repo: local
+    hooks:
+    -   id: pytest
+        name: pytest
+        entry: venv/bin/pytest
+        language: script
+        pass_filenames: false
+        # alternatively you could `types: [python]` so it only runs when python files change
+        # though tests might be invalidated if you were to say change a data file
+        always_run: true
+        stages: [push]

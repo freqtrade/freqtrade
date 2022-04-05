@@ -20,6 +20,8 @@ Best start by reading the [documentation](https://www.freqtrade.io/) to get a fe
 
 ## Before sending the PR
 
+Do the following if you disabled pre-commit hook when commiting.
+
 ### 1. Run unit tests
 
 All unit tests must pass. If a unit test is broken, change your code to 
