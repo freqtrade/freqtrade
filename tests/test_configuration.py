@@ -977,7 +977,7 @@ def test__validate_order_types(default_conf, caplog) -> None:
     assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for order_types is.*", caplog)
     assert conf['order_types']['entry'] == 'limit'
     assert conf['order_types']['exit'] == 'market'
-    assert conf['order_types']['forceentry'] == 'limit'
+    assert conf['order_types']['force_entry'] == 'limit'
     assert 'buy' not in conf['order_types']
     assert 'sell' not in conf['order_types']
     assert 'forcebuy' not in conf['order_types']

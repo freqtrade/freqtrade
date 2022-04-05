@@ -153,7 +153,7 @@ class Telegram(RPCHandler):
             CommandHandler('balance', self._balance),
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
-            CommandHandler(['forcesell', 'forceexit'], self._forceexit),
+            CommandHandler(['forcesell', 'force_exit'], self._force_exit),
             CommandHandler(['forcebuy', 'forcelong'], partial(
                 self._forceenter, order_side=SignalDirection.LONG)),
             CommandHandler('forceshort', partial(
@@ -926,7 +926,7 @@ class Telegram(RPCHandler):
         self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _forceexit(self, update: Update, context: CallbackContext) -> None:
+    def _force_exit(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /forcesell <id>.
         Sells the given trade at current price
@@ -940,8 +940,8 @@ class Telegram(RPCHandler):
             self._send_msg("You must specify a trade-id or 'all'.")
             return
         try:
-            msg = self._rpc._rpc_forceexit(trade_id)
-            self._send_msg('Forceexit Result: `{result}`'.format(**msg))
+            msg = self._rpc._rpc_force_exit(trade_id)
+            self._send_msg('Force_exit Result: `{result}`'.format(**msg))
 
         except RPCException as e:
             self._send_msg(str(e))
@@ -1373,7 +1373,7 @@ class Telegram(RPCHandler):
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
+            "*/force_exit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             f"{forceenter_text if self._config.get('forcebuy_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"

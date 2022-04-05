@@ -351,9 +351,9 @@ After:
     order_types = {
         "entry": "limit",
         "exit": "limit",
-        "emergencyexit": "market",
-        "forceexit": "market",
-        "forceentry": "market",
+        "emergency_exit": "market",
+        "force_exit": "market",
+        "force_entry": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60

@@ -94,8 +94,8 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
     :raise: OperationalException if config validation failed
     """
     if (not conf.get('edge', {}).get('enabled')
-       and conf.get('max_open_trades') == float('inf')
-       and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
+        and conf.get('max_open_trades') == float('inf')
+            and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
         raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
@@ -255,9 +255,9 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
             for o, n in [
                 ('buy', 'entry'),
                 ('sell', 'exit'),
-                ('emergencysell', 'emergencyexit'),
-                ('forcesell', 'forceexit'),
-                ('forcebuy', 'forceentry'),
+                ('emergencysell', 'emergency_exit'),
+                ('forcesell', 'force_exit'),
+                ('forcebuy', 'force_entry'),
             ]:
 
                 process_deprecated_setting(conf, 'order_types', o, 'order_types', n)

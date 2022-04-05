@@ -366,7 +366,7 @@ This table can tell you which area needs some additional work (e.g. all or many 
 
 ### Left open trades table
 
-The 3rd table contains all trades the bot had to `forceexit` at the end of the backtesting period to present you the full picture.
+The 3rd table contains all trades the bot had to `force_exit` at the end of the backtesting period to present you the full picture.
 This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
 These trades are also included in the first table, but are also shown separately in this table for clarity.
 

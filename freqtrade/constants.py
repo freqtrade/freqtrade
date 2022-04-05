@@ -216,9 +216,9 @@ CONF_SCHEMA = {
             'properties': {
                 'entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forceexit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forceentry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencyexit': {
+                'force_exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'force_entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergency_exit': {
                     'type': 'string',
                     'enum': ORDERTYPE_POSSIBILITIES,
                     'default': 'market'},
