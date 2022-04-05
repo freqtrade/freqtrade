@@ -1947,6 +1947,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'leverage': leverage,
         'stake_amount': 0.01465333,
         'sub_trade': True,
+        'direction': entered,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
@@ -1955,7 +1956,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
     })
 
     assert msg_mock.call_args[0][0] \
-        == f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n' \
+        == f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n' \
            f'*Enter Tag:* `{enter_signal}`\n' \
            '*Amount:* `1333.33333333`\n' \
            f"{leverage_text}" \
@@ -2045,7 +2046,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

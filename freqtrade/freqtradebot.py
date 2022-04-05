@@ -557,7 +557,7 @@ class FreqtradeBot(LoggingMixin):
                     f"Adjusting amount to trade.amount as it is higher. {amount} > {trade.amount}")
                 amount = trade.amount
             self.execute_trade_exit(trade, current_exit_rate, exit_check=ExitCheckTuple(
-                exit_type=ExitType.PARTIAL_SELL), sub_trade_amt=amount)
+                exit_type=ExitType.PARTIAL_EXIT), sub_trade_amt=amount)
 
     def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
         """

@@ -5414,7 +5414,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                  MagicMock(return_value=closed_sell_dca_order_1))
     assert freqtrade.execute_trade_exit(trade=trade, limit=8,
-                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_SELL),
+                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_EXIT),
                                         sub_trade_amt=15)
 
     # Assert trade is as expected (averaged dca)
@@ -5546,7 +5546,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                  MagicMock(return_value=closed_sell_dca_order_1))
     assert freqtrade.execute_trade_exit(trade=trade, limit=ask,
-                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_SELL),
+                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_EXIT),
                                         sub_trade_amt=amount)
     trades: List[Trade] = trade.get_open_trades_without_assigned_fees()
     assert len(trades) == 1
@@ -5592,7 +5592,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
                  MagicMock(return_value=closed_sell_dca_order_2))
     assert freqtrade.execute_trade_exit(trade=trade, limit=ask,
-                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_SELL),
+                                        exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_EXIT),
                                         sub_trade_amt=amount)
     # Assert trade is as expected (averaged dca)
 
@@ -5688,7 +5688,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
         else:
             assert freqtrade.execute_trade_exit(
                 trade=trade, limit=price,
-                exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_SELL),
+                exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_EXIT),
                 sub_trade_amt=amount)
 
         orders1 = Order.query.all()
