@@ -173,6 +173,12 @@ class StrategyResolver(IResolver):
     def validate_strategy(strategy: IStrategy) -> IStrategy:
         if strategy.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             # Require new method
+            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only', True)
+            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset', True)
+            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal', True)
+            warn_deprecated_setting(strategy, 'ignore_roi_if_buy_signal',
+                                    'ignore_roi_if_entry_signal', True)
+
             if not check_override(strategy, IStrategy, 'populate_entry_trend'):
                 raise OperationalException("`populate_entry_trend` must be implemented.")
             if not check_override(strategy, IStrategy, 'populate_exit_trend'):
@@ -187,11 +193,7 @@ class StrategyResolver(IResolver):
             if check_override(strategy, IStrategy, 'custom_sell'):
                 raise OperationalException(
                     "Please migrate your implementation of `custom_sell` to `custom_exit`.")
-            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only', True)
-            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset', True)
-            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal', True)
-            warn_deprecated_setting(strategy, 'ignore_roi_if_buy_signal',
-                                    'ignore_roi_if_entry_signal', True)
+
         else:
             # TODO: Implementing one of the following methods should show a deprecation warning
             #  buy_trend and sell_trend, custom_sell
