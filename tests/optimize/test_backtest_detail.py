@@ -23,7 +23,7 @@ tc0 = BTContainer(data=[
     [4, 5010, 5011, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 1: Stop-Loss Triggered 1% loss
@@ -424,7 +424,7 @@ tc26 = BTContainer(data=[
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 27: (copy of test26 with leverage)
@@ -441,7 +441,7 @@ tc27 = BTContainer(data=[
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 28: (copy of test26 with leverage and as short)
@@ -458,7 +458,7 @@ tc28 = BTContainer(data=[
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0, 0, 0]],
     stop_loss=-0.05, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
 )
 # Test 29: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger)
@@ -486,7 +486,7 @@ tc30 = BTContainer(data=[
     [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 31: trailing_stop should raise so candle 3 causes a stoploss
@@ -708,7 +708,7 @@ tc44 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01,
     use_exit_signal=True,
     custom_exit_price=4552,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=3)]
 )
 
 # Test 45: Custom exit price above all candles
@@ -723,7 +723,7 @@ tc45 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
     use_exit_signal=True,
     custom_exit_price=6052,
-    trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.FORCE_EXIT, open_tick=1, close_tick=4)]
 )
 
 # Test 46: (Short of tc45) Custom short exit price above below candles
@@ -738,7 +738,7 @@ tc46 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.0,
     use_exit_signal=True,
     custom_exit_price=4700,
-    trades=[BTrade(exit_reason=ExitType.FORCE_SELL, open_tick=1, close_tick=4, is_short=True)]
+    trades=[BTrade(exit_reason=ExitType.FORCE_EXIT, open_tick=1, close_tick=4, is_short=True)]
 )
 
 # Test 47: Colliding long and short signal

@@ -819,10 +819,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a entry order occurred.
         """
-        if fill:
-            msg_type = RPCMessageType.SHORT_FILL if trade.is_short else RPCMessageType.BUY_FILL
-        else:
-            msg_type = RPCMessageType.SHORT if trade.is_short else RPCMessageType.BUY
+        msg_type = RPCMessageType.ENTRY_FILL if fill else RPCMessageType.ENTRY
         open_rate = safe_value_fallback(order, 'average', 'price')
         if open_rate is None:
             open_rate = trade.open_rate
@@ -861,10 +858,10 @@ class FreqtradeBot(LoggingMixin):
         """
         current_rate = self.exchange.get_rate(
             trade.pair, side='entry', is_short=trade.is_short, refresh=False)
-        msg_type = RPCMessageType.SHORT_CANCEL if trade.is_short else RPCMessageType.BUY_CANCEL
+
         msg = {
             'trade_id': trade.id,
-            'type': msg_type,
+            'type': RPCMessageType.ENTRY_CANCEL,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'exchange': self.exchange.name.capitalize(),
@@ -981,7 +978,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.execute_trade_exit(trade, trade.stop_loss, exit_check=ExitCheckTuple(
-                exit_type=ExitType.EMERGENCY_SELL))
+                exit_type=ExitType.EMERGENCY_EXIT))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -1162,7 +1159,7 @@ class FreqtradeBot(LoggingMixin):
                         try:
                             self.execute_trade_exit(
                                 trade, order.get('price'),
-                                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_SELL))
+                                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
                         except DependencyException as exception:
                             logger.warning(
                                 f'Unable to emergency sell trade {trade.pair}: {exception}')
@@ -1380,7 +1377,7 @@ class FreqtradeBot(LoggingMixin):
         trade = self.cancel_stoploss_on_exchange(trade)
 
         order_type = ordertype or self.strategy.order_types[exit_type]
-        if exit_check.exit_type == ExitType.EMERGENCY_SELL:
+        if exit_check.exit_type == ExitType.EMERGENCY_EXIT:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencyexit", "market")
 
@@ -1446,8 +1443,8 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': (RPCMessageType.SELL_FILL if fill
-                     else RPCMessageType.SELL),
+            'type': (RPCMessageType.EXIT_FILL if fill
+                     else RPCMessageType.EXIT),
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
@@ -1497,7 +1494,7 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': RPCMessageType.SELL_CANCEL,
+            'type': RPCMessageType.EXIT_CANCEL,
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,

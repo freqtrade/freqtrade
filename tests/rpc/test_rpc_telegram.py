@@ -1040,7 +1040,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1059,8 +1059,8 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': ExitType.FORCE_SELL.value,
-        'exit_reason': ExitType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_EXIT.value,
+        'exit_reason': ExitType.FORCE_EXIT.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1109,7 +1109,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1128,8 +1128,8 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': ExitType.FORCE_SELL.value,
-        'exit_reason': ExitType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_EXIT.value,
+        'exit_reason': ExitType.FORCE_EXIT.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1168,7 +1168,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     assert msg_mock.call_count == 8
     msg = msg_mock.call_args_list[0][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1187,8 +1187,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'enter_tag': ANY,
-        'sell_reason': ExitType.FORCE_SELL.value,
-        'exit_reason': ExitType.FORCE_SELL.value,
+        'sell_reason': ExitType.FORCE_EXIT.value,
+        'exit_reason': ExitType.FORCE_EXIT.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -1771,10 +1771,10 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 1.0),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 5.0),
-    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 1.0),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 5.0),
+    (RPCMessageType.ENTRY, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
                                    enter, enter_signal, leverage) -> None:
 
@@ -1787,6 +1787,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
         'leverage': leverage,
         'limit': 1.099e-05,
         'order_type': 'limit',
+        'direction': enter,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -1827,8 +1828,8 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
 
 
 @pytest.mark.parametrize('message_type,enter_signal', [
-    (RPCMessageType.BUY_CANCEL, 'long_signal_01'),
-    (RPCMessageType.SHORT_CANCEL, 'short_signal_01')])
+    (RPCMessageType.ENTRY_CANCEL, 'long_signal_01'),
+    (RPCMessageType.ENTRY_CANCEL, 'short_signal_01')])
 def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type, enter_signal) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -1875,14 +1876,14 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
 
 
 @pytest.mark.parametrize('message_type,entered,enter_signal,leverage', [
-    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', 1.0),
-    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_02', 2.0),
-    (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Long', 'long_signal_01', 1.0),
+    (RPCMessageType.ENTRY_FILL, 'Long', 'long_signal_02', 2.0),
+    (RPCMessageType.ENTRY_FILL, 'Short', 'short_signal_01', 2.0),
 ])
-def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, entered,
-                                        enter_signal, leverage) -> None:
+def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, entered,
+                                          enter_signal, leverage) -> None:
 
-    default_conf['telegram']['notification_settings']['buy_fill'] = 'on'
+    default_conf['telegram']['notification_settings']['entry_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
@@ -1893,6 +1894,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
         'pair': 'ETH/BTC',
         'leverage': leverage,
         'stake_amount': 0.01465333,
+        'direction': entered,
         # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
@@ -1902,7 +1904,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
     })
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n'
+        f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
@@ -1918,7 +1920,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1954,7 +1956,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1996,7 +1998,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL,
+        'type': RPCMessageType.EXIT_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -2008,7 +2010,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL,
+        'type': RPCMessageType.EXIT_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -2028,11 +2030,11 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
                                          enter_signal, leverage) -> None:
 
-    default_conf['telegram']['notification_settings']['sell_fill'] = 'on'
+    default_conf['telegram']['notification_settings']['exit_fill'] = 'on'
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.SELL_FILL,
+        'type': RPCMessageType.EXIT_FILL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -2105,9 +2107,9 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-    (RPCMessageType.BUY, 'Long', 'long_signal_01', 2.0),
-    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.ENTRY, 'Long', 'long_signal_01', 2.0),
+    (RPCMessageType.ENTRY, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification_no_fiat(
         default_conf, mocker, message_type, enter, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
@@ -2122,6 +2124,7 @@ def test_send_msg_buy_notification_no_fiat(
         'leverage': leverage,
         'limit': 1.099e-05,
         'order_type': 'limit',
+        'direction': enter,
         'stake_amount': 0.01465333,
         'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
@@ -2155,7 +2158,7 @@ def test_send_msg_sell_notification_no_fiat(
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

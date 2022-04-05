@@ -285,21 +285,21 @@ CONF_SCHEMA = {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_fill': {'type': 'string',
-                                     'enum': TELEGRAM_SETTING_OPTIONS,
-                                     'default': 'off'
-                                     },
-                        'sell': {
+                        'entry': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_fill': {'type': 'string',
+                                       'enum': TELEGRAM_SETTING_OPTIONS,
+                                       'default': 'off'
+                                       },
+                        'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {
                                 'type': 'string',
                                 'enum': TELEGRAM_SETTING_OPTIONS
                             }
                         },
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_fill': {
+                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
@@ -327,12 +327,12 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
-                'webhookbuy': {'type': 'object'},
-                'webhookbuycancel': {'type': 'object'},
-                'webhookbuyfill': {'type': 'object'},
-                'webhooksell': {'type': 'object'},
-                'webhooksellcancel': {'type': 'object'},
-                'webhooksellfill': {'type': 'object'},
+                'webhookentry': {'type': 'object'},
+                'webhookentrycancel': {'type': 'object'},
+                'webhookentryfill': {'type': 'object'},
+                'webhookexit': {'type': 'object'},
+                'webhookexitcancel': {'type': 'object'},
+                'webhookexitfill': {'type': 'object'},
                 'webhookstatus': {'type': 'object'},
             },
         },
@@ -478,7 +478,7 @@ CANCEL_REASON = {
     "FULLY_CANCELLED": "fully cancelled",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
-    "FORCE_SELL": "forcesold",
+    "FORCE_EXIT": "forcesold",
 }
 
 # List of pairs with their timeframes

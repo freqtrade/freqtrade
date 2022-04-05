@@ -1210,7 +1210,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
-    assert trade.exit_reason == str(ExitType.EMERGENCY_SELL)
+    assert trade.exit_reason == str(ExitType.EMERGENCY_EXIT)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1293,7 +1293,7 @@ def test_create_stoploss_order_invalid_order(
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
-    assert trade.exit_reason == ExitType.EMERGENCY_SELL.value
+    assert trade.exit_reason == ExitType.EMERGENCY_EXIT.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
     assert log_has("Exiting the trade forcefully", caplog)
 
@@ -1305,7 +1305,7 @@ def test_create_stoploss_order_invalid_order(
 
     # Rpc is sending first buy, then sell
     assert rpc_mock.call_count == 2
-    assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == ExitType.EMERGENCY_SELL.value
+    assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 
@@ -2310,7 +2310,7 @@ def test_handle_trade_use_sell_signal(
     else:
         patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.SELL_SIGNAL",
+    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.EXIT_SIGNAL",
                    caplog)
 
 
@@ -3091,7 +3091,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'trade_id': 1,
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
@@ -3150,7 +3150,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
@@ -3221,7 +3221,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_check=ExitCheckTuple(exit_type=ExitType.SELL_SIGNAL)
+        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)
     )
 
     # Sell price must be different to default bid price
@@ -3232,7 +3232,7 @@ def test_execute_trade_exit_custom_exit_price(
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'trade_id': 1,
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'direction': 'Short' if trade.is_short else 'Long',
@@ -3249,8 +3249,8 @@ def test_execute_trade_exit_custom_exit_price(
         'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.SELL_SIGNAL.value,
-        'exit_reason': ExitType.SELL_SIGNAL.value,
+        'sell_reason': ExitType.EXIT_SIGNAL.value,
+        'exit_reason': ExitType.EXIT_SIGNAL.value,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3299,7 +3299,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
@@ -3487,15 +3487,9 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     assert trade.is_open is False
     assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
-    if is_short:
-        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.SHORT
-        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.SHORT_FILL
-        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
-
-    else:
-        assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
-        assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
-        assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
+    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.ENTRY
+    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.ENTRY_FILL
+    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT
 
 
 @pytest.mark.parametrize(
@@ -3563,7 +3557,7 @@ def test_execute_trade_exit_market_order(
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
-        'type': RPCMessageType.SELL,
+        'type': RPCMessageType.EXIT,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
@@ -3630,18 +3624,18 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
 
 @pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,exit_type,is_short', [
     # Enable profit
-    (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, False),
-    (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, True),
+    (True, 2.18, 2.2, False, True, ExitType.EXIT_SIGNAL.value, False),
+    (True, 2.18, 2.2, False, True, ExitType.EXIT_SIGNAL.value, True),
     # # Disable profit
-    (False, 3.19, 3.2, True,  False, ExitType.SELL_SIGNAL.value, False),
-    (False, 3.19, 3.2, True,  False, ExitType.SELL_SIGNAL.value, True),
+    (False, 3.19, 3.2, True,  False, ExitType.EXIT_SIGNAL.value, False),
+    (False, 3.19, 3.2, True,  False, ExitType.EXIT_SIGNAL.value, True),
     # # Enable loss
     # # * Shouldn't this be ExitType.STOP_LOSS.value
     (True, 0.21, 0.22, False, False, None, False),
     (True, 2.41, 2.42, False, False, None, True),
     # Disable loss
-    (False, 0.10, 0.22, True, False, ExitType.SELL_SIGNAL.value, False),
-    (False, 0.10, 0.22, True, False, ExitType.SELL_SIGNAL.value, True),
+    (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, False),
+    (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, True),
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
@@ -3669,7 +3663,7 @@ def test_sell_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    if exit_type == ExitType.SELL_SIGNAL.value:
+    if exit_type == ExitType.EXIT_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
         freqtrade.strategy.stop_loss_reached = MagicMock(return_value=ExitCheckTuple(
