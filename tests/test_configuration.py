@@ -1238,12 +1238,8 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-    ("ask_strategy", "use_exit_signal", True,
-     None, "use_exit_signal", False),
-    ("ask_strategy", "sell_profit_only", True,
-     None, "sell_profit_only", False),
-    ("ask_strategy", "sell_profit_offset", 0.1,
-     None, "sell_profit_offset", 0.01),
+    ("webhook", "webhookbuy", 'testWEbhook',
+     "webhook", "webhookentry", 'testWEbhook'),
     ("ask_strategy", "ignore_roi_if_buy_signal", True,
      None, "ignore_roi_if_buy_signal", False),
     ("ask_strategy", "ignore_buying_expired_candle_after", 5,
@@ -1288,7 +1284,7 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
 
 
 @pytest.mark.parametrize("setting", [
-    ("experimental", "use_exit_signal", False),
+    ("experimental", "use_sell_signal", False),
     ("experimental", "sell_profit_only", True),
     ("experimental", "ignore_roi_if_buy_signal", True),
 ])
