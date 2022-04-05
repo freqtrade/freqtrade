@@ -72,12 +72,7 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     # Kept for future deprecated / moved settings
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
     #                            'experimental', 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
-                               None, 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
-                               None, 'sell_profit_only')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_offset',
-                               None, 'sell_profit_offset')
+
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
                                None, 'ignore_roi_if_buy_signal')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
@@ -109,12 +104,15 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                    'webhook', 'webhookexitfill')
 
     # Legacy way - having them in experimental ...
-    process_removed_setting(config, 'experimental', 'use_sell_signal',
-                            None, 'use_sell_signal')
-    process_removed_setting(config, 'experimental', 'sell_profit_only',
-                            None, 'sell_profit_only')
+
+    process_removed_setting(config, 'experimental', 'use_sell_signal', None, 'use_sell_signal')
+    process_removed_setting(config, 'experimental', 'sell_profit_only', None, 'sell_profit_only')
     process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
                             None, 'ignore_roi_if_buy_signal')
+    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'use_sell_signal')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_only', None, 'sell_profit_only')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_offset',
+                            None, 'sell_profit_offset')
 
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):

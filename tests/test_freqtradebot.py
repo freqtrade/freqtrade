@@ -3637,7 +3637,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, False),
     (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, True),
 ])
-def test_sell_profit_only(
+def test_exit_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
         fee, mocker, profit_only, bid, ask, handle_first, handle_second, exit_type) -> None:
     patch_RPCManager(mocker)
@@ -3658,7 +3658,7 @@ def test_sell_profit_only(
     )
     default_conf_usdt.update({
         'use_sell_signal': True,
-        'sell_profit_only': profit_only,
+        'exit_profit_only': profit_only,
         'sell_profit_offset': 0.1,
     })
     freqtrade = FreqtradeBot(default_conf_usdt)

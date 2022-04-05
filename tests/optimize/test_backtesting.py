@@ -1152,7 +1152,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     default_conf.update({
         "use_sell_signal": True,
-        "sell_profit_only": False,
+        "exit_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
     })
@@ -1229,7 +1229,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdatadir, capsys):
     default_conf.update({
         "use_sell_signal": True,
-        "sell_profit_only": False,
+        "exit_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
     })
@@ -1347,7 +1347,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
         "trading_mode": "futures",
         "margin_mode": "isolated",
         "use_sell_signal": True,
-        "sell_profit_only": False,
+        "exit_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
         "strategy": CURRENT_TEST_STRATEGY,
@@ -1451,7 +1451,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
     # Tests detail-data loading
     default_conf.update({
         "use_sell_signal": True,
-        "sell_profit_only": False,
+        "exit_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
     })
@@ -1558,7 +1558,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
                                             start_delta, cache):
     default_conf.update({
         "use_sell_signal": True,
-        "sell_profit_only": False,
+        "exit_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
     })

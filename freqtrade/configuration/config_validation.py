@@ -219,6 +219,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
     _validate_order_types(conf)
     _validate_unfilledtimeout(conf)
     _validate_pricing_rules(conf)
+    _strategy_settings(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -312,3 +313,8 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
                 else:
                     process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']
+
+
+def _strategy_settings(conf: Dict[str, Any]) -> None:
+
+    process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')

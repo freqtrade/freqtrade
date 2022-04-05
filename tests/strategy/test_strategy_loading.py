@@ -333,27 +333,27 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
     assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
 
 
-def test_strategy_override_use_sell_profit_only(caplog, default_conf):
+def test_strategy_override_use_exit_profit_only(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
-    assert not strategy.sell_profit_only
-    assert isinstance(strategy.sell_profit_only, bool)
+    assert not strategy.exit_profit_only
+    assert isinstance(strategy.exit_profit_only, bool)
     # must be inserted to configuration
-    assert 'sell_profit_only' in default_conf
-    assert not default_conf['sell_profit_only']
+    assert 'exit_profit_only' in default_conf
+    assert not default_conf['exit_profit_only']
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'sell_profit_only': True,
+        'exit_profit_only': True,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.sell_profit_only
-    assert isinstance(strategy.sell_profit_only, bool)
-    assert log_has("Override strategy 'sell_profit_only' with value in config file: True.", caplog)
+    assert strategy.exit_profit_only
+    assert isinstance(strategy.exit_profit_only, bool)
+    assert log_has("Override strategy 'exit_profit_only' with value in config file: True.", caplog)
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")

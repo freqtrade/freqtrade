@@ -86,7 +86,7 @@ class StrategyResolver(IResolver):
                       ("startup_candle_count",            None),
                       ("unfilledtimeout",                 None),
                       ("use_sell_signal",                 True),
-                      ("sell_profit_only",                False),
+                      ("exit_profit_only",                False),
                       ("ignore_roi_if_buy_signal",        False),
                       ("sell_profit_offset",              0.0),
                       ("disable_dataframe_checks",        False),
@@ -187,9 +187,13 @@ class StrategyResolver(IResolver):
             if check_override(strategy, IStrategy, 'custom_sell'):
                 raise OperationalException(
                     "Please migrate your implementation of `custom_sell` to `custom_exit`.")
+            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only', True)
+
         else:
             # TODO: Implementing one of the following methods should show a deprecation warning
             #  buy_trend and sell_trend, custom_sell
+            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only')
+
             if (
                 not check_override(strategy, IStrategy, 'populate_buy_trend')
                 and not check_override(strategy, IStrategy, 'populate_entry_trend')
@@ -260,6 +264,15 @@ class StrategyResolver(IResolver):
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
             "or contains Python code errors."
         )
+
+
+def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error: False):
+    if hasattr(strategy, old):
+        errormsg = f"DEPRECATED: Using '{old}' moved to '{new}'."
+        if error:
+            raise OperationalException(errormsg)
+        logger.warning(errormsg)
+        setattr(strategy, new, getattr(strategy, f'{old}'))
 
 
 def check_override(object, parentclass, attribute):
