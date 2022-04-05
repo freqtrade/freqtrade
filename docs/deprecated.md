@@ -68,9 +68,9 @@ We will keep a compatibility layer for 1-2 versions (so both `buy_tag` and `ente
 
 Webhook terminology changed from "sell" to "exit", and from "buy" to "entry".
 
-  * `webhookbuy` -> `webhookentry`
-  * `webhookbuyfill` -> `webhookentryfill`
-  * `webhookbuycancel` -> `webhookentrycancel`
-  * `webhooksell` -> `webhookexit`
-  * `webhooksellfill` -> `webhookexitfill`
-  * `webhooksellcancel` -> `webhookexitcancel`
+* `webhookbuy` -> `webhookentry`
+* `webhookbuyfill` -> `webhookentryfill`
+* `webhookbuycancel` -> `webhookentrycancel`
+* `webhooksell` -> `webhookexit`
+* `webhooksellfill` -> `webhookexitfill`
+* `webhooksellcancel` -> `webhookexitcancel`
