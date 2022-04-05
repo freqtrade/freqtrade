@@ -1240,8 +1240,6 @@ def test_pairlist_resolving_fallback(mocker):
 @pytest.mark.parametrize("setting", [
     ("webhook", "webhookbuy", 'testWEbhook',
      "webhook", "webhookentry", 'testWEbhook'),
-    ("ask_strategy", "ignore_roi_if_buy_signal", True,
-     None, "ignore_roi_if_buy_signal", False),
     ("ask_strategy", "ignore_buying_expired_candle_after", 5,
      None, "ignore_buying_expired_candle_after", 6),
 ])

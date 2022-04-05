@@ -93,7 +93,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     use_exit_signal: bool
     exit_profit_only: bool
     exit_profit_offset: float
-    ignore_roi_if_buy_signal: bool
+    ignore_roi_if_entry_signal: bool
 
     # Position adjustment is disabled by default
     position_adjustment_enable: bool = False
@@ -871,7 +871,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (enter and self.ignore_roi_if_buy_signal)
+        roi_reached = (not (enter and self.ignore_roi_if_entry_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=current_time))
 

@@ -463,7 +463,7 @@ def generate_strategy_stats(pairlist: List[str],
         'use_exit_signal': config['use_exit_signal'],
         'exit_profit_only': config['exit_profit_only'],
         'exit_profit_offset': config['exit_profit_offset'],
-        'ignore_roi_if_buy_signal': config['ignore_roi_if_buy_signal'],
+        'ignore_roi_if_entry_signal': config['ignore_roi_if_entry_signal'],
         **daily_stats,
         **trade_stats
     }

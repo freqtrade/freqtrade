@@ -73,8 +73,6 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
     #                            'experimental', 'use_sell_signal')
 
-    process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
-                               None, 'ignore_roi_if_buy_signal')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
                                None, 'ignore_buying_expired_candle_after')
     # New settings
@@ -105,15 +103,17 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
 
     # Legacy way - having them in experimental ...
 
-    process_removed_setting(config, 'experimental', 'use_sell_signal', None, 'use_sell_signal')
-    process_removed_setting(config, 'experimental', 'sell_profit_only', None, 'sell_profit_only')
+    process_removed_setting(config, 'experimental', 'use_sell_signal', None, 'use_exit_signal')
+    process_removed_setting(config, 'experimental', 'sell_profit_only', None, 'exit_profit_only')
     process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
-                            None, 'ignore_roi_if_buy_signal')
-    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'use_sell_signal')
-    process_removed_setting(config, 'ask_strategy', 'sell_profit_only', None, 'sell_profit_only')
-    process_removed_setting(config, 'ask_strategy', 'sell_profit_offset',
-                            None, 'sell_profit_offset')
+                            None, 'ignore_roi_if_entry_signal')
 
+    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'exit_sell_signal')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_only', None, 'exit_profit_only')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_offset',
+                            None, 'exit_profit_offset')
+    process_removed_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
+                            None, 'ignore_roi_if_entry_signal')
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
         raise OperationalException(

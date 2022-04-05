@@ -18,7 +18,7 @@
     "use_exit_signal": true,
     "exit_profit_only": false,
     "exit_profit_offset": 0.0,
-    "ignore_roi_if_buy_signal": false,
+    "ignore_roi_if_entry_signal": false,
     "ignore_buying_expired_candle_after": 300,
     "trading_mode": "spot",
     "margin_mode": "",

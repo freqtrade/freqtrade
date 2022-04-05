@@ -67,7 +67,7 @@ class SampleStrategy(IStrategy):
     # These values can be overridden in the config.
     use_exit_signal = True
     exit_profit_only = False
-    ignore_roi_if_buy_signal = False
+    ignore_roi_if_entry_signal = False
 
     # Hyperoptable parameters
     buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)

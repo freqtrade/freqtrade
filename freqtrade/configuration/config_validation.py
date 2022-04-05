@@ -320,3 +320,5 @@ def _strategy_settings(conf: Dict[str, Any]) -> None:
     process_deprecated_setting(conf, None, 'use_sell_signal', None, 'use_exit_signal')
     process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')
     process_deprecated_setting(conf, None, 'sell_profit_offset', None, 'exit_profit_offset')
+    process_deprecated_setting(conf, None, 'ignore_roi_if_buy_signal',
+                               None, 'ignore_roi_if_entry_signal')

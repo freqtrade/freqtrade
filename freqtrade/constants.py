@@ -152,7 +152,7 @@ CONF_SCHEMA = {
         'use_exit_signal': {'type': 'boolean'},
         'exit_profit_only': {'type': 'boolean'},
         'exit_profit_offset': {'type': 'number'},
-        'ignore_roi_if_buy_signal': {'type': 'boolean'},
+        'ignore_roi_if_entry_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
