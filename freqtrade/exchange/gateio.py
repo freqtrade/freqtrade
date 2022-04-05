@@ -45,7 +45,7 @@ class Gateio(Exchange):
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
         ccxt_kwargs.update({"timeout": 15000})
-        super()._init_ccxt(exchange_config, ccxt_module, ccxt_kwargs)
+        return super()._init_ccxt(exchange_config, ccxt_module, ccxt_kwargs)
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
