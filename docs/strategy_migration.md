@@ -61,8 +61,11 @@ You can use the quick summary as checklist. Please refer to the detailed section
     * `sell` -> `exit`
     * `sell_fill` -> `exit_fill`
     * `sell_cancel` -> `exit_cancel`
-
-
+  * Strategy/config settings:
+    * `use_sell_signal` -> `use_exit_signal`
+    * `sell_profit_only` -> `exit_profit_only`
+    * `sell_profit_offset` -> `exit_profit_offset`
+    * `ignore_roi_if_buy_signal` -> `ignore_roi_if_entry_signal`
 
 ## Extensive explanation
 
@@ -358,6 +361,31 @@ After:
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
     }
+```
+
+#### Strategy level settings
+
+* `use_sell_signal` -> `use_exit_signal`
+* `sell_profit_only` -> `exit_profit_only`
+* `sell_profit_offset` -> `exit_profit_offset`
+* `ignore_roi_if_buy_signal` -> `ignore_roi_if_entry_signal`
+
+``` python hl_lines="2-5"
+    # These values can be overridden in the config.
+    use_sell_signal = True
+    sell_profit_only = True
+    sell_profit_offset: 0.01
+    ignore_roi_if_buy_signal = False
+```
+
+After:
+
+``` python hl_lines="2-5"
+    # These values can be overridden in the config.
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset: 0.01
+    ignore_roi_if_entry_signal = False
 ```
 
 #### `unfilledtimeout`
