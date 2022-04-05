@@ -462,7 +462,7 @@ def generate_strategy_stats(pairlist: List[str],
         'minimal_roi': config['minimal_roi'],
         'use_sell_signal': config['use_sell_signal'],
         'exit_profit_only': config['exit_profit_only'],
-        'sell_profit_offset': config['sell_profit_offset'],
+        'exit_profit_offset': config['exit_profit_offset'],
         'ignore_roi_if_buy_signal': config['ignore_roi_if_buy_signal'],
         **daily_stats,
         **trade_stats

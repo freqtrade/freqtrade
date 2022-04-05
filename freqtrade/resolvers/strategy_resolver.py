@@ -88,7 +88,7 @@ class StrategyResolver(IResolver):
                       ("use_sell_signal",                 True),
                       ("exit_profit_only",                False),
                       ("ignore_roi_if_buy_signal",        False),
-                      ("sell_profit_offset",              0.0),
+                      ("exit_profit_offset",              0.0),
                       ("disable_dataframe_checks",        False),
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
@@ -193,6 +193,7 @@ class StrategyResolver(IResolver):
             # TODO: Implementing one of the following methods should show a deprecation warning
             #  buy_trend and sell_trend, custom_sell
             warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only')
+            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset')
 
             if (
                 not check_override(strategy, IStrategy, 'populate_buy_trend')

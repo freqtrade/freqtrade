@@ -151,7 +151,7 @@ CONF_SCHEMA = {
         'trailing_only_offset_is_reached': {'type': 'boolean'},
         'use_sell_signal': {'type': 'boolean'},
         'exit_profit_only': {'type': 'boolean'},
-        'sell_profit_offset': {'type': 'number'},
+        'exit_profit_offset': {'type': 'number'},
         'ignore_roi_if_buy_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},

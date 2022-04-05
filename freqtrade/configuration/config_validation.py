@@ -318,3 +318,4 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
 def _strategy_settings(conf: Dict[str, Any]) -> None:
 
     process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')
+    process_deprecated_setting(conf, None, 'sell_profit_offset', None, 'exit_profit_offset')
