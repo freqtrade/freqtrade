@@ -635,8 +635,6 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalTagType.ENTER_TAG.value] = None
             dataframe[SignalTagType.EXIT_TAG.value] = None
 
-        # Other Defs in strategy that want to be called every loop here
-        # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
         logger.debug("Loop Analysis Launched")
 
         return dataframe
@@ -717,7 +715,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Calculates current signal based based on the entry order or exit order
         columns of the dataframe.
-        Used by Bot to get the signal to buy, sell, short, or exit_short
+        Used by Bot to get the signal to enter, or exit
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
@@ -751,7 +749,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         is_short: bool = None
     ) -> Tuple[bool, bool, Optional[str]]:
         """
-        Calculates current exit signal based based on the buy/short or sell/exit_short
+        Calculates current exit signal based based on the dataframe
         columns of the dataframe.
         Used by Bot to get the signal to exit.
         depending on is_short, looks at "short" or "long" columns.
@@ -788,9 +786,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe: DataFrame,
     ) -> Tuple[Optional[SignalDirection], Optional[str]]:
         """
-        Calculates current entry signal based based on the buy/short or sell/exit_short
+        Calculates current entry signal based based on the dataframe signals
         columns of the dataframe.
-        Used by Bot to get the signal to buy, sell, short, or exit_short
+        Used by Bot to get the signal to enter trades.
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
@@ -868,7 +866,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                               current_profit=current_profit,
                                               force_stoploss=force_stoploss, low=low, high=high)
 
-        # Set current rate to high for backtesting sell
+        # Set current rate to high for backtesting exits
         current_rate = (low if trade.is_short else high) or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
@@ -1028,9 +1026,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based on trade duration, current profit of the trade and ROI configuration,
-        decides whether bot should sell.
+        decides whether bot should exit.
         :param current_profit: current profit as ratio
-        :return: True if bot should sell at current rate
+        :return: True if bot should exit at current rate
         """
         # Check if time matches and current rate is above threshold
         trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
@@ -1129,7 +1127,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the
             currently traded pair
-        :return: DataFrame with sell column
+        :return: DataFrame with exit column
         """
 
         logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")
