@@ -1,15 +1,12 @@
 """ Gate.io exchange subclass """
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import ccxt
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
-
-CcxtModuleType = Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +38,6 @@ class Gateio(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
-
-    def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
-                   ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
-        ccxt_kwargs.update({"timeout": 15000})
-        return super()._init_ccxt(exchange_config, ccxt_module, ccxt_kwargs)
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
