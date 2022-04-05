@@ -85,7 +85,7 @@ class StrategyResolver(IResolver):
                       ("protections",                     None),
                       ("startup_candle_count",            None),
                       ("unfilledtimeout",                 None),
-                      ("use_sell_signal",                 True),
+                      ("use_exit_signal",                 True),
                       ("exit_profit_only",                False),
                       ("ignore_roi_if_buy_signal",        False),
                       ("exit_profit_offset",              0.0),
@@ -188,12 +188,14 @@ class StrategyResolver(IResolver):
                 raise OperationalException(
                     "Please migrate your implementation of `custom_sell` to `custom_exit`.")
             warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only', True)
-
+            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset', True)
+            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal', True)
         else:
             # TODO: Implementing one of the following methods should show a deprecation warning
             #  buy_trend and sell_trend, custom_sell
             warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only')
             warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset')
+            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal')
 
             if (
                 not check_override(strategy, IStrategy, 'populate_buy_trend')
@@ -267,7 +269,7 @@ class StrategyResolver(IResolver):
         )
 
 
-def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error: False):
+def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False):
     if hasattr(strategy, old):
         errormsg = f"DEPRECATED: Using '{old}' moved to '{new}'."
         if error:

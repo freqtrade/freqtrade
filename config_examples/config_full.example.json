@@ -15,7 +15,7 @@
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
-    "use_sell_signal": true,
+    "use_exit_signal": true,
     "exit_profit_only": false,
     "exit_profit_offset": 0.0,
     "ignore_roi_if_buy_signal": false,

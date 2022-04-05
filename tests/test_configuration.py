@@ -868,15 +868,15 @@ def test_validate_tsl(default_conf):
 
 def test_validate_edge2(edge_conf):
     edge_conf.update({
-        "use_sell_signal": True,
+        "use_exit_signal": True,
     })
     # Passes test
     validate_config_consistency(edge_conf)
 
     edge_conf.update({
-        "use_sell_signal": False,
+        "use_exit_signal": False,
     })
-    with pytest.raises(OperationalException, match="Edge requires `use_sell_signal` to be True, "
+    with pytest.raises(OperationalException, match="Edge requires `use_exit_signal` to be True, "
                        "otherwise no sells will happen."):
         validate_config_consistency(edge_conf)
 
@@ -1238,8 +1238,8 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-    ("ask_strategy", "use_sell_signal", True,
-     None, "use_sell_signal", False),
+    ("ask_strategy", "use_exit_signal", True,
+     None, "use_exit_signal", False),
     ("ask_strategy", "sell_profit_only", True,
      None, "sell_profit_only", False),
     ("ask_strategy", "sell_profit_offset", 0.1,
@@ -1288,7 +1288,7 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
 
 
 @pytest.mark.parametrize("setting", [
-    ("experimental", "use_sell_signal", False),
+    ("experimental", "use_exit_signal", False),
     ("experimental", "sell_profit_only", True),
     ("experimental", "ignore_roi_if_buy_signal", True),
 ])

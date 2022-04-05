@@ -154,9 +154,9 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if not conf.get('use_sell_signal', True):
+    if not conf.get('use_exit_signal', True):
         raise OperationalException(
-            "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."
+            "Edge requires `use_exit_signal` to be True, otherwise no sells will happen."
         )
 
 
@@ -317,5 +317,6 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
 
 def _strategy_settings(conf: Dict[str, Any]) -> None:
 
+    process_deprecated_setting(conf, None, 'use_sell_signal', None, 'use_exit_signal')
     process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')
     process_deprecated_setting(conf, None, 'sell_profit_offset', None, 'exit_profit_offset')

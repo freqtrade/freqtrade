@@ -2273,14 +2273,14 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_trade_use_sell_signal(
+def test_handle_trade_use_exit_signal(
     default_conf_usdt, ticker_usdt, limit_order_open, fee, mocker, caplog, is_short
 ) -> None:
 
     enter_open_order = limit_order_open[exit_side(is_short)]
     exit_open_order = limit_order_open[enter_side(is_short)]
 
-    # use_sell_signal is True buy default
+    # use_exit_signal is True buy default
     caplog.set_level(logging.DEBUG)
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -3657,7 +3657,7 @@ def test_exit_profit_only(
         get_fee=fee,
     )
     default_conf_usdt.update({
-        'use_sell_signal': True,
+        'use_exit_signal': True,
         'exit_profit_only': profit_only,
         'exit_profit_offset': 0.1,
     })

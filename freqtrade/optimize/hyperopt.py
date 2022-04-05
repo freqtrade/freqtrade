@@ -114,8 +114,8 @@ class Hyperopt:
         self.position_stacking = self.config.get('position_stacking', False)
 
         if HyperoptTools.has_space(self.config, 'sell'):
-            # Make sure use_sell_signal is enabled
-            self.config['use_sell_signal'] = True
+            # Make sure use_exit_signal is enabled
+            self.config['use_exit_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
         self.hyperopt_table_header = 0

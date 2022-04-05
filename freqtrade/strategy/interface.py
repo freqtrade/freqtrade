@@ -90,7 +90,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    use_sell_signal: bool
+    use_exit_signal: bool
     exit_profit_only: bool
     exit_profit_offset: float
     ignore_roi_if_buy_signal: bool
@@ -884,7 +884,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
             # exit_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif self.use_sell_signal and not enter:
+        elif self.use_exit_signal and not enter:
             if exit_:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:

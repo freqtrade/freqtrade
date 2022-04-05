@@ -310,27 +310,27 @@ def test_strategy_override_order_tif(caplog, default_conf):
         StrategyResolver.load_strategy(default_conf)
 
 
-def test_strategy_override_use_sell_signal(caplog, default_conf):
+def test_strategy_override_use_exit_signal(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
-    assert strategy.use_sell_signal
-    assert isinstance(strategy.use_sell_signal, bool)
+    assert strategy.use_exit_signal
+    assert isinstance(strategy.use_exit_signal, bool)
     # must be inserted to configuration
-    assert 'use_sell_signal' in default_conf
-    assert default_conf['use_sell_signal']
+    assert 'use_exit_signal' in default_conf
+    assert default_conf['use_exit_signal']
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'use_sell_signal': False,
+        'use_exit_signal': False,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert not strategy.use_sell_signal
-    assert isinstance(strategy.use_sell_signal, bool)
-    assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
+    assert not strategy.use_exit_signal
+    assert isinstance(strategy.use_exit_signal, bool)
+    assert log_has("Override strategy 'use_exit_signal' with value in config file: False.", caplog)
 
 
 def test_strategy_override_use_exit_profit_only(caplog, default_conf):
