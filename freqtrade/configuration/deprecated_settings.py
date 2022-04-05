@@ -82,6 +82,31 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                None, 'ignore_roi_if_buy_signal')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
                                None, 'ignore_buying_expired_candle_after')
+    # New settings
+    if config.get('telegram'):
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell',
+                                   'notification_settings', 'exit')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell_fill',
+                                   'notification_settings', 'exit_fill')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell_cancel',
+                                   'notification_settings', 'exit_cancel')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy',
+                                   'notification_settings', 'entry')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy_fill',
+                                   'notification_settings', 'entry_fill')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy_cancel',
+                                   'notification_settings', 'entry_cancel')
+    if config.get('webhook'):
+        process_deprecated_setting(config, 'webhook', 'webhookbuy', 'webhook', 'webhookentry')
+        process_deprecated_setting(config, 'webhook', 'webhookbuycancel',
+                                   'webhook', 'webhookentrycancel')
+        process_deprecated_setting(config, 'webhook', 'webhookbuyfill',
+                                   'webhook', 'webhookentryfill')
+        process_deprecated_setting(config, 'webhook', 'webhooksell', 'webhook', 'webhookexit')
+        process_deprecated_setting(config, 'webhook', 'webhooksellcancel',
+                                   'webhook', 'webhookexitcancel')
+        process_deprecated_setting(config, 'webhook', 'webhooksellfill',
+                                   'webhook', 'webhookexitfill')
 
     # Legacy way - having them in experimental ...
     process_removed_setting(config, 'experimental', 'use_sell_signal',

@@ -77,7 +77,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
                                  "exit_reason": [ExitType.ROI, ExitType.STOP_LOSS,
-                                                 ExitType.ROI, ExitType.FORCE_SELL]
+                                                 ExitType.ROI, ExitType.FORCE_EXIT]
                                  }),
         'config': default_conf,
         'locks': [],
@@ -129,7 +129,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
              "is_short": [False, False, False, False],
              "stake_amount": [0.01, 0.01, 0.01, 0.01],
              "exit_reason": [ExitType.ROI, ExitType.ROI,
-                             ExitType.STOP_LOSS, ExitType.FORCE_SELL]
+                             ExitType.STOP_LOSS, ExitType.FORCE_EXIT]
              }),
         'config': default_conf,
         'locks': [],

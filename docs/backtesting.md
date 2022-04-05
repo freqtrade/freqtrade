@@ -279,8 +279,8 @@ A backtesting result will look like that:
 |:-------------------|--------:|------:|-------:|--------:|
 | trailing_stop_loss |     205 |   150 |      0 |      55 |
 | stop_loss          |     166 |     0 |      0 |     166 |
-| sell_signal        |      56 |    36 |      0 |      20 |
-| force_sell         |       2 |     0 |      0 |       2 |
+| exit_signal        |      56 |    36 |      0 |      20 |
+| force_exit         |       2 |     0 |      0 |       2 |
 ====================================================== LEFT OPEN TRADES REPORT ======================================================
 | Pair     |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
 |:---------|-------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
@@ -362,7 +362,7 @@ Hence, keep in mind that your performance is an integral mix of all different el
 ### Exit reasons table
 
 The 2nd table contains a recap of exit reasons.
-This table can tell you which area needs some additional work (e.g. all or many of the `sell_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
+This table can tell you which area needs some additional work (e.g. all or many of the `exit_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
 
 ### Left open trades table
 

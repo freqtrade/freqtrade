@@ -139,21 +139,21 @@
             "status": "on",
             "warning": "on",
             "startup": "on",
-            "buy": "on",
-            "buy_fill": "on",
-            "sell": {
+            "entry": "on",
+            "entry_fill": "on",
+            "exit": {
                 "roi": "off",
-                "emergency_sell": "off",
-                "force_sell": "off",
-                "sell_signal": "off",
+                "emergency_exit": "off",
+                "force_exit": "off",
+                "exit_signal": "off",
                 "trailing_stop_loss": "off",
                 "stop_loss": "off",
                 "stoploss_on_exchange": "off",
-                "custom_sell": "off"
+                "custom_exit": "off"
             },
-            "sell_fill": "on",
-            "buy_cancel": "on",
-            "sell_cancel": "on",
+            "exit_fill": "on",
+            "entry_cancel": "on",
+            "exit_cancel": "on",
             "protection_trigger": "off",
             "protection_trigger_global": "on"
         },

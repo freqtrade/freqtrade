@@ -95,8 +95,8 @@ tc1 = BTContainer(data=[
     [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
 ],
     stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=2),
-            BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=4, close_tick=6)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=2),
+            BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=4, close_tick=6)]
 )
 
 # 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
@@ -391,7 +391,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 17,
          'close_rate': 17,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -402,7 +402,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 20,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -413,7 +413,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 26,
          'close_rate': 34,
-         'exit_type': 'sell_signal'}
+         'exit_type': 'exit_signal'}
     ]
 
     trades_df = DataFrame(trades)
