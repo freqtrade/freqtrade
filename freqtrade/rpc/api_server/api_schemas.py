@@ -316,7 +316,7 @@ class ForceEnterPayload(BaseModel):
     entry_tag: Optional[str]
 
 
-class Force_exitPayload(BaseModel):
+class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
 

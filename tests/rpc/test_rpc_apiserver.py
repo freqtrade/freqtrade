@@ -1075,7 +1075,7 @@ def test_api_whitelist(botclient):
 
 @pytest.mark.parametrize('endpoint', [
     'forcebuy',
-    'forceenter',
+    'force_enter',
 ])
 def test_api_force_entry(botclient, mocker, fee, endpoint):
     ftbot, client = botclient

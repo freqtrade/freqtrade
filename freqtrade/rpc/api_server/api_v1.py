@@ -15,7 +15,7 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
-                                                  ForceEnterResponse, Force_exitPayload, Health,
+                                                  ForceEnterResponse, ForceExitPayload, Health,
                                                   Locks, Logs, OpenTradeSchema, PairHistory,
                                                   PerformanceEntry, Ping, PlotConfig, Profit,
                                                   ResultMsg, ShowConfig, Stats, StatusMsg,
@@ -136,7 +136,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 
 
 # /forcebuy is deprecated with short addition. use Force_entry instead
-@router.post('/forceenter', response_model=ForceEnterResponse, tags=['trading'])
+@router.post('/force_enter', response_model=ForceEnterResponse, tags=['trading'])
 @router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
 def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
@@ -156,7 +156,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 
 @router.post('/force_exit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
-def forcesell(payload: Force_exitPayload, rpc: RPC = Depends(get_rpc)):
+def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     return rpc._rpc_force_exit(payload.tradeid, ordertype)
 

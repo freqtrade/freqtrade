@@ -9,6 +9,8 @@ You can use the quick summary as checklist. Please refer to the detailed section
 
 ## Quick summary / migration checklist
 
+Note : `force_exit`, `force_enter`, `emergency_exit` are changed to `force_exit`, `force_enter`, `emergency_exit` respectively.
+
 * Strategy methods:
   * [`populate_buy_trend()` -> `populate_entry_trend()`](#populate_buy_trend)
   * [`populate_sell_trend()` -> `populate_exit_trend()`](#populate_sell_trend)
@@ -331,6 +333,7 @@ After:
 #### `order_types`
 
 `order_types` have changed all wordings from `buy` to `entry` - and `sell` to `exit`.
+And two words are joined with `_`. 
 
 ``` python hl_lines="2-6"
     order_types = {
