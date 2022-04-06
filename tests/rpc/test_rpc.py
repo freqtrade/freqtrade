@@ -825,8 +825,7 @@ def test_rpc_forceexit(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
     mocker.patch(
-        'freqtrade.exchange.Exchange._fill_dry_limit_order',
-        MagicMock(side_effect=lambda *_: (None, 0)),)
+        'freqtrade.exchange.Exchange._fill_dry_limit_order', side_effect=lambda *_: (None, 0))
     freqtradebot.enter_positions()
     # make an limit-buy open trade
     trade = Trade.query.filter(Trade.id == '3').first()
