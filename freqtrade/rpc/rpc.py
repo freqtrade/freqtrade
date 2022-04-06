@@ -695,7 +695,7 @@ class RPC:
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                if order['side'] == trade.enter_side:
+                if order['side'] == trade.entry_side:
                     fully_canceled = self._freqtrade.handle_cancel_enter(
                         trade, order, CANCEL_REASON['FORCE_EXIT'])
 
