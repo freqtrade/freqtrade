@@ -774,8 +774,8 @@ class Backtesting:
                 ft_pair=trade.pair,
                 order_id=str(self.order_id_counter),
                 symbol=trade.pair,
-                ft_order_side=trade.enter_side,
-                side=trade.enter_side,
+                ft_order_side=trade.entry_side,
+                side=trade.entry_side,
                 order_type=order_type,
                 status="open",
                 order_date=current_time,
@@ -857,7 +857,7 @@ class Backtesting:
 
             timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
             if timedout:
-                if order.side == trade.enter_side:
+                if order.side == trade.entry_side:
                     self.timedout_entry_orders += 1
                     if trade.nr_of_successful_entries == 0:
                         # Remove trade due to entry timeout expiration.
@@ -972,7 +972,7 @@ class Backtesting:
 
                 for trade in list(open_trades[pair]):
                     # 3. Process entry orders.
-                    order = trade.select_order(trade.enter_side, is_open=True)
+                    order = trade.select_order(trade.entry_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time)
                         trade.open_order_id = None
