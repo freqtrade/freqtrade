@@ -1044,7 +1044,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
-        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+        side = 'entry' if order.ft_order_side == trade.entry_side else 'exit'
 
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:

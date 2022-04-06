@@ -27,7 +27,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
   * [New column `enter_short` and corresponding new column `exit_short`](#populate_sell_trend)
 * trade-object now has the following new properties:
   * `is_short`
-  * `enter_side`
+  * `entry_side`
   * `exit_side`
   * `trade_direction`
   * renamed: `sell_reason` -> `exit_reason`
