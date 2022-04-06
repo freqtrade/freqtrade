@@ -12,14 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 def check_conflicting_settings(config: Dict[str, Any],
-                               section_old: str, name_old: str,
+                               section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str) -> None:
     section_new_config = config.get(section_new, {}) if section_new else config
-    section_old_config = config.get(section_old, {})
+    section_old_config = config.get(section_old, {}) if section_old else config
     if name_new in section_new_config and name_old in section_old_config:
         new_name = f"{section_new}.{name_new}" if section_new else f"{name_new}"
+        old_name = f"{section_old}.{name_old}" if section_old else f"{name_old}"
         raise OperationalException(
-            f"Conflicting settings `{new_name}` and `{section_old}.{name_old}` "
+            f"Conflicting settings `{new_name}` and `{old_name}` "
             "(DEPRECATED) detected in the configuration file. "
             "This deprecated setting will be removed in the next versions of Freqtrade. "
             f"Please delete it from your configuration and use the `{new_name}` "
@@ -47,11 +48,11 @@ def process_removed_setting(config: Dict[str, Any],
 
 
 def process_deprecated_setting(config: Dict[str, Any],
-                               section_old: str, name_old: str,
+                               section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str
                                ) -> None:
     check_conflicting_settings(config, section_old, name_old, section_new, name_new)
-    section_old_config = config.get(section_old, {})
+    section_old_config = config.get(section_old, {}) if section_old else config
 
     if name_old in section_old_config:
         section_2 = f"{section_new}.{name_new}" if section_new else f"{name_new}"
