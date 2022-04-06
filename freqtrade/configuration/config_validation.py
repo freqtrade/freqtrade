@@ -154,9 +154,9 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if not conf.get('use_sell_signal', True):
+    if not conf.get('use_exit_signal', True):
         raise OperationalException(
-            "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."
+            "Edge requires `use_exit_signal` to be True, otherwise no sells will happen."
         )
 
 
@@ -219,6 +219,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
     _validate_order_types(conf)
     _validate_unfilledtimeout(conf)
     _validate_pricing_rules(conf)
+    _strategy_settings(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -312,3 +313,12 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
                 else:
                     process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']
+
+
+def _strategy_settings(conf: Dict[str, Any]) -> None:
+
+    process_deprecated_setting(conf, None, 'use_sell_signal', None, 'use_exit_signal')
+    process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')
+    process_deprecated_setting(conf, None, 'sell_profit_offset', None, 'exit_profit_offset')
+    process_deprecated_setting(conf, None, 'ignore_roi_if_buy_signal',
+                               None, 'ignore_roi_if_entry_signal')

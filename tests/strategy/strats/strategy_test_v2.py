@@ -50,6 +50,8 @@ class StrategyTestV2(IStrategy):
         'entry': 'gtc',
         'exit': 'gtc',
     }
+    # Test legacy use_sell_signal definition
+    use_sell_signal = False
 
     # By default this strategy does not use Position Adjustments
     position_adjustment_enable = False

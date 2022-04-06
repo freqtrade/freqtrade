@@ -2273,14 +2273,14 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_trade_use_sell_signal(
+def test_handle_trade_use_exit_signal(
     default_conf_usdt, ticker_usdt, limit_order_open, fee, mocker, caplog, is_short
 ) -> None:
 
     enter_open_order = limit_order_open[exit_side(is_short)]
     exit_open_order = limit_order_open[entry_side(is_short)]
 
-    # use_sell_signal is True buy default
+    # use_exit_signal is True buy default
     caplog.set_level(logging.DEBUG)
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -3637,7 +3637,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, False),
     (False, 0.10, 0.22, True, False, ExitType.EXIT_SIGNAL.value, True),
 ])
-def test_sell_profit_only(
+def test_exit_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
         fee, mocker, profit_only, bid, ask, handle_first, handle_second, exit_type) -> None:
     patch_RPCManager(mocker)
@@ -3657,9 +3657,9 @@ def test_sell_profit_only(
         get_fee=fee,
     )
     default_conf_usdt.update({
-        'use_sell_signal': True,
-        'sell_profit_only': profit_only,
-        'sell_profit_offset': 0.1,
+        'use_exit_signal': True,
+        'exit_profit_only': profit_only,
+        'exit_profit_offset': 0.1,
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
@@ -3679,7 +3679,7 @@ def test_sell_profit_only(
     assert freqtrade.handle_trade(trade) is handle_first
 
     if handle_second:
-        freqtrade.strategy.sell_profit_offset = 0.0
+        freqtrade.strategy.exit_profit_offset = 0.0
         assert freqtrade.handle_trade(trade) is True
 
 
@@ -3799,8 +3799,8 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_open, is_short,
-                                  fee, mocker) -> None:
+def test_ignore_roi_if_entry_signal(default_conf_usdt, limit_order, limit_order_open, is_short,
+                                    fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     eside = entry_side(is_short)
@@ -3817,7 +3817,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
         ]),
         get_fee=fee,
     )
-    default_conf_usdt['ignore_roi_if_buy_signal'] = True
+    default_conf_usdt['ignore_roi_if_entry_signal'] = True
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
@@ -4016,8 +4016,8 @@ def test_trailing_stop_loss_positive(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_open,
-                                          is_short, fee, mocker) -> None:
+def test_disable_ignore_roi_if_entry_signal(default_conf_usdt, limit_order, limit_order_open,
+                                            is_short, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     eside = entry_side(is_short)
@@ -4037,7 +4037,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     default_conf_usdt['exit_pricing'] = {
-        'ignore_roi_if_buy_signal': False
+        'ignore_roi_if_entry_signal': False
     }
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
