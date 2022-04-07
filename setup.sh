@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 9 10 8
+    for v in 10 9 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -35,7 +35,7 @@ function check_installed_python() {
             return
         fi
     done
-
+    PYTHON="python3.10"
     echo "No usable python found. Please make sure to have python3.8 or newer installed."
     exit 1
 }
