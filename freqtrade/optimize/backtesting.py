@@ -349,20 +349,20 @@ class Backtesting:
             data[pair] = df_analyzed[headers].values.tolist() if not df_analyzed.empty else []
         return data
 
-    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
+    def _get_close_rate(self, row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                         trade_dur: int) -> float:
         """
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
         if sell.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
-            return self._get_close_rate_for_stoploss(sell_row, trade, sell, trade_dur)
+            return self._get_close_rate_for_stoploss(row, trade, sell, trade_dur)
         elif sell.exit_type == (ExitType.ROI):
-            return self._get_close_rate_for_roi(sell_row, trade, sell, trade_dur)
+            return self._get_close_rate_for_roi(row, trade, sell, trade_dur)
         else:
-            return sell_row[OPEN_IDX]
+            return row[OPEN_IDX]
 
-    def _get_close_rate_for_stoploss(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
+    def _get_close_rate_for_stoploss(self, row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                                      trade_dur: int) -> float:
         # our stoploss was already lower than candle high,
         # possibly due to a cancelled trade exit.
@@ -371,11 +371,11 @@ class Backtesting:
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
         if is_short:
-            if trade.stop_loss < sell_row[LOW_IDX]:
-                return sell_row[OPEN_IDX]
+            if trade.stop_loss < row[LOW_IDX]:
+                return row[OPEN_IDX]
         else:
-            if trade.stop_loss > sell_row[HIGH_IDX]:
-                return sell_row[OPEN_IDX]
+            if trade.stop_loss > row[HIGH_IDX]:
+                return row[OPEN_IDX]
 
         # Special case: trailing triggers within same candle as trade opened. Assume most
         # pessimistic price movement, which is moving just enough to arm stoploss and
@@ -388,29 +388,28 @@ class Backtesting:
                 and self.strategy.trailing_stop_positive
             ):
                 # Worst case: price reaches stop_positive_offset and dives down.
-                stop_rate = (sell_row[OPEN_IDX] *
+                stop_rate = (row[OPEN_IDX] *
                              (1 + side_1 * abs(self.strategy.trailing_stop_positive_offset) -
                               side_1 * abs(self.strategy.trailing_stop_positive / leverage)))
             else:
                 # Worst case: price ticks tiny bit above open and dives down.
-                stop_rate = sell_row[OPEN_IDX] * (1 -
-                                                  side_1 * abs(trade.stop_loss_pct / leverage))
+                stop_rate = row[OPEN_IDX] * (1 - side_1 * abs(trade.stop_loss_pct / leverage))
                 if is_short:
-                    assert stop_rate > sell_row[LOW_IDX]
+                    assert stop_rate > row[LOW_IDX]
                 else:
-                    assert stop_rate < sell_row[HIGH_IDX]
+                    assert stop_rate < row[HIGH_IDX]
 
             # Limit lower-end to candle low to avoid sells below the low.
             # This still remains "worst case" - but "worst realistic case".
             if is_short:
-                return min(sell_row[HIGH_IDX], stop_rate)
+                return min(row[HIGH_IDX], stop_rate)
             else:
-                return max(sell_row[LOW_IDX], stop_rate)
+                return max(row[LOW_IDX], stop_rate)
 
         # Set close_rate to stoploss
         return trade.stop_loss
 
-    def _get_close_rate_for_roi(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
+    def _get_close_rate_for_roi(self, row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                                 trade_dur: int) -> float:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0
@@ -421,38 +420,38 @@ class Backtesting:
                 # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
                 # If that entry is a multiple of the timeframe (so on candle open)
                 # - we'll use open instead of close
-                return sell_row[OPEN_IDX]
+                return row[OPEN_IDX]
 
             # - (Expected abs profit - open_rate - open_fee) / (fee_close -1)
             roi_rate = trade.open_rate * roi / leverage
             open_fee_rate = side_1 * trade.open_rate * (1 + side_1 * trade.fee_open)
             close_rate = -(roi_rate + open_fee_rate) / (trade.fee_close - side_1 * 1)
             if is_short:
-                is_new_roi = sell_row[OPEN_IDX] < close_rate
+                is_new_roi = row[OPEN_IDX] < close_rate
             else:
-                is_new_roi = sell_row[OPEN_IDX] > close_rate
+                is_new_roi = row[OPEN_IDX] > close_rate
             if (trade_dur > 0 and trade_dur == roi_entry
                     and roi_entry % self.timeframe_min == 0
                     and is_new_roi):
                 # new ROI entry came into effect.
                 # use Open rate if open_rate > calculated sell rate
-                return sell_row[OPEN_IDX]
+                return row[OPEN_IDX]
 
             if (trade_dur == 0 and (
                 (
                     is_short
                     # Red candle (for longs)
-                    and sell_row[OPEN_IDX] < sell_row[CLOSE_IDX]  # Red candle
-                    and trade.open_rate > sell_row[OPEN_IDX]  # trade-open above open_rate
-                    and close_rate < sell_row[CLOSE_IDX]  # closes below close
+                    and row[OPEN_IDX] < row[CLOSE_IDX]  # Red candle
+                    and trade.open_rate > row[OPEN_IDX]  # trade-open above open_rate
+                    and close_rate < row[CLOSE_IDX]  # closes below close
                 )
                 or
                 (
                     not is_short
                     # green candle (for shorts)
-                    and sell_row[OPEN_IDX] > sell_row[CLOSE_IDX]  # green candle
-                    and trade.open_rate < sell_row[OPEN_IDX]  # trade-open below open_rate
-                    and close_rate > sell_row[CLOSE_IDX]  # closes above close
+                    and row[OPEN_IDX] > row[CLOSE_IDX]  # green candle
+                    and trade.open_rate < row[OPEN_IDX]  # trade-open below open_rate
+                    and close_rate > row[CLOSE_IDX]  # closes above close
                 )
             )):
                 # ROI on opening candles with custom pricing can only
@@ -464,11 +463,11 @@ class Backtesting:
             # Use the maximum between close_rate and low as we
             # cannot sell outside of a candle.
             # Applies when a new ROI setting comes in place and the whole candle is above that.
-            return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
+            return min(max(close_rate, row[LOW_IDX]), row[HIGH_IDX])
 
         else:
             # This should not be reached...
-            return sell_row[OPEN_IDX]
+            return row[OPEN_IDX]
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
@@ -498,7 +497,7 @@ class Backtesting:
         return row[LOW_IDX] <= rate <= row[HIGH_IDX]
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
-                                         sell_row: Tuple) -> Optional[LocalTrade]:
+                                         row: Tuple) -> Optional[LocalTrade]:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
@@ -507,15 +506,15 @@ class Backtesting:
                 entry_count = trade.nr_of_successful_entries
                 check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
             if check_adjust_entry:
-                trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+                trade = self._get_adjust_trade_entry_for_candle(trade, row)
 
-        sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
-        enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
-        exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]
+        sell_candle_time: datetime = row[DATE_IDX].to_pydatetime()
+        enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
+        exit_ = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
         sell = self.strategy.should_exit(
-            trade, sell_row[OPEN_IDX], sell_candle_time,  # type: ignore
+            trade, row[OPEN_IDX], sell_candle_time,  # type: ignore
             enter=enter, exit_=exit_,
-            low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
+            low=row[LOW_IDX], high=row[HIGH_IDX]
         )
 
         if sell.exit_flag:
@@ -523,7 +522,7 @@ class Backtesting:
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
-                closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+                closerate = self._get_close_rate(row, trade, sell, trade_dur)
             except ValueError:
                 return None
             # call the custom exit price,with default value as previous closerate
@@ -540,9 +539,9 @@ class Backtesting:
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
-                        closerate = min(closerate, sell_row[HIGH_IDX])
+                        closerate = min(closerate, row[HIGH_IDX])
                     else:
-                        closerate = max(closerate, sell_row[LOW_IDX])
+                        closerate = max(closerate, row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
@@ -558,13 +557,13 @@ class Backtesting:
             trade.exit_reason = sell.exit_reason
 
             # Checks and adds an exit tag, after checking that the length of the
-            # sell_row has the length for an exit tag column
+            # row has the length for an exit tag column
             if(
-                len(sell_row) > EXIT_TAG_IDX
-                and sell_row[EXIT_TAG_IDX] is not None
-                and len(sell_row[EXIT_TAG_IDX]) > 0
+                len(row) > EXIT_TAG_IDX
+                and row[EXIT_TAG_IDX] is not None
+                and len(row[EXIT_TAG_IDX]) > 0
             ):
-                trade.exit_reason = sell_row[EXIT_TAG_IDX]
+                trade.exit_reason = row[EXIT_TAG_IDX]
 
             self.order_id_counter += 1
             order = Order(
@@ -592,8 +591,8 @@ class Backtesting:
 
         return None
 
-    def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
-        sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
+    def _get_sell_trade_entry(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
+        sell_candle_time: datetime = row[DATE_IDX].to_pydatetime()
 
         if self.trading_mode == TradingMode.FUTURES:
             trade.funding_fees = self.exchange.calculate_funding_fees(
@@ -614,13 +613,13 @@ class Backtesting:
             ].copy()
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
-                return self._get_sell_trade_entry_for_candle(trade, sell_row)
-            detail_data.loc[:, 'enter_long'] = sell_row[LONG_IDX]
-            detail_data.loc[:, 'exit_long'] = sell_row[ELONG_IDX]
-            detail_data.loc[:, 'enter_short'] = sell_row[SHORT_IDX]
-            detail_data.loc[:, 'exit_short'] = sell_row[ESHORT_IDX]
-            detail_data.loc[:, 'enter_tag'] = sell_row[ENTER_TAG_IDX]
-            detail_data.loc[:, 'exit_tag'] = sell_row[EXIT_TAG_IDX]
+                return self._get_sell_trade_entry_for_candle(trade, row)
+            detail_data.loc[:, 'enter_long'] = row[LONG_IDX]
+            detail_data.loc[:, 'exit_long'] = row[ELONG_IDX]
+            detail_data.loc[:, 'enter_short'] = row[SHORT_IDX]
+            detail_data.loc[:, 'exit_short'] = row[ESHORT_IDX]
+            detail_data.loc[:, 'enter_tag'] = row[ENTER_TAG_IDX]
+            detail_data.loc[:, 'exit_tag'] = row[EXIT_TAG_IDX]
             headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                        'enter_short', 'exit_short', 'enter_tag', 'exit_tag']
             for det_row in detail_data[headers].values.tolist():
@@ -631,7 +630,7 @@ class Backtesting:
             return None
 
         else:
-            return self._get_sell_trade_entry_for_candle(trade, sell_row)
+            return self._get_sell_trade_entry_for_candle(trade, row)
 
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
