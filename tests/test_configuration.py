@@ -160,7 +160,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
+        'freqtrade.configuration.load_config.load_config_file',
         configsmock
     )
 
@@ -191,7 +191,7 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
+    mocker.patch('freqtrade.configuration.load_config.load_config_file', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
 
@@ -214,7 +214,7 @@ def test_print_config(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
-    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
+    mocker.patch('freqtrade.configuration.configuration.load_from_files', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json'])
 
