@@ -69,21 +69,10 @@ class Configuration:
         # We expect here a list of config filenames
         for path in files:
             logger.info(f'Using config: {path} ...')
-
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
 
-        # Load environment variables
-        env_data = enironment_vars_to_dict()
-        config = deep_merge_dicts(env_data, config)
-
         config['config_files'] = files
-        # Normalize config
-        if 'internals' not in config:
-            config['internals'] = {}
-
-        if 'pairlists' not in config:
-            config['pairlists'] = []
 
         return config
 
@@ -94,6 +83,17 @@ class Configuration:
         """
         # Load all configs
         config: Dict[str, Any] = self.load_from_files(self.args.get("config", []))
+
+        # Load environment variables
+        env_data = enironment_vars_to_dict()
+        config = deep_merge_dicts(env_data, config)
+
+        # Normalize config
+        if 'internals' not in config:
+            config['internals'] = {}
+
+        if 'pairlists' not in config:
+            config['pairlists'] = []
 
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
