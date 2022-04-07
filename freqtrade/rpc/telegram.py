@@ -233,11 +233,11 @@ class Telegram(RPCHandler):
         is_fill = msg['type'] in [RPCMessageType.ENTRY_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
+        entry_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
                       else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
             f"{emoji} *{msg['exchange']}:*"
-            f" {enter_side['entered'] if is_fill else enter_side['enter']} {msg['pair']}"
+            f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""

@@ -29,7 +29,7 @@ Note : `force_exit`, `force_enter`, `emergency_exit` are changed to `force_exit`
   * [New column `enter_short` and corresponding new column `exit_short`](#populate_sell_trend)
 * trade-object now has the following new properties:
   * `is_short`
-  * `enter_side`
+  * `entry_side`
   * `exit_side`
   * `trade_direction`
   * renamed: `sell_reason` -> `exit_reason`
@@ -63,8 +63,11 @@ Note : `force_exit`, `force_enter`, `emergency_exit` are changed to `force_exit`
     * `sell` -> `exit`
     * `sell_fill` -> `exit_fill`
     * `sell_cancel` -> `exit_cancel`
-
-
+  * Strategy/config settings:
+    * `use_sell_signal` -> `use_exit_signal`
+    * `sell_profit_only` -> `exit_profit_only`
+    * `sell_profit_offset` -> `exit_profit_offset`
+    * `ignore_roi_if_buy_signal` -> `ignore_roi_if_entry_signal`
 
 ## Extensive explanation
 
@@ -361,6 +364,31 @@ After:
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
     }
+```
+
+#### Strategy level settings
+
+* `use_sell_signal` -> `use_exit_signal`
+* `sell_profit_only` -> `exit_profit_only`
+* `sell_profit_offset` -> `exit_profit_offset`
+* `ignore_roi_if_buy_signal` -> `ignore_roi_if_entry_signal`
+
+``` python hl_lines="2-5"
+    # These values can be overridden in the config.
+    use_sell_signal = True
+    sell_profit_only = True
+    sell_profit_offset: 0.01
+    ignore_roi_if_buy_signal = False
+```
+
+After:
+
+``` python hl_lines="2-5"
+    # These values can be overridden in the config.
+    use_exit_signal = True
+    exit_profit_only = True
+    exit_profit_offset: 0.01
+    ignore_roi_if_entry_signal = False
 ```
 
 #### `unfilledtimeout`

@@ -220,13 +220,13 @@ Protections can have 2 different ways to stop trading for a limited :
 ##### Protections - per pair
 
 Protections that implement the per pair approach must set `has_local_stop=True`.
-The method `stop_per_pair()` will be called whenever a trade closed (sell order completed).
+The method `stop_per_pair()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - global protection
 
 These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
 Global protection must set `has_global_stop=True` to be evaluated for global stops.
-The method `global_stop()` will be called whenever a trade closed (sell order completed).
+The method `global_stop()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - calculating lock end time
 
@@ -264,7 +264,7 @@ Additional tests / steps to complete:
 * Check if balance shows correctly (*)
 * Create market order (*)
 * Create limit order (*)
-* Complete trade (buy + sell) (*)
+* Complete trade (enter + exit) (*)
   * Compare result calculation between exchange and bot
   * Ensure fees are applied correctly (check the database against the exchange)
 

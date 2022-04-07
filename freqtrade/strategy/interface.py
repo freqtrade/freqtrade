@@ -90,10 +90,10 @@ class IStrategy(ABC, HyperStrategyMixin):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    use_sell_signal: bool
-    sell_profit_only: bool
-    sell_profit_offset: float
-    ignore_roi_if_buy_signal: bool
+    use_exit_signal: bool
+    exit_profit_only: bool
+    exit_profit_offset: float
+    ignore_roi_if_entry_signal: bool
 
     # Position adjustment is disabled by default
     position_adjustment_enable: bool = False
@@ -871,7 +871,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (enter and self.ignore_roi_if_buy_signal)
+        roi_reached = (not (enter and self.ignore_roi_if_entry_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=current_time))
 
@@ -881,10 +881,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
-            # sell_profit_only and profit doesn't reach the offset - ignore sell signal
+        if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
+            # exit_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif self.use_sell_signal and not enter:
+        elif self.use_exit_signal and not enter:
             if exit_:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
@@ -1044,7 +1044,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
-        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+        side = 'entry' if order.ft_order_side == trade.entry_side else 'exit'
 
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:

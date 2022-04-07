@@ -372,6 +372,12 @@ class LocalTrade():
 
     @property
     def enter_side(self) -> str:
+        """ DEPRECATED, please use entry_side instead"""
+        # TODO: Please remove me after 2022.5
+        return self.entry_side
+
+    @property
+    def entry_side(self) -> str:
         if self.is_short:
             return "sell"
         else:
@@ -412,7 +418,7 @@ class LocalTrade():
 
     def to_json(self) -> Dict[str, Any]:
         filled_orders = self.select_filled_orders()
-        orders = [order.to_json(self.enter_side) for order in filled_orders]
+        orders = [order.to_json(self.entry_side) for order in filled_orders]
 
         return {
             'trade_id': self.id,
@@ -601,7 +607,7 @@ class LocalTrade():
 
         logger.info(f'Updating trade (id={self.id}) ...')
 
-        if order.ft_order_side == self.enter_side:
+        if order.ft_order_side == self.entry_side:
             # Update open rate and actual amount
             self.open_rate = order.safe_price
             self.amount = order.safe_amount_after_fee
@@ -650,7 +656,7 @@ class LocalTrade():
         """
         Update Fee parameters. Only acts once per side
         """
-        if self.enter_side == side and self.fee_open_currency is None:
+        if self.entry_side == side and self.fee_open_currency is None:
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
             if fee_rate is not None:
@@ -667,7 +673,7 @@ class LocalTrade():
         """
         Verify if this side (buy / sell) has already been updated
         """
-        if self.enter_side == side:
+        if self.entry_side == side:
             return self.fee_open_currency is not None
         elif self.exit_side == side:
             return self.fee_close_currency is not None
@@ -840,7 +846,7 @@ class LocalTrade():
     def recalc_trade_from_orders(self):
         # We need at least 2 entry orders for averaging amounts and rates.
         # TODO: this condition could probably be removed
-        if len(self.select_filled_orders(self.enter_side)) < 2:
+        if len(self.select_filled_orders(self.entry_side)) < 2:
             self.stake_amount = self.amount * self.open_rate / self.leverage
 
             # Just in case, still recalc open trade value
@@ -851,7 +857,7 @@ class LocalTrade():
         total_stake = 0.0
         for o in self.orders:
             if (o.ft_is_open or
-                    (o.ft_order_side != self.enter_side) or
+                    (o.ft_order_side != self.entry_side) or
                     (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
@@ -919,7 +925,7 @@ class LocalTrade():
         :return: int count of entry orders that have been filled for this trade.
         """
 
-        return len(self.select_filled_orders(self.enter_side))
+        return len(self.select_filled_orders(self.entry_side))
 
     @property
     def nr_of_successful_exits(self) -> int:
