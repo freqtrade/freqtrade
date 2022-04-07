@@ -115,7 +115,7 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$', r'/force_exit$',
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$', r'/forceexit$',
                                  r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -153,7 +153,7 @@ class Telegram(RPCHandler):
             CommandHandler('balance', self._balance),
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
-            CommandHandler(['forcesell', 'force_exit', 'fe'], self._force_exit),
+            CommandHandler(['forcesell', 'forceexit', 'fx'], self._force_exit),
             CommandHandler(['forcebuy', 'forcelong'], partial(
                 self._force_enter, order_side=SignalDirection.LONG)),
             CommandHandler('forceshort', partial(
@@ -1360,13 +1360,13 @@ class Telegram(RPCHandler):
         :return: None
         """
         force_enter_text = ("*/forcelong <pair> [<rate>]:* `Instantly buys the given pair. "
-                           "Optionally takes a rate at which to buy "
-                           "(only applies to limit orders).` \n"
-                           )
+                            "Optionally takes a rate at which to buy "
+                            "(only applies to limit orders).` \n"
+                            )
         if self._rpc._freqtrade.trading_mode != TradingMode.SPOT:
             force_enter_text += ("*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
-                                "Optionally takes a rate at which to sell "
-                                "(only applies to limit orders).` \n")
+                                 "Optionally takes a rate at which to sell "
+                                 "(only applies to limit orders).` \n")
         message = (
             "_BotControl_\n"
             "------------\n"

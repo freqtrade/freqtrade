@@ -171,8 +171,9 @@ official commands. You can ask at any moment for help with `/help`.
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
-| `/force_exit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
-| `/force_exit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/fx` | alias for `/forceexit`
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`forcebuy_enable` must be set to True)
 | `/performance` | Show performance of each finished trade grouped by pair

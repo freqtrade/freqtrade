@@ -244,7 +244,9 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
 def _validate_order_types(conf: Dict[str, Any]) -> None:
 
     order_types = conf.get('order_types', {})
-    if any(x in order_types for x in ['buy', 'sell', 'emergencysell', 'forcebuy', 'forcesell', 'emergencyexit', 'forceexit', 'forceentry']):
+    old_order_types = ['buy', 'sell', 'emergencysell', 'forcebuy',
+                       'forcesell', 'emergencyexit', 'forceexit', 'forceentry']
+    if any(x in order_types for x in old_order_types):
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             raise OperationalException(
                 "Please migrate your order_types settings to use the new wording.")
