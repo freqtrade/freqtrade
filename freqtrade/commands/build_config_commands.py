@@ -202,6 +202,8 @@ def ask_user_config() -> Dict[str, Any]:
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
+    # Ensure default is set for non-futures exchanges
+    answers['trading_mode'] = answers.get('trading_mode', "spot")
     answers['margin_mode'] = (
         'isolated'
         if answers.get('trading_mode') == 'futures'

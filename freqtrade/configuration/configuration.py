@@ -433,8 +433,9 @@ class Configuration:
                              logstring='Detected --new-pairs-days: {}')
         self._args_to_config(config, argname='trading_mode',
                              logstring='Detected --trading-mode: {}')
-        config['candle_type_def'] = CandleType.get_default(config.get('trading_mode', 'spot'))
-        config['trading_mode'] = TradingMode(config.get('trading_mode', 'spot'))
+        config['candle_type_def'] = CandleType.get_default(
+            config.get('trading_mode', 'spot') or 'spot')
+        config['trading_mode'] = TradingMode(config.get('trading_mode', 'spot') or 'spot')
         self._args_to_config(config, argname='candle_types',
                              logstring='Detected --candle-types: {}')
 
