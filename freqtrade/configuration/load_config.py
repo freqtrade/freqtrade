@@ -86,7 +86,7 @@ def load_from_files(files: List[str], base_path: Path = None, level: int = 0) ->
 
     if not files:
         return deepcopy(MINIMAL_CONFIG)
-
+    files_loaded = []
     # We expect here a list of config filenames
     for filename in files:
         logger.info(f'Using config: {filename} ...')
@@ -101,11 +101,14 @@ def load_from_files(files: List[str], base_path: Path = None, level: int = 0) ->
         config_tmp = load_config_file(str(file))
         if 'files' in config_tmp:
             config_sub = load_from_files(config_tmp['files'], file.resolve().parent, level + 1)
+            files_loaded.extend(config_sub.get('config_files', []))
             deep_merge_dicts(config_sub, config_tmp)
+
+        files_loaded.insert(0, str(file))
 
         # Merge config options, overwriting prior values
         config = deep_merge_dicts(config_tmp, config)
 
-    config['config_files'] = files
+    config['config_files'] = files_loaded
 
     return config

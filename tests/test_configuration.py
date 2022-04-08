@@ -222,6 +222,12 @@ def test_from_recursive_files(testdatadir) -> None:
     # The other key comes from pricing2, which is imported by pricing.json
     assert conf['exit_pricing']['price_side'] == "other"
 
+    assert len(conf['config_files']) == 4
+    assert 'testconfig.json' in conf['config_files'][0]
+    assert 'test_pricing_conf.json' in conf['config_files'][1]
+    assert 'test_base_config.json' in conf['config_files'][2]
+    assert 'test_pricing2_conf.json' in conf['config_files'][3]
+
     files = testdatadir / "testconfigs/recursive.json"
     with pytest.raises(OperationalException, match="Config loop detected."):
         load_from_files([files])

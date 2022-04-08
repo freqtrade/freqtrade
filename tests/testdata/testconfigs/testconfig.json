@@ -1,6 +1,6 @@
 {
     "files": [
-        "base_config.json",
-        "pricing.json"
+        "test_base_config.json",
+        "test_pricing_conf.json"
     ]
 }

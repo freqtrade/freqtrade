@@ -16,6 +16,6 @@
         "price_last_balance": 0.0
     },
     "files": [
-        "pricing2.json"
+        "./test_pricing2_conf.json"
     ]
 }
