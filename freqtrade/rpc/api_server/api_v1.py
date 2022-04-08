@@ -153,6 +153,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
         return ForceEnterResponse.parse_obj(
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
+
 # /forcesell is deprecated with short addition. use /forceexit instead
 @router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
