@@ -1,0 +1,6 @@
+{
+    // This file fails as it's loading itself over and over
+    "files": [
+        "./recursive.json"
+    ]
+}

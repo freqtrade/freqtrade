@@ -1,0 +1,12 @@
+{
+    "stake_currency": "",
+    "dry_run": true,
+    "exchange": {
+        "name": "",
+        "key": "",
+        "secret": "",
+        "pair_whitelist": [],
+        "ccxt_async_config": {
+        }
+    }
+}
