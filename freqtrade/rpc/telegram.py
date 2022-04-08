@@ -115,9 +115,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcelong$', r'/forceshort$', r'/forcebuy$', r'/forcesell$',
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$', r'/forcesell$',
                                  r'/edge$', r'/health$', r'/help$', r'/version$']
-
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -989,13 +988,13 @@ class Telegram(RPCHandler):
                 self._force_enter_action(pair, None, order_side)
 
     @staticmethod
-    def _layout_inline_keyboard(buttons: List[InlineKeyboardButton],
-                cols=3) -> List[List[InlineKeyboardButton]]:
+    def _layout_inline_keyboard(
+            buttons: List[InlineKeyboardButton], cols=3) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @staticmethod
-    def _layout_inline_keyboard_onecol(buttons: List[InlineKeyboardButton],
-                cols=1) -> List[List[InlineKeyboardButton]]:
+    def _layout_inline_keyboard_onecol(
+            buttons: List[InlineKeyboardButton], cols=1) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only
