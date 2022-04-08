@@ -3,7 +3,6 @@
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
 
-
 coveralls==3.3.1
 flake8==4.0.1
 flake8-tidy-imports==4.6.0
