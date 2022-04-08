@@ -136,7 +136,7 @@ class RPC:
                                                   ) if 'timeframe' in config else 0,
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
-            'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'force_entry_enable': config.get('force_entry_enable', False),
             'exit_pricing': config.get('exit_pricing', {}),
             'entry_pricing': config.get('entry_pricing', {}),
             'state': str(botstate),
@@ -750,7 +750,7 @@ class RPC:
         Buys a pair trade at the given or current price
         """
 
-        if not self._freqtrade.config.get('forcebuy_enable', False):
+        if not self._freqtrade.config.get('force_entry_enable', False):
             raise RPCException('Force_entry not enabled.')
 
         if self._freqtrade.state != State.RUNNING:

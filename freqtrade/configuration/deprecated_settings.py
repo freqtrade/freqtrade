@@ -55,10 +55,11 @@ def process_deprecated_setting(config: Dict[str, Any],
     section_old_config = config.get(section_old, {}) if section_old else config
 
     if name_old in section_old_config:
+        section_1 = f"{section_old}.{name_old}" if section_old else f"{name_old}"
         section_2 = f"{section_new}.{name_new}" if section_new else f"{name_new}"
         logger.warning(
             "DEPRECATED: "
-            f"The `{section_old}.{name_old}` setting is deprecated and "
+            f"The `{section_1}` setting is deprecated and "
             "will be removed in the next versions of Freqtrade. "
             f"Please use the `{section_2}` setting in your configuration instead."
         )
@@ -76,6 +77,9 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
 
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
                                None, 'ignore_buying_expired_candle_after')
+
+    process_deprecated_setting(config, None, 'forcebuy_enable', None, 'force_entry_enable')
+
     # New settings
     if config.get('telegram'):
         process_deprecated_setting(config['telegram'], 'notification_settings', 'sell',

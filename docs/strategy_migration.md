@@ -68,6 +68,7 @@ Note : `force_exit`, `force_enter`, `emergency_exit` are changed to `force_exit`
     * `sell_profit_only` -> `exit_profit_only`
     * `sell_profit_offset` -> `exit_profit_offset`
     * `ignore_roi_if_buy_signal` -> `ignore_roi_if_entry_signal`
+    * `forcebuy_enable` -> `force_entry_enable`
 
 ## Extensive explanation
 

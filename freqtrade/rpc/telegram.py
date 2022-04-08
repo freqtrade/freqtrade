@@ -1377,7 +1377,7 @@ class Telegram(RPCHandler):
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fe <trade_id>|all:* `Alias to /forceexit`"
-            f"{force_enter_text if self._config.get('forcebuy_enable', False) else ''}"
+            f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
             "*/whitelist:* `Show current whitelist` \n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "

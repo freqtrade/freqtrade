@@ -1183,7 +1183,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
 
 
 def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
@@ -1235,7 +1235,7 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
 
 
 def test_rpc_force_entry_stopped(mocker, default_conf) -> None:
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     default_conf['initial_state'] = 'stopped'
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
@@ -1259,7 +1259,7 @@ def test_rpc_force_entry_disabled(mocker, default_conf) -> None:
 
 
 def test_rpc_force_entry_wrong_mode(mocker, default_conf) -> None:
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)

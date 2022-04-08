@@ -358,7 +358,7 @@ CONF_SCHEMA = {
         'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
         'disableparamexport': {'type': 'boolean'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
-        'forcebuy_enable': {'type': 'boolean'},
+        'force_entry_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},
         'internals': {
             'type': 'object',

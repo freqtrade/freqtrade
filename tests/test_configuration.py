@@ -772,15 +772,15 @@ def test_set_logfile(default_conf, mocker, tmpdir):
 
 
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('forcebuy_enable')
-    assert log_has('`forcebuy` RPC message enabled.', caplog)
+    assert validated_conf.get('force_entry_enable')
+    assert log_has('`force_entry_enable` RPC message enabled.', caplog)
 
 
 def test_validate_default_conf(default_conf) -> None:

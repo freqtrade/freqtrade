@@ -174,7 +174,7 @@ class ShowConfig(BaseModel):
     timeframe_min: int
     exchange: str
     strategy: Optional[str]
-    forcebuy_enabled: bool
+    force_entry_enable: bool
     exit_pricing: Dict[str, Any]
     entry_pricing: Dict[str, Any]
     bot_name: str

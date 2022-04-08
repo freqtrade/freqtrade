@@ -166,7 +166,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
 | `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
-| `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
+| `force_entry_enable` | Enables the RPC Commands to force a Trade entry. More information below. <br> **Datatype:** Boolean
 | `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
@@ -345,9 +345,9 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 !!! Note "Special case to forceexit after a specific time"
     A special case presents using `"<N>": -1` as ROI. This forces the bot to exit a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-exit.
 
-### Understand forcebuy_enable
+### Understand force_entry_enable
 
-The `forcebuy_enable` configuration parameter enables the usage of forceenter commands via Telegram and REST API.
+The `force_entry_enable` configuration parameter enables the usage of force-enter (`/forcelong`, `/forceshort`) commands via Telegram and REST API.
 For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
 For example, you can send `/forceenter ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular exit-signal (ROI, stoploss, /forceexit) appears.
 

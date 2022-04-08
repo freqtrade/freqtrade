@@ -147,8 +147,8 @@ class Configuration:
             config.update({'db_url': self.args['db_url']})
             logger.info('Parameter --db-url detected ...')
 
-        if config.get('forcebuy_enable', False):
-            logger.warning('`forcebuy` RPC message enabled.')
+        if config.get('force_entry_enable', False):
+            logger.warning('`force_entry_enable` RPC message enabled.')
 
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args['sd_notify']:

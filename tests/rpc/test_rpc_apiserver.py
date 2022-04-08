@@ -1086,7 +1086,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
     assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled."}
 
     # enable forcebuy
-    ftbot.config['forcebuy_enable'] = True
+    ftbot.config['force_entry_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)

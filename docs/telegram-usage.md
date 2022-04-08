@@ -174,8 +174,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `/fx` | alias for `/forceexit`
-| `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
-| `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`forcebuy_enable` must be set to True)
+| `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
+| `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
@@ -290,9 +290,9 @@ Trades created through `/forcelong` will have the buy-tag of `force_entry`.
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 
-Note that for this to work, `forcebuy_enable` needs to be set to true.
+Note that for this to work, `force_entry_enable` needs to be set to true.
 
-[More details](configuration.md#understand-forcebuy_enable)
+[More details](configuration.md#understand-force_entry_enable)
 
 ### /performance
 
