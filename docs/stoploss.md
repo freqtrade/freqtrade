@@ -17,7 +17,7 @@ Those stoploss modes can be *on exchange* or *off exchange*.
 These modes can be configured with these values:
 
 ``` python
-    'emergencyexit': 'market',
+    'emergency_exit': 'market',
     'stoploss_on_exchange': False
     'stoploss_on_exchange_interval': 60,
     'stoploss_on_exchange_limit_ratio': 0.99
@@ -52,17 +52,17 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
-### forceexit
+### force_exit
 
-`forceexit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.
+`force_exit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.
 
-### forceentry
+### force_entry
 
-`forceentry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/forceentry` command from Telegram or from the Rest API.
+`force_entry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/forceentry` command from Telegram or from the Rest API.
 
-### emergencyexit
+### emergency_exit
 
-`emergencyexit` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
+`emergency_exit` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if not changed in strategy or configuration file.
 
 Example from strategy file:
@@ -71,7 +71,7 @@ Example from strategy file:
 order_types = {
     "entry": "limit",
     "exit": "limit",
-    "emergencyexit": "market",
+    "emergency_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": True,
     "stoploss_on_exchange_interval": 60,

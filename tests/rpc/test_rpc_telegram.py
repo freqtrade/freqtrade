@@ -95,7 +95,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], "
-                   "['forcesell', 'forceexit'], ['forcebuy', 'forcelong'], ['forceshort'], "
+                   "['forcesell', 'forceexit', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
                    "['trades'], ['delete'], ['performance'], "
                    "['buys', 'entries'], ['sells', 'exits'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
@@ -1035,7 +1035,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
 
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
@@ -1103,7 +1103,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
 
     assert msg_mock.call_count == 4
 
@@ -1162,7 +1162,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     # /forcesell all
     context = MagicMock()
     context.args = ["all"]
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
@@ -1207,7 +1207,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'not running' in msg_mock.call_args_list[0][0][0]
 
@@ -1216,7 +1216,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     freqtradebot.state = State.RUNNING
     context = MagicMock()
     context.args = []
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert "You must specify a trade-id or 'all'." in msg_mock.call_args_list[0][0][0]
 
@@ -1226,12 +1226,12 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     # /forcesell 123456
     context = MagicMock()
     context.args = ["123456"]
-    telegram._forceexit(update=update, context=context)
+    telegram._force_exit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forceenter_handle(default_conf, update, mocker) -> None:
+def test_force_enter_handle(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     fbuy_mock = MagicMock(return_value=None)
@@ -1243,7 +1243,7 @@ def test_forceenter_handle(default_conf, update, mocker) -> None:
     # /forcelong ETH/BTC
     context = MagicMock()
     context.args = ["ETH/BTC"]
-    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
+    telegram._force_enter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 1
     assert fbuy_mock.call_args_list[0][0][0] == 'ETH/BTC'
@@ -1256,7 +1256,7 @@ def test_forceenter_handle(default_conf, update, mocker) -> None:
     # /forcelong ETH/BTC 0.055
     context = MagicMock()
     context.args = ["ETH/BTC", "0.055"]
-    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
+    telegram._force_enter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 1
     assert fbuy_mock.call_args_list[0][0][0] == 'ETH/BTC'
@@ -1264,20 +1264,20 @@ def test_forceenter_handle(default_conf, update, mocker) -> None:
     assert fbuy_mock.call_args_list[0][0][1] == 0.055
 
 
-def test_forceenter_handle_exception(default_conf, update, mocker) -> None:
+def test_force_enter_handle_exception(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
 
     update.message.text = '/forcebuy ETH/Nonepair'
-    telegram._forceenter(update=update, context=MagicMock(), order_side=SignalDirection.LONG)
+    telegram._force_enter(update=update, context=MagicMock(), order_side=SignalDirection.LONG)
 
     assert msg_mock.call_count == 1
-    assert msg_mock.call_args_list[0][0][0] == 'Forceentry not enabled.'
+    assert msg_mock.call_args_list[0][0][0] == 'Force_entry not enabled.'
 
 
-def test_forceenter_no_pair(default_conf, update, mocker) -> None:
+def test_force_enter_no_pair(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     fbuy_mock = MagicMock(return_value=None)
@@ -1289,7 +1289,7 @@ def test_forceenter_no_pair(default_conf, update, mocker) -> None:
 
     context = MagicMock()
     context.args = []
-    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
+    telegram._force_enter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 0
     assert msg_mock.call_count == 1
@@ -1301,7 +1301,7 @@ def test_forceenter_no_pair(default_conf, update, mocker) -> None:
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = 'XRP/USDT_||_long'
-    telegram._forceenter_inline(update, None)
+    telegram._force_enter_inline(update, None)
     assert fbuy_mock.call_count == 1
 
 

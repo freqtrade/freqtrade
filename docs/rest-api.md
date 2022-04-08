@@ -223,8 +223,8 @@ forceenter
         :param side: 'long' or 'short'
         :param price: Optional - price to buy
 
-forcesell
-	Force-sell a trade.
+forceexit
+	Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
 

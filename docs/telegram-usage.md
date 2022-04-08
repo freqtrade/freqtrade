@@ -173,6 +173,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/fx` | alias for `/forceexit`
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`forcebuy_enable` must be set to True)
 | `/performance` | Show performance of each finished trade grouped by pair
@@ -285,7 +286,7 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 > **BINANCE:** Long ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
 
 Omitting the pair will open a query asking for the pair to trade (based on the current whitelist).
-Trades crated through `/forceentry` will have the buy-tag of `forceentry`.
+Trades created through `/forcelong` will have the buy-tag of `force_entry`.
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 
