@@ -15,7 +15,7 @@
         "order_book_top": 1,
         "price_last_balance": 0.0
     },
-    "files": [
+    "add_config_files": [
         "./test_pricing2_conf.json"
     ]
 }

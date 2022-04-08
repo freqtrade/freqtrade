@@ -1,5 +1,5 @@
 {
-    "files": [
+    "add_config_files": [
         "test_base_config.json",
         "test_pricing_conf.json"
     ]

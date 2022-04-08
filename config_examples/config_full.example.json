@@ -182,7 +182,7 @@
     "disable_dataframe_checks": false,
     "strategy": "SampleStrategy",
     "strategy_path": "user_data/strategies/",
-    "files": [],
+    "add_config_files": [],
     "dataformat_ohlcv": "json",
     "dataformat_trades": "jsongz"
 }

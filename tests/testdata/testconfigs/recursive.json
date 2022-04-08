@@ -1,6 +1,6 @@
 {
     // This file fails as it's loading itself over and over
-    "files": [
+    "add_config_files": [
         "./recursive.json"
     ]
 }
