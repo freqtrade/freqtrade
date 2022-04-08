@@ -136,7 +136,7 @@ class RPC:
                                                   ) if 'timeframe' in config else 0,
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
-            'forcebuy_enabled': config.get('forcebuy_enable', False),
+            'force_entry_enable': config.get('force_entry_enable', False),
             'exit_pricing': config.get('exit_pricing', {}),
             'entry_pricing': config.get('entry_pricing', {}),
             'state': str(botstate),
@@ -428,13 +428,13 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades = trades = Trade.get_trades([Trade.is_open.is_(False)])
+        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)])
         # Sell reason
-        sell_reasons = {}
+        exit_reasons = {}
         for trade in trades:
-            if trade.sell_reason not in sell_reasons:
-                sell_reasons[trade.sell_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
-            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
+            if trade.exit_reason not in exit_reasons:
+                exit_reasons[trade.exit_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
+            exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
         dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
@@ -448,7 +448,7 @@ class RPC:
         losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else None
 
         durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
-        return {'sell_reasons': sell_reasons, 'durations': durations}
+        return {'exit_reasons': exit_reasons, 'durations': durations}
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
@@ -684,7 +684,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forceexit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
+    def _rpc_force_exit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -695,21 +695,21 @@ class RPC:
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                if order['side'] == trade.enter_side:
+                if order['side'] == trade.entry_side:
                     fully_canceled = self._freqtrade.handle_cancel_enter(
-                        trade, order, CANCEL_REASON['FORCE_SELL'])
+                        trade, order, CANCEL_REASON['FORCE_EXIT'])
 
                 if order['side'] == trade.exit_side:
                     # Cancel order - so it is placed anew with a fresh price.
-                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_SELL'])
+                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_EXIT'])
 
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, side='exit', is_short=trade.is_short, refresh=True)
-                exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_SELL)
+                exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                    "forceexit", self._freqtrade.strategy.order_types["exit"])
+                    "force_exit", self._freqtrade.strategy.order_types["exit"])
 
                 self._freqtrade.execute_trade_exit(
                     trade, current_rate, exit_check, ordertype=order_type)
@@ -732,7 +732,7 @@ class RPC:
                 trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
             ).first()
             if not trade:
-                logger.warning('forceexit: Invalid argument received')
+                logger.warning('force_exit: Invalid argument received')
                 raise RPCException('invalid argument')
 
             _exec_forcesell(trade)
@@ -744,14 +744,14 @@ class RPC:
                          order_type: Optional[str] = None,
                          order_side: SignalDirection = SignalDirection.LONG,
                          stake_amount: Optional[float] = None,
-                         enter_tag: Optional[str] = 'forceentry') -> Optional[Trade]:
+                         enter_tag: Optional[str] = 'force_entry') -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
         """
 
-        if not self._freqtrade.config.get('forcebuy_enable', False):
-            raise RPCException('Forceentry not enabled.')
+        if not self._freqtrade.config.get('force_entry_enable', False):
+            raise RPCException('Force_entry not enabled.')
 
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
@@ -781,7 +781,7 @@ class RPC:
         # execute buy
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
-                'forceentry', self._freqtrade.strategy.order_types['entry'])
+                'force_entry', self._freqtrade.strategy.order_types['entry'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
                                          ordertype=order_type, trade=trade,
                                          is_short=is_short,
@@ -848,16 +848,16 @@ class RPC:
         """
         return Trade.get_enter_tag_performance(pair)
 
-    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for sell reason performance.
+        Handler for exit reason performance.
         Shows a performance statistic from finished trades
         """
-        return Trade.get_sell_reason_performance(pair)
+        return Trade.get_exit_reason_performance(pair)
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for mix tag (enter_tag + sell_reason) performance.
+        Handler for mix tag (enter_tag + exit_reason) performance.
         Shows a performance statistic from finished trades
         """
         mix_tags = Trade.get_mix_tag_performance(pair)

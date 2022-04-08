@@ -135,13 +135,13 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     return resp
 
 
-# /forcebuy is deprecated with short addition. use ForceEntry instead
+# /forcebuy is deprecated with short addition. use /forceentry instead
 @router.post('/forceenter', response_model=ForceEnterResponse, tags=['trading'])
 @router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
-def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
+def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
-    entry_tag = payload.entry_tag if payload.entry_tag else 'forceentry'
+    entry_tag = payload.entry_tag if payload.entry_tag else 'force_entry'
 
     trade = rpc._rpc_force_entry(payload.pair, payload.price, order_side=payload.side,
                                  order_type=ordertype, stake_amount=stake_amount,
@@ -154,11 +154,12 @@ def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
+# /forcesell is deprecated with short addition. use /forceexit instead
 @router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_forceexit(payload.tradeid, ordertype)
+    return rpc._rpc_force_exit(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

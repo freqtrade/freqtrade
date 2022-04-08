@@ -822,14 +822,14 @@ def test_api_stats(botclient, mocker, ticker, fee, markets, is_short):
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
     assert 'durations' in rc.json()
-    assert 'sell_reasons' in rc.json()
+    assert 'exit_reasons' in rc.json()
 
     create_mock_trades(fee, is_short=is_short)
 
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
     assert 'durations' in rc.json()
-    assert 'sell_reasons' in rc.json()
+    assert 'exit_reasons' in rc.json()
 
     assert 'wins' in rc.json()['durations']
     assert 'losses' in rc.json()['durations']
@@ -962,7 +962,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_rate_requested': ANY,
         'open_trade_value': open_trade_value,
         'sell_reason': None,
-        'sell_order_status': None,
+        'exit_reason': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,
@@ -1076,16 +1077,16 @@ def test_api_whitelist(botclient):
     'forcebuy',
     'forceenter',
 ])
-def test_api_forceentry(botclient, mocker, fee, endpoint):
+def test_api_force_entry(botclient, mocker, fee, endpoint):
     ftbot, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Forceentry not enabled."}
+    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled."}
 
     # enable forcebuy
-    ftbot.config['forcebuy_enable'] = True
+    ftbot.config['force_entry_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
@@ -1162,7 +1163,8 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         'open_rate_requested': None,
         'open_trade_value': 0.24605460,
         'sell_reason': None,
-        'sell_order_status': None,
+        'exit_reason': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,

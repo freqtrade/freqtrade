@@ -11,7 +11,7 @@ from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
 def generate_mock_trade(pair: str, fee: float, is_open: bool,
-                        sell_reason: str = ExitType.SELL_SIGNAL,
+                        sell_reason: str = ExitType.EXIT_SIGNAL,
                         min_ago_open: int = None, min_ago_close: int = None,
                         profit_rate: float = 0.9
                         ):
@@ -32,7 +32,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
     trade.recalc_open_trade_value()
     if not is_open:
         trade.close(open_rate * profit_rate)
-        trade.sell_reason = sell_reason
+        trade.exit_reason = sell_reason
 
     return trade
 

@@ -90,10 +90,10 @@ class IStrategy(ABC, HyperStrategyMixin):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    use_sell_signal: bool
-    sell_profit_only: bool
-    sell_profit_offset: float
-    ignore_roi_if_buy_signal: bool
+    use_exit_signal: bool
+    exit_profit_only: bool
+    exit_profit_offset: float
+    ignore_roi_if_entry_signal: bool
 
     # Position adjustment is disabled by default
     position_adjustment_enable: bool = False
@@ -308,10 +308,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_sell', 'emergency_sell']
+                           'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True, then the sell-order/exit_short-order is placed on the exchange.
+        :return bool: When True, then the exit-order is placed on the exchange.
             False aborts the process
         """
         return True
@@ -339,7 +339,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.stoploss
 
     def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
-                           entry_tag: Optional[str], **kwargs) -> float:
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Custom entry price logic, returning the new entry price.
 
@@ -351,6 +351,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New entry price value if provided
         """
@@ -396,7 +397,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom exit reason or True. Otherwise return
         None or False.
         """
         return None
@@ -420,7 +421,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom exit reason or True. Otherwise return
         None or False.
         """
         return self.custom_sell(pair, trade, current_time, current_rate, current_profit, **kwargs)
@@ -634,8 +635,6 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalTagType.ENTER_TAG.value] = None
             dataframe[SignalTagType.EXIT_TAG.value] = None
 
-        # Other Defs in strategy that want to be called every loop here
-        # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
         logger.debug("Loop Analysis Launched")
 
         return dataframe
@@ -716,7 +715,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Calculates current signal based based on the entry order or exit order
         columns of the dataframe.
-        Used by Bot to get the signal to buy, sell, short, or exit_short
+        Used by Bot to get the signal to enter, or exit
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
@@ -750,7 +749,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         is_short: bool = None
     ) -> Tuple[bool, bool, Optional[str]]:
         """
-        Calculates current exit signal based based on the buy/short or sell/exit_short
+        Calculates current exit signal based based on the dataframe
         columns of the dataframe.
         Used by Bot to get the signal to exit.
         depending on is_short, looks at "short" or "long" columns.
@@ -787,9 +786,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe: DataFrame,
     ) -> Tuple[Optional[SignalDirection], Optional[str]]:
         """
-        Calculates current entry signal based based on the buy/short or sell/exit_short
+        Calculates current entry signal based based on the dataframe signals
         columns of the dataframe.
-        Used by Bot to get the signal to buy, sell, short, or exit_short
+        Used by Bot to get the signal to enter trades.
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
@@ -867,34 +866,34 @@ class IStrategy(ABC, HyperStrategyMixin):
                                               current_profit=current_profit,
                                               force_stoploss=force_stoploss, low=low, high=high)
 
-        # Set current rate to high for backtesting sell
+        # Set current rate to high for backtesting exits
         current_rate = (low if trade.is_short else high) or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (enter and self.ignore_roi_if_buy_signal)
+        roi_reached = (not (enter and self.ignore_roi_if_entry_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=current_time))
 
-        sell_signal = ExitType.NONE
+        exit_signal = ExitType.NONE
         custom_reason = ''
         # use provided rate in backtesting, not high/low.
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
-            # sell_profit_only and profit doesn't reach the offset - ignore sell signal
+        if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
+            # exit_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif self.use_sell_signal and not enter:
+        elif self.use_exit_signal and not enter:
             if exit_:
-                sell_signal = ExitType.SELL_SIGNAL
+                exit_signal = ExitType.EXIT_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
                 if custom_reason:
-                    sell_signal = ExitType.CUSTOM_SELL
+                    exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
@@ -903,23 +902,23 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if sell_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
+            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.EXIT_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
-                             f"sell_type=ExitType.{sell_signal.name}" +
+                             f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
-                return ExitCheckTuple(exit_type=sell_signal, exit_reason=custom_reason)
+                return ExitCheckTuple(exit_type=exit_signal, exit_reason=custom_reason)
 
         # Sequence:
         # Exit-signal
         # ROI (if not stoploss)
         # Stoploss
         if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_type=ExitType.ROI")
+            logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
             return ExitCheckTuple(exit_type=ExitType.ROI)
 
         if stoplossflag.exit_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.exit_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
@@ -988,11 +987,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         if ((sl_higher_long or sl_lower_short) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
-            sell_type = ExitType.STOP_LOSS
+            exit_type = ExitType.STOP_LOSS
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
-                sell_type = ExitType.TRAILING_STOP_LOSS
+                exit_type = ExitType.TRAILING_STOP_LOSS
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at "
                     f"{((high if trade.is_short else low) or current_rate):.6f}, "
@@ -1007,7 +1006,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{new_stoploss:.6f}")
 
-            return ExitCheckTuple(exit_type=sell_type)
+            return ExitCheckTuple(exit_type=exit_type)
 
         return ExitCheckTuple(exit_type=ExitType.NONE)
 
@@ -1027,9 +1026,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def min_roi_reached(self, trade: Trade, current_profit: float, current_time: datetime) -> bool:
         """
         Based on trade duration, current profit of the trade and ROI configuration,
-        decides whether bot should sell.
+        decides whether bot should exit.
         :param current_profit: current profit as ratio
-        :return: True if bot should sell at current rate
+        :return: True if bot should exit at current rate
         """
         # Check if time matches and current rate is above threshold
         trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
@@ -1045,7 +1044,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         FT Internal method.
         Check if timeout is active, and if the order is still open and timed out
         """
-        side = 'entry' if order.ft_order_side == trade.enter_side else 'exit'
+        side = 'entry' if order.ft_order_side == trade.entry_side else 'exit'
 
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         if timeout is not None:
@@ -1128,7 +1127,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the
             currently traded pair
-        :return: DataFrame with sell column
+        :return: DataFrame with exit column
         """
 
         logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")

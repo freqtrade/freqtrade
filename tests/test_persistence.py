@@ -76,7 +76,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
 @pytest.mark.parametrize('is_short', [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_enter_exit_side(fee, is_short):
-    enter_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
+    entry_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -92,7 +92,7 @@ def test_enter_exit_side(fee, is_short):
         leverage=2.0,
         trading_mode=margin
     )
-    assert trade.enter_side == enter_side
+    assert trade.entry_side == entry_side
     assert trade.exit_side == exit_side
     assert trade.trade_direction == 'short' if is_short else 'long'
 
@@ -456,7 +456,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     enter_order = limit_sell_order_usdt if is_short else limit_buy_order_usdt
     exit_order = limit_buy_order_usdt if is_short else limit_sell_order_usdt
-    enter_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
+    entry_side, exit_side = ("sell", "buy") if is_short else ("buy", "sell")
 
     trade = Trade(
         id=2,
@@ -479,13 +479,13 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_date is None
 
     trade.open_order_id = 'something'
-    oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', enter_side)
+    oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', entry_side)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == open_rate
     assert trade.close_profit is None
     assert trade.close_date is None
-    assert log_has_re(f"LIMIT_{enter_side.upper()} has been fulfilled for "
+    assert log_has_re(f"LIMIT_{entry_side.upper()} has been fulfilled for "
                       r"Trade\(id=2, pair=ADA/USDT, amount=30.00000000, "
                       f"is_short={is_short}, leverage={lev}, open_rate={open_rate}0000000, "
                       r"open_since=.*\).",
@@ -1255,7 +1255,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.min_rate is None
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.sell_reason is None
+    assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
     assert trade.stoploss_order_id == 'stop_order_id222'
@@ -1590,7 +1590,8 @@ def test_to_json(fee):
                       'profit_pct': None,
                       'profit_abs': None,
                       'sell_reason': None,
-                      'sell_order_status': None,
+                      'exit_reason': None,
+                      'exit_order_status': None,
                       'stop_loss_abs': None,
                       'stop_loss_ratio': None,
                       'stop_loss_pct': None,
@@ -1676,7 +1677,8 @@ def test_to_json(fee):
                       'open_rate_requested': None,
                       'open_trade_value': 12.33075,
                       'sell_reason': None,
-                      'sell_order_status': None,
+                      'exit_reason': None,
+                      'exit_order_status': None,
                       'strategy': None,
                       'buy_tag': 'buys_signal_001',
                       'enter_tag': 'buys_signal_001',
@@ -2133,19 +2135,19 @@ def test_select_order(fee, is_short):
     trades = Trade.get_trades().all()
 
     # Open buy order, no sell order
-    order = trades[0].select_order(trades[0].enter_side, True)
+    order = trades[0].select_order(trades[0].entry_side, True)
     assert order is None
-    order = trades[0].select_order(trades[0].enter_side, False)
+    order = trades[0].select_order(trades[0].entry_side, False)
     assert order is not None
     order = trades[0].select_order(trades[0].exit_side, None)
     assert order is None
 
     # closed buy order, and open sell order
-    order = trades[1].select_order(trades[1].enter_side, True)
+    order = trades[1].select_order(trades[1].entry_side, True)
     assert order is None
-    order = trades[1].select_order(trades[1].enter_side, False)
+    order = trades[1].select_order(trades[1].entry_side, False)
     assert order is not None
-    order = trades[1].select_order(trades[1].enter_side, None)
+    order = trades[1].select_order(trades[1].entry_side, None)
     assert order is not None
     order = trades[1].select_order(trades[1].exit_side, True)
     assert order is None
@@ -2153,15 +2155,15 @@ def test_select_order(fee, is_short):
     assert order is not None
 
     # Has open buy order
-    order = trades[3].select_order(trades[3].enter_side, True)
+    order = trades[3].select_order(trades[3].entry_side, True)
     assert order is not None
-    order = trades[3].select_order(trades[3].enter_side, False)
+    order = trades[3].select_order(trades[3].entry_side, False)
     assert order is None
 
     # Open sell order
-    order = trades[4].select_order(trades[4].enter_side, True)
+    order = trades[4].select_order(trades[4].entry_side, True)
     assert order is None
-    order = trades[4].select_order(trades[4].enter_side, False)
+    order = trades[4].select_order(trades[4].entry_side, False)
     assert order is not None
 
     trades[4].orders[1].ft_order_side = trades[4].exit_side
@@ -2195,7 +2197,7 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
-        'get_sell_reason_performance',
+        'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
 
@@ -2384,7 +2386,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     o1_cost = o1_amount * o1_rate
     o1_fee_cost = o1_cost * fee.return_value
     o1_trade_val = o1_cost - o1_fee_cost if is_short else o1_cost + o1_fee_cost
-    enter_side = "sell" if is_short else "buy"
+    entry_side = "sell" if is_short else "buy"
     exit_side = "buy" if is_short else "sell"
 
     trade = Trade(
@@ -2400,16 +2402,16 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         is_short=is_short,
         leverage=1.0,
     )
-    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, enter_side)
+    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, entry_side)
     # Check with 1 order
     order1 = Order(
-        ft_order_side=enter_side,
+        ft_order_side=entry_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side=enter_side,
+        side=entry_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2430,13 +2432,13 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.nr_of_successful_entries == 1
 
     order2 = Order(
-        ft_order_side=enter_side,
+        ft_order_side=entry_side,
         ft_pair=trade.pair,
         ft_is_open=True,
         status="open",
         symbol=trade.pair,
         order_type="market",
-        side=enter_side,
+        side=entry_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2458,13 +2460,13 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
 
     # Let's try with some other orders
     order3 = Order(
-        ft_order_side=enter_side,
+        ft_order_side=entry_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="cancelled",
         symbol=trade.pair,
         order_type="market",
-        side=enter_side,
+        side=entry_side,
         price=1,
         average=2,
         filled=0,
@@ -2485,13 +2487,13 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.nr_of_successful_entries == 1
 
     order4 = Order(
-        ft_order_side=enter_side,
+        ft_order_side=entry_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side=enter_side,
+        side=entry_side,
         price=o1_rate,
         average=o1_rate,
         filled=o1_amount,
@@ -2540,13 +2542,13 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
 
     # Check with 1 order
     order_noavg = Order(
-        ft_order_side=enter_side,
+        ft_order_side=entry_side,
         ft_pair=trade.pair,
         ft_is_open=False,
         status="closed",
         symbol=trade.pair,
         order_type="market",
-        side=enter_side,
+        side=entry_side,
         price=o1_rate,
         average=None,
         filled=o1_amount,

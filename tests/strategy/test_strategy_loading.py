@@ -143,16 +143,6 @@ def test_strategy_can_short(caplog, default_conf):
     assert isinstance(strat, IStrategy)
 
 
-def test_strategy_implements_populate_entry(caplog, default_conf):
-    caplog.set_level(logging.INFO)
-    default_conf.update({
-        'strategy': "StrategyTestV2",
-    })
-    default_conf['trading_mode'] = 'futures'
-    with pytest.raises(OperationalException, match="`populate_entry_trend` must be implemented."):
-        StrategyResolver.load_strategy(default_conf)
-
-
 def test_strategy_override_minimal_roi(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
@@ -310,50 +300,50 @@ def test_strategy_override_order_tif(caplog, default_conf):
         StrategyResolver.load_strategy(default_conf)
 
 
-def test_strategy_override_use_sell_signal(caplog, default_conf):
+def test_strategy_override_use_exit_signal(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
-    assert strategy.use_sell_signal
-    assert isinstance(strategy.use_sell_signal, bool)
+    assert strategy.use_exit_signal
+    assert isinstance(strategy.use_exit_signal, bool)
     # must be inserted to configuration
-    assert 'use_sell_signal' in default_conf
-    assert default_conf['use_sell_signal']
+    assert 'use_exit_signal' in default_conf
+    assert default_conf['use_exit_signal']
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'use_sell_signal': False,
+        'use_exit_signal': False,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert not strategy.use_sell_signal
-    assert isinstance(strategy.use_sell_signal, bool)
-    assert log_has("Override strategy 'use_sell_signal' with value in config file: False.", caplog)
+    assert not strategy.use_exit_signal
+    assert isinstance(strategy.use_exit_signal, bool)
+    assert log_has("Override strategy 'use_exit_signal' with value in config file: False.", caplog)
 
 
-def test_strategy_override_use_sell_profit_only(caplog, default_conf):
+def test_strategy_override_use_exit_profit_only(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
-    assert not strategy.sell_profit_only
-    assert isinstance(strategy.sell_profit_only, bool)
+    assert not strategy.exit_profit_only
+    assert isinstance(strategy.exit_profit_only, bool)
     # must be inserted to configuration
-    assert 'sell_profit_only' in default_conf
-    assert not default_conf['sell_profit_only']
+    assert 'exit_profit_only' in default_conf
+    assert not default_conf['exit_profit_only']
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'sell_profit_only': True,
+        'exit_profit_only': True,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.sell_profit_only
-    assert isinstance(strategy.sell_profit_only, bool)
-    assert log_has("Override strategy 'sell_profit_only' with value in config file: True.", caplog)
+    assert strategy.exit_profit_only
+    assert isinstance(strategy.exit_profit_only, bool)
+    assert log_has("Override strategy 'exit_profit_only' with value in config file: True.", caplog)
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
@@ -391,7 +381,22 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_missing_implements(default_conf):
+def test_missing_implements(default_conf, caplog):
+
+    default_location = Path(__file__).parent / "strats"
+    default_conf.update({'strategy': 'StrategyTestV2',
+                         'strategy_path': default_location})
+    StrategyResolver.load_strategy(default_conf)
+
+    log_has_re(r"DEPRECATED: .*use_sell_signal.*use_exit_signal.", caplog)
+
+    default_conf['trading_mode'] = 'futures'
+    with pytest.raises(OperationalException,
+                       match=r"DEPRECATED: .*use_sell_signal.*use_exit_signal."):
+        StrategyResolver.load_strategy(default_conf)
+
+    default_conf['trading_mode'] = 'spot'
+
     default_location = Path(__file__).parent / "strats/broken_strats"
     default_conf.update({'strategy': 'TestStrategyNoImplements',
                          'strategy_path': default_location})

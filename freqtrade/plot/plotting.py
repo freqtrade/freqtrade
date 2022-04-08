@@ -240,7 +240,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         trades['desc'] = trades.apply(
             lambda row: f"{row['profit_ratio']:.2%}, " +
             (f"{row['enter_tag']}, " if row['enter_tag'] is not None else "") +
-            f"{row['sell_reason']}, " +
+            f"{row['exit_reason']}, " +
             f"{row['trade_duration']} min",
             axis=1)
         trade_buys = go.Scatter(

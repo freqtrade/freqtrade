@@ -86,7 +86,7 @@ class CryptoToFiatConverter:
                     return None
             else:
                 return None
-        found = [x for x in self._coinlistings if x['symbol'] == crypto_symbol]
+        found = [x for x in self._coinlistings if x['symbol'].lower() == crypto_symbol]
 
         if crypto_symbol in coingecko_mapping.keys():
             found = [x for x in self._coinlistings if x['id'] == coingecko_mapping[crypto_symbol]]
