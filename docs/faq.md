@@ -79,7 +79,7 @@ You can use "current" market data by using the [dataprovider](strategy-customiza
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/force_exit all` (sell all open trades).
+You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 

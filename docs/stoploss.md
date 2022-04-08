@@ -54,11 +54,11 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 
 ### force_exit
 
-`force_exit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/force_exit` command from Telegram or from the Rest API.
+`force_exit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.
 
 ### force_entry
 
-`force_entry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/force_entry` command from Telegram or from the Rest API.
+`force_entry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/forceentry` command from Telegram or from the Rest API.
 
 ### emergency_exit
 

@@ -115,7 +115,7 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$', r'/forceexit$',
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
                                  r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -1373,7 +1373,8 @@ class Telegram(RPCHandler):
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-            "*/force_exit <trade_id>|all:* `Instantly exits the given trade or all trades, "
+            # TODO: forceenter forceshort forcelong missing
+            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fe <trade_id>|all:* `Alias to /force_exit`"
             f"{force_enter_text if self._config.get('forcebuy_enable', False) else ''}"

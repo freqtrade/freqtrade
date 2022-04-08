@@ -135,7 +135,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     return resp
 
 
-# /forcebuy is deprecated with short addition. use Force_entry instead
+# /forcebuy is deprecated with short addition. use /forceentry instead
 @router.post('/forceenter', response_model=ForceEnterResponse, tags=['trading'])
 @router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
 def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
@@ -153,7 +153,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
         return ForceEnterResponse.parse_obj(
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
-
+# /forcesell is deprecated with short addition. use /forceexit instead
 @router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):

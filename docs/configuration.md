@@ -435,10 +435,7 @@ Configuration:
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
-
     If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will exit t_he trade using a market order. The order-type for the emergency-exit can be changed by setting the `emergency_exit` value in the `order_types` dictionary - however, this is not advised.
-
-
 
 ### Understand order_time_in_force
 
