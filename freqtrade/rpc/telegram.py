@@ -1376,7 +1376,7 @@ class Telegram(RPCHandler):
             # TODO: forceenter forceshort forcelong missing
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
-            "*/fe <trade_id>|all:* `Alias to /force_exit`"
+            "*/fe <trade_id>|all:* `Alias to /forceexit`"
             f"{force_enter_text if self._config.get('forcebuy_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
             "*/whitelist:* `Show current whitelist` \n"
