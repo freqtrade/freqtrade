@@ -1235,13 +1235,18 @@ def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> None:
 
     patch_get_signal(freqtradebot)
 
+    # /forceexit
+    context = MagicMock()
+    context.args = []
+    telegram._force_exit(update=update, context=context)
+    # No pair
+    assert msg_mock.call_args_list[0][1]['msg'] == 'No open trade found.'
+
     # Create some test data
     freqtradebot.enter_positions()
     msg_mock.reset_mock()
 
-    # /forcesell all
-    context = MagicMock()
-    context.args = []
+    # /forceexit
     telegram._force_exit(update=update, context=context)
     keyboard = msg_mock.call_args_list[0][1]['keyboard']
     # 4 pairs + cancel
@@ -1258,7 +1263,7 @@ def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> None:
     assert femock.call_count == 1
     assert femock.call_args_list[0][0][0] == '2'
 
-    # Retry selling - but cancel instead
+    # Retry exiting - but cancel instead
     update.callback_query.reset_mock()
     telegram._force_exit(update=update, context=context)
     # Use cancel button
