@@ -120,15 +120,13 @@ def parse_scalping_strategy_result() -> list:
     while counter < total_loop_time:
         list_of_row_items = []
         win_rate_percentage = run_scalping_strategy_command()  # running to get the win rate percentage for yearly data
-        win_rate_percentage_per_year = win_rate_percentage.split("|")[19].split(" ")[11].replace(" ", "")
+        win_rate_percentage_per_year = win_rate_percentage.split("|")[19].split()[3]
         write_to_json(counter)
         out_put_to_be_parsed = run_scalping_strategy_command()  # running to get the win rate percentage for daily data
         number_of_trades_per_day = out_put_to_be_parsed.split("|")[13].replace(" ", "")
         average_percentage_per_trade = out_put_to_be_parsed.split("|")[14].replace(" ", "")
         cumulative_percentage_per_day = out_put_to_be_parsed.split("|")[15].replace(" ", "")
-        win_rate_percentage_per_day = out_put_to_be_parsed.split("|")[19].split(" ")[17].replace(" ", "") if \
-            out_put_to_be_parsed.split("|")[19].split(" ")[17] != " " else \
-        out_put_to_be_parsed.split("|")[19].split(" ")[11].replace(" ", "")
+        win_rate_percentage_per_day = out_put_to_be_parsed.split("|")[19].split()[3]
         list_of_row_items.append(coin)
         list_of_row_items.append(brain_name)
         unix_time = eval(str([e + split_character for e in json_file_content.split(split_character) if e][counter]).replace("[[", "[").replace(" ", "").replace(",[", "["))

@@ -78,9 +78,8 @@ def perform_create_429_watcher():
 
 
 def setup_429():
-    if BrainConfig.IS_429_FIX_ENABLED:
-        __create_429_directory()
-        __create_429_watcher()
+    __create_429_directory()
+    __create_429_watcher()
 
 
 def __create_429_directory():
