@@ -29,9 +29,10 @@ def perform_execute_buy(mode, coin, brain, romeo_pool):
 
 
 def perform_execute_sell(coin, romeo_pool):
-    romeo = romeo_pool.get(coin)
-    if romeo is not None:
-        romeo.perform_sell_signal(RomeoExitPriceType.SS)
+    if Config.ROMEO_IS_PT_FROM_BRAIN_SS_ENABLED:
+        romeo = romeo_pool.get(coin)
+        if romeo is not None:
+            romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
 
 def perform_back_test_sell(date_time):
