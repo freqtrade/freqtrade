@@ -15,6 +15,9 @@ freqtrade/rpc/api_server/ui/*
 # Macos related
 .DS_Store
 
+# git files after merging
+*.orig
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
