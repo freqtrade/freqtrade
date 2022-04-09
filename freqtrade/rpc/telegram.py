@@ -508,7 +508,7 @@ class Telegram(RPCHandler):
                             lines.append("*Open Order:* `{open_order}`")
 
                 lines_detail = self._prepare_entry_details(
-                    r['orders'], r['base_currency'], r['is_open'])
+                    r['orders'], r['quote_currency'], r['is_open'])
                 lines.extend(lines_detail if lines_detail else "")
 
                 # Filter empty lines using list-comprehension

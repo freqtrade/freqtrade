@@ -279,6 +279,8 @@ class LocalTrade():
 
     exchange: str = ''
     pair: str = ''
+    base_currency: str = ''
+    stake_currency: str = ''
     is_open: bool = True
     fee_open: float = 0.0
     fee_open_cost: Optional[float] = None
@@ -397,6 +399,26 @@ class LocalTrade():
         else:
             return "long"
 
+    @property
+    def safe_base_currency(self) -> str:
+        """
+        Compatibility layer for asset - which can be empty for old trades.
+        """
+        try:
+            return self.base_currency or self.pair.split('/')[0]
+        except IndexError:
+            return ''
+
+    @property
+    def safe_quote_currency(self) -> str:
+        """
+        Compatibility layer for asset - which can be empty for old trades.
+        """
+        try:
+            return self.stake_currency or self.pair.split('/')[1].split(':')[0]
+        except IndexError:
+            return ''
+
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
@@ -423,6 +445,8 @@ class LocalTrade():
         return {
             'trade_id': self.id,
             'pair': self.pair,
+            'base_currency': self.safe_base_currency,
+            'quote_currency': self.safe_quote_currency,
             'is_open': self.is_open,
             'exchange': self.exchange,
             'amount': round(self.amount, 8),
@@ -1051,6 +1075,8 @@ class Trade(_DECL_BASE, LocalTrade):
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)
+    base_currency = Column(String(25), nullable=True)
+    stake_currency = Column(String(25), nullable=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_open_cost = Column(Float, nullable=True)

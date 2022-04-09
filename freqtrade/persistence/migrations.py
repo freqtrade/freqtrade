@@ -58,6 +58,8 @@ def migrate_trades_and_orders_table(
         decl_base, inspector, engine,
         trade_back_name: str, cols: List,
         order_back_name: str, cols_order: List):
+    base_currency = get_column_def(cols, 'base_currency', 'null')
+    stake_currency = get_column_def(cols, 'stake_currency', 'null')
     fee_open = get_column_def(cols, 'fee_open', 'fee')
     fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
     fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
@@ -130,7 +132,7 @@ def migrate_trades_and_orders_table(
     # Copy data back - following the correct schema
     with engine.begin() as connection:
         connection.execute(text(f"""insert into trades
-            (id, exchange, pair, is_open,
+            (id, exchange, pair, base_currency, stake_currency, is_open,
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_close_currency, open_rate,
             open_rate_requested, close_rate, close_rate_requested, close_profit,
@@ -142,7 +144,8 @@ def migrate_trades_and_orders_table(
             trading_mode, leverage, liquidation_price, is_short,
             interest_rate, funding_fees
             )
-        select id, lower(exchange), pair,
+        select id, lower(exchange), pair, {base_currency} base_currency,
+            {stake_currency} stake_currency,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
             {fee_open_currency} fee_open_currency, {fee_close} fee_close,
             {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
@@ -230,7 +233,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     inspector = inspect(engine)
 
-    cols = inspector.get_columns('trades')
+    cols_trades = inspector.get_columns('trades')
     cols_orders = inspector.get_columns('orders')
     tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = get_backup_name(tabs, 'trades_bak')
@@ -241,11 +244,12 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols, 'exit_order_status'):
+    if not has_column(cols_trades, 'base_currency'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
-            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name, cols_orders)
+            decl_base, inspector, engine, table_back_name, cols_trades,
+            order_table_bak_name, cols_orders)
 
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')

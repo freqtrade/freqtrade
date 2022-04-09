@@ -1561,6 +1561,8 @@ def test_to_json(fee):
 
     assert result == {'trade_id': None,
                       'pair': 'ADA/USDT',
+                      'base_currency': 'ADA',
+                      'quote_currency': 'USDT',
                       'is_open': None,
                       'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
@@ -1637,6 +1639,8 @@ def test_to_json(fee):
 
     assert result == {'trade_id': None,
                       'pair': 'XRP/BTC',
+                      'base_currency': 'XRP',
+                      'quote_currency': 'BTC',
                       'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
                       'close_date': trade.close_date.strftime("%Y-%m-%d %H:%M:%S"),

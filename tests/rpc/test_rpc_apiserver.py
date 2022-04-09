@@ -931,6 +931,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_order': None,
         'open_rate': 0.123,
         'pair': 'ETH/BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'stake_amount': 0.001,
         'stop_loss_abs': ANY,
         'stop_loss_pct': ANY,
@@ -1097,7 +1099,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
 
     # Test creating trade
     fbuy_mock = MagicMock(return_value=Trade(
-        pair='ETH/ETH',
+        pair='ETH/BTC',
         amount=1,
         amount_requested=1,
         exchange='binance',
@@ -1130,7 +1132,9 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         'open_date': ANY,
         'open_timestamp': ANY,
         'open_rate': 0.245441,
-        'pair': 'ETH/ETH',
+        'pair': 'ETH/BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'stake_amount': 1,
         'stop_loss_abs': None,
         'stop_loss_pct': None,

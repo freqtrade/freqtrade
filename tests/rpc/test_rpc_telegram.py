@@ -184,7 +184,8 @@ def test_telegram_status(default_conf, update, mocker) -> None:
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
-            'base_currency': 'BTC',
+            'base_currency': 'ETH',
+            'quote_currency': 'BTC',
             'open_date': arrow.utcnow(),
             'close_date': None,
             'open_rate': 1.099e-05,
