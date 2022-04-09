@@ -578,7 +578,7 @@ class Backtesting:
             ):
                 trade.exit_reason = row[EXIT_TAG_IDX]
 
-            return self._exit_trade(trade, sell_row, close_rate)
+            return self._exit_trade(trade, row, close_rate)
 
         return None
 
