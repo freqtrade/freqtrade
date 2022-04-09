@@ -975,7 +975,7 @@ class Telegram(RPCHandler):
                 trade_id = query.data.split("__")[1].split(' ')[0]
                 if trade_id == 'cancel':
                     query.answer()
-                    query.edit_message_text(text="Forcesell canceled")
+                    query.edit_message_text(text="Force exit canceled.")
                     return
                 trade: Trade = Trade.get_trades(trade_filter=Trade.id == trade_id).first()
                 query.answer()
