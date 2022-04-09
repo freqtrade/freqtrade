@@ -89,12 +89,13 @@ function updateenv() {
     fi
     echo "pip install completed"
     echo
-    if [[ $dev =~ ^[Yy]$ ]] then
+    if [[ $dev =~ ^[Yy]$ ]]; then
         ${PYTHON} -m pre-commit install
         if [ $? -ne 0 ]; then
             echo "Failed installing pre-commit"
             exit 1
         fi
+    fi
 }
 
 # Install tab lib
