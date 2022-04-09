@@ -958,7 +958,7 @@ class Telegram(RPCHandler):
     def _forceexit_action(self, trade_id):
         if trade_id != 'cancel':
             try:
-                self._rpc._rpc_forceexit(trade_id)
+                self._rpc._rpc_force_exit(trade_id)
             except RPCException as e:
                 self._send_msg(str(e))
 
