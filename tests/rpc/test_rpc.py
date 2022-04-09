@@ -1230,8 +1230,8 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
-    trade = rpc._rpc_force_entry(pair, None)
-    assert trade is None
+    with pytest.raises(RPCException, match=r"Failed to enter position for TKN/BTC."):
+        trade = rpc._rpc_force_entry(pair, None)
 
 
 def test_rpc_force_entry_stopped(mocker, default_conf) -> None:

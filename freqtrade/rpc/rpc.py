@@ -791,7 +791,7 @@ class RPC:
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
-            return None
+            raise RPCException(f'Failed to enter position for {pair}.')
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """
