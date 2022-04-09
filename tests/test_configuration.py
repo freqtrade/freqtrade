@@ -18,7 +18,8 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
 from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
-from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
+from freqtrade.configuration.load_config import (load_config_file, load_file, load_from_files,
+                                                 log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -204,6 +205,32 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert validated_conf['fiat_display_currency'] == "EUR"
     assert 'internals' in validated_conf
     assert isinstance(validated_conf['user_data_dir'], Path)
+
+
+def test_from_recursive_files(testdatadir) -> None:
+    files = testdatadir / "testconfigs/testconfig.json"
+
+    conf = Configuration.from_files([files])
+
+    assert conf
+    # Exchange comes from "the first config"
+    assert conf['exchange']
+    # Pricing comes from the 2nd config
+    assert conf['entry_pricing']
+    assert conf['entry_pricing']['price_side'] == "same"
+    assert conf['exit_pricing']
+    # The other key comes from pricing2, which is imported by pricing.json
+    assert conf['exit_pricing']['price_side'] == "other"
+
+    assert len(conf['config_files']) == 4
+    assert 'testconfig.json' in conf['config_files'][0]
+    assert 'test_pricing_conf.json' in conf['config_files'][1]
+    assert 'test_base_config.json' in conf['config_files'][2]
+    assert 'test_pricing2_conf.json' in conf['config_files'][3]
+
+    files = testdatadir / "testconfigs/recursive.json"
+    with pytest.raises(OperationalException, match="Config loop detected."):
+        load_from_files([files])
 
 
 def test_print_config(default_conf, mocker, caplog) -> None:
