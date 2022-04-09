@@ -881,10 +881,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
-            # exit_profit_only and profit doesn't reach the offset - ignore sell signal
-            pass
-        elif self.use_exit_signal and not enter:
+        if self.use_exit_signal and not enter:
             if exit_:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
@@ -902,7 +899,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.EXIT_SIGNAL):
+            if (
+                exit_signal == ExitType.CUSTOM_EXIT
+                or (exit_signal == ExitType.EXIT_SIGNAL
+                    and (not self.exit_profit_only or current_profit > self.exit_profit_offset))
+            ):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
