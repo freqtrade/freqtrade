@@ -3,6 +3,8 @@ from typing import List
 
 from sqlalchemy import inspect, text
 
+from freqtrade.exceptions import OperationalException
+
 
 logger = logging.getLogger(__name__)
 
@@ -176,23 +178,6 @@ def migrate_trades_and_orders_table(
     set_sequence_ids(engine, order_id, trade_id)
 
 
-def migrate_open_orders_to_trades(engine):
-    with engine.begin() as connection:
-        connection.execute(text("""
-        insert into orders (ft_trade_id, ft_pair, order_id, ft_order_side, ft_is_open)
-        select id ft_trade_id, pair ft_pair, open_order_id,
-            case when close_rate_requested is null then 'buy'
-            else 'sell' end ft_order_side, 1 ft_is_open
-        from trades
-        where open_order_id is not null
-        union all
-        select id ft_trade_id, pair ft_pair, stoploss_order_id order_id,
-            'stoploss' ft_order_side, 1 ft_is_open
-        from trades
-        where stoploss_order_id is not null
-        """))
-
-
 def drop_orders_table(engine, table_back_name: str):
     # Drop and recreate orders table as backup
     # This drops foreign keys, too.
@@ -210,7 +195,7 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
-            insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
+            insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
             order_date, order_filled_date, order_update_date, ft_fee_base)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
@@ -252,6 +237,9 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             order_table_bak_name, cols_orders)
 
     if 'orders' not in previous_tables and 'trades' in previous_tables:
-        logger.info('Moving open orders to Orders table.')
-        migrate_open_orders_to_trades(engine)
+        raise OperationalException(
+            "Your database seems to be very old. "
+            "Please update to freqtrade 2022.3 to migrate this database or "
+            "start with a fresh database.")
+
     set_sqlite_to_wal(engine)
