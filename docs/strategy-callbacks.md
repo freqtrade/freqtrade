@@ -88,11 +88,11 @@ Allows to define custom exit signals, indicating that specified position should 
 
 For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using custom_exit() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using `custom_exit()` signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a (none-empty) `string` or `True` from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (`use_exit_signal=False`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
-    `custom_exit()` will ignore `exit_profit_only`, and will always be called unless `use_exit_signal=False` or if there is an enter signal.
+    `custom_exit()` will ignore `exit_profit_only`, and will always be called unless `use_exit_signal=False`, even if there is a new enter signal.
 
 An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:
 

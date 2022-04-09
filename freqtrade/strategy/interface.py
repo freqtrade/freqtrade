@@ -881,8 +881,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if self.use_exit_signal and not enter:
-            if exit_:
+        if self.use_exit_signal:
+            if exit_ and not enter:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
