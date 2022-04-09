@@ -1077,16 +1077,16 @@ def test_api_whitelist(botclient):
     'forcebuy',
     'forceenter',
 ])
-def test_api_forceentry(botclient, mocker, fee, endpoint):
+def test_api_force_entry(botclient, mocker, fee, endpoint):
     ftbot, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Forceentry not enabled."}
+    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled."}
 
     # enable forcebuy
-    ftbot.config['forcebuy_enable'] = True
+    ftbot.config['force_entry_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)

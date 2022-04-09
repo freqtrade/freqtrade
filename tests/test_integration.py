@@ -139,7 +139,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     one trade was sold at a loss.
     """
     default_conf['max_open_trades'] = 5
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     default_conf['stake_amount'] = 'unlimited'
     default_conf['tradable_balance_ratio'] = balance_ratio
     default_conf['dry_run_wallet'] = 1000

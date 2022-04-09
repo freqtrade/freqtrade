@@ -4,12 +4,15 @@ This module contain functions to load the configuration file
 import logging
 import re
 import sys
+from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import rapidjson
 
+from freqtrade.constants import MINIMAL_CONFIG
 from freqtrade.exceptions import OperationalException
+from freqtrade.misc import deep_merge_dicts
 
 
 logger = logging.getLogger(__name__)
@@ -68,5 +71,23 @@ def load_config_file(path: str) -> Dict[str, Any]:
             f'Please verify the following segment of your configuration:\n{err_range}'
             if err_range else 'Please verify your configuration file for syntax errors.'
         )
+
+    return config
+
+
+def load_from_files(files: List[str]) -> Dict[str, Any]:
+
+    config: Dict[str, Any] = {}
+
+    if not files:
+        return deepcopy(MINIMAL_CONFIG)
+
+    # We expect here a list of config filenames
+    for path in files:
+        logger.info(f'Using config: {path} ...')
+        # Merge config options, overwriting old values
+        config = deep_merge_dicts(load_config_file(path), config)
+
+    config['config_files'] = files
 
     return config

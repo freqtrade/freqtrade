@@ -87,7 +87,7 @@ def get_mock_coro(return_value):
 
 def patched_configuration_load_config_file(mocker, config) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
+        'freqtrade.configuration.load_config.load_config_file',
         lambda *args, **kwargs: config
     )
 

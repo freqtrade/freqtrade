@@ -52,11 +52,11 @@ SELECT * FROM trades;
 ## Fix trade still open after a manual exit on the exchange
 
 !!! Warning
-    Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway. Whenever possible, forceexit <tradeid> should be used to accomplish the same thing.  
+    Manually selling a pair on the exchange will not be detected by the bot and it will try to sell anyway. Whenever possible, /forceexit <tradeid> should be used to accomplish the same thing.  
     It is strongly advised to backup your database file before making any manual changes.
 
 !!! Note
-    This should not be necessary after /forceexit, as forceexit orders are closed automatically by the bot on the next iteration.
+    This should not be necessary after /forceexit, as force_exit orders are closed automatically by the bot on the next iteration.
 
 ```sql
 UPDATE trades

@@ -140,9 +140,9 @@ class UnfilledTimeout(BaseModel):
 class OrderTypes(BaseModel):
     entry: OrderTypeValues
     exit: OrderTypeValues
-    emergencyexit: Optional[OrderTypeValues]
-    forceexit: Optional[OrderTypeValues]
-    forceentry: Optional[OrderTypeValues]
+    emergency_exit: Optional[OrderTypeValues]
+    force_exit: Optional[OrderTypeValues]
+    force_entry: Optional[OrderTypeValues]
     stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
@@ -174,7 +174,7 @@ class ShowConfig(BaseModel):
     timeframe_min: int
     exchange: str
     strategy: Optional[str]
-    forcebuy_enabled: bool
+    force_entry_enable: bool
     exit_pricing: Dict[str, Any]
     entry_pricing: Dict[str, Any]
     bot_name: str

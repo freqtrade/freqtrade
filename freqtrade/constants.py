@@ -86,8 +86,8 @@ SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
-    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "ETH", "XRP", "LTC", "BCH"
+    "RUB", "UAH", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR",
+    "USD", "BTC", "ETH", "XRP", "LTC", "BCH"
 ]
 
 MINIMAL_CONFIG = {
@@ -149,10 +149,10 @@ CONF_SCHEMA = {
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_only_offset_is_reached': {'type': 'boolean'},
-        'use_sell_signal': {'type': 'boolean'},
-        'sell_profit_only': {'type': 'boolean'},
-        'sell_profit_offset': {'type': 'number'},
-        'ignore_roi_if_buy_signal': {'type': 'boolean'},
+        'use_exit_signal': {'type': 'boolean'},
+        'exit_profit_only': {'type': 'boolean'},
+        'exit_profit_offset': {'type': 'number'},
+        'ignore_roi_if_entry_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
         'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
         'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
@@ -216,9 +216,9 @@ CONF_SCHEMA = {
             'properties': {
                 'entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forceexit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forceentry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencyexit': {
+                'force_exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'force_entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergency_exit': {
                     'type': 'string',
                     'enum': ORDERTYPE_POSSIBILITIES,
                     'default': 'market'},
@@ -358,7 +358,7 @@ CONF_SCHEMA = {
         'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
         'disableparamexport': {'type': 'boolean'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
-        'forcebuy_enable': {'type': 'boolean'},
+        'force_entry_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},
         'internals': {
             'type': 'object',

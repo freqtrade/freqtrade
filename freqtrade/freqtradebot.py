@@ -192,7 +192,7 @@ class FreqtradeBot(LoggingMixin):
             # Check and handle any timed out open orders
             self.check_handle_timedout()
 
-        # Protect from collisions with forceexit.
+        # Protect from collisions with force_exit.
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
         # while exiting is in process, since telegram messages arrive in an different thread.
         with self._exit_lock:
@@ -331,12 +331,12 @@ class FreqtradeBot(LoggingMixin):
 
         trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
-            if trade.is_open and not trade.fee_updated(trade.enter_side):
-                order = trade.select_order(trade.enter_side, False)
-                open_order = trade.select_order(trade.enter_side, True)
+            if trade.is_open and not trade.fee_updated(trade.entry_side):
+                order = trade.select_order(trade.entry_side, False)
+                open_order = trade.select_order(trade.entry_side, True)
                 if order and open_order is None:
                     logger.info(
-                        f"Updating {trade.enter_side}-fee on trade {trade}"
+                        f"Updating {trade.entry_side}-fee on trade {trade}"
                         f"for order {order.order_id}."
                     )
                     self.update_trade_state(trade, order.order_id, send_msg=False)
@@ -365,7 +365,7 @@ class FreqtradeBot(LoggingMixin):
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
-                elif order.ft_order_side == trade.enter_side:
+                elif order.ft_order_side == trade.entry_side:
                     if fo and fo['status'] == 'open':
                         trade.open_order_id = order.order_id
                 if fo:
@@ -570,9 +570,9 @@ class FreqtradeBot(LoggingMixin):
         order_book_bids = order_book_data_frame['b_size'].sum()
         order_book_asks = order_book_data_frame['a_size'].sum()
 
-        enter_side = order_book_bids if side == SignalDirection.LONG else order_book_asks
+        entry_side = order_book_bids if side == SignalDirection.LONG else order_book_asks
         exit_side = order_book_asks if side == SignalDirection.LONG else order_book_bids
-        bids_ask_delta = enter_side / exit_side
+        bids_ask_delta = entry_side / exit_side
 
         bids = f"Bids: {order_book_bids}"
         asks = f"Asks: {order_book_asks}"
@@ -619,6 +619,7 @@ class FreqtradeBot(LoggingMixin):
             pair, price, stake_amount, trade_side, enter_tag, trade)
 
         if not stake_amount:
+            logger.info(f"No stake amount to enter a trade for {pair}.")
             return False
 
         if pos_adjust:
@@ -949,8 +950,8 @@ class FreqtradeBot(LoggingMixin):
         exit_tag = None
         exit_signal_type = "exit_short" if trade.is_short else "exit_long"
 
-        if (self.config.get('use_sell_signal', True) or
-                self.config.get('ignore_roi_if_buy_signal', False)):
+        if (self.config.get('use_exit_signal', True) or
+                self.config.get('ignore_roi_if_entry_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
@@ -1159,7 +1160,7 @@ class FreqtradeBot(LoggingMixin):
                 continue
 
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
-            is_entering = order['side'] == trade.enter_side
+            is_entering = order['side'] == trade.entry_side
             not_closed = order['status'] == 'open' or fully_cancelled
             max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
@@ -1200,7 +1201,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
-            if order['side'] == trade.enter_side:
+            if order['side'] == trade.entry_side:
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
 
             elif order['side'] == trade.exit_side:
@@ -1239,7 +1240,7 @@ class FreqtradeBot(LoggingMixin):
             corder = order
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
 
-        side = trade.enter_side.capitalize()
+        side = trade.entry_side.capitalize()
         logger.info('%s order %s for %s.', side, reason, trade)
 
         # Using filled to determine the filled amount
@@ -1270,7 +1271,7 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
-            logger.info(f'Partial {trade.enter_side} order timeout for {trade}.')
+            logger.info(f'Partial {trade.entry_side} order timeout for {trade}.')
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
@@ -1405,7 +1406,7 @@ class FreqtradeBot(LoggingMixin):
         order_type = ordertype or self.strategy.order_types[exit_type]
         if exit_check.exit_type == ExitType.EMERGENCY_EXIT:
             # Emergency sells (default to market!)
-            order_type = self.strategy.order_types.get("emergencyexit", "market")
+            order_type = self.strategy.order_types.get("emergency_exit", "market")
 
         amount = self._safe_exit_amount(trade.pair, sub_trade_amt or trade.amount)
         time_in_force = self.strategy.order_time_in_force['exit']
@@ -1618,7 +1619,7 @@ class FreqtradeBot(LoggingMixin):
 
         if order.get('status') in constants.NON_OPEN_EXCHANGE_STATES:
             # If a entry order was closed, force update on stoploss on exchange
-            if order.get('side', None) == trade.enter_side:
+            if order.get('side', None) == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()

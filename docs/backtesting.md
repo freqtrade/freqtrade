@@ -345,9 +345,9 @@ The column `Avg Profit %` shows the average profit for all trades made while the
 The column `Tot Profit %` shows instead the total profit % in relation to the starting balance.
 In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the `Tot Profit %` will be `(0.00762792 / 0.01) * 100 ~= 76.2%`.
 
-Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
+Your strategy performance is influenced by your buy strategy, your exit strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
-For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bot to make more profit than 1% (because it will sell every time a trade reaches 1%).
+For example, if your `minimal_roi` is only `"0":  0.01` you cannot expect the bot to make more profit than 1% (because it will exit every time a trade reaches 1%).
 
 ```json
 "minimal_roi": {
@@ -362,11 +362,11 @@ Hence, keep in mind that your performance is an integral mix of all different el
 ### Exit reasons table
 
 The 2nd table contains a recap of exit reasons.
-This table can tell you which area needs some additional work (e.g. all or many of the `exit_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
+This table can tell you which area needs some additional work (e.g. all or many of the `exit_signal` trades are losses, so you should work on improving the exit signal, or consider disabling it).
 
 ### Left open trades table
 
-The 3rd table contains all trades the bot had to `forceexit` at the end of the backtesting period to present you the full picture.
+The 3rd table contains all trades the bot had to `force_exit` at the end of the backtesting period to present you the full picture.
 This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
 These trades are also included in the first table, but are also shown separately in this table for clarity.
 
@@ -492,24 +492,24 @@ Since backtesting lacks some detailed information about what happens within a ca
 
 - Buys happen at open-price
 - All orders are filled at the requested price (no slippage, no unfilled orders)
-- Sell-signal sells happen at open-price of the consecutive candle
-- Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
+- Exit-signal exits happen at open-price of the consecutive candle
+- Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
-  - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
-  - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
-  - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
-- Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
+  - exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)
+  - exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit
+  - Forceexits caused by `<N>=-1` ROI entries use low as exit value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
+- Stoploss exits happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
 - Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` exit reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
 - Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - Trailing Stoploss is only adjusted if it's below the candle's low (otherwise it would be triggered)
   - On trade entry candles that trigger trailing stoploss, the "minimum offset" (`stop_positive_offset`) is assumed (instead of high) - and the stop is calculated from this point
   - High happens first - adjusting stoploss
-  - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+  - Low uses the adjusted stoploss (so exits with large high-low difference are backtested correctly)
   - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
-- Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
+- Exit-reason does not explain if a trade was positive or negative, just what triggered the exit (this can look odd if negative ROI values are used)
 - Evaluation sequence (if multiple signals happen on the same candle)
-  - Sell-signal
+  - Exit-signal
   - ROI (if not stoploss)
   - Stoploss
 
