@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import OrderTypeValues
+from freqtrade.enums import OrderTypeValues, SignalDirection, TradingMode
 
 
 class Ping(BaseModel):
@@ -38,6 +38,11 @@ class Balance(BaseModel):
     used: float
     est_stake: float
     stake: str
+    # Starting with 2.x
+    side: str
+    leverage: float
+    is_position: bool
+    position: float
 
 
 class Balances(BaseModel):
@@ -108,7 +113,7 @@ class SellReason(BaseModel):
 
 
 class Stats(BaseModel):
-    sell_reasons: Dict[str, SellReason]
+    exit_reasons: Dict[str, SellReason]
     durations: Dict[str, Optional[float]]
 
 
@@ -126,18 +131,18 @@ class Daily(BaseModel):
 
 
 class UnfilledTimeout(BaseModel):
-    buy: Optional[int]
-    sell: Optional[int]
+    entry: Optional[int]
+    exit: Optional[int]
     unit: Optional[str]
     exit_timeout_count: Optional[int]
 
 
 class OrderTypes(BaseModel):
-    buy: OrderTypeValues
-    sell: OrderTypeValues
-    emergencysell: Optional[OrderTypeValues]
-    forcesell: Optional[OrderTypeValues]
-    forcebuy: Optional[OrderTypeValues]
+    entry: OrderTypeValues
+    exit: OrderTypeValues
+    emergency_exit: Optional[OrderTypeValues]
+    force_exit: Optional[OrderTypeValues]
+    force_entry: Optional[OrderTypeValues]
     stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
@@ -148,6 +153,8 @@ class ShowConfig(BaseModel):
     strategy_version: Optional[str]
     api_version: float
     dry_run: bool
+    trading_mode: str
+    short_allowed: bool
     stake_currency: str
     stake_amount: str
     available_capital: Optional[float]
@@ -167,9 +174,9 @@ class ShowConfig(BaseModel):
     timeframe_min: int
     exchange: str
     strategy: Optional[str]
-    forcebuy_enabled: bool
-    ask_strategy: Dict[str, Any]
-    bid_strategy: Dict[str, Any]
+    force_entry_enable: bool
+    exit_pricing: Dict[str, Any]
+    entry_pricing: Dict[str, Any]
     bot_name: str
     state: str
     runmode: str
@@ -196,13 +203,17 @@ class OrderSchema(BaseModel):
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str
+    base_currency: str
+    quote_currency: str
     is_open: bool
+    is_short: bool
     exchange: str
     amount: float
     amount_requested: float
     stake_amount: float
     strategy: str
-    buy_tag: Optional[str]
+    buy_tag: Optional[str]  # Deprecated
+    enter_tag: Optional[str]
     timeframe: int
     fee_open: Optional[float]
     fee_open_cost: Optional[float]
@@ -226,8 +237,9 @@ class TradeSchema(BaseModel):
     profit_pct: Optional[float]
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
-    sell_reason: Optional[str]
-    sell_order_status: Optional[str]
+    sell_reason: Optional[str]  # Deprecated
+    exit_reason: Optional[str]
+    exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
     stop_loss_ratio: Optional[float]
     stop_loss_pct: Optional[float]
@@ -241,6 +253,11 @@ class TradeSchema(BaseModel):
     max_rate: Optional[float]
     open_order_id: Optional[str]
     orders: List[OrderSchema]
+
+    leverage: Optional[float]
+    interest_rate: Optional[float]
+    funding_fees: Optional[float]
+    trading_mode: Optional[TradingMode]
 
 
 class OpenTradeSchema(TradeSchema):
@@ -262,7 +279,7 @@ class TradeResponse(BaseModel):
     total_trades: int
 
 
-class ForceBuyResponse(BaseModel):
+class ForceEnterResponse(BaseModel):
     __root__: Union[TradeSchema, StatusMsg]
 
 
@@ -292,15 +309,16 @@ class Logs(BaseModel):
     logs: List[List]
 
 
-class ForceBuyPayload(BaseModel):
+class ForceEnterPayload(BaseModel):
     pair: str
+    side: SignalDirection = SignalDirection.LONG
     price: Optional[float]
     ordertype: Optional[OrderTypeValues]
     stakeamount: Optional[float]
     entry_tag: Optional[str]
 
 
-class ForceSellPayload(BaseModel):
+class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
 
@@ -364,6 +382,10 @@ class PairHistory(BaseModel):
     length: int
     buy_signals: int
     sell_signals: int
+    enter_long_signals: int
+    exit_long_signals: int
+    enter_short_signals: int
+    exit_short_signals: int
     last_analyzed: datetime
     last_analyzed_ts: int
     data_start_ts: int

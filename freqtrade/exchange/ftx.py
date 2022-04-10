@@ -1,9 +1,10 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import ccxt
 
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -20,27 +21,29 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
         "ohlcv_volume_currency": "quote",
+        "mark_ohlcv_price": "index",
+        "mark_ohlcv_timeframe": "1h",
     }
 
-    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
-        """
-        Check if the market symbol is tradable by Freqtrade.
-        Default checks + check if pair is spot pair (no futures trading yet).
-        """
-        parent_check = super().market_is_tradable(market)
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.CROSS)
+    ]
 
-        return (parent_check and
-                market.get('spot', False) is True)
-
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return order['type'] == 'stop' and stop_loss > float(order['price'])
+        return order['type'] == 'stop' and (
+            side == "sell" and stop_loss > float(order['price']) or
+            side == "buy" and stop_loss < float(order['price'])
+        )
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float,
+                 order_types: Dict, side: str, leverage: float) -> Dict:
         """
         Creates a stoploss order.
         depending on order_types.stoploss configuration, uses 'market' or limit order.
@@ -48,7 +51,10 @@ class Ftx(Exchange):
         Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-        limit_rate = stop_price * limit_price_pct
+        if side == "sell":
+            limit_rate = stop_price * limit_price_pct
+        else:
+            limit_rate = stop_price * (2 - limit_price_pct)
 
         ordertype = "stop"
 
@@ -56,7 +62,7 @@ class Ftx(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price, stop_loss=True)
+                pair, ordertype, side, amount, stop_price, leverage, stop_loss=True)
             return dry_order
 
         try:
@@ -64,11 +70,14 @@ class Ftx(Exchange):
             if order_types.get('stoploss', 'market') == 'limit':
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
+            if self.trading_mode == TradingMode.FUTURES:
+                params.update({'reduceOnly': True})
 
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
-            order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
+            self._lev_prep(pair, leverage, side)
+            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, params=params)
             self._log_exchange_response('create_stoploss_order', order)
             logger.info('stoploss order added for %s. '
@@ -76,19 +85,19 @@ class Ftx(Exchange):
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Could not create {ordertype} sell order on market {pair}. '
+                f'Could not create {ordertype} {side} order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 

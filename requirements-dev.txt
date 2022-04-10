@@ -7,6 +7,7 @@ coveralls==3.3.1
 flake8==4.0.1
 flake8-tidy-imports==4.6.0
 mypy==0.942
+pre-commit==2.18.1
 pytest==7.1.1
 pytest-asyncio==0.18.3
 pytest-cov==3.0.0
@@ -17,12 +18,12 @@ isort==5.10.1
 time-machine==2.6.0
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.4.4
+nbconvert==6.4.5
 
 # mypy types
 types-cachetools==5.0.0
 types-filelock==3.2.5
-types-requests==2.27.15
+types-requests==2.27.16
 types-tabulate==0.8.6
 
 # Extensions to datetime library

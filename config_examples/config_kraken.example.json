@@ -8,21 +8,23 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-        "buy": 10,
-        "sell": 10,
+        "entry": 10,
+        "exit": 10,
         "exit_timeout_count": 0,
         "unit": "minutes"
     },
-    "bid_strategy": {
+    "entry_pricing": {
+        "price_side": "same",
         "use_order_book": true,
-        "ask_last_balance": 0.0,
         "order_book_top": 1,
+        "price_last_balance": 0.0,
         "check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy":{
+    "exit_pricing":{
+        "price_side": "same",
         "use_order_book": true,
         "order_book_top": 1
     },
@@ -93,7 +95,7 @@
     },
     "bot_name": "freqtrade",
     "initial_state": "running",
-    "forcebuy_enable": false,
+    "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5
     },

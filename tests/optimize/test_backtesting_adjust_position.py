@@ -8,15 +8,16 @@ from arrow import Arrow
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
 from tests.conftest import patch_exchange
 
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     patch_exchange(mocker)
     default_conf.update({
         "stake_amount": 100.0,
@@ -59,7 +60,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'trade_duration': [200, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'sell_reason': [SellType.ROI.value, SellType.ROI.value],
+         'exit_reason': [ExitType.ROI.value, ExitType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],
@@ -67,7 +68,8 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10481985, 0.1038888],
          'is_open': [False, False],
-         'buy_tag': [None, None],
+         'enter_tag': [None, None],
+         'is_short': [False, False],
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
