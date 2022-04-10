@@ -341,15 +341,11 @@ class Exchange:
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
     def get_pair_quote_currency(self, pair: str) -> str:
-        """
-        Return a pair's quote currency
-        """
+        """ Return a pair's quote currency (base/quote:settlement) """
         return self.markets.get(pair, {}).get('quote', '')
 
     def get_pair_base_currency(self, pair: str) -> str:
-        """
-        Return a pair's base currency
-        """
+        """ Return a pair's base currency (base/quote:settlement) """
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:

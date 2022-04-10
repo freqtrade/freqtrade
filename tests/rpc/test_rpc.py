@@ -52,7 +52,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'base_currency': 'BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
@@ -135,7 +136,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'base_currency': 'BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
