@@ -103,7 +103,7 @@ def load_from_files(files: List[str], base_path: Path = None, level: int = 0) ->
             config_sub = load_from_files(
                 config_tmp['add_config_files'], file.resolve().parent, level + 1)
             files_loaded.extend(config_sub.get('config_files', []))
-            deep_merge_dicts(config_sub, config_tmp)
+            config_tmp = deep_merge_dicts(config_tmp, config_sub)
 
         files_loaded.insert(0, str(file))
 

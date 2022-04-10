@@ -80,6 +80,36 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
 
     This is equivalent to the example above - but `config-private.json` is specified as cli argument.
 
+??? Note "config collision handling"
+    If the same configuration setting takes place in both `config.json` and `config-import.json`, then the parent configuration wins.
+    In the below case, `max_open_trades` would be 3 after the merging - as the reusable "import" configuration has this key overwritten.
+
+    ``` json title="user_data/config.json"
+    {
+        "max_open_trades": 3,
+        "stake_currency": "USDT",
+        "add_config_files": [
+            "config-import.json"
+        ]
+    }
+    ```
+
+    ``` json title="user_data/config-import.json"
+    {
+        "max_open_trades": 10,
+        "stake_amount": "unlimited",
+    }
+    ```
+    
+    Resulting combined configuration:
+
+    ``` json title="Result"
+    {
+        "max_open_trades": 10,
+        "stake_currency": "USDT",
+        "stake_amount": "unlimited"
+    }
+    ```
 
 ## Configuration parameters
 

@@ -219,8 +219,9 @@ def test_from_recursive_files(testdatadir) -> None:
     assert conf['entry_pricing']
     assert conf['entry_pricing']['price_side'] == "same"
     assert conf['exit_pricing']
-    # The other key comes from pricing2, which is imported by pricing.json
-    assert conf['exit_pricing']['price_side'] == "other"
+    # The other key comes from pricing2, which is imported by pricing.json.
+    # pricing.json is a level higher, therefore wins.
+    assert conf['exit_pricing']['price_side'] == "same"
 
     assert len(conf['config_files']) == 4
     assert 'testconfig.json' in conf['config_files'][0]
