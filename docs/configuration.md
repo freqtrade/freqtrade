@@ -53,14 +53,33 @@ FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
 
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
+You can specify additional configuration files in `add_config_files`. Files specified in this parameter will be loaded and merged with the initial config file. The files are resolved relative to the initial configuration file.
+This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
+
 !!! Tip "Use multiple configuration files to keep secrets secret"
     You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+
+    ``` json title="user_data/config.json"
+    "add_config_files": [
+        "config-private.json"
+    ]
+    ```
+    
+    ``` bash
+    freqtrade trade --config user_data/config.json <...>
+    ```
+
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
 
     ``` bash
     freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
     ```
-    The 2nd file should only specify what you intend to override.
-    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    This is equivalent to the example above - but `config-private.json` is specified as cli argument.
+
 
 ## Configuration parameters
 
@@ -175,6 +194,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
+| `add_config_files` | Additional config files. These files will be loaded and merged with the current config file. The files are resolved relative to the initial file.<br> *Defaults to `[]`*. <br> **Datatype:** List of strings
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean

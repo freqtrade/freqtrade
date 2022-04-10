@@ -52,7 +52,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'base_currency': 'BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
@@ -135,7 +136,8 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     assert results[0] == {
         'trade_id': 1,
         'pair': 'ETH/BTC',
-        'base_currency': 'BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'open_date': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
@@ -1230,8 +1232,8 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
-    trade = rpc._rpc_force_entry(pair, None)
-    assert trade is None
+    with pytest.raises(RPCException, match=r"Failed to enter position for TKN/BTC."):
+        trade = rpc._rpc_force_entry(pair, None)
 
 
 def test_rpc_force_entry_stopped(mocker, default_conf) -> None:

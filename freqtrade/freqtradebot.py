@@ -598,6 +598,7 @@ class FreqtradeBot(LoggingMixin):
             pair, price, stake_amount, trade_side, enter_tag, trade)
 
         if not stake_amount:
+            logger.info(f"No stake amount to enter a trade for {pair}.")
             return False
 
         if pos_adjust:
@@ -675,6 +676,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
         funding_fees = self.exchange.get_funding_fees(
             pair=pair, amount=amount, is_short=is_short, open_date=open_date)
@@ -682,6 +684,8 @@ class FreqtradeBot(LoggingMixin):
         if trade is None:
             trade = Trade(
                 pair=pair,
+                base_currency=base_currency,
+                stake_currency=self.config['stake_currency'],
                 stake_amount=stake_amount,
                 amount=amount,
                 is_open=True,

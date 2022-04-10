@@ -881,14 +881,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
-            # exit_profit_only and profit doesn't reach the offset - ignore sell signal
-            pass
-        elif self.use_exit_signal and not enter:
-            if exit_:
+        if self.use_exit_signal:
+            if exit_ and not enter:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
-                trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
@@ -896,13 +892,17 @@ class IStrategy(ABC, HyperStrategyMixin):
                     exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
-                            logger.warning(f'Custom {trade_type} reason returned from '
+                            logger.warning(f'Custom exit reason returned from '
                                            f'custom_exit is too long and was trimmed'
                                            f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
                             custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.EXIT_SIGNAL):
+            if (
+                exit_signal == ExitType.CUSTOM_EXIT
+                or (exit_signal == ExitType.EXIT_SIGNAL
+                    and (not self.exit_profit_only or current_profit > self.exit_profit_offset))
+            ):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))

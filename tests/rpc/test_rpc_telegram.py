@@ -184,7 +184,8 @@ def test_telegram_status(default_conf, update, mocker) -> None:
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
-            'base_currency': 'BTC',
+            'base_currency': 'ETH',
+            'quote_currency': 'BTC',
             'open_date': arrow.utcnow(),
             'close_date': None,
             'open_rate': 1.099e-05,
@@ -398,8 +399,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
     assert int(fields[0]) == 1
-    assert 'L' in fields[1]
-    assert 'ETH/BTC' in fields[2]
+    # assert 'L' in fields[1]
+    assert 'ETH/BTC' in fields[1]
     assert msg_mock.call_count == 1
 
 
@@ -1253,7 +1254,7 @@ def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> None:
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
     assert keyboard[-1][0].text == "Cancel"
 
-    assert keyboard[1][0].callback_data == 'force_exit__2 L'
+    assert keyboard[1][0].callback_data == 'force_exit__2 '
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = keyboard[1][0].callback_data

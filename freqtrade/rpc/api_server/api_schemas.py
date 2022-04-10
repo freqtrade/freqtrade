@@ -203,6 +203,8 @@ class OrderSchema(BaseModel):
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str
+    base_currency: str
+    quote_currency: str
     is_open: bool
     is_short: bool
     exchange: str

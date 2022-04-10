@@ -197,7 +197,6 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
-                    base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if trade.close_profit is not None else None,
                     current_rate=current_rate,
                     current_profit=current_profit,  # Deprecated
@@ -223,6 +222,7 @@ class RPC:
     def _rpc_status_table(self, stake_currency: str,
                           fiat_display_currency: str) -> Tuple[List, List, float]:
         trades: List[Trade] = Trade.get_open_trades()
+        nonspot = self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -237,7 +237,7 @@ class RPC:
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
-                direction_str = 'S' if trade.is_short else 'L'
+                direction_str = ('S' if trade.is_short else 'L') if nonspot else ''
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -267,7 +267,11 @@ class RPC:
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID L/S', 'Pair', 'Since', profitcol]
+            columns = [
+                'ID L/S' if nonspot else 'ID',
+                'Pair',
+                'Since',
+                profitcol]
             if self._config.get('position_adjustment_enable', False):
                 columns.append('# Entries')
             return trades_list, columns, fiat_profit_sum
@@ -791,7 +795,7 @@ class RPC:
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
-            return None
+            raise RPCException(f'Failed to enter position for {pair}.')
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """

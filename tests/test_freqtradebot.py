@@ -3663,6 +3663,7 @@ def test_exit_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+    freqtrade.strategy.custom_exit = MagicMock(return_value=None)
     if exit_type == ExitType.EXIT_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
@@ -3671,10 +3672,15 @@ def test_exit_profit_only(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
     trade.update_trade(oobj)
     freqtrade.wallets.update()
+    if profit_only:
+        assert freqtrade.handle_trade(trade) is False
+        # Custom-exit is called
+        freqtrade.strategy.custom_exit.call_count == 1
+
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is handle_first
 

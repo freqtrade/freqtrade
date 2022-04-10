@@ -1209,6 +1209,27 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
+    create_table_order = """CREATE TABLE orders (
+                                id INTEGER NOT NULL,
+                                ft_trade_id INTEGER,
+                                ft_order_side VARCHAR(25) NOT NULL,
+                                ft_pair VARCHAR(25) NOT NULL,
+                                ft_is_open BOOLEAN NOT NULL,
+                                order_id VARCHAR(255) NOT NULL,
+                                status VARCHAR(255),
+                                symbol VARCHAR(25),
+                                order_type VARCHAR(50),
+                                side VARCHAR(25),
+                                price FLOAT,
+                                amount FLOAT,
+                                filled FLOAT,
+                                remaining FLOAT,
+                                cost FLOAT,
+                                order_date DATETIME,
+                                order_filled_date DATETIME,
+                                order_update_date DATETIME,
+                                PRIMARY KEY (id)
+                            );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, stake_amount, amount, open_date,
                           stop_loss, initial_stop_loss, max_rate, ticker_interval,
@@ -1222,15 +1243,66 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
                                      )
+    insert_orders = f"""
+        insert into orders (
+            ft_trade_id,
+            ft_order_side,
+            ft_pair,
+            ft_is_open,
+            order_id,
+            status,
+            symbol,
+            order_type,
+            side,
+            price,
+            amount,
+            filled,
+            remaining,
+            cost)
+        values (
+            1,
+            'buy',
+            'ETC/BTC',
+            0,
+            'buy_order',
+            'closed',
+            'ETC/BTC',
+            'limit',
+            'buy',
+            0.00258580,
+            {amount},
+            {amount},
+            0,
+            {amount * 0.00258580}
+        ),
+        (
+            1,
+            'stoploss',
+            'ETC/BTC',
+            0,
+            'stop_order_id222',
+            'closed',
+            'ETC/BTC',
+            'limit',
+            'sell',
+            0.00258580,
+            {amount},
+            {amount},
+            0,
+            {amount * 0.00258580}
+        )
+    """
     engine = create_engine('sqlite://')
     mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
     with engine.begin() as connection:
         connection.execute(text(create_table_old))
+        connection.execute(text(create_table_order))
         connection.execute(text("create index ix_trades_is_open on trades(is_open)"))
         connection.execute(text("create index ix_trades_pair on trades(pair)"))
         connection.execute(text(insert_table_old))
+        connection.execute(text(insert_orders))
 
         # fake previous backup
         connection.execute(text("create table trades_bak as select * from trades"))
@@ -1267,8 +1339,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.open_trade_value == trade._calc_open_trade_value()
     assert trade.close_profit_abs is None
 
-    assert log_has("Moving open orders to Orders table.", caplog)
-    orders = Order.query.all()
+    orders = trade.orders
     assert len(orders) == 2
     assert orders[0].order_id == 'buy_order'
     assert orders[0].ft_order_side == 'buy'
@@ -1277,7 +1348,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert orders[1].ft_order_side == 'stoploss'
 
 
-def test_migrate_mid_state(mocker, default_conf, fee, caplog):
+def test_migrate_too_old(mocker, default_conf, fee, caplog):
     """
     Test Database migration (starting with new pairformat)
     """
@@ -1301,6 +1372,7 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
                                 PRIMARY KEY (id),
                                 CHECK (is_open IN (0, 1))
                                 );"""
+
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, fee_open, fee_close,
                           open_rate, stake_amount, amount, open_date)
                           VALUES ('binance', 'ETC/BTC', 1, {fee}, {fee},
@@ -1319,26 +1391,8 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
         connection.execute(text(insert_table_old))
 
     # Run init to test migration
-    init_db(default_conf['db_url'], default_conf['dry_run'])
-
-    assert len(Trade.query.filter(Trade.id == 1).all()) == 1
-    trade = Trade.query.filter(Trade.id == 1).first()
-    assert trade.fee_open == fee.return_value
-    assert trade.fee_close == fee.return_value
-    assert trade.open_rate_requested is None
-    assert trade.close_rate_requested is None
-    assert trade.is_open == 1
-    assert trade.amount == amount
-    assert trade.stake_amount == default_conf.get("stake_amount")
-    assert trade.pair == "ETC/BTC"
-    assert trade.exchange == "binance"
-    assert trade.max_rate == 0.0
-    assert trade.stop_loss == 0.0
-    assert trade.initial_stop_loss == 0.0
-    assert trade.open_trade_value == trade._calc_open_trade_value()
-    assert log_has("trying trades_bak0", caplog)
-    assert log_has("Running database migration for trades - backup: trades_bak0, orders_bak0",
-                   caplog)
+    with pytest.raises(OperationalException, match=r'Your database seems to be very old'):
+        init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
 def test_migrate_get_last_sequence_ids():
@@ -1561,6 +1615,8 @@ def test_to_json(fee):
 
     assert result == {'trade_id': None,
                       'pair': 'ADA/USDT',
+                      'base_currency': 'ADA',
+                      'quote_currency': 'USDT',
                       'is_open': None,
                       'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
@@ -1637,6 +1693,8 @@ def test_to_json(fee):
 
     assert result == {'trade_id': None,
                       'pair': 'XRP/BTC',
+                      'base_currency': 'XRP',
+                      'quote_currency': 'BTC',
                       'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
                       'close_date': trade.close_date.strftime("%Y-%m-%d %H:%M:%S"),

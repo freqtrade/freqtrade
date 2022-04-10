@@ -9,7 +9,7 @@ You can use the quick summary as checklist. Please refer to the detailed section
 
 ## Quick summary / migration checklist
 
-Note : `force_exit`, `force_enter`, `emergency_exit` are changed to `force_exit`, `force_enter`, `emergency_exit` respectively.
+Note : `forcesell`, `forcebuy`, `emergencysell` are changed to `force_exit`, `force_enter`, `emergency_exit` respectively.
 
 * Strategy methods:
   * [`populate_buy_trend()` -> `populate_entry_trend()`](#populate_buy_trend)
@@ -144,6 +144,9 @@ def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 Please refer to the [Strategy documentation](strategy-customization.md#exit-signal-rules) on how to enter and exit short trades.
 
 ### `custom_sell`
+
+`custom_sell` has been renamed to `custom_exit`.
+It's now also being called for every iteration, independent of current profit and `exit_profit_only` settings.
 
 ``` python hl_lines="2"
 class AwesomeStrategy(IStrategy):
