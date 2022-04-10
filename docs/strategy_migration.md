@@ -145,6 +145,9 @@ Please refer to the [Strategy documentation](strategy-customization.md#exit-sign
 
 ### `custom_sell`
 
+`custom_sell` has been renamed to `custom_exit`.
+It's now also being called for every iteration, independent of current profit and `exit_profit_only` settings.
+
 ``` python hl_lines="2"
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
