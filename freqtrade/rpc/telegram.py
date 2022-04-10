@@ -1414,7 +1414,6 @@ class Telegram(RPCHandler):
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-            # TODO: forceenter forceshort forcelong missing
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fe <trade_id>|all:* `Alias to /forceexit`"
