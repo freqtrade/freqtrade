@@ -103,7 +103,6 @@ class Telegram(RPCHandler):
             ['/count', '/start', '/stop', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
-        # like /forcesell and /forcebuy
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
@@ -116,6 +115,7 @@ class Telegram(RPCHandler):
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
                                  r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+                                 r'/forcesell$', r'/forceexit$',
                                  r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -197,7 +197,8 @@ class Telegram(RPCHandler):
                                  pattern='update_exit_reason_performance'),
             CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
-            CallbackQueryHandler(self._force_enter_inline),
+            CallbackQueryHandler(self._force_exit_inline, pattern=r"force_exit__\S+"),
+            CallbackQueryHandler(self._force_enter_inline, pattern=r"\S+\/\S+"),
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
@@ -928,23 +929,58 @@ class Telegram(RPCHandler):
     @authorized_only
     def _force_exit(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /forcesell <id>.
+        Handler for /forceexit <id>.
         Sells the given trade at current price
         :param bot: telegram bot
         :param update: message update
         :return: None
         """
 
-        trade_id = context.args[0] if context.args and len(context.args) > 0 else None
-        if not trade_id:
-            self._send_msg("You must specify a trade-id or 'all'.")
-            return
-        try:
-            msg = self._rpc._rpc_force_exit(trade_id)
-            self._send_msg('Force_exit Result: `{result}`'.format(**msg))
+        if context.args:
+            trade_id = context.args[0]
+            self._force_exit_action(trade_id)
+        else:
+            fiat_currency = self._config.get('fiat_display_currency', '')
+            try:
+                statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
+                    self._config['stake_currency'], fiat_currency)
+            except RPCException:
+                self._send_msg(msg='No open trade found.')
+                return
+            trades = []
+            for trade in statlist:
+                trades.append((trade[0], f"{trade[0]} {trade[1]} {trade[2]} {trade[3]}"))
 
-        except RPCException as e:
-            self._send_msg(str(e))
+            trade_buttons = [
+                InlineKeyboardButton(text=trade[1], callback_data=f"force_exit__{trade[0]}")
+                for trade in trades]
+            buttons_aligned = self._layout_inline_keyboard_onecol(trade_buttons)
+
+            buttons_aligned.append([InlineKeyboardButton(
+                text='Cancel', callback_data='force_exit__cancel')])
+            self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
+
+    def _force_exit_action(self, trade_id):
+        if trade_id != 'cancel':
+            try:
+                self._rpc._rpc_force_exit(trade_id)
+            except RPCException as e:
+                self._send_msg(str(e))
+
+    def _force_exit_inline(self, update: Update, _: CallbackContext) -> None:
+        if update.callback_query:
+            query = update.callback_query
+            if query.data and '__' in query.data:
+                # Input data is "force_exit__<tradid|cancel>"
+                trade_id = query.data.split("__")[1].split(' ')[0]
+                if trade_id == 'cancel':
+                    query.answer()
+                    query.edit_message_text(text="Force exit canceled.")
+                    return
+                trade: Trade = Trade.get_trades(trade_filter=Trade.id == trade_id).first()
+                query.answer()
+                query.edit_message_text(text=f"Manually exiting Trade #{trade_id}, {trade.pair}")
+                self._force_exit_action(trade_id)
 
     def _force_enter_action(self, pair, price: Optional[float], order_side: SignalDirection):
         if pair != 'cancel':
@@ -964,8 +1000,13 @@ class Telegram(RPCHandler):
                 self._force_enter_action(pair, None, order_side)
 
     @staticmethod
-    def _layout_inline_keyboard(buttons: List[InlineKeyboardButton],
-                                cols=3) -> List[List[InlineKeyboardButton]]:
+    def _layout_inline_keyboard(
+            buttons: List[InlineKeyboardButton], cols=3) -> List[List[InlineKeyboardButton]]:
+        return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
+
+    @staticmethod
+    def _layout_inline_keyboard_onecol(
+            buttons: List[InlineKeyboardButton], cols=1) -> List[List[InlineKeyboardButton]]:
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only

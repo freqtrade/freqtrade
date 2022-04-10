@@ -275,9 +275,12 @@ The relative profit of `1.2%` is the average profit per trade.
 The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.
 Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
 
-### /forcesell <trade_id>
+### /forceexit <trade_id>
 
-> **BINANCE:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
+> **BINANCE:** Exiting BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
+
+!!! Tip
+    You can get a list of all open trades by calling `/forceexit` without parameter, which will show a list of buttons to simply exit a trade.
 
 ### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
