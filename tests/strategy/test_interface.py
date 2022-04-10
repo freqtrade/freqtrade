@@ -523,7 +523,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.exit_flag is True
     assert res.exit_reason == 'h' * 64
-    assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
+    assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
 @pytest.mark.parametrize('side', TRADE_SIDES)
