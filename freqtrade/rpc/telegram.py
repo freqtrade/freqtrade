@@ -103,7 +103,6 @@ class Telegram(RPCHandler):
             ['/count', '/start', '/stop', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
-        # like /forcesell and /forcebuy
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
@@ -115,7 +114,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$', r'/forcesell$',
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+                                 r'/forcesell$', r'/forceexit$',
                                  r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -929,7 +929,7 @@ class Telegram(RPCHandler):
     @authorized_only
     def _force_exit(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /forcesell <id>.
+        Handler for /forceexit <id>.
         Sells the given trade at current price
         :param bot: telegram bot
         :param update: message update
@@ -1019,7 +1019,6 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-
         if context.args:
             pair = context.args[0]
             price = float(context.args[1]) if len(context.args) > 1 else None
