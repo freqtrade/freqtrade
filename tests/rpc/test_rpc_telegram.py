@@ -1005,7 +1005,7 @@ def test_reload_config_handle(default_conf, update, mocker) -> None:
     assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
+def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
                                    ticker_sell_up, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -1033,7 +1033,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     # Increase the price and sell it
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
 
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
@@ -1101,7 +1101,7 @@ def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
     trade = Trade.query.first()
     assert trade
 
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
@@ -1137,7 +1137,7 @@ def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
     } == last_msg
 
 
-def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
@@ -1160,7 +1160,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     freqtradebot.enter_positions()
     msg_mock.reset_mock()
 
-    # /forcesell all
+    # /forceexit all
     context = MagicMock()
     context.args = ["all"]
     telegram._force_exit(update=update, context=context)
@@ -1196,7 +1196,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     } == msg
 
 
-def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
+def test_forceexit_handle_invalid(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
 
@@ -1205,7 +1205,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
 
     # Trader is not running
     freqtradebot.state = State.STOPPED
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
@@ -1215,7 +1215,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     # Invalid argument
     msg_mock.reset_mock()
     freqtradebot.state = State.RUNNING
-    # /forcesell 123456
+    # /forceexit 123456
     context = MagicMock()
     context.args = ["123456"]
     telegram._force_exit(update=update, context=context)

@@ -157,7 +157,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 # /forcesell is deprecated with short addition. use /forceexit instead
 @router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
-def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
+def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     return rpc._rpc_force_exit(payload.tradeid, ordertype)
 

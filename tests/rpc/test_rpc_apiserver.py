@@ -1182,7 +1182,7 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
     }
 
 
-def test_api_forcesell(botclient, mocker, ticker, fee, markets):
+def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1194,15 +1194,15 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     )
     patch_get_signal(ftbot)
 
-    rc = client_post(client, f"{BASE_URI}/forcesell",
+    rc = client_post(client, f"{BASE_URI}/forceexit",
                      data='{"tradeid": "1"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": "Error querying /api/v1/forcesell: invalid argument"}
+    assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
     Trade.query.session.rollback()
 
     ftbot.enter_positions()
 
-    rc = client_post(client, f"{BASE_URI}/forcesell",
+    rc = client_post(client, f"{BASE_URI}/forceexit",
                      data='{"tradeid": "1"}')
     assert_response(rc)
     assert rc.json() == {'result': 'Created sell order for trade 1.'}

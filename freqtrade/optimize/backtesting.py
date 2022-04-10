@@ -417,7 +417,7 @@ class Backtesting:
         roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
         if roi is not None and roi_entry is not None:
             if roi == -1 and roi_entry % self.timeframe_min == 0:
-                # When forceselling with ROI=-1, the roi time will always be equal to trade_dur.
+                # When force_exiting with ROI=-1, the roi time will always be equal to trade_dur.
                 # If that entry is a multiple of the timeframe (so on candle open)
                 # - we'll use open instead of close
                 return row[OPEN_IDX]

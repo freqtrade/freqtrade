@@ -274,7 +274,7 @@ class Telegram(RPCHandler):
                                 else "")
 
         # Check if all sell properties are available.
-        # This might not be the case if the message origin is triggered by /forcesell
+        # This might not be the case if the message origin is triggered by /forceexit
         if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
