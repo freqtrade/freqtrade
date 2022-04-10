@@ -474,9 +474,12 @@ def generate_strategy_stats(pairlist: List[str],
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance)
+        (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
+             results, value_col='profit_abs', starting_balance=start_balance, relative=True)
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
+            'max_relative_drawdown': max_relative_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
             'drawdown_start_ts': drawdown_start.timestamp() * 1000,
@@ -497,6 +500,7 @@ def generate_strategy_stats(pairlist: List[str],
         strat_stats.update({
             'max_drawdown': 0.0,
             'max_drawdown_account': 0.0,
+            'max_relative_drawdown': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
             'max_drawdown_high': 0.0,
@@ -760,10 +764,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                              strat_results['stake_currency'])),
 
             # Compatibility to show old hyperopt results
-            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
+            ('Max % of account underwater', f"{strat_results['max_relative_drawdown']:.2%}"),
+            ('Absolute Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
             if 'max_drawdown_account' in strat_results else (
                 'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
-            ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+            ('Absolute Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
                                           strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
                                                strat_results['stake_currency'])),
