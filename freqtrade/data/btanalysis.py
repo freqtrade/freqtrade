@@ -445,6 +445,9 @@ def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_
         cumulative_balance = starting_balance + max_drawdown_df['cumulative']
         max_balance = starting_balance + max_drawdown_df['high_value']
         max_drawdown_df['drawdown_relative'] = ((max_balance - cumulative_balance) / max_balance)
+    else:
+        # This is not completely accurate, 
+        max_drawdown_df['drawdown_relative'] = ((max_drawdown_df['high_value'] - max_drawdown_df['cumulative']) / max_drawdown_df['high_value'])
     return max_drawdown_df
 
 

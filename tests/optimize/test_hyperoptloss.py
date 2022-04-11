@@ -85,6 +85,7 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SharpeHyperOptLoss",
     "SharpeHyperOptLossDaily",
     "MaxDrawDownHyperOptLoss",
+    "MaxDrawDownRelativeHyperOptLoss",
     "CalmarHyperOptLoss",
     "ProfitDrawDownHyperOptLoss",
 
