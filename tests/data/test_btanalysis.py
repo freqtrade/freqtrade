@@ -27,18 +27,19 @@ def test_get_latest_backtest_filename(testdatadir, mocker):
 
     with pytest.raises(ValueError,
                        match=r"Directory .* does not seem to contain .*"):
-        get_latest_backtest_filename(testdatadir.parent)
+        get_latest_backtest_filename(testdatadir)
 
-    res = get_latest_backtest_filename(testdatadir)
+    testdir_bt = testdatadir / "backtest_results"
+    res = get_latest_backtest_filename(testdir_bt)
     assert res == 'backtest-result_new.json'
 
-    res = get_latest_backtest_filename(str(testdatadir))
+    res = get_latest_backtest_filename(str(testdir_bt))
     assert res == 'backtest-result_new.json'
 
     mocker.patch("freqtrade.data.btanalysis.json_load", return_value={})
 
     with pytest.raises(ValueError, match=r"Invalid '.last_result.json' format."):
-        get_latest_backtest_filename(testdatadir)
+        get_latest_backtest_filename(testdir_bt)
 
 
 def test_get_latest_hyperopt_file(testdatadir):
@@ -81,7 +82,7 @@ def test_load_backtest_data_old_format(testdatadir, mocker):
 
 def test_load_backtest_data_new_format(testdatadir):
 
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
     assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
@@ -92,19 +93,19 @@ def test_load_backtest_data_new_format(testdatadir):
     assert bt_data.equals(bt_data2)
 
     # Test loading from folder (must yield same result)
-    bt_data3 = load_backtest_data(testdatadir)
+    bt_data3 = load_backtest_data(testdatadir / "backtest_results")
     assert bt_data.equals(bt_data3)
 
     with pytest.raises(ValueError, match=r"File .* does not exist\."):
         load_backtest_data(str("filename") + "nofile")
 
     with pytest.raises(ValueError, match=r"Unknown dataformat."):
-        load_backtest_data(testdatadir / LAST_BT_RESULT_FN)
+        load_backtest_data(testdatadir / "backtest_results" / LAST_BT_RESULT_FN)
 
 
 def test_load_backtest_data_multi(testdatadir):
 
-    filename = testdatadir / "backtest-result_multistrat.json"
+    filename = testdatadir / "backtest_results/backtest-result_multistrat.json"
     for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
@@ -182,7 +183,7 @@ def test_extract_trades_of_period(testdatadir):
 
 
 def test_analyze_trade_parallelism(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
 
     res = analyze_trade_parallelism(bt_data, "5m")
@@ -256,7 +257,7 @@ def test_combine_dataframes_with_mean_no_data(testdatadir):
 
 
 def test_create_cum_profit(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
@@ -272,7 +273,7 @@ def test_create_cum_profit(testdatadir):
 
 
 def test_create_cum_profit1(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
     bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
@@ -294,7 +295,7 @@ def test_create_cum_profit1(testdatadir):
 
 
 def test_calculate_max_drawdown(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
         bt_data, value_col="profit_abs")
@@ -318,7 +319,7 @@ def test_calculate_max_drawdown(testdatadir):
 
 
 def test_calculate_csum(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     csum_min, csum_max = calculate_csum(bt_data)
 
