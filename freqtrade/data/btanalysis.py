@@ -160,6 +160,30 @@ def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results:
             break
 
 
+def _get_backtest_files(dirname: Path) -> List[Path]:
+    return reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json')))
+
+
+def get_backtest_resultlist(dirname: Path):
+    """
+    Get list of backtest results read from metadata files
+    """
+    results = []
+    for filename in _get_backtest_files(dirname):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            continue
+        for s, v in metadata.items():
+            results.append({
+                'filename': filename.name,
+                'strategy': s,
+                'run_id': v['run_id'],
+                'backtest_start_time': v['backtest_start_time'],
+
+            })
+    return results
+
+
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
                                  min_backtest_date: datetime = None) -> Dict[str, Any]:
     """
@@ -179,7 +203,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
     }
 
     # Weird glob expression here avoids including .meta.json files.
-    for filename in reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))):
+    for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:
             # Files are sorted from newest to oldest. When file without metadata is encountered it

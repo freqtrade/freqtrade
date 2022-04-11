@@ -1,13 +1,16 @@
 import asyncio
 import logging
 from copy import deepcopy
+from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from freqtrade.configuration.config_validation import validate_config_consistency
+from freqtrade.data.btanalysis import get_backtest_resultlist
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
-from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
+from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
+                                                  BacktestResponse)
 from freqtrade.rpc.api_server.deps import get_config, is_webserver_mode
 from freqtrade.rpc.api_server.webserver import ApiServer
 from freqtrade.rpc.rpc import RPCException
@@ -200,3 +203,9 @@ def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
         "progress": 0,
         "status_msg": "Backtest ended",
     }
+
+
+@router.get('/backtest/history', response_model=List[BacktestHistoryEntry], tags=['webserver', 'backtest'])
+def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+    # Get backtest result history, read from metadata files
+    return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
