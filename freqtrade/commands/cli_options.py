@@ -83,7 +83,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     "recursive_strategy_search": Arg(
-        '-r', '--recursive_strategy_search',
+        '--recursive_strategy_search',
         help='Recursively search for a strategy in the strategies folder.',
         metavar='store_true',
     ),
