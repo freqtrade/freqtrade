@@ -190,7 +190,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
-    assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir/'backtest-result'))
+    assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'backtest-result'))
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'

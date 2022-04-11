@@ -390,8 +390,8 @@ class HyperoptTools():
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency, keep_trailing_zeros=True),
                 f"({x['Profit']:,.2%})".rjust(10, ' ')
-            ).rjust(25+len(stake_currency))
-            if x['Total profit'] != 0.0 else '--'.rjust(25+len(stake_currency)),
+            ).rjust(25 + len(stake_currency))
+            if x['Total profit'] != 0.0 else '--'.rjust(25 + len(stake_currency)),
             axis=1
         )
         trials = trials.drop(columns=['Total profit'])
@@ -399,11 +399,11 @@ class HyperoptTools():
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for j in range(len(trials.loc[i])-3):
+                    for j in range(len(trials.loc[i]) - 3):
                         trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
                                                            str(trials.loc[i][j]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for j in range(len(trials.loc[i])-3):
+                    for j in range(len(trials.loc[i]) - 3):
                         trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
                                                            str(trials.loc[i][j]), Style.RESET_ALL)
 
@@ -459,7 +459,7 @@ class HyperoptTools():
                         'loss', 'is_initial_point', 'is_best']
         perc_multi = 100
 
-        param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
+        param_metrics = [("params_dict." + param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
         base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Median profit', 'Total profit',

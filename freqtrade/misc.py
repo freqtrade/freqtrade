@@ -126,7 +126,7 @@ def format_ms_time(date: int) -> str:
     convert MS date to readable format.
     : epoch-string in ms
     """
-    return datetime.fromtimestamp(date/1000.0).strftime('%Y-%m-%dT%H:%M:%S')
+    return datetime.fromtimestamp(date / 1000.0).strftime('%Y-%m-%dT%H:%M:%S')
 
 
 def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
