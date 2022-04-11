@@ -8,7 +8,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
 from wao.strategy_controller import StrategyController
-from wao.waostrategy import WAOStrategy
+from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy002(WAOStrategy):

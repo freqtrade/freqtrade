@@ -5,7 +5,7 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
-from wao.waostrategy import WAOStrategy
+from wao.WAOStrategy import WAOStrategy
 from wao.strategy_controller import StrategyController
 
 
