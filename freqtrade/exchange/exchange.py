@@ -20,7 +20,7 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRU
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
-                                 ListPairsWithTimeframes, PairWithTimeframe)
+                                 EntryExit, ListPairsWithTimeframes, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -341,15 +341,11 @@ class Exchange:
         return sorted(set([x['quote'] for _, x in markets.items()]))
 
     def get_pair_quote_currency(self, pair: str) -> str:
-        """
-        Return a pair's quote currency
-        """
+        """ Return a pair's quote currency (base/quote:settlement) """
         return self.markets.get(pair, {}).get('quote', '')
 
     def get_pair_base_currency(self, pair: str) -> str:
-        """
-        Return a pair's base currency
-        """
+        """ Return a pair's base currency (base/quote:settlement) """
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
@@ -1429,7 +1425,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     def get_rate(self, pair: str, refresh: bool,
-                 side: Literal['entry', 'exit'], is_short: bool) -> float:
+                 side: EntryExit, is_short: bool) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -2181,7 +2177,7 @@ class Exchange:
                 lev = tier['lev']
 
                 if tier_index < len(pair_tiers) - 1:
-                    next_tier = pair_tiers[tier_index+1]
+                    next_tier = pair_tiers[tier_index + 1]
                     next_floor = next_tier['min'] / next_tier['lev']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
                         return min((tier['max'] / stake_amount), lev)

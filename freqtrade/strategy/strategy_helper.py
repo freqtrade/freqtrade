@@ -93,9 +93,9 @@ def stoploss_from_open(
         return 1
 
     if is_short is True:
-        stoploss = -1+((1-open_relative_stop)/(1-current_profit))
+        stoploss = -1 + ((1 - open_relative_stop) / (1 - current_profit))
     else:
-        stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+        stoploss = 1 - ((1 + open_relative_stop) / (1 + current_profit))
 
     # negative stoploss values indicate the requested stop price is higher/lower
     # (long/short) than the current price

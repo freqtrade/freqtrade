@@ -84,16 +84,17 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
-Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
+Allows to define custom exit signals, indicating that specified position should be sold. This is very useful when we need to customize exit conditions for each individual trade, or if you need trade data to make an exit decision.
 
 For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using custom_exit() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using `custom_exit()` signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
-    Returning a (none-empty) `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+    Returning a (none-empty) `string` or `True` from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (`use_exit_signal=False`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+    `custom_exit()` will ignore `exit_profit_only`, and will always be called unless `use_exit_signal=False`, even if there is a new enter signal.
 
-An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
+An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:
 
 ``` python
 class AwesomeStrategy(IStrategy):
@@ -365,7 +366,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
-                           entry_tag: Optional[str], **kwargs) -> float:
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
@@ -393,7 +394,7 @@ class AwesomeStrategy(IStrategy):
 !!! Warning "Backtesting"
     Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
     Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
-    `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
+    `custom_exit_price()` is only called for sells of type exit_signal and Custom exit. All other exit-types will use regular backtesting prices.
 
 ## Custom order timeout rules
 
@@ -564,13 +565,13 @@ class AwesomeStrategy(IStrategy):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_sell', 'emergency_sell']
+                           'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the sell-order is placed on the exchange.
+        :return bool: When True is returned, then the exit-order is placed on the exchange.
             False aborts the process
         """
-        if exit_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
+        if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)
@@ -665,7 +666,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        filled_entries = trade.select_filled_orders(trade.enter_side)
+        filled_entries = trade.select_filled_orders(trade.entry_side)
         count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x

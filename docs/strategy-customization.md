@@ -99,7 +99,7 @@ With this section, you have a new column in your dataframe, which has `1` assign
 
 ### Customize Indicators
 
-Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
+Buy and sell signals need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
 You should only add the indicators used in either `populate_entry_trend()`, `populate_exit_trend()`, or to populate another indicator, otherwise performance may suffer.
 
@@ -263,8 +263,8 @@ def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFram
 
 ### Exit signal rules
 
-Edit the method `populate_exit_trend()` into your strategy file to update your sell strategy.
-Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
+Edit the method `populate_exit_trend()` into your strategy file to update your exit strategy.
+Please note that the exit-signal is only used if `use_exit_signal` is set to true in the configuration.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
@@ -275,7 +275,7 @@ Sample from `user_data/strategies/sample_strategy.py`:
 ```python
 def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
-    Based on TA indicators, populates the sell signal for the given dataframe
+    Based on TA indicators, populates the exit signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
     :param metadata: Additional information, like the currently traded pair
     :return: DataFrame with buy column
@@ -319,7 +319,7 @@ def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 ### Minimal ROI
 
-This dict defines the minimal Return On Investment (ROI) a trade should reach before selling, independent from the sell signal.
+This dict defines the minimal Return On Investment (ROI) a trade should reach before exiting, independent from the exit signal.
 
 It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.
 
@@ -334,10 +334,10 @@ minimal_roi = {
 
 The above configuration would therefore mean:
 
-- Sell whenever 4% profit was reached
-- Sell when 2% profit was reached (in effect after 20 minutes)
-- Sell when 1% profit was reached (in effect after 30 minutes)
-- Sell when trade is non-loosing (in effect after 40 minutes)
+- Exit whenever 4% profit was reached
+- Exit when 2% profit was reached (in effect after 20 minutes)
+- Exit when 1% profit was reached (in effect after 30 minutes)
+- Exit when trade is non-loosing (in effect after 40 minutes)
 
 The calculation does include fees.
 
@@ -349,7 +349,7 @@ minimal_roi = {
 }
 ```
 
-While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
+While technically not completely disabled, this would exit once the trade reaches 10000% Profit.
 
 To use times based on candle duration (timeframe), the following snippet can be handy.
 This will allow you to change the timeframe for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
@@ -385,7 +385,7 @@ For the full documentation on stoploss features, look at the dedicated [stoploss
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
 
-Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
+Please note that the same entry/exit signals may work well with one timeframe, but not with the others.
 
 This setting is accessible within the strategy methods as the `self.timeframe` attribute.
 
@@ -1088,7 +1088,7 @@ The following lists some common patterns which should be avoided to prevent frus
 
 ### Colliding signals
 
-When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
+When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that enter, and exit immediately. Obviously, this can potentially lead to missed entries.
 
 The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:
 

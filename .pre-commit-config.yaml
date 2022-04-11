@@ -1,0 +1,21 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pycqa/flake8
+    rev: '4.0.1'
+    hooks:
+    -   id: flake8
+        # stages: [push]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.942'
+    hooks:
+    -   id: mypy
+        # stages: [push]
+
+-   repo: https://github.com/pycqa/isort
+    rev: '5.10.1'
+    hooks:
+      - id: isort
+        name: isort (python)
+        # stages: [push]

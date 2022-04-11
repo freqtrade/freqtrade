@@ -931,6 +931,8 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_order': None,
         'open_rate': 0.123,
         'pair': 'ETH/BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'stake_amount': 0.001,
         'stop_loss_abs': ANY,
         'stop_loss_pct': ANY,
@@ -963,7 +965,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_trade_value': open_trade_value,
         'sell_reason': None,
         'exit_reason': None,
-        'sell_order_status': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,
@@ -1077,16 +1079,16 @@ def test_api_whitelist(botclient):
     'forcebuy',
     'forceenter',
 ])
-def test_api_forceentry(botclient, mocker, fee, endpoint):
+def test_api_force_entry(botclient, mocker, fee, endpoint):
     ftbot, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/{endpoint}",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Forceentry not enabled."}
+    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled."}
 
     # enable forcebuy
-    ftbot.config['forcebuy_enable'] = True
+    ftbot.config['force_entry_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
@@ -1097,7 +1099,7 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
 
     # Test creating trade
     fbuy_mock = MagicMock(return_value=Trade(
-        pair='ETH/ETH',
+        pair='ETH/BTC',
         amount=1,
         amount_requested=1,
         exchange='binance',
@@ -1130,7 +1132,9 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         'open_date': ANY,
         'open_timestamp': ANY,
         'open_rate': 0.245441,
-        'pair': 'ETH/ETH',
+        'pair': 'ETH/BTC',
+        'base_currency': 'ETH',
+        'quote_currency': 'BTC',
         'stake_amount': 1,
         'stop_loss_abs': None,
         'stop_loss_pct': None,
@@ -1164,7 +1168,7 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
         'open_trade_value': 0.24605460,
         'sell_reason': None,
         'exit_reason': None,
-        'sell_order_status': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,
@@ -1178,7 +1182,7 @@ def test_api_forceentry(botclient, mocker, fee, endpoint):
     }
 
 
-def test_api_forcesell(botclient, mocker, ticker, fee, markets):
+def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1190,15 +1194,15 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     )
     patch_get_signal(ftbot)
 
-    rc = client_post(client, f"{BASE_URI}/forcesell",
+    rc = client_post(client, f"{BASE_URI}/forceexit",
                      data='{"tradeid": "1"}')
     assert_response(rc, 502)
-    assert rc.json() == {"error": "Error querying /api/v1/forcesell: invalid argument"}
+    assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
     Trade.query.session.rollback()
 
     ftbot.enter_positions()
 
-    rc = client_post(client, f"{BASE_URI}/forcesell",
+    rc = client_post(client, f"{BASE_URI}/forceexit",
                      data='{"tradeid": "1"}')
     assert_response(rc)
     assert rc.json() == {'result': 'Created sell order for trade 1.'}

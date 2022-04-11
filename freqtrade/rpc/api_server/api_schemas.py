@@ -140,9 +140,9 @@ class UnfilledTimeout(BaseModel):
 class OrderTypes(BaseModel):
     entry: OrderTypeValues
     exit: OrderTypeValues
-    emergencyexit: Optional[OrderTypeValues]
-    forceexit: Optional[OrderTypeValues]
-    forceentry: Optional[OrderTypeValues]
+    emergency_exit: Optional[OrderTypeValues]
+    force_exit: Optional[OrderTypeValues]
+    force_entry: Optional[OrderTypeValues]
     stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
@@ -174,7 +174,7 @@ class ShowConfig(BaseModel):
     timeframe_min: int
     exchange: str
     strategy: Optional[str]
-    forcebuy_enabled: bool
+    force_entry_enable: bool
     exit_pricing: Dict[str, Any]
     entry_pricing: Dict[str, Any]
     bot_name: str
@@ -203,6 +203,8 @@ class OrderSchema(BaseModel):
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str
+    base_currency: str
+    quote_currency: str
     is_open: bool
     is_short: bool
     exchange: str
@@ -237,7 +239,7 @@ class TradeSchema(BaseModel):
     profit_fiat: Optional[float]
     sell_reason: Optional[str]  # Deprecated
     exit_reason: Optional[str]
-    sell_order_status: Optional[str]
+    exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
     stop_loss_ratio: Optional[float]
     stop_loss_pct: Optional[float]

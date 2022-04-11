@@ -16,4 +16,4 @@ class PeriodicCache(TTLCache):
             return ts - offset
 
         # Init with smlight offset
-        super().__init__(maxsize=maxsize, ttl=ttl-1e-5, timer=local_timer, getsizeof=getsizeof)
+        super().__init__(maxsize=maxsize, ttl=ttl - 1e-5, timer=local_timer, getsizeof=getsizeof)
