@@ -1,9 +1,8 @@
-
-{
+  	{
     "max_open_trades": 3,
     "stake_currency": "USDT",
-    "stake_amount": 10,
-    "tradable_balance_ratio": 0.1,
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
@@ -29,14 +28,14 @@
     },
     "exchange": {
         "name": "binance",
-        "key": "",
-        "secret": "",
+        "key": "r7jNtIb7EWp8VR0Y9wyONEboIDYJ1P6LtY7ywpIH3knxDXQDukeAPTLMztlP2OGB",
+        "secret": "qdtxxwCA5USIb1F3086C3a0RlTqoRSX8pzxWqjmTDF8ap5v6CKLNn2GlbukiADHJ",
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-    "LTC/USDT",
-    "ADA/USDT",
-    "XLM/USDT"  
+            "LTC/USDT",
+            "ADA/USDT",
+            "XLM/USDT"
 	],
         "pair_blacklist": [
             "BNB/.*"
@@ -63,7 +62,7 @@
     },
     "telegram": {
         "enabled": false,
-        "token": "2112837066:AAHxxWaGtdciclPOqDycolF8hRg7vcWO6F4",
+        "token": "2123575847:AAHGr3YpgIm3K-atU1qxhEj3ZNjTsiIj2GQ",
         "chat_id": "2091515934"
     },
     "api_server": {

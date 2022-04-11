@@ -12,7 +12,7 @@ from romeo import Romeo
 class StrategyController:
     romeo_pool = {}
 
-    def __init__(self, brain):
+    def setup(self, brain):
         setup_429()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(brain, BrainConfig.BACKTEST_COIN,

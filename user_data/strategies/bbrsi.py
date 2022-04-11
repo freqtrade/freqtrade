@@ -1,9 +1,4 @@
 # --- Do not remove these libs ---
-
-from freqtrade.persistence import Trade
-from freqtrade.strategy import IStrategy
-from typing import Dict, List
-from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 
@@ -11,14 +6,18 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.waostrategy import WAOStrategy
-# from freqtrade.strategy import IStrategy
-# from wao.strategy_controller import StrategyController
+from wao.strategy_controller import StrategyController
 
 
 class bbrsi(WAOStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
-    # controller = StrategyController("Freq_bbrsi")
+    controller = StrategyController()
+    controller.setup("Freq_bbrsi")
+
+    def get_brain_name(self) -> str:
+        return "Freq_" + self.__class__.__name__
+
     minimal_roi = {
         "0": 0.07
     }
@@ -127,4 +126,3 @@ class bbrsi(WAOStrategy):
             ),
             'sell'] = 1
         return dataframe
-
