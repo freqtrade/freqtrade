@@ -1581,6 +1581,34 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert result['status_msg'] == 'Backtest reset'
 
 
+def test_api_backtest_history(botclient, mocker, testdatadir):
+    ftbot, client = botclient
+    mocker.patch('freqtrade.data.btanalysis._get_backtest_files',
+                 return_value=[
+                     testdatadir / 'backtest_results/backtest-result_multistrat.json',
+                     testdatadir / 'backtest_results/backtest-result_new.json'
+                     ])
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history")
+    assert_response(rc, 502)
+    ftbot.config['user_data_dir'] = testdatadir
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history")
+    assert_response(rc)
+    result = rc.json()
+    assert len(result) == 1
+    fn = result[0]['filename']
+    rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}")
+    assert_response(rc)
+    result2 = rc.json()
+    assert result2
+    assert result2['status'] == 'ended'
+    assert not result2['running']
+    assert result2['progress'] == 1
+    assert result2['backtest_result']['strategy'][CURRENT_TEST_STRATEGY]
+
+
 def test_health(botclient):
     ftbot, client = botclient
 
