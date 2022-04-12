@@ -64,7 +64,10 @@ Binance supports [time_in_force](configuration.md#understand-order_time_in_force
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
 Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
-### Binance Futures' order pricing
+### Binance Futures
+
+Binance has specific (unfortunately complex) [Futures Trading Quantitative Rules](https://www.binance.com/en/support/faq/4f462ebe6ff445d4a170be7d9e897272) which need to be followed, and which prohibit a too low stake-amount (among others) for too many orders.
+Violating these rules will result in a trading restriction.
 
 When trading on Binance Futures market, orderbook must be used because there is no price ticker data for futures.
 
