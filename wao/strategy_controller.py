@@ -7,6 +7,7 @@ import time
 
 
 class StrategyController:
+    # romeo_pool: key=coin+brain, value=romeo_instance
     romeo_pool = {}
 
     def __init__(self, brain):
@@ -33,9 +34,9 @@ class StrategyController:
             if BrainConfig.IS_BACKTEST:
                 perform_back_test_sell(current_time)
             else:
-                perform_execute_sell(coin, self.romeo_pool)
+                perform_execute_sell(coin, brain, self.romeo_pool)
 
-        self.__remove_from_pool(coin)
+        self.__remove_from_pool(coin, brain)
 
     def __buy_back_test(self, date_time, coin, brain):
         time.sleep(BrainConfig.BACKTEST_THROTTLE_SECOND)
@@ -50,7 +51,7 @@ class StrategyController:
         else:
             perform_execute_buy(mode, coin, brain, self.romeo_pool)
 
-    def __remove_from_pool(self, coin):
-        romeo = self.romeo_pool.get(coin)
+    def __remove_from_pool(self, coin, brain):
+        romeo = self.romeo_pool.get(coin + brain)
         if romeo is not None:
-            del self.romeo_pool[coin]
+            del self.romeo_pool[coin + brain]
