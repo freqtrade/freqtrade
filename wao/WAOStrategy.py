@@ -9,8 +9,7 @@ from wao.strategy_controller import StrategyController
 class WAOStrategy(IStrategy):
     controller = StrategyController()
 
-    def get_brain_name(self) -> str:
-        return "Freq_"
+    brain_name = "Freq_"
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
@@ -37,7 +36,7 @@ class WAOStrategy(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        brain = self.get_brain_name()
+        brain = self.brain_name
 
         self.controller.on_buy_signal(current_time, mode, coin, brain)
         return True
@@ -69,7 +68,7 @@ class WAOStrategy(IStrategy):
             False aborts the process
         """
         coin = pair.split("/")[0]
-        brain = self.get_brain_name()
+        brain = self.brain_name
         mode = "test"
 
         self.controller.on_sell_signal(sell_reason, current_time, mode, coin, brain)

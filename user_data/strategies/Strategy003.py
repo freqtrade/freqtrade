@@ -7,16 +7,13 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 
-from wao.strategy_controller import StrategyController
 from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy003(WAOStrategy):
-    controller = StrategyController()
-    controller.setup('Freq_Strategy003')
+    WAOStrategy.controller.setup('Freq_Strategy003')
 
-    def get_brain_name(self) -> str:
-        return "Freq_" + self.__class__.__name__
+    WAOStrategy.brain_name = 'Freq_Strategy003'
 
     """
     Strategy 003

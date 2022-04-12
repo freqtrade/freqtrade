@@ -6,17 +6,14 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.WAOStrategy import WAOStrategy
-from wao.strategy_controller import StrategyController
 
 
 class bbrsi(WAOStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
-    controller = StrategyController()
-    controller.setup("Freq_bbrsi")
+    WAOStrategy.controller.setup("Freq_bbrsi")
 
-    def get_brain_name(self) -> str:
-        return "Freq_" + self.__class__.__name__
+    WAOStrategy.brain_name = "Freq_bbrsi"
 
     minimal_roi = {
         "0": 0.07

@@ -5,16 +5,13 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 
-from wao.strategy_controller import StrategyController
 from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy004(WAOStrategy):
-    controller = StrategyController()
-    controller.setup('Freq_Strategy004')
+    WAOStrategy.controller.setup('Freq_Strategy004')
 
-    def get_brain_name(self) -> str:
-        return "Freq_" + self.__class__.__name__
+    WAOStrategy.brain_name = 'Freq_Strategy004'
     """
     Strategy 004
     author@: Gerald Lonlas
