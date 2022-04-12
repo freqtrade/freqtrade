@@ -426,8 +426,8 @@ class Hyperopt:
             for x in a_list:
                 key = repr(x)
                 if key not in seen:
-                    seen.append(eval(key))
-            return seen
+                    seen.append(key)
+            return [eval(x) for x in seen]
         i = 0
         asked_non_tried: List[List[Any]] = []
         is_random: List[bool] = []
