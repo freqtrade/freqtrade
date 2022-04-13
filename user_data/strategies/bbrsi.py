@@ -13,7 +13,7 @@ class bbrsi(WAOStrategy):
     # This attribute will be overridden if the config file contains "minimal_roi"
     WAOStrategy.controller.setup("Freq_bbrsi")
 
-    WAOStrategy.brain_name = "Freq_bbrsi"
+    brain = "Freq_bbrsi"
 
     minimal_roi = {
         "0": 0.07

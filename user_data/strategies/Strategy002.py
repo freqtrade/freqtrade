@@ -13,7 +13,7 @@ from wao.WAOStrategy import WAOStrategy
 class Strategy002(WAOStrategy):
     WAOStrategy.controller.setup('Freq_Strategy002')
 
-    WAOStrategy.brain_name = 'Freq_Strategy002'
+    brain = 'Freq_Strategy002'
     """
     Strategy 002
     author@: Gerald Lonlas
