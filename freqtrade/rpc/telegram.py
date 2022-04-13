@@ -387,7 +387,7 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_entry_details(self, filled_orders: List, base_currency: str, is_open: bool):
+    def _prepare_entry_details(self, filled_orders: List, quote_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
@@ -405,7 +405,7 @@ class Telegram(RPCHandler):
             if x == 0:
                 lines.append(f"*Entry #{x+1}:*")
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
                 lines.append(f"*Average Entry Price:* {cur_entry_average}")
             else:
                 sumA = 0
@@ -429,7 +429,7 @@ class Telegram(RPCHandler):
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {base_currency})")
+                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
                 lines.append(f"*Average Entry Price:* {cur_entry_average} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
                 lines.append(f"*Order filled at:* {order['order_filled_date']}")
@@ -472,7 +472,7 @@ class Telegram(RPCHandler):
                     "*Current Pair:* {pair}",
                     "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
                     "*Leverage:* `{leverage}`" if r.get('leverage') else "",
-                    "*Amount:* `{amount} ({stake_amount} {base_currency})`",
+                    "*Amount:* `{amount} ({stake_amount} {quote_currency})`",
                     "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                     "*Exit Reason:* `{exit_reason}`" if r['exit_reason'] else "",
                 ]
