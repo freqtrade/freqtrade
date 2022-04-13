@@ -168,7 +168,7 @@ def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: 
 
 
 def _get_backtest_files(dirname: Path) -> List[Path]:
-    return reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json')))
+    return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
 
 
 def get_backtest_resultlist(dirname: Path):

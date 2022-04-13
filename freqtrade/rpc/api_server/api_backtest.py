@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from copy import deepcopy
-from typing import List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
@@ -215,7 +215,7 @@ def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserve
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
     # Get backtest result history, read from metadata files
     fn = config['user_data_dir'] / 'backtest_results' / filename
-    results = {
+    results: Dict[str, Any] = {
         'metadata': {},
         'strategy': {},
         'strategy_comparison': [],
