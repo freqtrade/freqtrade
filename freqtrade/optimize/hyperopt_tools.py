@@ -310,11 +310,14 @@ class HyperoptTools():
         if not has_drawdown:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.max_drawdown_account'] = None
+        if 'is_random' not in trials.columns:
+            trials['is_random'] = False
 
         # New mode, using backtest result for metrics
         trials['results_metrics.winsdrawslosses'] = trials.apply(
             lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
                       f"{x['results_metrics.losses']:>4}", axis=1)
+
 
         trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
                          'results_metrics.winsdrawslosses',
