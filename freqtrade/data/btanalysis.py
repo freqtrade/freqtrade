@@ -149,7 +149,14 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     return data
 
 
-def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    """
+    Load one strategy from multi-strategy result
+    and merge it with results
+    :param strategy_name: Name of the strategy contained in the result
+    :param filename: Backtest-result-filename to load
+    :param results: dict to merge the result to.
+    """
     bt_data = load_backtest_stats(filename)
     for k in ('metadata', 'strategy'):
         results[k][strategy_name] = bt_data[k][strategy_name]
@@ -226,7 +233,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
 
             if strategy_metadata['run_id'] == run_id:
                 del run_ids[strategy_name]
-                _load_and_merge_backtest_result(strategy_name, filename, results)
+                load_and_merge_backtest_result(strategy_name, filename, results)
 
         if len(run_ids) == 0:
             break

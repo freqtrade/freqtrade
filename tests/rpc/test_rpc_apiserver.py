@@ -1599,7 +1599,8 @@ def test_api_backtest_history(botclient, mocker, testdatadir):
     result = rc.json()
     assert len(result) == 1
     fn = result[0]['filename']
-    rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}")
+    strategy = result[0]['strategy']
+    rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}&strategy={strategy}")
     assert_response(rc)
     result2 = rc.json()
     assert result2

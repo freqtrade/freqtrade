@@ -6,7 +6,7 @@ from typing import List
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from freqtrade.configuration.config_validation import validate_config_consistency
-from freqtrade.data.btanalysis import get_backtest_resultlist, load_backtest_stats
+from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
 from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
@@ -212,14 +212,21 @@ def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserve
 
 
 @router.get('/backtest/history/result', response_model=BacktestResponse, tags=['webserver', 'backtest'])
-def api_backtest_history_result(filename: str, config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
     # Get backtest result history, read from metadata files
     fn = config['user_data_dir'] / 'backtest_results' / filename
+    results = {
+        'metadata': {},
+        'strategy': {},
+        'strategy_comparison': [],
+    }
+
+    load_and_merge_backtest_result(strategy, fn, results)
     return {
         "status": "ended",
         "running": False,
         "step": "",
         "progress": 1,
         "status_msg": "Historic result",
-        "backtest_result": load_backtest_stats(fn)
+        "backtest_result": results,
     }
