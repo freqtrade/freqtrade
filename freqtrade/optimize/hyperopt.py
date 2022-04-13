@@ -422,12 +422,11 @@ class Hyperopt:
         6. Return a list with length truncated at `n_points`
         '''
         def unique_list(a_list):
-            seen = []
-            for x in a_list:
-                key = repr(x)
-                if key not in seen:
-                    seen.append(key)
-            return [eval(x) for x in seen]
+            new_list = []
+            for item in a_list:
+                if item not in new_list:
+                    new_list.append(item)
+            return new_list
         i = 0
         asked_non_tried: List[List[Any]] = []
         is_random: List[bool] = []
