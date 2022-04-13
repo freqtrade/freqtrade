@@ -11,7 +11,10 @@ from wao.WAOStrategy import WAOStrategy
 class bbrsi(WAOStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
-    WAOStrategy.controller.setup("Freq_bbrsi")
+
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.controller.setup("Freq_bbrsi")
 
     brain = "Freq_bbrsi"
 

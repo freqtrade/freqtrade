@@ -11,7 +11,9 @@ from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy003(WAOStrategy):
-    WAOStrategy.controller.setup('Freq_Strategy003')
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.controller.setup('Freq_Strategy003')
 
     brain = 'Freq_Strategy003'
 

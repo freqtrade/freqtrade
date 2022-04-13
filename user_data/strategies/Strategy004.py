@@ -9,7 +9,9 @@ from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy004(WAOStrategy):
-    WAOStrategy.controller.setup('Freq_Strategy004')
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.controller.setup('Freq_Strategy004')
 
     brain = 'Freq_Strategy004'
     """
