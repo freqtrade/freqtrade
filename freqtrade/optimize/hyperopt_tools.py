@@ -318,7 +318,6 @@ class HyperoptTools():
             lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
                       f"{x['results_metrics.losses']:>4}", axis=1)
 
-
         trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
                          'results_metrics.winsdrawslosses',
                          'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
