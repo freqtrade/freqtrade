@@ -24,13 +24,13 @@ def perform_execute_buy(coin, brain, romeo_pool):
     Config.BRAIN = brain
 
     romeo = Romeo.instance(is_test_mode, True)
-    romeo_pool[coin+brain] = romeo
+    romeo_pool[coin] = romeo
     romeo.start()
 
 
-def perform_execute_sell(coin, brain, romeo_pool):
+def perform_execute_sell(coin, romeo_pool):
     if Config.ROMEO_IS_PT_FROM_BRAIN_SS_ENABLED:
-        romeo = romeo_pool.get(coin+brain)
+        romeo = romeo_pool.get(coin)
         if romeo is not None:
             romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
@@ -59,7 +59,7 @@ def perform_back_test_buy(date_time, coin, brain, romeo_pool):
         Config.ROMEO_D_UP_MAX))
 
     romeo = Romeo.instance(True, True)
-    romeo_pool[coin+brain] = romeo
+    romeo_pool[coin] = romeo
     romeo.start()
 
 
