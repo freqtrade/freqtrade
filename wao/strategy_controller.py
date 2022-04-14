@@ -53,6 +53,7 @@ class StrategyController:
             perform_execute_buy(coin, self.brain, self.romeo_pool)
 
     def __remove_from_pool(self, coin):
-        romeo = self.romeo_pool.get(coin + self.brain)
+        key = coin + self.brain
+        romeo = self.romeo_pool.get(key)
         if romeo is not None:
-            del self.romeo_pool[coin + self.brain]
+            del self.romeo_pool[key]
