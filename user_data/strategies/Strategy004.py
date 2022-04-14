@@ -9,11 +9,11 @@ from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy004(WAOStrategy):
+    brain = 'Freq_Strategy004'
+
     def __init__(self, config: dict):
         super().__init__(config)
-        self.controller.setup('Freq_Strategy004')
-
-    brain = 'Freq_Strategy004'
+        self.controller.setup(self.brain)
     """
     Strategy 004
     author@: Gerald Lonlas

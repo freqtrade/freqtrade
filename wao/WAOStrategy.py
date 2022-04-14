@@ -11,8 +11,6 @@ class WAOStrategy(IStrategy):
         super().__init__(config)
         self.controller = StrategyController()
 
-    brain: str
-
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
                             **kwargs) -> bool:
@@ -38,9 +36,8 @@ class WAOStrategy(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        brain = self.brain
 
-        self.controller.on_buy_signal(current_time, mode, coin, brain)
+        self.controller.on_buy_signal(current_time, mode, coin)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -70,8 +67,7 @@ class WAOStrategy(IStrategy):
             False aborts the process
         """
         coin = pair.split("/")[0]
-        brain = self.brain
         mode = "test"
 
-        self.controller.on_sell_signal(sell_reason, current_time, mode, coin, brain)
+        self.controller.on_sell_signal(sell_reason, current_time, mode, coin)
         return True

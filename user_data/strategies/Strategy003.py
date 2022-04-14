@@ -11,12 +11,11 @@ from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy003(WAOStrategy):
-    def __init__(self, config: dict):
-        super().__init__(config)
-        self.controller.setup('Freq_Strategy003')
-
     brain = 'Freq_Strategy003'
 
+    def __init__(self, config: dict):
+        super().__init__(config)
+        self.controller.setup(self.brain)
     """
     Strategy 003
     author@: Gerald Lonlas

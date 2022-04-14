@@ -8,15 +8,14 @@ import numpy  # noqa
 from wao.WAOStrategy import WAOStrategy
 
 
-class bbrsi(WAOStrategy):
+class bbrsi_scalp(WAOStrategy):
+    brain = "Freq_bbrsi_scalp"
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
 
     def __init__(self, config: dict):
         super().__init__(config)
-        self.controller.setup("Freq_bbrsi")
-
-    brain = "Freq_bbrsi"
+        self.controller.setup(self.brain)
 
     minimal_roi = {
         "0": 0.07

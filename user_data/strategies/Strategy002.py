@@ -1,4 +1,3 @@
-
 # --- Do not remove these libs ---
 from pandas import DataFrame
 # --------------------------------
@@ -11,11 +10,12 @@ from wao.WAOStrategy import WAOStrategy
 
 
 class Strategy002(WAOStrategy):
+    brain = 'Freq_Strategy002'
+
     def __init__(self, config: dict):
         super().__init__(config)
-        self.controller.setup('Freq_Strategy002')
+        self.controller.setup(self.brain)
 
-    brain = 'Freq_Strategy002'
     """
     Strategy 002
     author@: Gerald Lonlas
