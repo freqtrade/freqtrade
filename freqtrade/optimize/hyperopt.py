@@ -438,12 +438,12 @@ class Hyperopt:
             else:
                 asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
                 is_random = [True for _ in range(len(asked))]
-            asked_non_tried += [x for x in asked
-                                if x not in self.opt.Xi
-                                and x not in asked_non_tried]
             is_random += [rand for x, rand in zip(asked, is_random)
                           if x not in self.opt.Xi
                           and x not in asked_non_tried]
+            asked_non_tried += [x for x in asked
+                                if x not in self.opt.Xi
+                                and x not in asked_non_tried]
             i += 1
 
         if asked_non_tried:
