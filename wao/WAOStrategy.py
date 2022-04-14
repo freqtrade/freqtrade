@@ -7,6 +7,7 @@ from wao.strategy_controller import StrategyController
 
 
 class WAOStrategy(IStrategy):
+
     def __init__(self, config: dict):
         super().__init__(config)
         self.controller = StrategyController()
@@ -34,10 +35,9 @@ class WAOStrategy(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        mode = "test"
         coin = pair.split("/")[0]
 
-        self.controller.on_buy_signal(current_time, mode, coin)
+        self.controller.on_buy_signal(current_time, coin)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -67,7 +67,6 @@ class WAOStrategy(IStrategy):
             False aborts the process
         """
         coin = pair.split("/")[0]
-        mode = "test"
 
-        self.controller.on_sell_signal(sell_reason, current_time, mode, coin)
+        self.controller.on_sell_signal(sell_reason, current_time, coin)
         return True

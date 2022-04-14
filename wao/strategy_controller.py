@@ -21,17 +21,16 @@ class StrategyController:
                                            BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
 
-    def on_buy_signal(self, current_time, mode, coin):
-        print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", mode=" + str(
-            mode) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
+    def on_buy_signal(self, current_time, coin):
+        print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
             self.__buy_back_test(current_time, coin)
         else:
-            self.__buy_execute(mode, coin)
+            self.__buy_execute(coin)
 
-    def on_sell_signal(self, sell_reason, current_time, mode, coin):
+    def on_sell_signal(self, sell_reason, current_time, coin):
         print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
-            current_time) + ", mode=" + str(mode) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
+            current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if sell_reason == 'sell_signal' or sell_reason == 'roi':
             if BrainConfig.IS_BACKTEST:
                 perform_back_test_sell(current_time)
@@ -47,11 +46,11 @@ class StrategyController:
         else:
             perform_back_test_buy(date_time, coin, self.brain, self.romeo_pool)
 
-    def __buy_execute(self, mode, coin):
+    def __buy_execute(self, coin):
         if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_execute_buy, args=(mode, coin, self.brain, self.romeo_pool)).start()
+            threading.Thread(target=perform_execute_buy, args=(coin, self.brain, self.romeo_pool)).start()
         else:
-            perform_execute_buy(mode, coin, self.brain, self.romeo_pool)
+            perform_execute_buy(coin, self.brain, self.romeo_pool)
 
     def __remove_from_pool(self, coin):
         romeo = self.romeo_pool.get(coin + self.brain)

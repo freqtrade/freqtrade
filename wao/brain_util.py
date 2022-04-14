@@ -13,11 +13,11 @@ from config import Config
 from romeo import Romeo, RomeoExitPriceType
 
 
-def perform_execute_buy(mode, coin, brain, romeo_pool):
+def perform_execute_buy(coin, brain, romeo_pool):
     is_test_mode = False
-    if mode == Config.MODE_TEST:
+    if BrainConfig.MODE == Config.MODE_TEST:
         is_test_mode = True
-    elif mode == Config.MODE_PROD:
+    elif BrainConfig.MODE == Config.MODE_PROD:
         is_test_mode = False
 
     Config.COIN = coin
