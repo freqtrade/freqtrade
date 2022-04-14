@@ -5,7 +5,7 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
-from wao.WAOStrategy import WAOStrategy
+from wao.wao_strategy import WAOStrategy
 
 
 class bbrsi_scalp(WAOStrategy):

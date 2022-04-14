@@ -5,7 +5,7 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 
-from wao.WAOStrategy import WAOStrategy
+from wao.wao_strategy import WAOStrategy
 
 
 class Strategy004(WAOStrategy):
