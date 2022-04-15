@@ -1,4 +1,4 @@
-from wao.strategy_controller import StrategyController
+from wao.wao_strategy_controller import WAOStrategyController
 import time
 import datetime
 brain = 'Freq_Strategy000'
@@ -7,7 +7,7 @@ coin = "ETH"
 sell_reason = 'sell_signal'
 current_time = str(datetime.datetime.now()).replace('.', '+')
 
-controller = StrategyController(brain)
+controller = WAOStrategyController(brain)
 
 
 controller.on_buy_signal(current_time, mode, coin, brain)

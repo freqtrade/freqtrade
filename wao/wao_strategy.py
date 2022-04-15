@@ -3,14 +3,14 @@ from typing import Optional
 from freqtrade.persistence import Trade
 from freqtrade.strategy import IStrategy
 
-from wao.strategy_controller import StrategyController
+from wao.wao_strategy_controller import WAOStrategyController
 
 
 class WAOStrategy(IStrategy):
 
     def __init__(self, config: dict):
         super().__init__(config)
-        self.controller = StrategyController()
+        self.controller = WAOStrategyController()
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
