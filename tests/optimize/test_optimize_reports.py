@@ -228,7 +228,7 @@ def test_generate_pair_metrics():
 
 def test_generate_daily_stats(testdatadir):
 
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     res = generate_daily_stats(bt_data)
     assert isinstance(res, dict)
@@ -248,7 +248,7 @@ def test_generate_daily_stats(testdatadir):
 
 
 def test_generate_trading_stats(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     res = generate_trading_stats(bt_data)
     assert isinstance(res, dict)
@@ -332,7 +332,7 @@ def test_generate_sell_reason_stats():
 
 
 def test_text_table_strategy(testdatadir):
-    filename = testdatadir / "backtest-result_multistrat.json"
+    filename = testdatadir / "backtest_results/backtest-result_multistrat.json"
     bt_res_data = load_backtest_stats(filename)
 
     bt_res_data_comparison = bt_res_data.pop('strategy_comparison')
@@ -364,7 +364,7 @@ def test_generate_edge_table():
 
 
 def test_generate_periodic_breakdown_stats(testdatadir):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename).to_dict(orient='records')
 
     res = generate_periodic_breakdown_stats(bt_data, 'day')
@@ -392,7 +392,7 @@ def test__get_resample_from_period():
 
 
 def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
-    filename = testdatadir / "backtest-result_new.json"
+    filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_stats(filename)
     default_conf['backtest_show_pair_list'] = True
 

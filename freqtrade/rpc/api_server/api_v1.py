@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 # 1.13: forcebuy supports stake_amount
 # versions 2.xx -> futures/short branch
 # 2.14: Add entry/exit orders to trade response
-API_VERSION = 2.14
+# 2.15: Add backtest history endpoints
+API_VERSION = 2.15
 
 # Public API, requires no auth.
 router_public = APIRouter()

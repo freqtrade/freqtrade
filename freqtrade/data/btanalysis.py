@@ -149,7 +149,14 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     return data
 
 
-def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    """
+    Load one strategy from multi-strategy result
+    and merge it with results
+    :param strategy_name: Name of the strategy contained in the result
+    :param filename: Backtest-result-filename to load
+    :param results: dict to merge the result to.
+    """
     bt_data = load_backtest_stats(filename)
     for k in ('metadata', 'strategy'):
         results[k][strategy_name] = bt_data[k][strategy_name]
@@ -158,6 +165,30 @@ def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results:
         if comparison[i]['key'] == strategy_name:
             results['strategy_comparison'].append(comparison[i])
             break
+
+
+def _get_backtest_files(dirname: Path) -> List[Path]:
+    return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
+
+
+def get_backtest_resultlist(dirname: Path):
+    """
+    Get list of backtest results read from metadata files
+    """
+    results = []
+    for filename in _get_backtest_files(dirname):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            continue
+        for s, v in metadata.items():
+            results.append({
+                'filename': filename.name,
+                'strategy': s,
+                'run_id': v['run_id'],
+                'backtest_start_time': v['backtest_start_time'],
+
+            })
+    return results
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
@@ -179,7 +210,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
     }
 
     # Weird glob expression here avoids including .meta.json files.
-    for filename in reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))):
+    for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:
             # Files are sorted from newest to oldest. When file without metadata is encountered it
@@ -202,7 +233,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
 
             if strategy_metadata['run_id'] == run_id:
                 del run_ids[strategy_name]
-                _load_and_merge_backtest_result(strategy_name, filename, results)
+                load_and_merge_backtest_result(strategy_name, filename, results)
 
         if len(run_ids) == 0:
             break
