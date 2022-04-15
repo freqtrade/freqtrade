@@ -22,16 +22,12 @@ class WAOStrategyController:
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
 
     def on_buy_signal(self, current_time, coin):
-        is_same_coin_trade_open = self.__is_romeo_alive(coin)
-
         print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
-              ", brain=" + str(self.brain) + ", is_same_coin_trade_open=" + str(is_same_coin_trade_open))
-
-        if not is_same_coin_trade_open:
-            if BrainConfig.IS_BACKTEST:
-                self.__buy_back_test(current_time, coin)
-            else:
-                self.__buy_execute(coin)
+              ", brain=" + str(self.brain))
+        if BrainConfig.IS_BACKTEST:
+            self.__buy_back_test(current_time, coin)
+        else:
+            self.__buy_execute(coin)
 
     def on_sell_signal(self, sell_reason, current_time, coin):
         print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
@@ -58,8 +54,8 @@ class WAOStrategyController:
             perform_execute_buy(coin, self.brain, self.romeo_pool)
 
     def __remove_from_pool(self, coin):
-        if self.__is_romeo_alive(coin):
+        if self.is_romeo_alive(coin):
             del self.romeo_pool[coin]
 
-    def __is_romeo_alive(self, coin):
+    def is_romeo_alive(self, coin):
         return self.romeo_pool.get(coin) is not None
