@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 from functools import wraps
+from typing import Any, Callable, Optional, TypeVar, cast, overload
 
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
 from freqtrade.mixins import LoggingMixin
@@ -133,8 +134,22 @@ def retrier_async(f):
     return wrapper
 
 
-def retrier(_func=None, retries=API_RETRY_COUNT):
-    def decorator(f):
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+# Type shenanigans
+@overload
+def retrier(_func: F) -> F:
+    ...
+
+
+@overload
+def retrier(*, retries=API_RETRY_COUNT) -> Callable[[F], F]:
+    ...
+
+
+def retrier(_func: Optional[F] = None, *, retries=API_RETRY_COUNT):
+    def decorator(f: F) -> F:
         @wraps(f)
         def wrapper(*args, **kwargs):
             count = kwargs.pop('count', retries)
@@ -155,7 +170,7 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                 else:
                     logger.warning(msg + 'Giving up.')
                     raise ex
-        return wrapper
+        return cast(F, wrapper)
     # Support both @retrier and @retrier(retries=2) syntax
     if _func is None:
         return decorator

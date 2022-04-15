@@ -1164,7 +1164,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str, params={}) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
@@ -1212,7 +1212,7 @@ class Exchange:
                 and order.get('filled') == 0.0)
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str, params={}) -> Dict:
+    def cancel_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self.fetch_dry_run_order(order_id)
