@@ -8,7 +8,6 @@ from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
-import pickle
 
 from numpy import nan
 from pandas import DataFrame
@@ -20,14 +19,16 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode, RunMode
+from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode,
+                            RunMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
-                                                 store_backtest_stats, store_backtest_signal_candles)
+                                                 store_backtest_stats,
+                                                 store_backtest_signal_candles)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
@@ -1075,7 +1076,8 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
-        if self.backtest_signal_candle_export_enable and self.dataprovider.runmode == RunMode.BACKTEST:
+        if self.backtest_signal_candle_export_enable and
+            self.dataprovider.runmode == RunMode.BACKTEST:
             signal_candles_only = {}
             for pair in preprocessed_tmp.keys():
                 signal_candles_only_df = DataFrame()
@@ -1157,7 +1159,8 @@ class Backtesting:
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
-            if self.backtest_signal_candle_export_enable and self.dataprovider.runmode == RunMode.BACKTEST:
+            if self.backtest_signal_candle_export_enable and
+                self.dataprovider.runmode == RunMode.BACKTEST:
                 store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.

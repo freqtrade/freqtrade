@@ -51,7 +51,8 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
     Stores backtest trade signal candles
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
-        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used as filename
+        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
+        as filename
     :param stats: Dict containing the backtesting signal candles
     """
     if recordfilename.is_dir():
