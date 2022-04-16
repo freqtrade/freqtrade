@@ -131,7 +131,8 @@ class Backtesting:
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        self.backtest_signal_candle_export_enable = self.config.get('backtest_signal_candle_export_enable', False)
+        self.backtest_signal_candle_export_enable = self.config.get(
+            'backtest_signal_candle_export_enable', False)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
