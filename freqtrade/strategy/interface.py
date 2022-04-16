@@ -206,18 +206,18 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pass
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_buy_timeout(self, pair: str, trade: Trade, order: Order,
                           current_time: datetime, **kwargs) -> bool:
         """
         DEPRECATED: Please use `check_entry_timeout` instead.
         """
         return False
 
-    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
                             current_time: datetime, **kwargs) -> bool:
         """
         Check entry timeout function callback.
-        This method can be used to override the enter-timeout.
+        This method can be used to override the entry-timeout.
         It is called whenever a limit entry order has been created,
         and is not yet fully filled.
         Configuration options in `unfilledtimeout` will be verified before this,
@@ -225,8 +225,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         When not implemented by a strategy, this simply returns False.
         :param pair: Pair the trade is for
-        :param trade: trade object.
-        :param order: Order dictionary as returned from CCXT.
+        :param trade: Trade object.
+        :param order: Order object.
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the entry order is cancelled.
@@ -234,30 +234,30 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.check_buy_timeout(
             pair=pair, trade=trade, order=order, current_time=current_time)
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_sell_timeout(self, pair: str, trade: Trade, order: Order,
                            current_time: datetime, **kwargs) -> bool:
         """
         DEPRECATED: Please use `check_exit_timeout` instead.
         """
         return False
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: Order,
                            current_time: datetime, **kwargs) -> bool:
         """
-        Check sell timeout function callback.
+        Check exit timeout function callback.
         This method can be used to override the exit-timeout.
-        It is called whenever a (long) limit sell order or (short) limit buy
-        has been created, and is not yet fully filled.
+        It is called whenever a limit exit order has been created,
+        and is not yet fully filled.
         Configuration options in `unfilledtimeout` will be verified before this,
         so ensure to set these timeouts high enough.
 
         When not implemented by a strategy, this simply returns False.
         :param pair: Pair the trade is for
-        :param trade: trade object.
-        :param order: Order dictionary as returned from CCXT.
+        :param trade: Trade object.
+        :param order: Order object
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the (long)sell/(short)buy-order is cancelled.
+        :return bool: When True is returned, then the exit-order is cancelled.
         """
         return self.check_sell_timeout(
             pair=pair, trade=trade, order=order, current_time=current_time)

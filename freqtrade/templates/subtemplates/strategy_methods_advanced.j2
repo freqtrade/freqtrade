@@ -170,7 +170,8 @@ def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount:
     """
     return True
 
-def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
+def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+                        current_time: datetime, **kwargs) -> bool:
     """
     Check entry timeout function callback.
     This method can be used to override the entry-timeout.
@@ -183,14 +184,16 @@ def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) 
 
     When not implemented by a strategy, this simply returns False.
     :param pair: Pair the trade is for
-    :param trade: trade object.
-    :param order: Order dictionary as returned from CCXT.
+    :param trade: Trade object.
+    :param order: Order object.
+    :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-    :return bool: When True is returned, then the buy-order is cancelled.
+    :return bool: When True is returned, then the entry order is cancelled.
     """
     return False
 
-def check_exit_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
+def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+                       current_time: datetime, **kwargs) -> bool:
     """
     Check exit timeout function callback.
     This method can be used to override the exit-timeout.
@@ -203,8 +206,9 @@ def check_exit_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -
 
     When not implemented by a strategy, this simply returns False.
     :param pair: Pair the trade is for
-    :param trade: trade object.
-    :param order: Order dictionary as returned from CCXT.
+    :param trade: Trade object.
+    :param order: Order object.
+    :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return bool: When True is returned, then the exit-order is cancelled.
     """

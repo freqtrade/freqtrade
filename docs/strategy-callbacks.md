@@ -418,7 +418,7 @@ The function must return either `True` (cancel order) or `False` (keep order ali
 
 ``` python
 from datetime import datetime, timedelta
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, Order
 
 class AwesomeStrategy(IStrategy):
 
@@ -430,7 +430,7 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order', 
                             current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -441,7 +441,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: 'Order',
                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -459,7 +459,7 @@ class AwesomeStrategy(IStrategy):
 
 ``` python
 from datetime import datetime
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, Order
 
 class AwesomeStrategy(IStrategy):
 
@@ -471,22 +471,22 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                             current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
-        if current_price > order['price'] * 1.02:
+        if current_price > order.price * 1.02:
             return True
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 2% below the order.
-        if current_price < order['price'] * 0.98:
+        if current_price < order.price * 0.98:
             return True
         return False
 ```
