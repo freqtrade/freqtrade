@@ -36,7 +36,7 @@ class MaxDrawdown(IProtection):
         """
         LockReason to use
         """
-        return (f'{drawdown} > {self._max_allowed_drawdown} in {self.lookback_period_str}, '
+        return (f'{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
     def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:
@@ -55,7 +55,8 @@ class MaxDrawdown(IProtection):
 
         # Drawdown is always positive
         try:
-            drawdown, _, _, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
+            # TODO: This should use absolute profit calculation, considering account balance.
+            drawdown, _, _, _, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
         except ValueError:
             return False, None, None
 

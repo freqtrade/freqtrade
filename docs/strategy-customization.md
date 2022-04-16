@@ -4,40 +4,30 @@ This page explains how to customize your strategies, add new indicators and set 
 
 Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
 
-## Install a custom strategy file
-
-This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
-
-Let assume you have a class called `AwesomeStrategy` in the file `AwesomeStrategy.py`:
-
-1. Move your file into `user_data/strategies` (you should have `user_data/strategies/AwesomeStrategy.py`
-2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
-
-```bash
-freqtrade trade --strategy AwesomeStrategy
-```
-
 ## Develop your own strategy
 
 The bot includes a default strategy file.
 Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
 You will however most likely have your own idea for a strategy.
-This document intends to help you develop one for yourself.
+This document intends to help you convert your strategy idea into your own strategy.
 
-To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
+To get started, use `freqtrade new-strategy --strategy AwesomeStrategy` (you can obviously use your own naming for your strategy).
 This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
 
 !!! Note
     This is just a template file, which will most likely not be profitable out of the box.
+
+??? Hint "Different template levels"
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with most callbacks defined.
 
 ### Anatomy of a strategy
 
 A strategy file contains all the information needed to build a good strategy:
 
 - Indicators
-- Buy strategy rules
-- Sell strategy rules
+- Entry strategy rules
+- Exit strategy rules
 - Minimal ROI recommended
 - Stoploss strongly recommended
 
@@ -45,7 +35,7 @@ The bot also include a sample strategy called `SampleStrategy` you can update: `
 You can test it with the parameter: `--strategy SampleStrategy`
 
 Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
-The current version is 2 - which is also the default when it's not set explicitly in the strategy.
+The current version is 3 - which is also the default when it's not set explicitly in the strategy.
 
 Future versions will require this to be set.
 
@@ -67,11 +57,51 @@ file as reference.**
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
 
+### Dataframe
+
+Freqtrade uses [pandas](https://pandas.pydata.org/) to store/provide the candlestick (OHLCV) data.
+Pandas is a great library developed for processing large amounts of data.
+
+Each row in a dataframe corresponds to one candle on a chart, with the latest candle always being the last in the dataframe (sorted by date).
+
+``` output
+> dataframe.head()
+                       date      open      high       low     close     volume
+0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253
+1 2021-11-09 23:30:00+00:00  67300.97  67301.34  67183.03  67187.01   61.38076
+2 2021-11-09 23:35:00+00:00  67187.02  67187.02  67031.93  67123.81  113.42728
+3 2021-11-09 23:40:00+00:00  67123.80  67222.40  67080.33  67160.48   78.96008
+4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292
+```
+
+Pandas provides fast ways to calculate metrics. To benefit from this speed, it's advised to not use loops, but use vectorized methods instead.
+
+Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
+
+As a dataframe is a table, simple python comparisons like the following will not work
+
+``` python
+    if dataframe['rsi'] > 30:
+        dataframe['enter_long'] = 1
+```
+
+The above section will fail with `The truth value of a Series is ambiguous. [...]`.
+
+This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe.
+
+``` python
+    dataframe.loc[
+        (dataframe['rsi'] > 30)
+    , 'enter_long'] = 1
+```
+
+With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
+
 ### Customize Indicators
 
-Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
+Buy and sell signals need indicators. You can add more indicators by extending the list contained in the method `populate_indicators()` from your strategy file.
 
-You should only add the indicators used in either `populate_buy_trend()`, `populate_sell_trend()`, or to populate another indicator, otherwise performance may suffer.
+You should only add the indicators used in either `populate_entry_trend()`, `populate_exit_trend()`, or to populate another indicator, otherwise performance may suffer.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
@@ -122,9 +152,19 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
     Then uncomment indicators you need.
 
+#### Indicator libraries
+
+Out of the box, freqtrade installs the following technical libraries:
+
+* [ta-lib](http://mrjbq7.github.io/ta-lib/)
+* [pandas-ta](https://twopirllc.github.io/pandas-ta/)
+* [technical](https://github.com/freqtrade/technical/)
+
+Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
+
 ### Strategy startup period
 
-Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+Most indicators have an instable startup period, in which they are either not available (NaN), or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
 To account for this, the strategy can be assigned the `startup_candle_count` attribute.
 This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.
 
@@ -136,8 +176,14 @@ In this example strategy, this should be set to 100 (`startup_candle_count = 100
 
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
 
+!!! Warning "Using x calls to get OHLCV"
+    If you receive a warning like `WARNING - Using 3 calls to get OHLCV. This can result in slower operations for the bot. Please check if you really need 1500 candles for your strategy` - you should consider if you really need this much historic data for your signals.
+    Having this will cause Freqtrade to make multiple calls for the same pair, which will obviously be slower than one network request.
+    As a consequence, Freqtrade will take longer to refresh candles - and should therefore be avoided if possible.
+    This is capped to 5 total calls to avoid overloading the exchange, or make freqtrade too slow.
+
 !!! Warning
-    `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
+    `startup_candle_count` should be below `ohlcv_candle_limit * 5` (which is 500 * 5 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
 
 #### Example
 
@@ -153,18 +199,18 @@ If this data is available, indicators will be calculated with this extended time
 !!! Note
     If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.
 
-### Buy signal rules
+### Entry signal rules
 
-Edit the method `populate_buy_trend()` in your strategy file to update your buy strategy.
+Edit the method `populate_entry_trend()` in your strategy file to update your entry strategy.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
+This method will also define a new column, `"enter_long"` (`"enter_short"` for shorts), which needs to contain 1 for entries, and 0 for "no action". `enter_long` is a mandatory column that must be set even if the strategy is shorting only.
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
     Based on TA indicators, populates the buy signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
@@ -178,29 +224,58 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
-        'buy'] = 1
+        ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
     return dataframe
 ```
 
+??? Note "Enter short trades"
+    Short-entries can be created by setting `enter_short` (corresponds to `enter_long` for long trades).
+    The `enter_tag` column remains identical.
+    Short-trades need to be supported by your exchange and market configuration!
+    Please make sure to set [`can_short`]() appropriately on your strategy if you intend to short.
+
+    ```python
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
+
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(dataframe['rsi'], 70)) &  # Signal: RSI crosses below 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['enter_short', 'enter_tag']] = (1, 'rsi_cross')
+
+        return dataframe
+    ```
+
 !!! Note
     Buying requires sellers to buy from - therefore volume needs to be > 0 (`dataframe['volume'] > 0`) to make sure that the bot does not buy/sell in no-activity periods.
 
-### Sell signal rules
+### Exit signal rules
 
-Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
-Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
+Edit the method `populate_exit_trend()` into your strategy file to update your exit strategy.
+Please note that the exit-signal is only used if `use_exit_signal` is set to true in the configuration.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
+This method will also define a new column, `"exit_long"` (`"exit_short"` for shorts), which needs to contain 1 for exits, and 0 for "no action".
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
 ```python
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     """
-    Based on TA indicators, populates the sell signal for the given dataframe
+    Based on TA indicators, populates the exit signal for the given dataframe
     :param dataframe: DataFrame populated with indicators
     :param metadata: Additional information, like the currently traded pair
     :return: DataFrame with buy column
@@ -212,13 +287,39 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
             (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
             (dataframe['volume'] > 0)  # Make sure Volume is not 0
         ),
-        'sell'] = 1
+        ['exit_long', 'exit_tag']] = (1, 'rsi_too_high')
     return dataframe
 ```
 
+??? Note "Exit short trades"
+    Short-exits can be created by setting `exit_short` (corresponds to `exit_long`).
+    The `exit_tag` column remains identical.
+    Short-trades need to be supported by your exchange and market configuration!
+
+    ```python
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['exit_long', 'exit_tag']] = (1, 'rsi_too_high')
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(dataframe['rsi'], 30)) &  # Signal: RSI crosses below 30
+                (dataframe['tema'] < dataframe['bb_middleband']) &  # Guard
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            ['exit_short', 'exit_tag']] = (1, 'rsi_too_low')
+        return dataframe
+    ```
+
 ### Minimal ROI
 
-This dict defines the minimal Return On Investment (ROI) a trade should reach before selling, independent from the sell signal.
+This dict defines the minimal Return On Investment (ROI) a trade should reach before exiting, independent from the exit signal.
 
 It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.
 
@@ -233,10 +334,10 @@ minimal_roi = {
 
 The above configuration would therefore mean:
 
-- Sell whenever 4% profit was reached
-- Sell when 2% profit was reached (in effect after 20 minutes)
-- Sell when 1% profit was reached (in effect after 30 minutes)
-- Sell when trade is non-loosing (in effect after 40 minutes)
+- Exit whenever 4% profit was reached
+- Exit when 2% profit was reached (in effect after 20 minutes)
+- Exit when 1% profit was reached (in effect after 30 minutes)
+- Exit when trade is non-loosing (in effect after 40 minutes)
 
 The calculation does include fees.
 
@@ -248,7 +349,7 @@ minimal_roi = {
 }
 ```
 
-While technically not completely disabled, this would sell once the trade reaches 10000% Profit.
+While technically not completely disabled, this would exit once the trade reaches 10000% Profit.
 
 To use times based on candle duration (timeframe), the following snippet can be handy.
 This will allow you to change the timeframe for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)
@@ -271,38 +372,51 @@ class AwesomeStrategy(IStrategy):
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
 
-Sample:
+Sample of setting a 10% stoploss:
 
 ``` python
 stoploss = -0.10
 ```
 
-This would signify a stoploss of -10%.
-
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
 
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.
-
-For more information on order_types please look [here](configuration.md#understand-order_types).
-
-### Timeframe (formerly ticker interval)
+### Timeframe
 
 This is the set of candles the bot should download and use for the analysis.
 Common values are `"1m"`, `"5m"`, `"15m"`, `"1h"`, however all values supported by your exchange should work.
 
-Please note that the same buy/sell signals may work well with one timeframe, but not with the others.
+Please note that the same entry/exit signals may work well with one timeframe, but not with the others.
 
 This setting is accessible within the strategy methods as the `self.timeframe` attribute.
 
+### Can short
+
+To use short signals in futures markets, you will have to let us know to do so by setting `can_short=True`.
+Strategies which enable this will fail to load on spot markets.
+Disabling of this will have short signals ignored (also in futures markets).
+
 ### Metadata dict
 
-The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `populate_indicators`) contains additional information.
+The metadata-dict (available for `populate_entry_trend`, `populate_exit_trend`, `populate_indicators`) contains additional information.
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
+Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
 
-## Additional data (informative_pairs)
+## Strategy file loading
+
+By default, freqtrade will attempt to load strategies from all `.py` files within `user_data/strategies`.
+
+Assuming your strategy is called `AwesomeStrategy`, stored in the file `user_data/strategies/AwesomeStrategy.py`, then you can start freqtrade with `freqtrade trade --strategy AwesomeStrategy`.
+Note that we're using the class-name, not the file name.
+
+You can use `freqtrade list-strategies` to see a list of all strategies Freqtrade is able to load (all strategies in the correct folder).
+It will also include a "status" field, highlighting potential problems.
+
+??? Hint "Customize strategy directory"
+    You can use a different directory by using `--strategy-path user_data/otherPath`. This parameter is available to all commands that require a strategy.
+
+## Informative Pairs
 
 ### Get data for non-tradeable pairs
 
@@ -329,7 +443,149 @@ A full sample can be found [in the DataProvider section](#complete-data-provider
     It is however better to use resampling to longer timeframes whenever possible
     to avoid hammering the exchange with too many requests and risk being blocked.
 
+??? Note "Alternative candle types"
+    Informative_pairs can also provide a 3rd tuple element defining the candle type explicitly.
+    Availability of alternative candle-types will depend on the trading-mode and the exchange. Details about this can be found in the exchange documentation.
+
+    ``` python
+    def informative_pairs(self):
+        return [
+            ("ETH/USDT", "5m", ""),   # Uses default candletype, depends on trading_mode 
+            ("ETH/USDT", "5m", "spot"),   # Forces usage of spot candles
+            ("BTC/TUSD", "15m", "futures"),  # Uses futures candles
+            ("BTC/TUSD", "15m", "mark"),  # Uses mark candles
+        ]
+    ```
 ***
+
+### Informative pairs decorator (`@informative()`)
+
+In most common case it is possible to easily define informative pairs by using a decorator. All decorated `populate_indicators_*` methods run in isolation,
+not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main `populate_indicators()` method.
+When hyperopting, use of hyperoptable parameter `.value` attribute is not supported. Please use `.range` attribute. See [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter)
+for more information.
+
+??? info "Full documentation"
+    ``` python
+    def informative(timeframe: str, asset: str = '',
+                    fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                    *,
+                    candle_type: Optional[CandleType] = None,
+                    ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
+        """
+        A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
+        define informative indicators.
+
+        Example usage:
+
+            @informative('1h')
+            def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+                dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+                return dataframe
+
+        :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
+        :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
+        current pair.
+        :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
+        specified, defaults to:
+        * {base}_{quote}_{column}_{timeframe} if asset is specified. 
+        * {column}_{timeframe} if asset is not specified.
+        Format string supports these format variables:
+        * {asset} - full name of the asset, for example 'BTC/USDT'.
+        * {base} - base currency in lower case, for example 'eth'.
+        * {BASE} - same as {base}, except in upper case.
+        * {quote} - quote currency in lower case, for example 'usdt'.
+        * {QUOTE} - same as {quote}, except in upper case.
+        * {column} - name of dataframe column.
+        * {timeframe} - timeframe of informative dataframe.
+        :param ffill: ffill dataframe after merging informative pair.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        """
+    ```
+
+??? Example "Fast and easy way to define informative pairs"
+
+    Most of the time we do not need power and flexibility offered by `merge_informative_pair()`, therefore we can use a decorator to quickly define informative pairs.
+
+    ``` python
+
+    from datetime import datetime
+    from freqtrade.persistence import Trade
+    from freqtrade.strategy import IStrategy, informative
+
+    class AwesomeStrategy(IStrategy):
+        
+        # This method is not required. 
+        # def informative_pairs(self): ...
+
+        # Define informative upper timeframe for each pair. Decorators can be stacked on same 
+        # method. Available in populate_indicators as 'rsi_30m' and 'rsi_1h'.
+        @informative('30m')
+        @informative('1h')
+        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+        # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
+        # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
+        # instead of hard-coding actual stake currency. Available in populate_indicators and other 
+        # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
+        @informative('1h', 'BTC/{stake}')
+        def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+        # Define BTC/ETH informative pair. You must specify quote currency if it is different from
+        # stake currency. Available in populate_indicators and other methods as 'eth_btc_rsi_1h'.
+        @informative('1h', 'ETH/BTC')
+        def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+    
+        # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
+        # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
+        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
+        @informative('1h', 'BTC/{stake}', '{column}')
+        def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+    
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Strategy timeframe indicators for current pair.
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            # Informative pairs are available in this method.
+            dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
+            return dataframe
+
+    ```
+
+!!! Note
+    Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
+    manually as described [in the DataProvider section](#complete-data-provider-sample).
+
+!!! Note
+    Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
+
+    ``` python
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        stake = self.config['stake_currency']
+        dataframe.loc[
+            (
+                (dataframe[f'btc_{stake}_rsi_1h'] < 35)
+                &
+                (dataframe['volume'] > 0)
+            ),
+            ['enter_long', 'enter_tag']] = (1, 'buy_signal_rsi')
+    
+        return dataframe
+    ```
+
+    Alternatively column renaming may be used to remove stake currency from column names: `@informative('1h', 'BTC/{stake}', fmt='{base}_{column}_{timeframe}')`.
+
+!!! Warning "Duplicate method names"
+    Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
+    will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
+    created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
 
 ## Additional data (DataProvider)
 
@@ -374,9 +630,9 @@ The strategy might look something like this:
 
 *Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
-Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
+Since we can't resample the data we will have to use an informative pair; and since the whitelist will be dynamic we don't know which pair(s) to use.
 
 This is where calling `self.dp.current_whitelist()` comes in handy.
 
@@ -526,7 +782,7 @@ class SampleStrategy(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
             (
@@ -534,7 +790,7 @@ class SampleStrategy(IStrategy):
                 (dataframe['rsi_1d'] < 30) &                     # Ensure daily RSI is < 30
                 (dataframe['volume'] > 0)                        # Ensure this candle had volume (important for backtesting)
             ),
-            'buy'] = 1
+            ['enter_long', 'enter_tag']] = (1, 'rsi_cross')
 
 ```
 
@@ -611,7 +867,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
     Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).  
 
-    If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, current_profit)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+    If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, current_profit, False)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
 
 
     ``` python
@@ -631,7 +887,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
             # once the profit has risen above 10%, keep the stoploss at 7% above the open price
             if current_profit > 0.10:
-                return stoploss_from_open(0.07, current_profit)
+                return stoploss_from_open(0.07, current_profit, is_short=trade.is_short)
 
             return 1
 
@@ -642,7 +898,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 !!! Note
     Providing invalid input to `stoploss_from_open()` may produce "CustomStoploss function did not return valid stoploss" warnings.
     This may happen if `current_profit` parameter is below specified `open_relative_stop`. Such situations may arise when closing trade
-    is blocked by `confirm_trade_exit()` method. Warnings can be solved by never blocking stop loss sells by checking `sell_reason` in
+    is blocked by `confirm_trade_exit()` method. Warnings can be solved by never blocking stop loss sells by checking `exit_reason` in
     `confirm_trade_exit()`, or by using `return stoploss_from_open(...) or 1` idiom, which will request to not change stop loss when
     `current_profit < open_relative_stop`.
 
@@ -652,13 +908,13 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    If we want to trail a stop price at 2xATR below current proce we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate)`.
+    If we want to trail a stop price at 2xATR below current price we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)`.
 
     ``` python
 
     from datetime import datetime
     from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_open
+    from freqtrade.strategy import IStrategy, stoploss_from_absolute
 
     class AwesomeStrategy(IStrategy):
 
@@ -672,134 +928,9 @@ In some situations it may be confusing to deal with stops relative to current ra
                             current_rate: float, current_profit: float, **kwargs) -> float:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             candle = dataframe.iloc[-1].squeeze()
-            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate)
+            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate, is_short=trade.is_short)
 
     ```
-
-### *@informative()*
-
-``` python
-def informative(timeframe: str, asset: str = '',
-                fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
-                ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
-    """
-    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
-    define informative indicators.
-
-    Example usage:
-
-        @informative('1h')
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-    :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
-    :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
-    current pair.
-    :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
-    specified, defaults to:
-    * {base}_{quote}_{column}_{timeframe} if asset is specified. 
-    * {column}_{timeframe} if asset is not specified.
-    Format string supports these format variables:
-    * {asset} - full name of the asset, for example 'BTC/USDT'.
-    * {base} - base currency in lower case, for example 'eth'.
-    * {BASE} - same as {base}, except in upper case.
-    * {quote} - quote currency in lower case, for example 'usdt'.
-    * {QUOTE} - same as {quote}, except in upper case.
-    * {column} - name of dataframe column.
-    * {timeframe} - timeframe of informative dataframe.
-    :param ffill: ffill dataframe after merging informative pair.
-    """
-```
-
-In most common case it is possible to easily define informative pairs by using a decorator. All decorated `populate_indicators_*` methods run in isolation,
-not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main `populate_indicators()` method.
-When hyperopting, use of hyperoptable parameter `.value` attribute is not supported. Please use `.range` attribute. See [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter)
-for more information.
-
-??? Example "Fast and easy way to define informative pairs"
-
-    Most of the time we do not need power and flexibility offered by `merge_informative_pair()`, therefore we can use a decorator to quickly define informative pairs.
-
-    ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, informative
-
-    class AwesomeStrategy(IStrategy):
-        
-        # This method is not required. 
-        # def informative_pairs(self): ...
-
-        # Define informative upper timeframe for each pair. Decorators can be stacked on same 
-        # method. Available in populate_indicators as 'rsi_30m' and 'rsi_1h'.
-        @informative('30m')
-        @informative('1h')
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-        # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
-        # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
-        # instead of hardcoding actual stake currency. Available in populate_indicators and other 
-        # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
-        @informative('1h', 'BTC/{stake}')
-        def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-        # Define BTC/ETH informative pair. You must specify quote currency if it is different from
-        # stake currency. Available in populate_indicators and other methods as 'eth_btc_rsi_1h'.
-        @informative('1h', 'ETH/BTC')
-        def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-    
-        # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
-        # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
-        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
-        @informative('1h', 'BTC/{stake}', '{column}')
-        def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-    
-        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            # Strategy timeframe indicators for current pair.
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            # Informative pairs are available in this method.
-            dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
-            return dataframe
-
-    ```
-
-!!! Note
-    Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
-    manually as described [in the DataProvider section](#complete-data-provider-sample).
-
-!!! Note
-    Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
-
-    ``` python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        stake = self.config['stake_currency']
-        dataframe.loc[
-            (
-                (dataframe[f'btc_{stake}_rsi_1h'] < 35)
-                &
-                (dataframe['volume'] > 0)
-            ),
-            ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
-    
-        return dataframe
-    ```
-
-    Alternatively column renaming may be used to remove stake currency from column names: `@informative('1h', 'BTC/{stake}', fmt='{base}_{column}_{timeframe}')`.
-
-!!! Warning "Duplicate method names"
-    Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
-    will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
-    created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
 
 ## Additional data (Wallets)
 
@@ -865,7 +996,7 @@ if self.config['runmode'].value in ('live', 'dry_run'):
 Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).
 
 ``` json
-{'pair': "ETH/BTC", 'profit': 0.015, 'count': 5}
+{"pair": "ETH/BTC", "profit": 0.015, "count": 5}
 ```
 
 !!! Warning
@@ -884,7 +1015,8 @@ Sometimes it may be desired to lock a pair after certain events happen (e.g. mul
 Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until, [reason])`.
 `until` must be a datetime object in the future, after which trading will be re-enabled for that pair, while `reason` is an optional string detailing why the pair was locked.
 
-Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)` or `self.unlock_reason(<reason>)` - providing reason the pair was locked with.
+`self.unlock_reason(<reason>)` will unlock all pairs currently locked with the provided reason.
 
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
@@ -918,16 +1050,16 @@ if self.config['runmode'].value in ('live', 'dry_run'):
 
 ## Print created dataframe
 
-To inspect the created dataframe, you can issue a print-statement in either `populate_buy_trend()` or `populate_sell_trend()`.
+To inspect the created dataframe, you can issue a print-statement in either `populate_entry_trend()` or `populate_exit_trend()`.
 You may also want to print the pair so it's clear what data is currently shown.
 
 ``` python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             #>> whatever condition<<<
         ),
-        'buy'] = 1
+        ['enter_long', 'enter_tag']] = (1, 'somestring')
 
     # Print the Analyzed pair
     print(f"result for {metadata['pair']}")
@@ -954,9 +1086,18 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
+### Colliding signals
+
+When conflicting signals collide (e.g. both `'enter_long'` and `'exit_long'` are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that enter, and exit immediately. Obviously, this can potentially lead to missed entries.
+
+The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:
+
+- `enter_long` -> `exit_long`, `enter_short`
+- `enter_short` -> `exit_short`, `enter_long`
+
 ## Further strategy ideas
 
-To get additional Ideas for strategies, head over to our [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
+To get additional Ideas for strategies, head over to the [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 

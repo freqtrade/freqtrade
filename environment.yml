@@ -4,7 +4,7 @@ channels:
 # - defaults
 dependencies:
 # 1/4 req main
-    - python>=3.7,<3.9
+    - python>=3.8,<=3.10
     - numpy
     - pandas
     - pip
@@ -16,7 +16,6 @@ dependencies:
     - cachetools
     - requests
     - urllib3
-    - wrapt
     - jsonschema
     - TA-Lib
     - tabulate
@@ -26,9 +25,13 @@ dependencies:
     - fastapi
     - uvicorn
     - pyjwt
+    - aiofiles
+    - psutil
     - colorama
     - questionary
     - prompt-toolkit
+    - schedule
+    - python-dateutil
 
 
     # ============================
@@ -64,7 +67,6 @@ dependencies:
         - py_find_1st
         - tables
         - pytest-random-order
-        - flake8-type-annotations
         - ccxt
         - flake8-tidy-imports
         - -e .

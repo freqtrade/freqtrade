@@ -6,13 +6,15 @@ Freqtrade supports spot trading only.
 
 ### Can I open short positions?
 
-No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+Freqtrade can open short positions in futures markets.
+This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
+Please make sure to read the [relevant documentation page](leverage.md) first.
 
-In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 
 ### Can I trade options or futures?
 
-No, options and futures trading are not supported.
+Futures trading is supported for selected exchanges.
 
 ## Beginner Tips & Tricks
 
@@ -42,7 +44,7 @@ position for a trade. Be patient!
 ### I have made 12 trades already, why is my total profit negative?
 
 I understand your disappointment but unfortunately 12 trades is just
-not enough to say anything. If you run backtesting, you can see that our
+not enough to say anything. If you run backtesting, you can see that the
 current algorithm does leave you on the plus side, but that is after
 thousands of trades and even there, you will be left with losses on
 specific coins that you have traded tens if not hundreds of times. We
@@ -54,13 +56,30 @@ you can't say much from few trades.
 
 Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
-### I want to improve the bot with a new strategy
+### Why does my bot not sell everything it bought?
 
-That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
+This is called "coin dust" and can happen on all exchanges.
+It happens because many exchanges subtract fees from the "receiving currency" - so you buy 100 COIN - but you only get 99.9 COIN.
+As COIN is trading in full lot sizes (1COIN steps), you cannot sell 0.9 COIN (or 99.9 COIN) - but you need to round down to 99 COIN.
+
+This is not a bot-problem, but will also happen while manual trading.
+
+While freqtrade can handle this (it'll sell 99 COIN), fees are often below the minimum tradable lot-size (you can only trade full COIN, not 0.9 COIN).
+Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next time freqtrade buys COIN, it'll eat into the remaining small balance, this time selling everything it bought, and therefore slowly declining the dust balance (although it most likely will never reach exactly 0).
+
+Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.  
+On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
+Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
+
+### I want to use incomplete candles
+
+Freqtrade will not provide incomplete candles to strategies. Using incomplete candles will lead to repainting and consequently to strategies with "ghost" buys, which are impossible to both backtest, and verify after they happened.
+
+You can use "current" market data by using the [dataprovider](strategy-customization.md#orderbookpair-maximum)'s orderbook or ticker methods - which however cannot be used during backtesting.
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forcesell all` (sell all open trades).
+You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 
@@ -76,22 +95,34 @@ If this happens for all pairs in the pairlist, this might indicate a recent exch
 
 Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
 
+### I'm getting "Outdated history for pair xxx" in the log
+
+The bot is trying to tell you that it got an outdated last candle (not the last complete candle).
+As a consequence, Freqtrade will not enter a trade for this pair - as trading on old information is usually not what is desired.
+
+This warning can point to one of the below problems:
+
+* Exchange downtime -> Check your exchange status page / blog / twitter feed for details.
+* Wrong system time -> Ensure your system-time is correct.
+* Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
+* API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
+
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  
 
 Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
-### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+### I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy
 
-As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex and Gate.io).
 
-To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
+To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
-```
+``` python
     order_types = {
         ...
-        'stoploss': 'limit',
+        "stoploss": "limit",
         ...
     }
 ```
@@ -136,6 +167,8 @@ On Windows, the `--logfile` option is also supported by Freqtrade and you can us
 > type \path\to\mylogfile.log | findstr "something"
 ```
 
+## Hyperopt module
+
 ### Why does freqtrade not have GPU support?
 
 First of all, most indicator libraries don't have GPU support - as such, there would be little benefit for indicator calculations.
@@ -152,19 +185,17 @@ The benefit of using GPU would therefore be pretty slim - and will not justify t
 
 There is however nothing preventing you from using GPU-enabled indicators within your strategy if you think you must have this - you will however probably be disappointed by the slim gain that will give you (compared to the complexity).
 
-## Hyperopt module
-
 ### How many epochs do I need to get a good Hyperopt result?
 
 Per default Hyperopt called without the `-e`/`--epochs` command line option will only
 run 100 epochs, means 100 evaluations of your triggers, guards, ... Too few
 to find a great result (unless if you are very lucky), so you probably
-have to run it for 10.000 or more. But it will take an eternity to
+have to run it for 10000 or more. But it will take an eternity to
 compute.
 
 Since hyperopt uses Bayesian search, running for too many epochs may not produce greater results.
 
-It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.
+It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.
 
 ```bash
 freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
@@ -188,9 +219,9 @@ already 8\*10^9\*10 evaluations. A roughly total of 80 billion evaluations.
 Did you run 100 000 evaluations? Congrats, you've done roughly 1 / 100 000 th
 of the search space, assuming that the bot never tests the same parameters more than once.
 
-* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 10.0000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
+* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 100000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
 
-Example: 4% profit 650 times vs 0,3% profit a trade 10.000 times in a year. If we assume you set the --timerange to 365 days. 
+Example: 4% profit 650 times vs 0,3% profit a trade 10000 times in a year. If we assume you set the --timerange to 365 days. 
 
 Example:
 `freqtrade --config config.json --strategy SampleStrategy --hyperopt SampleHyperopt -e 1000 --timerange 20190601-20200601`

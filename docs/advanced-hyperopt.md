@@ -13,7 +13,7 @@ A sample of this can be found below, which is identical to the Default Hyperopt 
 
 ``` python
 from datetime import datetime
-from typing import Dict
+from typing import Any, Dict
 
 from pandas import DataFrame
 
@@ -56,7 +56,7 @@ Currently, the arguments are:
 
 * `results`: DataFrame containing the resulting trades.
     The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
-    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, sell_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
+    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, exit_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the timerange used
 * `min_date`: End date of the timerange used
@@ -105,7 +105,7 @@ You can define your own estimator for Hyperopt by implementing `generate_estimat
 ```python
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
-        def generate_estimator():
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
             return "RF"
 
 ```
@@ -119,11 +119,32 @@ Example for `ExtraTreesRegressor` ("ET") with additional parameters:
 ```python
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
-        def generate_estimator():
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
             from skopt.learning import ExtraTreesRegressor
             # Corresponds to "ET" - but allows additional parameters.
             return ExtraTreesRegressor(n_estimators=100)
 
+```
+
+The `dimensions` parameter is the list of `skopt.space.Dimension` objects corresponding to the parameters to be optimized. It can be used to create isotropic kernels for the `skopt.learning.GaussianProcessRegressor` estimator. Here's an example:
+
+```python
+class MyAwesomeStrategy(IStrategy):
+    class HyperOpt:
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
+            from skopt.utils import cook_estimator
+            from skopt.learning.gaussian_process.kernels import (Matern, ConstantKernel)
+            kernel_bounds = (0.0001, 10000)
+            kernel = (
+                ConstantKernel(1.0, kernel_bounds) * 
+                Matern(length_scale=np.ones(len(dimensions)), length_scale_bounds=[kernel_bounds for d in dimensions], nu=2.5)
+            )
+            kernel += (
+                ConstantKernel(1.0, kernel_bounds) * 
+                Matern(length_scale=np.ones(len(dimensions)), length_scale_bounds=[kernel_bounds for d in dimensions], nu=1.5)
+            )
+
+            return cook_estimator("GP", space=dimensions, kernel=kernel, n_restarts_optimizer=2)
 ```
 
 !!! Note

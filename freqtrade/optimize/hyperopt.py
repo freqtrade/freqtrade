@@ -45,7 +45,7 @@ progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
-INITIAL_POINTS = 5
+INITIAL_POINTS = 30
 
 # Keep no more than SKOPT_MODEL_QUEUE_SIZE models
 # in the skopt model queue, to optimize memory consumption
@@ -76,6 +76,7 @@ class Hyperopt:
         self.config = config
 
         self.backtesting = Backtesting(self.config)
+        self.pairlist = self.backtesting.pairlists.whitelist
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
@@ -113,10 +114,8 @@ class Hyperopt:
         self.position_stacking = self.config.get('position_stacking', False)
 
         if HyperoptTools.has_space(self.config, 'sell'):
-            # Make sure use_sell_signal is enabled
-            if 'ask_strategy' not in self.config:
-                self.config['ask_strategy'] = {}
-            self.config['ask_strategy']['use_sell_signal'] = True
+            # Make sure use_exit_signal is enabled
+            self.config['use_exit_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
         self.hyperopt_table_header = 0
@@ -258,6 +257,7 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
+
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
                            + self.roi_space + self.stoploss_space + self.trailing_space)
 
@@ -331,7 +331,7 @@ class Hyperopt:
         params_details = self._get_params_details(params_dict)
 
         strat_stats = generate_strategy_stats(
-            processed, self.backtesting.strategy.get_strategy_name(),
+            self.pairlist, self.backtesting.strategy.get_strategy_name(),
             backtesting_results, min_date, max_date, market_change=0
         )
         results_explanation = HyperoptTools.format_results_explanation_string(
@@ -365,7 +365,7 @@ class Hyperopt:
         }
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
-        estimator = self.custom_hyperopt.generate_estimator()
+        estimator = self.custom_hyperopt.generate_estimator(dimensions=dimensions)
 
         acq_optimizer = "sampling"
         if isinstance(estimator, str):
@@ -394,6 +394,7 @@ class Hyperopt:
 
     def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
         logger.info("Dataload complete. Calculating indicators")
 
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
@@ -421,6 +422,7 @@ class Hyperopt:
         self.backtesting.exchange.close()
         self.backtesting.exchange._api = None  # type: ignore
         self.backtesting.exchange._api_async = None  # type: ignore
+        self.backtesting.exchange.loop = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
 

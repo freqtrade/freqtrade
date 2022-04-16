@@ -76,18 +76,23 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "max_open_trades",
-            "message": f"Please insert max_open_trades (Integer or '{UNLIMITED_STAKE_AMOUNT}'):",
+            "message": "Please insert max_open_trades (Integer or -1 for unlimited open trades):",
             "default": "3",
-            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val),
-            "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
-            if val == UNLIMITED_STAKE_AMOUNT
-            else val
+            "validate": lambda val: validate_is_int(val)
+        },
+        {
+            "type": "select",
+            "name": "timeframe_in_config",
+            "message": "Time",
+            "choices": ["Have the strategy define timeframe.", "Override in configuration."]
         },
         {
             "type": "text",
             "name": "timeframe",
             "message": "Please insert your desired timeframe (e.g. 5m):",
             "default": "5m",
+            "when": lambda x: x["timeframe_in_config"] == 'Override in configuration.'
+
         },
         {
             "type": "text",
@@ -99,17 +104,27 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "select",
             "name": "exchange_name",
             "message": "Select exchange",
-            "choices": [
+            "choices": lambda x: [
                 "binance",
                 "binanceus",
                 "bittrex",
-                "kraken",
                 "ftx",
-                "kucoin",
                 "gateio",
-                Separator(),
+                "huobi",
+                "kraken",
+                "kucoin",
+                "okx",
+                Separator("------------------"),
                 "other",
             ],
+        },
+        {
+            "type": "confirm",
+            "name": "trading_mode",
+            "message": "Do you want to trade Perpetual Swaps (perpetual futures)?",
+            "default": False,
+            "filter": lambda val: 'futures' if val else 'spot',
+            "when": lambda x: x["exchange_name"] in ['binance', 'gateio', 'okx'],
         },
         {
             "type": "autocomplete",
@@ -134,7 +149,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "password",
             "name": "exchange_key_password",
             "message": "Insert Exchange API Key password",
-            "when": lambda x: not x['dry_run'] and x['exchange_name'] == 'kucoin'
+            "when": lambda x: not x['dry_run'] and x['exchange_name'] in ('kucoin', 'okx')
         },
         {
             "type": "confirm",
@@ -163,7 +178,8 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "api_server_listen_addr",
-            "message": "Insert Api server Listen Address (best left untouched default!)",
+            "message": ("Insert Api server Listen Address (0.0.0.0 for docker, "
+                        "otherwise best left untouched)"),
             "default": "127.0.0.1",
             "when": lambda x: x['api_server']
         },
@@ -186,7 +202,13 @@ def ask_user_config() -> Dict[str, Any]:
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
-
+    # Ensure default is set for non-futures exchanges
+    answers['trading_mode'] = answers.get('trading_mode', "spot")
+    answers['margin_mode'] = (
+        'isolated'
+        if answers.get('trading_mode') == 'futures'
+        else ''
+    )
     # Force JWT token to be a random string
     answers['api_server_jwt_key'] = secrets.token_hex()
 

@@ -5,6 +5,7 @@ from freqtrade.exchange.exchange import Exchange
 # isort: on
 from freqtrade.exchange.bibox import Bibox
 from freqtrade.exchange.binance import Binance
+from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.coinbasepro import Coinbasepro
@@ -17,5 +18,7 @@ from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges,
 from freqtrade.exchange.ftx import Ftx
 from freqtrade.exchange.gateio import Gateio
 from freqtrade.exchange.hitbtc import Hitbtc
+from freqtrade.exchange.huobi import Huobi
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
+from freqtrade.exchange.okx import Okx

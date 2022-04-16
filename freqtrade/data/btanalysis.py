@@ -2,6 +2,8 @@
 Helpers when analyzing backtest data
 """
 import logging
+from copy import copy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -9,28 +11,22 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.misc import json_load
+from freqtrade.exceptions import OperationalException
+from freqtrade.misc import get_backtest_metadata_filename, json_load
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
 
 logger = logging.getLogger(__name__)
 
-# Old format - maybe remove?
-BT_DATA_COLUMNS_OLD = ["pair", "profit_percent", "open_date", "close_date", "index",
-                       "trade_duration", "open_rate", "close_rate", "open_at_end", "sell_reason"]
-
-# Mid-term format, created by BacktestResult Named Tuple
-BT_DATA_COLUMNS_MID = ['pair', 'profit_percent', 'open_date', 'close_date', 'trade_duration',
-                       'open_rate', 'close_rate', 'open_at_end', 'sell_reason', 'fee_open',
-                       'fee_close', 'amount', 'profit_abs', 'profit_ratio']
-
 # Newest format
 BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'open_rate', 'close_rate',
                    'fee_open', 'fee_close', 'trade_duration',
-                   'profit_ratio', 'profit_abs', 'sell_reason',
+                   'profit_ratio', 'profit_abs', 'exit_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
-                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'buy_tag']
+                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'enter_tag',
+                   'is_short'
+                   ]
 
 
 def get_latest_optimize_filename(directory: Union[Path, str], variant: str) -> str:
@@ -106,8 +102,28 @@ def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str =
     if isinstance(directory, str):
         directory = Path(directory)
     if predef_filename:
+        if Path(predef_filename).is_absolute():
+            raise OperationalException(
+                "--hyperopt-filename expects only the filename, not an absolute path.")
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
+
+
+def load_backtest_metadata(filename: Union[Path, str]) -> Dict[str, Any]:
+    """
+    Read metadata dictionary from backtest results file without reading and deserializing entire
+    file.
+    :param filename: path to backtest results file.
+    :return: metadata dict or None if metadata is not present.
+    """
+    filename = get_backtest_metadata_filename(filename)
+    try:
+        with filename.open() as fp:
+            return json_load(fp)
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        raise OperationalException('Unexpected error while loading backtest metadata.') from e
 
 
 def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
@@ -126,7 +142,102 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     with filename.open() as file:
         data = json_load(file)
 
+    # Legacy list format does not contain metadata.
+    if isinstance(data, dict):
+        data['metadata'] = load_backtest_metadata(filename)
+
     return data
+
+
+def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    """
+    Load one strategy from multi-strategy result
+    and merge it with results
+    :param strategy_name: Name of the strategy contained in the result
+    :param filename: Backtest-result-filename to load
+    :param results: dict to merge the result to.
+    """
+    bt_data = load_backtest_stats(filename)
+    for k in ('metadata', 'strategy'):
+        results[k][strategy_name] = bt_data[k][strategy_name]
+    comparison = bt_data['strategy_comparison']
+    for i in range(len(comparison)):
+        if comparison[i]['key'] == strategy_name:
+            results['strategy_comparison'].append(comparison[i])
+            break
+
+
+def _get_backtest_files(dirname: Path) -> List[Path]:
+    return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
+
+
+def get_backtest_resultlist(dirname: Path):
+    """
+    Get list of backtest results read from metadata files
+    """
+    results = []
+    for filename in _get_backtest_files(dirname):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            continue
+        for s, v in metadata.items():
+            results.append({
+                'filename': filename.name,
+                'strategy': s,
+                'run_id': v['run_id'],
+                'backtest_start_time': v['backtest_start_time'],
+
+            })
+    return results
+
+
+def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
+                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
+    """
+    Find existing backtest stats that match specified run IDs and load them.
+    :param dirname: pathlib.Path object, or string pointing to the file.
+    :param run_ids: {strategy_name: id_string} dictionary.
+    :param min_backtest_date: do not load a backtest older than specified date.
+    :return: results dict.
+    """
+    # Copy so we can modify this dict without affecting parent scope.
+    run_ids = copy(run_ids)
+    dirname = Path(dirname)
+    results: Dict[str, Any] = {
+        'metadata': {},
+        'strategy': {},
+        'strategy_comparison': [],
+    }
+
+    # Weird glob expression here avoids including .meta.json files.
+    for filename in _get_backtest_files(dirname):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            # Files are sorted from newest to oldest. When file without metadata is encountered it
+            # is safe to assume older files will also not have any metadata.
+            break
+
+        for strategy_name, run_id in list(run_ids.items()):
+            strategy_metadata = metadata.get(strategy_name, None)
+            if not strategy_metadata:
+                # This strategy is not present in analyzed backtest.
+                continue
+
+            if min_backtest_date is not None:
+                backtest_date = strategy_metadata['backtest_start_time']
+                backtest_date = datetime.fromtimestamp(backtest_date, tz=timezone.utc)
+                if backtest_date < min_backtest_date:
+                    # Do not use a cached result for this strategy as first result is too old.
+                    del run_ids[strategy_name]
+                    continue
+
+            if strategy_metadata['run_id'] == run_id:
+                del run_ids[strategy_name]
+                load_and_merge_backtest_result(strategy_name, filename, results)
+
+        if len(run_ids) == 0:
+            break
+    return results
 
 
 def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = None) -> pd.DataFrame:
@@ -165,25 +276,18 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                               utc=True,
                                               infer_datetime_format=True
                                               )
+            # Compatibility support for pre short Columns
+            if 'is_short' not in df.columns:
+                df['is_short'] = 0
+            if 'enter_tag' not in df.columns:
+                df['enter_tag'] = df['buy_tag']
+                df = df.drop(['buy_tag'], axis=1)
+
     else:
         # old format - only with lists.
-        df = pd.DataFrame(data, columns=BT_DATA_COLUMNS_OLD)
-        if not df.empty:
-            df['open_date'] = pd.to_datetime(df['open_date'],
-                                             unit='s',
-                                             utc=True,
-                                             infer_datetime_format=True
-                                             )
-            df['close_date'] = pd.to_datetime(df['close_date'],
-                                              unit='s',
-                                              utc=True,
-                                              infer_datetime_format=True
-                                              )
-            # Create compatibility with new format
-            df['profit_abs'] = df['close_rate'] - df['open_rate']
+        raise OperationalException(
+            "Backtest-results with only trades data are no longer supported.")
     if not df.empty:
-        if 'profit_ratio' not in df.columns:
-            df['profit_ratio'] = df['profit_percent']
         df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
@@ -325,6 +429,7 @@ def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
     :param column: Column in the original dataframes to use
     :return: DataFrame with the column renamed to the dict key, and a column
         named mean, containing the mean of all pairs.
+    :raise: ValueError if no data is provided.
     """
     df_comb = pd.concat([data[pair].set_index('date').rename(
         {column: pair}, axis=1)[pair] for pair in data], axis=1)
@@ -360,9 +465,19 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
-def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                           value_col: str = 'profit_ratio'
-                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float]:
+def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str
+                          ) -> pd.DataFrame:
+    max_drawdown_df = pd.DataFrame()
+    max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
+    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
+    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
+    max_drawdown_df['date'] = profit_results.loc[:, date_col]
+    return max_drawdown_df
+
+
+def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
+                         value_col: str = 'profit_ratio'
+                         ):
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
@@ -375,10 +490,29 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = pd.DataFrame()
-    max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
-    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
-    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
+    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
+
+    return max_drawdown_df
+
+
+def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
+                           value_col: str = 'profit_abs', starting_balance: float = 0
+                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
+    """
+    Calculate max drawdown and the corresponding close dates
+    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
+    :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
+    :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
+    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
+             with absolute max drawdown, high and low time and high and low value,
+             and the relative account drawdown
+    :raise: ValueError if trade-dataframe was found empty.
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
+    profit_results = trades.sort_values(date_col).reset_index(drop=True)
+    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
 
     idxmin = max_drawdown_df['drawdown'].idxmin()
     if idxmin == 0:
@@ -388,7 +522,18 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
                                    ['high_value'].idxmax(), 'cumulative']
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
-    return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
+    max_drawdown_rel = 0.0
+    if high_val + starting_balance != 0:
+        max_drawdown_rel = (high_val - low_val) / (high_val + starting_balance)
+
+    return (
+        abs(min(max_drawdown_df['drawdown'])),
+        high_date,
+        low_date,
+        high_val,
+        low_val,
+        max_drawdown_rel
+    )
 
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:

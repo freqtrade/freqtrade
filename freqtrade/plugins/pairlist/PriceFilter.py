@@ -50,7 +50,7 @@ class PriceFilter(IPairList):
         """
         active_price_filters = []
         if self._low_price_ratio != 0:
-            active_price_filters.append(f"below {self._low_price_ratio * 100}%")
+            active_price_filters.append(f"below {self._low_price_ratio:.1%}")
         if self._min_price != 0:
             active_price_filters.append(f"below {self._min_price:.8f}")
         if self._max_price != 0:
@@ -82,7 +82,7 @@ class PriceFilter(IPairList):
             changeperc = compare / ticker['last']
             if changeperc > self._low_price_ratio:
                 self.log_once(f"Removed {pair} from whitelist, "
-                              f"because 1 unit is {changeperc * 100:.3f}%", logger.info)
+                              f"because 1 unit is {changeperc:.3%}", logger.info)
                 return False
 
         # Perform low_amount check
@@ -90,8 +90,7 @@ class PriceFilter(IPairList):
             price = ticker['last']
             market = self._exchange.markets[pair]
             limits = market['limits']
-            if ('amount' in limits and 'min' in limits['amount']
-                    and limits['amount']['min'] is not None):
+            if (limits['amount']['min'] is not None):
                 min_amount = limits['amount']['min']
                 min_precision = market['precision']['amount']
 

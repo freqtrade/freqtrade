@@ -3,12 +3,12 @@
 
 import logging
 from copy import deepcopy
-from typing import Any, Dict, NamedTuple
+from typing import Dict, NamedTuple, Optional
 
 import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RunMode
+from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import LocalTrade, Trade
@@ -25,6 +25,14 @@ class Wallet(NamedTuple):
     total: float = 0
 
 
+class PositionWallet(NamedTuple):
+    symbol: str
+    position: float = 0
+    leverage: float = 0
+    collateral: float = 0
+    side: str = 'long'
+
+
 class Wallets:
 
     def __init__(self, config: dict, exchange: Exchange, log: bool = True) -> None:
@@ -32,6 +40,7 @@ class Wallets:
         self._log = log
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
+        self._positions: Dict[str, PositionWallet] = {}
         self.start_cap = config['dry_run_wallet']
         self._last_wallet_refresh = 0
         self.update()
@@ -66,6 +75,7 @@ class Wallets:
         """
         # Recreate _wallets to reset closed trade balances
         _wallets = {}
+        _positions = {}
         open_trades = Trade.get_trades_proxy(is_open=True)
         # If not backtesting...
         # TODO: potentially remove the ._log workaround to determine backtest mode.
@@ -73,25 +83,46 @@ class Wallets:
             tot_profit = Trade.get_total_closed_profit()
         else:
             tot_profit = LocalTrade.total_profit
-        tot_in_trades = sum([trade.stake_amount for trade in open_trades])
+        tot_in_trades = sum(trade.stake_amount for trade in open_trades)
+        used_stake = 0.0
 
-        current_stake = self.start_cap + tot_profit - tot_in_trades
+        if self._config.get('trading_mode', 'spot') != TradingMode.FUTURES:
+            current_stake = self.start_cap + tot_profit - tot_in_trades
+            total_stake = current_stake
+            for trade in open_trades:
+                curr = self._exchange.get_pair_base_currency(trade.pair)
+                _wallets[curr] = Wallet(
+                    curr,
+                    trade.amount,
+                    0,
+                    trade.amount
+                )
+        else:
+            tot_in_trades = 0
+            for position in open_trades:
+                # size = self._exchange._contracts_to_amount(position.pair, position['contracts'])
+                size = position.amount
+                collateral = position.stake_amount
+                leverage = position.leverage
+                tot_in_trades += collateral
+                _positions[position.pair] = PositionWallet(
+                    position.pair, position=size,
+                    leverage=leverage,
+                    collateral=collateral,
+                    side=position.trade_direction
+                )
+            current_stake = self.start_cap + tot_profit - tot_in_trades
+            used_stake = tot_in_trades
+            total_stake = current_stake + tot_in_trades
+
         _wallets[self._config['stake_currency']] = Wallet(
-            self._config['stake_currency'],
-            current_stake,
-            0,
-            current_stake
+            currency=self._config['stake_currency'],
+            free=current_stake,
+            used=used_stake,
+            total=total_stake
         )
-
-        for trade in open_trades:
-            curr = self._exchange.get_pair_base_currency(trade.pair)
-            _wallets[curr] = Wallet(
-                curr,
-                trade.amount,
-                0,
-                trade.amount
-            )
         self._wallets = _wallets
+        self._positions = _positions
 
     def _update_live(self) -> None:
         balances = self._exchange.get_balances()
@@ -108,6 +139,23 @@ class Wallets:
         for currency in deepcopy(self._wallets):
             if currency not in balances:
                 del self._wallets[currency]
+
+        positions = self._exchange.fetch_positions()
+        self._positions = {}
+        for position in positions:
+            symbol = position['symbol']
+            if position['side'] is None or position['collateral'] == 0.0:
+                # Position is not open ...
+                continue
+            size = self._exchange._contracts_to_amount(symbol, position['contracts'])
+            collateral = position['collateral']
+            leverage = position['leverage']
+            self._positions[symbol] = PositionWallet(
+                symbol, position=size,
+                leverage=leverage,
+                collateral=collateral,
+                side=position['side']
+            )
 
     def update(self, require_update: bool = True) -> None:
         """
@@ -126,8 +174,11 @@ class Wallets:
                 logger.info('Wallets synced.')
             self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
-    def get_all_balances(self) -> Dict[str, Any]:
+    def get_all_balances(self) -> Dict[str, Wallet]:
         return self._wallets
+
+    def get_all_positions(self) -> Dict[str, PositionWallet]:
+        return self._positions
 
     def get_starting_balance(self) -> float:
         """
@@ -211,7 +262,7 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, edge=None) -> float:
+    def get_trade_stake_amount(self, pair: str, edge=None, update: bool = True) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -219,7 +270,8 @@ class Wallets:
         """
         stake_amount: float
         # Ensure wallets are uptodate.
-        self.update()
+        if update:
+            self.update()
         val_tied_up = Trade.total_open_trades_stakes()
         available_amount = self.get_available_stake_amount()
 
@@ -238,29 +290,40 @@ class Wallets:
 
         return self._check_available_stake_amount(stake_amount, available_amount)
 
-    def _validate_stake_amount(self, pair, stake_amount, min_stake_amount):
+    def validate_stake_amount(self, pair: str, stake_amount: Optional[float],
+                              min_stake_amount: Optional[float], max_stake_amount: float):
         if not stake_amount:
             logger.debug(f"Stake amount is {stake_amount}, ignoring possible trade for {pair}.")
             return 0
 
-        max_stake_amount = self.get_available_stake_amount()
+        max_stake_amount = min(max_stake_amount, self.get_available_stake_amount())
 
-        if min_stake_amount > max_stake_amount:
+        if min_stake_amount is not None and min_stake_amount > max_stake_amount:
             if self._log:
                 logger.warning("Minimum stake amount > available balance.")
             return 0
         if min_stake_amount is not None and stake_amount < min_stake_amount:
-            stake_amount = min_stake_amount
             if self._log:
                 logger.info(
                     f"Stake amount for pair {pair} is too small "
                     f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
                 )
+            if stake_amount * 1.3 < min_stake_amount:
+                # Top-cap stake-amount adjustments to +30%.
+                if self._log:
+                    logger.info(
+                        f"Adjusted stake amount for pair {pair} is more than 30% bigger than "
+                        f"the desired stake amount of ({stake_amount:.8f} * 1.3 = "
+                        f"{stake_amount * 1.3:.8f}) < {min_stake_amount}), ignoring trade."
+                    )
+                return 0
+            stake_amount = min_stake_amount
+
         if stake_amount > max_stake_amount:
-            stake_amount = max_stake_amount
             if self._log:
                 logger.info(
                     f"Stake amount for pair {pair} is too big "
                     f"({stake_amount} > {max_stake_amount}), adjusting to {max_stake_amount}."
                 )
+            stake_amount = max_stake_amount
         return stake_amount

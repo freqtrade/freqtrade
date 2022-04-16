@@ -13,7 +13,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import CandleType, ExitType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -116,11 +116,12 @@ class Edge:
                 timeframe=self.strategy.timeframe,
                 timerange=timerange_startup,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
+                candle_type=self.config.get('candle_type_def', CandleType.SPOT),
             )
             # Download informative pairs too
             res = defaultdict(list)
-            for p, t in self.strategy.gather_informative_pairs():
-                res[t].append(p)
+            for pair, timeframe, _ in self.strategy.gather_informative_pairs():
+                res[timeframe].append(pair)
             for timeframe, inf_pairs in res.items():
                 timerange_startup = deepcopy(self._timerange)
                 timerange_startup.subtract_start(timeframe_to_seconds(
@@ -132,6 +133,7 @@ class Edge:
                     timeframe=timeframe,
                     timerange=timerange_startup,
                     data_format=self.config.get('dataformat_ohlcv', 'json'),
+                    candle_type=self.config.get('candle_type_def', CandleType.SPOT),
                 )
 
         data = load_data(
@@ -141,6 +143,7 @@ class Edge:
             timerange=self._timerange,
             startup_candles=self.strategy.startup_candle_count,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
+            candle_type=self.config.get('candle_type_def', CandleType.SPOT),
         )
 
         if not data:
@@ -159,7 +162,9 @@ class Edge:
         logger.info(f'Measuring data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days)..')
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
+        # TODO: Should edge support shorts? needs to be investigated further
+        # * (add enter_short exit_short)
+        headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long']
 
         trades: list = []
         for pair, pair_data in preprocessed.items():
@@ -167,8 +172,13 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+            df_analyzed = self.strategy.advise_exit(
+                dataframe=self.strategy.advise_entry(
+                    dataframe=pair_data,
+                    metadata={'pair': pair}
+                ),
+                metadata={'pair': pair}
+            )[headers].copy()
 
             trades += self._find_trades_for_stoploss_range(df_analyzed, pair, self._stoploss_range)
 
@@ -219,9 +229,11 @@ class Edge:
         """
         final = []
         for pair, info in self._cached_pairs.items():
-            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
-                info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)) and \
-                    pair in pairs:
+            if (
+                info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2))
+                and info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))
+                and pair in pairs
+            ):
                 final.append(pair)
 
         if self._final_pairs != final:
@@ -246,8 +258,8 @@ class Edge:
         """
         final = []
         for pair, info in self._cached_pairs.items():
-            if info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and \
-                    info.winrate > float(self.edge_config.get('minimum_winrate', 0.60)):
+            if (info.expectancy > float(self.edge_config.get('minimum_expectancy', 0.2)) and
+                    info.winrate > float(self.edge_config.get('minimum_winrate', 0.60))):
                 final.append({
                     'Pair': pair,
                     'Winrate': info.winrate,
@@ -382,8 +394,8 @@ class Edge:
         return final
 
     def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
-        buy_column = df['buy'].values
-        sell_column = df['sell'].values
+        buy_column = df['enter_long'].values
+        sell_column = df['exit_long'].values
         date_column = df['date'].values
         ohlc_columns = df[['open', 'high', 'low', 'close']].values
 
@@ -448,7 +460,7 @@ class Edge:
 
             if stop_index <= sell_index:
                 exit_index = open_trade_index + stop_index
-                exit_type = SellType.STOP_LOSS
+                exit_type = ExitType.STOP_LOSS
                 exit_price = stop_price
             elif stop_index > sell_index:
                 # If exit is SELL then we exit at the next candle
@@ -458,7 +470,7 @@ class Edge:
                 if len(ohlc_columns) - 1 < exit_index:
                     break
 
-                exit_type = SellType.SELL_SIGNAL
+                exit_type = ExitType.EXIT_SIGNAL
                 exit_price = ohlc_columns[exit_index, 0]
 
             trade = {'pair': pair,

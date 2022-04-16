@@ -1,15 +1,17 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (calculate_max_drawdown, combine_dataframes_with_mean,
+from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
+                                       calculate_underwater, combine_dataframes_with_mean,
                                        create_cum_profit, extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename
@@ -51,6 +53,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         timerange=timerange,
         startup_candles=startup_candles,
         data_format=config.get('dataformat_ohlcv', 'json'),
+        candle_type=config.get('candle_type_def', CandleType.SPOT)
     )
 
     if startup_candles and data:
@@ -60,8 +63,8 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
                                             startup_candles, min_date)
 
     no_trades = False
-    filename = config.get('exportfilename')
-    if config.get('no_trades', False):
+    filename = config.get("exportfilename")
+    if config.get("no_trades", False):
         no_trades = True
     elif config['trade_source'] == 'file':
         if not filename.is_dir() and not filename.is_file():
@@ -160,7 +163,7 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     Add scatter points indicating max drawdown
     """
     try:
-        max_drawdown, highdate, lowdate, _, _ = calculate_max_drawdown(trades)
+        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(trades)
 
         drawdown = go.Scatter(
             x=[highdate, lowdate],
@@ -169,8 +172,8 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
                 df_comb.loc[timeframe_to_prev_date(timeframe, lowdate), 'cum_profit'],
             ],
             mode='markers',
-            name=f"Max drawdown {max_drawdown * 100:.2f}%",
-            text=f"Max drawdown {max_drawdown * 100:.2f}%",
+            name=f"Max drawdown {max_drawdown:.2%}",
+            text=f"Max drawdown {max_drawdown:.2%}",
             marker=dict(
                 symbol='square-open',
                 size=9,
@@ -185,6 +188,48 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     return fig
 
 
+def add_underwater(fig, row, trades: pd.DataFrame) -> make_subplots:
+    """
+    Add underwater plot
+    """
+    try:
+        underwater = calculate_underwater(trades, value_col="profit_abs")
+
+        underwater = go.Scatter(
+            x=underwater['date'],
+            y=underwater['drawdown'],
+            name="Underwater Plot",
+            fill='tozeroy',
+            fillcolor='#cc362b',
+            line={'color': '#cc362b'},
+        )
+        fig.add_trace(underwater, row, 1)
+    except ValueError:
+        logger.warning("No trades found - not plotting underwater plot")
+    return fig
+
+
+def add_parallelism(fig, row, trades: pd.DataFrame, timeframe: str) -> make_subplots:
+    """
+    Add Chart showing trade parallelism
+    """
+    try:
+        result = analyze_trade_parallelism(trades, timeframe)
+
+        drawdown = go.Scatter(
+            x=result.index,
+            y=result['open_trades'],
+            name="Parallel trades",
+            fill='tozeroy',
+            fillcolor='#242222',
+            line={'color': '#242222'},
+        )
+        fig.add_trace(drawdown, row, 1)
+    except ValueError:
+        logger.warning("No trades found - not plotting Parallelism.")
+    return fig
+
+
 def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     """
     Add trades to "fig"
@@ -192,10 +237,12 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
-                                                  f"{row['sell_reason']}, "
-                                                  f"{row['trade_duration']} min",
-                                      axis=1)
+        trades['desc'] = trades.apply(
+            lambda row: f"{row['profit_ratio']:.2%}, " +
+            (f"{row['enter_tag']}, " if row['enter_tag'] is not None else "") +
+            f"{row['exit_reason']}, " +
+            f"{row['trade_duration']} min",
+            axis=1)
         trade_buys = go.Scatter(
             x=trades["open_date"],
             y=trades["open_rate"],
@@ -340,6 +387,35 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
     return fig
 
 
+def create_scatter(
+    data,
+    column_name,
+    color,
+    direction
+) -> Optional[go.Scatter]:
+
+    if column_name in data.columns:
+        df_short = data[data[column_name] == 1]
+        if len(df_short) > 0:
+            shorts = go.Scatter(
+                x=df_short.date,
+                y=df_short.close,
+                mode='markers',
+                name=column_name,
+                marker=dict(
+                    symbol=f"triangle-{direction}-dot",
+                    size=9,
+                    line=dict(width=1),
+                    color=color,
+                )
+            )
+            return shorts
+        else:
+            logger.warning(f"No {column_name}-signals found.")
+
+    return None
+
+
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
                                indicators2: List[str] = [],
@@ -386,43 +462,15 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
-    if 'buy' in data.columns:
-        df_buy = data[data['buy'] == 1]
-        if len(df_buy) > 0:
-            buys = go.Scatter(
-                x=df_buy.date,
-                y=df_buy.close,
-                mode='markers',
-                name='buy',
-                marker=dict(
-                    symbol='triangle-up-dot',
-                    size=9,
-                    line=dict(width=1),
-                    color='green',
-                )
-            )
-            fig.add_trace(buys, 1, 1)
-        else:
-            logger.warning("No buy-signals found.")
+    longs = create_scatter(data, 'enter_long', 'green', 'up')
+    exit_longs = create_scatter(data, 'exit_long', 'red', 'down')
+    shorts = create_scatter(data, 'enter_short', 'blue', 'down')
+    exit_shorts = create_scatter(data, 'exit_short', 'violet', 'up')
 
-    if 'sell' in data.columns:
-        df_sell = data[data['sell'] == 1]
-        if len(df_sell) > 0:
-            sells = go.Scatter(
-                x=df_sell.date,
-                y=df_sell.close,
-                mode='markers',
-                name='sell',
-                marker=dict(
-                    symbol='triangle-down-dot',
-                    size=9,
-                    line=dict(width=1),
-                    color='red',
-                )
-            )
-            fig.add_trace(sells, 1, 1)
-        else:
-            logger.warning("No sell-signals found.")
+    for scatter in [longs, exit_longs, shorts, exit_shorts]:
+        if scatter:
+            fig.add_trace(scatter, 1, 1)
+
     # Add Bollinger Bands
     fig = plot_area(fig, 1, data, 'bb_lowerband', 'bb_upperband',
                     label="Bollinger Band")
@@ -460,7 +508,12 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                           trades: pd.DataFrame, timeframe: str, stake_currency: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = combine_dataframes_with_mean(data, "close")
+    try:
+        df_comb = combine_dataframes_with_mean(data, "close")
+    except ValueError:
+        raise OperationalException(
+            "No data found. Please make sure that data is available for "
+            "the timerange and pairs selected.")
 
     # Trim trades to available OHLCV data
     trades = extract_trades_of_period(df_comb, trades, date_index=True)
@@ -477,20 +530,30 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
-                        row_width=[1, 1, 1],
+    fig = make_subplots(rows=5, cols=1, shared_xaxes=True,
+                        row_heights=[1, 1, 1, 0.5, 1],
                         vertical_spacing=0.05,
-                        subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
+                        subplot_titles=[
+                            "AVG Close Price",
+                            "Combined Profit",
+                            "Profit per pair",
+                            "Parallelism",
+                            "Underwater",
+                        ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
     fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
+    fig['layout']['yaxis4'].update(title='Trade count')
+    fig['layout']['yaxis5'].update(title='Underwater Plot')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
     fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
     fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe)
+    fig = add_parallelism(fig, 4, trades, timeframe)
+    fig = add_underwater(fig, 5, trades)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'

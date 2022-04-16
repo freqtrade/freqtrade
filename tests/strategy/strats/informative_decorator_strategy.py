@@ -2,8 +2,7 @@
 
 from pandas import DataFrame
 
-from freqtrade.strategy import informative, merge_informative_pair
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import IStrategy, informative, merge_informative_pair
 
 
 class InformativeDecoratorTest(IStrategy):
@@ -20,7 +19,12 @@ class InformativeDecoratorTest(IStrategy):
     startup_candle_count: int = 20
 
     def informative_pairs(self):
-        return [('BTC/USDT', '5m')]
+        # Intentionally return 2 tuples, must be converted to 3 in compatibility code
+        return [
+            ('NEO/USDT', '5m'),
+            ('NEO/USDT', '15m', ''),
+            ('NEO/USDT', '2h', 'futures'),
+            ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['buy'] = 0
@@ -38,19 +42,19 @@ class InformativeDecoratorTest(IStrategy):
         return dataframe
 
     # Simple informative test.
-    @informative('1h', 'BTC/{stake}')
-    def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    @informative('1h', 'NEO/{stake}')
+    def populate_indicators_neo_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['rsi'] = 14
         return dataframe
 
     # Quote currency different from stake currency test.
-    @informative('1h', 'ETH/BTC')
+    @informative('1h', 'ETH/BTC', candle_type='spot')
     def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['rsi'] = 14
         return dataframe
 
     # Formatting test.
-    @informative('30m', 'BTC/{stake}', '{column}_{BASE}_{QUOTE}_{base}_{quote}_{asset}_{timeframe}')
+    @informative('30m', 'NEO/{stake}', '{column}_{BASE}_{QUOTE}_{base}_{quote}_{asset}_{timeframe}')
     def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['rsi'] = 14
         return dataframe
@@ -68,7 +72,7 @@ class InformativeDecoratorTest(IStrategy):
         dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
 
         # Mixing manual informative pairs with decorators.
-        informative = self.dp.get_pair_dataframe('BTC/USDT', '5m')
+        informative = self.dp.get_pair_dataframe('NEO/USDT', '5m', '')
         informative['rsi'] = 14
         dataframe = merge_informative_pair(dataframe, informative, self.timeframe, '5m', ffill=True)
 

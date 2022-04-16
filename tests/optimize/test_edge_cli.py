@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
 from freqtrade.enums import RunMode
 from freqtrade.optimize.edge_cli import EdgeCli
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, patch_exchange,
                             patched_configuration_load_config_file)
 
 
@@ -16,7 +16,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
     ]
 
     config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
@@ -30,7 +30,6 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     assert 'datadir' in config
     assert log_has('Using data directory: {} ...'.format(config['datadir']), caplog)
     assert 'timeframe' in config
-    assert not log_has_re('Parameter -i/--ticker-interval detected .*', caplog)
 
     assert 'timerange' not in config
     assert 'stoploss_range' not in config
@@ -46,7 +45,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--timerange', ':100',
@@ -80,7 +79,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
     ]
     pargs = get_args(args)
     start_edge(pargs)

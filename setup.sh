@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 #encoding=utf8
 
+function echo_block() {
+    echo "----------------------------"
+    echo $1
+    echo "----------------------------"
+}
+
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
-        echo "-----------------------------"
-        echo "Installing Pip for ${PYTHON}"
-        echo "-----------------------------"
+        echo_block "Installing Pip for ${PYTHON}"
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         ${PYTHON} get-pip.py
         rm get-pip.py
@@ -21,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 9 8 7
+    for v in 9 10 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -30,16 +34,14 @@ function check_installed_python() {
             check_installed_pip
             return
         fi
-    done 
+    done
 
-    echo "No usable python found. Please make sure to have python3.7 or newer installed"
+    echo "No usable python found. Please make sure to have python3.8 or newer installed."
     exit 1
 }
 
 function updateenv() {
-    echo "-------------------------"
-    echo "Updating your virtual env"
-    echo "-------------------------"
+    echo_block "Updating your virtual env"
     if [ ! -f .env/bin/activate ]; then
         echo "Something went wrong, no virtual environment found."
         exit 1
@@ -49,6 +51,7 @@ function updateenv() {
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
+    dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
@@ -86,6 +89,13 @@ function updateenv() {
     fi
     echo "pip install completed"
     echo
+    if [[ $dev =~ ^[Yy]$ ]]; then
+        ${PYTHON} -m pre-commit install
+        if [ $? -ne 0 ]; then
+            echo "Failed installing pre-commit"
+            exit 1
+        fi
+    fi
 }
 
 # Install tab lib
@@ -95,27 +105,31 @@ function install_talib() {
         return
     fi
 
-    cd build_helpers && ./install_ta-lib.sh && cd ..
+    cd build_helpers && ./install_ta-lib.sh
+
+    if [ $? -ne 0 ]; then
+        echo "Quitting. Please fix the above error before continuing."
+        cd ..
+        exit 1
+    fi;
+
+    cd ..
 }
 
-function install_mac_newer_python_dependencies() {    
-    
+function install_mac_newer_python_dependencies() {
+
     if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
     then
-        echo "-------------------------"
-        echo "Installing hdf5"
-        echo "-------------------------"
+        echo_block "Installing hdf5"
         brew install hdf5
     fi
     export HDF5_DIR=$(brew --prefix)
 
     if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
     then
-        echo "-------------------------"
-        echo "Installing c-blosc"
-        echo "-------------------------"
+        echo_block "Installing c-blosc"
         brew install c-blosc
-    fi    
+    fi
     export CBLOSC_DIR=$(brew --prefix)
 }
 
@@ -123,14 +137,15 @@ function install_mac_newer_python_dependencies() {
 function install_macos() {
     if [ ! -x "$(command -v brew)" ]
     then
-        echo "-------------------------"
-        echo "Installing Brew"
-        echo "-------------------------"
+        echo_block "Installing Brew"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
+
+    brew install gettext
+
     #Gets number after decimal in python version
     version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')
-    
+
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
     fi
@@ -140,7 +155,14 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
+    sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
+    install_talib
+}
+
+# Install bot RedHat_CentOS
+function install_redhat() {
+    sudo yum update
+    sudo yum install -y gcc gcc-c++ make autoconf libtool pkg-config wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
     install_talib
 }
 
@@ -152,9 +174,7 @@ function update() {
 
 # Reset Develop or Stable branch
 function reset() {
-    echo "----------------------------"
-    echo "Resetting branch and virtual env"
-    echo "----------------------------"
+    echo_block "Resetting branch and virtual env"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
@@ -192,48 +212,39 @@ function reset() {
 }
 
 function config() {
-
-    echo "-------------------------"
-    echo "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
-    echo "-------------------------"
+    echo_block "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
 }
 
 function install() {
-    echo "-------------------------"
-    echo "Installing mandatory dependencies"
-    echo "-------------------------"
 
-    if [ "$(uname -s)" == "Darwin" ]
-    then
+    echo_block "Installing mandatory dependencies"
+
+    if [ "$(uname -s)" == "Darwin" ]; then
         echo "macOS detected. Setup for this system in-progress"
         install_macos
-    elif [ -x "$(command -v apt-get)" ]
-    then
+    elif [ -x "$(command -v apt-get)" ]; then
         echo "Debian/Ubuntu detected. Setup for this system in-progress"
         install_debian
+    elif [ -x "$(command -v yum)" ]; then
+        echo "Red Hat/CentOS detected. Setup for this system in-progress"
+        install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python3.6 or Python3.7, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.8 - 3.10, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
     echo
     reset
     config
-    echo "-------------------------"
-    echo "Run the bot !"
-    echo "-------------------------"
+    echo_block "Run the bot !"
     echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <subcommand>'."
     echo "You can see the list of available bot sub-commands by executing 'source .env/bin/activate; freqtrade --help'."
     echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
 }
 
 function plot() {
-    echo "
-    -----------------------------------------
-    Installing dependencies for Plotting scripts
-    -----------------------------------------
-    "
+    echo_block "Installing dependencies for Plotting scripts"
     ${PYTHON} -m pip install plotly --upgrade
 }
 
@@ -246,7 +257,7 @@ function help() {
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
-# Verify if 3.7 or 3.8 is installed
+# Verify if 3.8+ is installed
 check_installed_python
 
 case $* in

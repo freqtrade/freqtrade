@@ -59,7 +59,7 @@ $ freqtrade new-config --config config_binance.json
 ? Do you want to enable Dry-run (simulated trades)?  Yes
 ? Please insert your stake currency: BTC
 ? Please insert your stake amount: 0.05
-? Please insert max_open_trades (Integer or 'unlimited'): 3
+? Please insert max_open_trades (Integer or -1 for unlimited open trades): 3
 ? Please insert your desired timeframe (e.g. 5m): 5m
 ? Please insert your display Currency (for reporting): USD
 ? Select exchange  binance
@@ -281,7 +281,7 @@ bitmax              True     missing opt: fetchMyTrades
 bitmex              False    Various reasons.
 bitpanda            True
 bitso               False    missing: fetchOHLCV
-bitstamp            False    Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983
+bitstamp            True     missing opt: fetchTickers
 bitstamp1           False    missing: fetchOrder, fetchOHLCV
 bittrex             True
 bitvavo             True
@@ -439,14 +439,15 @@ usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                               [--print-list] [--print-json] [-1] [--print-csv]
                               [--base BASE_CURRENCY [BASE_CURRENCY ...]]
-                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
-                              [-a]
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
+                              [--trading-mode {spot,margin,futures}]
 
 usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                             [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
                             [--print-list] [--print-json] [-1] [--print-csv]
                             [--base BASE_CURRENCY [BASE_CURRENCY ...]]
                             [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]
+                            [--trading-mode {spot,margin,futures}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -463,6 +464,8 @@ optional arguments:
                         Specify quote currency(-ies). Space-separated list.
   -a, --all             Print all pairs or market symbols. By default only
                         active ones are shown.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -517,20 +520,25 @@ Requires a configuration with specified `pairlists` attribute.
 Can be used to generate static pairlists to be used during backtesting / hyperopt.
 
 ```
-usage: freqtrade test-pairlist [-h] [-c PATH]
+usage: freqtrade test-pairlist [-h] [-v] [-c PATH]
                                [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
-                               [-1] [--print-json]
+                               [-1] [--print-json] [--exchange EXCHANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
                         Specify quote currency(-ies). Space-separated list.
   -1, --one-column      Print output in one column.
   --print-json          Print list of pairs or market symbols in JSON format.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+
 ```
 
 ### Examples
@@ -558,6 +566,46 @@ usage: freqtrade webserver [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+```
+
+## Show previous Backtest results
+
+Allows you to show previous backtest results.
+Adding `--show-pair-list` outputs a sorted pair list you can easily copy/paste into your configuration (omitting bad pairs).
+
+??? Warning "Strategy overfitting"
+    Only using winning pairs can lead to an overfitted strategy, which will not work well on future data. Make sure to extensively test your strategy in dry-run before risking real money.
+
+```
+usage: freqtrade backtesting-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                  [-d PATH] [--userdir PATH]
+                                  [--export-filename PATH] [--show-pair-list]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --export-filename PATH
+                        Save backtest results to the file with this filename.
+                        Requires `--export` to be set as well. Example:
+                        `--export-filename=user_data/backtest_results/backtest
+                        _today.json`
+  --show-pair-list      Show backtesting pairlist sorted by profit.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -667,6 +715,7 @@ usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--profitable] [-n INT] [--print-json]
                                [--hyperopt-filename FILENAME] [--no-header]
                                [--disable-param-export]
+                               [--breakdown {day,week,month} [{day,week,month} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -680,6 +729,8 @@ optional arguments:
   --no-header           Do not print epoch details header.
   --disable-param-export
                         Disable automatic hyperopt parameter export.
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

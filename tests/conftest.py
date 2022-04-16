@@ -4,8 +4,8 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime, timedelta
-from functools import reduce
 from pathlib import Path
+from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
 import arrow
@@ -16,15 +16,18 @@ from telegram import Chat, Message, Update
 from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
-from freqtrade.edge import Edge, PairInfo
-from freqtrade.enums import RunMode
+from freqtrade.edge import PairInfo
+from freqtrade.enums import CandleType, MarginMode, RunMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import LocalTrade, Trade, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6)
+from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
+                                   mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
+from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mock_trade_usdt_3,
+                                        mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6,
+                                        mock_trade_usdt_7)
 
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -32,6 +35,9 @@ logging.getLogger('').setLevel(logging.INFO)
 
 # Do not mask numpy errors as warnings that no one read, raise the exсeption
 np.seterr(all='raise')
+
+CURRENT_TEST_STRATEGY = 'StrategyTestV3'
+TRADE_SIDES = ('long', 'short')
 
 
 def pytest_addoption(parser):
@@ -48,17 +54,23 @@ def pytest_configure(config):
 
 
 def log_has(line, logs):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
-    # and we want to match line against foobar in the tuple
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs.record_tuples),
-                  False)
+    """Check if line is found on some caplog's message."""
+    return any(line == message for message in logs.messages)
 
 
 def log_has_re(line, logs):
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: re.match(line, x[2]), logs.record_tuples),
-                  False)
+    """Check if line matches some caplog's message."""
+    return any(re.match(line, message) for message in logs.messages)
+
+
+def num_log_has(line, logs):
+    """Check how many times line is found in caplog's messages."""
+    return sum(line == message for message in logs.messages)
+
+
+def num_log_has_re(line, logs):
+    """Check how many times line matches caplog's messages."""
+    return sum(bool(re.match(line, message)) for message in logs.messages)
 
 
 def get_args(args):
@@ -75,33 +87,56 @@ def get_mock_coro(return_value):
 
 def patched_configuration_load_config_file(mocker, config) -> None:
     mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
+        'freqtrade.configuration.load_config.load_config_file',
         lambda *args, **kwargs: config
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> None:
+def patch_exchange(
+    mocker,
+    api_mock=None,
+    id='binance',
+    mock_markets=True,
+    mock_supported_modes=True
+) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+
     if mock_markets:
+        if isinstance(mock_markets, bool):
+            mock_markets = get_markets()
         mocker.patch('freqtrade.exchange.Exchange.markets',
-                     PropertyMock(return_value=get_markets()))
+                     PropertyMock(return_value=mock_markets))
+
+    if mock_supported_modes:
+        mocker.patch(
+            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_margin_pairs',
+            PropertyMock(return_value=[
+                (TradingMode.MARGIN, MarginMode.CROSS),
+                (TradingMode.MARGIN, MarginMode.ISOLATED),
+                (TradingMode.FUTURES, MarginMode.CROSS),
+                (TradingMode.FUTURES, MarginMode.ISOLATED)
+            ])
+        )
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
+        mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
+                return_value=['5m', '15m', '1h', '1d']))
 
 
 def get_patched_exchange(mocker, config, api_mock=None, id='binance',
-                         mock_markets=True) -> Exchange:
-    patch_exchange(mocker, api_mock, id, mock_markets)
+                         mock_markets=True, mock_supported_modes=True) -> Exchange:
+    patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
     config['exchange']['name'] = id
     try:
         exchange = ExchangeResolver.load_exchange(id, config)
@@ -136,11 +171,6 @@ def patch_edge(mocker) -> None:
     mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
 
 
-def get_patched_edge(mocker, config) -> Edge:
-    patch_edge(mocker)
-    edge = Edge(config)
-    return edge
-
 # Functions for recurrent object patching
 
 
@@ -152,7 +182,6 @@ def patch_freqtradebot(mocker, config) -> None:
     :return: None
     """
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    init_db(config['db_url'])
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
@@ -182,17 +211,121 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False, None)) -> None:
+def patch_get_signal(
+    freqtrade: FreqtradeBot,
+    enter_long=True,
+    exit_long=False,
+    enter_short=False,
+    exit_short=False,
+    enter_tag: Optional[str] = None,
+    exit_tag: Optional[str] = None,
+) -> None:
     """
     :param mocker: mocker to patch IStrategy class
-    :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s, x: value
+    # returns (Signal-direction, signaname)
+    def patched_get_entry_signal(*args, **kwargs):
+        direction = None
+        if enter_long and not any([exit_long, enter_short]):
+            direction = SignalDirection.LONG
+        if enter_short and not any([exit_short, enter_long]):
+            direction = SignalDirection.SHORT
+
+        return direction, enter_tag
+
+    freqtrade.strategy.get_entry_signal = patched_get_entry_signal
+
+    def patched_get_exit_signal(pair, timeframe, dataframe, is_short):
+        if is_short:
+            return enter_short, exit_short, exit_tag
+        else:
+            return enter_long, exit_long, exit_tag
+
+    # returns (enter, exit)
+    freqtrade.strategy.get_exit_signal = patched_get_exit_signal
+
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, use_db: bool = True):
+def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = True):
+    """
+    Create some fake trades ...
+    :param is_short: Optional bool, None creates a mix of long and short trades.
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+    is_short1 = is_short if is_short is not None else True
+    is_short2 = is_short if is_short is not None else False
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee, is_short1)
+    add_trade(trade)
+
+    trade = mock_trade_2(fee, is_short1)
+    add_trade(trade)
+
+    trade = mock_trade_3(fee, is_short2)
+    add_trade(trade)
+
+    trade = mock_trade_4(fee, is_short2)
+    add_trade(trade)
+
+    trade = mock_trade_5(fee, is_short2)
+    add_trade(trade)
+
+    trade = mock_trade_6(fee, is_short1)
+    add_trade(trade)
+
+    if use_db:
+        Trade.commit()
+
+
+def create_mock_trades_with_leverage(fee, use_db: bool = True):
+    """
+    Create some fake trades ...
+    """
+    if use_db:
+        Trade.query.session.rollback()
+
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee, False)
+    add_trade(trade)
+
+    trade = mock_trade_2(fee, False)
+    add_trade(trade)
+
+    trade = mock_trade_3(fee, False)
+    add_trade(trade)
+
+    trade = mock_trade_4(fee, False)
+    add_trade(trade)
+
+    trade = mock_trade_5(fee, False)
+    add_trade(trade)
+
+    trade = mock_trade_6(fee, False)
+    add_trade(trade)
+
+    trade = short_trade(fee)
+    add_trade(trade)
+
+    trade = leverage_trade(fee)
+    add_trade(trade)
+
+    if use_db:
+        Trade.query.session.flush()
+
+
+def create_mock_trades_usdt(fee, use_db: bool = True):
     """
     Create some fake trades ...
     """
@@ -203,26 +336,28 @@ def create_mock_trades(fee, use_db: bool = True):
             LocalTrade.add_bt_trade(trade)
 
     # Simulate dry_run entries
-    trade = mock_trade_1(fee)
+    trade = mock_trade_usdt_1(fee)
     add_trade(trade)
 
-    trade = mock_trade_2(fee)
+    trade = mock_trade_usdt_2(fee)
     add_trade(trade)
 
-    trade = mock_trade_3(fee)
+    trade = mock_trade_usdt_3(fee)
     add_trade(trade)
 
-    trade = mock_trade_4(fee)
+    trade = mock_trade_usdt_4(fee)
     add_trade(trade)
 
-    trade = mock_trade_5(fee)
+    trade = mock_trade_usdt_5(fee)
     add_trade(trade)
 
-    trade = mock_trade_6(fee)
+    trade = mock_trade_usdt_6(fee)
     add_trade(trade)
 
+    trade = mock_trade_usdt_7(fee)
+    add_trade(trade)
     if use_db:
-        Trade.query.session.flush()
+        Trade.commit()
 
 
 @pytest.fixture(autouse=True)
@@ -257,6 +392,11 @@ def default_conf(testdatadir):
     return get_default_conf(testdatadir)
 
 
+@pytest.fixture(scope="function")
+def default_conf_usdt(testdatadir):
+    return get_default_conf_usdt(testdatadir)
+
+
 def get_default_conf(testdatadir):
     """ Returns validated configuration suitable for most tests """
     configuration = {
@@ -276,11 +416,11 @@ def get_default_conf(testdatadir):
         "dry_run_wallet": 1000,
         "stoploss": -0.10,
         "unfilledtimeout": {
-            "buy": 10,
-            "sell": 30
+            "entry": 10,
+            "exit": 30
         },
-        "bid_strategy": {
-            "ask_last_balance": 0.0,
+        "entry_pricing": {
+            "price_last_balance": 0.0,
             "use_order_book": False,
             "order_book_top": 1,
             "check_depth_of_market": {
@@ -288,7 +428,7 @@ def get_default_conf(testdatadir):
                 "bids_to_ask_delta": 1
             }
         },
-        "ask_strategy": {
+        "exit_pricing": {
             "use_order_book": False,
             "order_book_top": 1,
         },
@@ -323,11 +463,38 @@ def get_default_conf(testdatadir):
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
-        "strategy": "StrategyTestV2",
+        "strategy": CURRENT_TEST_STRATEGY,
         "disableparamexport": True,
         "internals": {},
         "export": "none",
+        "candle_type_def": CandleType.SPOT,
     }
+    return configuration
+
+
+def get_default_conf_usdt(testdatadir):
+    configuration = get_default_conf(testdatadir)
+    configuration.update({
+        "stake_amount": 60.0,
+        "stake_currency": "USDT",
+        "exchange": {
+            "name": "binance",
+            "enabled": True,
+            "key": "key",
+            "secret": "secret",
+            "pair_whitelist": [
+                "ETH/USDT",
+                "LTC/USDT",
+                "XRP/USDT",
+                "NEO/USDT",
+                "TKN/USDT",
+            ],
+            "pair_blacklist": [
+                "DOGE/USDT",
+                "HOT/USDT",
+            ]
+        },
+    })
     return configuration
 
 
@@ -371,11 +538,40 @@ def ticker_sell_down():
 
 
 @pytest.fixture
+def ticker_usdt():
+    return MagicMock(return_value={
+        'bid': 2.0,
+        'ask': 2.02,
+        'last': 2.0,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_up():
+    return MagicMock(return_value={
+        'bid': 2.2,
+        'ask': 2.3,
+        'last': 2.2,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_down():
+    return MagicMock(return_value={
+        'bid': 2.01,
+        'ask': 2.0,
+        'last': 2.01,
+    })
+
+
+@pytest.fixture
 def markets():
     return get_markets()
 
 
 def get_markets():
+    # See get_markets_static() for immutable markets and do not modify them unless absolutely
+    # necessary!
     return {
         'ETH/BTC': {
             'id': 'ethbtc',
@@ -383,24 +579,35 @@ def get_markets():
             'base': 'ETH',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
                 },
+                'leverage': {
+                    'min': 1.0,
+                    'max': 2.0
+                }
             },
-            'info': {},
         },
         'TKN/BTC': {
             'id': 'tknbtc',
@@ -409,24 +616,35 @@ def get_markets():
             'quote': 'BTC',
             # According to ccxt, markets without active item set are also active
             # 'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
                 },
+                'leverage': {
+                    'min': 1.0,
+                    'max': 5.0
+                }
             },
-            'info': {},
         },
         'BLK/BTC': {
             'id': 'blkbtc',
@@ -434,24 +652,35 @@ def get_markets():
             'base': 'BLK',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
                     'max': 1000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
                 },
+                'leverage': {
+                    'min': 1.0,
+                    'max': 3.0
+                },
             },
-            'info': {},
         },
         'LTC/BTC': {
             'id': 'ltcbtc',
@@ -459,21 +688,33 @@ def get_markets():
             'base': 'LTC',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None
                 },
             },
             'info': {},
@@ -484,21 +725,33 @@ def get_markets():
             'base': 'XRP',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
                 },
             },
             'info': {},
@@ -509,21 +762,33 @@ def get_markets():
             'base': 'NEO',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
             'precision': {
                 'price': 8,
                 'amount': 8,
                 'cost': 8,
             },
             'lot': 0.00000001,
+            'contractSize': None,
             'limits': {
                 'amount': {
                     'min': 0.01,
-                    'max': 1000,
+                    'max': 100000000,
                 },
-                'price': 500000,
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
                 'cost': {
                     'min': 0.0001,
                     'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
                 },
             },
             'info': {},
@@ -534,6 +799,11 @@ def get_markets():
             'base': 'BTT',
             'quote': 'BTC',
             'active': False,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -552,7 +822,11 @@ def get_markets():
                 'cost': {
                     'min': 0.0001,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -561,22 +835,52 @@ def get_markets():
             'symbol': 'ETH/USDT',
             'base': 'ETH',
             'quote': 'USDT',
+            'settle': None,
+            'baseId': 'ETH',
+            'quoteId': 'USDT',
+            'settleId': None,
+            'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': True,
+            'future': True,
+            'option': False,
+            'active': True,
+            'contract': None,
+            'linear': None,
+            'inverse': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'contractSize': None,
+            'expiry': None,
+            'expiryDateTime': None,
+            'strike': None,
+            'optionType': None,
             'precision': {
                 'amount': 8,
-                'price': 8
+                'price': 8,
             },
             'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100,
+                },
                 'amount': {
                     'min': 0.02214286,
-                    'max': None
+                    'max': None,
                 },
                 'price': {
                     'min': 1e-08,
-                    'max': None
-                }
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
-            'active': True,
-            'info': {},
+            'info': {
+                'maintenance_rate': '0.005',
+            },
         },
         'LTC/USDT': {
             'id': 'USDT-LTC',
@@ -584,6 +888,16 @@ def get_markets():
             'base': 'LTC',
             'quote': 'USDT',
             'active': False,
+            'spot': True,
+            'future': True,
+            'swap': True,
+            'margin': True,
+            'linear': None,
+            'inverse': False,
+            'type': 'spot',
+            'contractSize': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -596,7 +910,143 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
+            },
+            'info': {},
+        },
+        'XRP/USDT': {
+            'id': 'xrpusdt',
+            'symbol': 'XRP/USDT',
+            'base': 'XRP',
+            'quote': 'USDT',
+            'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'contractSize': None,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'NEO/USDT': {
+            'id': 'neousdt',
+            'symbol': 'NEO/USDT',
+            'base': 'NEO',
+            'quote': 'USDT',
+            'settle': '',
+            'baseId': 'NEO',
+            'quoteId': 'USDT',
+            'settleId': '',
+            'type': 'spot',
+            'spot': True,
+            'margin': True,
+            'swap': False,
+            'futures': False,
+            'option': False,
+            'active': True,
+            'contract': False,
+            'linear': None,
+            'inverse': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'contractSize': None,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'tierBased': None,
+            'percentage': None,
+            'lot': 0.00000001,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'limits': {
+                "leverage": {
+                    'min': 1,
+                    'max': 10
+                },
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': {
+                    'min': None,
+                    'max': 500000,
+                },
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'TKN/USDT': {
+            'id': 'tknusdt',
+            'symbol': 'TKN/USDT',
+            'base': 'TKN',
+            'quote': 'USDT',
+            'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
+            'contractSize': None,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 100000000000,
+                },
+                'price': {
+                    'min': None,
+                    'max': 500000
+                },
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -606,6 +1056,11 @@ def get_markets():
             'base': 'LTC',
             'quote': 'USD',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -618,7 +1073,15 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -628,11 +1091,22 @@ def get_markets():
             'base': 'LTC',
             'quote': 'USDT',
             'active': True,
+            'spot': False,
+            'type': 'swap',
+            'contractSize': 0.01,
+            'swap': False,
+            'linear': False,
+            'taker': 0.0006,
+            'maker': 0.0002,
             'precision': {
                 'amount': 8,
                 'price': 8
             },
             'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
                 'amount': {
                     'min': 0.06646786,
                     'max': None
@@ -640,7 +1114,11 @@ def get_markets():
                 'price': {
                     'min': 1e-08,
                     'max': None
-                }
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             'info': {},
         },
@@ -650,6 +1128,11 @@ def get_markets():
             'base': 'LTC',
             'quote': 'ETH',
             'active': True,
+            'spot': True,
+            'swap': False,
+            'linear': None,
+            'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -657,6 +1140,10 @@ def get_markets():
                 'price': 5
             },
             'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
                 'amount': {
                     'min': 0.001,
                     'max': 10000000.0
@@ -670,16 +1157,261 @@ def get_markets():
                     'max': None
                 }
             },
+            'info': {
+            }
+        },
+        'ETH/USDT:USDT': {
+            'id': 'ETH_USDT',
+            'symbol': 'ETH/USDT:USDT',
+            'base': 'ETH',
+            'quote': 'USDT',
+            'settle': 'USDT',
+            'baseId': 'ETH',
+            'quoteId': 'USDT',
+            'settleId': 'USDT',
+            'type': 'swap',
+            'spot': False,
+            'margin': False,
+            'swap': True,
+            'future': True,  # Binance mode ...
+            'option': False,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'tierBased': False,
+            'percentage': True,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'contractSize': 10,
+            'active': True,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100
+                },
+                'amount': {
+                    'min': 1,
+                    'max': 300000
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                }
+            },
+            'precision': {
+                'price': 0.05,
+                'amount': 1
+            },
+            'info': {}
+        },
+        'ADA/USDT:USDT': {
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 20,
+                },
+                'amount': {
+                    'min': 1,
+                    'max': 1000000,
+                },
+                'price': {
+                    'min': 0.52981,
+                    'max': 1.58943,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                }
+            },
+            'precision': {
+                'amount': 1,
+                'price': 0.00001
+            },
+            'tierBased': True,
+            'percentage': True,
+            'taker': 0.0000075,
+            'maker': -0.0000025,
+            'feeSide': 'get',
+            'tiers': {
+                'maker': [
+                    [0, 0.002],       [1.5, 0.00185],
+                    [3, 0.00175],     [6, 0.00165],
+                    [12.5, 0.00155],  [25, 0.00145],
+                    [75, 0.00135],    [200, 0.00125],
+                    [500, 0.00115],   [1250, 0.00105],
+                    [2500, 0.00095],  [3000, 0.00085],
+                    [6000, 0.00075],  [11000, 0.00065],
+                    [20000, 0.00055], [40000, 0.00055],
+                    [75000, 0.00055]
+                ],
+                'taker': [
+                    [0, 0.002],       [1.5, 0.00195],
+                    [3, 0.00185],     [6, 0.00175],
+                    [12.5, 0.00165],  [25, 0.00155],
+                    [75, 0.00145],    [200, 0.00135],
+                    [500, 0.00125],   [1250, 0.00115],
+                    [2500, 0.00105],  [3000, 0.00095],
+                    [6000, 0.00085],  [11000, 0.00075],
+                    [20000, 0.00065], [40000, 0.00065],
+                    [75000, 0.00065]
+                ]
+            },
+            'id': 'ADA_USDT',
+            'symbol': 'ADA/USDT:USDT',
+            'base': 'ADA',
+            'quote': 'USDT',
+            'settle': 'USDT',
+            'baseId': 'ADA',
+            'quoteId': 'USDT',
+            'settleId': 'usdt',
+            'type': 'swap',
+            'spot': False,
+            'margin': False,
+            'swap': True,
+            'future': True,  # Binance mode ...
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 0.01,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'info': {}
+        },
+        'SOL/BUSD:BUSD': {
+            'limits': {
+                'leverage': {'min': None, 'max': None},
+                'amount': {'min': 1, 'max': 1000000},
+                'price': {'min': 0.04, 'max': 100000},
+                'cost': {'min': 5, 'max': None},
+                'market': {'min': 1, 'max': 1500}
+            },
+            'precision': {'amount': 0, 'price': 2, 'base': 8, 'quote': 8},
+            'tierBased': False,
+            'percentage': True,
+            'taker': 0.0004,
+            'maker': 0.0002,
+            'feeSide': 'get',
+            'id': 'SOLBUSD',
+            'lowercaseId': 'solbusd',
+            'symbol': 'SOL/BUSD',
+            'base': 'SOL',
+            'quote': 'BUSD',
+            'settle': 'BUSD',
+            'baseId': 'SOL',
+            'quoteId': 'BUSD',
+            'settleId': 'BUSD',
+            'type': 'future',
+            'spot': False,
+            'margin': False,
+            'future': True,
+            'delivery': False,
+            'option': False,
+            'active': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'contractSize': 1,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'info': {
+                'symbol': 'SOLBUSD',
+                'pair': 'SOLBUSD',
+                'contractType': 'PERPETUAL',
+                'deliveryDate': '4133404800000',
+                'onboardDate': '1630566000000',
+                'status': 'TRADING',
+                'maintMarginPercent': '2.5000',
+                'requiredMarginPercent': '5.0000',
+                'baseAsset': 'SOL',
+                'quoteAsset': 'BUSD',
+                'marginAsset': 'BUSD',
+                'pricePrecision': '4',
+                'quantityPrecision': '0',
+                'baseAssetPrecision': '8',
+                'quotePrecision': '8',
+                'underlyingType': 'COIN',
+                'underlyingSubType': [],
+                'settlePlan': '0',
+                'triggerProtect': '0.0500',
+                'liquidationFee': '0.005000',
+                'marketTakeBound': '0.05',
+                'filters': [
+                    {
+                        'minPrice': '0.0400',
+                        'maxPrice': '100000',
+                        'filterType': 'PRICE_FILTER',
+                        'tickSize': '0.0100'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'LOT_SIZE',
+                        'maxQty': '1000000',
+                        'minQty': '1'
+                    },
+                    {
+                        'stepSize': '1',
+                        'filterType': 'MARKET_LOT_SIZE',
+                        'maxQty': '1500',
+                        'minQty': '1'
+                    },
+                    {'limit': '200', 'filterType': 'MAX_NUM_ORDERS'},
+                    {'limit': '10', 'filterType': 'MAX_NUM_ALGO_ORDERS'},
+                    {'notional': '5', 'filterType': 'MIN_NOTIONAL'},
+                    {
+                        'multiplierDown': '0.9500',
+                        'multiplierUp': '1.0500',
+                        'multiplierDecimal': '4',
+                        'filterType': 'PERCENT_PRICE'
+                    }
+                ],
+                'orderTypes': [
+                    'LIMIT',
+                    'MARKET',
+                    'STOP',
+                    'STOP_MARKET',
+                    'TAKE_PROFIT',
+                    'TAKE_PROFIT_MARKET',
+                    'TRAILING_STOP_MARKET'
+                ],
+                'timeInForce': ['GTC', 'IOC', 'FOK', 'GTX']
+            }
         },
     }
 
 
 @pytest.fixture
-def shitcoinmarkets(markets):
+def markets_static():
+    # These markets are used in some tests that would need adaptation should anything change in
+    # market list. Do not modify this list without a good reason! Do not modify market parameters
+    # of listed pairs in get_markets() without a good reason either!
+    static_markets = ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
+                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC',
+                      'ADA/USDT:USDT', 'ETH/USDT:USDT',
+                      ]
+    all_markets = get_markets()
+    return {m: all_markets[m] for m in static_markets}
+
+
+@pytest.fixture
+def shitcoinmarkets(markets_static):
     """
     Fixture with shitcoin markets - used to test filters in pairlists
     """
-    shitmarkets = deepcopy(markets)
+    shitmarkets = deepcopy(markets_static)
     shitmarkets.update({
         'HOT/BTC': {
             'id': 'HOTBTC',
@@ -687,6 +1419,8 @@ def shitcoinmarkets(markets):
             'base': 'HOT',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'type': 'spot',
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -715,6 +1449,8 @@ def shitcoinmarkets(markets):
             'base': 'FUEL',
             'quote': 'BTC',
             'active': True,
+            'spot': True,
+            'type': 'spot',
             'precision': {
                 'base': 8,
                 'quote': 8,
@@ -749,6 +1485,22 @@ def shitcoinmarkets(markets):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "NANOUSDT",
             "symbol": "NANO/USDT",
@@ -774,6 +1526,22 @@ def shitcoinmarkets(markets):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "ADAHALFUSDT",
             "symbol": "ADAHALF/USDT",
@@ -799,6 +1567,22 @@ def shitcoinmarkets(markets):
                 "price": 4
             },
             "limits": {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': None,
+                    'max': None,
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                },
             },
             "id": "ADADOUBLEUSDT",
             "symbol": "ADADOUBLE/USDT",
@@ -828,8 +1612,8 @@ def limit_buy_order_open():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -855,6 +1639,7 @@ def market_buy_order():
         'type': 'market',
         'side': 'buy',
         'symbol': 'mocked',
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
         'amount': 91.99181073,
@@ -871,6 +1656,7 @@ def market_sell_order():
         'type': 'market',
         'side': 'sell',
         'symbol': 'mocked',
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
         'amount': 91.99181073,
@@ -887,7 +1673,8 @@ def limit_buy_order_old():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -903,6 +1690,7 @@ def limit_sell_order_old():
         'type': 'limit',
         'side': 'sell',
         'symbol': 'ETH/BTC',
+        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -919,6 +1707,7 @@ def limit_buy_order_old_partial():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'ETH/BTC',
+        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
         'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
@@ -948,7 +1737,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -969,7 +1758,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': 'AZNPFF-4AC4N-7MKTAT',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'status': 'canceled',
@@ -990,7 +1779,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -1011,7 +1800,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -1035,9 +1824,9 @@ def limit_sell_order_open():
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp,
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'price': 0.00001173,
         'amount': 90.99181073,
         'filled': 0.0,
@@ -1203,7 +1992,7 @@ def tickers():
         'BLK/BTC': {
             'symbol': 'BLK/BTC',
             'timestamp': 1522014806072,
-            'datetime': '2018-03-25T21:53:26.720Z',
+            'datetime': '2018-03-25T21:53:26.072Z',
             'high': 0.007745,
             'low': 0.007512,
             'bid': 0.007729,
@@ -1521,27 +2310,34 @@ def result(testdatadir):
 
 @pytest.fixture(scope="function")
 def trades_for_order():
-    return [{'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
-             'timestamp': 1521663363189,
-             'datetime': '2018-03-21T20:16:03.189Z',
-             'symbol': 'LTC/ETH',
-             'id': '34567',
-             'order': '123456',
-             'type': None,
-             'side': 'buy',
-             'price': 0.245441,
-             'cost': 1.963528,
-             'amount': 8.0,
-             'fee': {'cost': 0.008, 'currency': 'LTC'}}]
+    return [{
+        'info': {
+            'id': 34567,
+            'orderId': 123456,
+            'price': '2.0',
+            'qty': '8.00000000',
+            'commission': '0.00800000',
+            'commissionAsset': 'LTC',
+            'time': 1521663363189,
+            'isBuyer': True,
+            'isMaker': False,
+            'isBestMatch': True
+        },
+        'timestamp': 1521663363189,
+        'datetime': '2018-03-21T20:16:03.189Z',
+        'symbol': 'LTC/USDT',
+        'id': '34567',
+        'order': '123456',
+        'type': None,
+        'side': 'buy',
+        'price': 2.0,
+        'cost': 16.0,
+        'amount': 8.0,
+        'fee': {
+            'cost': 0.008,
+            'currency': 'LTC'
+        }
+    }]
 
 
 @pytest.fixture(scope="function")
@@ -1685,14 +2481,6 @@ def trades_for_order2():
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
 
 
-@pytest.fixture(scope="function")
-def trades_for_order3(trades_for_order2):
-    # Different fee currencies for each trade
-    trades_for_order = deepcopy(trades_for_order2)
-    trades_for_order[0]['fee'] = {'cost': 0.02, 'currency': 'BNB'}
-    return trades_for_order
-
-
 @pytest.fixture
 def buy_order_fee():
     return {
@@ -1700,7 +2488,8 @@ def buy_order_fee():
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
-        'datetime': str(arrow.utcnow().shift(minutes=-601).datetime),
+        'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp * 1000,
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
         'price': 0.245441,
         'amount': 8.0,
         'cost': 1.963528,
@@ -1800,7 +2589,7 @@ def import_fails() -> None:
 
 @pytest.fixture(scope="function")
 def open_trade():
-    return Trade(
+    trade = Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
         exchange='binance',
@@ -1812,6 +2601,62 @@ def open_trade():
         open_date=arrow.utcnow().shift(minutes=-601).datetime,
         is_open=True
     )
+    trade.orders = [
+        Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=False,
+            order_id='123456789',
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        )
+    ]
+    return trade
+
+
+@pytest.fixture(scope="function")
+def open_trade_usdt():
+    trade = Trade(
+        pair='ADA/USDT',
+        open_rate=2.0,
+        exchange='binance',
+        open_order_id='123456789',
+        amount=30.0,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=60.0,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+    trade.orders = [
+        Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=False,
+            order_id='123456789',
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        )
+    ]
+    return trade
 
 
 @pytest.fixture
@@ -1822,7 +2667,7 @@ def saved_hyperopt_results():
             'params_dict': {
                 'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1190, 'roi_t2': 541, 'roi_t3': 408, 'roi_p1': 0.026035863879169705, 'roi_p2': 0.12508730043628782, 'roi_p3': 0.27766427921605896, 'stoploss': -0.2562930402099556},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.4287874435315165, 408: 0.15112316431545753, 949: 0.026035863879169705, 2139: 0}, 'stoploss': {'stoploss': -0.2562930402099556}},  # noqa: E501
-            'results_metrics': {'total_trades': 2, 'wins': 0, 'draws': 0, 'losses': 2, 'profit_mean': -0.01254995, 'profit_median': -0.012222, 'profit_total': -0.00125625, 'profit_total_abs': -2.50999, 'holding_avg': timedelta(minutes=3930.0), 'stake_currency': 'BTC', 'strategy_name': 'SampleStrategy'},  # noqa: E501
+            'results_metrics': {'total_trades': 2, 'wins': 0, 'draws': 0, 'losses': 2, 'profit_mean': -0.01254995, 'profit_median': -0.012222, 'profit_total': -0.00125625,  'profit_total_abs': -2.50999, 'max_drawdown': 0.23, 'max_drawdown_abs': -0.00125625,  'holding_avg': timedelta(minutes=3930.0), 'stake_currency': 'BTC', 'strategy_name': 'SampleStrategy'},  # noqa: E501
             'results_explanation': '     2 trades. Avg profit  -1.25%. Total profit -0.00125625 BTC (  -2.51Σ%). Avg duration 3930.0 min.',  # noqa: E501
             'total_profit': -0.00125625,
             'current_epoch': 1,
@@ -1838,7 +2683,7 @@ def saved_hyperopt_results():
                 'sell': {'sell-mfi-value': 96, 'sell-fastd-value': 68, 'sell-adx-value': 63, 'sell-rsi-value': 81, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'},  # noqa: E501
                 'roi': {0: 0.4449309386008759, 140: 0.11955965746663, 823: 0.06403981740598495, 1157: 0},  # noqa: E501
                 'stoploss': {'stoploss': -0.338070047333259}},
-            'results_metrics': {'total_trades': 1, 'wins': 0, 'draws': 0, 'losses': 1, 'profit_mean': 0.012357, 'profit_median': -0.012222, 'profit_total': 6.185e-05, 'profit_total_abs': 0.12357, 'holding_avg': timedelta(minutes=1200.0)},  # noqa: E501
+            'results_metrics': {'total_trades': 1, 'wins': 0, 'draws': 0, 'losses': 1, 'profit_mean': 0.012357, 'profit_median': -0.012222, 'profit_total': 6.185e-05, 'profit_total_abs': 0.12357, 'max_drawdown': 0.23, 'max_drawdown_abs': -0.00125625, 'holding_avg': timedelta(minutes=1200.0)},  # noqa: E501
             'results_explanation': '     1 trades. Avg profit   0.12%. Total profit  0.00006185 BTC (   0.12Σ%). Avg duration 1200.0 min.',  # noqa: E501
             'total_profit': 6.185e-05,
             'current_epoch': 2,
@@ -1848,7 +2693,7 @@ def saved_hyperopt_results():
             'loss': 14.241196856510731,
             'params_dict': {'mfi-value': 25, 'fastd-value': 16, 'adx-value': 29, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 98, 'sell-fastd-value': 72, 'sell-adx-value': 51, 'sell-rsi-value': 82, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 889, 'roi_t2': 533, 'roi_t3': 263, 'roi_p1': 0.04759065393663096, 'roi_p2': 0.1488819964638463, 'roi_p3': 0.4102801822104605, 'stoploss': -0.05394588767607611},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 25, 'fastd-value': 16, 'adx-value': 29, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 98, 'sell-fastd-value': 72, 'sell-adx-value': 51, 'sell-rsi-value': 82, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.6067528326109377, 263: 0.19647265040047726, 796: 0.04759065393663096, 1685: 0}, 'stoploss': {'stoploss': -0.05394588767607611}},  # noqa: E501
-            'results_metrics': {'total_trades': 621, 'wins': 320, 'draws': 0, 'losses': 301, 'profit_mean': -0.043883302093397747, 'profit_median': -0.012222, 'profit_total': -0.13639474, 'profit_total_abs': -272.515306, 'holding_avg': timedelta(minutes=1691.207729468599)},  # noqa: E501
+            'results_metrics': {'total_trades': 621, 'wins': 320, 'draws': 0, 'losses': 301, 'profit_mean': -0.043883302093397747, 'profit_median': -0.012222, 'profit_total': -0.13639474, 'profit_total_abs': -272.515306, 'max_drawdown': 0.25, 'max_drawdown_abs': -272.515306, 'holding_avg': timedelta(minutes=1691.207729468599)},  # noqa: E501
             'results_explanation': '   621 trades. Avg profit  -0.44%. Total profit -0.13639474 BTC (-272.52Σ%). Avg duration 1691.2 min.',  # noqa: E501
             'total_profit': -0.13639474,
             'current_epoch': 3,
@@ -1865,7 +2710,7 @@ def saved_hyperopt_results():
             'loss': 0.22195522184191518,
             'params_dict': {'mfi-value': 17, 'fastd-value': 21, 'adx-value': 38, 'rsi-value': 33, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 87, 'sell-fastd-value': 82, 'sell-adx-value': 78, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 1269, 'roi_t2': 601, 'roi_t3': 444, 'roi_p1': 0.07280999507931168, 'roi_p2': 0.08946698095898986, 'roi_p3': 0.1454876733325284, 'stoploss': -0.18181041180901014},   # noqa: E501
             'params_details': {'buy': {'mfi-value': 17, 'fastd-value': 21, 'adx-value': 38, 'rsi-value': 33, 'mfi-enabled': True, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 82, 'sell-adx-value': 78, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.3077646493708299, 444: 0.16227697603830155, 1045: 0.07280999507931168, 2314: 0}, 'stoploss': {'stoploss': -0.18181041180901014}},  # noqa: E501
-            'results_metrics': {'total_trades': 14, 'wins': 6, 'draws': 0, 'losses': 8, 'profit_mean': -0.003539515, 'profit_median': -0.012222, 'profit_total': -0.002480140000000001, 'profit_total_abs': -4.955321, 'holding_avg': timedelta(minutes=3402.8571428571427)},  # noqa: E501
+            'results_metrics': {'total_trades': 14, 'wins': 6, 'draws': 0, 'losses': 8, 'profit_mean': -0.003539515, 'profit_median': -0.012222, 'profit_total': -0.002480140000000001, 'profit_total_abs': -4.955321, 'max_drawdown': 0.34, 'max_drawdown_abs': -4.955321, 'holding_avg': timedelta(minutes=3402.8571428571427)},  # noqa: E501
             'results_explanation': '    14 trades. Avg profit  -0.35%. Total profit -0.00248014 BTC (  -4.96Σ%). Avg duration 3402.9 min.',  # noqa: E501
             'total_profit': -0.002480140000000001,
             'current_epoch': 5,
@@ -1875,7 +2720,7 @@ def saved_hyperopt_results():
             'loss': 0.545315889154162,
             'params_dict': {'mfi-value': 22, 'fastd-value': 43, 'adx-value': 46, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'bb_lower', 'sell-mfi-value': 87, 'sell-fastd-value': 65, 'sell-adx-value': 94, 'sell-rsi-value': 63, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 319, 'roi_t2': 556, 'roi_t3': 216, 'roi_p1': 0.06251955472249589, 'roi_p2': 0.11659519602202795, 'roi_p3': 0.0953744132197762, 'stoploss': -0.024551752215582423},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 22, 'fastd-value': 43, 'adx-value': 46, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 87, 'sell-fastd-value': 65, 'sell-adx-value': 94, 'sell-rsi-value': 63, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.2744891639643, 216: 0.17911475074452382, 772: 0.06251955472249589, 1091: 0}, 'stoploss': {'stoploss': -0.024551752215582423}},  # noqa: E501
-            'results_metrics': {'total_trades': 39, 'wins': 20, 'draws': 0, 'losses': 19, 'profit_mean': -0.0021400679487179478, 'profit_median': -0.012222, 'profit_total': -0.0041773, 'profit_total_abs': -8.346264999999997, 'holding_avg': timedelta(minutes=636.9230769230769)},  # noqa: E501
+            'results_metrics': {'total_trades': 39, 'wins': 20, 'draws': 0, 'losses': 19, 'profit_mean': -0.0021400679487179478, 'profit_median': -0.012222, 'profit_total': -0.0041773, 'profit_total_abs': -8.346264999999997, 'max_drawdown': 0.45, 'max_drawdown_abs': -4.955321, 'holding_avg': timedelta(minutes=636.9230769230769)},  # noqa: E501
             'results_explanation': '    39 trades. Avg profit  -0.21%. Total profit -0.00417730 BTC (  -8.35Σ%). Avg duration 636.9 min.',  # noqa: E501
             'total_profit': -0.0041773,
             'current_epoch': 6,
@@ -1887,7 +2732,7 @@ def saved_hyperopt_results():
             'params_details': {
                 'buy': {'mfi-value': 13, 'fastd-value': 41, 'adx-value': 21, 'rsi-value': 29, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 99, 'sell-fastd-value': 60, 'sell-adx-value': 81, 'sell-rsi-value': 69, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': False, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.4837436938134452, 145: 0.10853310701097472, 765: 0.0586919200378493, 1536: 0},  # noqa: E501
                 'stoploss': {'stoploss': -0.14613268022709905}},  # noqa: E501
-            'results_metrics': {'total_trades': 318, 'wins': 100, 'draws': 0, 'losses': 218, 'profit_mean': -0.0039833954716981146, 'profit_median': -0.012222, 'profit_total': -0.06339929, 'profit_total_abs': -126.67197600000004, 'holding_avg': timedelta(minutes=3140.377358490566)},  # noqa: E501
+            'results_metrics': {'total_trades': 318, 'wins': 100, 'draws': 0, 'losses': 218, 'profit_mean': -0.0039833954716981146, 'profit_median': -0.012222, 'profit_total': -0.06339929, 'profit_total_abs': -126.67197600000004, 'max_drawdown': 0.50, 'max_drawdown_abs': -200.955321, 'holding_avg': timedelta(minutes=3140.377358490566)},  # noqa: E501
             'results_explanation': '   318 trades. Avg profit  -0.40%. Total profit -0.06339929 BTC (-126.67Σ%). Avg duration 3140.4 min.',  # noqa: E501
             'total_profit': -0.06339929,
             'current_epoch': 7,
@@ -1897,7 +2742,7 @@ def saved_hyperopt_results():
             'loss': 20.0,  # noqa: E501
             'params_dict': {'mfi-value': 24, 'fastd-value': 43, 'adx-value': 33, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'sar_reversal', 'sell-mfi-value': 89, 'sell-fastd-value': 74, 'sell-adx-value': 70, 'sell-rsi-value': 70, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': False, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal', 'roi_t1': 1149, 'roi_t2': 375, 'roi_t3': 289, 'roi_p1': 0.05571820757172588, 'roi_p2': 0.0606240398618907, 'roi_p3': 0.1729012220156157, 'stoploss': -0.1588514289110401},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 24, 'fastd-value': 43, 'adx-value': 33, 'rsi-value': 20, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 89, 'sell-fastd-value': 74, 'sell-adx-value': 70, 'sell-rsi-value': 70, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': False, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'}, 'roi': {0: 0.2892434694492323, 289: 0.11634224743361658, 664: 0.05571820757172588, 1813: 0}, 'stoploss': {'stoploss': -0.1588514289110401}},  # noqa: E501
-            'results_metrics': {'total_trades': 1, 'wins': 0, 'draws': 1, 'losses': 0, 'profit_mean': 0.0, 'profit_median': 0.0, 'profit_total': 0.0, 'profit_total_abs': 0.0, 'holding_avg': timedelta(minutes=5340.0)},  # noqa: E501
+            'results_metrics': {'total_trades': 1, 'wins': 0, 'draws': 1, 'losses': 0, 'profit_mean': 0.0, 'profit_median': 0.0, 'profit_total': 0.0, 'profit_total_abs': 0.0, 'max_drawdown': 0.0, 'max_drawdown_abs': 0.52, 'holding_avg': timedelta(minutes=5340.0)},  # noqa: E501
             'results_explanation': '     1 trades. Avg profit   0.00%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration 5340.0 min.',  # noqa: E501
             'total_profit': 0.0,
             'current_epoch': 8,
@@ -1907,7 +2752,7 @@ def saved_hyperopt_results():
             'loss': 2.4731817780991223,
             'params_dict': {'mfi-value': 22, 'fastd-value': 20, 'adx-value': 29, 'rsi-value': 40, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'sar_reversal', 'sell-mfi-value': 97, 'sell-fastd-value': 65, 'sell-adx-value': 81, 'sell-rsi-value': 64, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1012, 'roi_t2': 584, 'roi_t3': 422, 'roi_p1': 0.036764323603472565, 'roi_p2': 0.10335480573205287, 'roi_p3': 0.10322347377503042, 'stoploss': -0.2780610808108503},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 22, 'fastd-value': 20, 'adx-value': 29, 'rsi-value': 40, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 97, 'sell-fastd-value': 65, 'sell-adx-value': 81, 'sell-rsi-value': 64, 'sell-mfi-enabled': True, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.2433426031105559, 422: 0.14011912933552545, 1006: 0.036764323603472565, 2018: 0}, 'stoploss': {'stoploss': -0.2780610808108503}},  # noqa: E501
-            'results_metrics': {'total_trades': 229, 'wins': 150, 'draws': 0, 'losses': 79, 'profit_mean': -0.0038433433624454144, 'profit_median': -0.012222, 'profit_total': -0.044050070000000004, 'profit_total_abs': -88.01256299999999, 'holding_avg': timedelta(minutes=6505.676855895196)},  # noqa: E501
+            'results_metrics': {'total_trades': 229, 'wins': 150, 'draws': 0, 'losses': 79, 'profit_mean': -0.0038433433624454144, 'profit_median': -0.012222, 'profit_total': -0.044050070000000004, 'profit_total_abs': -88.01256299999999, 'max_drawdown': 0.41, 'max_drawdown_abs': -150.955321, 'holding_avg': timedelta(minutes=6505.676855895196)},  # noqa: E501
             'results_explanation': '   229 trades. Avg profit  -0.38%. Total profit -0.04405007 BTC ( -88.01Σ%). Avg duration 6505.7 min.',  # noqa: E501
             'total_profit': -0.044050070000000004,  # noqa: E501
             'current_epoch': 9,
@@ -1917,7 +2762,7 @@ def saved_hyperopt_results():
             'loss': -0.2604606005845212,  # noqa: E501
             'params_dict': {'mfi-value': 23, 'fastd-value': 24, 'adx-value': 22, 'rsi-value': 24, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 97, 'sell-fastd-value': 70, 'sell-adx-value': 64, 'sell-rsi-value': 80, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal', 'roi_t1': 792, 'roi_t2': 464, 'roi_t3': 215, 'roi_p1': 0.04594053535385903, 'roi_p2': 0.09623192684243963, 'roi_p3': 0.04428219070850663, 'stoploss': -0.16992287161634415},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 23, 'fastd-value': 24, 'adx-value': 22, 'rsi-value': 24, 'mfi-enabled': False, 'fastd-enabled': False, 'adx-enabled': False, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 97, 'sell-fastd-value': 70, 'sell-adx-value': 64, 'sell-rsi-value': 80, 'sell-mfi-enabled': False, 'sell-fastd-enabled': True, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-sar_reversal'}, 'roi': {0: 0.18645465290480528, 215: 0.14217246219629864, 679: 0.04594053535385903, 1471: 0}, 'stoploss': {'stoploss': -0.16992287161634415}},  # noqa: E501
-            'results_metrics': {'total_trades': 4, 'wins': 0, 'draws': 0, 'losses': 4, 'profit_mean': 0.001080385, 'profit_median': -0.012222, 'profit_total': 0.00021629, 'profit_total_abs': 0.432154, 'holding_avg': timedelta(minutes=2850.0)},  # noqa: E501
+            'results_metrics': {'total_trades': 4, 'wins': 0, 'draws': 0, 'losses': 4, 'profit_mean': 0.001080385, 'profit_median': -0.012222, 'profit_total': 0.00021629, 'profit_total_abs': 0.432154, 'max_drawdown': 0.13, 'max_drawdown_abs': -4.955321, 'holding_avg': timedelta(minutes=2850.0)},  # noqa: E501
             'results_explanation': '     4 trades. Avg profit   0.11%. Total profit  0.00021629 BTC (   0.43Σ%). Avg duration 2850.0 min.',  # noqa: E501
             'total_profit': 0.00021629,
             'current_epoch': 10,
@@ -1928,7 +2773,7 @@ def saved_hyperopt_results():
             'params_dict': {'mfi-value': 20, 'fastd-value': 32, 'adx-value': 49, 'rsi-value': 23, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower', 'sell-mfi-value': 75, 'sell-fastd-value': 56, 'sell-adx-value': 61, 'sell-rsi-value': 62, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal', 'roi_t1': 579, 'roi_t2': 614, 'roi_t3': 273, 'roi_p1': 0.05307643172744114, 'roi_p2': 0.1352282078262871, 'roi_p3': 0.1913307406325751, 'stoploss': -0.25728526022513887},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 20, 'fastd-value': 32, 'adx-value': 49, 'rsi-value': 23, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': False, 'rsi-enabled': False, 'trigger': 'bb_lower'}, 'sell': {'sell-mfi-value': 75, 'sell-fastd-value': 56, 'sell-adx-value': 61, 'sell-rsi-value': 62, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-macd_cross_signal'}, 'roi': {0: 0.3796353801863034, 273: 0.18830463955372825, 887: 0.05307643172744114, 1466: 0}, 'stoploss': {'stoploss': -0.25728526022513887}},  # noqa: E501
             # New Hyperopt mode!
-            'results_metrics': {'total_trades': 117, 'wins': 67, 'draws': 0, 'losses': 50, 'profit_mean': -0.012698609145299145, 'profit_median': -0.012222, 'profit_total': -0.07436117, 'profit_total_abs': -148.573727, 'holding_avg': timedelta(minutes=4282.5641025641025)},  # noqa: E501
+            'results_metrics': {'total_trades': 117, 'wins': 67, 'draws': 0, 'losses': 50, 'profit_mean': -0.012698609145299145, 'profit_median': -0.012222, 'profit_total': -0.07436117, 'profit_total_abs': -148.573727, 'max_drawdown': 0.52, 'max_drawdown_abs': -224.955321, 'holding_avg': timedelta(minutes=4282.5641025641025)},  # noqa: E501
             'results_explanation': '   117 trades. Avg profit  -1.27%. Total profit -0.07436117 BTC (-148.57Σ%). Avg duration 4282.6 min.',  # noqa: E501
             'total_profit': -0.07436117,
             'current_epoch': 11,
@@ -1938,7 +2783,7 @@ def saved_hyperopt_results():
             'loss': 100000,
             'params_dict': {'mfi-value': 10, 'fastd-value': 36, 'adx-value': 31, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'sar_reversal', 'sell-mfi-value': 80, 'sell-fastd-value': 71, 'sell-adx-value': 60, 'sell-rsi-value': 85, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1156, 'roi_t2': 581, 'roi_t3': 408, 'roi_p1': 0.06860454019988212, 'roi_p2': 0.12473718444931989, 'roi_p3': 0.2896360635226823, 'stoploss': -0.30889015124682806},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 10, 'fastd-value': 36, 'adx-value': 31, 'rsi-value': 22, 'mfi-enabled': True, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': False, 'trigger': 'sar_reversal'}, 'sell': {'sell-mfi-value': 80, 'sell-fastd-value': 71, 'sell-adx-value': 60, 'sell-rsi-value': 85, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.4829777881718843, 408: 0.19334172464920202, 989: 0.06860454019988212, 2145: 0}, 'stoploss': {'stoploss': -0.30889015124682806}},  # noqa: E501
-            'results_metrics': {'total_trades': 0, 'wins': 0, 'draws': 0, 'losses': 0, 'profit_mean': None, 'profit_median': None, 'profit_total': 0, 'profit_total_abs': 0.0, 'holding_avg': timedelta()},  # noqa: E501
+            'results_metrics': {'total_trades': 0, 'wins': 0, 'draws': 0, 'losses': 0, 'profit_mean': None, 'profit_median': None, 'profit_total': 0, 'profit_total_abs': 0.0, 'max_drawdown': 0.0, 'max_drawdown_abs': 0.0, 'holding_avg': timedelta()},  # noqa: E501
             'results_explanation': '     0 trades. Avg profit    nan%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration   nan min.',  # noqa: E501
             'total_profit': 0,
             'current_epoch': 12,
@@ -1957,12 +2802,12 @@ def saved_hyperopt_results():
 @pytest.fixture(scope='function')
 def limit_buy_order_usdt_open():
     return {
-        'id': 'mocked_limit_buy',
+        'id': 'mocked_limit_buy_usdt',
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp,
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'price': 2.00,
         'amount': 30.0,
         'filled': 0.0,
@@ -1984,14 +2829,15 @@ def limit_buy_order_usdt(limit_buy_order_usdt_open):
 @pytest.fixture
 def limit_sell_order_usdt_open():
     return {
-        'id': 'mocked_limit_sell',
+        'id': 'mocked_limit_sell_usdt',
         'type': 'limit',
         'side': 'sell',
-        'pair': 'mocked',
+        'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
-        'timestamp': arrow.utcnow().int_timestamp,
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'price': 2.20,
         'amount': 30.0,
+        'cost': 66.0,
         'filled': 0.0,
         'remaining': 30.0,
         'status': 'open'
@@ -2014,6 +2860,7 @@ def market_buy_order_usdt():
         'type': 'market',
         'side': 'buy',
         'symbol': 'mocked',
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
         'price': 2.00,
         'amount': 30.0,
@@ -2024,16 +2871,644 @@ def market_buy_order_usdt():
 
 
 @pytest.fixture
+def market_buy_order_usdt_doublefee(market_buy_order_usdt):
+    order = deepcopy(market_buy_order_usdt)
+    order['fee'] = None
+    # Market orders filled with 2 trades can have fees in different currencies
+    # assuming the account runs out of BNB.
+    order['fees'] = [
+        {'cost': 0.00025125, 'currency': 'BNB'},
+        {'cost': 0.05030681, 'currency': 'USDT'},
+    ]
+    order['trades'] = [{
+        'timestamp': None,
+        'datetime': None,
+        'symbol': 'ETH/USDT',
+        'id': None,
+        'order': '123',
+        'type': 'market',
+        'side': 'sell',
+        'takerOrMaker': None,
+        'price': 2.01,
+        'amount': 25.0,
+        'cost': 50.25,
+        'fee': {'cost': 0.00025125, 'currency': 'BNB'}
+    }, {
+        'timestamp': None,
+        'datetime': None,
+        'symbol': 'ETH/USDT',
+        'id': None,
+        'order': '123',
+        'type': 'market',
+        'side': 'sell',
+        'takerOrMaker': None,
+        'price': 2.0,
+        'amount': 5,
+        'cost': 10,
+        'fee': {'cost': 0.0100306, 'currency': 'USDT'}
+    }]
+    return order
+
+
+@pytest.fixture
 def market_sell_order_usdt():
     return {
         'id': 'mocked_limit_sell',
         'type': 'market',
         'side': 'sell',
         'symbol': 'mocked',
+        'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
         'price': 2.20,
         'amount': 30.0,
         'filled': 30.0,
         'remaining': 0.0,
         'status': 'closed'
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_order(limit_buy_order_usdt, limit_sell_order_usdt):
+    return {
+        'buy': limit_buy_order_usdt,
+        'sell': limit_sell_order_usdt
+    }
+
+
+@pytest.fixture(scope='function')
+def market_order(market_buy_order_usdt, market_sell_order_usdt):
+    return {
+        'buy': market_buy_order_usdt,
+        'sell': market_sell_order_usdt
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_order_open(limit_buy_order_usdt_open, limit_sell_order_usdt_open):
+    return {
+        'buy': limit_buy_order_usdt_open,
+        'sell': limit_sell_order_usdt_open
+    }
+
+
+@pytest.fixture(scope='function')
+def mark_ohlcv():
+    return [
+        [1630454400000, 2.77, 2.77, 2.73, 2.73, 0],
+        [1630458000000, 2.73, 2.76, 2.72, 2.74, 0],
+        [1630461600000, 2.74, 2.76, 2.74, 2.76, 0],
+        [1630465200000, 2.76, 2.76, 2.74, 2.76, 0],
+        [1630468800000, 2.76, 2.77, 2.75, 2.77, 0],
+        [1630472400000, 2.77, 2.79, 2.75, 2.78, 0],
+        [1630476000000, 2.78, 2.80, 2.77, 2.77, 0],
+        [1630479600000, 2.78, 2.79, 2.77, 2.77, 0],
+        [1630483200000, 2.77, 2.79, 2.77, 2.78, 0],
+        [1630486800000, 2.77, 2.84, 2.77, 2.84, 0],
+        [1630490400000, 2.84, 2.85, 2.81, 2.81, 0],
+        [1630494000000, 2.81, 2.83, 2.81, 2.81, 0],
+        [1630497600000, 2.81, 2.84, 2.81, 2.82, 0],
+        [1630501200000, 2.82, 2.83, 2.81, 2.81, 0],
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_hourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000004,
+            "timestamp": 1630458000000,
+            "datetime": "2021-09-01T01:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000012,
+            "timestamp": 1630461600000,
+            "datetime": "2021-09-01T02:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630465200000,
+            "datetime": "2021-09-01T03:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000007,
+            "timestamp": 1630468800000,
+            "datetime": "2021-09-01T04:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630472400000,
+            "datetime": "2021-09-01T05:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000019,
+            "timestamp": 1630476000000,
+            "datetime": "2021-09-01T06:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630479600000,
+            "datetime": "2021-09-01T07:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0,
+            "timestamp": 1630486800000,
+            "datetime": "2021-09-01T09:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000013,
+            "timestamp": 1630490400000,
+            "datetime": "2021-09-01T10:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000077,
+            "timestamp": 1630494000000,
+            "datetime": "2021-09-01T11:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000072,
+            "timestamp": 1630497600000,
+            "datetime": "2021-09-01T12:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000097,
+            "timestamp": 1630501200000,
+            "datetime": "2021-09-01T13:00:00.000Z"
+        },
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_octohourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        }
+    ]
+
+
+@pytest.fixture(scope='function')
+def leverage_tiers():
+    return {
+        "1000SHIB/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
+        ],
+        "1INCH/USDT": [
+            {
+                'min': 0,
+                'max': 5000,
+                'mmr': 0.012,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 5000,
+                'max': 25000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 65.0
+            },
+            {
+                'min': 25000,
+                'max': 100000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 690.0
+            },
+            {
+                'min': 100000,
+                'max': 250000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 5690.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 2,
+                'maintAmt': 11940.0
+            },
+            {
+                'min': 1000000,
+                'max': 100000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 386940.0
+            },
+        ],
+        "AAVE/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 250000,
+                'mmr': 0.02,
+                'lev': 25,
+                'maintAmt': 500.0
+            },
+            {
+                'min': 250000,
+                'max': 1000000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 8000.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 58000.0
+            },
+            {
+                'min': 2000000,
+                'max': 5000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 108000.0
+            },
+            {
+                'min': 5000000,
+                'max': 10000000,
+                'mmr': 0.1665,
+                'lev': 3,
+                'maintAmt': 315500.0
+            },
+            {
+                'min': 10000000,
+                'max': 20000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 1150500.0
+            },
+            {
+                "min": 20000000,
+                "max": 50000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6150500.0
+            }
+        ],
+        "ADA/BUSD": [
+            {
+                "min": 0,
+                "max": 100000,
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,
+                "max": 500000,
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,
+                "max": 1000000,
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,
+                "max": 2000000,
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,
+                "max": 5000000,
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,
+                "max": 30000000,
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            },
+        ],
+        'BNB/BUSD': [
+            {
+                "min": 0,       # stake(before leverage) = 0
+                "max": 100000,  # max stake(before leverage) = 5000
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 100000,  # stake = 10000.0
+                "max": 500000,  # max_stake = 50000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 2500.0
+            },
+            {
+                "min": 500000,   # stake = 100000.0
+                "max": 1000000,  # max_stake = 200000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 27500.0
+            },
+            {
+                "min": 1000000,  # stake = 333333.3333333333
+                "max": 2000000,  # max_stake = 666666.6666666666
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 77500.0
+            },
+            {
+                "min": 2000000,  # stake = 1000000.0
+                "max": 5000000,  # max_stake = 2500000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 277500.0
+            },
+            {
+                "min": 5000000,   # stake = 5000000.0
+                "max": 30000000,  # max_stake = 30000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1527500.0
+            }
+        ],
+        'BNB/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 10000,  # max_stake = 133.33333333333334
+                "mmr": 0.0065,
+                "lev": 75,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 10000,  # stake = 200.0
+                "max": 50000,  # max_stake = 1000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 35.0
+            },
+            {
+                "min": 50000,   # stake = 2000.0
+                "max": 250000,  # max_stake = 10000.0
+                "mmr": 0.02,
+                "lev": 25,
+                "maintAmt": 535.0
+            },
+            {
+                "min": 250000,   # stake = 25000.0
+                "max": 1000000,  # max_stake = 100000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 8035.0
+            },
+            {
+                "min": 1000000,  # stake = 200000.0
+                "max": 2000000,  # max_stake = 400000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 58035.0
+            },
+            {
+                "min": 2000000,  # stake = 500000.0
+                "max": 5000000,  # max_stake = 1250000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 108035.0
+            },
+            {
+                "min": 5000000,   # stake = 1666666.6666666667
+                "max": 10000000,  # max_stake = 3333333.3333333335
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 233035.0
+            },
+            {
+                "min": 10000000,  # stake = 5000000.0
+                "max": 20000000,  # max_stake = 10000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 1233035.0
+            },
+            {
+                "min": 20000000,  # stake = 20000000.0
+                "max": 50000000,  # max_stake = 50000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 6233035.0
+            },
+        ],
+        'BTC/USDT': [
+            {
+                "min": 0,      # stake = 0.0
+                "max": 50000,  # max_stake = 400.0
+                "mmr": 0.004,
+                "lev": 125,
+                "maintAmt": 0.0
+            },
+            {
+                "min": 50000,   # stake = 500.0
+                "max": 250000,  # max_stake = 2500.0
+                "mmr": 0.005,
+                "lev": 100,
+                "maintAmt": 50.0
+            },
+            {
+                "min": 250000,   # stake = 5000.0
+                "max": 1000000,  # max_stake = 20000.0
+                "mmr": 0.01,
+                "lev": 50,
+                "maintAmt": 1300.0
+            },
+            {
+                "min": 1000000,  # stake = 50000.0
+                "max": 7500000,  # max_stake = 375000.0
+                "mmr": 0.025,
+                "lev": 20,
+                "maintAmt": 16300.0
+            },
+            {
+                "min": 7500000,   # stake = 750000.0
+                "max": 40000000,  # max_stake = 4000000.0
+                "mmr": 0.05,
+                "lev": 10,
+                "maintAmt": 203800.0
+            },
+            {
+                "min": 40000000,   # stake = 8000000.0
+                "max": 100000000,  # max_stake = 20000000.0
+                "mmr": 0.1,
+                "lev": 5,
+                "maintAmt": 2203800.0
+            },
+            {
+                "min": 100000000,  # stake = 25000000.0
+                "max": 200000000,  # max_stake = 50000000.0
+                "mmr": 0.125,
+                "lev": 4,
+                "maintAmt": 4703800.0
+            },
+            {
+                "min": 200000000,  # stake = 66666666.666666664
+                "max": 400000000,  # max_stake = 133333333.33333333
+                "mmr": 0.15,
+                "lev": 3,
+                "maintAmt": 9703800.0
+            },
+            {
+                "min": 400000000,  # stake = 200000000.0
+                "max": 600000000,  # max_stake = 300000000.0
+                "mmr": 0.25,
+                "lev": 2,
+                "maintAmt": 4.97038E7
+            },
+            {
+                "min": 600000000,   # stake = 600000000.0
+                "max": 1000000000,  # max_stake = 1000000000.0
+                "mmr": 0.5,
+                "lev": 1,
+                "maintAmt": 1.997038E8
+            },
+        ],
+        "ZEC/USDT": [
+            {
+                'min': 0,
+                'max': 50000,
+                'mmr': 0.01,
+                'lev': 50,
+                'maintAmt': 0.0
+            },
+            {
+                'min': 50000,
+                'max': 150000,
+                'mmr': 0.025,
+                'lev': 20,
+                'maintAmt': 750.0
+            },
+            {
+                'min': 150000,
+                'max': 250000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 4500.0
+            },
+            {
+                'min': 250000,
+                'max': 500000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 17000.0
+            },
+            {
+                'min': 500000,
+                'max': 1000000,
+                'mmr': 0.125,
+                'lev': 4,
+                'maintAmt': 29500.0
+            },
+            {
+                'min': 1000000,
+                'max': 2000000,
+                'mmr': 0.25,
+                'lev': 2,
+                'maintAmt': 154500.0
+            },
+            {
+                'min': 2000000,
+                'max': 30000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 654500.0
+            },
+        ]
     }

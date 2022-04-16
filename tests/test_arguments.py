@@ -7,6 +7,7 @@ import pytest
 
 from freqtrade.commands import Arguments
 from freqtrade.commands.cli_options import check_int_nonzero, check_int_positive
+from tests.conftest import CURRENT_TEST_STRATEGY
 
 
 # Parse common command-line-arguments. Used for all tools
@@ -111,19 +112,19 @@ def test_parse_args_strategy_path_invalid() -> None:
 
 def test_parse_args_backtesting_invalid() -> None:
     with pytest.raises(SystemExit, match=r'2'):
-        Arguments(['backtesting --ticker-interval']).get_parsed_arg()
+        Arguments(['backtesting --timeframe']).get_parsed_arg()
 
     with pytest.raises(SystemExit, match=r'2'):
-        Arguments(['backtesting --ticker-interval', 'abc']).get_parsed_arg()
+        Arguments(['backtesting --timeframe', 'abc']).get_parsed_arg()
 
 
 def test_parse_args_backtesting_custom() -> None:
     args = [
         'backtesting',
         '-c', 'test_conf.json',
-        '--ticker-interval', '1m',
+        '--timeframe', '1m',
         '--strategy-list',
-        'StrategyTestV2',
+        CURRENT_TEST_STRATEGY,
         'SampleStrategy'
     ]
     call_args = Arguments(args).get_parsed_arg()

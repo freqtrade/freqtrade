@@ -4,14 +4,14 @@ from datetime import datetime, timedelta
 import pytest
 
 from freqtrade import constants
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
 def generate_mock_trade(pair: str, fee: float, is_open: bool,
-                        sell_reason: str = SellType.SELL_SIGNAL,
+                        sell_reason: str = ExitType.EXIT_SIGNAL,
                         min_ago_open: int = None, min_ago_close: int = None,
                         profit_rate: float = 0.9
                         ):
@@ -32,7 +32,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
     trade.recalc_open_trade_value()
     if not is_open:
         trade.close(open_rate * profit_rate)
-        trade.sell_reason = sell_reason
+        trade.exit_reason = sell_reason
 
     return trade
 
@@ -91,7 +91,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=200, min_ago_close=30,
     ))
 
@@ -100,12 +100,12 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     caplog.clear()
     # This trade does not count, as it's closed too long ago
     Trade.query.session.add(generate_mock_trade(
-        'BCH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'BCH/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=250, min_ago_close=100,
     ))
 
     Trade.query.session.add(generate_mock_trade(
-        'ETH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'ETH/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=240, min_ago_close=30,
     ))
     # 3 Trades closed - but the 2nd has been closed too long ago.
@@ -114,7 +114,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        'LTC/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'LTC/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=180, min_ago_close=30,
     ))
 
@@ -148,7 +148,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        pair, fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=200, min_ago_close=30, profit_rate=0.9,
     ))
 
@@ -158,12 +158,12 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
     caplog.clear()
     # This trade does not count, as it's closed too long ago
     Trade.query.session.add(generate_mock_trade(
-        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        pair, fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=250, min_ago_close=100, profit_rate=0.9,
     ))
     # Trade does not count for per pair stop as it's the wrong pair.
     Trade.query.session.add(generate_mock_trade(
-        'ETH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'ETH/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=240, min_ago_close=30, profit_rate=0.9,
     ))
     # 3 Trades closed - but the 2nd has been closed too long ago.
@@ -178,7 +178,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 
     # 2nd Trade that counts with correct pair
     Trade.query.session.add(generate_mock_trade(
-        pair, fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        pair, fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=180, min_ago_close=30, profit_rate=0.9,
     ))
 
@@ -203,7 +203,7 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=200, min_ago_close=30,
     ))
 
@@ -213,7 +213,7 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
     Trade.query.session.add(generate_mock_trade(
-        'ETH/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        'ETH/BTC', fee.return_value, False, sell_reason=ExitType.ROI.value,
         min_ago_open=205, min_ago_close=35,
     ))
 
@@ -242,7 +242,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=800, min_ago_close=450, profit_rate=0.9,
     ))
 
@@ -253,7 +253,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=200, min_ago_close=120, profit_rate=0.9,
     ))
 
@@ -265,14 +265,14 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
 
     # Add positive trade
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.ROI.value,
         min_ago_open=20, min_ago_close=10, profit_rate=1.15,
     ))
     assert not freqtrade.protections.stop_per_pair('XRP/BTC')
     assert not PairLocks.is_pair_locked('XRP/BTC')
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=110, min_ago_close=20, profit_rate=0.8,
     ))
 
@@ -300,15 +300,15 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
     caplog.clear()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
     ))
     Trade.query.session.add(generate_mock_trade(
-        'ETH/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'ETH/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
     ))
     Trade.query.session.add(generate_mock_trade(
-        'NEO/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'NEO/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=1000, min_ago_close=900, profit_rate=1.1,
     ))
     # No losing trade yet ... so max_drawdown will raise exception
@@ -316,7 +316,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
     assert not freqtrade.protections.stop_per_pair('XRP/BTC')
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=500, min_ago_close=400, profit_rate=0.9,
     ))
     # Not locked with one trade
@@ -326,7 +326,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.STOP_LOSS.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.STOP_LOSS.value,
         min_ago_open=1200, min_ago_close=1100, profit_rate=0.5,
     ))
 
@@ -339,7 +339,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 
     # Winning trade ... (should not lock, does not change drawdown!)
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.ROI.value,
         min_ago_open=320, min_ago_close=410, profit_rate=1.5,
     ))
     assert not freqtrade.protections.global_stop()
@@ -349,7 +349,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 
     # Add additional negative trade, causing a loss of > 15%
     Trade.query.session.add(generate_mock_trade(
-        'XRP/BTC', fee.return_value, False, sell_reason=SellType.ROI.value,
+        'XRP/BTC', fee.return_value, False, sell_reason=ExitType.ROI.value,
         min_ago_open=20, min_ago_close=10, profit_rate=0.8,
     ))
     assert not freqtrade.protections.stop_per_pair('XRP/BTC')

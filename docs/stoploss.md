@@ -2,6 +2,7 @@
 
 The `stoploss` configuration parameter is loss as ratio that should trigger a sale.
 For example, value `-0.10` will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
+Stoploss calculations do include fees, so a stoploss of -10% is placed exactly 10% below the entry point.
 
 Most of the strategy files already include the optimal `stoploss` value.
 
@@ -16,21 +17,21 @@ Those stoploss modes can be *on exchange* or *off exchange*.
 These modes can be configured with these values:
 
 ``` python
-    'emergencysell': 'market',
+    'emergency_exit': 'market',
     'stoploss_on_exchange': False
     'stoploss_on_exchange_interval': 60,
     'stoploss_on_exchange_limit_ratio': 0.99
 ```
 
 !!! Note
-    Stoploss on exchange is only supported for Binance (stop-loss-limit), Kraken (stop-loss-market, stop-loss-limit) and FTX (stop limit and stop-market) as of now.  
+    Stoploss on exchange is only supported for Binance (stop-loss-limit), Huobi (stop-limit), Kraken (stop-loss-market, stop-loss-limit), FTX (stop limit and stop-market) Gateio (stop-limit), and Kucoin (stop-limit and stop-market) as of now.  
     <ins>Do not set too low/tight stoploss value if using stop loss on exchange!</ins>  
     If set to low/tight then you have greater risk of missing fill on the order and stoploss will not work.
 
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
 Enable or Disable stop loss on exchange.
-If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order happens successfully. This will protect you against sudden crashes in market as the order will be in the queue immediately and if market goes down then the order has more chance of being fulfilled.
+If the stoploss is *on exchange* it means a stoploss limit order is placed on the exchange immediately after buy order fills. This will protect you against sudden crashes in market, as the order execution happens purely within the exchange, and has no potential network overhead.
 
 If `stoploss_on_exchange` uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.  
 `stoploss` defines the stop-price where the limit order is placed - and limit should be slightly below this.  
@@ -51,30 +52,30 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
-### forcesell
+### force_exit
 
-`forcesell` is an optional value, which defaults to the same value as `sell` and is used when sending a `/forcesell` command from Telegram or from the Rest API.
+`force_exit` is an optional value, which defaults to the same value as `exit` and is used when sending a `/forceexit` command from Telegram or from the Rest API.
 
-### forcebuy
+### force_entry
 
-`forcebuy` is an optional value, which defaults to the same value as `buy` and is used when sending a `/forcebuy` command from Telegram or from the Rest API.
+`force_entry` is an optional value, which defaults to the same value as `entry` and is used when sending a `/forceentry` command from Telegram or from the Rest API.
 
-### emergencysell
+### emergency_exit
 
-`emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
+`emergency_exit` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if not changed in strategy or configuration file.
 
 Example from strategy file:
 
 ``` python
 order_types = {
-    'buy': 'limit',
-    'sell': 'limit',
-    'emergencysell': 'market',
-    'stoploss': 'market',
-    'stoploss_on_exchange': True,
-    'stoploss_on_exchange_interval': 60,
-    'stoploss_on_exchange_limit_ratio': 0.99
+    "entry": "limit",
+    "exit": "limit",
+    "emergency_exit": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": True,
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_on_exchange_limit_ratio": 0.99
 }
 ```
 
@@ -182,7 +183,7 @@ For example, simplified math:
 * the bot buys an asset at a price of 100$
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
-* stoploss will remain at 90$ unless asset increases to or above our configured offset
+* stoploss will remain at 90$ unless asset increases to or above the configured offset
 * assuming the asset now increases to 103$ (where we have the offset configured)
 * the stop loss will now be -2% of 103$ = 100.94$
 * now the asset drops in value to 101\$, the stop loss will still be 100.94$ and would trigger at 100.94$

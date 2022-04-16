@@ -12,7 +12,7 @@ class BTProgress:
     def init_step(self, action: BacktestState, max_steps: float):
         self._action = action
         self._max_steps = max_steps
-        self._proress = 0
+        self._progress = 0
 
     def set_new_value(self, new_value: float):
         self._progress = new_value

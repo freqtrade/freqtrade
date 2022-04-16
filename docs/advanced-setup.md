@@ -52,6 +52,71 @@ freqtrade trade -c MyConfigUSDT.json -s MyCustomStrategy --db-url sqlite:///user
 
 For more information regarding usage of the sqlite databases, for example to manually enter or remove trades, please refer to the [SQL Cheatsheet](sql_cheatsheet.md).
 
+### Multiple instances using docker
+
+To run multiple instances of freqtrade using docker you will need to edit the docker-compose.yml file and add all the instances you want as separate services. Remember, you can separate your configuration into multiple files, so it's a good idea to think about making them modular, then if you need to edit something common to all bots, you can do that in a single config file. 
+``` yml
+---
+version: '3'
+services:
+  freqtrade1:
+    image: freqtradeorg/freqtrade:stable
+    # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: "./docker/Dockerfile.custom"
+    restart: always
+    container_name: freqtrade1
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
+    # before enabling this.
+     ports:
+     - "127.0.0.1:8080:8080"
+    # Default command used when running `docker compose up`
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade1.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade1.sqlite
+      --config /freqtrade/user_data/config.json
+      --config /freqtrade/user_data/config.freqtrade1.json
+      --strategy SampleStrategy
+  
+  freqtrade2:
+    image: freqtradeorg/freqtrade:stable
+    # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: "./docker/Dockerfile.custom"
+    restart: always
+    container_name: freqtrade2
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
+    # before enabling this.
+    ports:
+      - "127.0.0.1:8081:8080"
+    # Default command used when running `docker compose up`
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade2.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade2.sqlite
+      --config /freqtrade/user_data/config.json
+      --config /freqtrade/user_data/config.freqtrade2.json
+      --strategy SampleStrategy
+
+```
+You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary. Note, that you will need to use different database files, port mappings and telegram configurations for each instance, as mentioned above. 
+
+
 ## Configure the bot running as a systemd service
 
 Copy the `freqtrade.service` file to your systemd user directory (usually `~/.config/systemd/user`) and update `WorkingDirectory` and `ExecStart` to match your setup.
@@ -111,12 +176,15 @@ Log messages are send to `syslog` with the `user` facility. So you can see them 
 On many systems `syslog` (`rsyslog`) fetches data from `journald` (and vice versa), so both `--logfile syslog` or `--logfile journald` can be used and the messages be viewed with both `journalctl` and a syslog viewer utility. You can combine this in any way which suites you better.
 
 For `rsyslog` the messages from the bot can be redirected into a separate dedicated log file. To achieve this, add
+
 ```
 if $programname startswith "freqtrade" then -/var/log/freqtrade.log
 ```
+
 to one of the rsyslog configuration files, for example at the end of the `/etc/rsyslog.d/50-default.conf`.
 
 For `syslog` (`rsyslog`), the reduction mode can be switched on. This will reduce the number of repeating messages. For instance, multiple bot Heartbeat messages will be reduced to a single message when nothing else happens with the bot. To achieve this, set in `/etc/rsyslog.conf`:
+
 ```
 # Filter duplicated messages
 $RepeatedMsgReduction on

@@ -137,7 +137,7 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     assert len(fiat_convert._coinlistings) == 0
     assert fiat_convert._backoff > datetime.datetime.now().timestamp()
     assert log_has(
-        'Too many requests for Coingecko API, backing off and trying again later.',
+        'Too many requests for CoinGecko API, backing off and trying again later.',
         caplog
     )
 
@@ -148,12 +148,15 @@ def test_fiat_multiple_coins(mocker, caplog):
         {'id': 'helium', 'symbol': 'hnt', 'name': 'Helium'},
         {'id': 'hymnode', 'symbol': 'hnt', 'name': 'Hymnode'},
         {'id': 'bitcoin', 'symbol': 'btc', 'name': 'Bitcoin'},
+        {'id': 'ethereum', 'symbol': 'eth', 'name': 'Ethereum'},
+        {'id': 'ethereum-wormhole', 'symbol': 'eth', 'name': 'Ethereum Wormhole'},
     ]
 
     assert fiat_convert._get_gekko_id('btc') == 'bitcoin'
     assert fiat_convert._get_gekko_id('hnt') is None
+    assert fiat_convert._get_gekko_id('eth') == 'ethereum'
 
-    assert log_has('Found multiple mappings in goingekko for hnt.', caplog)
+    assert log_has('Found multiple mappings in CoinGecko for hnt.', caplog)
 
 
 def test_fiat_invalid_response(mocker, caplog):

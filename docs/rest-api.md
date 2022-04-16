@@ -38,6 +38,11 @@ Sample configuration:
 !!! Danger "Security warning"
     By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
+??? Note "API/UI Access on a remote servers"
+    If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+    This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+    Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
 This should return the response:
 
@@ -78,7 +83,7 @@ If you run your bot using docker, you'll need to have the bot listen to incoming
     },
 ```
 
-Uncomment the following from your docker-compose file:
+Make sure that the following 2 lines are available in your docker-compose file:
 
 ```yml
     ports:
@@ -140,9 +145,10 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `locks` | Displays currently locked pairs.
 | `delete_lock <lock_id>` | Deletes (disables) the lock by id.
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
-| `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `forceenter <pair> [rate]` | Instantly enters the given pair. Rate is optional. (`force_entry_enable` must be set to True)
+| `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`force_entry_enable` must be set to True)
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
@@ -210,8 +216,15 @@ forcebuy
         :param pair: Pair to buy (ETH/BTC)
         :param price: Optional - price to buy
 
-forcesell
-	Force-sell a trade.
+forceenter
+	Force entering a trade
+
+        :param pair: Pair to buy (ETH/BTC)
+        :param side: 'long' or 'short'
+        :param price: Optional - price to buy
+
+forceexit
+	Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
 
@@ -280,6 +293,9 @@ strategy
 
         :param strategy: Strategy class name
 
+sysinfo
+	Provides system information (CPU, RAM usage)
+
 trade
 	Return specific trade
 
@@ -330,12 +346,15 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 
 ### CORS
 
-All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
-Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
-Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
+This whole section is only necessary in cross-origin cases (where you multiple bot API's running on `localhost:8081`, `localhost:8082`, ...), and want to combine them into one FreqUI instance.
 
-Users can configure this themselves via the `CORS_origins` configuration setting.
-It consists of a list of allowed sites that are allowed to consume resources from the bot's API.
+??? info "Technical explanation"
+    All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
+    Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
+    Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
+
+Users can allow access from different origin URL's to the bot API via the `CORS_origins` configuration setting.
+It consists of a list of allowed URL's that are allowed to consume resources from the bot's API.
 
 Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
 
@@ -344,6 +363,20 @@ Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - t
     //...
     "jwt_secret_key": "somethingrandom",
     "CORS_origins": ["https://frequi.freqtrade.io"],
+    //...
+}
+```
+
+In the following (pretty common) case, FreqUI is accessible on `http://localhost:8080/trade` (this is what you see in your navbar when navigating to freqUI).
+![freqUI url](assets/frequi_url.png)
+
+The correct configuration for this case is `http://localhost:8080` - the main part of the URL including the port.
+
+```jsonc
+{
+    //...
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": ["http://localhost:8080"],
     //...
 }
 ```

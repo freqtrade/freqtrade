@@ -8,7 +8,7 @@ All contributions, bug reports, bug fixes, documentation improvements, enhanceme
 
 Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) and needs to be provided with every new feature PR.
 
-Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/extensions/admonition/).
+Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/reference/admonitions/).
 
 To test the documentation locally use the following commands.
 
@@ -25,6 +25,11 @@ To configure a development environment, you can either use the provided [DevCont
 Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
+
+Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
+This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
+
+Before opening a pull request, please familiarize yourself with our [Contributing Guidelines](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md).
 
 ### Devcontainer setup
 
@@ -218,13 +223,13 @@ Protections can have 2 different ways to stop trading for a limited :
 ##### Protections - per pair
 
 Protections that implement the per pair approach must set `has_local_stop=True`.
-The method `stop_per_pair()` will be called whenever a trade closed (sell order completed).
+The method `stop_per_pair()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - global protection
 
 These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
 Global protection must set `has_global_stop=True` to be evaluated for global stops.
-The method `global_stop()` will be called whenever a trade closed (sell order completed).
+The method `global_stop()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - calculating lock end time
 
@@ -250,7 +255,23 @@ Most exchanges supported by CCXT should work out of the box.
 To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
 Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
 
-Also try to use `freqtrade download-data` for an extended timerange and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
+Also try to use `freqtrade download-data` for an extended timerange (multiple months) and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
+
+These are prerequisites to have an exchange listed as either Supported or Community tested (listed on the homepage).
+The below are "extras", which will make an exchange better (feature-complete) - but are not absolutely necessary for either of the 2 categories.
+
+Additional tests / steps to complete:
+
+* Verify data provided by `fetch_ohlcv()` - and eventually adjust `ohlcv_candle_limit` for this exchange
+* Check L2 orderbook limit range (API documentation) - and eventually set as necessary
+* Check if balance shows correctly (*)
+* Create market order (*)
+* Create limit order (*)
+* Complete trade (enter + exit) (*)
+  * Compare result calculation between exchange and bot
+  * Ensure fees are applied correctly (check the database against the exchange)
+
+(*) Requires API keys and Balance on the exchange.
 
 ### Stoploss On Exchange
 
@@ -306,9 +327,8 @@ jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown freqtrade
 This documents some decisions taken for the CI Pipeline.
 
 * CI runs on all OS variants, Linux (ubuntu), macOS and Windows.
-* Docker images are build for the branches `stable` and `develop`.
+* Docker images are build for the branches `stable` and `develop`, and are built as multiarch builds, supporting multiple platforms via the same tag.
 * Docker images containing Plot dependencies are also available as `stable_plot` and `develop_plot`.
-* Raspberry PI Docker images are postfixed with `_pi` - so tags will be `:stable_pi` and `develop_pi`.
 * Docker images contain a file, `/freqtrade/freqtrade_commit` containing the commit this image is based of.
 * Full docker image rebuilds are run once a week via schedule.
 * Deployments run on ubuntu.

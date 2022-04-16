@@ -3,9 +3,9 @@ name: Freqtrade CI
 on:
   push:
     branches:
-      - master
       - stable
       - develop
+      - ci/*
     tags:
   release:
     types: [published]
@@ -20,26 +20,26 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-18.04, ubuntu-20.04 ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (linux)
-      uses: actions/cache@v2
-      if: startsWith(matrix.os, 'ubuntu')
+      uses: actions/cache@v3
+      if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -50,8 +50,9 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - *nix
+      if: runner.os == 'Linux'
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -69,7 +70,7 @@ jobs:
       if: matrix.python-version == '3.9'
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -101,42 +102,39 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI ${{ matrix.os }}*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Freqtrade CI failed on ${{ matrix.os }}
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   build_macos:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (macOS)
-      uses: actions/cache@v2
-      if: startsWith(matrix.os, 'macOS')
+      uses: actions/cache@v3
+      if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
         key: test-${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -147,10 +145,11 @@ jobs:
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
     - name: Installation - macOS
+      if: runner.os == 'macOS'
       run: |
         brew update
         brew install hdf5 c-blosc
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -162,7 +161,7 @@ jobs:
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
     - name: Coveralls
-      if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -194,17 +193,13 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI ${{ matrix.os }}*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
-
+          severity: info
+          details: Test Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   build_windows:
 
@@ -212,19 +207,18 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7, 3.8]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Pip cache (Windows)
-      uses: actions/cache@preview
-      if: startsWith(runner.os, 'Windows')
+      uses: actions/cache@v3
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -257,28 +251,25 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI windows*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Test Failed
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   docs_check:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Documentation syntax
       run: |
         ./tests/test_docs.sh
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.8
 
@@ -288,14 +279,13 @@ jobs:
         pip install mkdocs
         mkdocs build
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade Docs*'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Freqtrade doc test failed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
     runs-on: ubuntu-20.04
@@ -306,7 +296,7 @@ jobs:
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
@@ -320,14 +310,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: always() && steps.check.outputs.has-permission && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI*'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: info
+          details: Test Completed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
@@ -336,10 +325,10 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.8
 
@@ -385,7 +374,7 @@ jobs:
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v1
+      uses: crazy-max/ghaction-docker-buildx@v3.3.1
       with:
         buildx-version: latest
         qemu-version: latest
@@ -400,17 +389,13 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI Deploy*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: info
+          details: Deploy Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
 
   deploy_arm:
@@ -420,7 +405,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Extract branch name
       shell: bash
