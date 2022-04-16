@@ -635,7 +635,7 @@ class Backtesting:
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
         direction: LongShort, current_time: datetime, entry_tag: Optional[str],
-        trade: Optional[LocalTrade], order_type: str
+        trade: Optional[LocalTrade], order_type: str, readjust_req: Optional[bool] = False
     ) -> Tuple[float, float, float, float]:
 
         if order_type == 'limit':
@@ -645,6 +645,14 @@ class Backtesting:
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate
+            if readjust_req:
+                propose_rate = strategy_safe_wrapper(self.strategy.readjust_entry_price,
+                                                     default_retval=propose_rate)(
+                    pair=pair, current_time=current_time,
+                    proposed_rate=propose_rate, entry_tag=entry_tag,
+                    side=direction
+                )  # default value is open rate or custom rate from before
+
             # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
             # which freqtrade does not support in live.
             if direction == "short":
@@ -652,7 +660,7 @@ class Backtesting:
             else:
                 propose_rate = min(propose_rate, row[HIGH_IDX])
 
-        pos_adjust = trade is not None
+        pos_adjust = trade is not None and readjust_req is False
         leverage = trade.leverage if trade else 1.0
         if not pos_adjust:
             try:
@@ -697,17 +705,18 @@ class Backtesting:
 
     def _enter_trade(self, pair: str, row: Tuple, direction: LongShort,
                      stake_amount: Optional[float] = None,
-                     trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+                     trade: Optional[LocalTrade] = None,
+                     readjust_req: Optional[bool] = False) -> Optional[LocalTrade]:
 
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
         order_type = self.strategy.order_types['entry']
-        pos_adjust = trade is not None
+        pos_adjust = trade is not None and readjust_req is False
 
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
             pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
-            order_type
+            order_type, readjust_req
         )
 
         if not stake_amount:
@@ -850,6 +859,21 @@ class Backtesting:
             self.protections.stop_per_pair(pair, current_time)
             self.protections.global_stop(current_time)
 
+    def check_order_replace(self, trade: LocalTrade, current_time, row: Tuple) -> None:
+        """
+        Check if an entry order has to be replaced and do so.
+        Returns None.
+        """
+        for order in [o for o in trade.orders if o.ft_is_open]:
+            if order.side == trade.entry_side and current_time > order.order_date_utc:
+                # cancel existing order
+                del trade.orders[trade.orders.index(order)]
+
+                # place new order
+                self._enter_trade(pair=trade.pair, row=row, trade=trade,
+                                  direction='short' if trade.is_short else 'long',
+                                  readjust_req=True)
+
     def check_order_cancel(self, trade: LocalTrade, current_time) -> bool:
         """
         Check if an order has been canceled.
@@ -949,6 +973,8 @@ class Backtesting:
                         open_trade_count -= 1
                         open_trades[pair].remove(t)
                         self.wallets.update()
+                    else:
+                        self.check_order_replace(t, current_time, row)
 
                 # 2. Process buys.
                 # without positionstacking, we can only have one open trade per pair.
