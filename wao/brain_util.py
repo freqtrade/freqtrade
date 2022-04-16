@@ -78,8 +78,9 @@ def perform_create_429_watcher():
 
 
 def setup_429():
-    __create_429_directory()
-    __create_429_watcher()
+    if Config.ENABLE_429_SOLUTION:
+        __create_429_directory()
+        __create_429_watcher()
 
 
 def __create_429_directory():
