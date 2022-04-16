@@ -360,7 +360,7 @@ class LocalTrade():
         if self.has_no_leverage:
             return 0.0
         elif not self.is_short:
-            return (self.amount * self.open_rate) * ((self.leverage-1)/self.leverage)
+            return (self.amount * self.open_rate) * ((self.leverage - 1) / self.leverage)
         else:
             return self.amount
 
@@ -747,7 +747,7 @@ class LocalTrade():
         now = (self.close_date or datetime.now(timezone.utc)).replace(tzinfo=None)
         sec_per_hour = Decimal(3600)
         total_seconds = Decimal((now - open_date).total_seconds())
-        hours = total_seconds/sec_per_hour or zero
+        hours = total_seconds / sec_per_hour or zero
 
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
@@ -861,9 +861,9 @@ class LocalTrade():
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = (1 - (close_trade_value/self.open_trade_value)) * leverage
+                profit_ratio = (1 - (close_trade_value / self.open_trade_value)) * leverage
             else:
-                profit_ratio = ((close_trade_value/self.open_trade_value) - 1) * leverage
+                profit_ratio = ((close_trade_value / self.open_trade_value) - 1) * leverage
 
         return float(f"{profit_ratio:.8f}")
 

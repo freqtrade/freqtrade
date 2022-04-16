@@ -119,7 +119,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
 
-    trade._set_stop_loss(0.1, (1.0/9.0))
+    trade._set_stop_loss(0.1, (1.0 / 9.0))
     assert trade.liquidation_price == 0.09
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.1
@@ -160,7 +160,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
 
-    trade._set_stop_loss(0.08, (1.0/9.0))
+    trade._set_stop_loss(0.08, (1.0 / 9.0))
     assert trade.liquidation_price == 0.09
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.08
@@ -171,13 +171,13 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.initial_stop_loss == 0.08
 
     trade.set_isolated_liq(0.07)
-    trade._set_stop_loss(0.1, (1.0/8.0))
+    trade._set_stop_loss(0.1, (1.0 / 8.0))
     assert trade.liquidation_price == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.08
 
     # Stop doesn't move stop higher
-    trade._set_stop_loss(0.1, (1.0/9.0))
+    trade._set_stop_loss(0.1, (1.0 / 9.0))
     assert trade.liquidation_price == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.08

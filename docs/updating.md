@@ -2,6 +2,10 @@
 
 To update your freqtrade installation, please use one of the below methods, corresponding to your installation method.
 
+!!! Note "Tracking changes"
+    Breaking changes / changed behavior will be documented in the changelog that is posted alongside every release.
+    For the develop branch, please follow PR's to avoid being surprised by changes.
+
 ## docker-compose
 
 !!! Note "Legacy installations using the `master` image"

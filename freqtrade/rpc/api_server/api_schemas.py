@@ -421,6 +421,13 @@ class BacktestResponse(BaseModel):
     backtest_result: Optional[Dict[str, Any]]
 
 
+class BacktestHistoryEntry(BaseModel):
+    filename: str
+    strategy: str
+    run_id: str
+    backtest_start_time: int
+
+
 class SysInfo(BaseModel):
     cpu_pct: List[float]
     ram_pct: float

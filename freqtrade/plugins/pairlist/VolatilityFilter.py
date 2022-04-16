@@ -107,7 +107,7 @@ class VolatilityFilter(IPairList):
             returns = (np.log(daily_candles.close / daily_candles.close.shift(-1)))
             returns.fillna(0, inplace=True)
 
-            volatility_series = returns.rolling(window=self._days).std()*np.sqrt(self._days)
+            volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
             volatility_avg = volatility_series.mean()
 
             if self._min_volatility <= volatility_avg <= self._max_volatility:

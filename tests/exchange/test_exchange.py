@@ -231,6 +231,10 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.34559, 2, 3, 1, 2.345, 'spot'),
     (2.9999, 2, 3, 1, 2.999, 'spot'),
     (2.9909, 2, 3, 1, 2.990, 'spot'),
+    (2.9909, 2, 0, 1, 2, 'spot'),
+    (29991.5555, 2, 0, 1, 29991, 'spot'),
+    (29991.5555, 2, -1, 1, 29990, 'spot'),
+    (29991.5555, 2, -2, 1, 29900, 'spot'),
     # Tests for Tick-size
     (2.34559, 4, 0.0001, 1, 2.3455, 'spot'),
     (2.34559, 4, 0.00001, 1, 2.34559, 'spot'),
@@ -382,11 +386,11 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     # min
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    expected_result = 2 * (1+0.05) / (1-abs(stoploss))
+    expected_result = 2 * (1 + 0.05) / (1 - abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
-    assert isclose(result, expected_result/3)
+    assert isclose(result, expected_result / 3)
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -401,11 +405,11 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = 2 * 2 * (1+0.05) / (1-abs(stoploss))
+    expected_result = 2 * 2 * (1 + 0.05) / (1 - abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
-    assert isclose(result, expected_result/5)
+    assert isclose(result, expected_result / 5)
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
@@ -420,11 +424,11 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    expected_result = max(2, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
-    assert isclose(result, expected_result/10)
+    assert isclose(result, expected_result / 10)
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -436,11 +440,11 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result = max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    expected_result = max(8, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
-    assert isclose(result, expected_result/7.0)
+    assert isclose(result, expected_result / 7.0)
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -450,7 +454,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
-    assert isclose(result, expected_result/8.0)
+    assert isclose(result, expected_result / 8.0)
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -461,7 +465,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     assert isclose(result, expected_result)
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, expected_result/12)
+    assert isclose(result, expected_result / 12)
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -489,7 +493,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     # With Leverage, Contract size 10
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, (expected_result/12) * 10.0)
+    assert isclose(result, (expected_result / 12) * 10.0)
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -510,7 +514,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
+    expected_result = max(0.0001, 0.001 * 0.020405) * (1 + 0.05) / (1 - abs(stoploss))
     assert round(result, 8) == round(expected_result, 8)
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2.0)
@@ -518,12 +522,12 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
 
     # Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
-    assert round(result, 8) == round(expected_result/3, 8)
+    assert round(result, 8) == round(expected_result / 3, 8)
 
     # Contract_size
     markets["ETH/BTC"]["contractSize"] = 0.1
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
-    assert round(result, 8) == round((expected_result/3), 8)
+    assert round(result, 8) == round((expected_result / 3), 8)
 
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 12.0)
@@ -2691,9 +2695,10 @@ async def test__async_get_trade_history_time(default_conf, mocker, caplog, excha
     # Monkey-patch async function
     exchange._api_async.fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
     pair = 'ETH/BTC'
-    ret = await exchange._async_get_trade_history_time(pair,
-                                                       since=fetch_trades_result[0]['timestamp'],
-                                                       until=fetch_trades_result[-1]['timestamp']-1)
+    ret = await exchange._async_get_trade_history_time(
+        pair,
+        since=fetch_trades_result[0]['timestamp'],
+        until=fetch_trades_result[-1]['timestamp'] - 1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list
@@ -2729,7 +2734,7 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
     pair = 'ETH/BTC'
     ret = await exchange._async_get_trade_history_time(pair, since=trades_history[0][0],
-                                                       until=trades_history[-1][0]-1)
+                                                       until=trades_history[-1][0] - 1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list

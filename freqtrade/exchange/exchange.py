@@ -651,7 +651,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        if self.markets[pair]['precision']['amount']:
+        if self.markets[pair]['precision']['amount'] is not None:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
                                                 counting_mode=self.precisionMode,
@@ -2177,7 +2177,7 @@ class Exchange:
                 lev = tier['lev']
 
                 if tier_index < len(pair_tiers) - 1:
-                    next_tier = pair_tiers[tier_index+1]
+                    next_tier = pair_tiers[tier_index + 1]
                     next_floor = next_tier['min'] / next_tier['lev']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
                         return min((tier['max'] / stake_amount), lev)
