@@ -37,7 +37,7 @@ class WAOStrategy(IStrategy):
         """
         coin = pair.split("/")[0]
 
-        is_same_coin_trade_open = self.is_romeo_alive(coin)
+        is_same_coin_trade_open = self.controller.is_romeo_alive(coin)
         print("WAOStrategy: confirm_trade_entry: is_same_coin_trade_open="+str(is_same_coin_trade_open))
 
         if is_same_coin_trade_open:
