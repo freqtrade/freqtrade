@@ -20,7 +20,7 @@ from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_t
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode,
-                            RunMode)
+                             RunMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
@@ -1077,8 +1077,8 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
-        if self.backtest_signal_candle_export_enable and
-            self.dataprovider.runmode == RunMode.BACKTEST:
+        if self.backtest_signal_candle_export_enable and \
+                self.dataprovider.runmode == RunMode.BACKTEST:
             signal_candles_only = {}
             for pair in preprocessed_tmp.keys():
                 signal_candles_only_df = DataFrame()
@@ -1160,8 +1160,8 @@ class Backtesting:
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
-            if self.backtest_signal_candle_export_enable and
-                self.dataprovider.runmode == RunMode.BACKTEST:
+            if self.backtest_signal_candle_export_enable and \
+                    self.dataprovider.runmode == RunMode.BACKTEST:
                 store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
