@@ -19,16 +19,16 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode,
-                             RunMode)
+from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, RunMode,
+                             TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
-                                                 store_backtest_stats,
-                                                 store_backtest_signal_candles)
+                                                 store_backtest_signal_candles,
+                                                 store_backtest_stats)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager

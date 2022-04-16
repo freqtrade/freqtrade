@@ -1,9 +1,9 @@
 import logging
+import pickle
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
-import pickle
 
 from numpy import int64
 from pandas import DataFrame, to_datetime
