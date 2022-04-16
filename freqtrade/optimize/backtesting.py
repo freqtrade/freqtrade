@@ -27,7 +27,7 @@ from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
-                                                 store_backtest_stats)
+                                                 store_backtest_stats, store_backtest_signal_candles)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
@@ -1156,6 +1156,9 @@ class Backtesting:
 
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
+
+            if self.enable_backtest_signal_candle_export and self.dataprovider.runmode == RunMode.BACKTEST:
+                store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
         if 'strategy_list' in self.config and len(self.results) > 0:
