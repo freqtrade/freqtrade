@@ -2461,6 +2461,7 @@ def test_manage_open_orders_entry(
     # Custom user buy-timeout is never called
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
+
 @pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_cancelled_buy(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
@@ -2818,7 +2819,7 @@ def test_manage_open_orders_partial_except(
 
 
 def test_manage_open_orders_exception(default_conf_usdt, ticker_usdt, open_trade_usdt, mocker,
-                                         caplog) -> None:
+                                      caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
