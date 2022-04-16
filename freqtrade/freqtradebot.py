@@ -1234,7 +1234,10 @@ class FreqtradeBot(LoggingMixin):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
         Trade.commit()
 
-    def handle_cancel_enter(self, trade: Trade, order: Dict, reason: str) -> bool:
+    def handle_cancel_enter(
+            self, trade: Trade, order: Dict, reason: str,
+            allow_full_cancel: Optional[bool] = True
+    ) -> bool:
         """
         Buy cancel - cancel order
         :return: True if order was fully cancelled
@@ -1274,7 +1277,7 @@ class FreqtradeBot(LoggingMixin):
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
             # if trade is not partially completed and it's the only order, just delete the trade
-            if len(trade.orders) <= 1:
+            if len(trade.orders) <= 1 and allow_full_cancel:
                 trade.delete()
                 was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
