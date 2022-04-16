@@ -45,6 +45,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
+
 def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> None:
     """
     Stores backtest trade signal candles
@@ -64,6 +65,7 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
 
     with open(filename, 'wb') as f:
         pickle.dump(candles, f)
+
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
