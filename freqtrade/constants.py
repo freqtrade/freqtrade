@@ -380,6 +380,7 @@ CONF_SCHEMA = {
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
+        'backtest_signal_candle_export_enable': {'type': 'boolean'},
     },
     'definitions': {
         'exchange': {

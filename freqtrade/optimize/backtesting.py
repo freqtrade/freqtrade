@@ -19,7 +19,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode
+from freqtrade.enums import BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
@@ -74,7 +74,7 @@ class Backtesting:
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
         self.processed_dfs: Dict[str, Dict] = {}
-        
+
         self._exchange_name = self.config['exchange']['name']
         self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
         self.dataprovider = DataProvider(self.config, self.exchange)
@@ -129,9 +129,7 @@ class Backtesting:
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        self.enable_backtest_signal_candle_export = False
-        if self.config.get('enable_backtest_signal_candle_export', None) is not None:
-            self.enable_backtest_signal_candle_export = bool(self.config.get('enable_backtest_signal_candle_export'))
+        self.backtest_signal_candle_export_enable = self.config.get('backtest_signal_candle_export_enable', False)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
@@ -1076,7 +1074,7 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
-        if self.enable_backtest_signal_candle_export:
+        if self.backtest_signal_candle_export_enable and self.dataprovider.runmode == RunMode.BACKTEST:
             signal_candles_only = {}
             for pair in preprocessed_tmp.keys():
                 signal_candles_only_df = DataFrame()

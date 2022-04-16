@@ -44,6 +44,25 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
+def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> None:
+    """
+    Stores backtest trade signal candles
+    :param recordfilename: Path object, which can either be a filename or a directory.
+        Filenames will be appended with a timestamp right before the suffix
+        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used as filename
+    :param stats: Dict containing the backtesting signal candles
+    """
+    if recordfilename.is_dir():
+        filename = (recordfilename /
+                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl')
+    else:
+        filename = Path.joinpath(
+            recordfilename.parent,
+            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+        ).with_suffix(recordfilename.suffix)
+
+    with open(filename, 'wb') as f:
+        pickle.dump(candles, f)
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
