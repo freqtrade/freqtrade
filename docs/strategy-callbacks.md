@@ -16,6 +16,7 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
+* [`readjust_entry_price()`](#readjust-entry-price)
 * [`leverage()`](#leverage-callback)
 
 !!! Tip "Callback calling sequence"
@@ -365,13 +366,13 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
-        
+
         return new_entryprice
 
     def custom_exit_price(self, pair: str, trade: Trade,
@@ -381,14 +382,14 @@ class AwesomeStrategy(IStrategy):
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
-        
+
         return new_exitprice
 
 ```
 
 !!! Warning
-    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.  
-    **Example**:  
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
+    **Example**:
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
@@ -430,7 +431,7 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict,
                             current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -508,7 +509,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
                             side: str, **kwargs) -> bool:
         """
         Called right before placing a entry order.
@@ -616,35 +617,35 @@ from freqtrade.persistence import Trade
 
 
 class DigDeeperStrategy(IStrategy):
-    
+
     position_adjustment_enable = True
-    
+
     # Attempts to handle large drops with DCA. High stoploss is required.
     stoploss = -0.30
-    
+
     # ... populate_* methods
-    
+
     # Example specific variables
     max_entry_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
-    
+
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
-        
+
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
         return proposed_stake / self.max_dca_multiplier
-        
+
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
                               current_rate: float, current_profit: float, min_stake: float,
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
- 
+
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Current buy rate.
@@ -654,7 +655,7 @@ class DigDeeperStrategy(IStrategy):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
         """
-        
+
         if current_profit > -0.05:
             return None
 
@@ -687,6 +688,46 @@ class DigDeeperStrategy(IStrategy):
 
         return None
 
+```
+
+## Readjust Entry Price
+
+The `readjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
+Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
+
+!!! Warning This mechanism will not trigger if previous orders were partially or fully filled.
+
+!!! Warning Entry `unfilledtimeout` mechanism takes precedence over this. Be sure to update timeout values to match your expectancy.
+
+```python
+from freqtrade.persistence import Trade
+from datetime import timedelta
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def readjust_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+        """
+        Entry price readjustment logic, returning the readjusted entry price.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: Trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+
+        """
+        # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+            current_candle = dataframe.iloc[-1].squeeze()
+            return current_candle['sma_200']
+        return proposed_rate
 ```
 
 ## Leverage Callback
