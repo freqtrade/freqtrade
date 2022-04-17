@@ -22,7 +22,7 @@
         }
     },
     "ask_strategy": {
-        "price_side": "ask",
+        "price_side": "bid",
         "use_order_book": true,
         "order_book_top": 1
     },
