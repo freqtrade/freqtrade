@@ -9,10 +9,10 @@ import time
 class WAOStrategyController:
     # romeo_pool: key=coin, value=romeo_instance
     romeo_pool = {}
-    brain = ""
 
-    def setup(self, brain):
+    def __init__(self, brain, time_out_hours):
         self.brain = brain
+        self.time_out_hours = time_out_hours
         setup_429()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(self.brain, BrainConfig.BACKTEST_COIN,
@@ -43,15 +43,15 @@ class WAOStrategyController:
     def __buy_back_test(self, date_time, coin):
         time.sleep(BrainConfig.BACKTEST_THROTTLE_SECOND)
         if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_back_test_buy, args=(date_time, coin, self.brain, self.romeo_pool)).start()
+            threading.Thread(target=perform_back_test_buy, args=(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
         else:
-            perform_back_test_buy(date_time, coin, self.brain, self.romeo_pool)
+            perform_back_test_buy(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)
 
     def __buy_execute(self, coin):
         if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_execute_buy, args=(coin, self.brain, self.romeo_pool)).start()
+            threading.Thread(target=perform_execute_buy, args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
         else:
-            perform_execute_buy(coin, self.brain, self.romeo_pool)
+            perform_execute_buy(coin, self.brain, self.romeo_pool, self.time_out_hours)
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):

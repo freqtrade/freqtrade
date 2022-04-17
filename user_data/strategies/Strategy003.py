@@ -14,8 +14,8 @@ class Strategy003(WAOStrategy):
     brain = 'Freq_Strategy003'
 
     def __init__(self, config: dict):
-        super().__init__(config)
-        self.controller.setup(self.brain)
+        super().__init__(config, self.brain, 20)
+
     """
     Strategy 003
     author@: Gerald Lonlas
