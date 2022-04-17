@@ -7,6 +7,14 @@ from wao.wao_strategy_controller import WAOStrategyController
 
 class WAOStrategy(IStrategy):
 
+    # Optional order type mapping
+    order_types = {
+        'buy': 'market',
+        'sell': 'market',
+        'stoploss': 'market',
+        'stoploss_on_exchange': False
+    }
+
     def __init__(self, config: dict, brain, time_out_hours):
         super().__init__(config)
         self.controller = WAOStrategyController(brain, time_out_hours)

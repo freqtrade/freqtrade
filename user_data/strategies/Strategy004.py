@@ -52,14 +52,6 @@ class Strategy004(WAOStrategy):
     sell_profit_only = True
     ignore_roi_if_buy_signal = False
 
-    # Optional order type mapping
-    order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
-        'stoploss': 'market',
-        'stoploss_on_exchange': False
-    }
-
     def informative_pairs(self):
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
