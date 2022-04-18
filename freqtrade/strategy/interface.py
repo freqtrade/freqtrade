@@ -467,18 +467,22 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
-    def readjust_entry_price(self, trade: Trade, pair: str, current_time: datetime,
-                             proposed_rate: float, entry_tag: Optional[str],
-                             side: str, **kwargs) -> float:
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
-        Entry price readjustment logic, returning the readjusted entry price.
-        This only executes when a order was already placed, open(unfilled) and not timed out on
-        subsequent candles.
+        Entry price re-adjustment logic, returning the user desired limit price.
+        This only executes when a order was already placed, still open(unfilled fully or partially)
+        and not timed out on subsequent candles after entry trigger.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
+        When not implemented by a strategy, returns proposed_stake.
+        If None is returned then order gets canceled but not replaced by a new one.
+
         :param pair: Pair that's currently analyzed
         :param trade: Trade object.
+        :param order: Order object
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
