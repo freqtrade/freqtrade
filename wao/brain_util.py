@@ -30,14 +30,14 @@ def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
 
 
 def perform_execute_sell(coin, romeo_pool):
-    if Config.ROMEO_IS_PT_FROM_BRAIN_SS_ENABLED:
+    if Config.IS_SS_ENABLED:
         romeo = romeo_pool.get(coin)
         if romeo is not None:
             romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
 
 def perform_back_test_sell(date_time):
-    if Config.ROMEO_IS_PT_FROM_BRAIN_SS_ENABLED:
+    if Config.IS_SS_ENABLED:
         date = str(date_time).replace(" ", ", ")
         Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
