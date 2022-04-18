@@ -169,90 +169,90 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
         'ADA/BUSD': [
             {
                 "tier": 1,
-                "notionalFloor": 0,
-                "notionalCap": 100000,
+                "minNotional": 0,
+                "maxNotional": 100000,
                 "maintenanceMarginRate": 0.025,
                 "maxLeverage": 20,
                 "info": {
                     "bracket": "1",
                     "initialLeverage": "20",
-                    "notionalCap": "100000",
-                    "notionalFloor": "0",
+                    "maxNotional": "100000",
+                    "minNotional": "0",
                     "maintMarginRatio": "0.025",
                     "cum": "0.0"
                 }
             },
             {
                 "tier": 2,
-                "notionalFloor": 100000,
-                "notionalCap": 500000,
+                "minNotional": 100000,
+                "maxNotional": 500000,
                 "maintenanceMarginRate": 0.05,
                 "maxLeverage": 10,
                 "info": {
                     "bracket": "2",
                     "initialLeverage": "10",
-                    "notionalCap": "500000",
-                    "notionalFloor": "100000",
+                    "maxNotional": "500000",
+                    "minNotional": "100000",
                     "maintMarginRatio": "0.05",
                     "cum": "2500.0"
                 }
             },
             {
                 "tier": 3,
-                "notionalFloor": 500000,
-                "notionalCap": 1000000,
+                "minNotional": 500000,
+                "maxNotional": 1000000,
                 "maintenanceMarginRate": 0.1,
                 "maxLeverage": 5,
                 "info": {
                     "bracket": "3",
                     "initialLeverage": "5",
-                    "notionalCap": "1000000",
-                    "notionalFloor": "500000",
+                    "maxNotional": "1000000",
+                    "minNotional": "500000",
                     "maintMarginRatio": "0.1",
                     "cum": "27500.0"
                 }
             },
             {
                 "tier": 4,
-                "notionalFloor": 1000000,
-                "notionalCap": 2000000,
+                "minNotional": 1000000,
+                "maxNotional": 2000000,
                 "maintenanceMarginRate": 0.15,
                 "maxLeverage": 3,
                 "info": {
                     "bracket": "4",
                     "initialLeverage": "3",
-                    "notionalCap": "2000000",
-                    "notionalFloor": "1000000",
+                    "maxNotional": "2000000",
+                    "minNotional": "1000000",
                     "maintMarginRatio": "0.15",
                     "cum": "77500.0"
                 }
             },
             {
                 "tier": 5,
-                "notionalFloor": 2000000,
-                "notionalCap": 5000000,
+                "minNotional": 2000000,
+                "maxNotional": 5000000,
                 "maintenanceMarginRate": 0.25,
                 "maxLeverage": 2,
                 "info": {
                     "bracket": "5",
                     "initialLeverage": "2",
-                    "notionalCap": "5000000",
-                    "notionalFloor": "2000000",
+                    "maxNotional": "5000000",
+                    "minNotional": "2000000",
                     "maintMarginRatio": "0.25",
                     "cum": "277500.0"
                 }
             },
             {
                 "tier": 6,
-                "notionalFloor": 5000000,
-                "notionalCap": 30000000,
+                "minNotional": 5000000,
+                "maxNotional": 30000000,
                 "maintenanceMarginRate": 0.5,
                 "maxLeverage": 1,
                 "info": {
                     "bracket": "6",
                     "initialLeverage": "1",
-                    "notionalCap": "30000000",
-                    "notionalFloor": "5000000",
+                    "maxNotional": "30000000",
+                    "minNotional": "5000000",
                     "maintMarginRatio": "0.5",
                     "cum": "1527500.0"
                 }
@@ -261,105 +261,105 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
         "ZEC/USDT": [
             {
                 "tier": 1,
-                "notionalFloor": 0,
-                "notionalCap": 50000,
+                "minNotional": 0,
+                "maxNotional": 50000,
                 "maintenanceMarginRate": 0.01,
                 "maxLeverage": 50,
                 "info": {
                     "bracket": "1",
                     "initialLeverage": "50",
-                    "notionalCap": "50000",
-                    "notionalFloor": "0",
+                    "maxNotional": "50000",
+                    "minNotional": "0",
                     "maintMarginRatio": "0.01",
                     "cum": "0.0"
                 }
             },
             {
                 "tier": 2,
-                "notionalFloor": 50000,
-                "notionalCap": 150000,
+                "minNotional": 50000,
+                "maxNotional": 150000,
                 "maintenanceMarginRate": 0.025,
                 "maxLeverage": 20,
                 "info": {
                     "bracket": "2",
                     "initialLeverage": "20",
-                    "notionalCap": "150000",
-                    "notionalFloor": "50000",
+                    "maxNotional": "150000",
+                    "minNotional": "50000",
                     "maintMarginRatio": "0.025",
                     "cum": "750.0"
                 }
             },
             {
                 "tier": 3,
-                "notionalFloor": 150000,
-                "notionalCap": 250000,
+                "minNotional": 150000,
+                "maxNotional": 250000,
                 "maintenanceMarginRate": 0.05,
                 "maxLeverage": 10,
                 "info": {
                     "bracket": "3",
                     "initialLeverage": "10",
-                    "notionalCap": "250000",
-                    "notionalFloor": "150000",
+                    "maxNotional": "250000",
+                    "minNotional": "150000",
                     "maintMarginRatio": "0.05",
                     "cum": "4500.0"
                 }
             },
             {
                 "tier": 4,
-                "notionalFloor": 250000,
-                "notionalCap": 500000,
+                "minNotional": 250000,
+                "maxNotional": 500000,
                 "maintenanceMarginRate": 0.1,
                 "maxLeverage": 5,
                 "info": {
                     "bracket": "4",
                     "initialLeverage": "5",
-                    "notionalCap": "500000",
-                    "notionalFloor": "250000",
+                    "maxNotional": "500000",
+                    "minNotional": "250000",
                     "maintMarginRatio": "0.1",
                     "cum": "17000.0"
                 }
             },
             {
                 "tier": 5,
-                "notionalFloor": 500000,
-                "notionalCap": 1000000,
+                "minNotional": 500000,
+                "maxNotional": 1000000,
                 "maintenanceMarginRate": 0.125,
                 "maxLeverage": 4,
                 "info": {
                     "bracket": "5",
                     "initialLeverage": "4",
-                    "notionalCap": "1000000",
-                    "notionalFloor": "500000",
+                    "maxNotional": "1000000",
+                    "minNotional": "500000",
                     "maintMarginRatio": "0.125",
                     "cum": "29500.0"
                 }
             },
             {
                 "tier": 6,
-                "notionalFloor": 1000000,
-                "notionalCap": 2000000,
+                "minNotional": 1000000,
+                "maxNotional": 2000000,
                 "maintenanceMarginRate": 0.25,
                 "maxLeverage": 2,
                 "info": {
                     "bracket": "6",
                     "initialLeverage": "2",
-                    "notionalCap": "2000000",
-                    "notionalFloor": "1000000",
+                    "maxNotional": "2000000",
+                    "minNotional": "1000000",
                     "maintMarginRatio": "0.25",
                     "cum": "154500.0"
                 }
             },
             {
                 "tier": 7,
-                "notionalFloor": 2000000,
-                "notionalCap": 30000000,
+                "minNotional": 2000000,
+                "maxNotional": 30000000,
                 "maintenanceMarginRate": 0.5,
                 "maxLeverage": 1,
                 "info": {
                     "bracket": "7",
                     "initialLeverage": "1",
-                    "notionalCap": "30000000",
-                    "notionalFloor": "2000000",
+                    "maxNotional": "30000000",
+                    "minNotional": "2000000",
                     "maintMarginRatio": "0.5",
                     "cum": "654500.0"
                 }
