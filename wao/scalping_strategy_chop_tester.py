@@ -6,16 +6,18 @@ import time
 import datetime
 import csv
 import os
+from wao.brain_config import BrainConfig
 
 coin = 'LTC'
 time_range = '1m'
-json_file_name = f'/root/workspace2/freqtrade/user_data/data/binance/{coin}_USDT-{time_range}.json'
+workspace = 'workspace2'
+freqtrade_directory = BrainConfig.ROOT_DIRECTORY + workspace + "/freqtrade/"
+json_file_name = f''+freqtrade_directory+'user_data/data/binance/{coin}_USDT-{time_range}.json'
 json_file_content = Path(json_file_name).read_text()
 total_loop_time = json_file_content.count(']') - 1
 minutes_per_day = 1440 if time_range == '1m' else 288
 brain_name = "Scalp"
 config_file_name = "config_scalp.json"
-freqtrade_directory = "/root/workspace2/freqtrade/"
 result_saved_directory = "wao/_scalping_results_directory/"
 file_format = ".csv"
 under_score = "_"

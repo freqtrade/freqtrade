@@ -1,4 +1,3 @@
-EXECUTION_PATH = '/root/workspace/execution'  # do not move this to config
 import sys
 import threading
 import watchdog
@@ -8,7 +7,7 @@ import datetime
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
 
-sys.path.append(EXECUTION_PATH)
+sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
 
