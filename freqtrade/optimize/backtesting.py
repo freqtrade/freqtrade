@@ -646,7 +646,7 @@ class Backtesting:
                 side=direction,
             )  # default value is the open rate
             if readjust_req:
-                propose_rate = strategy_safe_wrapper(self.strategy.readjust_entry_price,
+                propose_rate = strategy_safe_wrapper(self.strategy.adjust_entry_price,
                                                      default_retval=propose_rate)(
                     pair=pair, current_time=current_time,
                     proposed_rate=propose_rate, entry_tag=entry_tag,
