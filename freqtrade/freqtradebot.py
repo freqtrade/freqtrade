@@ -1147,13 +1147,13 @@ class FreqtradeBot(LoggingMixin):
             if not_closed:
                 if fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
                    trade, order_obj, datetime.now(timezone.utc))):
-                    self.handle_timedout_orders(order, trade)
+                    self.handle_timedout_order(order, trade)
                 else:
-                    self.replace_orders(order, order_obj, trade)
+                    self.replace_order(order, order_obj, trade)
 
-    def handle_timedout_orders(self, order: Dict, trade: Trade) -> None:
+    def handle_timedout_order(self, order: Dict, trade: Trade) -> None:
         """
-        Check if any orders are timed out and cancel if necessary.
+        Check if current analyzed order timed out and cancel if necessary.
         :param order: Order dict grabbed with exchange.fetch_order()
         :param trade: Trade object.
         :return: None
@@ -1176,9 +1176,11 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(
                         f'Unable to emergency sell trade {trade.pair}: {exception}')
 
-    def replace_orders(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
+    def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
         """
-        Check if any orders should be replaced and do so
+        Check if current analyzed entry order should be replaced. Analyzed order is canceled
+        if adjust_entry_price() returned price differs from proposed_rate.
+        New order is only placed if adjust_entry_price() returned price is not None.
         :param order: Order dict grabbed with exchange.fetch_order()
         :param order_obj: Order object.
         :param trade: Trade object.
@@ -1194,25 +1196,30 @@ class FreqtradeBot(LoggingMixin):
             # New candle
             proposed_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=True)
-            adjusted_entry_price = strategy_safe_wrapper(self.strategy.readjust_entry_price,
+            adjusted_entry_price = strategy_safe_wrapper(self.strategy.adjust_entry_price,
                                                          default_retval=proposed_rate)(
-                pair=trade.pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_rate, entry_tag=trade.enter_tag,
-                side=trade.entry_side)
-            # check if user has requested entry limit adjustment
+                trade=trade, order=order_obj, pair=trade.pair,
+                current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
+                entry_tag=trade.enter_tag, side=trade.entry_side)
+
+            full_cancel = False
+            cancel_reason = constants.CANCEL_REASON['REPLACE']
+            if not adjusted_entry_price:
+                full_cancel = True
+                cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
             if proposed_rate != adjusted_entry_price:
-                # cancel existing order
-                self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['REPLACE'],
-                                         allow_full_cancel=False)
-                stake = self.wallets.get_trade_stake_amount(trade.pair, self.edge)
-                # place new order with requested price
-                self.execute_entry(
-                    pair=trade.pair,
-                    stake_amount=stake,
-                    price=adjusted_entry_price,
-                    trade=trade,
-                    is_short=trade.is_short
-                )
+                # cancel existing order if new price is supplied or None
+                self.handle_cancel_enter(trade, order, cancel_reason,
+                                         allow_full_cancel=full_cancel)
+                if adjusted_entry_price:
+                    # place new order only if new price is supplied
+                    self.execute_entry(
+                        pair=trade.pair,
+                        stake_amount=(order_obj.remaining * order_obj.price),
+                        price=adjusted_entry_price,
+                        trade=trade,
+                        is_short=trade.is_short
+                    )
 
     def cancel_all_open_orders(self) -> None:
         """
