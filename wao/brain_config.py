@@ -8,6 +8,7 @@ class BrainConfig:
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
     IS_BACKTEST = False
+    CHOP_TESTER_WORKSPACE = "workspace2"
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     ROOT_DIRECTORY = "/root/"
     EXECUTION_PATH = ROOT_DIRECTORY + "workspace/execution"
