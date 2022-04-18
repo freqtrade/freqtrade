@@ -37,8 +37,9 @@ def perform_execute_sell(coin, romeo_pool):
 
 
 def perform_back_test_sell(date_time):
-    date = str(date_time).replace(" ", ", ")
-    Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
+    if Config.ROMEO_IS_PT_FROM_BRAIN_SS_ENABLED:
+        date = str(date_time).replace(" ", ", ")
+        Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
 
 def perform_back_test_buy(date_time, coin, brain, romeo_pool, time_out_hours):
