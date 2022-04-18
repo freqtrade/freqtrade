@@ -32,7 +32,7 @@ class WAOStrategyController:
     def on_sell_signal(self, sell_reason, current_time, coin):
         print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
-        if sell_reason == 'sell_signal' or sell_reason == 'roi':
+        if sell_reason == 'sell_signal' or sell_reason == 'roi' or sell_reason == 'stop_loss':
             if BrainConfig.IS_BACKTEST:
                 perform_back_test_sell(current_time)
             else:
