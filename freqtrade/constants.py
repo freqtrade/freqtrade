@@ -479,6 +479,7 @@ CANCEL_REASON = {
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
     "FORCE_EXIT": "forcesold",
     "REPLACE": "cancelled to be replaced by new limit order",
+    "USER_CANCEL": "user requested order cancel"
 }
 
 # List of pairs with their timeframes
