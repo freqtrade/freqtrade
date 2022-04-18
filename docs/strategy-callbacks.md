@@ -16,7 +16,7 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
-* [`readjust_entry_price()`](#readjust-entry-price)
+* [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
 
 !!! Tip "Callback calling sequence"
@@ -389,7 +389,7 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning
     Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
-    **Example**:
+    **Example**:  
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
@@ -690,14 +690,16 @@ class DigDeeperStrategy(IStrategy):
 
 ```
 
-## Readjust Entry Price
+## Adjust Entry Price
 
-The `readjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
+The `adjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
 Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
 
-!!! Warning This mechanism will not trigger if previous orders were partially or fully filled.
+!!! Note "Simple Order Cancelation"
+    This also allows simple cancelation without an replacement order. This behavior occurs when `None` is returned.
 
-!!! Warning Entry `unfilledtimeout` mechanism takes precedence over this. Be sure to update timeout values to match your expectancy.
+!!! Warning 
+    Entry `unfilledtimeout` mechanism takes precedence over this. Be sure to update timeout values to match your expectancy.
 
 ```python
 from freqtrade.persistence import Trade
@@ -707,13 +709,17 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def readjust_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
-                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+    def adjust_entry_price(self, trade: Trade, order: Order, pair: str,
+                          current_time: datetime, proposed_rate: float,
+                          entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
-        Entry price readjustment logic, returning the readjusted entry price.
+        Entry price re-adjustment logic, returning the user desired limit price.
+        This only executes when a order was already placed, still open(unfilled fully or partially)
+        and not timed out on subsequent candles after entry trigger.
 
         :param pair: Pair that's currently analyzed
         :param trade: Trade object.
+        :param order: Order object
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
@@ -724,9 +730,13 @@ class AwesomeStrategy(IStrategy):
         """
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
         if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
-            dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-            current_candle = dataframe.iloc[-1].squeeze()
-            return current_candle['sma_200']
+            # just cancel the order if it has been filled more than half of the ammount
+            if order.filled > order.remaining:
+                return None
+            else:
+                dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+                current_candle = dataframe.iloc[-1].squeeze()
+                return current_candle['sma_200']
         return proposed_rate
 ```
 
