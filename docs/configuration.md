@@ -11,7 +11,7 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command-line option.
 
-If you used the [Quick start](installation.md/#quick-start) method for installing 
+If you used the [Quick start](installation.md/#quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
 If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
@@ -64,7 +64,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "config-private.json"
     ]
     ```
-    
+
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
@@ -100,7 +100,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited",
     }
     ```
-    
+
     Resulting combined configuration:
 
     ``` json title="Result"
@@ -229,6 +229,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 | `max_entry_position_adjustment` | Maximum additional order(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
+| `backtest_signal_candle_export_enable` | Enables the exporting of signal candles for use in post-backtesting analysis of buy tags. See [Strategy Analysis](strategy_analysis_example.md#analyse-the-buy-entry-and-sell-exit-tags). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 
 ### Parameters in the strategy
 
