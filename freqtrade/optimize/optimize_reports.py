@@ -60,8 +60,8 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
     else:
         filename = Path.joinpath(
             recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals'
-        ).with_suffix(recordfilename.suffix)
+            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl'
+        )
 
     file_dump_pickle(filename, candles)
 
