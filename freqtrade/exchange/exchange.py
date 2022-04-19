@@ -2137,8 +2137,8 @@ class Exchange:
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier.get('info', {})
         return {
-            'min': tier['notionalFloor'],
-            'max': tier['notionalCap'],
+            'min': tier['minNotional'],
+            'max': tier['maxNotional'],
             'mmr': tier['maintenanceMarginRate'],
             'lev': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
