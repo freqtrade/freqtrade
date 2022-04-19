@@ -1,5 +1,5 @@
 import re
-from datetime import timedelta
+from datetime import timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +19,7 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
+                                                 store_backtest_signal_candles,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -199,6 +200,27 @@ def test_store_backtest_stats(testdatadir, mocker):
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
+
+
+def test_store_backtest_candles(testdatadir, mocker):
+
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_pickle')
+
+    # test directory exporting
+    store_backtest_signal_candles(testdatadir, {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}})
+
+    assert dump_mock.call_count == 1
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+
+    dump_mock.reset_mock()
+    # test file exporting
+    filename = testdatadir / 'testresult'
+    store_backtest_signal_candles(filename, {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}})
+    assert dump_mock.call_count == 1
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    # result will be testdatadir / testresult-<timestamp>_signals.pkl
+    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
 
 
 def test_generate_pair_metrics():

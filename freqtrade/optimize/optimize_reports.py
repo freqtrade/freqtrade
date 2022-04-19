@@ -1,5 +1,4 @@
 import logging
-import pickle
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,8 +11,8 @@ from tabulate import tabulate
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
-from freqtrade.misc import (decimals_per_coin, file_dump_json, get_backtest_metadata_filename,
-                            round_coin_value)
+from freqtrade.misc import (decimals_per_coin, file_dump_json, file_dump_pickle,
+                            get_backtest_metadata_filename, round_coin_value)
 
 
 logger = logging.getLogger(__name__)
@@ -61,11 +60,10 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
     else:
         filename = Path.joinpath(
             recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals'
         ).with_suffix(recordfilename.suffix)
 
-    with open(filename, 'wb') as f:
-        pickle.dump(candles, f)
+    file_dump_pickle(filename, candles)
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:

@@ -4,6 +4,7 @@ Various tool function for Freqtrade and scripts
 import gzip
 import hashlib
 import logging
+import pickle
 import re
 from copy import deepcopy
 from datetime import datetime
@@ -84,6 +85,21 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
+
+
+def file_dump_pickle(filename: Path, data: Any, log: bool = True) -> None:
+    """
+    Dump object data into a file
+    :param filename: file to create
+    :param data: Object data to save
+    :return:
+    """
+
+    if log:
+        logger.info(f'dumping pickle to "{filename}"')
+    with open(filename, 'wb') as fp:
+        pickle.dump(data, fp)
+    logger.debug(f'done pickling to "{filename}"')
 
 
 def json_load(datafile: IO) -> Any:
