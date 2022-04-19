@@ -1284,7 +1284,8 @@ class FreqtradeBot(LoggingMixin):
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
             # if trade is not partially completed and it's the only order, just delete the trade
-            if len(trade.orders) <= 1 and allow_full_cancel:
+            open_order_count = len([order for order in trade.orders if order.status == 'open'])
+            if open_order_count <= 1 and allow_full_cancel:
                 trade.delete()
                 was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
