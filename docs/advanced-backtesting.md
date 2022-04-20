@@ -10,7 +10,15 @@ determine indicator values on the signal candle that resulted in a trade opening
 !!! Note
     The following buy reason analysis is only available for backtesting, *not hyperopt*.
 
-We first need to enable the exporting of trades from backtesting:
+We first need to tell freqtrade to export the signal candles for each opened trade,
+so add the following option to your config file:
+
+```
+'backtest_signal_candle_export_enable': true,
+```
+
+We then need to run backtesting and include the `--export` option to enable the exporting of
+trades:
 
 ```bash
 freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange=<timerange> --export=trades
@@ -19,13 +27,6 @@ freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_nam
 To analyse the buy tags, we need to use the `buy_reasons.py` script from
 [froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
 in their README to copy the script into your `freqtrade/scripts/` folder.
-
-We then need the signal candles for each opened trade so add the following option to your
-config file:
-
-```
-'backtest_signal_candle_export_enable': true,
-```
 
 This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
 DataFrame of the candles that resulted in buy signals. Depending on how many buys your strategy
