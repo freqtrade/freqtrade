@@ -4,7 +4,6 @@ Various tool function for Freqtrade and scripts
 import gzip
 import hashlib
 import logging
-import pickle
 import re
 from copy import deepcopy
 from datetime import datetime
@@ -13,6 +12,7 @@ from typing import Any, Iterator, List, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
+import joblib
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
@@ -87,7 +87,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
     logger.debug(f'done json to "{filename}"')
 
 
-def file_dump_pickle(filename: Path, data: Any, log: bool = True) -> None:
+def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
     """
     Dump object data into a file
     :param filename: file to create
@@ -96,10 +96,10 @@ def file_dump_pickle(filename: Path, data: Any, log: bool = True) -> None:
     """
 
     if log:
-        logger.info(f'dumping pickle to "{filename}"')
+        logger.info(f'dumping joblib to "{filename}"')
     with open(filename, 'wb') as fp:
-        pickle.dump(data, fp)
-    logger.debug(f'done pickling to "{filename}"')
+        joblib.dump(data, fp)
+    logger.debug(f'done joblib dump to "{filename}"')
 
 
 def json_load(datafile: IO) -> Any:

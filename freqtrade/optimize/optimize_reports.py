@@ -11,7 +11,7 @@ from tabulate import tabulate
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
-from freqtrade.misc import (decimals_per_coin, file_dump_json, file_dump_pickle,
+from freqtrade.misc import (decimals_per_coin, file_dump_joblib, file_dump_json,
                             get_backtest_metadata_filename, round_coin_value)
 
 
@@ -45,7 +45,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> None:
+def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> Path:
     """
     Stores backtest trade signal candles
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -63,7 +63,9 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl'
         )
 
-    file_dump_pickle(filename, candles)
+    file_dump_joblib(filename, candles)
+
+    return filename
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:
