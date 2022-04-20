@@ -13,6 +13,7 @@ class WAOStrategyController:
     def __init__(self, brain, time_out_hours):
         self.brain = brain
         self.time_out_hours = time_out_hours
+        print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
         setup_429()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(self.brain, BrainConfig.BACKTEST_COIN,
@@ -22,36 +23,26 @@ class WAOStrategyController:
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
 
     def on_buy_signal(self, current_time, coin):
-        print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
+        print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
               ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            self.__buy_back_test(current_time, coin)
+            self.__write_to_backtest_table(current_time, coin, "buy")
         else:
             self.__buy_execute(coin)
 
     def on_sell_signal(self, sell_reason, current_time, coin):
-        print("StrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
+        print("WAOStrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if sell_reason == 'sell_signal' or sell_reason == 'roi' or sell_reason == 'stop_loss':
             if BrainConfig.IS_BACKTEST:
-                perform_back_test_sell(current_time)
+                self.__write_to_backtest_table(current_time, coin, "sell")
             else:
                 perform_execute_sell(coin, self.romeo_pool)
+                self.__remove_from_pool(coin)
 
-        self.__remove_from_pool(coin)
-
-    def __buy_back_test(self, date_time, coin):
-        time.sleep(BrainConfig.BACKTEST_THROTTLE_SECOND)
-        if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_back_test_buy, args=(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
-        else:
-            perform_back_test_buy(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)
-
-    def __buy_execute(self, coin):
-        if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_execute_buy, args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
-        else:
-            perform_execute_buy(coin, self.brain, self.romeo_pool, self.time_out_hours)
+    def __write_to_backtest_table(self, date_time, coin, type):
+        #todo: write to backtest table: Execution - date_time, coin, type, self.brain, self.romeo_pool, self.time_out_hours
+        pass
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):

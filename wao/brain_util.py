@@ -34,13 +34,13 @@ def perform_execute_sell(coin, romeo_pool):
         if romeo is not None:
             romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
-
+#todo: remove at end
 def perform_back_test_sell(date_time):
     if Config.IS_SS_ENABLED:
         date = str(date_time).replace(" ", ", ")
         Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
-
+#todo : extract to table
 def perform_back_test_buy(date_time, coin, brain, romeo_pool, time_out_hours):
     Config.COIN = coin
     Config.BRAIN = brain
@@ -51,7 +51,6 @@ def perform_back_test_buy(date_time, coin, brain, romeo_pool, time_out_hours):
     Config.BACKTEST_BUY_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
     Config.BACKTEST_MONTH_INDEX = __get_month_from_timestamp()
     Config.BACKTEST_YEAR = __get_year_from_timestamp()
-    Config.IS_BACKTEST = True
     print("_perform_back_test: Config.BACKTEST_BUY_SIGNAL_TIMESTAMP = " + str(
         Config.BACKTEST_BUY_SIGNAL_TIMESTAMP) + " Config.BACKTEST_MONTH_INDEX = " + str(
         Config.BACKTEST_MONTH_INDEX) + " Config.COIN = " + str(
