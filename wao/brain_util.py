@@ -10,6 +10,13 @@ from wao._429_watcher import _429_Watcher
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
+from backtest_execution import BacktestExecution
+import pickle
+
+def write_to_backtest_table(timestamp, coin, brain, type):
+    print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
+    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, timestamp=timestamp))
+    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_TABLE_FILE_PATH, 'w'))
 
 
 def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
@@ -34,13 +41,15 @@ def perform_execute_sell(coin, romeo_pool):
         if romeo is not None:
             romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
-#todo: remove at end
+
+# todo: remove at end
 def perform_back_test_sell(date_time):
     if Config.IS_SS_ENABLED:
         date = str(date_time).replace(" ", ", ")
         Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
-#todo : extract to table
+
+# todo : extract to table
 def perform_back_test_buy(date_time, coin, brain, romeo_pool, time_out_hours):
     Config.COIN = coin
     Config.BRAIN = brain
@@ -114,3 +123,9 @@ def __get_unix_timestamp(date):
                                            "%Y-%m-%d, %H:%M:%S")
     unix_time = datetime.datetime.timestamp(date_time)
     return int(unix_time)
+
+
+def delete_backtest_table_file():
+    file_name = BrainConfig.BACKTEST_TABLE_FILE_PATH
+    if os.path.isfile(file_name):
+        os.remove(file_name)

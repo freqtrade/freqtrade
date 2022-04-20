@@ -1,16 +1,15 @@
-from wao.brain_util import perform_execute_buy, perform_execute_sell, perform_back_test_buy, perform_back_test_sell
+from wao.brain_util import perform_execute_buy, perform_execute_sell, perform_back_test_buy, perform_back_test_sell, write_to_backtest_table
 import threading
 from wao.brain_config import BrainConfig
 from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 
-
 class WAOStrategyController:
-    # romeo_pool: key=coin, value=romeo_instance
-    romeo_pool = {}
 
     def __init__(self, brain, time_out_hours):
+        # romeo_pool: key=coin, value=romeo_instance
+        self.romeo_pool = {}
         self.brain = brain
         self.time_out_hours = time_out_hours
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
@@ -26,7 +25,7 @@ class WAOStrategyController:
         print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
               ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            self.__write_to_backtest_table(current_time, coin, "buy")
+            write_to_backtest_table(current_time, coin, "buy")
         else:
             self.__buy_execute(coin)
 
@@ -35,14 +34,10 @@ class WAOStrategyController:
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if sell_reason == 'sell_signal' or sell_reason == 'roi' or sell_reason == 'stop_loss':
             if BrainConfig.IS_BACKTEST:
-                self.__write_to_backtest_table(current_time, coin, "sell")
+                write_to_backtest_table(current_time, coin, "sell")
             else:
                 perform_execute_sell(coin, self.romeo_pool)
                 self.__remove_from_pool(coin)
-
-    def __write_to_backtest_table(self, date_time, coin, type):
-        #todo: write to backtest table: Execution - date_time, coin, type, self.brain, self.romeo_pool, self.time_out_hours
-        pass
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):
