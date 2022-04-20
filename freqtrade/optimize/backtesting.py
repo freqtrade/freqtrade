@@ -1079,25 +1079,28 @@ class Backtesting:
 
         if self.backtest_signal_candle_export_enable and \
                 self.dataprovider.runmode == RunMode.BACKTEST:
-            signal_candles_only = {}
-            for pair in preprocessed_tmp.keys():
-                signal_candles_only_df = DataFrame()
-
-                pairdf = preprocessed_tmp[pair]
-                resdf = results['results']
-                pairresults = resdf.loc[(resdf["pair"] == pair)]
-
-                if pairdf.shape[0] > 0:
-                    for t, v in pairresults.open_date.items():
-                        allinds = pairdf.loc[(pairdf['date'] < v)]
-                        signal_inds = allinds.iloc[[-1]]
-                        signal_candles_only_df = signal_candles_only_df.append(signal_inds)
-
-                    signal_candles_only[pair] = signal_candles_only_df
-
-            self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
+            self._generate_trade_signal_candles(preprocessed_tmp, results)
 
         return min_date, max_date
+
+    def _generate_trade_signal_candles(self, preprocessed_df, bt_results):
+        signal_candles_only = {}
+        for pair in preprocessed_df.keys():
+            signal_candles_only_df = DataFrame()
+
+            pairdf = preprocessed_df[pair]
+            resdf = bt_results['results']
+            pairresults = resdf.loc[(resdf["pair"] == pair)]
+
+            if pairdf.shape[0] > 0:
+                for t, v in pairresults.open_date.items():
+                    allinds = pairdf.loc[(pairdf['date'] < v)]
+                    signal_inds = allinds.iloc[[-1]]
+                    signal_candles_only_df = signal_candles_only_df.append(signal_inds)
+
+                signal_candles_only[pair] = signal_candles_only_df
+
+        self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
 
     def _get_min_cached_backtest_date(self):
         min_backtest_date = None
