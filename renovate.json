@@ -1,0 +1,42 @@
+{
+  "extends": [
+    "config:base",
+    ":prConcurrentLimit20",
+    ":preserveSemverRanges"
+  ],
+  "ignorePresets": [
+    ":dependencyDashboard"
+  ],
+  "semanticCommits": "enabled",
+  "commitMessageTopic": "{{depName}}",
+  "pip_requirements": {
+    "fileMatch": [
+      "(^|/)(requirements[\\w-]*\\.txt|\\.pre-commit-config\\.yaml)$"
+    ]
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["pre-commit"],
+      "commitMessageTopic": "{{depName}}",
+      "semanticCommitScope": "pre-commit"
+    },
+    {
+      "matchPackagePatterns": ["(^|/)mypy$"],
+      "groupName": "mypy",
+      "versioning": "pep440",
+    },
+    {
+      "matchPackagePatterns": ["(^|/)flake8$"],
+      "versioning": "pep440",
+      "groupName": "flake8"
+    },
+    {
+      "matchPackagePatterns": ["(^|/)isort$"],
+      "versioning": "pep440",
+      "groupName": "isort"
+    }
+  ]
+}
