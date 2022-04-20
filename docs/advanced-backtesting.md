@@ -13,11 +13,15 @@ determine indicator values on the signal candle that resulted in a trade opening
 We first need to enable the exporting of trades from backtesting:
 
 ```bash
-freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange=<timerange> --export=trades --export-filename=user_data/backtest_results/<name>-<timerange>
+freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange=<timerange> --export=trades
 ```
 
-To analyse the buy tags, we need to use the `freqtrade tag-analysis` command. We need the signal
-candles for each opened trade so add the following option to your config file:
+To analyse the buy tags, we need to use the `buy_reasons.py` script from
+[froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
+in their README to copy the script into your `freqtrade/scripts/` folder.
+
+We then need the signal candles for each opened trade so add the following option to your
+config file:
 
 ```
 'backtest_signal_candle_export_enable': true,
@@ -37,7 +41,7 @@ If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl`
 Now run the buy_reasons.py script, supplying a few options:
 
 ```bash
-freqtrade tag-analysis -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4
+python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4
 ```
 
 The `-g` option is used to specify the various tabular outputs, ranging from the simplest (0)
@@ -56,7 +60,7 @@ To show only certain buy and sell tags in the displayed output, use the followin
 For example:
 
 ```bash
-freqtrade tag-analysis -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss"
+python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss"
 ```
 
 ### Outputting signal candle indicators
@@ -67,7 +71,7 @@ indicators. To print out a column for a given set of indicators, use the `--indi
 option:
 
 ```bash
-freqtrade tag-analysis -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
+python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main
