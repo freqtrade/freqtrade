@@ -5,7 +5,7 @@ from freqtrade.strategy import IStrategy
 from wao.wao_strategy_controller import WAOStrategyController
 
 
-class wao_strategy(IStrategy):
+class WAOStrategy(IStrategy):
 
     # Optional order type mapping
     order_types = {
