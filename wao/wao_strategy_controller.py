@@ -6,7 +6,8 @@ from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 import os
-
+sys.path.append(BrainConfig.EXECUTION_PATH)
+from config import Config
 
 class WAOStrategyController:
 
@@ -21,8 +22,7 @@ class WAOStrategyController:
             send_start_deliminator_message(self.brain, BrainConfig.BACKTEST_COIN,
                                            BrainConfig.BACKTEST_MONTH_LIST[
                                                BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
-                                           BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
-                                           BrainConfig.BACKTEST_MAX_COUNT_DUP)
+                                           BrainConfig.BACKTEST_DATA_CLEANER_YEAR)
             # delete cumulative file
             file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
             if os.path.isfile(file_name):
@@ -46,7 +46,7 @@ class WAOStrategyController:
             self.__remove_from_pool(coin)
 
     def __buy_execute(self, coin):
-        if BrainConfig.IS_PARALLEL_EXECUTION:
+        if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
                              args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
         else:

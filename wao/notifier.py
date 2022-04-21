@@ -10,9 +10,9 @@ TELEGRAM_RESPONSE_200 = "<Response [200]>"
 TELEGRAM_RESPONSE_429 = "<Response [429]>"
 
 
-def send_start_deliminator_message(brain, coin, month, year, dup, max_counter_dup):
+def send_start_deliminator_message(brain, coin, month, year):
     print("notifier: send_start_deliminator_message: ")
-    text = "========" + str(brain) + " DUP = " + str(dup) + " MAX_COUNTER_DUP = " + max_counter_dup + " " + str(
+    text = "========" + str(brain) + " coin=" + str(
         coin) + " " + str(month) + " " + str(year) + "=======>"
 
     post_request(text)
