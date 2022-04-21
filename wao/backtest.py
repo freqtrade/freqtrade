@@ -6,13 +6,10 @@ import time
 import datetime
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
-from wao.brain_util import perform_back_test_buy, perform_back_test_sell
+from wao.brain_util import perform_back_test_buy, perform_back_test_sell, clear_execution_state, is_execution_state_open
 import pickle
 import threading
 from wao.backtest_execution import BacktestExecution
-
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
 
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", read_from_backtest_table")
 backtest_execution_list = pickle.load(open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'r'))
@@ -28,16 +25,6 @@ def __buy_back_test(date_time, coin, brain, timeout_hours):
         perform_back_test_buy(date_time, coin, brain, timeout_hours)
 
 
-def __is_execution_state_open():
-    return not os.path.isfile(Config.BACKTEST_EXECUTION_FINISHED_FILE_PATH)
-
-
-def __clear_execution_state():
-    filename = Config.BACKTEST_EXECUTION_FINISHED_FILE_PATH
-    if os.path.isfile(filename):
-        os.remove(filename)
-
-
 # backtest_execution_stack: first element is buy and second is sell
 stack = []
 index = 0
@@ -46,11 +33,11 @@ for backtest_execution in backtest_execution_list:
     print("STEP [3]++++++++++++++++++++++++++++++++++++ execution.type=" + str(backtest_execution.type) + str(
         index + 1) + " of " + str(len(backtest_execution_list)))
 
-    while __is_execution_state_open() and index > 0:
-        print("STEP [3]++++++++++++++++ __is_execution_state_open: True  index=" + str(index) + ", waiting...")
+    while is_execution_state_open() and index > 0:
+        print("STEP [3]++++++++++++++++ is_execution_state_open: True  index=" + str(index) + ", waiting...")
         time.sleep(1)
 
-    __clear_execution_state()
+    clear_execution_state()
 
     if backtest_execution.type == "buy":
         if len(stack) == 0:

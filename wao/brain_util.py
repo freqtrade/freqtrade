@@ -14,6 +14,16 @@ from romeo import Romeo, RomeoExitPriceType
 import pickle
 
 
+def is_execution_state_open():
+    return not os.path.isfile(Config.BACKTEST_EXECUTION_FINISHED_FILE_PATH)
+
+
+def clear_execution_state():
+    filename = Config.BACKTEST_EXECUTION_FINISHED_FILE_PATH
+    if os.path.isfile(filename):
+        os.remove(filename)
+
+
 def write_to_backtest_table(timestamp, coin, brain, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
     BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, timestamp=timestamp))
