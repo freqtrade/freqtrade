@@ -24,9 +24,9 @@ def clear_execution_state():
         os.remove(filename)
 
 
-def write_to_backtest_table(timestamp, coin, brain, type):
+def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
-    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, timestamp=timestamp))
+    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, time_out_hours, timestamp=timestamp))
     pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'w'))
 
 
