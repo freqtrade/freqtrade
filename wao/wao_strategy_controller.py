@@ -4,6 +4,7 @@ from wao.brain_config import BrainConfig
 from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
+import os
 
 
 class WAOStrategyController:
@@ -20,6 +21,10 @@ class WAOStrategyController:
                                                BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
                                            BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
+            # delete cumulative file
+            file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+            if os.path.isfile(file_name):
+                os.remove(file_name)
 
     def on_buy_signal(self, current_time, coin):
         print("StrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
@@ -43,13 +48,15 @@ class WAOStrategyController:
     def __buy_back_test(self, date_time, coin):
         time.sleep(BrainConfig.BACKTEST_THROTTLE_SECOND)
         if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_back_test_buy, args=(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
+            threading.Thread(target=perform_back_test_buy,
+                             args=(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
         else:
             perform_back_test_buy(date_time, coin, self.brain, self.romeo_pool, self.time_out_hours)
 
     def __buy_execute(self, coin):
         if BrainConfig.IS_PARALLEL_EXECUTION:
-            threading.Thread(target=perform_execute_buy, args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
+            threading.Thread(target=perform_execute_buy,
+                             args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
         else:
             perform_execute_buy(coin, self.brain, self.romeo_pool, self.time_out_hours)
 

@@ -15,4 +15,5 @@ class BrainConfig:
     _429_DIRECTORY = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_429_directory/"
     IS_PARALLEL_EXECUTION = True
     BACKTEST_THROTTLE_SECOND = 1
-    MODE = "test"
+    MODE = "test" # test or prod
+    CUMULATIVE_PROFIT_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/execution/_cumulative_profit.txt"
