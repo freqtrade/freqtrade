@@ -5,16 +5,16 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
-from wao.wao_strategy import WAOStrategy
+from wao.wao_strategy import wao_strategy
 
 
-class bbrsi_scalp(WAOStrategy):
-    brain = "Freq_bbrsi_scalp"
+class bbrsi_scalp(wao_strategy):
+    # brain = "Freq_bbrsi_scalp"
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
 
-    def __init__(self, config: dict):
-        super().__init__(config, self.brain, 5)
+    # def __init__(self, config: dict):
+    #     super().__init__(config, self.brain, 5)
 
     minimal_roi = {
         "0": 0.07
