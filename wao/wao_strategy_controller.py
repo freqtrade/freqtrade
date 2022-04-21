@@ -4,6 +4,7 @@ from wao.brain_config import BrainConfig
 from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
+import os
 
 class WAOStrategyController:
 
@@ -20,6 +21,10 @@ class WAOStrategyController:
                                                BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
                                            BrainConfig.BACKTEST_DATA_CLEANER_YEAR, BrainConfig.BACKTEST_DUP,
                                            BrainConfig.BACKTEST_MAX_COUNT_DUP)
+            # delete cumulative file
+            file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+            if os.path.isfile(file_name):
+                os.remove(file_name)
 
     def on_buy_signal(self, current_time, coin):
         print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
