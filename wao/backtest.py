@@ -15,7 +15,7 @@ from config import Config
 from romeo import Romeo, RomeoExitPriceType
 
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", read_from_backtest_table")
-file_pi2 = open(BrainConfig.BACKTEST_TABLE_FILE_PATH, 'r')
+file_pi2 = open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE, 'r')
 backtest_execution_list = pickle.load(file_pi2)
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", backtest_execution_list.size=" + str(
     len(backtest_execution_list)))
@@ -29,8 +29,11 @@ def __buy_back_test(date_time, coin, brain, timeout_hours):
         perform_back_test_buy(date_time, coin, brain, timeout_hours)
 
 
+index = 0
 for backtest_execution in backtest_execution_list:
-    print("STEP [2]++++++++++++++++++++++++++++++++++++ execution.type=" + str(backtest_execution.type))
+
+    print("STEP [2]++++++++++++++++++++++++++++++++++++ execution.type=" + str(backtest_execution.type) + str(
+        index + 1) + " of " + str(len(backtest_execution_list)))
 
     # backtest_execution_stack: first element is buy and second is sell
     stack = []
@@ -56,5 +59,4 @@ for backtest_execution in backtest_execution_list:
         execution = stack[0]
         __buy_back_test(execution.timestamp, execution.coin, execution.brain, execution.timeout_hours)
 
-
-
+    index += 1

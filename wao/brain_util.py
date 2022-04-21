@@ -16,7 +16,7 @@ import pickle
 def write_to_backtest_table(timestamp, coin, brain, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
     BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, timestamp=timestamp))
-    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_TABLE_FILE_PATH, 'w'))
+    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE, 'w'))
 
 
 def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
@@ -122,6 +122,6 @@ def __get_unix_timestamp(date):
 
 
 def delete_backtest_table_file():
-    file_name = BrainConfig.BACKTEST_TABLE_FILE_PATH
+    file_name = BrainConfig.BACKTEST_EXECUTION_LIST_FILE
     if os.path.isfile(file_name):
         os.remove(file_name)

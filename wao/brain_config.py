@@ -13,7 +13,7 @@ class BrainConfig:
     ROOT_DIRECTORY = "/root/"
     EXECUTION_PATH = ROOT_DIRECTORY + "workspace/execution"
     _429_DIRECTORY = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_429_directory/"
-    BACKTEST_TABLE_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/backtest_table.csv"
+    BACKTEST_EXECUTION_LIST_FILE = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_backtest_list.txt"
     BACKTEST_EXECUTION_LIST = []
     IS_PARALLEL_EXECUTION = True
     BACKTEST_THROTTLE_SECOND = 1
