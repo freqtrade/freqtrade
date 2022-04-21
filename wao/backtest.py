@@ -12,7 +12,7 @@ import threading
 from wao.backtest_execution import BacktestExecution
 
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", read_from_backtest_table")
-backtest_execution_list = pickle.load(open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'r'))
+backtest_execution_list = pickle.load(open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'rb'))
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", backtest_execution_list.size=" + str(
     len(backtest_execution_list)))
 
