@@ -6,11 +6,11 @@ import time
 import datetime
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
+from wao.backtest_execution import BacktestExecution
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
-from backtest_execution import BacktestExecution
 import pickle
 
 

@@ -9,11 +9,10 @@ from wao._429_watcher import _429_Watcher
 from wao.brain_util import perform_back_test_buy, perform_back_test_sell
 import pickle
 import threading
+from wao.backtest_execution import BacktestExecution
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
-from romeo import Romeo, RomeoExitPriceType
-from backtest_execution import BacktestExecution
 
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", read_from_backtest_table")
 backtest_execution_list = pickle.load(open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'r'))
