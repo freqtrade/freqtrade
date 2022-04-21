@@ -16,20 +16,17 @@ from romeo import Romeo, RomeoExitPriceType
 from backtest_execution import BacktestExecution
 
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", read_from_backtest_table")
-file_pi2 = open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'r')
-backtest_execution_list = pickle.load(file_pi2)
+backtest_execution_list = pickle.load(open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'r'))
 print("STEP [2]++++++++++++++++++++++++++++++++++++" + ", backtest_execution_list.size=" + str(
     len(backtest_execution_list)))
-
-romeo_pool = {}
 
 
 def __buy_back_test(date_time, coin, brain, timeout_hours):
     if BrainConfig.IS_PARALLEL_EXECUTION:
         threading.Thread(target=perform_back_test_buy,
-                         args=(date_time, coin, brain, timeout_hours, romeo_pool)).start()
+                         args=(date_time, coin, brain, timeout_hours)).start()
     else:
-        perform_back_test_buy(date_time, coin, brain, timeout_hours, romeo_pool)
+        perform_back_test_buy(date_time, coin, brain, timeout_hours)
 
 
 def __is_execution_state_open():

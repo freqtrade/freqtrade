@@ -49,7 +49,7 @@ def perform_back_test_sell(date_time):
         Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
 
-def perform_back_test_buy(date_time, coin, brain, time_out_hours, romeo_pool):
+def perform_back_test_buy(date_time, coin, brain, time_out_hours):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
@@ -68,7 +68,6 @@ def perform_back_test_buy(date_time, coin, brain, time_out_hours, romeo_pool):
         Config.ROMEO_D_UP_MAX))
 
     romeo = Romeo.instance(True, True)
-    romeo_pool[coin] = romeo
     romeo.start()
 
 
