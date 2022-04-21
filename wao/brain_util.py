@@ -13,10 +13,11 @@ from romeo import Romeo, RomeoExitPriceType
 from backtest_execution import BacktestExecution
 import pickle
 
+
 def write_to_backtest_table(timestamp, coin, brain, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
     BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, timestamp=timestamp))
-    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE, 'w'))
+    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH, 'w'))
 
 
 def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
@@ -48,7 +49,7 @@ def perform_back_test_sell(date_time):
         Config.BACKTEST_SELL_SIGNAL_TIMESTAMP = __get_unix_timestamp(date.split("+", 1)[0])
 
 
-def perform_back_test_buy(date_time, coin, brain, time_out_hours):
+def perform_back_test_buy(date_time, coin, brain, time_out_hours, romeo_pool):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
@@ -66,7 +67,9 @@ def perform_back_test_buy(date_time, coin, brain, time_out_hours):
         Config.ROMEO_D_UP_PERCENTAGE) + " Config.ROMEO_D_UP_MAX = " + str(
         Config.ROMEO_D_UP_MAX))
 
-    Romeo.instance(True, True).start()
+    romeo = Romeo.instance(True, True)
+    romeo_pool[coin] = romeo
+    romeo.start()
 
 
 def perform_create_429_watcher():
@@ -122,6 +125,6 @@ def __get_unix_timestamp(date):
 
 
 def delete_backtest_table_file():
-    file_name = BrainConfig.BACKTEST_EXECUTION_LIST_FILE
+    file_name = BrainConfig.BACKTEST_EXECUTION_LIST_FILE_PATH
     if os.path.isfile(file_name):
         os.remove(file_name)

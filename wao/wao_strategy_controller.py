@@ -1,10 +1,12 @@
-from wao.brain_util import perform_execute_buy, perform_execute_sell, perform_back_test_buy, perform_back_test_sell, write_to_backtest_table
+from wao.brain_util import perform_execute_buy, perform_execute_sell, perform_back_test_buy, perform_back_test_sell, \
+    write_to_backtest_table
 import threading
 from wao.brain_config import BrainConfig
 from wao.brain_util import setup_429
 from wao.notifier import send_start_deliminator_message
 import time
 import os
+
 
 class WAOStrategyController:
 
@@ -42,6 +44,13 @@ class WAOStrategyController:
         else:
             perform_execute_sell(coin, self.romeo_pool)
             self.__remove_from_pool(coin)
+
+    def __buy_execute(self, coin):
+        if BrainConfig.IS_PARALLEL_EXECUTION:
+            threading.Thread(target=perform_execute_buy,
+                             args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
+        else:
+            perform_execute_buy(coin, self.brain, self.romeo_pool, self.time_out_hours)
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):
