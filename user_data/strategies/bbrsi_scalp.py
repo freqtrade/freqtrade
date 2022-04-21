@@ -5,10 +5,10 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
-from wao.waostrategy import WAOStrategy
+from wao.wao_strategy import wao_strategy
 
 
-class bbrsi_scalp(WAOStrategy):
+class bbrsi_scalp(wao_strategy):
     # brain = "Freq_bbrsi_scalp"
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
