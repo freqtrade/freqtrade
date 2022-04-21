@@ -7,10 +7,10 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 
-from wao.wao_strategy import wao_strategy
+from wao.wao_strategy import WAOStrategy
 
 
-class Strategy003(wao_strategy):
+class Strategy003(WAOStrategy):
     brain = 'Freq_Strategy003'
 
     def __init__(self, config: dict):

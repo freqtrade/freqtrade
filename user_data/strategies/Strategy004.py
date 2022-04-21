@@ -5,10 +5,10 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 
-from wao.wao_strategy import wao_strategy
+from wao.wao_strategy import WAOStrategy
 
 
-class Strategy004(wao_strategy):
+class Strategy004(WAOStrategy):
     brain = 'Freq_Strategy004'
 
     def __init__(self, config: dict):
