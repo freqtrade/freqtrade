@@ -1077,7 +1077,7 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
-        if self.backtest_signal_candle_export_enable and \
+        if self.config.get('export', 'none') == 'signals' and \
                 self.dataprovider.runmode == RunMode.BACKTEST:
             self._generate_trade_signal_candles(preprocessed_tmp, results)
 
@@ -1163,8 +1163,9 @@ class Backtesting:
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
-            if self.backtest_signal_candle_export_enable and \
+            if self.config.get('export', 'none') == 'signals' and \
                     self.dataprovider.runmode == RunMode.BACKTEST:
+                store_backtest_stats(self.config['exportfilename'], self.results)
                 store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
