@@ -1,6 +1,6 @@
 # Advanced Backtesting Analysis
 
-## Analyse the buy/entry and sell/exit tags
+## Analyze the buy/entry and sell/exit tags
 
 It can be helpful to understand how a strategy behaves according to the buy/entry tags used to
 mark up different buy conditions. You might want to see more complex statistics about each buy and
@@ -20,11 +20,11 @@ so add the following option to your config file:
 We then need to run backtesting and include the `--export` option to enable the exporting of
 trades:
 
-```bash
+``` bash
 freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange=<timerange> --export=trades
 ```
 
-To analyse the buy tags, we need to use the `buy_reasons.py` script from
+To analyze the buy tags, we need to use the `buy_reasons.py` script from
 [froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
 in their README to copy the script into your `freqtrade/scripts/` folder.
 
@@ -39,9 +39,9 @@ backtesting with the `--cache none` option to make sure no cached results are us
 If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` file in the
 `user_data/backtest_results` folder.
 
-Now run the buy_reasons.py script, supplying a few options:
+Now run the `buy_reasons.py` script, supplying a few options:
 
-```bash
+``` bash
 python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4
 ```
 
@@ -76,5 +76,5 @@ python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main
-timeframe or for informatives) otherwise they will simply be ignored in the script
+timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.
