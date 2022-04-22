@@ -10,7 +10,7 @@ import pickle
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
-from romeo import Romeo, RomeoExitPriceType
+# from romeo import Romeo, RomeoExitPriceType
 from backtest_execution import BacktestExecution
 
 
@@ -31,16 +31,16 @@ def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
 
-    romeo = Romeo.instance(is_test_mode, True)
-    romeo_pool[coin] = romeo
-    romeo.start()
+    # romeo = Romeo.instance(is_test_mode, True)
+    # romeo_pool[coin] = romeo
+    # romeo.start()
 
 
 def perform_execute_sell(coin, romeo_pool):
     if Config.IS_SS_ENABLED:
         romeo = romeo_pool.get(coin)
-        if romeo is not None:
-            romeo.perform_sell_signal(RomeoExitPriceType.SS)
+        # if romeo is not None:
+        #     romeo.perform_sell_signal(RomeoExitPriceType.SS)
 
 
 def perform_create_429_watcher():
