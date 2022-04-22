@@ -32,7 +32,7 @@ class WAOStrategyController:
         print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
               ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, self.time_out_hours, "buy")
+            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, "buy")
         else:
             self.__buy_execute(coin)
 
@@ -40,7 +40,7 @@ class WAOStrategyController:
         print("WAOStrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, self.time_out_hours,  "sell")
+            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours,  "sell")
         else:
             perform_execute_sell(coin, self.romeo_pool)
             self.__remove_from_pool(coin)
