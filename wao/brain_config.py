@@ -9,7 +9,7 @@ class BrainConfig:
     CHOP_TESTER_WORKSPACE = "workspace2"
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     ROOT_DIRECTORY = "/root/"
-    EXECUTION_PATH = ROOT_DIRECTORY + "workspace/execution"
+    EXECUTION_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/execution"
     _429_DIRECTORY = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_429_directory/"
     BACKTEST_EXECUTION_LIST_PICKLE_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_backtest_list.pickle"
     BACKTEST_EXECUTION_LIST = []
