@@ -410,7 +410,7 @@ class Hyperopt:
         dump(preprocessed, self.data_pickle_file)
 
     def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
-        '''
+        """
         Enforce points returned from `self.opt.ask` have not been already evaluated
 
         Steps:
@@ -420,7 +420,7 @@ class Hyperopt:
         4. If still some points are missing in respect to `n_points`, random sample some points
         5. Repeat until at least `n_points` points in the `asked_non_tried` list
         6. Return a list with length truncated at `n_points`
-        '''
+        """
         def unique_list(a_list):
             new_list = []
             for item in a_list:
