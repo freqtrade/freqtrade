@@ -17,14 +17,14 @@ signals **and** trades:
 freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange=<timerange> --export=signals
 ```
 
-To analyze the buy tags, we need to use the `buy_reasons.py` script from
-[froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
-in their README to copy the script into your `freqtrade/scripts/` folder.
-
 This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
 DataFrame of the candles that resulted in buy signals. Depending on how many buys your strategy
 makes, this file may get quite large, so periodically check your `user_data/backtest_results`
 folder to delete old exports.
+
+To analyze the buy tags, we need to use the `buy_reasons.py` script from
+[froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
+in their README to copy the script into your `freqtrade/scripts/` folder.
 
 Before running your next backtest, make sure you either delete your old backtest results or run
 backtesting with the `--cache none` option to make sure no cached results are used.
@@ -47,14 +47,14 @@ running with the `-h` option.
 To show only certain buy and sell tags in the displayed output, use the following two options:
 
 ```
---buy_reason_list : Comma separated list of buy signals to analyse. Default: "all"
---sell_reason_list : Comma separated list of sell signals to analyse. Default: "stop_loss,trailing_stop_loss"
+--enter_reason_list : Comma separated list of enter signals to analyse. Default: "all"
+--exit_reason_list : Comma separated list of exit signals to analyse. Default: "stop_loss,trailing_stop_loss"
 ```
 
 For example:
 
 ```bash
-python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss"
+python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss"
 ```
 
 ### Outputting signal candle indicators
@@ -65,7 +65,7 @@ indicators. To print out a column for a given set of indicators, use the `--indi
 option:
 
 ```bash
-python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --buy_reason_list "buy_tag_a,buy_tag_b" --sell_reason_list "roi,custom_sell_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
+python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main
