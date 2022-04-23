@@ -847,7 +847,7 @@ def test_start_convert_trades(mocker, caplog):
     assert convert_mock.call_count == 1
 
 
-def test_start_list_strategies(mocker, caplog, capsys):
+def test_start_list_strategies(capsys):
 
     args = [
         "list-strategies",
@@ -892,6 +892,26 @@ def test_start_list_strategies(mocker, caplog, capsys):
     assert "legacy_strategy_v1.py" in captured.out
     assert CURRENT_TEST_STRATEGY in captured.out
     assert "LOAD FAILED" in captured.out
+    # Recursive
+    assert "TestStrategyNoImplements" not in captured.out
+
+    # Test recursive
+    args = [
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
+        '--no-color',
+        '--recursive-strategy-search'
+    ]
+    pargs = get_args(args)
+    # pargs['config'] = None
+    start_list_strategies(pargs)
+    captured = capsys.readouterr()
+    assert "TestStrategyLegacyV1" in captured.out
+    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "TestStrategyNoImplements" in captured.out
+    assert str(Path("broken_strats/broken_futures_strategies.py")) in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):

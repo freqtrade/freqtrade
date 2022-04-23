@@ -7,8 +7,9 @@ import logging
 import tempfile
 from base64 import urlsafe_b64decode
 from inspect import getfullargspec
+from os import walk
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
 from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
@@ -237,10 +238,19 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
+        if config.get('recursive_strategy_search', False):
+            extra_dirs: List[str] = [
+                path[0] for path in walk(f"{config['user_data_dir']}/{USERPATH_STRATEGIES}")
+            ]  # sub-directories
+        else:
+            extra_dirs = []
+
+        if extra_dir:
+            extra_dirs.append(extra_dir)
 
         abs_paths = StrategyResolver.build_search_paths(config,
                                                         user_subdir=USERPATH_STRATEGIES,
-                                                        extra_dir=extra_dir)
+                                                        extra_dirs=extra_dirs)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")

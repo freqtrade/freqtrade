@@ -12,7 +12,7 @@ from freqtrade.constants import DEFAULT_CONFIG
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
-ARGS_STRATEGY = ["strategy", "strategy_path"]
+ARGS_STRATEGY = ["strategy", "strategy_path", "recursive_strategy_search"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
@@ -37,7 +37,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
+ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized",
+                        "recursive_strategy_search"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 

@@ -41,7 +41,8 @@ class HyperoptTools():
         """
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
-        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategy_objs = StrategyResolver.search_all_objects(
+            directory, False, config.get('recursive_strategy_search', False))
         strategies = [s for s in strategy_objs if s['name'] == strategy_name]
         if strategies:
             strategy = strategies[0]
