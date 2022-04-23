@@ -44,7 +44,7 @@ class IResolver:
 
     @classmethod
     def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
-                           extra_dirs: Optional[List[str]] = None) -> List[Path]:
+                           extra_dirs: List[str] = []) -> List[Path]:
 
         abs_paths: List[Path] = []
         if cls.initial_search_path:
@@ -53,10 +53,9 @@ class IResolver:
         if user_subdir:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
 
-        if extra_dirs:
-            # Add extra directory to the top of the search paths
-            for dir in extra_dirs:
-                abs_paths.insert(0, Path(dir).resolve())
+        # Add extra directory to the top of the search paths
+        for dir in extra_dirs:
+            abs_paths.insert(0, Path(dir).resolve())
 
         return abs_paths
 
