@@ -1157,12 +1157,11 @@ class Backtesting:
             else:
                 self.results = results
 
-            if self.config.get('export', 'none') == 'trades':
+            if self.config.get('export', 'none') in ('trades', 'signals'):
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
             if (self.config.get('export', 'none') == 'signals' and
                     self.dataprovider.runmode == RunMode.BACKTEST):
-                store_backtest_stats(self.config['exportfilename'], self.results)
                 store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
