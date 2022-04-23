@@ -12,7 +12,6 @@ from typing import Any, Iterator, List, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
-import joblib
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
@@ -94,6 +93,7 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
     :param data: Object data to save
     :return:
     """
+    import joblib
 
     if log:
         logger.info(f'dumping joblib to "{filename}"')
