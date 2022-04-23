@@ -1428,6 +1428,8 @@ class PairLock(_DECL_BASE):
     id = Column(Integer, primary_key=True)
 
     pair = Column(String(25), nullable=False, index=True)
+    # lock direction - long, short or * (for both)
+    direction = Column(String(25), nullable=False, default="*")
     reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
