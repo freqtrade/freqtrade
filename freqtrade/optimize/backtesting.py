@@ -19,13 +19,15 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import BacktestState, CandleType, ExitCheckTuple, ExitType, TradingMode
+from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, RunMode,
+                             TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
+                                                 store_backtest_signal_candles,
                                                  store_backtest_stats)
 from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
@@ -73,6 +75,8 @@ class Backtesting:
         self.run_ids: Dict[str, str] = {}
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
+        self.processed_dfs: Dict[str, Dict] = {}
+
         self._exchange_name = self.config['exchange']['name']
         self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
         self.dataprovider = DataProvider(self.config, self.exchange)
@@ -1070,7 +1074,30 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
+        if (self.config.get('export', 'none') == 'signals' and
+                self.dataprovider.runmode == RunMode.BACKTEST):
+            self._generate_trade_signal_candles(preprocessed_tmp, results)
+
         return min_date, max_date
+
+    def _generate_trade_signal_candles(self, preprocessed_df, bt_results):
+        signal_candles_only = {}
+        for pair in preprocessed_df.keys():
+            signal_candles_only_df = DataFrame()
+
+            pairdf = preprocessed_df[pair]
+            resdf = bt_results['results']
+            pairresults = resdf.loc[(resdf["pair"] == pair)]
+
+            if pairdf.shape[0] > 0:
+                for t, v in pairresults.open_date.items():
+                    allinds = pairdf.loc[(pairdf['date'] < v)]
+                    signal_inds = allinds.iloc[[-1]]
+                    signal_candles_only_df = signal_candles_only_df.append(signal_inds)
+
+                signal_candles_only[pair] = signal_candles_only_df
+
+        self.processed_dfs[self.strategy.get_strategy_name()] = signal_candles_only
 
     def _get_min_cached_backtest_date(self):
         min_backtest_date = None
@@ -1130,8 +1157,12 @@ class Backtesting:
             else:
                 self.results = results
 
-            if self.config.get('export', 'none') == 'trades':
+            if self.config.get('export', 'none') in ('trades', 'signals'):
                 store_backtest_stats(self.config['exportfilename'], self.results)
+
+            if (self.config.get('export', 'none') == 'signals' and
+                    self.dataprovider.runmode == RunMode.BACKTEST):
+                store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
         if 'strategy_list' in self.config and len(self.results) > 0:

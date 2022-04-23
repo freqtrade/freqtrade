@@ -11,7 +11,7 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command-line option.
 
-If you used the [Quick start](installation.md/#quick-start) method for installing 
+If you used the [Quick start](installation.md/#quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
 If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
@@ -64,7 +64,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "config-private.json"
     ]
     ```
-    
+
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
@@ -100,7 +100,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited",
     }
     ```
-    
+
     Resulting combined configuration:
 
     ``` json title="Result"

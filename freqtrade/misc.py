@@ -12,6 +12,7 @@ from typing import Any, Iterator, List, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
+import joblib
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
@@ -84,6 +85,21 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
+
+
+def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
+    """
+    Dump object data into a file
+    :param filename: file to create
+    :param data: Object data to save
+    :return:
+    """
+
+    if log:
+        logger.info(f'dumping joblib to "{filename}"')
+    with open(filename, 'wb') as fp:
+        joblib.dump(data, fp)
+    logger.debug(f'done joblib dump to "{filename}"')
 
 
 def json_load(datafile: IO) -> Any:
