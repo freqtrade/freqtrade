@@ -157,6 +157,12 @@ jobs:
         pip install -e .
 
     - name: Tests
+      if: (runner.os != 'Linux' || matrix.python-version != '3.8')
+      run: |
+        pytest --random-order
+
+    - name: Tests (with cov)
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
@@ -229,7 +235,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order
 
     - name: Backtesting
       run: |
