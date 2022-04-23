@@ -435,7 +435,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
 
 
 def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str,
-                          starting_balance : Optional[float] = 0.0) -> pd.DataFrame:
+                          starting_balance: Optional[float] = 0.0) -> pd.DataFrame:
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
@@ -446,13 +446,15 @@ def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_
         max_balance = starting_balance + max_drawdown_df['high_value']
         max_drawdown_df['drawdown_relative'] = ((max_balance - cumulative_balance) / max_balance)
     else:
-        # This is not completely accurate, 
-        max_drawdown_df['drawdown_relative'] = ((max_drawdown_df['high_value'] - max_drawdown_df['cumulative']) / max_drawdown_df['high_value'])
+        # This is not completely accurate
+        max_drawdown_df['drawdown_relative'] = (
+            (max_drawdown_df['high_value'] - max_drawdown_df['cumulative'])
+            / max_drawdown_df['high_value'])
     return max_drawdown_df
 
 
 def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                         value_col: str = 'profit_ratio', starting_balance : Optional[float] = 0.0
+                         value_col: str = 'profit_ratio', starting_balance: Optional[float] = 0.0
                          ):
     """
     Calculate max drawdown and the corresponding close dates
@@ -466,7 +468,11 @@ def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col, starting_balance=starting_balance)
+    max_drawdown_df = _calc_drawdown_series(
+        profit_results,
+        date_col=date_col,
+        value_col=value_col,
+        starting_balance=starting_balance)
 
     return max_drawdown_df
 
@@ -489,9 +495,15 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col, starting_balance=starting_balance)
+    max_drawdown_df = _calc_drawdown_series(
+        profit_results,
+        date_col=date_col,
+        value_col=value_col,
+        starting_balance=starting_balance
+    )
 
-    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative else max_drawdown_df['drawdown'].idxmin()
+    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative \
+        else max_drawdown_df['drawdown'].idxmin()
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]

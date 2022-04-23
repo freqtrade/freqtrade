@@ -164,7 +164,10 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     Add scatter points indicating max drawdown
     """
     try:
-        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(trades, starting_balance=starting_balance)
+        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(
+            trades,
+            starting_balance=starting_balance
+        )
 
         drawdown = go.Scatter(
             x=[highdate, lowdate],
@@ -194,7 +197,11 @@ def add_underwater(fig, row, trades: pd.DataFrame, starting_balance: number) -> 
     Add underwater plots
     """
     try:
-        underwater = calculate_underwater(trades, value_col="profit_abs", starting_balance=starting_balance)
+        underwater = calculate_underwater(
+            trades,
+            value_col="profit_abs",
+            starting_balance=starting_balance
+        )
 
         underwater_plot = go.Scatter(
             x=underwater['date'],
@@ -213,9 +220,9 @@ def add_underwater(fig, row, trades: pd.DataFrame, starting_balance: number) -> 
             fillcolor='green',
             line={'color': 'green'}
         )
-        
+
         fig.add_trace(underwater_plot, row, 1)
-        fig.add_trace(underwater_plot_relative, row+1, 1)
+        fig.add_trace(underwater_plot_relative, row + 1, 1)
     except ValueError:
         logger.warning("No trades found - not plotting underwater plot")
     return fig

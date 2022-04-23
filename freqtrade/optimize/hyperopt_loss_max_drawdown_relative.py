@@ -4,12 +4,11 @@ MaxDrawDownRelativeHyperOptLoss
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
-from datetime import datetime
 from typing import Dict
 
 from pandas import DataFrame
 
-from freqtrade.data.btanalysis import calculate_underwater, calculate_max_drawdown
+from freqtrade.data.btanalysis import calculate_underwater
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
@@ -34,7 +33,11 @@ class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
         """
         total_profit = results['profit_abs'].sum()
         try:
-            drawdown_df = calculate_underwater(results, value_col='profit_abs', starting_balance=config['available_capital'])
+            drawdown_df = calculate_underwater(
+                results,
+                value_col='profit_abs',
+                starting_balance=config['available_capital']
+            )
             max_drawdown = abs(min(drawdown_df['drawdown']))
             relative_drawdown = max(drawdown_df['drawdown_relative'])
             if max_drawdown == 0:
@@ -42,4 +45,3 @@ class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
             return -total_profit / max_drawdown / relative_drawdown
         except (Exception, ValueError):
             return -total_profit
-        

@@ -769,7 +769,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             if 'max_drawdown_account' in strat_results else (
                 'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
             ('Absolute Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
-                                          strat_results['stake_currency'])),
+                                                   strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
                                                strat_results['stake_currency'])),
             ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
