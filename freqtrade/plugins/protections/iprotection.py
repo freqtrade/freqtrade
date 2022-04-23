@@ -12,7 +12,8 @@ from freqtrade.persistence import LocalTrade
 
 logger = logging.getLogger(__name__)
 
-ProtectionReturn = Tuple[bool, Optional[datetime], Optional[str]]
+# lock, until, reason, lock_side
+ProtectionReturn = Tuple[bool, Optional[datetime], Optional[str], Optional[str]]
 
 
 class IProtection(LoggingMixin, ABC):
@@ -80,14 +81,14 @@ class IProtection(LoggingMixin, ABC):
         """
 
     @abstractmethod
-    def global_stop(self, date_now: datetime) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
         """
 
     @abstractmethod
-    def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
+    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

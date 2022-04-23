@@ -849,10 +849,10 @@ class Backtesting:
             return 'short'
         return None
 
-    def run_protections(self, enable_protections, pair: str, current_time: datetime):
+    def run_protections(self, enable_protections, pair: str, current_time: datetime, side: str):
         if enable_protections:
-            self.protections.stop_per_pair(pair, current_time)
-            self.protections.global_stop(current_time)
+            self.protections.stop_per_pair(pair, current_time, side)
+            self.protections.global_stop(current_time, side)
 
     def check_order_cancel(self, trade: LocalTrade, current_time) -> bool:
         """
@@ -1002,7 +1002,8 @@ class Backtesting:
                         LocalTrade.close_bt_trade(trade)
                         trades.append(trade)
                         self.wallets.update()
-                        self.run_protections(enable_protections, pair, current_time)
+                        self.run_protections(
+                            enable_protections, pair, current_time, trade.trade_direction)
 
             # Move time one configured time_interval ahead.
             self.progress.increment()

@@ -51,7 +51,7 @@ class LowProfitPairs(IProtection):
         # trades = Trade.get_trades(filters).all()
         if len(trades) < self._trade_limit:
             # Not enough trades in the relevant period
-            return False, None, None
+            return False, None, None, None
 
         profit = sum(trade.close_profit for trade in trades if trade.close_profit)
         if profit < self._required_profit:
@@ -60,20 +60,20 @@ class LowProfitPairs(IProtection):
                 f"within {self._lookback_period} minutes.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
-            return True, until, self._reason(profit)
+            return True, until, self._reason(profit), None
 
-        return False, None, None
+        return False, None, None, None
 
-    def global_stop(self, date_now: datetime) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
         :return: Tuple of [bool, until, reason].
             If true, all pairs will be locked with <reason> until <until>
         """
-        return False, None, None
+        return False, None, None, None
 
-    def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
+    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

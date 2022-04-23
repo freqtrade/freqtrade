@@ -26,7 +26,7 @@ class CooldownPeriod(IProtection):
         """
         return (f"{self.name} - Cooldown period of {self.stop_duration_str}.")
 
-    def _cooldown_period(self, pair: str, date_now: datetime, ) -> ProtectionReturn:
+    def _cooldown_period(self, pair: str, date_now: datetime) -> ProtectionReturn:
         """
         Get last trade for this pair
         """
@@ -45,11 +45,11 @@ class CooldownPeriod(IProtection):
             self.log_once(f"Cooldown for {pair} for {self.stop_duration_str}.", logger.info)
             until = self.calculate_lock_end([trade], self._stop_duration)
 
-            return True, until, self._reason()
+            return True, until, self._reason(), None
 
-        return False, None, None
+        return False, None, None, None
 
-    def global_stop(self, date_now: datetime) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
@@ -57,9 +57,9 @@ class CooldownPeriod(IProtection):
             If true, all pairs will be locked with <reason> until <until>
         """
         # Not implemented for cooldown period.
-        return False, None, None
+        return False, None, None, None
 
-    def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
+    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> ProtectionReturn:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

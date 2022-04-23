@@ -1604,21 +1604,21 @@ class FreqtradeBot(LoggingMixin):
         if not trade.is_open:
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
-            self.handle_protections(trade.pair)
+            self.handle_protections(trade.pair, trade.trade_direction)
         elif send_msg and not trade.open_order_id:
             # Enter fill
             self._notify_enter(trade, order, fill=True)
 
         return False
 
-    def handle_protections(self, pair: str) -> None:
-        prot_trig = self.protections.stop_per_pair(pair)
+    def handle_protections(self, pair: str, side: str) -> None:
+        prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
             msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }
             msg.update(prot_trig.to_json())
             self.rpc.send_msg(msg)
 
-        prot_trig_glb = self.protections.global_stop()
+        prot_trig_glb = self.protections.global_stop(side=side)
         if prot_trig_glb:
             msg = {'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL, }
             msg.update(prot_trig_glb.to_json())

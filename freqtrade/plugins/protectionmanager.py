@@ -44,13 +44,14 @@ class ProtectionManager():
         """
         return [{p.name: p.short_desc()} for p in self._protection_handlers]
 
-    def global_stop(self, now: Optional[datetime] = None) -> Optional[PairLock]:
+    def global_stop(self, now: Optional[datetime] = None, side: str = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None
         for protection_handler in self._protection_handlers:
             if protection_handler.has_global_stop:
-                lock, until, reason = protection_handler.global_stop(now)
+                lock, until, reason, lock_side = protection_handler.global_stop(
+                    date_now=now, side=side)
 
                 # Early stopping - first positive result blocks further trades
                 if lock and until:
@@ -58,13 +59,15 @@ class ProtectionManager():
                         result = PairLocks.lock_pair('*', until, reason, now=now)
         return result
 
-    def stop_per_pair(self, pair, now: Optional[datetime] = None) -> Optional[PairLock]:
+    def stop_per_pair(
+            self, pair, now: Optional[datetime] = None, side: str = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None
         for protection_handler in self._protection_handlers:
             if protection_handler.has_local_stop:
-                lock, until, reason = protection_handler.stop_per_pair(pair, now)
+                lock, until, reason, lock_side = protection_handler.stop_per_pair(
+                    pair=pair, date_now=now, side=side)
                 if lock and until:
                     if not PairLocks.is_pair_locked(pair, until):
                         result = PairLocks.lock_pair(pair, until, reason, now=now)
