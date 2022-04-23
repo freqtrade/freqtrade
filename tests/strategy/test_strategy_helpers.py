@@ -68,6 +68,21 @@ def test_merge_informative_pair():
     assert result.iloc[7]['date_1h'] == result.iloc[4]['date']
     assert result.iloc[8]['date_1h'] == result.iloc[4]['date']
 
+    informative = generate_test_data('1h', 40)
+    result = merge_informative_pair(data, informative, '15m', '1h', ffill=False)
+    # First 3 rows are empty
+    assert result.iloc[0]['date_1h'] is pd.NaT
+    assert result.iloc[1]['date_1h'] is pd.NaT
+    assert result.iloc[2]['date_1h'] is pd.NaT
+    # Next 4 rows contain the starting date (0:00)
+    assert result.iloc[3]['date_1h'] == result.iloc[0]['date']
+    assert result.iloc[4]['date_1h'] is pd.NaT
+    assert result.iloc[5]['date_1h'] is pd.NaT
+    assert result.iloc[6]['date_1h'] is pd.NaT
+    # Next 4 rows contain the next Hourly date original date row 4
+    assert result.iloc[7]['date_1h'] == result.iloc[4]['date']
+    assert result.iloc[8]['date_1h'] is pd.NaT
+
 
 def test_merge_informative_pair_same():
     data = generate_test_data('15m', 40)
