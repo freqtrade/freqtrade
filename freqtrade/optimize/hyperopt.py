@@ -114,10 +114,8 @@ class Hyperopt:
         self.position_stacking = self.config.get('position_stacking', False)
 
         if HyperoptTools.has_space(self.config, 'sell'):
-            # Make sure use_sell_signal is enabled
-            if 'ask_strategy' not in self.config:
-                self.config['ask_strategy'] = {}
-            self.config['ask_strategy']['use_sell_signal'] = True
+            # Make sure use_exit_signal is enabled
+            self.config['use_exit_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
         self.hyperopt_table_header = 0
@@ -396,6 +394,7 @@ class Hyperopt:
 
     def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
         logger.info("Dataload complete. Calculating indicators")
 
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)

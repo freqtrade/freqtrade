@@ -153,8 +153,8 @@ Checklist on all tasks / possibilities in hyperopt
 
 Depending on the space you want to optimize, only some of the below are required:
 
-* define parameters with `space='buy'` - for buy signal optimization
-* define parameters with `space='sell'` - for sell signal optimization
+* define parameters with `space='buy'` - for entry signal optimization
+* define parameters with `space='sell'` - for exit signal optimization
 
 !!! Note
     `populate_indicators` needs to create all indicators any of the spaces may use, otherwise hyperopt will not work.
@@ -180,7 +180,7 @@ Hyperopt will first load your data into memory and will then run `populate_indic
 
 Hyperopt will then spawn into different processes (number of processors, or `-j <n>`), and run backtesting over and over again, changing the parameters that are part of the `--spaces` defined.
 
-For every new set of parameters, freqtrade will run first `populate_buy_trend()` followed by `populate_sell_trend()`, and then run the regular backtesting process to simulate trades.
+For every new set of parameters, freqtrade will run first `populate_entry_trend()` followed by `populate_exit_trend()`, and then run the regular backtesting process to simulate trades.
 
 After backtesting, the results are passed into the [loss function](#loss-functions), which will evaluate if this result was better or worse than previous results.  
 Based on the loss function result, hyperopt will determine the next set of parameters to try in the next round of backtesting.
@@ -190,7 +190,7 @@ Based on the loss function result, hyperopt will determine the next set of param
 There are two places you need to change in your strategy file to add a new buy hyperopt for testing:
 
 * Define the parameters at the class level hyperopt shall be optimizing.
-* Within `populate_buy_trend()` - use defined parameter values instead of raw constants.
+* Within `populate_entry_trend()` - use defined parameter values instead of raw constants.
 
 There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
@@ -200,25 +200,25 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 !!! Hint "Guards and Triggers"
     Technically, there is no difference between Guards and Triggers.  
     However, this guide will make this distinction to make it clear that signals should not be "sticking".
-    Sticking signals are signals that are active for multiple candles. This can lead into buying a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
+    Sticking signals are signals that are active for multiple candles. This can lead into entering a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
 
 Hyper-optimization will, for each epoch round, pick one trigger and possibly multiple guards.
 
-#### Sell optimization
+#### Exit signal optimization
 
-Similar to the buy-signal above, sell-signals can also be optimized.
+Similar to the entry-signal above, exit-signals can also be optimized.
 Place the corresponding settings into the following methods
 
 * Define the parameters at the class level hyperopt shall be optimizing, either naming them `sell_*`, or by explicitly defining `space='sell'`.
-* Within `populate_sell_trend()` - use defined parameter values instead of raw constants.
+* Within `populate_exit_trend()` - use defined parameter values instead of raw constants.
 
 The configuration and rules are the same than for buy signals.
 
 ## Solving a Mystery
 
-Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your buys. 
-And you also wonder should you use RSI or ADX to help with those buy decisions. 
-If you decide to use RSI or ADX, which values should I use for them? 
+Let's say you are curious: should you use MACD crossings or lower Bollinger Bands to trigger your long entries.
+And you also wonder should you use RSI or ADX to help with those decisions.
+If you decide to use RSI or ADX, which values should I use for them?
 
 So let's use hyperparameter optimization to solve this mystery.
 
@@ -274,7 +274,7 @@ The last one we call `trigger` and use it to decide which buy trigger we want to
 So let's write the buy strategy using these values:
 
 ```python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
         if self.buy_adx_enabled.value:
@@ -296,12 +296,12 @@ So let's write the buy strategy using these values:
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
 
         return dataframe
 ```
 
-Hyperopt will now call `populate_buy_trend()` many times (`epochs`) with different value combinations.  
+Hyperopt will now call `populate_entry_trend()` many times (`epochs`) with different value combinations.  
 It will use the given historical data and simulate buys based on the buy signals generated with the above function.  
 Based on the results, hyperopt will tell you which parameter combination produced the best results (based on the configured [loss function](#loss-functions)).
 
@@ -364,7 +364,7 @@ class MyAwesomeStrategy(IStrategy):
         
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_short_{self.buy_ema_short.value}'], dataframe[f'ema_long_{self.buy_ema_long.value}']
@@ -376,10 +376,10 @@ class MyAwesomeStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_long_{self.buy_ema_long.value}'], dataframe[f'ema_short_{self.buy_ema_short.value}']
@@ -391,7 +391,7 @@ class MyAwesomeStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x & y, conditions),
-                'sell'] = 1
+                'exit_long'] = 1
         return dataframe
 ```
 

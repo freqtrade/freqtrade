@@ -29,6 +29,7 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
                                [--data-format-trades {json,jsongz,hdf5}]
+                               [--trading-mode {spot,margin,futures}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -59,6 +60,8 @@ optional arguments:
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
                         `jsongz`).
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -193,11 +196,14 @@ usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               {json,jsongz,hdf5} --format-to
                               {json,jsongz,hdf5} [--erase]
                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+                              [--exchange EXCHANGE]
+                              [--trading-mode {spot,margin,futures}]
+                              [--candle-types {spot,,futures,mark,index,premiumIndex,funding_rate} [{spot,,futures,mark,index,premiumIndex,funding_rate} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --format-from {json,jsongz,hdf5}
                         Source format for data conversion.
@@ -208,6 +214,12 @@ optional arguments:
   -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
+  --candle-types {spot,,futures,mark,index,premiumIndex,funding_rate} [{spot,,futures,mark,index,premiumIndex,funding_rate} ...]
+                        Select candle type to use
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -224,6 +236,7 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
+
 ```
 
 ##### Example converting data
@@ -347,6 +360,7 @@ usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--userdir PATH] [--exchange EXCHANGE]
                            [--data-format-ohlcv {json,jsongz,hdf5}]
                            [-p PAIRS [PAIRS ...]]
+                           [--trading-mode {spot,margin,futures}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -356,8 +370,10 @@ optional arguments:
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `json`).
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
