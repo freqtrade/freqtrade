@@ -41,6 +41,7 @@ def generate_result_metrics():
         'max_drawdown_abs': 0.001,
         'loss': 0.001,
         'is_initial_point': 0.001,
+        'is_random': False,
         'is_best': 1,
     }
 
@@ -247,6 +248,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
             'total_profit': 0,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'is_initial_point': False,
+            'is_random': False,
             'is_best': True
         }
     )
