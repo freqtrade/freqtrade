@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import arrow
 import numpy as np
 import pytest
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
