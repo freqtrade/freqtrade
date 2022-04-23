@@ -1632,40 +1632,6 @@ def limit_buy_order(limit_buy_order_open):
     return order
 
 
-@pytest.fixture(scope='function')
-def market_buy_order():
-    return {
-        'id': 'mocked_market_buy',
-        'type': 'market',
-        'side': 'buy',
-        'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
-        'price': 0.00004099,
-        'amount': 91.99181073,
-        'filled': 91.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
-    }
-
-
-@pytest.fixture
-def market_sell_order():
-    return {
-        'id': 'mocked_limit_sell',
-        'type': 'market',
-        'side': 'sell',
-        'symbol': 'mocked',
-        'timestamp': arrow.utcnow().int_timestamp * 1000,
-        'datetime': arrow.utcnow().isoformat(),
-        'price': 0.00004173,
-        'amount': 91.99181073,
-        'filled': 91.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
-    }
-
-
 @pytest.fixture
 def limit_buy_order_old():
     return {
@@ -2943,14 +2909,6 @@ def limit_order(limit_buy_order_usdt, limit_sell_order_usdt):
     return {
         'buy': limit_buy_order_usdt,
         'sell': limit_sell_order_usdt
-    }
-
-
-@pytest.fixture(scope='function')
-def market_order(market_buy_order_usdt, market_sell_order_usdt):
-    return {
-        'buy': market_buy_order_usdt,
-        'sell': market_sell_order_usdt
     }
 
 
