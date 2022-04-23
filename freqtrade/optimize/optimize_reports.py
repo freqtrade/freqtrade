@@ -264,7 +264,7 @@ def generate_edge_table(results: dict) -> str:
 
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
 def _get_resample_from_period(period: str) -> str:

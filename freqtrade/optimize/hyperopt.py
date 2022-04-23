@@ -290,7 +290,7 @@ class Hyperopt:
             self.assign_params(params_dict, 'protection')
 
         if HyperoptTools.has_space(self.config, 'roi'):
-            self.backtesting.strategy.minimal_roi = (  # type: ignore
+            self.backtesting.strategy.minimal_roi = (
                 self.custom_hyperopt.generate_roi_table(params_dict))
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
@@ -465,8 +465,8 @@ class Hyperopt:
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange.close()
-        self.backtesting.exchange._api = None  # type: ignore
-        self.backtesting.exchange._api_async = None  # type: ignore
+        self.backtesting.exchange._api = None
+        self.backtesting.exchange._api_async = None
         self.backtesting.exchange.loop = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
