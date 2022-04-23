@@ -90,7 +90,7 @@ function updateenv() {
     echo "pip install completed"
     echo
     if [[ $dev =~ ^[Yy]$ ]]; then
-        ${PYTHON} -m pre-commit install
+        ${PYTHON} -m pre_commit install
         if [ $? -ne 0 ]; then
             echo "Failed installing pre-commit"
             exit 1
