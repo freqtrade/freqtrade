@@ -182,18 +182,25 @@ class IResolver:
         )
 
     @classmethod
-    def search_all_objects(cls, directory: Path,
-                           enum_failed: bool) -> List[Dict[str, Any]]:
+    def search_all_objects(cls, directory: Path, enum_failed: bool,
+                           recursive: bool = False) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
+        :param recursive: Recursively walk directory tree searching for strategies
         :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
         objects = []
         for entry in directory.iterdir():
+            if (
+                recursive and entry.is_dir()
+                and not entry.name.startswith('__')
+                and not entry.name.startswith('.')
+            ):
+                objects.extend(cls.search_all_objects(entry, enum_failed, recursive=recursive))
             # Only consider python files
             if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)

@@ -41,7 +41,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
 
 
-def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
+def _print_objs_tabular(objs: List, print_colorized: bool, base_dir: Path) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
         red = Fore.RED
@@ -55,7 +55,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     names = [s['name'] for s in objs]
     objs_to_print = [{
         'name': s['name'] if s['name'] else "--",
-        'location': s['location'].name,
+        'location': s['location'].relative_to(base_dir),
         'status': (red + "LOAD FAILED" + reset if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
                    else yellow + "DUPLICATE NAME" + reset)
@@ -77,7 +77,8 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
-    strategy_objs = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
+    strategy_objs = StrategyResolver.search_all_objects(
+        directory, not args['print_one_column'], config.get('recursive_strategy_search', False))
     # Sort alphabetically
     strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
     for obj in strategy_objs:
@@ -89,7 +90,7 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategy_objs]))
     else:
-        _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
+        _print_objs_tabular(strategy_objs, config.get('print_colorized', False), directory)
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

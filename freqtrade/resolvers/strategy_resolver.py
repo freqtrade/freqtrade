@@ -167,7 +167,7 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
-        if 'recursive_strategy_search' in config and config['recursive_strategy_search']:
+        if config.get('recursive_strategy_search', False):
             extra_dirs: List[str] = [
                 path[0] for path in walk(f"{config['user_data_dir']}/{USERPATH_STRATEGIES}")
             ]  # sub-directories

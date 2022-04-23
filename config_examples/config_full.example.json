@@ -179,6 +179,7 @@
     "disable_dataframe_checks": false,
     "strategy": "SampleStrategy",
     "strategy_path": "user_data/strategies/",
+    "recursive_strategy_search": false,
     "dataformat_ohlcv": "json",
     "dataformat_trades": "jsongz"
 }
