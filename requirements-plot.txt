@@ -2,4 +2,3 @@
 -r requirements.txt
 
 plotly==5.7.0
-

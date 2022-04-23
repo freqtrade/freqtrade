@@ -1,21 +1,39 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: https://github.com/pycqa/flake8
-    rev: '4.0.1'
+  - repo: https://github.com/pycqa/flake8
+    rev: "4.0.1"
     hooks:
-    -   id: flake8
+      - id: flake8
         # stages: [push]
 
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.942'
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v0.942"
     hooks:
-    -   id: mypy
+      - id: mypy
         # stages: [push]
 
--   repo: https://github.com/pycqa/isort
-    rev: '5.10.1'
+  - repo: https://github.com/pycqa/isort
+    rev: "5.10.1"
     hooks:
       - id: isort
         name: isort (python)
         # stages: [push]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: |
+            (?x)^(
+                tests/.*|
+                .*\.svg
+            )$
+      - id: mixed-line-ending
+      - id: debug-statements
+      - id: check-ast
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+                .*\.md
+            )$
