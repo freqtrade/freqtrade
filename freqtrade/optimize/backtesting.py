@@ -131,9 +131,6 @@ class Backtesting:
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
-        self.backtest_signal_candle_export_enable = self.config.get(
-            'backtest_signal_candle_export_enable', False)
-
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
@@ -1077,8 +1074,8 @@ class Backtesting:
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
-        if self.config.get('export', 'none') == 'signals' and \
-                self.dataprovider.runmode == RunMode.BACKTEST:
+        if (self.config.get('export', 'none') == 'signals' and
+                self.dataprovider.runmode == RunMode.BACKTEST):
             self._generate_trade_signal_candles(preprocessed_tmp, results)
 
         return min_date, max_date
@@ -1163,8 +1160,8 @@ class Backtesting:
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
-            if self.config.get('export', 'none') == 'signals' and \
-                    self.dataprovider.runmode == RunMode.BACKTEST:
+            if (self.config.get('export', 'none') == 'signals' and
+                    self.dataprovider.runmode == RunMode.BACKTEST):
                 store_backtest_stats(self.config['exportfilename'], self.results)
                 store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
 

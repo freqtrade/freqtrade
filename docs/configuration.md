@@ -229,7 +229,6 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 | `max_entry_position_adjustment` | Maximum additional order(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
-| `backtest_signal_candle_export_enable` | Enables the exporting of signal candles for use in post-backtesting analysis of buy tags. See [Strategy Analysis](strategy_analysis_example.md#analyse-the-buy-entry-and-sell-exit-tags). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 
 ### Parameters in the strategy
 
