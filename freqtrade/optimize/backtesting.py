@@ -332,11 +332,11 @@ class Backtesting:
             self.dataprovider._set_cached_df(
                 pair, self.timeframe, df_analyzed, self.config['candle_type_def'])
 
-            # Create a copy of the dataframe before shifting, that way the buy signal/tag
+            # Create a copy of the dataframe before shifting, that way the entry signal/tag
             # remains on the correct candle for callbacks.
             df_analyzed = df_analyzed.copy()
 
-            # To avoid using data from future, we use buy/sell signals shifted
+            # To avoid using data from future, we use entry/exit signals shifted
             # from the previous candle
             for col in headers[5:]:
                 tag_col = col in ('enter_tag', 'exit_tag')
@@ -649,7 +649,7 @@ class Backtesting:
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate
-            # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
+            # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
             if direction == "short":
                 propose_rate = max(propose_rate, row[LOW_IDX])
@@ -813,7 +813,7 @@ class Backtesting:
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
                     if trade.open_order_id and trade.nr_of_successful_entries == 0:
-                        # Ignore trade if buy-order did not fill yet
+                        # Ignore trade if entry-order did not fill yet
                         continue
                     sell_row = data[pair][-1]
 
@@ -869,7 +869,7 @@ class Backtesting:
                         # Remove trade due to entry timeout expiration.
                         return True
                     else:
-                        # Close additional buy order
+                        # Close additional entry order
                         del trade.orders[trade.orders.index(order)]
                 if order.side == trade.exit_side:
                     self.timedout_exit_orders += 1
@@ -882,7 +882,7 @@ class Backtesting:
             self, data: Dict, pair: str, row_index: int, current_time: datetime) -> Optional[Tuple]:
         try:
             # Row is treated as "current incomplete candle".
-            # Buy / sell signals are shifted by 1 to compensate for this.
+            # entry / exit signals are shifted by 1 to compensate for this.
             row = data[pair][row_index]
         except IndexError:
             # missing Data for one pair at the end.
@@ -947,14 +947,14 @@ class Backtesting:
                 self.dataprovider._set_dataframe_max_index(row_index)
 
                 for t in list(open_trades[pair]):
-                    # 1. Cancel expired buy/sell orders.
+                    # 1. Cancel expired entry/exit orders.
                     if self.check_order_cancel(t, current_time):
-                        # Close trade due to buy timeout expiration.
+                        # Close trade due to entry timeout expiration.
                         open_trade_count -= 1
                         open_trades[pair].remove(t)
                         self.wallets.update()
 
-                # 2. Process buys.
+                # 2. Process entries.
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
@@ -970,7 +970,7 @@ class Backtesting:
                     if trade:
                         # TODO: hacky workaround to avoid opening > max_open_trades
                         # This emulates previous behavior - not sure if this is correct
-                        # Prevents buying if the trade-slot was freed in this candle
+                        # Prevents entering if the trade-slot was freed in this candle
                         open_trade_count_start += 1
                         open_trade_count += 1
                         # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
@@ -1052,7 +1052,7 @@ class Backtesting:
                 "No data left after adjusting for startup candles.")
 
         # Use preprocessed_tmp for date generation (the trimmed dataframe).
-        # Backtesting will re-trim the dataframes after buy/sell signal generation.
+        # Backtesting will re-trim the dataframes after entry/exit signal generation.
         min_date, max_date = history.get_timerange(preprocessed_tmp)
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
