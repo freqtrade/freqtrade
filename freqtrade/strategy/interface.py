@@ -551,6 +551,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         :param reason: Optional string explaining why the pair was locked.
+        :param side: Side to check, can be long, short or '*'
         """
         PairLocks.lock_pair(pair, until, reason, side=side)
 
