@@ -11,12 +11,12 @@ import pickle
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 # from romeo import Romeo, RomeoExitPriceType
-from backtest_execution import BacktestExecution
+from backtest_signal import BacktestSignal
 
 
 def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
-    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestExecution(brain, coin, type, time_out_hours, timestamp=timestamp))
+    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestSignal(brain, coin, type, time_out_hours, timestamp=timestamp))
     pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_PICKLE_FILE_PATH, 'wb'))
 
 
