@@ -63,6 +63,13 @@ def setup_429():
         __create_429_watcher()
 
 
+def clear_cumulative_value():
+    # delete cumulative file
+    file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+    if os.path.isfile(file_name):
+        os.remove(file_name)
+
+
 def __create_429_directory():
     print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
     if not os.path.exists(BrainConfig._429_DIRECTORY):
