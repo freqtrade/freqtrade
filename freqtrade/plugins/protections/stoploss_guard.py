@@ -51,7 +51,7 @@ class StoplossGuard(IProtection):
             ExitType.STOPLOSS_ON_EXCHANGE.value)
             and trade.close_profit and trade.close_profit < 0)]
 
-        if self._only_per_side and side:
+        if self._only_per_side:
             # Long or short trades only
             trades = [trade for trade in trades if trade.trade_direction == side]
 
