@@ -714,7 +714,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     )
 
     # No data available.
-    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    res = backtesting._get_exit_trade_entry(trade, row_sell)
     assert res is not None
     assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
@@ -727,13 +727,13 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         [], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                      'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag'])
 
-    res = backtesting._get_sell_trade_entry(trade, row)
+    res = backtesting._get_exit_trade_entry(trade, row)
     assert res is None
 
     # Assign backtest-detail data
     backtesting.detail_data[pair] = row_detail
 
-    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    res = backtesting._get_exit_trade_entry(trade, row_sell)
     assert res is not None
     assert res.exit_reason == ExitType.ROI.value
     # Sell at minute 3 (not available above!)
