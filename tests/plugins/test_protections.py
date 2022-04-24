@@ -70,7 +70,7 @@ def test_protectionmanager(mocker, default_conf):
     ('1h', [60, 540],
      [{"method": "StoplossGuard", "lookback_period_candles": 1, "stop_duration_candles": 9}]),
 ])
-def test_protections_init(mocker, default_conf, timeframe, expected, protconf):
+def test_protections_init(default_conf, timeframe, expected, protconf):
     default_conf['timeframe'] = timeframe
     man = ProtectionManager(default_conf, protconf)
     assert len(man._protection_handlers) == len(protconf)
@@ -134,15 +134,19 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog, is_short):
 
 
 @pytest.mark.parametrize('only_per_pair', [False, True])
+@pytest.mark.parametrize('only_per_side', [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair):
+def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair, only_per_side):
     default_conf['protections'] = [{
         "method": "StoplossGuard",
         "lookback_period": 60,
         "trade_limit": 2,
         "stop_duration": 60,
-        "only_per_pair": only_per_pair
+        "only_per_pair": only_per_pair,
+        "only_per_side": only_per_side,
     }]
+    check_side = 'long' if only_per_side else '*'
+    is_short = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     message = r"Trading stopped due to .*"
     pair = 'XRP/BTC'
@@ -153,7 +157,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 
     Trade.query.session.add(generate_mock_trade(
         pair, fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=200, min_ago_close=30, profit_rate=0.9,
+        min_ago_open=200, min_ago_close=30, profit_rate=0.9, is_short=is_short
     ))
 
     assert not freqtrade.protections.stop_per_pair(pair)
@@ -163,12 +167,12 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
     # This trade does not count, as it's closed too long ago
     Trade.query.session.add(generate_mock_trade(
         pair, fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=250, min_ago_close=100, profit_rate=0.9,
+        min_ago_open=250, min_ago_close=100, profit_rate=0.9, is_short=is_short
     ))
     # Trade does not count for per pair stop as it's the wrong pair.
     Trade.query.session.add(generate_mock_trade(
         'ETH/BTC', fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=240, min_ago_close=30, profit_rate=0.9,
+        min_ago_open=240, min_ago_close=30, profit_rate=0.9, is_short=is_short
     ))
     # 3 Trades closed - but the 2nd has been closed too long ago.
     assert not freqtrade.protections.stop_per_pair(pair)
@@ -180,16 +184,34 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 
     caplog.clear()
 
+    # Trade does not count potentially, as it's in the wrong direction
+    Trade.query.session.add(generate_mock_trade(
+        pair, fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
+        min_ago_open=150, min_ago_close=25, profit_rate=0.9, is_short=not is_short
+    ))
+    freqtrade.protections.stop_per_pair(pair)
+    assert freqtrade.protections.global_stop() != only_per_pair
+    assert PairLocks.is_pair_locked(pair, side=check_side) != (only_per_side and only_per_pair)
+    assert PairLocks.is_global_lock(side=check_side) != only_per_pair
+    if only_per_side:
+        assert not PairLocks.is_pair_locked(pair, side='*')
+        assert not PairLocks.is_global_lock(side='*')
+
+    caplog.clear()
+
     # 2nd Trade that counts with correct pair
     Trade.query.session.add(generate_mock_trade(
         pair, fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=180, min_ago_close=30, profit_rate=0.9,
+        min_ago_open=180, min_ago_close=30, profit_rate=0.9, is_short=is_short
     ))
 
     freqtrade.protections.stop_per_pair(pair)
     assert freqtrade.protections.global_stop() != only_per_pair
-    assert PairLocks.is_pair_locked(pair)
-    assert PairLocks.is_global_lock() != only_per_pair
+    assert PairLocks.is_pair_locked(pair, side=check_side)
+    assert PairLocks.is_global_lock(side=check_side) != only_per_pair
+    if only_per_side:
+        assert not PairLocks.is_pair_locked(pair, side='*')
+        assert not PairLocks.is_global_lock(side='*')
 
 
 @pytest.mark.usefixtures("init_persistence")
