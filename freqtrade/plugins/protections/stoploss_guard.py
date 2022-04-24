@@ -38,7 +38,7 @@ class StoplossGuard(IProtection):
                 f'locking for {self._stop_duration} min.')
 
     def _stoploss_guard(
-            self, date_now: datetime, pair: Optional[str], side: str) -> ProtectionReturn:
+            self, date_now: datetime, pair: Optional[str], side: str) -> Optional[ProtectionReturn]:
         """
         Evaluate recent trades
         """
@@ -55,14 +55,19 @@ class StoplossGuard(IProtection):
             trades = [trade for trade in trades if trade.trade_direction == side]
 
         if len(trades) < self._trade_limit:
-            return False, None, None, None
+            return None
 
         self.log_once(f"Trading stopped due to {self._trade_limit} "
                       f"stoplosses within {self._lookback_period} minutes.", logger.info)
         until = self.calculate_lock_end(trades, self._stop_duration)
-        return True, until, self._reason(), (side if self._only_per_side else None)
+        return ProtectionReturn(
+            lock=True,
+            until=until,
+            reason=self._reason(),
+            lock_side=(side if self._only_per_side else None)
+            )
 
-    def global_stop(self, date_now: datetime, side: str) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
@@ -70,10 +75,10 @@ class StoplossGuard(IProtection):
             If true, all pairs will be locked with <reason> until <until>
         """
         if self._disable_global_stop:
-            return False, None, None, None
+            return None
         return self._stoploss_guard(date_now, None, side)
 
-    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> ProtectionReturn:
+    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

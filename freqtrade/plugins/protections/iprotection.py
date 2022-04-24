@@ -1,8 +1,9 @@
 
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import plural
@@ -12,8 +13,13 @@ from freqtrade.persistence import LocalTrade
 
 logger = logging.getLogger(__name__)
 
-# lock, until, reason, lock_side
-ProtectionReturn = Tuple[bool, Optional[datetime], Optional[str], Optional[str]]
+
+@dataclass
+class ProtectionReturn:
+    lock: bool
+    until: datetime
+    reason: Optional[str]
+    lock_side: Optional[str] = None
 
 
 class IProtection(LoggingMixin, ABC):
@@ -81,14 +87,14 @@ class IProtection(LoggingMixin, ABC):
         """
 
     @abstractmethod
-    def global_stop(self, date_now: datetime, side: str) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
         """
 
     @abstractmethod
-    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> ProtectionReturn:
+    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".
