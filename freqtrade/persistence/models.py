@@ -1476,5 +1476,6 @@ class PairLock(_DECL_BASE):
             'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
                                                                  ).timestamp() * 1000),
             'reason': self.reason,
+            'side': self.side,
             'active': self.active,
         }
