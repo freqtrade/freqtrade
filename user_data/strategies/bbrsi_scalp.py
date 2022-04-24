@@ -10,12 +10,12 @@ from wao.wao_strategy import WAOStrategy
 
 class bbrsi_scalp(WAOStrategy):
     brain = "Freq_bbrsi_scalp"
-    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 5)
 
+    # Minimal ROI designed for the strategy.
+    # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
         "0": 0.07
     }
