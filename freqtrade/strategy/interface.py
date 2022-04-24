@@ -541,7 +541,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime, reason: str = None) -> None:
+    def lock_pair(self, pair: str, until: datetime, reason: str = None, side: str = '*') -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -552,7 +552,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 Needs to be timezone aware `datetime.now(timezone.utc)`
         :param reason: Optional string explaining why the pair was locked.
         """
-        PairLocks.lock_pair(pair, until, reason)
+        PairLocks.lock_pair(pair, until, reason, side=side)
 
     def unlock_pair(self, pair: str) -> None:
         """

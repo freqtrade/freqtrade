@@ -20,7 +20,7 @@ class ProtectionReturn:
     lock: bool
     until: datetime
     reason: Optional[str]
-    lock_side: Optional[str] = None
+    lock_side: str = '*'
 
 
 class IProtection(LoggingMixin, ABC):

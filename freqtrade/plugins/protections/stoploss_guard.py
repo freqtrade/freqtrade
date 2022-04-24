@@ -65,7 +65,7 @@ class StoplossGuard(IProtection):
             lock=True,
             until=until,
             reason=self._reason(),
-            lock_side=(side if self._only_per_side else None)
+            lock_side=(side if self._only_per_side else '*')
             )
 
     def global_stop(self, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:

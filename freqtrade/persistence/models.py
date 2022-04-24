@@ -1445,7 +1445,7 @@ class PairLock(_DECL_BASE):
                 f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
+    def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> Query:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -1456,6 +1456,9 @@ class PairLock(_DECL_BASE):
                    PairLock.active.is_(True), ]
         if pair:
             filters.append(PairLock.pair == pair)
+        if side != '*':
+            filters.append(PairLock.direction == side)
+
         return PairLock.query.filter(
             *filters
         )
