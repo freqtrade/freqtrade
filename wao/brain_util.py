@@ -16,8 +16,8 @@ from backtest_signal import BacktestSignal
 
 def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
-    BrainConfig.BACKTEST_EXECUTION_LIST.append(BacktestSignal(brain, coin, type, time_out_hours, timestamp=timestamp))
-    pickle.dump(BrainConfig.BACKTEST_EXECUTION_LIST, open(BrainConfig.BACKTEST_EXECUTION_LIST_PICKLE_FILE_PATH, 'wb'))
+    BrainConfig.BACKTEST_SIGNAL_LIST.append(BacktestSignal(brain, coin, type, time_out_hours, timestamp=timestamp))
+    pickle.dump(BrainConfig.BACKTEST_SIGNAL_LIST, open(BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH, 'wb'))
 
 
 def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
@@ -74,6 +74,6 @@ def __create_429_watcher():
 
 
 def delete_backtest_table_file():
-    file_name = BrainConfig.BACKTEST_EXECUTION_LIST_PICKLE_FILE_PATH
+    file_name = BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH
     if os.path.isfile(file_name):
         os.remove(file_name)

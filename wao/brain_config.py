@@ -11,8 +11,8 @@ class BrainConfig:
     ROOT_DIRECTORY = "/root/"
     EXECUTION_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/execution"
     _429_DIRECTORY = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_429_directory/"
-    BACKTEST_EXECUTION_LIST_PICKLE_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_backtest_list.pickle"
-    BACKTEST_EXECUTION_LIST = []
+    BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/freqtrade/_backtest_list.pickle"
+    BACKTEST_SIGNAL_LIST = []
     BACKTEST_THROTTLE_SECOND = 1
     MODE = "test" # test or prod
     CUMULATIVE_PROFIT_FILE_PATH = ROOT_DIRECTORY + WORKSPACE_PATH + "/execution/_cumulative_profit.txt"
