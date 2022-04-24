@@ -31,7 +31,7 @@ class PairLocks():
 
     @staticmethod
     def lock_pair(pair: str, until: datetime, reason: str = None, *,
-                  now: datetime = None, side: str) -> PairLock:
+                  now: datetime = None, side: str = '*') -> PairLock:
         """
         Create PairLock from now to "until".
         Uses database by default, unless PairLocks.use_db is set to False,
@@ -47,7 +47,7 @@ class PairLocks():
             lock_time=now or datetime.now(timezone.utc),
             lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
             reason=reason,
-            direction=side,
+            side=side,
             active=True
         )
         if PairLocks.use_db:
@@ -76,7 +76,7 @@ class PairLocks():
                 lock.lock_end_time >= now
                 and lock.active is True
                 and (pair is None or lock.pair == pair)
-                and (side == '*' or lock.direction == side)
+                and (side == '*' or lock.side == side)
             )]
             return locks
 

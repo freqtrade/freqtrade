@@ -421,7 +421,7 @@ def test_enter_positions_global_pairlock(default_conf_usdt, ticker_usdt, limit_b
     assert not log_has_re(message, caplog)
     caplog.clear()
 
-    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
+    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because', side='*')
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has_re(message, caplog)

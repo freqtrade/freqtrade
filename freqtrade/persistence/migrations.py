@@ -219,16 +219,16 @@ def migrate_pairlocks_table(
 
     drop_index_on_table(engine, inspector, pairlock_back_name)
 
-    direction = get_column_def(cols, 'direction', "'*'")
+    side = get_column_def(cols, 'side', "'*'")
 
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
     # Copy data back - following the correct schema
     with engine.begin() as connection:
         connection.execute(text(f"""insert into pairlocks
-        (id, pair, direction, reason, lock_time,
+        (id, pair, side, reason, lock_time,
          lock_end_time, active)
-        select id, pair, {direction} direction, reason, lock_time,
+        select id, pair, {side} side, reason, lock_time,
          lock_end_time, active
         from {pairlock_back_name}
         """))

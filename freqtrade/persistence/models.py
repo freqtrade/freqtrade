@@ -1429,7 +1429,7 @@ class PairLock(_DECL_BASE):
 
     pair = Column(String(25), nullable=False, index=True)
     # lock direction - long, short or * (for both)
-    direction = Column(String(25), nullable=False, default="*")
+    side = Column(String(25), nullable=False, default="*")
     reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
@@ -1457,7 +1457,7 @@ class PairLock(_DECL_BASE):
         if pair:
             filters.append(PairLock.pair == pair)
         if side != '*':
-            filters.append(PairLock.direction == side)
+            filters.append(PairLock.side == side)
 
         return PairLock.query.filter(
             *filters
