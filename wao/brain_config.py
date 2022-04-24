@@ -6,10 +6,10 @@ class BrainConfig:
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
     IS_BACKTEST = False
-    WORKSPACE = "workspace2" if IS_BACKTEST else "workspace"
-    ROOT_DIRECTORY = "/root/"
-    EXECUTION_PATH = ROOT_DIRECTORY + WORKSPACE + "/execution"
-    FREQTRADE_PATH = ROOT_DIRECTORY + WORKSPACE + "/freqtrade"
+    WORKSPACE = "/workspace2" if IS_BACKTEST else "/workspace"
+    ROOT = "/root"
+    EXECUTION_PATH = ROOT + WORKSPACE + "/execution"
+    FREQTRADE_PATH = ROOT + WORKSPACE + "/freqtrade"
     _429_DIRECTORY = FREQTRADE_PATH + "/_429_directory/"
     BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH = FREQTRADE_PATH + "/_backtest_list.pickle"
     BACKTEST_SIGNAL_LIST = []
