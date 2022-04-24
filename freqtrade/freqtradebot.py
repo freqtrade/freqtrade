@@ -399,7 +399,10 @@ class FreqtradeBot(LoggingMixin):
             logger.info("No currency pair in active pair whitelist, "
                         "but checking to exit open trades.")
             return trades_created
-        if PairLocks.is_global_lock():
+        if PairLocks.is_global_lock(side='*'):
+            # This only checks for total locks (both sides).
+            # per-side locks will be evaluated by `is_pair_locked` within create_trade,
+            # once the direction for the trade is clear.
             lock = PairLocks.get_pair_longest_lock('*')
             if lock:
                 self.log_once(f"Global pairlock active until "
@@ -433,16 +436,6 @@ class FreqtradeBot(LoggingMixin):
 
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         nowtime = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
-        if self.strategy.is_pair_locked(pair, nowtime):
-            lock = PairLocks.get_pair_longest_lock(pair, nowtime)
-            if lock:
-                self.log_once(f"Pair {pair} is still locked until "
-                              f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
-                              f"due to {lock.reason}.",
-                              logger.info)
-            else:
-                self.log_once(f"Pair {pair} is still locked.", logger.info)
-            return False
 
         # get_free_open_trades is checked before create_trade is called
         # but it is still used here to prevent opening too many trades within one iteration
@@ -458,6 +451,16 @@ class FreqtradeBot(LoggingMixin):
         )
 
         if signal:
+            if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
+                lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
+                if lock:
+                    self.log_once(f"Pair {pair} {lock.side} is locked until "
+                                  f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
+                                  f"due to {lock.reason}.",
+                                  logger.info)
+                else:
+                    self.log_once(f"Pair {pair} is currently locked.", logger.info)
+                return False
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('entry_pricing', {}).get('check_depth_of_market', {})

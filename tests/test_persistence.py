@@ -1471,7 +1471,10 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
 
     assert len(PairLock.query.all()) == 2
     assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1
-    assert len(PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()) == 1
+    pairlocks = PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()
+    assert len(pairlocks) == 1
+    pairlocks[0].pair == 'ETH/BTC'
+    pairlocks[0].side == '*'
 
 
 def test_adjust_stop_loss(fee):

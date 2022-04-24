@@ -81,16 +81,17 @@ class PairLocks():
             return locks
 
     @staticmethod
-    def get_pair_longest_lock(pair: str, now: Optional[datetime] = None) -> Optional[PairLock]:
+    def get_pair_longest_lock(
+            pair: str, now: Optional[datetime] = None, side: str = '*') -> Optional[PairLock]:
         """
         Get the lock that expires the latest for the pair given.
         """
-        locks = PairLocks.get_pair_locks(pair, now)
+        locks = PairLocks.get_pair_locks(pair, now, side=side)
         locks = sorted(locks, key=lambda l: l.lock_end_time, reverse=True)
         return locks[0] if locks else None
 
     @staticmethod
-    def unlock_pair(pair: str, now: Optional[datetime] = None) -> None:
+    def unlock_pair(pair: str, now: Optional[datetime] = None, side: str = '*') -> None:
         """
         Release all locks for this pair.
         :param pair: Pair to unlock
@@ -101,7 +102,7 @@ class PairLocks():
             now = datetime.now(timezone.utc)
 
         logger.info(f"Releasing all locks for {pair}.")
-        locks = PairLocks.get_pair_locks(pair, now)
+        locks = PairLocks.get_pair_locks(pair, now, side=side)
         for lock in locks:
             lock.active = False
         if PairLocks.use_db:

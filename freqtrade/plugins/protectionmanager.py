@@ -54,7 +54,7 @@ class ProtectionManager():
             if protection_handler.has_global_stop:
                 lock = protection_handler.global_stop(date_now=now, side=side)
                 if lock and lock.until:
-                    if not PairLocks.is_global_lock(lock.until, lock.lock_side):
+                    if not PairLocks.is_global_lock(lock.until, side=lock.lock_side):
                         result = PairLocks.lock_pair(
                             '*', lock.until, lock.reason, now=now, side=lock.lock_side)
         return result

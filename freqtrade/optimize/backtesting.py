@@ -965,7 +965,7 @@ class Backtesting:
                     and self.trade_slot_available(max_open_trades, open_trade_count_start)
                     and current_time != end_date
                     and trade_dir is not None
-                    and not PairLocks.is_pair_locked(pair, row[DATE_IDX])
+                    and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
                 ):
                     trade = self._enter_trade(pair, row, trade_dir)
                     if trade:

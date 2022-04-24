@@ -268,7 +268,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             decl_base, inspector, engine, table_back_name, cols_trades,
             order_table_bak_name, cols_orders)
 
-    if not has_column(cols_pairlocks, 'direction'):
+    if not has_column(cols_pairlocks, 'side'):
         logger.info(f"Running database migration for pairlocks - "
                     f"backup: {pairlock_table_bak_name}")
 
