@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
-                        create_engine, desc, func, inspect)
+                        create_engine, desc, func, inspect, or_)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -1441,8 +1441,9 @@ class PairLock(_DECL_BASE):
     def __repr__(self):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
-        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
+        return (
+            f'PairLock(id={self.id}, pair={self.pair}, side={self.side}, lock_time={lock_time}, '
+            f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> Query:
@@ -1457,7 +1458,9 @@ class PairLock(_DECL_BASE):
         if pair:
             filters.append(PairLock.pair == pair)
         if side != '*':
-            filters.append(PairLock.side == side)
+            filters.append(or_(PairLock.side == side, PairLock.side == '*'))
+        else:
+            filters.append(PairLock.side == '*')
 
         return PairLock.query.filter(
             *filters

@@ -76,7 +76,7 @@ class PairLocks():
                 lock.lock_end_time >= now
                 and lock.active is True
                 and (pair is None or lock.pair == pair)
-                and (side == '*' or lock.side == side)
+                and (lock.side == '*' or lock.side == side)
             )]
             return locks
 
