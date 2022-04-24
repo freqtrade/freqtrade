@@ -21,7 +21,7 @@ class WAOStrategyController:
         setup_429()
         clear_cumulative_value()
         if BrainConfig.IS_BACKTEST:
-            send_start_deliminator_message(self.brain, BrainConfig.BACKTEST_COIN,
+            send_start_deliminator_message(self.brain,
                                            BrainConfig.BACKTEST_MONTH_LIST[
                                                BrainConfig.BACKTEST_DATA_CLEANER_MONTH_INDEX],
                                            BrainConfig.BACKTEST_DATA_CLEANER_YEAR)

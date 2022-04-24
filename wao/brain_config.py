@@ -1,7 +1,6 @@
 class BrainConfig:
 
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
-    BACKTEST_COIN = 'ETH'
     BACKTEST_MONTH_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
