@@ -1611,7 +1611,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_protections(self, pair: str, side: str) -> None:
+    def handle_protections(self, pair: str, side: LongShort) -> None:
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
             msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }

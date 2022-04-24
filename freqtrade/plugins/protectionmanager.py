@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from freqtrade.constants import LongShort
 from freqtrade.persistence import PairLocks
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
@@ -44,7 +45,8 @@ class ProtectionManager():
         """
         return [{p.name: p.short_desc()} for p in self._protection_handlers]
 
-    def global_stop(self, now: Optional[datetime] = None, side: str = 'long') -> Optional[PairLock]:
+    def global_stop(self, now: Optional[datetime] = None,
+                    side: LongShort = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None
@@ -56,8 +58,8 @@ class ProtectionManager():
                         result = PairLocks.lock_pair('*', lock.until, lock.reason, now=now)
         return result
 
-    def stop_per_pair(
-            self, pair, now: Optional[datetime] = None, side: str = 'long') -> Optional[PairLock]:
+    def stop_per_pair(self, pair, now: Optional[datetime] = None,
+                      side: LongShort = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None

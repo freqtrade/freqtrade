@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
+from freqtrade.constants import LongShort
 from freqtrade.data.btanalysis import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
@@ -75,7 +76,7 @@ class MaxDrawdown(IProtection):
 
         return None
 
-    def global_stop(self, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
+    def global_stop(self, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
@@ -84,7 +85,8 @@ class MaxDrawdown(IProtection):
         """
         return self._max_drawdown(date_now)
 
-    def stop_per_pair(self, pair: str, date_now: datetime, side: str) -> Optional[ProtectionReturn]:
+    def stop_per_pair(
+            self, pair: str, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".

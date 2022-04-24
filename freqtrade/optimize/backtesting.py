@@ -849,7 +849,8 @@ class Backtesting:
             return 'short'
         return None
 
-    def run_protections(self, enable_protections, pair: str, current_time: datetime, side: str):
+    def run_protections(
+            self, enable_protections, pair: str, current_time: datetime, side: LongShort):
         if enable_protections:
             self.protections.stop_per_pair(pair, current_time, side)
             self.protections.global_stop(current_time, side)
