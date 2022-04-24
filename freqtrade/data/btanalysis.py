@@ -511,9 +511,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
                                    ['high_value'].idxmax(), 'cumulative']
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
-    max_drawdown_rel = 0.0
-    if starting_balance != 0:
-        max_drawdown_rel = max_drawdown_df.loc[idxmin, 'drawdown_relative']
+    max_drawdown_rel = max_drawdown_df.loc[idxmin, 'drawdown_relative']
 
     return (
         abs(min(max_drawdown_df['drawdown'])),
