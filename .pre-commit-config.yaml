@@ -11,7 +11,7 @@ repos:
     rev: "v0.942"
     hooks:
       - id: mypy
-        args: [ freqtrade ]
+        args: [ freqtrade, scripts, tests ]
         additional_dependencies:
           - types-cachetools==5.0.1
           - types-filelock==3.2.5

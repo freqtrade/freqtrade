@@ -100,7 +100,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -255,7 +255,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
