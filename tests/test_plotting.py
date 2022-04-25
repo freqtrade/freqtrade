@@ -58,6 +58,7 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "ohlcv" in ret
     assert "TRX/BTC" in ret["ohlcv"]
     assert "ADA/BTC" in ret["ohlcv"]
+    assert default_conf['strategy'].bot_started is True
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
