@@ -364,20 +364,20 @@ def test_calculate_max_drawdown2():
         calculate_max_drawdown(df, date_col='open_date', value_col='profit')
 
 
-@pytest.mark.parametrize('values,relative,result,result_rel', [
-    ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 1000.0,  0.090909),
-    ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 1000.0, 0.5),
+@pytest.mark.parametrize('profits,relative,highd,lowd,result,result_rel', [
+    ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 3, 4, 1000.0, 0.090909),
+    ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 0, 1, 1000.0, 0.5),
 
 ])
-def test_calculate_max_drawdown_abs(values, relative, result, result_rel):
+def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, result_rel):
     """
     Test case from issue https://github.com/freqtrade/freqtrade/issues/6655
     [1000, 500,  1000, 11000, 10000] # absolute results
     [1000, 50%,  0%,   0%,       ~9%]   # Relative drawdowns
     """
-
-    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
-    df = DataFrame(zip(values, dates), columns=['profit_abs', 'open_date'])
+    init_date = Arrow(2020, 1, 1)
+    dates = [init_date.shift(days=i) for i in range(len(profits))]
+    df = DataFrame(zip(profits, dates), columns=['profit_abs', 'open_date'])
     # sort by profit and reset index
     df = df.sort_values('profit_abs').reset_index(drop=True)
     df1 = df.copy()
@@ -388,6 +388,9 @@ def test_calculate_max_drawdown_abs(values, relative, result, result_rel):
 
     assert isinstance(drawdown, float)
     assert isinstance(drawdown_rel, float)
+    assert hdate == init_date.shift(days=highd)
+    assert ldate == init_date.shift(days=lowd)
+
     # High must be before low
     assert hdate < ldate
     # High value must be higher than low value
