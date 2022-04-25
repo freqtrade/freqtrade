@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from numpy import nan
+import pandas as pd
 from pandas import DataFrame
 
 from freqtrade import constants
@@ -1093,7 +1094,7 @@ class Backtesting:
                 for t, v in pairresults.open_date.items():
                     allinds = pairdf.loc[(pairdf['date'] < v)]
                     signal_inds = allinds.iloc[[-1]]
-                    signal_candles_only_df = signal_candles_only_df.append(signal_inds)
+                    signal_candles_only_df = pd.concat([signal_candles_only_df, signal_inds])
 
                 signal_candles_only[pair] = signal_candles_only_df
 
