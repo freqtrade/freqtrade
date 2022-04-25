@@ -3,7 +3,7 @@ import datetime
 import time
 import os
 import sys
-from brain_config import BrainConfig
+from wao.brain_config import BrainConfig
 
 
 def clean_json():
