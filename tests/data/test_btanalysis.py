@@ -8,13 +8,13 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism, calculate_csum,
-                                       calculate_market_change, calculate_max_drawdown,
-                                       calculate_underwater, combine_dataframes_with_mean,
-                                       create_cum_profit, extract_trades_of_period,
-                                       get_latest_backtest_filename, get_latest_hyperopt_file,
-                                       load_backtest_data, load_backtest_metadata, load_trades,
-                                       load_trades_from_db)
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism, calculate_cagr,
+                                       calculate_csum, calculate_market_change,
+                                       calculate_max_drawdown, calculate_underwater,
+                                       combine_dataframes_with_mean, create_cum_profit,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       get_latest_hyperopt_file, load_backtest_data,
+                                       load_backtest_metadata, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.exceptions import OperationalException
 from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
@@ -334,6 +334,19 @@ def test_calculate_csum(testdatadir):
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
+
+
+@pytest.mark.parametrize('start,end,days, expected', [
+    (64900, 176000, 3 * 365, 0.3945),
+    (64900, 176000, 365, 1.7119),
+    (1000, 1000, 365, 0.0),
+    (1000, 1500, 365, 0.5),
+    (1000, 1500, 100, 3.3927),  # sub year
+    (0.01000000, 0.01762792, 120, 4.6087),  # sub year BTC values
+])
+def test_calculate_cagr(start, end, days, expected):
+
+    assert round(calculate_cagr(days, start, end), 4) == expected
 
 
 def test_calculate_max_drawdown2():

@@ -299,6 +299,7 @@ A backtesting result will look like that:
 | Final balance          | 0.01762792 BTC      |
 | Absolute profit        | 0.00762792 BTC      |
 | Total profit %         | 76.2%               |
+| CAGR %                 | 460.87%             |
 | Trades per day         | 3.575               |
 | Avg. stake amount      | 0.001      BTC      |
 | Total trade volume     | 0.429      BTC      |
@@ -388,6 +389,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Final balance          | 0.01762792 BTC      |
 | Absolute profit        | 0.00762792 BTC      |
 | Total profit %         | 76.2%               |
+| CAGR %                 | 460.87%             |
 | Avg. stake amount      | 0.001      BTC      |
 | Total trade volume     | 0.429      BTC      |
 |                        |                     |
