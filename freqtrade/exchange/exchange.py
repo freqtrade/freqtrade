@@ -64,6 +64,7 @@ class Exchange:
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        "ohlcv_require_since": False,
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
         "ohlcv_volume_currency": "base",  # "base" or "quote"
         "tickers_have_quoteVolume": True,
@@ -1710,7 +1711,8 @@ class Exchange:
     def _build_coroutine(self, pair: str, timeframe: str, candle_type: CandleType,
                          since_ms: Optional[int]) -> Coroutine:
 
-        if not since_ms and self.required_candle_call_count > 1:
+        if (not since_ms
+                and (self._ft_has["ohlcv_require_since"] or self.required_candle_call_count > 1)):
             # Multiple calls for one pair - to get more history
             one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
             move_to = one_call * self.required_candle_call_count
@@ -1829,17 +1831,18 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
+            candle_limit = self.ohlcv_candle_limit(timeframe)
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
             if candle_type != CandleType.FUNDING_RATE:
                 data = await self._api_async.fetch_ohlcv(
                     pair, timeframe=timeframe, since=since_ms,
-                    limit=self.ohlcv_candle_limit(timeframe), params=params)
+                    limit=candle_limit, params=params)
             else:
                 # Funding rate
                 data = await self._api_async.fetch_funding_rate_history(
                     pair, since=since_ms,
-                    limit=self.ohlcv_candle_limit(timeframe))
+                    limit=candle_limit)
                 # Convert funding rate to candle pattern
                 data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
             # Some exchanges sort OHLCV in ASC order and others in DESC.
