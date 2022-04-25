@@ -9,8 +9,8 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from numpy import nan
 import pandas as pd
+from numpy import nan
 from pandas import DataFrame
 
 from freqtrade import constants
