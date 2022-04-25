@@ -362,3 +362,35 @@ def test_calculate_max_drawdown2():
     df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])
     with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
         calculate_max_drawdown(df, date_col='open_date', value_col='profit')
+
+
+@pytest.mark.parametrize('values,relative,result,result_rel', [
+    ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 1000.0,  0.090909),
+    ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 1000.0, 0.5),
+
+])
+def test_calculate_max_drawdown_abs(values, relative, result, result_rel):
+    """
+    Test case from issue https://github.com/freqtrade/freqtrade/issues/6655
+    [1000, 500,  1000, 11000, 10000] # absolute results
+    [1000, 50%,  0%,   0%,       ~9%]   # Relative drawdowns
+    """
+
+    dates = [Arrow(2020, 1, 1).shift(days=i) for i in range(len(values))]
+    df = DataFrame(zip(values, dates), columns=['profit_abs', 'open_date'])
+    # sort by profit and reset index
+    df = df.sort_values('profit_abs').reset_index(drop=True)
+    df1 = df.copy()
+    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
+        df, date_col='open_date', starting_balance=1000, relative=relative)
+    # Ensure df has not been altered.
+    assert df.equals(df1)
+
+    assert isinstance(drawdown, float)
+    assert isinstance(drawdown_rel, float)
+    # High must be before low
+    assert hdate < ldate
+    # High value must be higher than low value
+    assert hval > lval
+    assert drawdown == result
+    assert pytest.approx(drawdown_rel) == result_rel

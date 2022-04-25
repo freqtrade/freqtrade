@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from numpy import number
 
 import pandas as pd
+from numpy import number
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
