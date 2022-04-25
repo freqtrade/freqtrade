@@ -110,7 +110,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: Optional[DataProvider]
+    dp: DataProvider
     wallets: Optional[Wallets] = None
     # Filled from configuration
     stake_currency: str
