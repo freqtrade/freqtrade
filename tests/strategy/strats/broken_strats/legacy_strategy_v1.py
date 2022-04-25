@@ -1,3 +1,4 @@
+# type: ignore
 from pandas import DataFrame
 
 from freqtrade.strategy import IStrategy
