@@ -7,6 +7,7 @@ Depending on the callback used, they may be called when entering / exiting a tra
 
 Currently available callbacks:
 
+* [`bot_start()`](#bot-start)
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#stake-size-management)
 * [`custom_exit()`](#custom-exit-signal)
@@ -21,6 +22,31 @@ Currently available callbacks:
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
 
+## Bot start
+
+A simple callback which is called once when the bot starts.
+This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set
+
+``` python
+import asyncio
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    async def some_asynchronous_task(self):
+        self.dp['remote_data'] = requests.get('https://some_remote_source.example.com')
+
+    def bot_start(self, **kwargs) -> None:
+        """
+        Called only once after bot instantiation.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_until_complete(self.some_asynchronous_task())
+
+```
 ## Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
