@@ -1389,7 +1389,6 @@ def test_api_strategies(botclient):
         'StrategyTestV2',
         'StrategyTestV3',
         'StrategyTestV3Futures',
-        'TestStrategyLegacyV1',
     ]}
 
 
