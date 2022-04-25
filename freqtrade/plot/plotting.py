@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from numpy import number
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
@@ -159,7 +158,7 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
 
 
 def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
-                     timeframe: str, starting_balance: number) -> make_subplots:
+                     timeframe: str, starting_balance: float) -> make_subplots:
     """
     Add scatter points indicating max drawdown
     """
@@ -192,7 +191,7 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     return fig
 
 
-def add_underwater(fig, row, trades: pd.DataFrame, starting_balance: number) -> make_subplots:
+def add_underwater(fig, row, trades: pd.DataFrame, starting_balance: float) -> make_subplots:
     """
     Add underwater plots
     """
@@ -526,7 +525,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                           trades: pd.DataFrame, timeframe: str, stake_currency: str,
-                          starting_balance: number) -> go.Figure:
+                          starting_balance: float) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     try:
         df_comb = combine_dataframes_with_mean(data, "close")
