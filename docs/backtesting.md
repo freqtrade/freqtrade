@@ -439,7 +439,9 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
-- `Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as $(Absolute Drawdown) / (DrawdownHigh + startingBalance)$.
+- `Max % of account underwater`: Maximum percentage your account has decreased from the top since the simulation started.
+Calculated as the maximum of `(Max Balance - Current Balance) / (Max Balance)`.
+- `Absolute Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 - `Drawdown`: Maximum, absolute drawdown experienced. Difference between Drawdown High and Subsequent Low point.
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
