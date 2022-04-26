@@ -540,7 +540,8 @@ class Backtesting:
                                                       default_retval=closerate)(
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
-                        proposed_rate=closerate, current_profit=current_profit)
+                        proposed_rate=closerate, current_profit=current_profit,
+                        exit_tag=exit_.exit_reason)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
