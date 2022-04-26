@@ -309,6 +309,9 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
+    permissions:
+      actions: write  # for rokroskar/workflow-run-cleanup-action to obtain workflow name & cancel it
+      contents: read  # for rokroskar/workflow-run-cleanup-action to obtain branch
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
