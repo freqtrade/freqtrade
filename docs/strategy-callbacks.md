@@ -34,17 +34,12 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    async def some_asynchronous_task(self):
-        self.dp['remote_data'] = requests.get('https://some_remote_source.example.com')
-
     def bot_start(self, **kwargs) -> None:
         """
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self.some_asynchronous_task())
+        self.dp['remote_data'] = requests.get('https://some_remote_source.example.com')
 
 ```
 ## Bot loop start
