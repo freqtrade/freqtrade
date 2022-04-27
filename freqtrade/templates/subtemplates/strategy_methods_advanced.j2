@@ -32,7 +32,7 @@ def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate:
 
 def custom_exit_price(self, pair: str, trade: 'Trade',
                       current_time: 'datetime', proposed_rate: float,
-                      current_profit: float, exit_tag: Optional[str, **kwargs) -> float:
+                      current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
     """
     Custom exit price logic, returning the new exit price.
 
