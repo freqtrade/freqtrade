@@ -1373,7 +1373,8 @@ class FreqtradeBot(LoggingMixin):
                                                   default_retval=proposed_limit_rate)(
             pair=trade.pair, trade=trade,
             current_time=datetime.now(timezone.utc),
-            proposed_rate=proposed_limit_rate, current_profit=current_profit)
+            proposed_rate=proposed_limit_rate, current_profit=current_profit,
+            exit_tag=exit_check.exit_reason)
 
         limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 

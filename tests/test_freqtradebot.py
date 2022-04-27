@@ -3221,7 +3221,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)
+        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL, exit_reason='foo')
     )
 
     # Sell price must be different to default bid price
@@ -3249,8 +3249,8 @@ def test_execute_trade_exit_custom_exit_price(
         'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.EXIT_SIGNAL.value,
-        'exit_reason': ExitType.EXIT_SIGNAL.value,
+        'sell_reason': 'foo',
+        'exit_reason': 'foo',
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,

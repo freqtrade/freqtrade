@@ -376,7 +376,7 @@ class AwesomeStrategy(IStrategy):
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
-                          current_profit: float, **kwargs) -> float:
+                          current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
