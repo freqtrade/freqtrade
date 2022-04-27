@@ -585,7 +585,6 @@ class FreqtradeBot(LoggingMixin):
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
         :param stake_amount: amount of stake-currency for the pair
-        :param leverage: amount of leverage applied to this trade
         :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['entry']
