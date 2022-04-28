@@ -55,7 +55,7 @@ class WAOStrategyController:
     def is_romeo_alive(self, coin):
         return
 
-    @Config.bus.on(Config.EVENT_BUS_CALLBACK_EXECUTION_SELF_COMPLETE)
+    @Config.bus.on(Config.EVENT_BUS_EXECUTION_SELF_COMPLETE)
     def on_execution_self_complete(coin):
         print("on_execution_self_complete: " + coin)
         if BrainConfig.ROMEO_POOL.get(coin) is not None:
