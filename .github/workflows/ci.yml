@@ -321,6 +321,8 @@ jobs:
   notify-complete:
     needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
+    # Discord notification can't handle schedule events
+    if: (github.event_name != 'schedule')
     steps:
 
     - name: Check user permission
