@@ -698,6 +698,9 @@ Be aware that `custom_entry_price()` is still the one dictating initial entry li
 !!! Note "Simple Order Cancelation"
     This also allows simple cancelation without an replacement order. This behavior occurs when `None` is returned.
 
+!!! Note "Maintaining Order"
+    Maintaining existing order on exchange is facilitated. This behavior occurs when `order.price` is returned.
+
 !!! Warning 
     Entry `unfilledtimeout` mechanism takes precedence over this. Be sure to update timeout values to match your expectancy.
 
@@ -709,19 +712,24 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def adjust_entry_price(self, trade: Trade, order: Order, pair: str,
-                          current_time: datetime, proposed_rate: float,
-                          entry_tag: Optional[str], side: str, **kwargs) -> float:
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float, current_order_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Entry price re-adjustment logic, returning the user desired limit price.
         This only executes when a order was already placed, still open(unfilled fully or partially)
         and not timed out on subsequent candles after entry trigger.
 
+        When not implemented by a strategy, returns current_order_rate as default.
+        If current_order_rate is returned then the existing order is maintained.
+        If None is returned then order gets canceled but not replaced by a new one.
+
         :param pair: Pair that's currently analyzed
         :param trade: Trade object.
         :param order: Order object
         :param current_time: datetime object, containing the current datetime
-        :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
+        :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.
+        :param current_order_rate: Rate of the existing order in place.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
@@ -736,8 +744,10 @@ class AwesomeStrategy(IStrategy):
             else:
                 dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
                 current_candle = dataframe.iloc[-1].squeeze()
+                # desired price
                 return current_candle['sma_200']
-        return proposed_rate
+        # default: maintain existing order
+        return current_order_rate
 ```
 
 ## Leverage Callback

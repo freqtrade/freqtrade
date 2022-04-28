@@ -1165,9 +1165,10 @@ class FreqtradeBot(LoggingMixin):
 
     def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
         """
-        Check if current analyzed entry order should be replaced. Analyzed order is canceled
-        if adjust_entry_price() returned price differs from proposed_rate.
-        New order is only placed if adjust_entry_price() returned price is not None.
+        Check if current analyzed entry order should be replaced or simply cancelled.
+        To simply cancel the existing order(no replacement) adjust_entry_price() should return None
+        To maintain existing order adjust_entry_price() should return order_obj.price
+        To replace existing order adjust_entry_price() should return desired price for limit order
         :param order: Order dict grabbed with exchange.fetch_order()
         :param order_obj: Order object.
         :param trade: Trade object.
@@ -1184,17 +1185,18 @@ class FreqtradeBot(LoggingMixin):
             proposed_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=True)
             adjusted_entry_price = strategy_safe_wrapper(self.strategy.adjust_entry_price,
-                                                         default_retval=proposed_rate)(
+                                                         default_retval=order_obj.price)(
                 trade=trade, order=order_obj, pair=trade.pair,
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
-                entry_tag=trade.enter_tag, side=trade.entry_side)
+                current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
+                side=trade.entry_side)
 
             full_cancel = False
             cancel_reason = constants.CANCEL_REASON['REPLACE']
             if not adjusted_entry_price:
                 full_cancel = True
                 cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
-            if proposed_rate != adjusted_entry_price:
+            if order_obj.price != adjusted_entry_price:
                 # cancel existing order if new price is supplied or None
                 self.handle_cancel_enter(trade, order, cancel_reason,
                                          allow_full_cancel=full_cancel)
