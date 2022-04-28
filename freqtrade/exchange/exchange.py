@@ -9,6 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import ceil
+from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import arrow
@@ -96,6 +97,9 @@ class Exchange:
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
+        # Lock event loop. This is necessary to avoid race-conditions when using force* commands
+        # Due to funding fee fetching.
+        self._loop_lock = Lock()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self._config: Dict = {}
@@ -1775,7 +1779,8 @@ class Exchange:
             async def gather_stuff():
                 return await asyncio.gather(*input_coro, return_exceptions=True)
 
-            results = self.loop.run_until_complete(gather_stuff())
+            with self._loop_lock:
+                results = self.loop.run_until_complete(gather_stuff())
 
             for res in results:
                 if isinstance(res, Exception):
@@ -2032,9 +2037,10 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             raise OperationalException("This exchange does not support downloading Trades.")
 
-        return self.loop.run_until_complete(
-            self._async_get_trade_history(pair=pair, since=since,
-                                          until=until, from_id=from_id))
+        with self._loop_lock:
+            return self.loop.run_until_complete(
+                self._async_get_trade_history(pair=pair, since=since,
+                                              until=until, from_id=from_id))
 
     @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
