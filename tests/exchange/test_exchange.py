@@ -909,7 +909,7 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     with pytest.raises(OperationalException,
                        match=r'The ccxt library does not provide the list of timeframes '
-                             r'for the exchange ".*" and this exchange '
+                             r'for the exchange .* and this exchange '
                              r'is therefore not supported. *'):
         Exchange(default_conf)
 
@@ -930,7 +930,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     with pytest.raises(OperationalException,
                        match=r'The ccxt library does not provide the list of timeframes '
-                             r'for the exchange ".*" and this exchange '
+                             r'for the exchange .* and this exchange '
                              r'is therefore not supported. *'):
         Exchange(default_conf)
 

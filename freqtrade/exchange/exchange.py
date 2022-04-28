@@ -171,7 +171,7 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
-        logger.info('Using Exchange "%s"', self.name)
+        logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
             # Check if timeframe is available
@@ -559,7 +559,7 @@ class Exchange:
             # Therefore we also show that.
             raise OperationalException(
                 f"The ccxt library does not provide the list of timeframes "
-                f"for the exchange \"{self.name}\" and this exchange "
+                f"for the exchange {self.name} and this exchange "
                 f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
 
         if timeframe and (timeframe not in self.timeframes):
