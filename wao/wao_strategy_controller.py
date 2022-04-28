@@ -13,8 +13,6 @@ from config import Config
 class WAOStrategyController:
 
     def __init__(self, brain, time_out_hours):
-        # romeo_pool: key=coin, value=romeo_instance
-        self.romeo_pool = {}
         self.brain = brain
         self.time_out_hours = time_out_hours
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
@@ -40,19 +38,27 @@ class WAOStrategyController:
         if BrainConfig.IS_BACKTEST:
             write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, "sell")
         else:
-            perform_execute_sell(coin, self.romeo_pool)
+            perform_execute_sell(coin, BrainConfig.ROMEO_POOL)
             self.__remove_from_pool(coin)
 
     def __buy_execute(self, coin):
         if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
-                             args=(coin, self.brain, self.romeo_pool, self.time_out_hours)).start()
+                             args=(coin, self.brain, BrainConfig.ROMEO_POOL, self.time_out_hours)).start()
         else:
-            perform_execute_buy(coin, self.brain, self.romeo_pool, self.time_out_hours)
+            perform_execute_buy(coin, self.brain, BrainConfig.ROMEO_POOL, self.time_out_hours)
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):
-            del self.romeo_pool[coin]
+            del BrainConfig.ROMEO_POOL[coin]
 
     def is_romeo_alive(self, coin):
-        return self.romeo_pool.get(coin) is not None
+        return
+
+    @Config.bus.on(Config.EVENT_BUS_CALLBACK_EXECUTION_SELF_COMPLETE)
+    def on_execution_self_complete(coin):
+        print("on_execution_self_complete: " + coin)
+        if BrainConfig.ROMEO_POOL.get(coin) is not None:
+            del BrainConfig.ROMEO_POOL[coin]
+
+
