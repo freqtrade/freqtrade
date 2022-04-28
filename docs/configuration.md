@@ -11,7 +11,7 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command-line option.
 
-If you used the [Quick start](installation.md/#quick-start) method for installing 
+If you used the [Quick start](installation.md/#quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
 If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
@@ -64,7 +64,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "config-private.json"
     ]
     ```
-    
+
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
@@ -100,7 +100,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited",
     }
     ```
-    
+
     Resulting combined configuration:
 
     ``` json title="Result"
@@ -173,6 +173,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `order_types` | Configure order-types depending on the action (`"entry"`, `"exit"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for entry and exit orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `custom_price_max_distance_ratio` | Configure maximum distance ratio between current and custom entry or exit price. <br>*Defaults to `0.02` 2%).*<br> **Datatype:** Positive float
+| `recursive_strategy_search` | Set to `true` to recursively search sub-directories inside `user_data/strategies` for a strategy. <br> **Datatype:** Boolean
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> **Datatype:** Boolean
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String

@@ -122,5 +122,6 @@ Best avoid relative paths, since this starts at the storage location of the jupy
 
 * [Strategy debugging](strategy_analysis_example.md) - also available as Jupyter notebook (`user_data/notebooks/strategy_analysis_example.ipynb`)
 * [Plotting](plotting.md)
+* [Tag Analysis](advanced-backtesting.md)
 
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.

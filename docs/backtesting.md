@@ -20,7 +20,8 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--dry-run-wallet DRY_RUN_WALLET]
                              [--timeframe-detail TIMEFRAME_DETAIL]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                             [--export {none,trades}] [--export-filename PATH]
+                             [--export {none,trades,signals}]
+                             [--export-filename PATH]
                              [--breakdown {day,week,month} [{day,week,month} ...]]
                              [--cache {none,day,week,month}]
 
@@ -63,18 +64,17 @@ optional arguments:
                         `30m`, `1h`, `1d`).
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
-                        backtest. Please note that timeframe needs to be
-                        set either in config or via command line. When using
-                        this together with `--export trades`, the strategy-
-                        name is injected into the filename (so `backtest-
-                        data.json` becomes `backtest-data-SampleStrategy.json`
-  --export {none,trades}
+                        backtest. Please note that timeframe needs to be set
+                        either in config or via command line. When using this
+                        together with `--export trades`, the strategy-name is
+                        injected into the filename (so `backtest-data.json`
+                        becomes `backtest-data-SampleStrategy.json`
+  --export {none,trades,signals}
                         Export backtest results (default: trades).
-  --export-filename PATH
-                        Save backtest results to the file with this filename.
-                        Requires `--export` to be set as well. Example:
-                        `--export-filename=user_data/backtest_results/backtest
-                        _today.json`
+  --export-filename PATH, --backtest-filename PATH
+                        Use this filename for backtest results.Requires
+                        `--export` to be set as well. Example: `--export-filen
+                        ame=user_data/backtest_results/backtest_today.json`
   --breakdown {day,week,month} [{day,week,month} ...]
                         Show backtesting breakdown per [day, week, month].
   --cache {none,day,week,month}
@@ -299,6 +299,7 @@ A backtesting result will look like that:
 | Final balance          | 0.01762792 BTC      |
 | Absolute profit        | 0.00762792 BTC      |
 | Total profit %         | 76.2%               |
+| CAGR %                 | 460.87%             |
 | Trades per day         | 3.575               |
 | Avg. stake amount      | 0.001      BTC      |
 | Total trade volume     | 0.429      BTC      |
@@ -388,6 +389,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Final balance          | 0.01762792 BTC      |
 | Absolute profit        | 0.00762792 BTC      |
 | Total profit %         | 76.2%               |
+| CAGR %                 | 460.87%             |
 | Avg. stake amount      | 0.001      BTC      |
 | Total trade volume     | 0.429      BTC      |
 |                        |                     |

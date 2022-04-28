@@ -2,6 +2,7 @@ import re
 from datetime import timedelta
 from pathlib import Path
 
+import joblib
 import pandas as pd
 import pytest
 from arrow import Arrow
@@ -19,6 +20,7 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_periodic_breakdown_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
+                                                 store_backtest_signal_candles,
                                                  store_backtest_stats, text_table_bt_results,
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -199,6 +201,62 @@ def test_store_backtest_stats(testdatadir, mocker):
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
     assert str(dump_mock.call_args_list[0][0][0]).startswith(str(testdatadir / 'testresult'))
+
+
+def test_store_backtest_candles(testdatadir, mocker):
+
+    dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_joblib')
+
+    candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
+
+    # mock directory exporting
+    store_backtest_signal_candles(testdatadir, candle_dict)
+
+    assert dump_mock.call_count == 1
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+
+    dump_mock.reset_mock()
+    # mock file exporting
+    filename = Path(testdatadir / 'testresult')
+    store_backtest_signal_candles(filename, candle_dict)
+    assert dump_mock.call_count == 1
+    assert isinstance(dump_mock.call_args_list[0][0][0], Path)
+    # result will be testdatadir / testresult-<timestamp>_signals.pkl
+    assert str(dump_mock.call_args_list[0][0][0]).endswith(str('_signals.pkl'))
+    dump_mock.reset_mock()
+
+
+def test_write_read_backtest_candles(tmpdir):
+
+    candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
+
+    # test directory exporting
+    stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict)
+    scp = open(stored_file, "rb")
+    pickled_signal_candles = joblib.load(scp)
+    scp.close()
+
+    assert pickled_signal_candles.keys() == candle_dict.keys()
+    assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
+    assert pickled_signal_candles['DefStrat']['UNITTEST/BTC'] \
+        .equals(pickled_signal_candles['DefStrat']['UNITTEST/BTC'])
+
+    _clean_test_file(stored_file)
+
+    # test file exporting
+    filename = Path(tmpdir / 'testresult')
+    stored_file = store_backtest_signal_candles(filename, candle_dict)
+    scp = open(stored_file, "rb")
+    pickled_signal_candles = joblib.load(scp)
+    scp.close()
+
+    assert pickled_signal_candles.keys() == candle_dict.keys()
+    assert pickled_signal_candles['DefStrat'].keys() == pickled_signal_candles['DefStrat'].keys()
+    assert pickled_signal_candles['DefStrat']['UNITTEST/BTC'] \
+        .equals(pickled_signal_candles['DefStrat']['UNITTEST/BTC'])
+
+    _clean_test_file(stored_file)
 
 
 def test_generate_pair_metrics():

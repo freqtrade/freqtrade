@@ -943,7 +943,7 @@ class Telegram(RPCHandler):
         else:
             fiat_currency = self._config.get('fiat_display_currency', '')
             try:
-                statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
+                statlist, _, _ = self._rpc._rpc_status_table(
                     self._config['stake_currency'], fiat_currency)
             except RPCException:
                 self._send_msg(msg='No open trade found.')

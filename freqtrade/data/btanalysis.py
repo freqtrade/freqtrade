@@ -553,3 +553,14 @@ def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[f
     csum_max = csum_df['sum'].max() + starting_balance
 
     return csum_min, csum_max
+
+
+def calculate_cagr(days_passed: int, starting_balance: float, final_balance: float) -> float:
+    """
+    Calculate CAGR
+    :param days_passed: Days passed between start and ending balance
+    :param starting_balance: Starting balance
+    :param final_balance: Final balance to calculate CAGR against
+    :return: CAGR
+    """
+    return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
