@@ -54,6 +54,11 @@ ESHORT_IDX = 8  # Exit short
 ENTER_TAG_IDX = 9
 EXIT_TAG_IDX = 10
 
+# Every change to this headers list must evaluate further usages of the resulting tuple
+# and eventually change the constants for indexes at the top
+HEADERS = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
+           'enter_short', 'exit_short', 'enter_tag', 'exit_tag']
+
 
 class Backtesting:
     """
@@ -305,10 +310,7 @@ class Backtesting:
         :param processed: a processed dictionary with format {pair, data}, which gets cleared to
         optimize memory usage!
         """
-        # Every change to this headers list must evaluate further usages of the resulting tuple
-        # and eventually change the constants for indexes at the top
-        headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                   'enter_short', 'exit_short', 'enter_tag', 'exit_tag']
+
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -320,7 +322,7 @@ class Backtesting:
 
             if not pair_data.empty:
                 # Cleanup from prior runs
-                pair_data.drop(headers[5:] + ['buy', 'sell'], axis=1, errors='ignore')
+                pair_data.drop(HEADERS[5:] + ['buy', 'sell'], axis=1, errors='ignore')
 
             df_analyzed = self.strategy.advise_exit(
                 self.strategy.advise_entry(pair_data, {'pair': pair}),
@@ -339,7 +341,7 @@ class Backtesting:
 
             # To avoid using data from future, we use entry/exit signals shifted
             # from the previous candle
-            for col in headers[5:]:
+            for col in HEADERS[5:]:
                 tag_col = col in ('enter_tag', 'exit_tag')
                 if col in df_analyzed.columns:
                     df_analyzed.loc[:, col] = df_analyzed.loc[:, col].replace(
@@ -351,7 +353,7 @@ class Backtesting:
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = df_analyzed[headers].values.tolist() if not df_analyzed.empty else []
+            data[pair] = df_analyzed[HEADERS].values.tolist() if not df_analyzed.empty else []
         return data
 
     def _get_close_rate(self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple,
@@ -515,10 +517,10 @@ class Backtesting:
 
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
-        exit_ = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
+        exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
         exit_ = self.strategy.should_exit(
             trade, row[OPEN_IDX], exit_candle_time,  # type: ignore
-            enter=enter, exit_=exit_,
+            enter=enter, exit_=exit_sig,
             low=row[LOW_IDX], high=row[HIGH_IDX]
         )
 
@@ -540,7 +542,8 @@ class Backtesting:
                                                       default_retval=closerate)(
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
-                        proposed_rate=closerate, current_profit=current_profit)
+                        proposed_rate=closerate, current_profit=current_profit,
+                        exit_tag=exit_.exit_reason)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
@@ -567,6 +570,7 @@ class Backtesting:
                 len(row) > EXIT_TAG_IDX
                 and row[EXIT_TAG_IDX] is not None
                 and len(row[EXIT_TAG_IDX]) > 0
+                and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
             ):
                 trade.exit_reason = row[EXIT_TAG_IDX]
 
@@ -625,9 +629,7 @@ class Backtesting:
             detail_data.loc[:, 'exit_short'] = row[ESHORT_IDX]
             detail_data.loc[:, 'enter_tag'] = row[ENTER_TAG_IDX]
             detail_data.loc[:, 'exit_tag'] = row[EXIT_TAG_IDX]
-            headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                       'enter_short', 'exit_short', 'enter_tag', 'exit_tag']
-            for det_row in detail_data[headers].values.tolist():
+            for det_row in detail_data[HEADERS].values.tolist():
                 res = self._get_exit_trade_entry_for_candle(trade, det_row)
                 if res:
                     return res
