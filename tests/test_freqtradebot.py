@@ -717,12 +717,12 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (True, 'spot', 'gateio', None, 0.0, None),
     (False, 'spot', 'okx', None, 0.0, None),
     (True, 'spot', 'okx', None, 0.0, None),
-    (True, 'futures', 'binance', 'isolated', 0.0, 11.89108910891089),
-    (False, 'futures', 'binance', 'isolated', 0.0, 8.070707070707071),
+    (True, 'futures', 'binance', 'isolated', 0.0, 11.88151815181518),
+    (False, 'futures', 'binance', 'isolated', 0.0, 8.080471380471382),
     (True, 'futures', 'gateio', 'isolated', 0.0, 11.87413417771621),
     (False, 'futures', 'gateio', 'isolated', 0.0, 8.085708510208207),
-    (True, 'futures', 'binance', 'isolated', 0.05, 11.796534653465345),
-    (False, 'futures', 'binance', 'isolated', 0.05, 8.167171717171717),
+    (True, 'futures', 'binance', 'isolated', 0.05, 11.7874422442244),
+    (False, 'futures', 'binance', 'isolated', 0.05, 8.17644781144781),
     (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
     (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
     (True, 'futures', 'okx', 'isolated', 0.0, 11.87413417771621),
@@ -845,6 +845,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_order_id is None
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
+    assert pytest.approx(trade.liquidation_price) == liq_price
 
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
@@ -932,8 +933,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
-    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
-    freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
@@ -946,7 +945,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
-    assert trade.liquidation_price == liq_price
 
     # In case of too high stake amount
 

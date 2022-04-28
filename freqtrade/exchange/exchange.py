@@ -789,7 +789,9 @@ class Exchange:
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self.amount_to_precision(pair, amount)
+        # Rounding here must respect to contract sizes
+        _amount = self._contracts_to_amount(
+            pair, self.amount_to_precision(pair, self._amount_to_contracts(pair, amount)))
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
