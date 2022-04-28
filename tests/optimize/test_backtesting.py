@@ -1342,6 +1342,39 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
+def test_backtest_start_futures_noliq(default_conf_usdt, mocker,
+                                      caplog, testdatadir, capsys):
+    # Tests detail-data loading
+    default_conf_usdt.update({
+        "trading_mode": "futures",
+        "margin_mode": "isolated",
+        "use_exit_signal": True,
+        "exit_profit_only": False,
+        "exit_profit_offset": 0.0,
+        "ignore_roi_if_entry_signal": False,
+        "strategy": CURRENT_TEST_STRATEGY,
+    })
+    patch_exchange(mocker)
+
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['HULUMULU/USDT', 'XRP/USDT']))
+    # mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+
+    patched_configuration_load_config_file(mocker, default_conf_usdt)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '1h',
+    ]
+    args = get_args(args)
+    with pytest.raises(OperationalException, match=r"Pairs .* got no leverage tiers available\."):
+        start_backtesting(args)
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
                                        caplog, testdatadir, capsys):
     # Tests detail-data loading
