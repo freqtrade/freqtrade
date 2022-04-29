@@ -459,6 +459,8 @@ SCHEMA_BACKTEST_REQUIRED = [
     'stake_currency',
     'stake_amount',
     'dry_run_wallet',
+    'stoploss',
+    'minimal_roi',
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
