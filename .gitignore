@@ -98,6 +98,9 @@ target/
 .pytest_cache/
 .mypy_cache/
 
+# temp
+.pre-commit-config.yaml
+
 #exceptions
 !*.gitkeep
 !config_examples/config_binance.example.json
