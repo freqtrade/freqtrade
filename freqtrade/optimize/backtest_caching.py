@@ -26,7 +26,9 @@ def get_strategy_run_id(strategy) -> str:
     # as it does not matter for getting the hash.
     digest.update(rapidjson.dumps(config, default=str,
                                   number_mode=rapidjson.NM_NAN).encode('utf-8'))
-
+    # Include _ft_params_from_file - so changing parameter files cause cache eviction
+    digest.update(rapidjson.dumps(
+        strategy._ft_params_from_file, default=str, number_mode=rapidjson.NM_NAN).encode('utf-8'))
     with open(strategy.__file__, 'rb') as fp:
         digest.update(fp.read())
     return digest.hexdigest().lower()
