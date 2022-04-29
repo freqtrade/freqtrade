@@ -166,6 +166,7 @@ class Order(_DECL_BASE):
     def close_bt_order(self, close_date: datetime, trade: 'LocalTrade'):
         self.order_filled_date = close_date
         self.filled = self.amount
+        self.remaining = 0
         self.status = 'closed'
         self.ft_is_open = False
         if (self.ft_order_side == trade.entry_side
