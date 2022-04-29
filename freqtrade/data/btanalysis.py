@@ -12,7 +12,8 @@ import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import get_backtest_metadata_filename, json_load
+from freqtrade.misc import json_load
+from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
 

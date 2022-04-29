@@ -22,7 +22,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.misc import get_strategy_run_id
+from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
