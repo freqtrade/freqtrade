@@ -123,11 +123,11 @@ See [Dataframe access](strategy-advanced.md#dataframe-access) for more informati
 
 ## Custom stoploss
 
-Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
+Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.
 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
 
-The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade).
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade), and is still mandatory.
 
 The method must return a stoploss value (float / number) as a percentage of the current price.
 E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
@@ -389,7 +389,7 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning
     Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
-    **Example**:  
+    **Example**:
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
