@@ -13,5 +13,5 @@ class BrainConfig:
     BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH = FREQTRADE_PATH + "/_backtest_list.pickle"
     BACKTEST_SIGNAL_LIST = []
     BACKTEST_THROTTLE_SECOND = 1
-    MODE = "test"  # test or prod
+    MODE = "prod"  # test or prod
     CUMULATIVE_PROFIT_FILE_PATH = EXECUTION_PATH + "/_cumulative_profit.txt"
