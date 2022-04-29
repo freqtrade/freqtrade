@@ -12,6 +12,7 @@ sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
 from backtest_signal import BacktestSignal
+import os
 
 
 def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
@@ -34,6 +35,7 @@ def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
     romeo = Romeo.instance(is_test_mode, True)
     romeo_pool[coin] = romeo
     romeo.start()
+    os.system('ntpdate -s ntp.ubuntu.com')
 
 
 def perform_execute_sell(coin, romeo_pool):
