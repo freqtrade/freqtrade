@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 # 1.13: forcebuy supports stake_amount
 # versions 2.xx -> futures/short branch
 # 2.14: Add entry/exit orders to trade response
-API_VERSION = 2.14
+# 2.15: Add backtest history endpoints
+API_VERSION = 2.15
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -252,7 +253,8 @@ def list_strategies(config=Depends(get_config)):
     directory = Path(config.get(
         'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
-    strategies = StrategyResolver.search_all_objects(directory, False)
+    strategies = StrategyResolver.search_all_objects(
+        directory, False, config.get('recursive_strategy_search', False))
     strategies = sorted(strategies, key=lambda x: x['name'])
 
     return {'strategies': [x['name'] for x in strategies]}

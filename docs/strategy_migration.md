@@ -183,11 +183,11 @@ class AwesomeStrategy(IStrategy):
 
 ``` python hl_lines="2 6"
 class AwesomeStrategy(IStrategy):
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order', 
                             current_time: datetime, **kwargs) -> bool:
         return False
 
-    def check_exit_timeout(self, pair: str, trade: 'Trade', order: dict, 
+    def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order', 
                             current_time: datetime, **kwargs) -> bool:
         return False 
 ```

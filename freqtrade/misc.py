@@ -2,13 +2,11 @@
 Various tool function for Freqtrade and scripts
 """
 import gzip
-import hashlib
 import logging
 import re
-from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator, List, Union
+from typing import Any, Iterator, List
 from typing.io import IO
 from urllib.parse import urlparse
 
@@ -84,6 +82,22 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
     logger.debug(f'done json to "{filename}"')
+
+
+def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
+    """
+    Dump object data into a file
+    :param filename: file to create
+    :param data: Object data to save
+    :return:
+    """
+    import joblib
+
+    if log:
+        logger.info(f'dumping joblib to "{filename}"')
+    with open(filename, 'wb') as fp:
+        joblib.dump(data, fp)
+    logger.debug(f'done joblib dump to "{filename}"')
 
 
 def json_load(datafile: IO) -> Any:
@@ -235,34 +249,3 @@ def parse_db_uri_for_logging(uri: str):
         return uri
     pwd = parsed_db_uri.netloc.split(':')[1].split('@')[0]
     return parsed_db_uri.geturl().replace(f':{pwd}@', ':*****@')
-
-
-def get_strategy_run_id(strategy) -> str:
-    """
-    Generate unique identification hash for a backtest run. Identical config and strategy file will
-    always return an identical hash.
-    :param strategy: strategy object.
-    :return: hex string id.
-    """
-    digest = hashlib.sha1()
-    config = deepcopy(strategy.config)
-
-    # Options that have no impact on results of individual backtest.
-    not_important_keys = ('strategy_list', 'original_config', 'telegram', 'api_server')
-    for k in not_important_keys:
-        if k in config:
-            del config[k]
-
-    # Explicitly allow NaN values (e.g. max_open_trades).
-    # as it does not matter for getting the hash.
-    digest.update(rapidjson.dumps(config, default=str,
-                                  number_mode=rapidjson.NM_NAN).encode('utf-8'))
-    with open(strategy.__file__, 'rb') as fp:
-        digest.update(fp.read())
-    return digest.hexdigest().lower()
-
-
-def get_backtest_metadata_filename(filename: Union[Path, str]) -> Path:
-    """Return metadata filename for specified backtest results file."""
-    filename = Path(filename)
-    return filename.parent / Path(f'{filename.stem}.meta{filename.suffix}')

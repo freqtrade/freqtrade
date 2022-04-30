@@ -32,6 +32,7 @@ dependencies:
     - prompt-toolkit
     - schedule
     - python-dateutil
+    - joblib
 
 
     # ============================
@@ -54,7 +55,6 @@ dependencies:
     - scikit-learn
     - filelock
     - scikit-optimize
-    - joblib
     - progressbar2
     # ============================
     # 4/4 req plot

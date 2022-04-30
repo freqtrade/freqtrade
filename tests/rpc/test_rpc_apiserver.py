@@ -13,7 +13,6 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
-from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
@@ -985,7 +984,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
     assert_response(rc)
     resp_values = rc.json()
     assert len(resp_values) == 4
-    assert isnan(resp_values[0]['profit_abs'])
+    assert resp_values[0]['profit_abs'] is None
 
 
 def test_api_version(botclient):
@@ -1389,7 +1388,6 @@ def test_api_strategies(botclient):
         'StrategyTestV2',
         'StrategyTestV3',
         'StrategyTestV3Futures',
-        'TestStrategyLegacyV1',
     ]}
 
 
@@ -1579,6 +1577,38 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert result['status'] == 'reset'
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
+
+
+def test_api_backtest_history(botclient, mocker, testdatadir):
+    ftbot, client = botclient
+    mocker.patch('freqtrade.data.btanalysis._get_backtest_files',
+                 return_value=[
+                     testdatadir / 'backtest_results/backtest-result_multistrat.json',
+                     testdatadir / 'backtest_results/backtest-result_new.json'
+                     ])
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history")
+    assert_response(rc, 502)
+    ftbot.config['user_data_dir'] = testdatadir
+    ftbot.config['runmode'] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/backtest/history")
+    assert_response(rc)
+    result = rc.json()
+    assert len(result) == 3
+    fn = result[0]['filename']
+    assert fn == "backtest-result_multistrat.json"
+    strategy = result[0]['strategy']
+    rc = client_get(client, f"{BASE_URI}/backtest/history/result?filename={fn}&strategy={strategy}")
+    assert_response(rc)
+    result2 = rc.json()
+    assert result2
+    assert result2['status'] == 'ended'
+    assert not result2['running']
+    assert result2['progress'] == 1
+    # Only one strategy loaded - even though we use multiresult
+    assert len(result2['backtest_result']['strategy']) == 1
+    assert result2['backtest_result']['strategy'][strategy]
 
 
 def test_health(botclient):

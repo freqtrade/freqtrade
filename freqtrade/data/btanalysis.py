@@ -12,7 +12,8 @@ import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import get_backtest_metadata_filename, json_load
+from freqtrade.misc import json_load
+from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
 
@@ -149,7 +150,14 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     return data
 
 
-def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+def load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    """
+    Load one strategy from multi-strategy result
+    and merge it with results
+    :param strategy_name: Name of the strategy contained in the result
+    :param filename: Backtest-result-filename to load
+    :param results: dict to merge the result to.
+    """
     bt_data = load_backtest_stats(filename)
     for k in ('metadata', 'strategy'):
         results[k][strategy_name] = bt_data[k][strategy_name]
@@ -158,6 +166,30 @@ def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results:
         if comparison[i]['key'] == strategy_name:
             results['strategy_comparison'].append(comparison[i])
             break
+
+
+def _get_backtest_files(dirname: Path) -> List[Path]:
+    return list(reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))))
+
+
+def get_backtest_resultlist(dirname: Path):
+    """
+    Get list of backtest results read from metadata files
+    """
+    results = []
+    for filename in _get_backtest_files(dirname):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            continue
+        for s, v in metadata.items():
+            results.append({
+                'filename': filename.name,
+                'strategy': s,
+                'run_id': v['run_id'],
+                'backtest_start_time': v['backtest_start_time'],
+
+            })
+    return results
 
 
 def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
@@ -179,7 +211,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
     }
 
     # Weird glob expression here avoids including .meta.json files.
-    for filename in reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))):
+    for filename in _get_backtest_files(dirname):
         metadata = load_backtest_metadata(filename)
         if not metadata:
             # Files are sorted from newest to oldest. When file without metadata is encountered it
@@ -202,7 +234,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
 
             if strategy_metadata['run_id'] == run_id:
                 del run_ids[strategy_name]
-                _load_and_merge_backtest_result(strategy_name, filename, results)
+                load_and_merge_backtest_result(strategy_name, filename, results)
 
         if len(run_ids) == 0:
             break
@@ -541,3 +573,14 @@ def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[f
     csum_max = csum_df['sum'].max() + starting_balance
 
     return csum_min, csum_max
+
+
+def calculate_cagr(days_passed: int, starting_balance: float, final_balance: float) -> float:
+    """
+    Calculate CAGR
+    :param days_passed: Days passed between start and ending balance
+    :param starting_balance: Starting balance
+    :param final_balance: Final balance to calculate CAGR against
+    :return: CAGR
+    """
+    return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1

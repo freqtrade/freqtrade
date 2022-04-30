@@ -83,6 +83,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Reset sample files to their original state.',
         action='store_true',
     ),
+    "recursive_strategy_search": Arg(
+        '--recursive-strategy-search',
+        help='Recursively search for a strategy in the strategies folder.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',

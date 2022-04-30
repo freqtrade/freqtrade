@@ -231,6 +231,10 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.34559, 2, 3, 1, 2.345, 'spot'),
     (2.9999, 2, 3, 1, 2.999, 'spot'),
     (2.9909, 2, 3, 1, 2.990, 'spot'),
+    (2.9909, 2, 0, 1, 2, 'spot'),
+    (29991.5555, 2, 0, 1, 29991, 'spot'),
+    (29991.5555, 2, -1, 1, 29990, 'spot'),
+    (29991.5555, 2, -2, 1, 29900, 'spot'),
     # Tests for Tick-size
     (2.34559, 4, 0.0001, 1, 2.3455, 'spot'),
     (2.34559, 4, 0.00001, 1, 2.34559, 'spot'),
@@ -905,7 +909,7 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     with pytest.raises(OperationalException,
                        match=r'The ccxt library does not provide the list of timeframes '
-                             r'for the exchange ".*" and this exchange '
+                             r'for the exchange .* and this exchange '
                              r'is therefore not supported. *'):
         Exchange(default_conf)
 
@@ -926,7 +930,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     with pytest.raises(OperationalException,
                        match=r'The ccxt library does not provide the list of timeframes '
-                             r'for the exchange ".*" and this exchange '
+                             r'for the exchange .* and this exchange '
                              r'is therefore not supported. *'):
         Exchange(default_conf)
 
@@ -4503,8 +4507,8 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
         'ADA/USDT:USDT': [
             {
                 'tier': 1,
-                'notionalFloor': 0,
-                'notionalCap': 500,
+                'minNotional': 0,
+                'maxNotional': 500,
                 'maintenanceMarginRate': 0.02,
                 'maxLeverage': 75,
                 'info': {
@@ -4544,8 +4548,8 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
         'ADA/USDT:USDT': [
             {
                 'tier': 1,
-                'notionalFloor': 0,
-                'notionalCap': 500,
+                'minNotional': 0,
+                'maxNotional': 500,
                 'maintenanceMarginRate': 0.02,
                 'maxLeverage': 75,
                 'info': {
@@ -4580,15 +4584,15 @@ def test_parse_leverage_tier(mocker, default_conf):
 
     tier = {
         "tier": 1,
-        "notionalFloor": 0,
-        "notionalCap": 100000,
+        "minNotional": 0,
+        "maxNotional": 100000,
         "maintenanceMarginRate": 0.025,
         "maxLeverage": 20,
         "info": {
             "bracket": "1",
             "initialLeverage": "20",
-            "notionalCap": "100000",
-            "notionalFloor": "0",
+            "maxNotional": "100000",
+            "minNotional": "0",
             "maintMarginRatio": "0.025",
             "cum": "0.0"
         }
@@ -4604,8 +4608,8 @@ def test_parse_leverage_tier(mocker, default_conf):
 
     tier2 = {
         'tier': 1,
-        'notionalFloor': 0,
-        'notionalCap': 2000,
+        'minNotional': 0,
+        'maxNotional': 2000,
         'maintenanceMarginRate': 0.01,
         'maxLeverage': 75,
         'info': {

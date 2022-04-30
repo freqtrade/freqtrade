@@ -9,6 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import ceil
+from threading import Lock
 from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import arrow
@@ -64,6 +65,7 @@ class Exchange:
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        "ohlcv_require_since": False,
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
         "ohlcv_volume_currency": "base",  # "base" or "quote"
         "tickers_have_quoteVolume": True,
@@ -95,6 +97,9 @@ class Exchange:
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
+        # Lock event loop. This is necessary to avoid race-conditions when using force* commands
+        # Due to funding fee fetching.
+        self._loop_lock = Lock()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self._config: Dict = {}
@@ -166,7 +171,7 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
-        logger.info('Using Exchange "%s"', self.name)
+        logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
             # Check if timeframe is available
@@ -368,6 +373,9 @@ class Exchange:
         return (
             market.get('quote', None) is not None
             and market.get('base', None) is not None
+            and (self.precisionMode != TICK_SIZE
+                 # Too low precision will falsify calculations
+                 or market.get('precision', {}).get('price', None) > 1e-11)
             and ((self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
                  or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
                  or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market)))
@@ -551,7 +559,7 @@ class Exchange:
             # Therefore we also show that.
             raise OperationalException(
                 f"The ccxt library does not provide the list of timeframes "
-                f"for the exchange \"{self.name}\" and this exchange "
+                f"for the exchange {self.name} and this exchange "
                 f"is therefore not supported. ccxt fetchOHLCV: {self.exchange_has('fetchOHLCV')}")
 
         if timeframe and (timeframe not in self.timeframes):
@@ -651,7 +659,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        if self.markets[pair]['precision']['amount']:
+        if self.markets[pair]['precision']['amount'] is not None:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
                                                 counting_mode=self.precisionMode,
@@ -781,7 +789,9 @@ class Exchange:
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self.amount_to_precision(pair, amount)
+        # Rounding here must respect to contract sizes
+        _amount = self._contracts_to_amount(
+            pair, self.amount_to_precision(pair, self._amount_to_contracts(pair, amount)))
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -1710,7 +1720,8 @@ class Exchange:
     def _build_coroutine(self, pair: str, timeframe: str, candle_type: CandleType,
                          since_ms: Optional[int]) -> Coroutine:
 
-        if not since_ms and self.required_candle_call_count > 1:
+        if (not since_ms
+                and (self._ft_has["ohlcv_require_since"] or self.required_candle_call_count > 1)):
             # Multiple calls for one pair - to get more history
             one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
             move_to = one_call * self.required_candle_call_count
@@ -1770,7 +1781,8 @@ class Exchange:
             async def gather_stuff():
                 return await asyncio.gather(*input_coro, return_exceptions=True)
 
-            results = self.loop.run_until_complete(gather_stuff())
+            with self._loop_lock:
+                results = self.loop.run_until_complete(gather_stuff())
 
             for res in results:
                 if isinstance(res, Exception):
@@ -1829,17 +1841,18 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
+            candle_limit = self.ohlcv_candle_limit(timeframe)
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
             if candle_type != CandleType.FUNDING_RATE:
                 data = await self._api_async.fetch_ohlcv(
                     pair, timeframe=timeframe, since=since_ms,
-                    limit=self.ohlcv_candle_limit(timeframe), params=params)
+                    limit=candle_limit, params=params)
             else:
                 # Funding rate
                 data = await self._api_async.fetch_funding_rate_history(
                     pair, since=since_ms,
-                    limit=self.ohlcv_candle_limit(timeframe))
+                    limit=candle_limit)
                 # Convert funding rate to candle pattern
                 data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
             # Some exchanges sort OHLCV in ASC order and others in DESC.
@@ -2026,9 +2039,10 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             raise OperationalException("This exchange does not support downloading Trades.")
 
-        return self.loop.run_until_complete(
-            self._async_get_trade_history(pair=pair, since=since,
-                                          until=until, from_id=from_id))
+        with self._loop_lock:
+            return self.loop.run_until_complete(
+                self._async_get_trade_history(pair=pair, since=since,
+                                              until=until, from_id=from_id))
 
     @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
@@ -2137,8 +2151,8 @@ class Exchange:
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier.get('info', {})
         return {
-            'min': tier['notionalFloor'],
-            'max': tier['notionalCap'],
+            'min': tier['minNotional'],
+            'max': tier['maxNotional'],
             'mmr': tier['maintenanceMarginRate'],
             'lev': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
