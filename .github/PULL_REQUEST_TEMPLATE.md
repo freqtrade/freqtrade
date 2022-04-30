@@ -9,8 +9,8 @@ Solve the issue: #___
 
 ## Quick changelog
 
-- <!-- <change log 1> -->
-- <!-- <change log 1> -->
+- <change log 1>
+- <change log 1>
 
 ## What's new?
 
