@@ -285,9 +285,11 @@ class LocalTrade():
     fee_open: float = 0.0
     fee_open_cost: Optional[float] = None
     fee_open_currency: str = ''
+    fee_open_is_maker: str = True
     fee_close: float = 0.0
     fee_close_cost: Optional[float] = None
     fee_close_currency: str = ''
+    fee_close_is_maker: str = True
     open_rate: float = 0.0
     open_rate_requested: Optional[float] = None
     # open_trade_value - calculated via _calc_open_trade_value
@@ -682,7 +684,12 @@ class LocalTrade():
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
             if fee_rate is not None:
-                current_rate_ratio = self.fee_close / self.fee_open
+                if self.fee_open_is_maker == self.fee_close_is_maker:
+                    current_rate_ratio = 1
+                elif self.fee_open_is_maker and not self.fee_close_is_maker:
+                    current_rate_ratio = 2
+                elif not self.fee_open_is_maker and self.fee_close_is_maker:
+                    current_rate_ratio = 0.5
                 self.fee_open = fee_rate
                 # The new open/close fees will be as proportional as the old fees
                 self.fee_close = fee_rate * current_rate_ratio
@@ -1080,9 +1087,11 @@ class Trade(_DECL_BASE, LocalTrade):
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_open_cost = Column(Float, nullable=True)
     fee_open_currency = Column(String(25), nullable=True)
+    fee_open_is_maker = Column(Boolean, default=True)
     fee_close = Column(Float, nullable=False, default=0.0)
     fee_close_cost = Column(Float, nullable=True)
     fee_close_currency = Column(String(25), nullable=True)
+    fee_close_is_maker = Column(Boolean, default=True)
     open_rate: float = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_value - calculated via _calc_open_trade_value
