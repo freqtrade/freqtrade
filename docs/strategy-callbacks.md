@@ -39,7 +39,10 @@ class AwesomeStrategy(IStrategy):
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        self.dp['remote_data'] = requests.get('https://some_remote_source.example.com')
+        if self.config['runmode'].value in ('live', 'dry_run'):
+            # Assign this to the class by using self.*
+            # can then be used by populate_* methods
+            self.remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
 ## Bot loop start
