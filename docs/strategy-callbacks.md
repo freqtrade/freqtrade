@@ -24,11 +24,11 @@ Currently available callbacks:
 
 ## Bot start
 
-A simple callback which is called once when the bot starts.
+A simple callback which is called once when the strategy is loaded.
 This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set
 
 ``` python
-import asyncio
+import requests
 
 class AwesomeStrategy(IStrategy):
 
@@ -42,7 +42,7 @@ class AwesomeStrategy(IStrategy):
         if self.config['runmode'].value in ('live', 'dry_run'):
             # Assign this to the class by using self.*
             # can then be used by populate_* methods
-            self.remote_data = requests.get('https://some_remote_source.example.com')
+            self.cust_remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
 ## Bot loop start

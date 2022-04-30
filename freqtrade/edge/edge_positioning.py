@@ -91,8 +91,6 @@ class Edge:
             except IndexError:
                 self.fee = None
 
-        strategy.bot_start()
-
     def calculate(self, pairs: List[str]) -> bool:
         if self.fee is None and pairs:
             self.fee = self.exchange.get_fee(pairs[0])
