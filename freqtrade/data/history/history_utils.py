@@ -323,8 +323,9 @@ def _download_trades_history(exchange: Exchange,
     try:
 
         until = None
-        if (timerange and timerange.starttype == 'date'):
-            since = timerange.startts * 1000
+        if timerange:
+            if timerange.starttype == 'date':
+                since = timerange.startts * 1000
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
         else:
