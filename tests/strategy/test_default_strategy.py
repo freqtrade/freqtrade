@@ -32,7 +32,6 @@ def test_strategy_test_v3(result, fee, is_short, side):
     assert type(indicators) is DataFrame
     assert type(strategy.populate_buy_trend(indicators, metadata)) is DataFrame
     assert type(strategy.populate_sell_trend(indicators, metadata)) is DataFrame
-    assert strategy.bot_started is True
 
     trade = Trade(
         open_rate=19_000,
