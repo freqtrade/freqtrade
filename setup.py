@@ -57,6 +57,7 @@ setup(
         'pycoingecko',
         'py_find_1st',
         'python-rapidjson',
+        'orjson',
         'sdnotify',
         'colorama',
         'jinja2',

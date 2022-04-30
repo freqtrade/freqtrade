@@ -309,6 +309,9 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
+    permissions:
+      actions: write  # for rokroskar/workflow-run-cleanup-action to obtain workflow name & cancel it
+      contents: read  # for rokroskar/workflow-run-cleanup-action to obtain branch
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
@@ -321,6 +324,10 @@ jobs:
   notify-complete:
     needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
+    # Discord notification can't handle schedule events
+    if: (github.event_name != 'schedule')
+    permissions:
+      repository-projects: read  
     steps:
 
     - name: Check user permission

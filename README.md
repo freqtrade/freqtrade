@@ -39,6 +39,14 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
+### Experimentally, freqtrade also supports futures on the following exchanges
+
+- [X] [Binance](https://www.binance.com/)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [OKX](https://okx.com/).
+
+Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
+
 ### Community tested
 
 Exchanges confirmed working by the community:

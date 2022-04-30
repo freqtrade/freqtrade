@@ -362,7 +362,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
-                          current_profit: float, **kwargs) -> float:
+                          current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
         """
         Custom exit price logic, returning the new exit price.
 
@@ -375,6 +375,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param exit_tag: Exit reason.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New exit price value if provided
         """
