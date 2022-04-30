@@ -1194,7 +1194,7 @@ class FreqtradeBot(LoggingMixin):
             full_cancel = False
             cancel_reason = constants.CANCEL_REASON['REPLACE']
             if not adjusted_entry_price:
-                full_cancel = True
+                full_cancel = True if trade.nr_of_successful_entries == 0 else False
                 cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
             if order_obj.price != adjusted_entry_price:
                 # cancel existing order if new price is supplied or None
