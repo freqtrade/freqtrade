@@ -90,7 +90,7 @@ class Edge:
                     self.config['exchange']['pair_whitelist'], list(self.exchange.markets))[0])
             except IndexError:
                 self.fee = None
-            
+
         strategy.bot_start()
 
     def calculate(self, pairs: List[str]) -> bool:
