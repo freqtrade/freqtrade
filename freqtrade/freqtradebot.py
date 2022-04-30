@@ -583,11 +583,9 @@ class FreqtradeBot(LoggingMixin):
         '''
         order_type = self.config['order_types'][side]
         if order_type == 'limit':
-            enter_side = 'ask' if is_short else 'bid'
-            exit_side = 'bid' if is_short else 'ask'
             if (
-                side == 'entry' and self.config['bid_strategy']['price_side'] == enter_side or
-                side == 'exit' and self.config['ask_strategy']['price_side'] == exit_side
+                side == 'entry' and self.config['entry_pricing']['price_side'] == 'same' or
+                side == 'exit' and self.config['exit_pricing']['price_side'] == 'same'
             ):
                 taker_or_maker = 'maker'
             else:
