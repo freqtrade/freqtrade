@@ -24,8 +24,8 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
+from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_signal_candles,
@@ -187,6 +187,7 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        self.strategy.bot_start()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):

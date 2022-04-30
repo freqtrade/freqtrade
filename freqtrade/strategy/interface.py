@@ -193,6 +193,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.populate_sell_trend(dataframe, metadata)
 
+    def bot_start(self, **kwargs) -> None:
+        """
+        Called only once after bot instantiation.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
     def bot_loop_start(self, **kwargs) -> None:
         """
         Called at the start of the bot iteration (one loop).

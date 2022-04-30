@@ -123,6 +123,8 @@ class FreqtradeBot(LoggingMixin):
                     self._schedule.every().day.at(t).do(update)
         self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+        self.strategy.bot_start()
+
     def notify_status(self, msg: str) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications

@@ -22,7 +22,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.misc import get_strategy_run_id
+from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
@@ -312,6 +312,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     get_fee.assert_called()
     assert backtesting.fee == 0.5
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]
+    assert backtesting.strategy.bot_started is True
 
 
 def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
