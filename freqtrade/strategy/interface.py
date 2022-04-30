@@ -120,8 +120,6 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
 
-    tags: Dict[str, List[str]] = {}
-
     def __init__(self, config: dict) -> None:
         self.config = config
         # Dict to determine if analysis is necessary
@@ -845,8 +843,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
                     low: float = None, high: float = None,
-                    force_stoploss: float = 0, enter_tag: Optional[str] = None,
-                    exit_tag: Optional[str]) -> ExitCheckTuple:
+                    force_stoploss: float = 0, enter_tag: Optional[str] = None) -> ExitCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
@@ -887,10 +884,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if ((enter_tag in self.tags and exit_tag not in self.tags[enter_tag])):
-            # sell_profit_only and profit doesn't reach the offset - ignore sell signal
-            pass
-        elif self.use_exit_signal:
+        if self.use_exit_signal:
             if exit_ and not enter:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
