@@ -570,32 +570,21 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def get_fee(
+    def is_maker(
         self,
-        pair: str,
         side: str,
-        is_short: bool = False,
     ):
         '''
-        :param pair: Unified CCXT symbol
-        :param side: One of entry, exit or stoploss
-        :param is_short: True for short trades
+        :param side: One of entry, or exit # TODO: stoploss
         '''
         order_type = self.config['order_types'][side]
         if order_type == 'limit':
-            if (
+            return (
                 side == 'entry' and self.config['entry_pricing']['price_side'] == 'same' or
                 side == 'exit' and self.config['exit_pricing']['price_side'] == 'same'
-            ):
-                taker_or_maker = 'maker'
-            else:
-                taker_or_maker = 'taker'
+            )
         else:
-            taker_or_maker = 'taker'
-        return self.exchange.get_fee(
-            symbol=pair,
-            taker_or_maker=taker_or_maker
-        )
+            return True
 
     def execute_entry(
         self,
@@ -696,6 +685,8 @@ class FreqtradeBot(LoggingMixin):
         funding_fees = self.exchange.get_funding_fees(
             pair=pair, amount=amount, is_short=is_short, open_date=open_date)
         if trade is None:
+            open_maker = self.is_maker('entry')
+            close_maker = self.is_maker('exit')
             trade = Trade(
                 pair=pair,
                 base_currency=base_currency,
@@ -704,8 +695,10 @@ class FreqtradeBot(LoggingMixin):
                 amount=amount,
                 is_open=True,
                 amount_requested=amount_requested,
-                fee_open=self.get_fee(pair, 'entry'),
-                fee_close=self.get_fee(pair, 'exit'),
+                fee_open=self.exchange.get_fee(symbol=pair, taker_or_maker=('maker' if open_maker else 'taker')),
+                fee_close=self.exchange.get_fee(symbol=pair, taker_or_maker=('maker' if close_maker else 'taker')),
+                fee_open_is_maker=open_maker,
+                fee_close_is_maker=close_maker,
                 open_rate=enter_limit_filled_price,
                 open_rate_requested=enter_limit_requested,
                 open_date=open_date,
