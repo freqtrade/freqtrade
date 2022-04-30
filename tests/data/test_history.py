@@ -149,8 +149,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert file.is_file()
     assert log_has_re(
-        r'Download history data for pair: "MEME/BTC" \(0/1\), timeframe: 1m, '
-        r'candle type: spot and store in .*', caplog
+        r'\(0/1\) - Download history data for "MEME/BTC", 1m, '
+        r'spot and store in .*', caplog
     )
 
 
