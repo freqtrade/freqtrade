@@ -94,6 +94,7 @@ def test_edge_init(mocker, edge_conf) -> None:
     assert edge_cli.config == edge_conf
     assert edge_cli.config['stake_amount'] == 'unlimited'
     assert callable(edge_cli.edge.calculate)
+    assert edge_cli.strategy.bot_started is True
 
 
 def test_edge_init_fee(mocker, edge_conf) -> None:
