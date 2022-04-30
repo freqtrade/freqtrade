@@ -139,8 +139,9 @@ def _load_cached_data_for_updating(
     timeframe: str,
     timerange: Optional[TimeRange],
     data_handler: IDataHandler,
-    candle_type: CandleType
-) -> Tuple[DataFrame, Optional[int]]:
+    candle_type: CandleType,
+    prepend: bool = False,
+) -> Tuple[DataFrame, Optional[int], Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
@@ -150,9 +151,12 @@ def _load_cached_data_for_updating(
     Note: Only used by download_pair_history().
     """
     start = None
+    end = None
     if timerange:
         if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        if timerange.stoptype == 'date':
+            end = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.
     data = data_handler.ohlcv_load(pair, timeframe=timeframe,
@@ -160,14 +164,18 @@ def _load_cached_data_for_updating(
                                    drop_incomplete=True, warn_no_data=False,
                                    candle_type=candle_type)
     if not data.empty:
-        if start and start < data.iloc[0]['date']:
+        if not prepend and start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
             data = DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
         else:
-            start = data.iloc[-1]['date']
+            if prepend:
+                end = data.iloc[0]['date']
+            else:
+                start = data.iloc[-1]['date']
 
     start_ms = int(start.timestamp() * 1000) if start else None
-    return data, start_ms
+    end_ms = int(end.timestamp() * 1000) if end else None
+    return data, start_ms, end_ms
 
 
 def _download_pair_history(pair: str, *,
@@ -208,9 +216,12 @@ def _download_pair_history(pair: str, *,
             f'candle type: {candle_type} and store in {datadir}.'
         )
 
-        data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
-                                                        data_handler=data_handler,
-                                                        candle_type=candle_type)
+        data, since_ms, until_ms = _load_cached_data_for_updating(
+            pair, timeframe, timerange,
+            data_handler=data_handler,
+            candle_type=candle_type,
+            prepend=False)
+        # TODO: Prepend should come from a param
 
         logger.debug("Current Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
@@ -225,6 +236,7 @@ def _download_pair_history(pair: str, *,
                                                    days=-new_pairs_days).int_timestamp * 1000,
                                                is_new_pair=data.empty,
                                                candle_type=candle_type,
+                                               until_ms=until_ms if until_ms else None
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
