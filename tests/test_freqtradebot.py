@@ -786,7 +786,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_max_pair_stake_amount=MagicMock(return_value=500000),
         get_fee=MagicMock(side_effect=(
-            lambda symbol, taker_or_maker: fee if taker_or_maker == 'maker' else fee*2
+            lambda symbol, taker_or_maker: fee if taker_or_maker == 'maker' else fee * 2
         )),
         get_funding_fees=MagicMock(return_value=0),
         name=exchange_name,
@@ -822,7 +822,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.is_open is True
     assert trade.open_order_id == '22'
     assert trade.open_fee == fee
-    assert trade.close_fee == fee*2
+    assert trade.close_fee == fee * 2
 
     # Test calling with price
     open_order['id'] = '33'
@@ -858,7 +858,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['price'] * order['filled'] / leverage, 8)
     assert pytest.approx(trade.liquidation_price) == liq_price
-    assert trade.open_fee == fee*2
+    assert trade.open_fee == fee * 2
     assert trade.close_fee == fee
 
     # In case of rejected or expired order and partially filled
