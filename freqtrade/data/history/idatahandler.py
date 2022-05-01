@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class IDataHandler(ABC):
 
-    _OHLCV_REGEX = r'^([a-zA-Z_-]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=\.)'
+    _OHLCV_REGEX = r'^([a-zA-Z_-]+)\-(\d+[a-zA-Z]{1,2})\-?([a-zA-Z_]*)?(?=\.)'
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
@@ -201,7 +201,7 @@ class IDataHandler(ABC):
             datadir = datadir.joinpath('futures')
             candle = f"-{candle_type}"
         filename = datadir.joinpath(
-            f'{pair_s}-{timeframe}{candle}.{cls._get_file_extension()}')
+            f'{pair_s}-{cls.timeframe_to_file(timeframe)}{candle}.{cls._get_file_extension()}')
         return filename
 
     @classmethod
@@ -209,6 +209,18 @@ class IDataHandler(ABC):
         pair_s = misc.pair_to_filename(pair)
         filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
         return filename
+
+    @staticmethod
+    def timeframe_to_file(timeframe: str):
+        return timeframe.replace('M', 'Mo')
+
+    @staticmethod
+    def rebuild_timeframe_from_filename(timeframe: str) -> str:
+        """
+        converts timeframe from disk to file
+        Replaces mo with M (to avoid problems on case-insensitive filesystems)
+        """
+        return re.sub('mo', 'M', timeframe, flags=re.IGNORECASE)
 
     @staticmethod
     def rebuild_pair_from_filename(pair: str) -> str:
