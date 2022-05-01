@@ -7,6 +7,7 @@ Depending on the callback used, they may be called when entering / exiting a tra
 
 Currently available callbacks:
 
+* [`bot_start()`](#bot-start)
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#stake-size-management)
 * [`custom_exit()`](#custom-exit-signal)
@@ -21,6 +22,29 @@ Currently available callbacks:
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
 
+## Bot start
+
+A simple callback which is called once when the strategy is loaded.
+This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set
+
+``` python
+import requests
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def bot_start(self, **kwargs) -> None:
+        """
+        Called only once after bot instantiation.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        if self.config['runmode'].value in ('live', 'dry_run'):
+            # Assign this to the class by using self.*
+            # can then be used by populate_* methods
+            self.cust_remote_data = requests.get('https://some_remote_source.example.com')
+
+```
 ## Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
@@ -122,11 +146,11 @@ See [Dataframe access](strategy-advanced.md#dataframe-access) for more informati
 
 ## Custom stoploss
 
-Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
+Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.
 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
 
-The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade).
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade), and is still mandatory.
 
 The method must return a stoploss value (float / number) as a percentage of the current price.
 E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
@@ -365,30 +389,30 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
-        
+
         return new_entryprice
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
-                          current_profit: float, **kwargs) -> float:
+                          current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
-        
+
         return new_exitprice
 
 ```
 
 !!! Warning
-    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.  
-    **Example**:  
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
+    **Example**:
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
@@ -430,7 +454,7 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order', 
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                             current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -508,7 +532,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
                             side: str, **kwargs) -> bool:
         """
         Called right before placing a entry order.
@@ -616,35 +640,35 @@ from freqtrade.persistence import Trade
 
 
 class DigDeeperStrategy(IStrategy):
-    
+
     position_adjustment_enable = True
-    
+
     # Attempts to handle large drops with DCA. High stoploss is required.
     stoploss = -0.30
-    
+
     # ... populate_* methods
-    
+
     # Example specific variables
     max_entry_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
-    
+
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
-        
+
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
         return proposed_stake / self.max_dca_multiplier
-        
+
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
                               current_rate: float, current_profit: float, min_stake: float,
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
- 
+
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Current buy rate.
@@ -654,7 +678,7 @@ class DigDeeperStrategy(IStrategy):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
         """
-        
+
         if current_profit > -0.05:
             return None
 

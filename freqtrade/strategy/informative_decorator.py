@@ -23,7 +23,7 @@ class InformativeData:
 def informative(timeframe: str, asset: str = '',
                 fmt: Optional[Union[str, Callable[[Any], str]]] = None,
                 *,
-                candle_type: Optional[CandleType] = None,
+                candle_type: Optional[Union[CandleType, str]] = None,
                 ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
     """
     A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to

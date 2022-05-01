@@ -122,6 +122,8 @@ class FreqtradeBot(LoggingMixin):
                     self._schedule.every().day.at(t).do(update)
         self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+        self.strategy.bot_start()
+
     def notify_status(self, msg: str) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -588,7 +590,6 @@ class FreqtradeBot(LoggingMixin):
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
         :param stake_amount: amount of stake-currency for the pair
-        :param leverage: amount of leverage applied to this trade
         :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['entry']
@@ -667,16 +668,6 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
-        # TODO: this might be unnecessary, as we're calling it in update_trade_state.
-        isolated_liq = self.exchange.get_liquidation_price(
-            leverage=leverage,
-            pair=pair,
-            amount=amount,
-            open_rate=enter_limit_filled_price,
-            is_short=is_short
-        )
-        interest_rate = self.exchange.get_interest_rate()
-
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         base_currency = self.exchange.get_pair_base_currency(pair)
@@ -705,8 +696,6 @@ class FreqtradeBot(LoggingMixin):
                 timeframe=timeframe_to_minutes(self.config['timeframe']),
                 leverage=leverage,
                 is_short=is_short,
-                interest_rate=interest_rate,
-                liquidation_price=isolated_liq,
                 trading_mode=self.trading_mode,
                 funding_fees=funding_fees
             )
@@ -1376,7 +1365,8 @@ class FreqtradeBot(LoggingMixin):
                                                   default_retval=proposed_limit_rate)(
             pair=trade.pair, trade=trade,
             current_time=datetime.now(timezone.utc),
-            proposed_rate=proposed_limit_rate, current_profit=current_profit)
+            proposed_rate=proposed_limit_rate, current_profit=current_profit,
+            exit_tag=exit_check.exit_reason)
 
         limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 

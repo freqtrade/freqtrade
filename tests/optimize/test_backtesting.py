@@ -22,7 +22,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.misc import get_strategy_run_id
+from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
@@ -312,6 +312,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     get_fee.assert_called()
     assert backtesting.fee == 0.5
     assert not backtesting.strategy.order_types["stoploss_on_exchange"]
+    assert backtesting.strategy.bot_started is True
 
 
 def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
@@ -500,7 +501,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     Backtesting(default_conf)
 
     # Multiple strategies
-    default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY, 'TestStrategyLegacyV1']
+    default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY, 'StrategyTestV2']
     with pytest.raises(OperationalException,
                        match='PrecisionFilter not allowed for backtesting multiple strategies.'):
         Backtesting(default_conf)
@@ -1198,7 +1199,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--disable-max-market-positions',
         '--strategy-list',
         CURRENT_TEST_STRATEGY,
-        'TestStrategyLegacyV1',
+        'StrategyTestV2',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -1221,14 +1222,13 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
-        'Running backtesting for Strategy TestStrategyLegacyV1',
+        'Running backtesting for Strategy StrategyTestV2',
     ]
 
     for line in exists:
         assert log_has(line, caplog)
 
 
-@pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdatadir, capsys):
     default_conf.update({
         "use_exit_signal": True,
@@ -1310,7 +1310,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--breakdown', 'day',
         '--strategy-list',
         CURRENT_TEST_STRATEGY,
-        'TestStrategyLegacyV1',
+        'StrategyTestV2',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -1327,7 +1327,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
-        'Running backtesting for Strategy TestStrategyLegacyV1',
+        'Running backtesting for Strategy StrategyTestV2',
     ]
 
     for line in exists:
@@ -1340,6 +1340,39 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     assert 'LEFT OPEN TRADES REPORT' in captured.out
     assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
+def test_backtest_start_futures_noliq(default_conf_usdt, mocker,
+                                      caplog, testdatadir, capsys):
+    # Tests detail-data loading
+    default_conf_usdt.update({
+        "trading_mode": "futures",
+        "margin_mode": "isolated",
+        "use_exit_signal": True,
+        "exit_profit_only": False,
+        "exit_profit_offset": 0.0,
+        "ignore_roi_if_entry_signal": False,
+        "strategy": CURRENT_TEST_STRATEGY,
+    })
+    patch_exchange(mocker)
+
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['HULUMULU/USDT', 'XRP/USDT']))
+    # mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+
+    patched_configuration_load_config_file(mocker, default_conf_usdt)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '1h',
+    ]
+    args = get_args(args)
+    with pytest.raises(OperationalException, match=r"Pairs .* got no leverage tiers available\."):
+        start_backtesting(args)
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
@@ -1592,7 +1625,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         min_backtest_date = now - timedelta(weeks=4)
     load_backtest_metadata = MagicMock(return_value={
         'StrategyTestV2': {'run_id': '1', 'backtest_start_time': now.timestamp()},
-        'TestStrategyLegacyV1': {'run_id': run_id, 'backtest_start_time': start_time.timestamp()}
+        'StrategyTestV3': {'run_id': run_id, 'backtest_start_time': start_time.timestamp()}
     })
     load_backtest_stats = MagicMock(side_effect=[
         {
@@ -1601,9 +1634,9 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
             'strategy_comparison': [{'key': 'StrategyTestV2'}]
         },
         {
-            'metadata': {'TestStrategyLegacyV1': {'run_id': '2'}},
-            'strategy': {'TestStrategyLegacyV1': {}},
-            'strategy_comparison': [{'key': 'TestStrategyLegacyV1'}]
+            'metadata': {'StrategyTestV3': {'run_id': '2'}},
+            'strategy': {'StrategyTestV3': {}},
+            'strategy_comparison': [{'key': 'StrategyTestV3'}]
         }
     ])
     mocker.patch('pathlib.Path.glob', return_value=[
@@ -1627,7 +1660,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         '--cache', cache,
         '--strategy-list',
         'StrategyTestV2',
-        'TestStrategyLegacyV1',
+        'StrategyTestV3',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -1649,7 +1682,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         assert backtestmock.call_count == 2
         exists = [
             'Running backtesting for Strategy StrategyTestV2',
-            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Running backtesting for Strategy StrategyTestV3',
             'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
             'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
         ]
@@ -1657,12 +1690,12 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         assert backtestmock.call_count == 0
         exists = [
             'Reusing result of previous backtest for StrategyTestV2',
-            'Reusing result of previous backtest for TestStrategyLegacyV1',
+            'Reusing result of previous backtest for StrategyTestV3',
         ]
     else:
         exists = [
             'Reusing result of previous backtest for StrategyTestV2',
-            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Running backtesting for Strategy StrategyTestV3',
             'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
             'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
         ]

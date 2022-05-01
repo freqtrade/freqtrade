@@ -859,8 +859,8 @@ def test_start_list_strategies(capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy_v1.py" not in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "strategy_test_v2.py" not in captured.out
     assert CURRENT_TEST_STRATEGY in captured.out
 
     # Test regular output
@@ -874,8 +874,8 @@ def test_start_list_strategies(capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "strategy_test_v2.py" in captured.out
     assert CURRENT_TEST_STRATEGY in captured.out
 
     # Test color output
@@ -888,8 +888,8 @@ def test_start_list_strategies(capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "strategy_test_v2.py" in captured.out
     assert CURRENT_TEST_STRATEGY in captured.out
     assert "LOAD FAILED" in captured.out
     # Recursive
@@ -907,8 +907,8 @@ def test_start_list_strategies(capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "strategy_test_v2.py" in captured.out
     assert "StrategyTestV2" in captured.out
     assert "TestStrategyNoImplements" in captured.out
     assert str(Path("broken_strats/broken_futures_strategies.py")) in captured.out

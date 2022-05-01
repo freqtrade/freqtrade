@@ -84,6 +84,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             lastconfig['enable_protections'] = btconfig.get('enable_protections')
             lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
 
+            ApiServer._bt.strategylist = [strat]
             ApiServer._bt.results = {}
             ApiServer._bt.load_prior_backtest()
 
