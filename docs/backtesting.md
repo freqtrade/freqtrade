@@ -377,50 +377,47 @@ The last element of the backtest report is the summary metrics table.
 It contains some useful key metrics about performance of your strategy on backtesting data.
 
 ```
-================ SUMMARY METRICS ===============
-| Metric                 | Value               |
-|------------------------+---------------------|
-| Backtesting from       | 2019-01-01 00:00:00 |
-| Backtesting to         | 2019-05-01 00:00:00 |
-| Max open trades        | 3                   |
-|                        |                     |
-| Total/Daily Avg Trades | 429 / 3.575         |
-| Starting balance       | 0.01000000 BTC      |
-| Final balance          | 0.01762792 BTC      |
-| Absolute profit        | 0.00762792 BTC      |
-| Total profit %         | 76.2%               |
-| CAGR %                 | 460.87%             |
-| Avg. stake amount      | 0.001      BTC      |
-| Total trade volume     | 0.429      BTC      |
-|                        |                     |
-| Long / Short           | 352 / 77            |
-| Total profit Long %    | 1250.58%            |
-| Total profit Short %   | -15.02%             |
-| Absolute profit Long   | 0.00838792 BTC      |
-| Absolute profit Short  | -0.00076 BTC        |
-|                        |                     |
-| Best Pair              | LSK/BTC 26.26%      |
-| Worst Pair             | ZEC/BTC -10.18%     |
-| Best Trade             | LSK/BTC 4.25%       |
-| Worst Trade            | ZEC/BTC -10.25%     |
-| Best day               | 0.00076 BTC         |
-| Worst day              | -0.00036 BTC        |
-| Days win/draw/lose     | 12 / 82 / 25        |
-| Avg. Duration Winners  | 4:23:00             |
-| Avg. Duration Loser    | 6:55:00             |
-| Rejected Entry signals | 3089                |
-| Entry/Exit Timeouts    | 0 / 0               |
-|                        |                     |
-| Min balance            | 0.00945123 BTC      |
-| Max balance            | 0.01846651 BTC      |
-| Drawdown (Account)     | 13.33%              |
-| Drawdown               | 0.0015 BTC          |
-| Drawdown high          | 0.0013 BTC          |
-| Drawdown low           | -0.0002 BTC         |
-| Drawdown Start         | 2019-02-15 14:10:00 |
-| Drawdown End           | 2019-04-11 18:15:00 |
-| Market change          | -5.88%              |
-================================================
+================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2022-02-01 00:00:00 |
+| Backtesting to              | 2022-03-15 00:15:00 |
+| Max open trades             | 10                  |
+|                             |                     |
+| Total/Daily Avg Trades      | 77 / 1.83           |
+| Starting balance            | 1000 USDT           |
+| Final balance               | 1135.843 USDT       |
+| Absolute profit             | 135.843 USDT        |
+| Total profit %              | 13.58%              |
+| CAGR %                      | 202.51%             |
+| Trades per day              | 1.83                |
+| Avg. daily profit %         | 0.32%               |
+| Avg. stake amount           | 105.996 USDT        |
+| Total trade volume          | 8161.695 USDT       |
+|                             |                     |
+| Best Pair                   | THETA/USDT 61.28%   |
+| Worst Pair                  | SAND/USDT -15.57%   |
+| Best trade                  | THETA/USDT 25.47%   |
+| Worst trade                 | SAND/USDT -5.19%    |
+| Best day                    | 73.347 USDT         |
+| Worst day                   | -56.261 USDT        |
+| Days win/draw/lose          | 12 / 9 / 11         |
+| Avg. Duration Winners       | 1 day, 19:30:00     |
+| Avg. Duration Loser         | 20:31:00            |
+| Rejected Entry signals      | 16959               |
+| Entry/Exit Timeouts         | 0 / 0               |
+|                             |                     |
+| Min balance                 | 970.12 USDT         |
+| Max balance                 | 1141.775 USDT       |
+| Max % of account underwater | 7.07%               |
+| Absolute Drawdown (Account) | 7.07%               |
+| Absolute Drawdown           | 77.666 USDT         |
+| Drawdown high               | 97.995 USDT         |
+| Drawdown low                | 20.329 USDT         |
+| Drawdown Start              | 2022-02-11 08:00:00 |
+| Drawdown End                | 2022-02-13 15:30:00 |
+| Market change               | -6.67%              |
+=====================================================
 
 ```
 
