@@ -661,8 +661,7 @@ class Backtesting:
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate
-
-            # We can't place orders higher than current high (otherwise it'd be a stop limit buy)
+            # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
             if direction == "short":
                 propose_rate = max(propose_rate, row[LOW_IDX])
