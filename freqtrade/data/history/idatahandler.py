@@ -98,7 +98,8 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: True when deleted, false if file did not exist.
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        filename = self._pair_data_filename(
+            self._datadir, pair, self.timeframe_to_file(timeframe), candle_type)
         if filename.exists():
             filename.unlink()
             return True
@@ -201,7 +202,7 @@ class IDataHandler(ABC):
             datadir = datadir.joinpath('futures')
             candle = f"-{candle_type}"
         filename = datadir.joinpath(
-            f'{pair_s}-{cls.timeframe_to_file(timeframe)}{candle}.{cls._get_file_extension()}')
+            f'{pair_s}-{timeframe}{candle}.{cls._get_file_extension()}')
         return filename
 
     @classmethod
@@ -220,7 +221,7 @@ class IDataHandler(ABC):
         converts timeframe from disk to file
         Replaces mo with M (to avoid problems on case-insensitive filesystems)
         """
-        return re.sub('mo', 'M', timeframe, flags=re.IGNORECASE)
+        return re.sub('1mo', '1M', timeframe, flags=re.IGNORECASE)
 
     @staticmethod
     def rebuild_pair_from_filename(pair: str) -> str:
