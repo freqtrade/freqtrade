@@ -153,7 +153,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     max_drawdown_rel = max_drawdown_df.loc[idxmin, 'drawdown_relative']
 
     return (
-        abs(min(max_drawdown_df['drawdown'])),
+        abs(max_drawdown_df.loc[idxmin, 'drawdown']),
         high_date,
         low_date,
         high_val,

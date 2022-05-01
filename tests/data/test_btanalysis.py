@@ -380,7 +380,7 @@ def test_calculate_max_drawdown2():
 
 @pytest.mark.parametrize('profits,relative,highd,lowd,result,result_rel', [
     ([0.0, -500.0, 500.0, 10000.0, -1000.0], False, 3, 4, 1000.0, 0.090909),
-    ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 0, 1, 1000.0, 0.5),
+    ([0.0, -500.0, 500.0, 10000.0, -1000.0], True, 0, 1, 500.0, 0.5),
 
 ])
 def test_calculate_max_drawdown_abs(profits, relative, highd, lowd, result, result_rel):

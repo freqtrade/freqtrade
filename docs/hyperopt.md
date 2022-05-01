@@ -566,7 +566,7 @@ Currently, the following loss functions are builtin:
 * `SortinoHyperOptLoss` - optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation.
 * `SortinoHyperOptLossDaily` - optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation.
 * `MaxDrawDownHyperOptLoss` - Optimizes Maximum absolute drawdown.
-* `MaxDrawDownRelativeHyperOptLoss` - Similar as the above, but also optimizes Maximum relative drawdown.
+* `MaxDrawDownRelativeHyperOptLoss` -  Optimizes both maximum absolute drawdown while also adjusting for maximum relative drawdown.
 * `CalmarHyperOptLoss` - Optimizes Calmar Ratio calculated on trade returns relative to max drawdown.
 * `ProfitDrawDownHyperOptLoss` - Optimizes by max Profit & min Drawdown objective. `DRAWDOWN_MULT` variable within the hyperoptloss file can be adjusted to be stricter or more flexible on drawdown purposes.
 
