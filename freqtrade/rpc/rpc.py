@@ -18,7 +18,8 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType, State
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
+                             TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -27,7 +28,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.wallets import PositionWallet, Wallet
 
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,8 @@ class RPC:
             'version': __version__,
             'strategy_version': strategy_version,
             'dry_run': config['dry_run'],
+            'trading_mode': config.get('trading_mode', 'spot'),
+            'short_allowed': config.get('trading_mode', 'spot') != 'spot',
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
             'stake_amount': str(config['stake_amount']),
@@ -133,9 +136,9 @@ class RPC:
                                                   ) if 'timeframe' in config else 0,
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
-            'forcebuy_enabled': config.get('forcebuy_enable', False),
-            'ask_strategy': config.get('ask_strategy', {}),
-            'bid_strategy': config.get('bid_strategy', {}),
+            'force_entry_enable': config.get('force_entry_enable', False),
+            'exit_pricing': config.get('exit_pricing', {}),
+            'entry_pricing': config.get('entry_pricing', {}),
             'state': str(botstate),
             'runmode': config['runmode'].value,
             'position_adjustment_enable': config.get('position_adjustment_enable', False),
@@ -153,7 +156,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+            trades: List[Trade] = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
@@ -169,7 +172,7 @@ class RPC:
                 if trade.is_open:
                     try:
                         current_rate = self._freqtrade.exchange.get_rate(
-                            trade.pair, refresh=False, side="sell")
+                            trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -194,7 +197,6 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
-                    base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if trade.close_profit is not None else None,
                     current_rate=current_rate,
                     current_profit=current_profit,  # Deprecated
@@ -219,7 +221,8 @@ class RPC:
 
     def _rpc_status_table(self, stake_currency: str,
                           fiat_display_currency: str) -> Tuple[List, List, float]:
-        trades = Trade.get_open_trades()
+        trades: List[Trade] = Trade.get_open_trades()
+        nonspot = self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -229,11 +232,12 @@ class RPC:
                 # calculate profit and send message to user
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side="sell")
+                        trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                direction_str = ('S' if trade.is_short else 'L') if nonspot else ''
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -245,7 +249,7 @@ class RPC:
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
                 detail_trade = [
-                    trade.id,
+                    f'{trade.id} {direction_str}',
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
                     + ('**' if (trade.close_rate_requested is not None) else ''),
@@ -253,20 +257,23 @@ class RPC:
                     profit_str
                 ]
                 if self._config.get('position_adjustment_enable', False):
-                    max_buy_str = ''
+                    max_entry_str = ''
                     if self._config.get('max_entry_position_adjustment', -1) > 0:
-                        max_buy_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
-                    filled_buys = trade.nr_of_successful_buys
-                    detail_trade.append(f"{filled_buys}{max_buy_str}")
+                        max_entry_str = f"/{self._config['max_entry_position_adjustment'] + 1}"
+                    filled_entries = trade.nr_of_successful_entries
+                    detail_trade.append(f"{filled_entries}{max_entry_str}")
                 trades_list.append(detail_trade)
             profitcol = "Profit"
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
+            columns = [
+                'ID L/S' if nonspot else 'ID',
+                'Pair',
+                'Since',
+                profitcol]
             if self._config.get('position_adjustment_enable', False):
-                columns = ['ID', 'Pair', 'Since', profitcol, '# Entries']
-            else:
-                columns = ['ID', 'Pair', 'Since', profitcol]
+                columns.append('# Entries')
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
@@ -425,13 +432,13 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades = trades = Trade.get_trades([Trade.is_open.is_(False)])
+        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)])
         # Sell reason
-        sell_reasons = {}
+        exit_reasons = {}
         for trade in trades:
-            if trade.sell_reason not in sell_reasons:
-                sell_reasons[trade.sell_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
-            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
+            if trade.exit_reason not in exit_reasons:
+                exit_reasons[trade.exit_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
+            exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
         dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
@@ -445,7 +452,7 @@ class RPC:
         losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else None
 
         durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
-        return {'sell_reasons': sell_reasons, 'durations': durations}
+        return {'exit_reasons': exit_reasons, 'durations': durations}
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
@@ -453,7 +460,7 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades = Trade.get_trades(trade_filter).order_by(Trade.id).all()
+        trades: List[Trade] = Trade.get_trades(trade_filter).order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_ratio = []
@@ -483,7 +490,7 @@ class RPC:
                 # Get current rate
                 try:
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side="sell")
+                        trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
@@ -559,7 +566,7 @@ class RPC:
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
-        output = []
+        currencies = []
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers(cached=True)
@@ -570,7 +577,8 @@ class RPC:
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = self._fiat_converter.convert_amount(
             starting_capital, stake_currency, fiat_display_currency) if self._fiat_converter else 0
-
+        coin: str
+        balance: Wallet
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
                 continue
@@ -579,6 +587,9 @@ class RPC:
             if coin == stake_currency:
                 rate = 1.0
                 est_stake = balance.total
+                if self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
+                    # in Futures, "total" includes the locked stake, and therefore all positions
+                    est_stake = balance.free
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
@@ -591,13 +602,35 @@ class RPC:
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
             total = total + (est_stake or 0)
-            output.append({
+            currencies.append({
                 'currency': coin,
+                # TODO: The below can be simplified if we don't assign None to values.
                 'free': balance.free if balance.free is not None else 0,
                 'balance': balance.total if balance.total is not None else 0,
                 'used': balance.used if balance.used is not None else 0,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
+                'side': 'long',
+                'leverage': 1,
+                'position': 0,
+                'is_position': False,
+            })
+        symbol: str
+        position: PositionWallet
+        for symbol, position in self._freqtrade.wallets.get_all_positions().items():
+            total += position.collateral
+
+            currencies.append({
+                'currency': symbol,
+                'free': 0,
+                'balance': 0,
+                'used': 0,
+                'position': position.position,
+                'est_stake': position.collateral,
+                'stake': stake_currency,
+                'leverage': position.leverage,
+                'side': position.side,
+                'is_position': True
             })
 
         value = self._fiat_converter.convert_amount(
@@ -609,7 +642,7 @@ class RPC:
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
         return {
-            'currencies': output,
+            'currencies': currencies,
             'total': total,
             'symbol': fiat_display_currency,
             'value': value,
@@ -655,35 +688,35 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forcesell(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
+    def _rpc_force_exit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
-        Handler for forcesell <id>.
+        Handler for forceexit <id>.
         Sells the given trade at current price
         """
-        def _exec_forcesell(trade: Trade) -> None:
+        def _exec_force_exit(trade: Trade) -> None:
             # Check if there is there is an open order
             fully_canceled = False
             if trade.open_order_id:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
-                if order['side'] == 'buy':
+                if order['side'] == trade.entry_side:
                     fully_canceled = self._freqtrade.handle_cancel_enter(
-                        trade, order, CANCEL_REASON['FORCE_SELL'])
+                        trade, order, CANCEL_REASON['FORCE_EXIT'])
 
-                if order['side'] == 'sell':
+                if order['side'] == trade.exit_side:
                     # Cancel order - so it is placed anew with a fresh price.
-                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_SELL'])
+                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_EXIT'])
 
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, refresh=False, side="sell")
-                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                    trade.pair, side='exit', is_short=trade.is_short, refresh=True)
+                exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                    "forcesell", self._freqtrade.strategy.order_types["sell"])
+                    "force_exit", self._freqtrade.strategy.order_types["exit"])
 
                 self._freqtrade.execute_trade_exit(
-                    trade, current_rate, sell_reason, ordertype=order_type)
+                    trade, current_rate, exit_check, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -693,7 +726,7 @@ class RPC:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
-                    _exec_forcesell(trade)
+                    _exec_force_exit(trade)
                 Trade.commit()
                 self._freqtrade.wallets.update()
                 return {'result': 'Created sell orders for all open trades.'}
@@ -703,27 +736,32 @@ class RPC:
                 trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True), ]
             ).first()
             if not trade:
-                logger.warning('forcesell: Invalid argument received')
+                logger.warning('force_exit: Invalid argument received')
                 raise RPCException('invalid argument')
 
-            _exec_forcesell(trade)
+            _exec_force_exit(trade)
             Trade.commit()
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
-                      stake_amount: Optional[float] = None,
-                      buy_tag: Optional[str] = 'forceentry') -> Optional[Trade]:
+    def _rpc_force_entry(self, pair: str, price: Optional[float], *,
+                         order_type: Optional[str] = None,
+                         order_side: SignalDirection = SignalDirection.LONG,
+                         stake_amount: Optional[float] = None,
+                         enter_tag: Optional[str] = 'force_entry') -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
         """
 
-        if not self._freqtrade.config.get('forcebuy_enable', False):
-            raise RPCException('Forcebuy not enabled.')
+        if not self._freqtrade.config.get('force_entry_enable', False):
+            raise RPCException('Force_entry not enabled.')
 
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
+
+        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
+            raise RPCException("Can't go short on Spot markets.")
 
         # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
@@ -733,8 +771,10 @@ class RPC:
         # check if valid pair
 
         # check if pair already has an open pair
-        trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        trade: Trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+        is_short = (order_side == SignalDirection.SHORT)
         if trade:
+            is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
@@ -745,14 +785,17 @@ class RPC:
         # execute buy
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
-                'forcebuy', self._freqtrade.strategy.order_types['buy'])
+                'force_entry', self._freqtrade.strategy.order_types['entry'])
         if self._freqtrade.execute_entry(pair, stake_amount, price,
-                                         ordertype=order_type, trade=trade, buy_tag=buy_tag):
+                                         ordertype=order_type, trade=trade,
+                                         is_short=is_short,
+                                         enter_tag=enter_tag,
+                                         ):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
-            return None
+            raise RPCException(f'Failed to enter position for {pair}.')
 
     def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
         """
@@ -802,27 +845,23 @@ class RPC:
 
         return pair_rates
 
-    def _rpc_buy_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_enter_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for buy tag performance.
         Shows a performance statistic from finished trades
         """
-        buy_tags = Trade.get_buy_tag_performance(pair)
+        return Trade.get_enter_tag_performance(pair)
 
-        return buy_tags
-
-    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for sell reason performance.
+        Handler for exit reason performance.
         Shows a performance statistic from finished trades
         """
-        sell_reasons = Trade.get_sell_reason_performance(pair)
-
-        return sell_reasons
+        return Trade.get_exit_reason_performance(pair)
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for mix tag (buy_tag + sell_reason) performance.
+        Handler for mix tag (enter_tag + exit_reason) performance.
         Shows a performance statistic from finished trades
         """
         mix_tags = Trade.get_mix_tag_performance(pair)
@@ -945,20 +984,21 @@ class RPC:
     def _convert_dataframe_to_dict(strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
                                    last_analyzed: datetime) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
-        buy_signals = 0
-        sell_signals = 0
+        signals = {
+            'enter_long': 0,
+            'exit_long': 0,
+            'enter_short': 0,
+            'exit_short': 0,
+        }
         if has_content:
 
             dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
-            if 'buy' in dataframe.columns:
-                buy_mask = (dataframe['buy'] == 1)
-                buy_signals = int(buy_mask.sum())
-                dataframe.loc[buy_mask, '_buy_signal_close'] = dataframe.loc[buy_mask, 'close']
-            if 'sell' in dataframe.columns:
-                sell_mask = (dataframe['sell'] == 1)
-                sell_signals = int(sell_mask.sum())
-                dataframe.loc[sell_mask, '_sell_signal_close'] = dataframe.loc[sell_mask, 'close']
+            for sig_type in signals.keys():
+                if sig_type in dataframe.columns:
+                    mask = (dataframe[sig_type] == 1)
+                    signals[sig_type] = int(mask.sum())
+                    dataframe.loc[mask, f'_{sig_type}_signal_close'] = dataframe.loc[mask, 'close']
 
             # band-aid until this is fixed:
             # https://github.com/pandas-dev/pandas/issues/45836
@@ -978,8 +1018,12 @@ class RPC:
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
-            'buy_signals': buy_signals,
-            'sell_signals': sell_signals,
+            'buy_signals': signals['enter_long'],  # Deprecated
+            'sell_signals': signals['exit_long'],  # Deprecated
+            'enter_long_signals': signals['enter_long'],
+            'exit_long_signals': signals['exit_long'],
+            'enter_short_signals': signals['enter_short'],
+            'exit_short_signals': signals['exit_short'],
             'last_analyzed': last_analyzed,
             'last_analyzed_ts': int(last_analyzed.timestamp()),
             'data_start': '',
@@ -1018,6 +1062,7 @@ class RPC:
             timeframe=timeframe,
             timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
+            candle_type=config.get('candle_type_def', CandleType.SPOT)
         )
         if pair not in _data:
             raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")

@@ -22,12 +22,14 @@ nav:
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
+    - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
     - Exchange-specific Notes: exchanges.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
         - Strategy analysis: strategy_analysis_example.md
+        - Backtest analysis: advanced-backtesting.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
         - Edge Positioning: edge.md
@@ -36,29 +38,30 @@ nav:
         - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md
+    - Strategy migration: strategy_migration.md
     - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md
 theme:
   name: material
-  logo: 'images/logo.png'
-  favicon: 'images/logo.png'
-  custom_dir: 'docs/overrides'
+  logo: "images/logo.png"
+  favicon: "images/logo.png"
+  custom_dir: "docs/overrides"
   palette:
     - scheme: default
-      primary: 'blue grey'
-      accent: 'tear'
+      primary: "blue grey"
+      accent: "tear"
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     - scheme: slate
-      primary: 'blue grey'
-      accent: 'tear'
+      primary: "blue grey"
+      accent: "tear"
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
 extra_css:
-  - 'stylesheets/ft.extra.css'
+  - "stylesheets/ft.extra.css"
 extra_javascript:
   - javascripts/config.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6

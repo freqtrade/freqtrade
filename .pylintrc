@@ -7,4 +7,3 @@ ignore=vendor
 
 [TYPECHECK]
 ignored-modules=numpy,talib,talib.abstract
-

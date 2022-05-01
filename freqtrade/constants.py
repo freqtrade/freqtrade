@@ -3,7 +3,9 @@
 """
 bot constants
 """
-from typing import List, Tuple
+from typing import List, Literal, Tuple
+
+from freqtrade.enums import CandleType
 
 
 DEFAULT_CONFIG = 'config.json'
@@ -12,14 +14,14 @@ PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 TIMEOUT_UNITS = ['minutes', 'seconds']
-EXPORT_OPTIONS = ['none', 'trades']
+EXPORT_OPTIONS = ['none', 'trades', 'signals']
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
 DEFAULT_AMOUNT_RESERVE_PERCENT = 0.05
-REQUIRED_ORDERTIF = ['buy', 'sell']
-REQUIRED_ORDERTYPES = ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
-ORDERBOOK_SIDES = ['ask', 'bid']
+REQUIRED_ORDERTIF = ['entry', 'exit']
+REQUIRED_ORDERTYPES = ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']
+PRICING_SIDES = ['ask', 'bid', 'same', 'other']
 ORDERTYPE_POSSIBILITIES = ['limit', 'market']
 ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
@@ -43,6 +45,8 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 # Don't modify sequence of DEFAULT_TRADES_COLUMNS
 # it has wide consequences for stored trades files
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
+TRADING_MODES = ['spot', 'margin', 'futures']
+MARGIN_MODES = ['cross', 'isolated', '']
 
 LAST_BT_RESULT_FN = '.last_result.json'
 FTHYPT_FILEVERSION = 'fthypt_fileversion'
@@ -82,20 +86,19 @@ SUPPORTED_FIAT = [
     "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
     "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
-    "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
-    "BTC", "ETH", "XRP", "LTC", "BCH"
+    "RUB", "UAH", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR",
+    "USD", "BTC", "ETH", "XRP", "LTC", "BCH"
 ]
 
 MINIMAL_CONFIG = {
-    'stake_currency': '',
-    'dry_run': True,
-    'exchange': {
-        'name': '',
-        'key': '',
-        'secret': '',
-        'pair_whitelist': [],
-        'ccxt_async_config': {
-            'enableRateLimit': True,
+    "stake_currency": "",
+    "dry_run": True,
+    "exchange": {
+        "name": "",
+        "key": "",
+        "secret": "",
+        "pair_whitelist": [],
+        "ccxt_async_config": {
         }
     }
 }
@@ -145,11 +148,14 @@ CONF_SCHEMA = {
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_only_offset_is_reached': {'type': 'boolean'},
-        'use_sell_signal': {'type': 'boolean'},
-        'sell_profit_only': {'type': 'boolean'},
-        'sell_profit_offset': {'type': 'number'},
-        'ignore_roi_if_buy_signal': {'type': 'boolean'},
+        'use_exit_signal': {'type': 'boolean'},
+        'exit_profit_only': {'type': 'boolean'},
+        'exit_profit_offset': {'type': 'number'},
+        'ignore_roi_if_entry_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
+        'trading_mode': {'type': 'string', 'enum': TRADING_MODES},
+        'margin_mode': {'type': 'string', 'enum': MARGIN_MODES},
+        'liquidation_buffer': {'type': 'number', 'minimum': 0.0, 'maximum': 0.99},
         'backtest_breakdown': {
             'type': 'array',
             'items': {'type': 'string', 'enum': BACKTEST_BREAKDOWNS}
@@ -158,22 +164,22 @@ CONF_SCHEMA = {
         'unfilledtimeout': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'number', 'minimum': 1},
-                'sell': {'type': 'number', 'minimum': 1},
+                'entry': {'type': 'number', 'minimum': 1},
+                'exit': {'type': 'number', 'minimum': 1},
                 'exit_timeout_count': {'type': 'number', 'minimum': 0, 'default': 0},
                 'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },
-        'bid_strategy': {
+        'entry_pricing': {
             'type': 'object',
             'properties': {
-                'ask_last_balance': {
+                'price_last_balance': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,
                     'exclusiveMaximum': False,
                 },
-                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'bid'},
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'same'},
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
                 'check_depth_of_market': {
@@ -186,11 +192,11 @@ CONF_SCHEMA = {
             },
             'required': ['price_side']
         },
-        'ask_strategy': {
+        'exit_pricing': {
             'type': 'object',
             'properties': {
-                'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
-                'bid_last_balance': {
+                'price_side': {'type': 'string', 'enum': PRICING_SIDES, 'default': 'same'},
+                'price_last_balance': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1,
@@ -207,11 +213,11 @@ CONF_SCHEMA = {
         'order_types': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {
+                'entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'force_exit': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'force_entry': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergency_exit': {
                     'type': 'string',
                     'enum': ORDERTYPE_POSSIBILITIES,
                     'default': 'market'},
@@ -221,15 +227,15 @@ CONF_SCHEMA = {
                 'stoploss_on_exchange_limit_ratio': {'type': 'number', 'minimum': 0.0,
                                                      'maximum': 1.0}
             },
-            'required': ['buy', 'sell', 'stoploss', 'stoploss_on_exchange']
+            'required': ['entry', 'exit', 'stoploss', 'stoploss_on_exchange']
         },
         'order_time_in_force': {
             'type': 'object',
             'properties': {
-                'buy': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
-                'sell': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
+                'entry': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES},
+                'exit': {'type': 'string', 'enum': ORDERTIF_POSSIBILITIES}
             },
-            'required': ['buy', 'sell']
+            'required': REQUIRED_ORDERTIF
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
@@ -278,21 +284,21 @@ CONF_SCHEMA = {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'buy_fill': {'type': 'string',
-                                     'enum': TELEGRAM_SETTING_OPTIONS,
-                                     'default': 'off'
-                                     },
-                        'sell': {
+                        'entry': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'entry_fill': {'type': 'string',
+                                       'enum': TELEGRAM_SETTING_OPTIONS,
+                                       'default': 'off'
+                                       },
+                        'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {
                                 'type': 'string',
                                 'enum': TELEGRAM_SETTING_OPTIONS
                             }
                         },
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_fill': {
+                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
@@ -320,12 +326,12 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
-                'webhookbuy': {'type': 'object'},
-                'webhookbuycancel': {'type': 'object'},
-                'webhookbuyfill': {'type': 'object'},
-                'webhooksell': {'type': 'object'},
-                'webhooksellcancel': {'type': 'object'},
-                'webhooksellfill': {'type': 'object'},
+                'webhookentry': {'type': 'object'},
+                'webhookentrycancel': {'type': 'object'},
+                'webhookentryfill': {'type': 'object'},
+                'webhookexit': {'type': 'object'},
+                'webhookexitcancel': {'type': 'object'},
+                'webhookexitfill': {'type': 'object'},
                 'webhookstatus': {'type': 'object'},
             },
         },
@@ -351,7 +357,7 @@ CONF_SCHEMA = {
         'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
         'disableparamexport': {'type': 'boolean'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
-        'forcebuy_enable': {'type': 'boolean'},
+        'force_entry_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},
         'internals': {
             'type': 'object',
@@ -438,8 +444,8 @@ SCHEMA_TRADE_REQUIRED = [
     'last_stake_amount_min_ratio',
     'dry_run',
     'dry_run_wallet',
-    'ask_strategy',
-    'bid_strategy',
+    'exit_pricing',
+    'entry_pricing',
     'stoploss',
     'minimal_roi',
     'internals',
@@ -456,6 +462,10 @@ SCHEMA_BACKTEST_REQUIRED = [
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
+SCHEMA_BACKTEST_REQUIRED_FINAL = SCHEMA_BACKTEST_REQUIRED + [
+    'stoploss',
+    'minimal_roi',
+]
 
 SCHEMA_MINIMAL_REQUIRED = [
     'exchange',
@@ -471,12 +481,15 @@ CANCEL_REASON = {
     "FULLY_CANCELLED": "fully cancelled",
     "ALL_CANCELLED": "cancelled (all unfilled and partially filled open orders cancelled)",
     "CANCELLED_ON_EXCHANGE": "cancelled on exchange",
-    "FORCE_SELL": "forcesold",
+    "FORCE_EXIT": "forcesold",
 }
 
 # List of pairs with their timeframes
-PairWithTimeframe = Tuple[str, str]
+PairWithTimeframe = Tuple[str, str, CandleType]
 ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
 TradeList = List[List]
+
+LongShort = Literal['long', 'short']
+EntryExit = Literal['entry', 'exit']

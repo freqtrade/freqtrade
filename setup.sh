@@ -51,6 +51,7 @@ function updateenv() {
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
+    dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
@@ -88,6 +89,13 @@ function updateenv() {
     fi
     echo "pip install completed"
     echo
+    if [[ $dev =~ ^[Yy]$ ]]; then
+        ${PYTHON} -m pre_commit install
+        if [ $? -ne 0 ]; then
+            echo "Failed installing pre-commit"
+            exit 1
+        fi
+    fi
 }
 
 # Install tab lib

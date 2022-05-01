@@ -38,7 +38,7 @@ The old section of configuration parameters (`"pairlist"`) has been deprecated i
 
 Since only quoteVolume can be compared between assets, the other options (bidVolume, askVolume) have been deprecated in 2020.4, and have been removed in 2020.9.
 
-### Using order book steps for sell price
+### Using order book steps for exit price
 
 Using `order_book_min` and `order_book_max` used to allow stepping the orderbook and trying to find the next ROI slot - trying to place sell-orders early.
 As this does however increase risk and provides no benefit, it's been removed for maintainability purposes in 2021.7.
@@ -47,3 +47,30 @@ As this does however increase risk and provides no benefit, it's been removed fo
 
 Using separate hyperopt files was deprecated in 2021.4 and was removed in 2021.9.
 Please switch to the new [Parametrized Strategies](hyperopt.md) to benefit from the new hyperopt interface.
+
+## Strategy changes between V2 and V3
+
+Isolated Futures / short trading was introduced in 2022.4. This required major changes to configuration settings, strategy interfaces, ...
+
+We have put a great effort into keeping compatibility with existing strategies, so if you just want to continue using freqtrade in spot markets, there are no changes necessary.
+While we may drop support for the current interface sometime in the future, we will announce this separately and have an appropriate transition period.
+
+Please follow the [Strategy migration](strategy_migration.md) guide to migrate your strategy to the new format to start using the new functionalities.
+
+### webhooks - changes with 2022.4
+
+#### `buy_tag` has been renamed to `enter_tag`
+
+This should apply only to your strategy and potentially to webhooks.
+We will keep a compatibility layer for 1-2 versions (so both `buy_tag` and `enter_tag` will still work), but support for this in webhooks will disappear after that.
+
+#### Naming changes
+
+Webhook terminology changed from "sell" to "exit", and from "buy" to "entry".
+
+* `webhookbuy` -> `webhookentry`
+* `webhookbuyfill` -> `webhookentryfill`
+* `webhookbuycancel` -> `webhookentrycancel`
+* `webhooksell` -> `webhookexit`
+* `webhooksellfill` -> `webhookexitfill`
+* `webhooksellcancel` -> `webhookexitcancel`

@@ -73,7 +73,7 @@ df.tail()
 
 ```python
 # Report results
-print(f"Generated {df['buy'].sum()} buy signals")
+print(f"Generated {df['enter_long'].sum()} entry signals")
 data = df.set_index('date', drop=False)
 data.tail()
 ```
@@ -93,7 +93,7 @@ from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
 
 # if backtest_dir points to a directory, it'll automatically load the last backtest file.
 backtest_dir = config["user_data_dir"] / "backtest_results"
-# backtest_dir can also point to a specific file 
+# backtest_dir can also point to a specific file
 # backtest_dir = config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"
 ```
 
@@ -129,7 +129,7 @@ print(stats['strategy_comparison'])
 trades = load_backtest_data(backtest_dir)
 
 # Show value-counts per pair
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["exit_reason"].value_counts()
 ```
 
 ## Plotting daily profit / equity line
@@ -182,7 +182,7 @@ from freqtrade.data.btanalysis import load_trades_from_db
 trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
 # Display results
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["exit_reason"].value_counts()
 ```
 
 ## Analyze the loaded trades for trade parallelism
@@ -244,7 +244,7 @@ import plotly.figure_factory as ff
 hist_data = [trades.profit_ratio]
 group_labels = ['profit_ratio']  # name of the dataset
 
-fig = ff.create_distplot(hist_data, group_labels,bin_size=0.01)
+fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)
 fig.show()
 
 ```

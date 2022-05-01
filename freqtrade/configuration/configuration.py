@@ -12,8 +12,8 @@ from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
-from freqtrade.configuration.load_config import load_config_file, load_file
-from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
+from freqtrade.configuration.load_config import load_file, load_from_files
+from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
@@ -55,39 +55,9 @@ class Configuration:
         :param files: List of file paths
         :return: configuration dictionary
         """
+        # Keep this method as staticmethod, so it can be used from interactive environments
         c = Configuration({'config': files}, RunMode.OTHER)
         return c.get_config()
-
-    def load_from_files(self, files: List[str]) -> Dict[str, Any]:
-
-        # Keep this method as staticmethod, so it can be used from interactive environments
-        config: Dict[str, Any] = {}
-
-        if not files:
-            return deepcopy(constants.MINIMAL_CONFIG)
-
-        # We expect here a list of config filenames
-        for path in files:
-            logger.info(f'Using config: {path} ...')
-
-            # Merge config options, overwriting old values
-            config = deep_merge_dicts(load_config_file(path), config)
-
-        # Load environment variables
-        env_data = enironment_vars_to_dict()
-        config = deep_merge_dicts(env_data, config)
-
-        config['config_files'] = files
-        # Normalize config
-        if 'internals' not in config:
-            config['internals'] = {}
-        if 'ask_strategy' not in config:
-            config['ask_strategy'] = {}
-
-        if 'pairlists' not in config:
-            config['pairlists'] = []
-
-        return config
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -95,7 +65,18 @@ class Configuration:
         :return: Configuration dictionary
         """
         # Load all configs
-        config: Dict[str, Any] = self.load_from_files(self.args.get("config", []))
+        config: Dict[str, Any] = load_from_files(self.args.get("config", []))
+
+        # Load environment variables
+        env_data = enironment_vars_to_dict()
+        config = deep_merge_dicts(env_data, config)
+
+        # Normalize config
+        if 'internals' not in config:
+            config['internals'] = {}
+
+        if 'pairlists' not in config:
+            config['pairlists'] = []
 
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
@@ -166,8 +147,8 @@ class Configuration:
             config.update({'db_url': self.args['db_url']})
             logger.info('Parameter --db-url detected ...')
 
-        if config.get('forcebuy_enable', False):
-            logger.warning('`forcebuy` RPC message enabled.')
+        if config.get('force_entry_enable', False):
+            logger.warning('`force_entry_enable` RPC message enabled.')
 
         # Support for sd_notify
         if 'sd_notify' in self.args and self.args['sd_notify']:
@@ -266,6 +247,12 @@ class Configuration:
 
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
+
+        self._args_to_config(
+            config,
+            argname='recursive_strategy_search',
+            logstring='Recursively searching for a strategy in the strategies folder.',
+        )
 
         self._args_to_config(config, argname='timeframe',
                              logstring='Overriding timeframe with Command line argument')
@@ -433,6 +420,13 @@ class Configuration:
     def _process_data_options(self, config: Dict[str, Any]) -> None:
         self._args_to_config(config, argname='new_pairs_days',
                              logstring='Detected --new-pairs-days: {}')
+        self._args_to_config(config, argname='trading_mode',
+                             logstring='Detected --trading-mode: {}')
+        config['candle_type_def'] = CandleType.get_default(
+            config.get('trading_mode', 'spot') or 'spot')
+        config['trading_mode'] = TradingMode(config.get('trading_mode', 'spot') or 'spot')
+        self._args_to_config(config, argname='candle_types',
+                             logstring='Detected --candle-types: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 

@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import pandas as pd
 
-from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
@@ -36,7 +36,7 @@ class MaxDrawdown(IProtection):
         """
         LockReason to use
         """
-        return (f'{drawdown} > {self._max_allowed_drawdown} in {self.lookback_period_str}, '
+        return (f'{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
     def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:

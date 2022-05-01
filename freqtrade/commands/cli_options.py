@@ -5,6 +5,7 @@ from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
+from freqtrade.enums import CandleType
 
 
 def check_int_positive(value: str) -> int:
@@ -80,6 +81,11 @@ AVAILABLE_CLI_OPTIONS = {
     "reset": Arg(
         '--reset',
         help='Reset sample files to their original state.',
+        action='store_true',
+    ),
+    "recursive_strategy_search": Arg(
+        '--recursive-strategy-search',
+        help='Recursively search for a strategy in the strategies folder.',
         action='store_true',
     ),
     # Main options
@@ -179,7 +185,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--export',
         help='Export backtest results (default: trades).',
         choices=constants.EXPORT_OPTIONS,
-
     ),
     "exportfilename": Arg(
         "--export-filename",
@@ -355,6 +360,17 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify base currency(-ies). Space-separated list.',
         nargs='+',
         metavar='BASE_CURRENCY',
+    ),
+    "trading_mode": Arg(
+        '--trading-mode',
+        help='Select Trading mode',
+        choices=constants.TRADING_MODES,
+    ),
+    "candle_types": Arg(
+        '--candle-types',
+        help='Select candle type to use',
+        choices=[c.value for c in CandleType],
+        nargs='+',
     ),
     # Script options
     "pairs": Arg(

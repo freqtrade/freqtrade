@@ -10,33 +10,33 @@ Sample configuration (tested using IFTTT).
   "webhook": {
         "enabled": true,
         "url": "https://maker.ifttt.com/trigger/<YOUREVENT>/with/key/<YOURKEY>/",
-        "webhookbuy": {
+        "webhookentry": {
             "value1": "Buying {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-        "webhookbuycancel": {
+        "webhookentrycancel": {
             "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-         "webhookbuyfill": {
+         "webhookentryfill": {
             "value1": "Buy Order for {pair} filled",
             "value2": "at {open_rate:8f}",
             "value3": ""
         },
-        "webhooksell": {
-            "value1": "Selling {pair}",
+        "webhookexit": {
+            "value1": "Exiting {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellcancel": {
-            "value1": "Cancelling Open Sell Order for {pair}",
+        "webhookexitcancel": {
+            "value1": "Cancelling Open Exit Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhooksellfill": {
-            "value1": "Sell Order for {pair} filled",
+        "webhookexitfill": {
+            "value1": "Exit Order for {pair} filled",
             "value2": "at {close_rate:8f}.",
             "value3": ""
         },
@@ -96,14 +96,16 @@ Optional parameters are available to enable automatic retries for webhook messag
 
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
-### Webhookbuy
+### Webhookentry
 
-The fields in `webhook.webhookbuy` are filled when the bot executes a buy. Parameters are filled using string.format.
+The fields in `webhook.webhookentry` are filled when the bot executes a long/short. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * ~~`limit` # Deprecated - should no longer be used.~~
 * `open_rate`
 * `amount`
@@ -114,16 +116,18 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
-* `buy_tag`
+* `enter_tag`
 
-### Webhookbuycancel
+### Webhookentrycancel
 
-The fields in `webhook.webhookbuycancel` are filled when the bot cancels a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookentrycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `limit`
 * `amount`
 * `open_date`
@@ -133,16 +137,18 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
-* `buy_tag`
+* `enter_tag`
 
-### Webhookbuyfill
+### Webhookentryfill
 
-The fields in `webhook.webhookbuyfill` are filled when the bot filled a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookentryfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `open_rate`
 * `amount`
 * `open_date`
@@ -152,16 +158,18 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
-* `buy_tag`
+* `enter_tag`
 
-### Webhooksell
+### Webhookexit
 
-The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
+The fields in `webhook.webhookexit` are filled when the bot exits a trade. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `limit`
 * `amount`
@@ -171,19 +179,21 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`
 
-### Webhooksellfill
+### Webhookexitfill
 
-The fields in `webhook.webhooksellfill` are filled when the bot fills a sell order (closes a Trae). Parameters are filled using string.format.
+The fields in `webhook.webhookexitfill` are filled when the bot fills a exit order (closes a Trade). Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `close_rate`
 * `amount`
@@ -194,19 +204,21 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`
 
-### Webhooksellcancel
+### Webhookexitcancel
 
-The fields in `webhook.webhooksellcancel` are filled when the bot cancels a sell order. Parameters are filled using string.format.
+The fields in `webhook.webhookexitcancel` are filled when the bot cancels a exit order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `limit`
 * `amount`
@@ -217,7 +229,7 @@ Possible parameters are:
 * `stake_currency`
 * `base_currency`
 * `fiat_currency`
-* `sell_reason`
+* `exit_reason`
 * `order_type`
 * `open_date`
 * `close_date`

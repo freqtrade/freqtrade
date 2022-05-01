@@ -1,13 +1,16 @@
 import asyncio
 import logging
 from copy import deepcopy
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from freqtrade.configuration.config_validation import validate_config_consistency
+from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
-from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
+from freqtrade.rpc.api_server.api_schemas import (BacktestHistoryEntry, BacktestRequest,
+                                                  BacktestResponse)
 from freqtrade.rpc.api_server.deps import get_config, is_webserver_mode
 from freqtrade.rpc.api_server.webserver import ApiServer
 from freqtrade.rpc.rpc import RPCException
@@ -81,6 +84,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             lastconfig['enable_protections'] = btconfig.get('enable_protections')
             lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
 
+            ApiServer._bt.strategylist = [strat]
             ApiServer._bt.results = {}
             ApiServer._bt.load_prior_backtest()
 
@@ -199,4 +203,31 @@ def api_backtest_abort(ws_mode=Depends(is_webserver_mode)):
         "step": "",
         "progress": 0,
         "status_msg": "Backtest ended",
+    }
+
+
+@router.get('/backtest/history', response_model=List[BacktestHistoryEntry], tags=['webserver', 'backtest'])
+def api_backtest_history(config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+    # Get backtest result history, read from metadata files
+    return get_backtest_resultlist(config['user_data_dir'] / 'backtest_results')
+
+
+@router.get('/backtest/history/result', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config), ws_mode=Depends(is_webserver_mode)):
+    # Get backtest result history, read from metadata files
+    fn = config['user_data_dir'] / 'backtest_results' / filename
+    results: Dict[str, Any] = {
+        'metadata': {},
+        'strategy': {},
+        'strategy_comparison': [],
+    }
+
+    load_and_merge_backtest_result(strategy, fn, results)
+    return {
+        "status": "ended",
+        "running": False,
+        "step": "",
+        "progress": 1,
+        "status_msg": "Historic result",
+        "backtest_result": results,
     }

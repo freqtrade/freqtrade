@@ -6,7 +6,7 @@ import pytest
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
-from tests.conftest import get_patched_freqtradebot, patch_wallet
+from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_wallet
 
 
 def test_sync_wallet_at_boot(mocker, default_conf):
@@ -180,24 +180,32 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     assert result == 0
 
 
-@pytest.mark.parametrize('stake_amount,min_stake_amount,max_stake_amount,expected', [
-    (22, 11, 50, 22),
-    (100, 11, 500, 100),
-    (1000, 11, 500, 500),  # Above max-stake
-    (20, 15, 10, 0),  # Minimum stake > max-stake
-    (9, 11, 100, 11),  # Below min stake
-    (1, 15, 10, 0),  # Below min stake and min_stake > max_stake
-    (20, 50, 100, 0),  # Below min stake and stake * 1.3 > min_stake
-    (1000, None, 1000, 1000),  # No min-stake-amount could be determined
+@pytest.mark.parametrize('stake_amount,min_stake,stake_available,max_stake,expected', [
+    (22, 11, 50, 10000, 22),
+    (100, 11, 500, 10000, 100),
+    (1000, 11, 500, 10000, 500),  # Above stake_available
+    (700, 11, 1000, 400, 400),  # Above max_stake, below stake available
+    (20, 15, 10, 10000, 0),  # Minimum stake > stake_available
+    (9, 11, 100, 10000, 11),  # Below min stake
+    (1, 15, 10, 10000, 0),  # Below min stake and min_stake > stake_available
+    (20, 50, 100, 10000, 0),  # Below min stake and stake * 1.3 > min_stake
+    (1000, None, 1000, 10000, 1000),  # No min-stake-amount could be determined
 
 ])
-def test_validate_stake_amount(mocker, default_conf,
-                               stake_amount, min_stake_amount, max_stake_amount, expected):
+def test_validate_stake_amount(
+    mocker,
+    default_conf,
+    stake_amount,
+    min_stake,
+    stake_available,
+    max_stake,
+    expected,
+):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch("freqtrade.wallets.Wallets.get_available_stake_amount",
-                 return_value=max_stake_amount)
-    res = freqtrade.wallets.validate_stake_amount('XRP/USDT', stake_amount, min_stake_amount)
+                 return_value=stake_available)
+    res = freqtrade.wallets.validate_stake_amount('XRP/USDT', stake_amount, min_stake, max_stake)
     assert res == expected
 
 
@@ -226,3 +234,131 @@ def test_get_starting_balance(mocker, default_conf, available_capital, closed_pr
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     assert freqtrade.wallets.get_starting_balance() == expected
+
+
+def test_sync_wallet_futures_live(mocker, default_conf):
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    mock_result = [
+        {
+            "symbol": "ETH/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 100.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 100.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        },
+        {
+            "symbol": "ADA/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 100.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 100.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 0.91,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        },
+        {
+            # Closed position
+            "symbol": "SOL/BUSD:BUSD",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 0.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 0.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 15.41,
+            "collateral": 0.0,
+            "marginType": "isolated",
+            "side": 'short',
+            "percentage": None
+        }
+    ]
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value={
+            "USDT": {
+                "free": 900,
+                "used": 100,
+                "total": 1000
+            },
+        }),
+        fetch_positions=MagicMock(return_value=mock_result)
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 2
+
+    assert 'USDT' in freqtrade.wallets._wallets
+    assert 'ETH/USDT:USDT' in freqtrade.wallets._positions
+    assert freqtrade.wallets._last_wallet_refresh > 0
+
+    # Remove ETH/USDT:USDT position
+    del mock_result[0]
+    freqtrade.wallets.update()
+    assert len(freqtrade.wallets._positions) == 1
+    assert 'ETH/USDT:USDT' not in freqtrade.wallets._positions
+
+
+def test_sync_wallet_futures_dry(mocker, default_conf, fee):
+    default_conf['dry_run'] = True
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 0
+
+    create_mock_trades(fee, is_short=None)
+
+    freqtrade.wallets.update()
+
+    assert len(freqtrade.wallets._wallets) == 1
+    assert len(freqtrade.wallets._positions) == 4
+    positions = freqtrade.wallets.get_all_positions()
+    positions['ETH/BTC'].side == 'short'
+    positions['ETC/BTC'].side == 'long'
+    positions['XRP/BTC'].side == 'long'
+    positions['LTC/BTC'].side == 'short'
+
+    assert freqtrade.wallets.get_starting_balance() == default_conf['dry_run_wallet']
+    total = freqtrade.wallets.get_total('BTC')
+    free = freqtrade.wallets.get_free('BTC')
+    used = freqtrade.wallets.get_used('BTC')
+    assert free + used == total

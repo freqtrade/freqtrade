@@ -23,7 +23,7 @@ def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate:
 
     :param pair: Pair that's currently analyzed
     :param current_time: datetime object, containing the current datetime
-    :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return float: New entry price value if provided
@@ -32,7 +32,7 @@ def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate:
 
 def custom_exit_price(self, pair: str, trade: 'Trade',
                       current_time: 'datetime', proposed_rate: float,
-                      current_profit: float, **kwargs) -> float:
+                      current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
     """
     Custom exit price logic, returning the new exit price.
 
@@ -43,8 +43,9 @@ def custom_exit_price(self, pair: str, trade: 'Trade',
     :param pair: Pair that's currently analyzed
     :param trade: trade object.
     :param current_time: datetime object, containing the current datetime
-    :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param proposed_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param exit_tag: Exit reason.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return float: New exit price value if provided
     """
@@ -52,18 +53,18 @@ def custom_exit_price(self, pair: str, trade: 'Trade',
 
 def custom_stake_amount(self, pair: str, current_time: 'datetime', current_rate: float,
                         proposed_stake: float, min_stake: float, max_stake: float,
-                        entry_tag: 'Optional[str]', **kwargs) -> float:
+                        side: str, entry_tag: 'Optional[str]', **kwargs) -> float:
     """
-    Customize stake size for each new trade. This method is not called when edge module is
-    enabled.
+    Customize stake size for each new trade.
 
     :param pair: Pair that's currently analyzed
     :param current_time: datetime object, containing the current datetime
-    :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param proposed_stake: A stake amount proposed by the bot.
     :param min_stake: Minimal stake size allowed by exchange.
     :param max_stake: Balance available for trading.
     :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: 'long' or 'short' - indicating the direction of the proposed trade
     :return: A stake size, which is between min_stake and max_stake.
     """
     return proposed_stake
@@ -85,17 +86,17 @@ def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime',
     :param pair: Pair that's currently analyzed
     :param trade: trade object.
     :param current_time: datetime object, containing the current datetime
-    :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param current_profit: Current profit (as ratio), calculated based on current_rate.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return float: New stoploss value, relative to the current_rate
     """
     return self.stoploss
 
-def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                 current_profit: float, **kwargs) -> 'Optional[Union[str, bool]]':
     """
-    Custom sell signal logic indicating that specified position should be sold. Returning a
+    Custom exit signal logic indicating that specified position should be sold. Returning a
     string or True from this method is equal to setting sell signal on a candle at specified
     time. This method is not called when sell signal is set.
 
@@ -103,24 +104,24 @@ def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', curre
     example you could implement a sell relative to the candle when the trade was opened,
     or a custom 1:2 risk-reward ROI.
 
-    Custom sell reason max length is 64. Exceeding characters will be removed.
+    Custom exit reason max length is 64. Exceeding characters will be removed.
 
     :param pair: Pair that's currently analyzed
     :param trade: trade object.
     :param current_time: datetime object, containing the current datetime
-    :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
     :param current_profit: Current profit (as ratio), calculated based on current_rate.
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-    :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+    :return: To execute sell, return a string with custom exit reason or True. Otherwise return
     None or False.
     """
     return None
 
 def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                        time_in_force: str, current_time: 'datetime', entry_tag: 'Optional[str]',
-                        **kwargs) -> bool:
+                        time_in_force: str, current_time: datetime, entry_tag: 'Optional[str]',
+                        side: str, **kwargs) -> bool:
     """
-    Called right before placing a buy order.
+    Called right before placing a entry order.
     Timing for this function is critical, so avoid doing heavy computations or
     network requests in this method.
 
@@ -128,13 +129,14 @@ def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: f
 
     When not implemented by a strategy, returns True (always confirming).
 
-    :param pair: Pair that's about to be bought.
+    :param pair: Pair that's about to be bought/shorted.
     :param order_type: Order type (as configured in order_types). usually limit or market.
     :param amount: Amount in target (quote) currency that's going to be traded.
     :param rate: Rate that's going to be used when using limit orders
     :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
     :param current_time: datetime object, containing the current datetime
     :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: 'long' or 'short' - indicating the direction of the proposed trade
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     :return bool: When True is returned, then the buy-order is placed on the exchange.
         False aborts the process
@@ -142,7 +144,7 @@ def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: f
     return True
 
 def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
-                       rate: float, time_in_force: str, sell_reason: str,
+                       rate: float, time_in_force: str, exit_reason: str,
                        current_time: 'datetime', **kwargs) -> bool:
     """
     Called right before placing a regular sell order.
@@ -159,21 +161,22 @@ def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount:
     :param amount: Amount in quote currency.
     :param rate: Rate that's going to be used when using limit orders
     :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-    :param sell_reason: Sell reason.
+    :param exit_reason: Exit reason.
         Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                        'sell_signal', 'force_sell', 'emergency_sell']
+                        'exit_signal', 'force_exit', 'emergency_exit']
     :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-    :return bool: When True is returned, then the sell-order is placed on the exchange.
+    :return bool: When True is returned, then the exit-order is placed on the exchange.
         False aborts the process
     """
     return True
 
-def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
+def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+                        current_time: datetime, **kwargs) -> bool:
     """
-    Check buy timeout function callback.
-    This method can be used to override the buy-timeout.
-    It is called whenever a limit buy order has been created,
+    Check entry timeout function callback.
+    This method can be used to override the entry-timeout.
+    It is called whenever a limit entry order has been created,
     and is not yet fully filled.
     Configuration options in `unfilledtimeout` will be verified before this,
     so ensure to set these timeouts high enough.
@@ -182,18 +185,20 @@ def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) ->
 
     When not implemented by a strategy, this simply returns False.
     :param pair: Pair the trade is for
-    :param trade: trade object.
-    :param order: Order dictionary as returned from CCXT.
+    :param trade: Trade object.
+    :param order: Order object.
+    :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-    :return bool: When True is returned, then the buy-order is cancelled.
+    :return bool: When True is returned, then the entry order is cancelled.
     """
     return False
 
-def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
+def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
+                       current_time: datetime, **kwargs) -> bool:
     """
-    Check sell timeout function callback.
-    This method can be used to override the sell-timeout.
-    It is called whenever a limit sell order has been created,
+    Check exit timeout function callback.
+    This method can be used to override the exit-timeout.
+    It is called whenever a limit exit order has been created,
     and is not yet fully filled.
     Configuration options in `unfilledtimeout` will be verified before this,
     so ensure to set these timeouts high enough.
@@ -202,10 +207,11 @@ def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -
 
     When not implemented by a strategy, this simply returns False.
     :param pair: Pair the trade is for
-    :param trade: trade object.
-    :param order: Order dictionary as returned from CCXT.
+    :param trade: Trade object.
+    :param order: Order object.
+    :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-    :return bool: When True is returned, then the sell-order is cancelled.
+    :return bool: When True is returned, then the exit-order is cancelled.
     """
     return False
 
@@ -231,3 +237,19 @@ def adjust_trade_position(self, trade: 'Trade', current_time: 'datetime',
     :return float: Stake amount to adjust your trade
     """
     return None
+
+def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                proposed_leverage: float, max_leverage: float, side: str,
+                **kwargs) -> float:
+    """
+    Customize leverage for each new trade. This method is only called in futures mode.
+
+    :param pair: Pair that's currently analyzed
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
+    :param proposed_leverage: A leverage proposed by the bot.
+    :param max_leverage: Max leverage allowed on this pair
+    :param side: 'long' or 'short' - indicating the direction of the proposed trade
+    :return: A leverage amount, which is between 1.0 and max_leverage.
+    """
+    return 1.0

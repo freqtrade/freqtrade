@@ -8,6 +8,7 @@ from typing import Dict, List
 from cachetools import TTLCache, cached
 
 from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.mixins import LoggingMixin
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -132,7 +133,6 @@ class PairListManager(LoggingMixin):
         :return: pairlist - whitelisted pairs
         """
         try:
-
             whitelist = expand_pairlist(pairlist, self._exchange.get_markets().keys(), keep_invalid)
         except ValueError as err:
             logger.error(f"Pair whitelist contains an invalid Wildcard: {err}")
@@ -143,4 +143,10 @@ class PairListManager(LoggingMixin):
         """
         Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['timeframe']) for pair in pairs]
+        return [
+            (
+                pair,
+                timeframe or self._config['timeframe'],
+                self._config.get('candle_type_def', CandleType.SPOT)
+            ) for pair in pairs
+        ]

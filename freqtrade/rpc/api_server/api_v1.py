@@ -9,13 +9,14 @@ from fastapi.exceptions import HTTPException
 from freqtrade import __version__
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
+from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
-                                                  ForceBuyResponse, ForceSellPayload, Health, Locks,
-                                                  Logs, OpenTradeSchema, PairHistory,
+                                                  DeleteLockRequest, DeleteTrade, ForceEnterPayload,
+                                                  ForceEnterResponse, ForceExitPayload, Health,
+                                                  Locks, Logs, OpenTradeSchema, PairHistory,
                                                   PerformanceEntry, Ping, PlotConfig, Profit,
                                                   ResultMsg, ShowConfig, Stats, StatusMsg,
                                                   StrategyListResponse, StrategyResponse, SysInfo,
@@ -32,8 +33,10 @@ logger = logging.getLogger(__name__)
 # 1.11: forcebuy and forcesell accept ordertype
 # 1.12: add blacklist delete endpoint
 # 1.13: forcebuy supports stake_amount
-# 1.14: Add entry/exit orders to trade response
-API_VERSION = 1.14
+# versions 2.xx -> futures/short branch
+# 2.14: Add entry/exit orders to trade response
+# 2.15: Add backtest history endpoints
+API_VERSION = 2.15
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -133,24 +136,31 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     return resp
 
 
-@router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
-def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
+# /forcebuy is deprecated with short addition. use /forceentry instead
+@router.post('/forceenter', response_model=ForceEnterResponse, tags=['trading'])
+@router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
+def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
-    entry_tag = payload.entry_tag if payload.entry_tag else 'forceentry'
+    entry_tag = payload.entry_tag if payload.entry_tag else 'force_entry'
 
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount, entry_tag)
+    trade = rpc._rpc_force_entry(payload.pair, payload.price, order_side=payload.side,
+                                 order_type=ordertype, stake_amount=stake_amount,
+                                 enter_tag=entry_tag)
 
     if trade:
-        return ForceBuyResponse.parse_obj(trade.to_json())
+        return ForceEnterResponse.parse_obj(trade.to_json())
     else:
-        return ForceBuyResponse.parse_obj({"status": f"Error buying pair {payload.pair}."})
+        return ForceEnterResponse.parse_obj(
+            {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
+# /forcesell is deprecated with short addition. use /forceexit instead
+@router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
-def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
+def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_forcesell(payload.tradeid, ordertype)
+    return rpc._rpc_force_exit(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
@@ -243,7 +253,8 @@ def list_strategies(config=Depends(get_config)):
     directory = Path(config.get(
         'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
-    strategies = StrategyResolver.search_all_objects(directory, False)
+    strategies = StrategyResolver.search_all_objects(
+        directory, False, config.get('recursive_strategy_search', False))
     strategies = sorted(strategies, key=lambda x: x['name'])
 
     return {'strategies': [x['name'] for x in strategies]}
@@ -268,16 +279,22 @@ def get_strategy(strategy: str, config=Depends(get_config)):
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
 def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Optional[str] = None,
-                         config=Depends(get_config)):
+                         candletype: Optional[CandleType] = None, config=Depends(get_config)):
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
-
-    pair_interval = dh.ohlcv_get_available_data(config['datadir'])
+    trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
+    pair_interval = dh.ohlcv_get_available_data(config['datadir'], trading_mode)
 
     if timeframe:
         pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
     if stake_currency:
         pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+    if candletype:
+        pair_interval = [pair for pair in pair_interval if pair[2] == candletype]
+    else:
+        candle_type = CandleType.get_default(trading_mode)
+        pair_interval = [pair for pair in pair_interval if pair[2] == candle_type]
+
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
     pairs = list({x[0] for x in pair_interval})
