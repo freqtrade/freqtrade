@@ -5,12 +5,13 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
-                                       calculate_underwater, combine_dataframes_with_mean,
-                                       create_cum_profit, extract_trades_of_period, load_trades)
+from freqtrade.data.btanalysis import (analyze_trade_parallelism, extract_trades_of_period,
+                                       load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
+from freqtrade.data.metrics import (calculate_max_drawdown, calculate_underwater,
+                                    combine_dataframes_with_mean, create_cum_profit)
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds

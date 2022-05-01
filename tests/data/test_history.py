@@ -149,8 +149,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert file.is_file()
     assert log_has_re(
-        r'Download history data for pair: "MEME/BTC" \(0/1\), timeframe: 1m, '
-        r'candle type: spot and store in .*', caplog
+        r'\(0/1\) - Download history data for "MEME/BTC", 1m, '
+        r'spot and store in .*', caplog
     )
 
 
@@ -223,42 +223,65 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     # timeframe starts earlier than the cached data
     # should fully update data
     timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
-    data, start_ts = _load_cached_data_for_updating(
+    data, start_ts, end_ts = _load_cached_data_for_updating(
         'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts == test_data[0][0] - 1000
+    assert end_ts is None
+
+    # timeframe starts earlier than the cached data - prepending
+
+    timerange = TimeRange('date', None, test_data[0][0] / 1000 - 1, 0)
+    data, start_ts, end_ts = _load_cached_data_for_updating(
+        'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT, True)
+    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert start_ts == test_data[0][0] - 1000
+    assert end_ts == test_data[0][0]
 
     # timeframe starts in the center of the cached data
     # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
-    data, start_ts = _load_cached_data_for_updating(
+    data, start_ts, end_ts = _load_cached_data_for_updating(
         'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
 
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
+    assert end_ts is None
 
     # timeframe starts after the cached data
     # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 100, 0)
-    data, start_ts = _load_cached_data_for_updating(
+    data, start_ts, end_ts = _load_cached_data_for_updating(
         'UNITTEST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
+    assert end_ts is None
 
     # no datafile exist
     # should return timestamp start time
     timerange = TimeRange('date', None, now_ts - 10000, 0)
-    data, start_ts = _load_cached_data_for_updating(
+    data, start_ts, end_ts = _load_cached_data_for_updating(
         'NONEXIST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts == (now_ts - 10000) * 1000
+    assert end_ts is None
+
+    # no datafile exist
+    # should return timestamp start and end time time
+    timerange = TimeRange('date', 'date', now_ts - 1000000, now_ts - 100000)
+    data, start_ts, end_ts = _load_cached_data_for_updating(
+        'NONEXIST/BTC', '1m', timerange, data_handler, CandleType.SPOT)
+    assert data.empty
+    assert start_ts == (now_ts - 1000000) * 1000
+    assert end_ts == (now_ts - 100000) * 1000
 
     # no datafile exist, no timeframe is set
     # should return an empty array and None
-    data, start_ts = _load_cached_data_for_updating(
+    data, start_ts, end_ts = _load_cached_data_for_updating(
         'NONEXIST/BTC', '1m', None, data_handler, CandleType.SPOT)
     assert data.empty
     assert start_ts is None
+    assert end_ts is None
 
 
 @pytest.mark.parametrize('candle_type,subdir,file_tail', [

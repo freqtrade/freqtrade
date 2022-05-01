@@ -139,8 +139,9 @@ def _load_cached_data_for_updating(
     timeframe: str,
     timerange: Optional[TimeRange],
     data_handler: IDataHandler,
-    candle_type: CandleType
-) -> Tuple[DataFrame, Optional[int]]:
+    candle_type: CandleType,
+    prepend: bool = False,
+) -> Tuple[DataFrame, Optional[int], Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
@@ -150,9 +151,12 @@ def _load_cached_data_for_updating(
     Note: Only used by download_pair_history().
     """
     start = None
+    end = None
     if timerange:
         if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        if timerange.stoptype == 'date':
+            end = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.
     data = data_handler.ohlcv_load(pair, timeframe=timeframe,
@@ -160,14 +164,17 @@ def _load_cached_data_for_updating(
                                    drop_incomplete=True, warn_no_data=False,
                                    candle_type=candle_type)
     if not data.empty:
-        if start and start < data.iloc[0]['date']:
+        if not prepend and start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
             data = DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
         else:
-            start = data.iloc[-1]['date']
-
+            if prepend:
+                end = data.iloc[0]['date']
+            else:
+                start = data.iloc[-1]['date']
     start_ms = int(start.timestamp() * 1000) if start else None
-    return data, start_ms
+    end_ms = int(end.timestamp() * 1000) if end else None
+    return data, start_ms, end_ms
 
 
 def _download_pair_history(pair: str, *,
@@ -180,14 +187,13 @@ def _download_pair_history(pair: str, *,
                            timerange: Optional[TimeRange] = None,
                            candle_type: CandleType,
                            erase: bool = False,
+                           prepend: bool = False,
                            ) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
     exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded
-
-    Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
 
     :param pair: pair to download
     :param timeframe: Timeframe (e.g "5m")
@@ -203,14 +209,17 @@ def _download_pair_history(pair: str, *,
             if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
                 logger.info(f'Deleting existing data for pair {pair}, {timeframe}, {candle_type}.')
 
-        logger.info(
-            f'Download history data for pair: "{pair}" ({process}), timeframe: {timeframe}, '
-            f'candle type: {candle_type} and store in {datadir}.'
-        )
+        data, since_ms, until_ms = _load_cached_data_for_updating(
+            pair, timeframe, timerange,
+            data_handler=data_handler,
+            candle_type=candle_type,
+            prepend=prepend)
 
-        data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
-                                                        data_handler=data_handler,
-                                                        candle_type=candle_type)
+        logger.info(f'({process}) - Download history data for "{pair}", {timeframe}, '
+                    f'{candle_type} and store in {datadir}.'
+                    f'From {format_ms_time(since_ms) if since_ms else "start"} to '
+                    f'{format_ms_time(until_ms) if until_ms else "now"}'
+                    )
 
         logger.debug("Current Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
@@ -225,6 +234,7 @@ def _download_pair_history(pair: str, *,
                                                    days=-new_pairs_days).int_timestamp * 1000,
                                                is_new_pair=data.empty,
                                                candle_type=candle_type,
+                                               until_ms=until_ms if until_ms else None
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
@@ -257,6 +267,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                 timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
                                 data_format: str = None,
+                                prepend: bool = False,
                                 ) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
@@ -280,7 +291,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                    timerange=timerange, data_handler=data_handler,
                                    timeframe=str(timeframe), new_pairs_days=new_pairs_days,
                                    candle_type=candle_type,
-                                   erase=erase)
+                                   erase=erase, prepend=prepend)
         if trading_mode == 'futures':
             # Predefined candletype (and timeframe) depending on exchange
             # Downloads what is necessary to backtest based on futures data.
@@ -294,7 +305,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                        timerange=timerange, data_handler=data_handler,
                                        timeframe=str(tf_mark), new_pairs_days=new_pairs_days,
                                        candle_type=funding_candle_type,
-                                       erase=erase)
+                                       erase=erase, prepend=prepend)
 
     return pairs_not_available
 
@@ -312,8 +323,9 @@ def _download_trades_history(exchange: Exchange,
     try:
 
         until = None
-        if (timerange and timerange.starttype == 'date'):
-            since = timerange.startts * 1000
+        if timerange:
+            if timerange.starttype == 'date':
+                since = timerange.startts * 1000
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
         else:

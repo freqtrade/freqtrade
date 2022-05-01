@@ -1483,7 +1483,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
     ftbot.config['export'] = 'trades'
-    ftbot.config['backtest_cache'] = 'none'
+    ftbot.config['backtest_cache'] = 'day'
     ftbot.config['user_data_dir'] = Path(tmpdir)
     ftbot.config['exportfilename'] = Path(tmpdir) / "backtest_results"
     ftbot.config['exportfilename'].mkdir()
@@ -1556,18 +1556,18 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmpdir):
 
     ApiServer._bgtask_running = False
 
-    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-                 side_effect=DependencyException())
-    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
-    assert log_has("Backtesting caused an error: ", caplog)
-
-    ftbot.config['backtest_cache'] = 'day'
-
     # Rerun backtest (should get previous result)
     rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
     assert_response(rc)
     result = rc.json()
     assert log_has_re('Reusing result of previous backtest.*', caplog)
+
+    data['stake_amount'] = 101
+
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+                 side_effect=DependencyException())
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert log_has("Backtesting caused an error: ", caplog)
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")

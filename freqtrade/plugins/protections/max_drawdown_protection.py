@@ -1,11 +1,12 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.constants import LongShort
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
@@ -39,7 +40,7 @@ class MaxDrawdown(IProtection):
         return (f'{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
-    def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:
+    def _max_drawdown(self, date_now: datetime) -> Optional[ProtectionReturn]:
         """
         Evaluate recent trades for drawdown ...
         """
@@ -51,14 +52,14 @@ class MaxDrawdown(IProtection):
 
         if len(trades) < self._trade_limit:
             # Not enough trades in the relevant period
-            return False, None, None
+            return None
 
         # Drawdown is always positive
         try:
             # TODO: This should use absolute profit calculation, considering account balance.
             drawdown, _, _, _, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
         except ValueError:
-            return False, None, None
+            return None
 
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
@@ -66,11 +67,15 @@ class MaxDrawdown(IProtection):
                 f" within {self.lookback_period_str}.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
-            return True, until, self._reason(drawdown)
+            return ProtectionReturn(
+                lock=True,
+                until=until,
+                reason=self._reason(drawdown),
+            )
 
-        return False, None, None
+        return None
 
-    def global_stop(self, date_now: datetime) -> ProtectionReturn:
+    def global_stop(self, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for all pairs
         This must evaluate to true for the whole period of the "cooldown period".
@@ -79,11 +84,12 @@ class MaxDrawdown(IProtection):
         """
         return self._max_drawdown(date_now)
 
-    def stop_per_pair(self, pair: str, date_now: datetime) -> ProtectionReturn:
+    def stop_per_pair(
+            self, pair: str, date_now: datetime, side: LongShort) -> Optional[ProtectionReturn]:
         """
         Stops trading (position entering) for this pair
         This must evaluate to true for the whole period of the "cooldown period".
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
-        return False, None, None
+        return None

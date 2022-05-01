@@ -443,6 +443,11 @@ AVAILABLE_CLI_OPTIONS = {
         default=['1m', '5m'],
         nargs='+',
     ),
+    "prepend_data": Arg(
+        '--prepend',
+        help='Allow data prepending.',
+        action='store_true',
+    ),
     "erase": Arg(
         '--erase',
         help='Clean all existing data for the selected exchange/pairs/timeframes.',

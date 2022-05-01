@@ -1645,7 +1645,8 @@ class Exchange:
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int, candle_type: CandleType,
-                           is_new_pair: bool = False) -> List:
+                           is_new_pair: bool = False,
+                           until_ms: int = None) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1653,13 +1654,14 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
+        :param until_ms: Timestamp in milliseconds to get history up to
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List with candle (OHLCV) data
         """
         pair, _, _, data = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                           since_ms=since_ms, is_new_pair=is_new_pair,
-                                           candle_type=candle_type))
+                                           since_ms=since_ms, until_ms=until_ms,
+                                           is_new_pair=is_new_pair, candle_type=candle_type))
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
         return data
 
@@ -1680,6 +1682,7 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
+                                        until_ms: int = None
                                         ) -> Tuple[str, str, str, List]:
         """
         Download historic ohlcv
@@ -1695,7 +1698,7 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, candle_type, since) for since in
-            range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
+            range(since_ms, until_ms or (arrow.utcnow().int_timestamp * 1000), one_call)]
 
         data: List = []
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling

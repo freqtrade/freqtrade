@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from freqtrade.constants import LongShort
 from freqtrade.persistence import PairLocks
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
@@ -44,28 +45,31 @@ class ProtectionManager():
         """
         return [{p.name: p.short_desc()} for p in self._protection_handlers]
 
-    def global_stop(self, now: Optional[datetime] = None) -> Optional[PairLock]:
+    def global_stop(self, now: Optional[datetime] = None,
+                    side: LongShort = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None
         for protection_handler in self._protection_handlers:
             if protection_handler.has_global_stop:
-                lock, until, reason = protection_handler.global_stop(now)
-
-                # Early stopping - first positive result blocks further trades
-                if lock and until:
-                    if not PairLocks.is_global_lock(until):
-                        result = PairLocks.lock_pair('*', until, reason, now=now)
+                lock = protection_handler.global_stop(date_now=now, side=side)
+                if lock and lock.until:
+                    if not PairLocks.is_global_lock(lock.until, side=lock.lock_side):
+                        result = PairLocks.lock_pair(
+                            '*', lock.until, lock.reason, now=now, side=lock.lock_side)
         return result
 
-    def stop_per_pair(self, pair, now: Optional[datetime] = None) -> Optional[PairLock]:
+    def stop_per_pair(self, pair, now: Optional[datetime] = None,
+                      side: LongShort = 'long') -> Optional[PairLock]:
         if not now:
             now = datetime.now(timezone.utc)
         result = None
         for protection_handler in self._protection_handlers:
             if protection_handler.has_local_stop:
-                lock, until, reason = protection_handler.stop_per_pair(pair, now)
-                if lock and until:
-                    if not PairLocks.is_pair_locked(pair, until):
-                        result = PairLocks.lock_pair(pair, until, reason, now=now)
+                lock = protection_handler.stop_per_pair(
+                    pair=pair, date_now=now, side=side)
+                if lock and lock.until:
+                    if not PairLocks.is_pair_locked(pair, lock.until, lock.lock_side):
+                        result = PairLocks.lock_pair(
+                            pair, lock.until, lock.reason, now=now, side=lock.lock_side)
         return result
