@@ -15,6 +15,7 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
+from freqtrade.persistence.models import PairLock
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
 
 
@@ -1425,6 +1426,55 @@ def test_migrate_set_sequence_ids():
     set_sequence_ids(engine, 22, 55)
 
     assert engine.begin.call_count == 0
+
+
+def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
+    """
+    Test Database migration (starting with new pairformat)
+    """
+    caplog.set_level(logging.DEBUG)
+    # Always create all columns apart from the last!
+    create_table_old = """CREATE TABLE pairlocks (
+                            id INTEGER NOT NULL,
+                            pair VARCHAR(25) NOT NULL,
+                            reason VARCHAR(255),
+                            lock_time DATETIME NOT NULL,
+                            lock_end_time DATETIME NOT NULL,
+                            active BOOLEAN NOT NULL,
+                            PRIMARY KEY (id)
+                        )
+                                """
+    create_index1 = "CREATE INDEX ix_pairlocks_pair ON pairlocks (pair)"
+    create_index2 = "CREATE INDEX ix_pairlocks_lock_end_time ON pairlocks (lock_end_time)"
+    create_index3 = "CREATE INDEX ix_pairlocks_active ON pairlocks (active)"
+    insert_table_old = """INSERT INTO pairlocks (
+        id, pair, reason, lock_time, lock_end_time, active)
+        VALUES (1, 'ETH/BTC', 'Auto lock', '2021-07-12 18:41:03', '2021-07-11 18:45:00', 1)
+                          """
+    insert_table_old2 = """INSERT INTO pairlocks (
+        id, pair, reason, lock_time, lock_end_time, active)
+        VALUES (2, '*', 'Lock all', '2021-07-12 18:41:03', '2021-07-12 19:00:00', 1)
+                          """
+    engine = create_engine('sqlite://')
+    mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
+    # Create table using the old format
+    with engine.begin() as connection:
+        connection.execute(text(create_table_old))
+
+        connection.execute(text(insert_table_old))
+        connection.execute(text(insert_table_old2))
+        connection.execute(text(create_index1))
+        connection.execute(text(create_index2))
+        connection.execute(text(create_index3))
+
+    init_db(default_conf['db_url'], default_conf['dry_run'])
+
+    assert len(PairLock.query.all()) == 2
+    assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1
+    pairlocks = PairLock.query.filter(PairLock.pair == 'ETH/BTC').all()
+    assert len(pairlocks) == 1
+    pairlocks[0].pair == 'ETH/BTC'
+    pairlocks[0].side == '*'
 
 
 def test_adjust_stop_loss(fee):

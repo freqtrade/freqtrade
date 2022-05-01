@@ -291,6 +291,7 @@ class LockModel(BaseModel):
     lock_time: str
     lock_timestamp: int
     pair: str
+    side: str
     reason: str
 
 

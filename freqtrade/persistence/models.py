@@ -7,13 +7,13 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
-                        create_engine, desc, func, inspect)
+                        create_engine, desc, func, inspect, or_)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
+from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES, LongShort
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -393,7 +393,7 @@ class LocalTrade():
             return "sell"
 
     @property
-    def trade_direction(self) -> str:
+    def trade_direction(self) -> LongShort:
         if self.is_short:
             return "short"
         else:
@@ -1426,6 +1426,8 @@ class PairLock(_DECL_BASE):
     id = Column(Integer, primary_key=True)
 
     pair = Column(String(25), nullable=False, index=True)
+    # lock direction - long, short or * (for both)
+    side = Column(String(25), nullable=False, default="*")
     reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
@@ -1437,11 +1439,12 @@ class PairLock(_DECL_BASE):
     def __repr__(self):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
-        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
+        return (
+            f'PairLock(id={self.id}, pair={self.pair}, side={self.side}, lock_time={lock_time}, '
+            f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
+    def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> Query:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -1452,6 +1455,11 @@ class PairLock(_DECL_BASE):
                    PairLock.active.is_(True), ]
         if pair:
             filters.append(PairLock.pair == pair)
+        if side != '*':
+            filters.append(or_(PairLock.side == side, PairLock.side == '*'))
+        else:
+            filters.append(PairLock.side == '*')
+
         return PairLock.query.filter(
             *filters
         )
@@ -1466,5 +1474,6 @@ class PairLock(_DECL_BASE):
             'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
                                                                  ).timestamp() * 1000),
             'reason': self.reason,
+            'side': self.side,
             'active': self.active,
         }

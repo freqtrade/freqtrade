@@ -666,23 +666,23 @@ def test_is_pair_locked(default_conf):
 
     assert not strategy.is_pair_locked(pair)
     # latest candle is from 14:20, lock goes to 14:30
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-10))
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-10))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-50))
 
     # latest candle is from 14:25 (lock should be lifted)
     # Since this is the "new candle" available at 14:30
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-4))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-4))
 
     # Should not be locked after time expired
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=10))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=10))
 
     # Change timeframe to 15m
     strategy.timeframe = '15m'
     # Candle from 14:14 - lock goes until 14:30
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-16))
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15, seconds=-2))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-16))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-15, seconds=-2))
     # Candle from 14:15 - lock goes until 14:30
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-15))
 
 
 def test_is_informative_pairs_callback(default_conf):
