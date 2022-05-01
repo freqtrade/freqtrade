@@ -166,7 +166,7 @@ freqtrade download-data --exchange binance --pairs .*/USDT
 #### Download additional data before the current timerange
 
 Assuming you downloaded all data from 2022 (`--timerange 20220101-`) - but you'd now like to also backtest with earlier data.
-You can do so by using the `--prepend` flag, combined with 
+You can do so by using the `--prepend` flag, combined with `--timerange` - specifying an end-date.
 
 ``` bash
 freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT --prepend --timerange 20210101-20220101
