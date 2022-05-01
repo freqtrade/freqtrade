@@ -1038,7 +1038,7 @@ class Backtesting:
                               timerange: TimeRange):
         self.progress.init_step(BacktestState.ANALYZE, 0)
 
-        logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
+        logger.info(f"Running backtesting for Strategy {strat.get_strategy_name()}")
         backtest_start_time = datetime.now(timezone.utc)
         self._set_strategy(strat)
 

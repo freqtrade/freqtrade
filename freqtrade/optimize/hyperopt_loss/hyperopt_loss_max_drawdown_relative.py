@@ -8,7 +8,7 @@ from typing import Dict
 
 from pandas import DataFrame
 
-from freqtrade.data.btanalysis import calculate_underwater
+from freqtrade.data.metrics import calculate_underwater
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 

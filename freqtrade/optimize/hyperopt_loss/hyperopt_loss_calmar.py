@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 from pandas import DataFrame
 
-from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
