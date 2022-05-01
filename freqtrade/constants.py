@@ -462,6 +462,10 @@ SCHEMA_BACKTEST_REQUIRED = [
     'dataformat_ohlcv',
     'dataformat_trades',
 ]
+SCHEMA_BACKTEST_REQUIRED_FINAL = SCHEMA_BACKTEST_REQUIRED + [
+    'stoploss',
+    'minimal_roi',
+]
 
 SCHEMA_MINIMAL_REQUIRED = [
     'exchange',
