@@ -393,6 +393,8 @@ class Configuration:
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
+        self._args_to_config(config, argname='prepend_data',
+                             logstring='Prepend detected. Allowing data prepending.')
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
