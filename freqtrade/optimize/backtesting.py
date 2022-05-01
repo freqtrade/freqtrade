@@ -890,7 +890,10 @@ class Backtesting:
                 )  # default value is current order price
 
                 # cancel existing order whenever a new rate is requested (or None)
-                if requested_rate != order.price:
+                if requested_rate == order.price:
+                    # assumption: there can't be multiple open entry orders at any given time
+                    return False
+                else:
                     del trade.orders[trade.orders.index(order)]
 
                 # place new order if None was not returned
