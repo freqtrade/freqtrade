@@ -72,18 +72,28 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
-def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str
-                          ) -> pd.DataFrame:
+def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str,
+                          starting_balance: float) -> pd.DataFrame:
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
     max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
     max_drawdown_df['date'] = profit_results.loc[:, date_col]
+    if starting_balance:
+        cumulative_balance = starting_balance + max_drawdown_df['cumulative']
+        max_balance = starting_balance + max_drawdown_df['high_value']
+        max_drawdown_df['drawdown_relative'] = ((max_balance - cumulative_balance) / max_balance)
+    else:
+        # NOTE: This is not completely accurate,
+        # but might good enough if starting_balance is not available
+        max_drawdown_df['drawdown_relative'] = (
+            (max_drawdown_df['high_value'] - max_drawdown_df['cumulative'])
+            / max_drawdown_df['high_value'])
     return max_drawdown_df
 
 
 def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                         value_col: str = 'profit_ratio'
+                         value_col: str = 'profit_ratio', starting_balance: float = 0.0
                          ):
     """
     Calculate max drawdown and the corresponding close dates
@@ -97,13 +107,18 @@ def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
+    max_drawdown_df = _calc_drawdown_series(
+        profit_results,
+        date_col=date_col,
+        value_col=value_col,
+        starting_balance=starting_balance)
 
     return max_drawdown_df
 
 
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                           value_col: str = 'profit_abs', starting_balance: float = 0
+                           value_col: str = 'profit_abs', starting_balance: float = 0,
+                           relative: bool = False
                            ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
     """
     Calculate max drawdown and the corresponding close dates
@@ -119,9 +134,15 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
+    max_drawdown_df = _calc_drawdown_series(
+        profit_results,
+        date_col=date_col,
+        value_col=value_col,
+        starting_balance=starting_balance
+    )
 
-    idxmin = max_drawdown_df['drawdown'].idxmin()
+    idxmin = max_drawdown_df['drawdown_relative'].idxmax() if relative \
+        else max_drawdown_df['drawdown'].idxmin()
     if idxmin == 0:
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
@@ -129,12 +150,10 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
                                    ['high_value'].idxmax(), 'cumulative']
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
-    max_drawdown_rel = 0.0
-    if high_val + starting_balance != 0:
-        max_drawdown_rel = (high_val - low_val) / (high_val + starting_balance)
+    max_drawdown_rel = max_drawdown_df.loc[idxmin, 'drawdown_relative']
 
     return (
-        abs(min(max_drawdown_df['drawdown'])),
+        abs(max_drawdown_df.loc[idxmin, 'drawdown']),
         high_date,
         low_date,
         high_val,
