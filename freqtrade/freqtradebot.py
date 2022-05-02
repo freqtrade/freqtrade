@@ -1123,7 +1123,6 @@ class FreqtradeBot(LoggingMixin):
         Timeout setting takes priority over limit order adjustment request.
         :return: None
         """
-        logger.warning(Order.query.all())
         for trade in Trade.get_open_order_trades():
             try:
                 if not trade.open_order_id:
@@ -1151,7 +1150,6 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
-        logger.warning("handle_timedout_order")
         if order['side'] == trade.entry_side:
             self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
         else:
@@ -1181,8 +1179,6 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
-        logger.warning("replace_order")
-        logger.warning(f"Order: {order}, Trade:{trade}")
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                   self.strategy.timeframe)
         latest_candle_open_date = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
@@ -1199,7 +1195,6 @@ class FreqtradeBot(LoggingMixin):
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
                 current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
                 side=trade.entry_side)
-            logger.warning(f"adjusted_entry_price: {adjusted_entry_price}")
 
             full_cancel = False
             cancel_reason = constants.CANCEL_REASON['REPLACE']
