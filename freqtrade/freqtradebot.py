@@ -1123,6 +1123,7 @@ class FreqtradeBot(LoggingMixin):
         Timeout setting takes priority over limit order adjustment request.
         :return: None
         """
+        logger.warning(Order.query.all())
         for trade in Trade.get_open_order_trades():
             try:
                 if not trade.open_order_id:
@@ -1150,6 +1151,7 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
+        logger.warning("handle_timedout_order")
         if order['side'] == trade.entry_side:
             self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
         else:
@@ -1179,6 +1181,8 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
+        logger.warning("replace_order")
+        logger.warning(f"Order: {order}, Trade:{trade}")
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                   self.strategy.timeframe)
         latest_candle_open_date = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
@@ -1195,6 +1199,7 @@ class FreqtradeBot(LoggingMixin):
                 current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
                 current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
                 side=trade.entry_side)
+            logger.warning(f"adjusted_entry_price: {adjusted_entry_price}")
 
             full_cancel = False
             cancel_reason = constants.CANCEL_REASON['REPLACE']
@@ -1276,10 +1281,10 @@ class FreqtradeBot(LoggingMixin):
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
-            logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
             # if trade is not partially completed and it's the only order, just delete the trade
             open_order_count = len([order for order in trade.orders if order.status == 'open'])
             if open_order_count <= 1 and allow_full_cancel:
+                logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
                 trade.delete()
                 was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
