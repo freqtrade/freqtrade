@@ -5,7 +5,7 @@ It's subclasses handle and storing data from disk.
 """
 import logging
 import re
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,7 +38,8 @@ class IDataHandler(ABC):
         """
         raise NotImplementedError()
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def ohlcv_get_available_data(
             cls, datadir: Path, trading_mode: TradingMode) -> ListPairsWithTimeframes:
         """
@@ -48,7 +49,8 @@ class IDataHandler(ABC):
         :return: List of Tuples of (pair, timeframe)
         """
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
@@ -118,7 +120,8 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def trades_get_pairs(cls, datadir: Path) -> List[str]:
         """
         Returns a list of all pairs for which trade data is available in this
