@@ -2450,6 +2450,7 @@ def test_manage_open_orders_entry(
     Trade.query.session.add(open_trade)
 
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
@@ -2459,6 +2460,107 @@ def test_manage_open_orders_entry(
     assert nb_trades == 0
     # Custom user buy-timeout is never called
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
+    # Entry adjustment is never called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 0
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_adjust_entry_cancel(
+    default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
+    limit_sell_order_old, fee, mocker, caplog, is_short
+) -> None:
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
+    old_order['id'] = open_trade.open_order_id
+    limit_buy_cancel = deepcopy(old_order)
+    limit_buy_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_usdt,
+        fetch_order=MagicMock(return_value=old_order),
+        cancel_order_with_result=cancel_order_mock,
+        get_fee=fee
+    )
+    freqtrade = FreqtradeBot(default_conf_usdt)
+
+    open_trade.is_short = is_short
+    Trade.query.session.add(open_trade)
+
+    # Timeout to not interfere
+    freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
+
+    # check that order is cancelled
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=None)
+    freqtrade.manage_open_orders()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 0
+    nb_all_orders = len(Order.query.all())
+    assert nb_all_orders == 0
+    assert log_has_re(
+        f"{'Sell' if is_short else 'Buy'} order user requested order cancel*", caplog)
+    assert log_has_re(
+        f"{'Sell' if is_short else 'Buy'} order fully cancelled.*", caplog)
+
+    # Entry adjustment is called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 1
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_adjust_entry_maintain_replace(
+    default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
+    limit_sell_order_old, fee, mocker, caplog, is_short
+) -> None:
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
+    old_order['id'] = open_trade.open_order_id
+    limit_buy_cancel = deepcopy(old_order)
+    limit_buy_cancel['status'] = 'canceled'
+    cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_usdt,
+        fetch_order=MagicMock(return_value=old_order),
+        cancel_order_with_result=cancel_order_mock,
+        get_fee=fee
+    )
+    freqtrade = FreqtradeBot(default_conf_usdt)
+
+    open_trade.is_short = is_short
+    Trade.query.session.add(open_trade)
+
+    # Timeout to not interfere
+    freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
+
+    # Check that order is maintained
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=old_order['price'])
+    freqtrade.manage_open_orders()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 1
+    nb_orders = len(Order.get_open_orders())
+    assert nb_orders == 1
+    # Entry adjustment is called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 1
+
+    # Check that order is replaced
+    freqtrade.get_valid_enter_price_and_stake = MagicMock(return_value={100, 10, 1})
+    freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
+    freqtrade.manage_open_orders()
+    trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
+    nb_trades = len(trades)
+    assert nb_trades == 1
+    nb_all_orders = len(Order.query.all())
+    freqtrade.logger.warning(Order.query.all())
+    assert nb_all_orders == 2
+    # New order seems to be in closed status?
+    # nb_open_orders = len(Order.get_open_orders())
+    # assert nb_open_orders == 1
+    assert log_has_re(
+        f"{'Sell' if is_short else 'Buy'} order cancelled to be replaced*", caplog)
+    # Entry adjustment is called
+    assert freqtrade.strategy.adjust_entry_price.call_count == 1
 
 
 @pytest.mark.parametrize("is_short", [False, True])
