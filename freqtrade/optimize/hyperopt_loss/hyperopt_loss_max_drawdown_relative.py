@@ -36,7 +36,7 @@ class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
             drawdown_df = calculate_underwater(
                 results,
                 value_col='profit_abs',
-                starting_balance=config['available_capital']
+                starting_balance=config['dry_run_wallet']
             )
             max_drawdown = abs(min(drawdown_df['drawdown']))
             relative_drawdown = max(drawdown_df['drawdown_relative'])

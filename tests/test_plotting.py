@@ -454,7 +454,6 @@ def test_plot_profit(default_conf, mocker, testdatadir):
     default_conf['datadir'] = testdatadir
     default_conf['exportfilename'] = testdatadir / 'backtest-result_test_nofile.json'
     default_conf['pairs'] = ['ETH/BTC', 'LTC/BTC']
-    default_conf['available_capital'] = 1000
 
     profit_mock = MagicMock()
     store_mock = MagicMock()

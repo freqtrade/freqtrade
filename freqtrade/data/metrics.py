@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -73,7 +73,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
 
 
 def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str,
-                          starting_balance: Optional[float] = 0.0) -> pd.DataFrame:
+                          starting_balance: float) -> pd.DataFrame:
     max_drawdown_df = pd.DataFrame()
     max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
     max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
@@ -93,7 +93,7 @@ def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_
 
 
 def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                         value_col: str = 'profit_ratio', starting_balance: Optional[float] = 0.0
+                         value_col: str = 'profit_ratio', starting_balance: float = 0.0
                          ):
     """
     Calculate max drawdown and the corresponding close dates

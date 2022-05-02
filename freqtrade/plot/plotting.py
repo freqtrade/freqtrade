@@ -692,7 +692,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
                                 trades, config['timeframe'],
-                                config.get('stake_currency', ''), config['available_capital'])
+                                config.get('stake_currency', ''),
+                                config.get('available_capital', config['dry_run_wallet']))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot',
                     auto_open=config.get('plot_auto_open', False))
