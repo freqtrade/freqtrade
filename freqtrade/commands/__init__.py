@@ -19,7 +19,6 @@ from freqtrade.commands.list_commands import (start_list_exchanges, start_list_m
                                               start_show_trades)
 from freqtrade.commands.optimize_commands import (start_backtesting, start_backtesting_show,
                                                   start_edge, start_hyperopt)
-from freqtrade.commands.freqai_commands import (start_training)
 from freqtrade.commands.pairlist_commands import start_test_pairlist
 from freqtrade.commands.plot_commands import start_plot_dataframe, start_plot_profit
 from freqtrade.commands.trade_commands import start_trading
