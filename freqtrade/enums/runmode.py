@@ -15,9 +15,10 @@ class RunMode(Enum):
     UTIL_NO_EXCHANGE = "util_no_exchange"
     PLOT = "plot"
     WEBSERVER = "webserver"
+    FREQAI = "freqai"
     OTHER = "other"
 
 
 TRADING_MODES = [RunMode.LIVE, RunMode.DRY_RUN]
-OPTIMIZE_MODES = [RunMode.BACKTEST, RunMode.EDGE, RunMode.HYPEROPT]
+OPTIMIZE_MODES = [RunMode.BACKTEST, RunMode.EDGE, RunMode.HYPEROPT, RunMode.FREQAI]
 NON_UTIL_MODES = TRADING_MODES + OPTIMIZE_MODES
