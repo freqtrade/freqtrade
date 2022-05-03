@@ -19,6 +19,7 @@ class DataHandler:
     """
     Class designed to handle all the data for the IFreqaiModel class model. 
     Functionalities include holding, saving, loading, and analyzing the data.
+    author: Robert Caulk, rob.caulk@gmail.com
     """
 
     def __init__(self, config: Dict[str, Any], dataframe: DataFrame, data: List):
@@ -32,6 +33,10 @@ class DataHandler:
         self.data_dictionary = {}
         self.config = config
         self.freq_config = config['freqai']
+        self.predictions = np.array([])
+        self.do_predict = np.array([])
+        self.target_mean = np.array([])
+        self.target_std = np.array([])
 
     def save_data(self, model: Any) -> None:
         """
