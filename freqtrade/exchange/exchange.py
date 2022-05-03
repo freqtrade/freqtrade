@@ -1613,7 +1613,9 @@ class Exchange:
                 order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
         elif fee_curr in self.get_pair_quote_currency(order['symbol']):
             # Quote currency - divide by cost
-            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
+            return round(self._contracts_to_amount(
+                order['symbol'], order['fee']['cost']) / order['cost'],
+                8) if order['cost'] else None
         else:
             # If Fee currency is a different currency
             if not order['cost']:
@@ -1628,7 +1630,8 @@ class Exchange:
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
-            return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
+            return round((self._contracts_to_amount(
+                order['symbol'], order['fee']['cost']) * fee_to_quote_rate) / order['cost'], 8)
 
     def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
         """
