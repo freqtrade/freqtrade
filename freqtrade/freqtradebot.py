@@ -745,8 +745,8 @@ class FreqtradeBot(LoggingMixin):
             else:
                 logger.info(f"DCA order {order_status}, will wait for resolution: {trade}")
 
-        # Update fees if order is closed
-        if order_status == 'closed':
+        # Update fees if order is non-opened
+        if order_status in constants.NON_OPEN_EXCHANGE_STATES:
             self.update_trade_state(trade, order_id, order)
 
         return True
