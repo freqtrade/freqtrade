@@ -62,10 +62,6 @@ class IFreqaiModel(ABC):
 
         print('going to train',len(self.dh.training_timeranges),
             'timeranges:',self.dh.training_timeranges)
-        predictions = np.array([])
-        do_predict = np.array([])
-        target_mean = np.array([])
-        target_std = np.array([])
 
         # Loop enforcing the sliding window training/backtesting paragigm
         # tr_train is the training time range e.g. 1 historical month
@@ -149,7 +145,7 @@ class IFreqaiModel(ABC):
         :param path: path to model
         """
         coin,_ = pair.split('/')
-        self.dh.model_filename = f"cb_"+coin.lower()+"_"+self.freqai_info['trained_stake']+"_"+training_timerange
+        self.dh.model_filename = f"cb_"+coin.lower()+"_"+training_timerange
         file_exists = os.path.isfile(self.dh.model_path+
                               self.dh.model_filename+"_model.joblib")
         if file_exists:
