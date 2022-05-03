@@ -33,6 +33,12 @@ from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mo
 logging.getLogger('').setLevel(logging.INFO)
 
 
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    yield
+    assert Trade.use_db
+
+
 # Do not mask numpy errors as warnings that no one read, raise the exсeption
 np.seterr(all='raise')
 

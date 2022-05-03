@@ -144,6 +144,7 @@ class Backtesting:
         self.init_backtest()
 
     def __del__(self):
+        logger.info('Inside Backtesting.__del__()')
         self.cleanup()
 
     @staticmethod
@@ -151,6 +152,7 @@ class Backtesting:
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
+        logger.info('Cleaned Backtest')
 
     def init_backtest_detail(self):
         # Load detail timeframe if specified
