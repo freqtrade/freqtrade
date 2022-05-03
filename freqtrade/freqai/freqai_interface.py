@@ -17,6 +17,7 @@ class IFreqaiModel(ABC):
     User models should inherit from this class as shown in 
     templates/ExamplePredictionModel.py where the user overrides
     train(), predict(), fit(), and make_labels().
+    Author: Robert Caulk, rob.caulk@gmail.com
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
@@ -104,10 +105,10 @@ class IFreqaiModel(ABC):
 
         return dataframe
 
-    def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Tuple[DataFrame, DataFrame]:
+    def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahandler
-        for storing, saving, loading, and managed.
+        for storing, saving, loading, and analyzing the data.
         :params:
         :unfiltered_dataframe: Full dataframe for the current training period
         :metadata: pair metadata from strategy. 
@@ -115,7 +116,7 @@ class IFreqaiModel(ABC):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        return unfiltered_dataframe, unfiltered_dataframe
+        return Any
 
     def fit(self) -> Any:
         """
