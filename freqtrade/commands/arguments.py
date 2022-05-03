@@ -12,7 +12,7 @@ from freqtrade.constants import DEFAULT_CONFIG
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
-ARGS_STRATEGY = ["strategy", "strategy_path", "recursive_strategy_search"]
+ARGS_STRATEGY = ["strategy", "strategy_path", "recursive_strategy_search", "freqaimodel", "freqaimodel_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
@@ -190,7 +190,8 @@ class Arguments:
                                         start_list_markets, start_list_strategies,
                                         start_list_timeframes, start_new_config, start_new_strategy,
                                         start_plot_dataframe, start_plot_profit, start_show_trades,
-                                        start_test_pairlist, start_trading, start_webserver)
+                                        start_test_pairlist, start_trading, start_webserver,
+                                        start_training)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added

@@ -7,6 +7,8 @@ logfile.txt
 user_data/*
 !user_data/strategy/sample_strategy.py
 !user_data/notebooks
+!user_data/models
+user_data/models/*
 user_data/notebooks/*
 freqtrade-plot.html
 freqtrade-profit-plot.html
@@ -105,3 +107,4 @@ target/
 !config_examples/config_ftx.example.json
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
+!config_examples/config_freqai.example.json

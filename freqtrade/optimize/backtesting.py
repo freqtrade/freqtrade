@@ -204,6 +204,12 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
+        if self.config['freqaimodel']:
+            self.required_startup += int((self.config['freqai']['train_period']*86400) /
+                                    timeframe_to_seconds(self.config['timeframe']))
+            self.config['startup_candle_count'] = self.required_startup
+
+
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,

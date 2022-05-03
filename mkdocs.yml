@@ -36,6 +36,7 @@ nav:
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Sandbox Testing: sandbox-testing.md
+        - Freqai: freqai.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md
     - Strategy migration: strategy_migration.md
