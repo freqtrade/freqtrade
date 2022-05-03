@@ -42,7 +42,7 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=1.77.29',
+        'ccxt>=1.79.69',
         'SQLAlchemy',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
@@ -57,6 +57,7 @@ setup(
         'pycoingecko',
         'py_find_1st',
         'python-rapidjson',
+        'orjson',
         'sdnotify',
         'colorama',
         'jinja2',

@@ -5,12 +5,13 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
-                                       calculate_underwater, combine_dataframes_with_mean,
-                                       create_cum_profit, extract_trades_of_period, load_trades)
+from freqtrade.data.btanalysis import (analyze_trade_parallelism, extract_trades_of_period,
+                                       load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
+from freqtrade.data.metrics import (calculate_max_drawdown, calculate_underwater,
+                                    combine_dataframes_with_mean, create_cum_profit)
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
@@ -158,12 +159,15 @@ def add_profit(fig, row, data: pd.DataFrame, column: str, name: str) -> make_sub
 
 
 def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
-                     timeframe: str) -> make_subplots:
+                     timeframe: str, starting_balance: float) -> make_subplots:
     """
     Add scatter points indicating max drawdown
     """
     try:
-        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(trades)
+        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(
+            trades,
+            starting_balance=starting_balance
+        )
 
         drawdown = go.Scatter(
             x=[highdate, lowdate],
@@ -188,22 +192,37 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     return fig
 
 
-def add_underwater(fig, row, trades: pd.DataFrame) -> make_subplots:
+def add_underwater(fig, row, trades: pd.DataFrame, starting_balance: float) -> make_subplots:
     """
-    Add underwater plot
+    Add underwater plots
     """
     try:
-        underwater = calculate_underwater(trades, value_col="profit_abs")
+        underwater = calculate_underwater(
+            trades,
+            value_col="profit_abs",
+            starting_balance=starting_balance
+        )
 
-        underwater = go.Scatter(
+        underwater_plot = go.Scatter(
             x=underwater['date'],
             y=underwater['drawdown'],
             name="Underwater Plot",
             fill='tozeroy',
             fillcolor='#cc362b',
-            line={'color': '#cc362b'},
+            line={'color': '#cc362b'}
         )
-        fig.add_trace(underwater, row, 1)
+
+        underwater_plot_relative = go.Scatter(
+            x=underwater['date'],
+            y=(-underwater['drawdown_relative']),
+            name="Underwater Plot (%)",
+            fill='tozeroy',
+            fillcolor='green',
+            line={'color': 'green'}
+        )
+
+        fig.add_trace(underwater_plot, row, 1)
+        fig.add_trace(underwater_plot_relative, row + 1, 1)
     except ValueError:
         logger.warning("No trades found - not plotting underwater plot")
     return fig
@@ -506,7 +525,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame, timeframe: str, stake_currency: str) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str, stake_currency: str,
+                          starting_balance: float) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     try:
         df_comb = combine_dataframes_with_mean(data, "close")
@@ -530,8 +550,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = make_subplots(rows=5, cols=1, shared_xaxes=True,
-                        row_heights=[1, 1, 1, 0.5, 1],
+    fig = make_subplots(rows=6, cols=1, shared_xaxes=True,
+                        row_heights=[1, 1, 1, 0.5, 0.75, 0.75],
                         vertical_spacing=0.05,
                         subplot_titles=[
                             "AVG Close Price",
@@ -539,6 +559,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                             "Profit per pair",
                             "Parallelism",
                             "Underwater",
+                            "Relative Drawdown",
                         ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
@@ -546,14 +567,16 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
     fig['layout']['yaxis4'].update(title='Trade count')
     fig['layout']['yaxis5'].update(title='Underwater Plot')
+    fig['layout']['yaxis6'].update(title='Underwater Plot Relative (%)', tickformat=',.2%')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
     fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
-    fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe)
+    fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe, starting_balance)
     fig = add_parallelism(fig, 4, trades, timeframe)
-    fig = add_underwater(fig, 5, trades)
+    # Two rows consumed
+    fig = add_underwater(fig, 5, trades, starting_balance)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'
@@ -610,6 +633,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     IStrategy.dp = DataProvider(config, exchange)
+    strategy.bot_start()
     plot_elements = init_plotscript(config, list(exchange.markets), strategy.startup_candle_count)
     timerange = plot_elements['timerange']
     trades = plot_elements['trades']
@@ -668,7 +692,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
                                 trades, config['timeframe'],
-                                config.get('stake_currency', ''))
+                                config.get('stake_currency', ''),
+                                config.get('available_capital', config['dry_run_wallet']))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot',
                     auto_open=config.get('plot_auto_open', False))

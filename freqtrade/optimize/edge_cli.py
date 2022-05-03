@@ -44,6 +44,7 @@ class EdgeCli:
 
         self.edge._timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
+        self.strategy.bot_start()
 
     def start(self) -> None:
         result = self.edge.calculate(self.config['exchange']['pair_whitelist'])

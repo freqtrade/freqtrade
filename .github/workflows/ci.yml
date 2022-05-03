@@ -100,7 +100,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -157,6 +157,12 @@ jobs:
         pip install -e .
 
     - name: Tests
+      if: (runner.os != 'Linux' || matrix.python-version != '3.8')
+      run: |
+        pytest --random-order
+
+    - name: Tests (with cov)
+      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
 
@@ -229,7 +235,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order
 
     - name: Backtesting
       run: |
@@ -249,7 +255,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -258,6 +264,21 @@ jobs:
           severity: error
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  mypy_version_check:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+
+    - name: pre-commit dependencies
+      run: |
+        pip install pyaml
+        python build_helpers/pre_commit_update.py
 
   docs_check:
     runs-on: ubuntu-20.04
@@ -271,7 +292,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: 3.9
 
     - name: Documentation build
       run: |
@@ -288,6 +309,9 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
+    permissions:
+      actions: write  # for rokroskar/workflow-run-cleanup-action to obtain workflow name & cancel it
+      contents: read  # for rokroskar/workflow-run-cleanup-action to obtain branch
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
@@ -298,8 +322,12 @@ jobs:
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
+    # Discord notification can't handle schedule events
+    if: (github.event_name != 'schedule')
+    permissions:
+      repository-projects: read  
     steps:
 
     - name: Check user permission
@@ -319,7 +347,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'

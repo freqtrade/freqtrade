@@ -82,6 +82,11 @@ class StrategyTestV3(IStrategy):
     #         })
     #     return prot
 
+    bot_started = False
+
+    def bot_start(self):
+        self.bot_started = True
+
     def informative_pairs(self):
 
         return []

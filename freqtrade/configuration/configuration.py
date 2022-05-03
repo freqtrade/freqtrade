@@ -248,6 +248,12 @@ class Configuration:
         self._args_to_config(config, argname='strategy_list',
                              logstring='Using strategy list of {} strategies', logfun=len)
 
+        self._args_to_config(
+            config,
+            argname='recursive_strategy_search',
+            logstring='Recursively searching for a strategy in the strategies folder.',
+        )
+
         self._args_to_config(config, argname='timeframe',
                              logstring='Overriding timeframe with Command line argument')
 
@@ -387,6 +393,8 @@ class Configuration:
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
+        self._args_to_config(config, argname='prepend_data',
+                             logstring='Prepend detected. Allowing data prepending.')
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 

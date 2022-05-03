@@ -197,7 +197,6 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
-                    base_currency=self._freqtrade.config['stake_currency'],
                     close_profit=trade.close_profit if not trade.is_open else None,
                     current_rate=current_rate,
                     current_profit=current_profit,  # Deprecated
@@ -223,6 +222,7 @@ class RPC:
     def _rpc_status_table(self, stake_currency: str,
                           fiat_display_currency: str) -> Tuple[List, List, float]:
         trades: List[Trade] = Trade.get_open_trades()
+        nonspot = self._config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT
         if not trades:
             raise RPCException('no active trade')
         else:
@@ -237,7 +237,7 @@ class RPC:
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
-                direction_str = 'S' if trade.is_short else 'L'
+                direction_str = ('S' if trade.is_short else 'L') if nonspot else ''
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -267,7 +267,11 @@ class RPC:
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID L/S', 'Pair', 'Since', profitcol]
+            columns = [
+                'ID L/S' if nonspot else 'ID',
+                'Pair',
+                'Since',
+                profitcol]
             if self._config.get('position_adjustment_enable', False):
                 columns.append('# Entries')
             return trades_list, columns, fiat_profit_sum
@@ -686,10 +690,10 @@ class RPC:
 
     def _rpc_force_exit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
-        Handler for forcesell <id>.
+        Handler for forceexit <id>.
         Sells the given trade at current price
         """
-        def _exec_forcesell(trade: Trade) -> None:
+        def _exec_force_exit(trade: Trade) -> None:
             # Check if there is there is an open order
             fully_canceled = False
             if trade.open_order_id:
@@ -722,7 +726,7 @@ class RPC:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
-                    _exec_forcesell(trade)
+                    _exec_force_exit(trade)
                 Trade.commit()
                 self._freqtrade.wallets.update()
                 return {'result': 'Created sell orders for all open trades.'}
@@ -735,7 +739,7 @@ class RPC:
                 logger.warning('force_exit: Invalid argument received')
                 raise RPCException('invalid argument')
 
-            _exec_forcesell(trade)
+            _exec_force_exit(trade)
             Trade.commit()
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}

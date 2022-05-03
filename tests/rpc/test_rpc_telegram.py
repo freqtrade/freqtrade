@@ -184,7 +184,8 @@ def test_telegram_status(default_conf, update, mocker) -> None:
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
-            'base_currency': 'BTC',
+            'base_currency': 'ETH',
+            'quote_currency': 'BTC',
             'open_date': arrow.utcnow(),
             'close_date': None,
             'open_rate': 1.099e-05,
@@ -398,8 +399,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
     assert int(fields[0]) == 1
-    assert 'L' in fields[1]
-    assert 'ETH/BTC' in fields[2]
+    # assert 'L' in fields[1]
+    assert 'ETH/BTC' in fields[1]
     assert msg_mock.call_count == 1
 
 
@@ -1016,7 +1017,7 @@ def test_reload_config_handle(default_conf, update, mocker) -> None:
     assert 'Reloading config' in msg_mock.call_args_list[0][0][0]
 
 
-def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
+def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
                                    ticker_sell_up, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -1044,7 +1045,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     # Increase the price and sell it
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
 
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
@@ -1081,8 +1082,8 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     } == last_msg
 
 
-def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
-                                        ticker_sell_down, mocker) -> None:
+def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
+                                         ticker_sell_down, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
     msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
@@ -1114,7 +1115,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     trade = Trade.query.first()
     assert trade
 
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
@@ -1152,7 +1153,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     } == last_msg
 
 
-def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None:
+def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -> None:
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
@@ -1175,7 +1176,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     freqtradebot.enter_positions()
     msg_mock.reset_mock()
 
-    # /forcesell all
+    # /forceexit all
     context = MagicMock()
     context.args = ["all"]
     telegram._force_exit(update=update, context=context)
@@ -1213,7 +1214,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     } == msg
 
 
-def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
+def test_forceexit_handle_invalid(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
 
@@ -1222,31 +1223,75 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
 
     # Trader is not running
     freqtradebot.state = State.STOPPED
-    # /forcesell 1
+    # /forceexit 1
     context = MagicMock()
     context.args = ["1"]
     telegram._force_exit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'not running' in msg_mock.call_args_list[0][0][0]
 
-    # No argument
-    msg_mock.reset_mock()
-    freqtradebot.state = State.RUNNING
-    context = MagicMock()
-    context.args = []
-    telegram._force_exit(update=update, context=context)
-    assert msg_mock.call_count == 1
-    assert "You must specify a trade-id or 'all'." in msg_mock.call_args_list[0][0][0]
-
     # Invalid argument
     msg_mock.reset_mock()
     freqtradebot.state = State.RUNNING
-    # /forcesell 123456
+    # /forceexit 123456
     context = MagicMock()
     context.args = ["123456"]
     telegram._force_exit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
+
+
+def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> None:
+    default_conf['max_open_trades'] = 4
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
+    )
+    femock = mocker.patch('freqtrade.rpc.rpc.RPC._rpc_force_exit')
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    patch_get_signal(freqtradebot)
+
+    # /forceexit
+    context = MagicMock()
+    context.args = []
+    telegram._force_exit(update=update, context=context)
+    # No pair
+    assert msg_mock.call_args_list[0][1]['msg'] == 'No open trade found.'
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    msg_mock.reset_mock()
+
+    # /forceexit
+    telegram._force_exit(update=update, context=context)
+    keyboard = msg_mock.call_args_list[0][1]['keyboard']
+    # 4 pairs + cancel
+    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
+    assert keyboard[-1][0].text == "Cancel"
+
+    assert keyboard[1][0].callback_data == 'force_exit__2 '
+    update = MagicMock()
+    update.callback_query = MagicMock()
+    update.callback_query.data = keyboard[1][0].callback_data
+    telegram._force_exit_inline(update, None)
+    assert update.callback_query.answer.call_count == 1
+    assert update.callback_query.edit_message_text.call_count == 1
+    assert femock.call_count == 1
+    assert femock.call_args_list[0][0][0] == '2'
+
+    # Retry exiting - but cancel instead
+    update.callback_query.reset_mock()
+    telegram._force_exit(update=update, context=context)
+    # Use cancel button
+    update.callback_query.data = keyboard[-1][0].callback_data
+    telegram._force_exit_inline(update, None)
+    query = update.callback_query
+    assert query.answer.call_count == 1
+    assert query.edit_message_text.call_count == 1
+    assert query.edit_message_text.call_args_list[-1][1]['text'] == "Force exit canceled."
 
 
 def test_force_enter_handle(default_conf, update, mocker) -> None:

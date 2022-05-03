@@ -251,7 +251,7 @@ tc15 = BTContainer(data=[
             BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=2, close_tick=2)]
 )
 
-# Test 16: Buy, hold for 65 min, then forcesell using roi=-1
+# Test 16: Buy, hold for 65 min, then forceexit using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 65 minutes (limits trade duration)
 tc16 = BTContainer(data=[
@@ -259,14 +259,14 @@ tc16 = BTContainer(data=[
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
-    [3, 4975, 5000, 4940, 4962, 6172, 0, 0],  # ForceSell on ROI (roi=-1)
+    [3, 4975, 5000, 4940, 4962, 6172, 0, 0],  # Forceexit on ROI (roi=-1)
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "65": -1}, profit_perc=-0.012,
     trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
-# Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
+# Test 17: Buy, hold for 120 mins, then forceexit using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
 # Uses open as sell-rate (special case) - since the roi-time is a multiple of the timeframe.
@@ -275,7 +275,7 @@ tc17 = BTContainer(data=[
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],
     [2, 4987, 5300, 4950, 5050, 6172, 0, 0],
-    [3, 4980, 5000, 4940, 4962, 6172, 0, 0],  # ForceSell on ROI (roi=-1)
+    [3, 4980, 5000, 4940, 4962, 6172, 0, 0],  # Forceexit on ROI (roi=-1)
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "120": -1}, profit_perc=-0.004,

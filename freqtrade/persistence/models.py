@@ -8,13 +8,14 @@ from math import isclose
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
-                        create_engine, desc, func, inspect)
+                        create_engine, desc, func, inspect, or_)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES
+from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
+                                 LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -281,6 +282,8 @@ class LocalTrade():
 
     exchange: str = ''
     pair: str = ''
+    base_currency: str = ''
+    stake_currency: str = ''
     is_open: bool = True
     fee_open: float = 0.0
     fee_open_cost: Optional[float] = None
@@ -393,11 +396,31 @@ class LocalTrade():
             return "sell"
 
     @property
-    def trade_direction(self) -> str:
+    def trade_direction(self) -> LongShort:
         if self.is_short:
             return "short"
         else:
             return "long"
+
+    @property
+    def safe_base_currency(self) -> str:
+        """
+        Compatibility layer for asset - which can be empty for old trades.
+        """
+        try:
+            return self.base_currency or self.pair.split('/')[0]
+        except IndexError:
+            return ''
+
+    @property
+    def safe_quote_currency(self) -> str:
+        """
+        Compatibility layer for asset - which can be empty for old trades.
+        """
+        try:
+            return self.stake_currency or self.pair.split('/')[1].split(':')[0]
+        except IndexError:
+            return ''
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -409,12 +432,10 @@ class LocalTrade():
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
-        leverage = self.leverage or 1.0
-        is_short = self.is_short or False
 
         return (
             f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
-            f'is_short={is_short}, leverage={leverage}, '
+            f'is_short={self.is_short or False}, leverage={self.leverage or 1.0}, '
             f'open_rate={self.open_rate:.8f}, open_since={open_since})'
         )
 
@@ -425,6 +446,8 @@ class LocalTrade():
         return {
             'trade_id': self.id,
             'pair': self.pair,
+            'base_currency': self.safe_base_currency,
+            'quote_currency': self.safe_quote_currency,
             'is_open': self.is_open,
             'exchange': self.exchange,
             'amount': round(self.amount, 8),
@@ -1092,6 +1115,8 @@ class Trade(_DECL_BASE, LocalTrade):
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)
+    base_currency = Column(String(25), nullable=True)
+    stake_currency = Column(String(25), nullable=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_open_cost = Column(Float, nullable=True)
@@ -1445,6 +1470,8 @@ class PairLock(_DECL_BASE):
     id = Column(Integer, primary_key=True)
 
     pair = Column(String(25), nullable=False, index=True)
+    # lock direction - long, short or * (for both)
+    side = Column(String(25), nullable=False, default="*")
     reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
@@ -1456,11 +1483,12 @@ class PairLock(_DECL_BASE):
     def __repr__(self):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
-        return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
+        return (
+            f'PairLock(id={self.id}, pair={self.pair}, side={self.side}, lock_time={lock_time}, '
+            f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
-    def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
+    def query_pair_locks(pair: Optional[str], now: datetime, side: str = '*') -> Query:
         """
         Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
@@ -1471,6 +1499,11 @@ class PairLock(_DECL_BASE):
                    PairLock.active.is_(True), ]
         if pair:
             filters.append(PairLock.pair == pair)
+        if side != '*':
+            filters.append(or_(PairLock.side == side, PairLock.side == '*'))
+        else:
+            filters.append(PairLock.side == '*')
+
         return PairLock.query.filter(
             *filters
         )
@@ -1485,5 +1518,6 @@ class PairLock(_DECL_BASE):
             'lock_end_timestamp': int(self.lock_end_time.replace(tzinfo=timezone.utc
                                                                  ).timestamp() * 1000),
             'reason': self.reason,
+            'side': self.side,
             'active': self.active,
         }

@@ -19,8 +19,8 @@ def test_get_maintenance_ratio_and_amt_okx(
             'ETH/USDT:USDT': [
                 {
                     'tier': 1,
-                    'notionalFloor': 0,
-                    'notionalCap': 2000,
+                    'minNotional': 0,
+                    'maxNotional': 2000,
                     'maintenanceMarginRate': 0.01,
                     'maxLeverage': 75,
                     'info': {
@@ -39,8 +39,8 @@ def test_get_maintenance_ratio_and_amt_okx(
                 },
                 {
                     'tier': 2,
-                    'notionalFloor': 2001,
-                    'notionalCap': 4000,
+                    'minNotional': 2001,
+                    'maxNotional': 4000,
                     'maintenanceMarginRate': 0.015,
                     'maxLeverage': 50,
                     'info': {
@@ -59,8 +59,8 @@ def test_get_maintenance_ratio_and_amt_okx(
                 },
                 {
                     'tier': 3,
-                    'notionalFloor': 4001,
-                    'notionalCap': 8000,
+                    'minNotional': 4001,
+                    'maxNotional': 8000,
                     'maintenanceMarginRate': 0.02,
                     'maxLeverage': 20,
                     'info': {
@@ -81,8 +81,8 @@ def test_get_maintenance_ratio_and_amt_okx(
             'ADA/USDT:USDT': [
                 {
                     'tier': 1,
-                    'notionalFloor': 0,
-                    'notionalCap': 500,
+                    'minNotional': 0,
+                    'maxNotional': 500,
                     'maintenanceMarginRate': 0.02,
                     'maxLeverage': 75,
                     'info': {
@@ -101,8 +101,8 @@ def test_get_maintenance_ratio_and_amt_okx(
                 },
                 {
                     'tier': 2,
-                    'notionalFloor': 501,
-                    'notionalCap': 1000,
+                    'minNotional': 501,
+                    'maxNotional': 1000,
                     'maintenanceMarginRate': 0.025,
                     'maxLeverage': 50,
                     'info': {
@@ -121,8 +121,8 @@ def test_get_maintenance_ratio_and_amt_okx(
                 },
                 {
                     'tier': 3,
-                    'notionalFloor': 1001,
-                    'notionalCap': 2000,
+                    'minNotional': 1001,
+                    'maxNotional': 2000,
                     'maintenanceMarginRate': 0.03,
                     'maxLeverage': 20,
                     'info': {
@@ -180,8 +180,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
         [
             {
                 'tier': 1,
-                'notionalFloor': 0,
-                'notionalCap': 500,
+                'minNotional': 0,
+                'maxNotional': 500,
                 'maintenanceMarginRate': 0.02,
                 'maxLeverage': 75,
                 'info': {
@@ -200,8 +200,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
             },
             {
                 'tier': 2,
-                'notionalFloor': 501,
-                'notionalCap': 1000,
+                'minNotional': 501,
+                'maxNotional': 1000,
                 'maintenanceMarginRate': 0.025,
                 'maxLeverage': 50,
                 'info': {
@@ -220,8 +220,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
             },
             {
                 'tier': 3,
-                'notionalFloor': 1001,
-                'notionalCap': 2000,
+                'minNotional': 1001,
+                'maxNotional': 2000,
                 'maintenanceMarginRate': 0.03,
                 'maxLeverage': 20,
                 'info': {
@@ -242,8 +242,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
         [
             {
                 'tier': 1,
-                'notionalFloor': 0,
-                'notionalCap': 2000,
+                'minNotional': 0,
+                'maxNotional': 2000,
                 'maintenanceMarginRate': 0.01,
                 'maxLeverage': 75,
                 'info': {
@@ -262,8 +262,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
             },
             {
                 'tier': 2,
-                'notionalFloor': 2001,
-                'notionalCap': 4000,
+                'minNotional': 2001,
+                'maxNotional': 4000,
                 'maintenanceMarginRate': 0.015,
                 'maxLeverage': 50,
                 'info': {
@@ -282,8 +282,8 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
             },
             {
                 'tier': 3,
-                'notionalFloor': 4001,
-                'notionalCap': 8000,
+                'minNotional': 4001,
+                'maxNotional': 8000,
                 'maintenanceMarginRate': 0.02,
                 'maxLeverage': 20,
                 'info': {

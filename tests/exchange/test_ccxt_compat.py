@@ -369,25 +369,25 @@ class TestCCXTExchange():
             pair_tiers = leverage_tiers[futures_pair]
             assert len(pair_tiers) > 0
             oldLeverage = float('inf')
-            oldMaintenanceMarginRate = oldNotionalFloor = oldNotionalCap = -1
+            oldMaintenanceMarginRate = oldminNotional = oldmaxNotional = -1
             for tier in pair_tiers:
                 for key in [
                     'maintenanceMarginRate',
-                    'notionalFloor',
-                    'notionalCap',
+                    'minNotional',
+                    'maxNotional',
                     'maxLeverage'
                 ]:
                     assert key in tier
                     assert tier[key] >= 0.0
-                assert tier['notionalCap'] > tier['notionalFloor']
+                assert tier['maxNotional'] > tier['minNotional']
                 assert tier['maxLeverage'] <= oldLeverage
                 assert tier['maintenanceMarginRate'] >= oldMaintenanceMarginRate
-                assert tier['notionalFloor'] > oldNotionalFloor
-                assert tier['notionalCap'] > oldNotionalCap
+                assert tier['minNotional'] > oldminNotional
+                assert tier['maxNotional'] > oldmaxNotional
                 oldLeverage = tier['maxLeverage']
                 oldMaintenanceMarginRate = tier['maintenanceMarginRate']
-                oldNotionalFloor = tier['notionalFloor']
-                oldNotionalCap = tier['notionalCap']
+                oldminNotional = tier['minNotional']
+                oldmaxNotional = tier['maxNotional']
 
     def test_ccxt_dry_run_liquidation_price(self, exchange_futures):
         futures, futures_name = exchange_futures

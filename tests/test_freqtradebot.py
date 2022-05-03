@@ -20,6 +20,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
+from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.worker import Worker
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
                             log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
@@ -421,7 +422,7 @@ def test_enter_positions_global_pairlock(default_conf_usdt, ticker_usdt, limit_b
     assert not log_has_re(message, caplog)
     caplog.clear()
 
-    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
+    PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because', side='*')
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has_re(message, caplog)
@@ -442,9 +443,9 @@ def test_handle_protections(mocker, default_conf_usdt, fee, is_short):
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     freqtrade.protections._protection_handlers[1].global_stop = MagicMock(
-        return_value=(True, arrow.utcnow().shift(hours=1).datetime, "asdf"))
+        return_value=ProtectionReturn(True, arrow.utcnow().shift(hours=1).datetime, "asdf"))
     create_mock_trades(fee, is_short)
-    freqtrade.handle_protections('ETC/BTC')
+    freqtrade.handle_protections('ETC/BTC', '*')
     send_msg_mock = freqtrade.rpc.send_msg
     assert send_msg_mock.call_count == 2
     assert send_msg_mock.call_args_list[0][0][0]['type'] == RPCMessageType.PROTECTION_TRIGGER
@@ -718,12 +719,12 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (True, 'spot', 'gateio', None, 0.0, None),
     (False, 'spot', 'okx', None, 0.0, None),
     (True, 'spot', 'okx', None, 0.0, None),
-    (True, 'futures', 'binance', 'isolated', 0.0, 11.89108910891089),
-    (False, 'futures', 'binance', 'isolated', 0.0, 8.070707070707071),
+    (True, 'futures', 'binance', 'isolated', 0.0, 11.88151815181518),
+    (False, 'futures', 'binance', 'isolated', 0.0, 8.080471380471382),
     (True, 'futures', 'gateio', 'isolated', 0.0, 11.87413417771621),
     (False, 'futures', 'gateio', 'isolated', 0.0, 8.085708510208207),
-    (True, 'futures', 'binance', 'isolated', 0.05, 11.796534653465345),
-    (False, 'futures', 'binance', 'isolated', 0.05, 8.167171717171717),
+    (True, 'futures', 'binance', 'isolated', 0.05, 11.7874422442244),
+    (False, 'futures', 'binance', 'isolated', 0.05, 8.17644781144781),
     (True, 'futures', 'gateio', 'isolated', 0.05, 11.7804274688304),
     (False, 'futures', 'gateio', 'isolated', 0.05, 8.181423084697796),
     (True, 'futures', 'okx', 'isolated', 0.0, 11.87413417771621),
@@ -846,6 +847,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_order_id is None
     assert trade.open_rate == 10
     assert trade.stake_amount == round(order['average'] * order['filled'] / leverage, 8)
+    assert pytest.approx(trade.liquidation_price) == liq_price
 
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
@@ -933,8 +935,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
-    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
-    freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
@@ -947,7 +947,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
-    assert trade.liquidation_price == liq_price
 
     # In case of too high stake amount
 
@@ -3232,7 +3231,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)
+        exit_check=ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL, exit_reason='foo')
     )
 
     # Sell price must be different to default bid price
@@ -3260,8 +3259,8 @@ def test_execute_trade_exit_custom_exit_price(
         'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
-        'sell_reason': ExitType.EXIT_SIGNAL.value,
-        'exit_reason': ExitType.EXIT_SIGNAL.value,
+        'sell_reason': 'foo',
+        'exit_reason': 'foo',
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
@@ -3680,6 +3679,7 @@ def test_exit_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
+    freqtrade.strategy.custom_exit = MagicMock(return_value=None)
     if exit_type == ExitType.EXIT_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
@@ -3688,10 +3688,15 @@ def test_exit_profit_only(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
     trade.update_trade(oobj)
     freqtrade.wallets.update()
+    if profit_only:
+        assert freqtrade.handle_trade(trade) is False
+        # Custom-exit is called
+        freqtrade.strategy.custom_exit.call_count == 1
+
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is handle_first
 
@@ -3806,13 +3811,16 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
         exit_check=ExitCheckTuple(exit_type=ExitType.STOP_LOSS)
     )
     trade.close(ticker_usdt_sell_down()['bid'])
-    assert freqtrade.strategy.is_pair_locked(trade.pair)
+    assert freqtrade.strategy.is_pair_locked(trade.pair, side='*')
+    # Boths sides are locked
+    assert freqtrade.strategy.is_pair_locked(trade.pair, side='long')
+    assert freqtrade.strategy.is_pair_locked(trade.pair, side='short')
 
     # reinit - should buy other pair.
     caplog.clear()
     freqtrade.enter_positions()
 
-    assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
+    assert log_has_re(fr"Pair {trade.pair} \* is locked.*", caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])

@@ -83,6 +83,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Reset sample files to their original state.',
         action='store_true',
     ),
+    "recursive_strategy_search": Arg(
+        '--recursive-strategy-search',
+        help='Recursively search for a strategy in the strategies folder.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
@@ -437,6 +442,11 @@ AVAILABLE_CLI_OPTIONS = {
                  '6h', '8h', '12h', '1d', '3d', '1w', '2w', '1M', '1y'],
         default=['1m', '5m'],
         nargs='+',
+    ),
+    "prepend_data": Arg(
+        '--prepend',
+        help='Allow data prepending.',
+        action='store_true',
     ),
     "erase": Arg(
         '--erase',

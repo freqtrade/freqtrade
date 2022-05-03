@@ -203,6 +203,8 @@ class OrderSchema(BaseModel):
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str
+    base_currency: str
+    quote_currency: str
     is_open: bool
     is_short: bool
     exchange: str
@@ -289,6 +291,7 @@ class LockModel(BaseModel):
     lock_time: str
     lock_timestamp: int
     pair: str
+    side: str
     reason: str
 
 
@@ -417,6 +420,13 @@ class BacktestResponse(BaseModel):
     trade_count: Optional[float]
     # TODO: Properly type backtestresult...
     backtest_result: Optional[Dict[str, Any]]
+
+
+class BacktestHistoryEntry(BaseModel):
+    filename: str
+    strategy: str
+    run_id: str
+    backtest_start_time: int
 
 
 class SysInfo(BaseModel):

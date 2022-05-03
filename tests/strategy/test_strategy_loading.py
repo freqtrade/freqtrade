@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
-import warnings
 from base64 import urlsafe_b64encode
 from pathlib import Path
 
@@ -35,7 +34,7 @@ def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
-    assert len(strategies) == 6
+    assert len(strategies) == 5
     assert isinstance(strategies[0], dict)
 
 
@@ -43,10 +42,10 @@ def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
-    assert len(strategies) == 7
+    assert len(strategies) == 6
     # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
-    assert len([x for x in strategies if x['class'] is not None]) == 6
+    assert len([x for x in strategies if x['class'] is not None]) == 5
     assert len([x for x in strategies if x['class'] is None]) == 1
 
 
@@ -100,7 +99,7 @@ def test_load_strategy_noname(default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-@pytest.mark.parametrize('strategy_name', ['StrategyTestV2', 'TestStrategyLegacyV1'])
+@pytest.mark.parametrize('strategy_name', ['StrategyTestV2'])
 def test_strategy_pre_v3(result, default_conf, strategy_name):
     default_conf.update({'strategy': strategy_name})
 
@@ -347,40 +346,6 @@ def test_strategy_override_use_exit_profit_only(caplog, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_deprecate_populate_indicators(result, default_conf):
-    default_location = Path(__file__).parent / "strats"
-    default_conf.update({'strategy': 'TestStrategyLegacyV1',
-                         'strategy_path': default_location})
-    strategy = StrategyResolver.load_strategy(default_conf)
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        indicators = strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - check out the Sample strategy to see the current function headers!" \
-            in str(w[-1].message)
-
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        strategy.advise_entry(indicators, {'pair': 'ETH/BTC'})
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - check out the Sample strategy to see the current function headers!" \
-            in str(w[-1].message)
-
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        strategy.advise_exit(indicators, {'pair': 'ETH_BTC'})
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        assert "deprecated - check out the Sample strategy to see the current function headers!" \
-            in str(w[-1].message)
-
-
-@pytest.mark.filterwarnings("ignore:deprecated")
 def test_missing_implements(default_conf, caplog):
 
     default_location = Path(__file__).parent / "strats"
@@ -438,33 +403,14 @@ def test_missing_implements(default_conf, caplog):
         StrategyResolver.load_strategy(default_conf)
 
 
-@pytest.mark.filterwarnings("ignore:deprecated")
-def test_call_deprecated_function(result, default_conf, caplog):
-    default_location = Path(__file__).parent / "strats"
+def test_call_deprecated_function(default_conf):
+    default_location = Path(__file__).parent / "strats/broken_strats/"
     del default_conf['timeframe']
     default_conf.update({'strategy': 'TestStrategyLegacyV1',
                          'strategy_path': default_location})
-    strategy = StrategyResolver.load_strategy(default_conf)
-    metadata = {'pair': 'ETH/BTC'}
-
-    # Make sure we are using a legacy function
-    assert strategy._populate_fun_len == 2
-    assert strategy._buy_fun_len == 2
-    assert strategy._sell_fun_len == 2
-    assert strategy.INTERFACE_VERSION == 1
-    assert strategy.timeframe == '5m'
-
-    indicator_df = strategy.advise_indicators(result, metadata=metadata)
-    assert isinstance(indicator_df, DataFrame)
-    assert 'adx' in indicator_df.columns
-
-    enterdf = strategy.advise_entry(result, metadata=metadata)
-    assert isinstance(enterdf, DataFrame)
-    assert 'enter_long' in enterdf.columns
-
-    exitdf = strategy.advise_exit(result, metadata=metadata)
-    assert isinstance(exitdf, DataFrame)
-    assert 'exit_long' in exitdf
+    with pytest.raises(OperationalException,
+                       match=r"Strategy Interface v1 is no longer supported.*"):
+        StrategyResolver.load_strategy(default_conf)
 
 
 def test_strategy_interface_versioning(result, default_conf):
@@ -472,10 +418,6 @@ def test_strategy_interface_versioning(result, default_conf):
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
 
-    # Make sure we are using a legacy function
-    assert strategy._populate_fun_len == 3
-    assert strategy._buy_fun_len == 3
-    assert strategy._sell_fun_len == 3
     assert strategy.INTERFACE_VERSION == 2
 
     indicator_df = strategy.advise_indicators(result, metadata=metadata)

@@ -200,11 +200,12 @@ For that reason, they must implement the following methods:
 * `global_stop()`
 * `stop_per_pair()`.
 
-`global_stop()` and `stop_per_pair()` must return a ProtectionReturn tuple, which consists of:
+`global_stop()` and `stop_per_pair()` must return a ProtectionReturn object, which consists of:
 
 * lock pair - boolean
 * lock until - datetime - until when should the pair be locked (will be rounded up to the next new candle)
 * reason - string, used for logging and storage in the database
+* lock_side - long, short or '*'.
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 

@@ -41,7 +41,8 @@ class HyperoptTools():
         """
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
-        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategy_objs = StrategyResolver.search_all_objects(
+            directory, False, config.get('recursive_strategy_search', False))
         strategies = [s for s in strategy_objs if s['name'] == strategy_name]
         if strategies:
             strategy = strategies[0]
@@ -310,6 +311,8 @@ class HyperoptTools():
         if not has_drawdown:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.max_drawdown_account'] = None
+        if 'is_random' not in trials.columns:
+            trials['is_random'] = False
 
         # New mode, using backtest result for metrics
         trials['results_metrics.winsdrawslosses'] = trials.apply(
@@ -322,12 +325,12 @@ class HyperoptTools():
                          'results_metrics.profit_total', 'results_metrics.holding_avg',
                          'results_metrics.max_drawdown',
                          'results_metrics.max_drawdown_account', 'results_metrics.max_drawdown_abs',
-                         'loss', 'is_initial_point', 'is_best']]
+                         'loss', 'is_initial_point', 'is_random', 'is_best']]
 
         trials.columns = [
             'Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
             'Total profit', 'Profit', 'Avg duration', 'max_drawdown', 'max_drawdown_account',
-            'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_best'
+            'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_random', 'is_best'
             ]
 
         return trials
@@ -349,9 +352,11 @@ class HyperoptTools():
         trials = HyperoptTools.prepare_trials_columns(trials, has_account_drawdown)
 
         trials['is_profit'] = False
-        trials.loc[trials['is_initial_point'], 'Best'] = '*     '
+        trials.loc[trials['is_initial_point'] | trials['is_random'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
-        trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
+        trials.loc[
+            (trials['is_initial_point'] | trials['is_random']) & trials['is_best'],
+            'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
         # perc_multi = 1 if legacy_mode else 100
@@ -390,8 +395,8 @@ class HyperoptTools():
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency, keep_trailing_zeros=True),
                 f"({x['Profit']:,.2%})".rjust(10, ' ')
-            ).rjust(25+len(stake_currency))
-            if x['Total profit'] != 0.0 else '--'.rjust(25+len(stake_currency)),
+            ).rjust(25 + len(stake_currency))
+            if x['Total profit'] != 0.0 else '--'.rjust(25 + len(stake_currency)),
             axis=1
         )
         trials = trials.drop(columns=['Total profit'])
@@ -399,15 +404,15 @@ class HyperoptTools():
         if print_colorized:
             for i in range(len(trials)):
                 if trials.loc[i]['is_profit']:
-                    for j in range(len(trials.loc[i])-3):
+                    for j in range(len(trials.loc[i]) - 3):
                         trials.iat[i, j] = "{}{}{}".format(Fore.GREEN,
                                                            str(trials.loc[i][j]), Fore.RESET)
                 if trials.loc[i]['is_best'] and highlight_best:
-                    for j in range(len(trials.loc[i])-3):
+                    for j in range(len(trials.loc[i]) - 3):
                         trials.iat[i, j] = "{}{}{}".format(Style.BRIGHT,
                                                            str(trials.loc[i][j]), Style.RESET_ALL)
 
-        trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
+        trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit', 'is_random'])
         if remove_header > 0:
             table = tabulate.tabulate(
                 trials.to_dict(orient='list'), tablefmt='orgtbl',
@@ -459,7 +464,7 @@ class HyperoptTools():
                         'loss', 'is_initial_point', 'is_best']
         perc_multi = 100
 
-        param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
+        param_metrics = [("params_dict." + param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
         base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Median profit', 'Total profit',

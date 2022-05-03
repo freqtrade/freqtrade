@@ -96,7 +96,7 @@ Strategy arguments:
 Example:
 
 ``` bash
-freqtrade plot-dataframe -p BTC/ETH
+freqtrade plot-dataframe -p BTC/ETH --strategy AwesomeStrategy
 ```
 
 The `-p/--pairs` argument can be used to specify pairs you would like to plot.
@@ -106,9 +106,6 @@ The `-p/--pairs` argument can be used to specify pairs you would like to plot.
 
 Specify custom indicators.
 Use `--indicators1` for the main plot and `--indicators2` for the subplot below (if values are in a different range than prices).
-
-!!! Tip
-    You will almost certainly want to specify a custom strategy! This can be done by adding `-s Classname` / `--strategy ClassName` to the command.
 
 ``` bash
 freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --indicators1 sma ema --indicators2 macd

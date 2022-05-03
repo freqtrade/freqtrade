@@ -31,7 +31,7 @@ def log_config_error_range(path: str, errmsg: str) -> str:
             offset = int(offsetlist[0])
             text = Path(path).read_text()
             # Fetch an offset of 80 characters around the error line
-            subtext = text[offset-min(80, offset):offset+80]
+            subtext = text[offset - min(80, offset):offset + 80]
             segments = subtext.split('\n')
             if len(segments) > 3:
                 # Remove first and last lines, to avoid odd truncations
@@ -75,19 +75,41 @@ def load_config_file(path: str) -> Dict[str, Any]:
     return config
 
 
-def load_from_files(files: List[str]) -> Dict[str, Any]:
-
+def load_from_files(files: List[str], base_path: Path = None, level: int = 0) -> Dict[str, Any]:
+    """
+    Recursively load configuration files if specified.
+    Sub-files are assumed to be relative to the initial config.
+    """
     config: Dict[str, Any] = {}
+    if level > 5:
+        raise OperationalException("Config loop detected.")
 
     if not files:
         return deepcopy(MINIMAL_CONFIG)
-
+    files_loaded = []
     # We expect here a list of config filenames
-    for path in files:
-        logger.info(f'Using config: {path} ...')
-        # Merge config options, overwriting old values
-        config = deep_merge_dicts(load_config_file(path), config)
+    for filename in files:
+        logger.info(f'Using config: {filename} ...')
+        if filename == '-':
+            # Immediately load stdin and return
+            return load_config_file(filename)
+        file = Path(filename)
+        if base_path:
+            # Prepend basepath to allow for relative assignments
+            file = base_path / file
 
-    config['config_files'] = files
+        config_tmp = load_config_file(str(file))
+        if 'add_config_files' in config_tmp:
+            config_sub = load_from_files(
+                config_tmp['add_config_files'], file.resolve().parent, level + 1)
+            files_loaded.extend(config_sub.get('config_files', []))
+            config_tmp = deep_merge_dicts(config_tmp, config_sub)
+
+        files_loaded.insert(0, str(file))
+
+        # Merge config options, overwriting prior values
+        config = deep_merge_dicts(config_tmp, config)
+
+    config['config_files'] = files_loaded
 
     return config

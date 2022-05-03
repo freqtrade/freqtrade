@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 # 1.13: forcebuy supports stake_amount
 # versions 2.xx -> futures/short branch
 # 2.14: Add entry/exit orders to trade response
-API_VERSION = 2.14
+# 2.15: Add backtest history endpoints
+API_VERSION = 2.15
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -157,7 +158,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 # /forcesell is deprecated with short addition. use /forceexit instead
 @router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
-def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
+def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     return rpc._rpc_force_exit(payload.tradeid, ordertype)
 
@@ -252,7 +253,8 @@ def list_strategies(config=Depends(get_config)):
     directory = Path(config.get(
         'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
-    strategies = StrategyResolver.search_all_objects(directory, False)
+    strategies = StrategyResolver.search_all_objects(
+        directory, False, config.get('recursive_strategy_search', False))
     strategies = sorted(strategies, key=lambda x: x['name'])
 
     return {'strategies': [x['name'] for x in strategies]}
