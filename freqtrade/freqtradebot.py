@@ -599,7 +599,6 @@ class FreqtradeBot(LoggingMixin):
             pair, price, stake_amount, trade_side, enter_tag, trade)
 
         if not stake_amount:
-            logger.info(f"No stake amount to enter a trade for {pair}.")
             return False
 
         if pos_adjust:
