@@ -2469,12 +2469,12 @@ def test_adjust_entry_cancel(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short
 ) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_order_id
     limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
@@ -2482,7 +2482,6 @@ def test_adjust_entry_cancel(
         cancel_order_with_result=cancel_order_mock,
         get_fee=fee
     )
-    freqtrade = FreqtradeBot(default_conf_usdt)
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
@@ -2512,12 +2511,12 @@ def test_adjust_entry_maintain_replace(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short
 ) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
     old_order['id'] = open_trade.open_order_id
     limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
-    patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
@@ -2525,7 +2524,6 @@ def test_adjust_entry_maintain_replace(
         cancel_order_with_result=cancel_order_mock,
         get_fee=fee
     )
-    freqtrade = FreqtradeBot(default_conf_usdt)
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
