@@ -866,9 +866,17 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
+        filled_orders_count = len(self.select_filled_orders(self.entry_side))
+        latest_order_in_trade = self.select_order(self.entry_side, True)
+        # No fills but newer order
+        if (filled_orders_count == 0 and latest_order_in_trade is not None and
+                latest_order_in_trade.id is not None):
+            # after ensuring there is a populated order
+            if latest_order_in_trade.id > 1:
+                self.open_rate = latest_order_in_trade.price
         # We need at least 2 entry orders for averaging amounts and rates.
         # TODO: this condition could probably be removed
-        if len(self.select_filled_orders(self.entry_side)) < 2:
+        if filled_orders_count < 2:
             self.stake_amount = self.amount * self.open_rate / self.leverage
 
             # Just in case, still recalc open trade value
