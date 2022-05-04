@@ -20,7 +20,7 @@ def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
     pickle.dump(BrainConfig.BACKTEST_SIGNAL_LIST, open(BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH, 'wb'))
 
 
-def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
+def perform_execute_buy(coin, brain, time_out_hours):
     is_test_mode = False
     if BrainConfig.MODE == Config.MODE_TEST:
         is_test_mode = True
@@ -32,12 +32,13 @@ def perform_execute_buy(coin, brain, romeo_pool, time_out_hours):
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
 
     romeo = Romeo.instance(is_test_mode, True)
-    romeo_pool[coin] = romeo
+    BrainConfig.ROMEO_POOL[coin] = romeo
     romeo.start()
 
-def perform_execute_sell(coin, romeo_pool):
+
+def perform_execute_sell(coin):
     if Config.IS_SS_ENABLED:
-        romeo = romeo_pool.get(coin)
+        romeo = BrainConfig.ROMEO_POOL.get(coin)
         if romeo is not None:
             romeo.perform_sell_signal(RomeoExitPriceType.SS)
 

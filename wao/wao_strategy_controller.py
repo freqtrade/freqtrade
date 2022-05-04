@@ -38,15 +38,15 @@ class WAOStrategyController:
         if BrainConfig.IS_BACKTEST:
             write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, "sell")
         else:
-            perform_execute_sell(coin, BrainConfig.ROMEO_POOL)
+            perform_execute_sell(coin)
             self.__remove_from_pool(coin)
 
     def __buy_execute(self, coin):
         if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
-                             args=(coin, self.brain, BrainConfig.ROMEO_POOL, self.time_out_hours)).start()
+                             args=(coin, self.brain, self.time_out_hours)).start()
         else:
-            perform_execute_buy(coin, self.brain, BrainConfig.ROMEO_POOL, self.time_out_hours)
+            perform_execute_buy(coin, self.brain, self.time_out_hours)
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):
