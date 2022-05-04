@@ -868,12 +868,11 @@ class LocalTrade():
     def recalc_trade_from_orders(self):
         filled_orders_count = len(self.select_filled_orders(self.entry_side))
         latest_order_in_trade = self.select_order(self.entry_side, True)
-        # No fills but newer order
+        # No fills - update open_rate in case order was replaced
         if (filled_orders_count == 0 and latest_order_in_trade is not None and
-                latest_order_in_trade.id is not None):
-            # after ensuring there is a populated order
-            if latest_order_in_trade.id > 1:
-                self.open_rate = latest_order_in_trade.price
+                latest_order_in_trade.price is not None):
+            # after ensuring there is a populated order price
+            self.open_rate = latest_order_in_trade.price
         # We need at least 2 entry orders for averaging amounts and rates.
         # TODO: this condition could probably be removed
         if filled_orders_count < 2:
