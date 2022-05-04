@@ -2493,10 +2493,8 @@ def test_adjust_entry_cancel(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=None)
     freqtrade.manage_open_orders()
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
-    nb_trades = len(trades)
-    assert nb_trades == 0
-    nb_all_orders = len(Order.query.all())
-    assert nb_all_orders == 0
+    assert len(trades) == 0
+    assert len(Order.query.all()) == 0
     assert log_has_re(
         f"{'Sell' if is_short else 'Buy'} order user requested order cancel*", caplog)
     assert log_has_re(
@@ -2535,10 +2533,8 @@ def test_adjust_entry_maintain_replace(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=old_order['price'])
     freqtrade.manage_open_orders()
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
-    nb_trades = len(trades)
-    assert nb_trades == 1
-    nb_orders = len(Order.get_open_orders())
-    assert nb_orders == 1
+    assert len(trades) == 1
+    assert len(Order.get_open_orders()) == 1
     # Entry adjustment is called
     assert freqtrade.strategy.adjust_entry_price.call_count == 1
 
@@ -2547,10 +2543,8 @@ def test_adjust_entry_maintain_replace(
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
     freqtrade.manage_open_orders()
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
-    nb_trades = len(trades)
-    assert nb_trades == 1
+    assert len(trades) == 1
     nb_all_orders = len(Order.query.all())
-    freqtrade.logger.warning(Order.query.all())
     assert nb_all_orders == 2
     # New order seems to be in closed status?
     # nb_open_orders = len(Order.get_open_orders())
@@ -2588,8 +2582,7 @@ def test_check_handle_cancelled_buy(
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
-    nb_trades = len(trades)
-    assert nb_trades == 0
+    assert len(trades) == 0
     assert log_has_re(
         f"{'Sell' if is_short else 'Buy'} order cancelled on exchange for Trade.*", caplog)
 
