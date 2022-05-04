@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Tuple
 
 import pandas as pd
@@ -5,6 +6,9 @@ from catboost import CatBoostRegressor, Pool
 from pandas import DataFrame
 
 from freqtrade.freqai.freqai_interface import IFreqaiModel
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExamplePredictionModel(IFreqaiModel):
@@ -32,7 +36,7 @@ class ExamplePredictionModel(IFreqaiModel):
         self.dh.data["s_mean"] = dataframe["s"].mean()
         self.dh.data["s_std"] = dataframe["s"].std()
 
-        print("label mean", self.dh.data["s_mean"], "label std", self.dh.data["s_std"])
+        logger.info("label mean", self.dh.data["s_mean"], "label std", self.dh.data["s_std"])
 
         return dataframe["s"]
 
@@ -46,7 +50,7 @@ class ExamplePredictionModel(IFreqaiModel):
         :returns:
         :model: Trained model which can be used to inference (self.predict)
         """
-        print("--------------------Starting training--------------------")
+        logger.info("--------------------Starting training--------------------")
 
         # create the full feature list based on user config info
         self.dh.training_features_list = self.dh.build_feature_list(self.config)
@@ -73,12 +77,12 @@ class ExamplePredictionModel(IFreqaiModel):
         if self.feature_parameters["DI_threshold"]:
             self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
 
-        print("length of train data", len(data_dictionary["train_features"]))
+        logger.info("length of train data", len(data_dictionary["train_features"]))
 
         model = self.fit(data_dictionary)
 
-        print("Finished training")
-        print(f'--------------------done training {metadata["pair"]}--------------------')
+        logger.info("Finished training")
+        logger.info(f'--------------------done training {metadata["pair"]}--------------------')
 
         return model
 
@@ -121,7 +125,7 @@ class ExamplePredictionModel(IFreqaiModel):
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
-        print("--------------------Starting prediction--------------------")
+        logger.info("--------------------Starting prediction--------------------")
 
         original_feature_list = self.dh.build_feature_list(self.config)
         filtered_dataframe, _ = self.dh.filter_features(
@@ -150,6 +154,6 @@ class ExamplePredictionModel(IFreqaiModel):
         # compute the non-standardized predictions
         predictions = predictions * self.dh.data["labels_std"] + self.dh.data["labels_mean"]
 
-        print("--------------------Finished prediction--------------------")
+        logger.info("--------------------Finished prediction--------------------")
 
         return (predictions, self.dh.do_predict)
