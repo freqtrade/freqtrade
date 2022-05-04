@@ -785,6 +785,26 @@ class Exchange:
 
     # Dry-run methods
 
+    def taker_or_maker(
+        self,
+        order_reason: Literal['entry', 'exit', 'stoploss'],  # TODO: stoploss
+    ):
+        order_type = self._config['order_types'][order_reason]
+        if order_type == 'market' or order_reason == 'stoploss':
+            return 'taker'
+        else:
+            return (
+                'maker' if (
+                    (
+                        order_reason == 'entry' and
+                        self._config['entry_pricing']['price_side'] == 'same'
+                    ) or (
+                        order_reason == 'exit' and
+                        self._config['exit_pricing']['price_side'] == 'same'
+                    )
+                ) else 'taker'
+            )
+
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
@@ -824,7 +844,7 @@ class Exchange:
                 'filled': _amount,
                 'cost': (dry_order['amount'] * average) / leverage
             })
-            dry_order = self.add_dry_order_fee(pair, dry_order)
+            dry_order = self.add_dry_order_fee(pair, dry_order, self.taker_or_maker('entry'))
 
         dry_order = self.check_dry_limit_order_filled(dry_order)
 
@@ -832,12 +852,17 @@ class Exchange:
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def add_dry_order_fee(self, pair: str, dry_order: Dict[str, Any]) -> Dict[str, Any]:
+    def add_dry_order_fee(
+        self,
+        pair: str,
+        dry_order: Dict[str, Any],
+        taker_or_maker: Literal['taker', 'maker'],
+    ) -> Dict[str, Any]:
         dry_order.update({
             'fee': {
                 'currency': self.get_pair_quote_currency(pair),
-                'cost': dry_order['cost'] * self.get_fee(pair),
-                'rate': self.get_fee(pair)
+                'cost': dry_order['cost'] * self.get_fee(pair, taker_or_maker=taker_or_maker),
+                'rate': self.get_fee(pair, taker_or_maker=taker_or_maker)
             }
         })
         return dry_order
@@ -917,7 +942,16 @@ class Exchange:
                     'filled': order['amount'],
                     'remaining': 0,
                 })
-                self.add_dry_order_fee(pair, order)
+                enter_long = not order['is_short'] and order['side'] == 'buy'
+                enter_short = order['is_short'] and order['side'] == 'sell'
+                entry_or_exit: Literal['entry', 'exit'] = (
+                    'entry' if (enter_short or enter_long) else 'exit'
+                )
+                self.add_dry_order_fee(
+                    pair,
+                    order,
+                    self.taker_or_maker(entry_or_exit)
+                )
 
         return order
 
