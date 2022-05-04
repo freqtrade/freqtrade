@@ -5005,13 +5005,13 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     ("exit", "same", "limit", "maker"),
     ("entry", "other", "limit", "taker"),
     ("exit", "other", "limit", "taker"),
-    ("entry", "same", "market", "maker"),
-    ("exit", "same", "market", "maker"),
+    ("stoploss", "same", "limit", "taker"),
+    ("stoploss", "other", "limit", "taker"),
+    ("entry", "same", "market", "taker"),
+    ("exit", "same", "market", "taker"),
     ("entry", "other", "market", "taker"),
     ("exit", "other", "market", "taker"),
-    ("stoploss", "same", "limit", "taker"),
     ("stoploss", "same", "market", "taker"),
-    ("stoploss", "other", "limit", "taker"),
     ("stoploss", "other", "market", "taker"),
 ])
 def test_taker_or_maker(mocker, default_conf, order_reason, price_side, order_type, taker_or_maker):
