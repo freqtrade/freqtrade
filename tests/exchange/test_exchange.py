@@ -5015,7 +5015,9 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     ("stoploss", "other", "market", "taker"),
 ])
 def test_taker_or_maker(mocker, default_conf, order_reason, price_side, order_type, taker_or_maker):
-    default_conf[f"{order_reason}_pricing"]["price_side"] = price_side
+    if order_reason != 'stoploss':
+        default_conf[f"{order_reason}_pricing"]["price_side"] = price_side
+    default_conf["order_types"] = {}
     default_conf["order_types"][order_reason] = order_type
     exchange = get_patched_exchange(mocker, default_conf)
     assert exchange.taker_or_maker(order_reason) == taker_or_maker
