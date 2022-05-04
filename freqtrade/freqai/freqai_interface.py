@@ -1,6 +1,7 @@
 import gc
+import logging
 import shutil
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -12,6 +13,7 @@ from freqtrade.freqai.data_handler import DataHandler
 
 
 pd.options.mode.chained_assignment = None
+logger = logging.getLogger(__name__)
 
 
 class IFreqaiModel(ABC):
@@ -67,7 +69,7 @@ class IFreqaiModel(ABC):
         self.pair = metadata["pair"]
         self.dh = DataHandler(self.config, dataframe)
 
-        print(
+        logger.info(
             "going to train",
             len(self.dh.training_timeranges),
             "timeranges:",
@@ -88,7 +90,7 @@ class IFreqaiModel(ABC):
             self.freqai_info["training_timerange"] = tr_train
             dataframe_train = self.dh.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = self.dh.slice_dataframe(tr_backtest, dataframe)
-            print("training", self.pair, "for", tr_train)
+            logger.info("training", self.pair, "for", tr_train)
             # self.dh.model_path = self.full_path + "/" + "sub-train" + "-" + str(tr_train) + "/"
             self.dh.model_path = Path(self.full_path / str("sub-train" + "-" + str(tr_train)))
             if not self.model_exists(self.pair, training_timerange=tr_train):
@@ -114,6 +116,7 @@ class IFreqaiModel(ABC):
 
         return dataframe
 
+    @abstractmethod
     def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahandler
@@ -127,6 +130,7 @@ class IFreqaiModel(ABC):
 
         return Any
 
+    @abstractmethod
     def fit(self) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
@@ -139,6 +143,7 @@ class IFreqaiModel(ABC):
 
         return Any
 
+    @abstractmethod
     def predict(self, dataframe: DataFrame) -> Tuple[np.array, np.array]:
         """
         Filter the prediction features data and predict with it.
@@ -162,7 +167,7 @@ class IFreqaiModel(ABC):
         path_to_modelfile = Path(self.dh.model_path / str(self.dh.model_filename + "_model.joblib"))
         file_exists = path_to_modelfile.is_file()
         if file_exists:
-            print("Found model at", self.dh.model_path / self.dh.model_filename)
+            logger.info("Found model at", self.dh.model_path / self.dh.model_filename)
         else:
-            print("Could not find model at", self.dh.model_path / self.dh.model_filename)
+            logger.info("Could not find model at", self.dh.model_path / self.dh.model_filename)
         return file_exists

@@ -1,6 +1,7 @@
 import copy
 import datetime
 import json
+import logging
 import pickle as pk
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -16,6 +17,8 @@ from freqtrade.configuration import TimeRange
 
 
 SECONDS_IN_DAY = 86400
+
+logger = logging.getLogger(__name__)
 
 
 class DataHandler:
@@ -175,7 +178,7 @@ class DataHandler:
             labels = labels[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
-            print(
+            logger.info(
                 "dropped",
                 len(unfiltered_dataframe) - len(filtered_dataframe),
                 "training data points due to NaNs, ensure you have downloaded",
@@ -193,7 +196,7 @@ class DataHandler:
             # that was based on a single NaN is ultimately protected from buys with do_predict
             drop_index = ~drop_index
             self.do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
-            print(
+            logger.info(
                 "dropped",
                 len(self.do_predict) - self.do_predict.sum(),
                 "of",
@@ -350,8 +353,8 @@ class DataHandler:
         pca2 = PCA(n_components=n_keep_components)
         self.data["n_kept_components"] = n_keep_components
         pca2 = pca2.fit(self.data_dictionary["train_features"])
-        print("reduced feature dimension by", n_components - n_keep_components)
-        print("explained variance", np.sum(pca2.explained_variance_ratio_))
+        logger.info("reduced feature dimension by", n_components - n_keep_components)
+        logger.info("explained variance", np.sum(pca2.explained_variance_ratio_))
         train_components = pca2.transform(self.data_dictionary["train_features"])
         test_components = pca2.transform(self.data_dictionary["test_features"])
 
@@ -377,10 +380,10 @@ class DataHandler:
         return None
 
     def compute_distances(self) -> float:
-        print("computing average mean distance for all training points")
+        logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=-1)
         avg_mean_dist = pairwise.mean(axis=1).mean()
-        print("avg_mean_dist", avg_mean_dist)
+        logger.info("avg_mean_dist", avg_mean_dist)
 
         return avg_mean_dist
 
@@ -407,7 +410,7 @@ class DataHandler:
             drop_index = ~drop_index
             do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
 
-            print(
+            logger.info(
                 "remove_outliers() tossed",
                 len(do_predict) - do_predict.sum(),
                 "predictions because they were beyond 3 std deviations from training data.",
@@ -472,7 +475,7 @@ class DataHandler:
                     for p in config["freqai"]["corr_pairlist"]:
                         features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
 
-        print("number of features", len(features))
+        logger.info("number of features", len(features))
         return features
 
     def check_if_pred_in_training_spaces(self) -> None:
@@ -483,7 +486,7 @@ class DataHandler:
         from the training data set.
         """
 
-        print("checking if prediction features are in AOA")
+        logger.info("checking if prediction features are in AOA")
         distance = pairwise_distances(
             self.data_dictionary["train_features"],
             self.data_dictionary["prediction_features"],
@@ -497,7 +500,7 @@ class DataHandler:
             0,
         )
 
-        print(
+        logger.info(
             "Distance checker tossed",
             len(do_predict) - do_predict.sum(),
             "predictions for being too far from training data",
