@@ -1,61 +1,59 @@
 import logging
+from functools import reduce
+
+import numpy as np
+import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
-import pandas as pd
 from technical import qtpylib
-import numpy as np
-from freqtrade.strategy import (merge_informative_pair)
-from freqtrade.strategy.interface import IStrategy
+
 from freqtrade.freqai.strategy_bridge import CustomModel
-from functools import reduce
+from freqtrade.strategy import merge_informative_pair
+from freqtrade.strategy.interface import IStrategy
+
+
 logger = logging.getLogger(__name__)
+
 
 class FreqaiExampleStrategy(IStrategy):
     """
-    Example strategy showing how the user connects their own 
+    Example strategy showing how the user connects their own
     IFreqaiModel to the strategy. Namely, the user uses:
     self.model = CustomModel(self.config)
     self.model.bridge.start(dataframe, metadata)
 
-    to make predictions on their data. populate_any_indicators() automatically 
+    to make predictions on their data. populate_any_indicators() automatically
     generates the variety of features indicated by the user in the
     canonical freqtrade configuration file under config['freqai'].
     """
 
-    minimal_roi = {
-          "0": 0.01,
-          "240": -1
-     }
+    minimal_roi = {"0": 0.01, "240": -1}
 
     plot_config = {
-        'main_plot': {
+        "main_plot": {},
+        "subplots": {
+            "prediction": {"prediction": {"color": "blue"}},
+            "target_roi": {
+                "target_roi": {"color": "brown"},
+            },
+            "do_predict": {
+                "do_predict": {"color": "brown"},
+            },
         },
-        'subplots': {
-            "prediction":{
-                'prediction':{'color':'blue'}
-            },
-            "target_roi":{
-                'target_roi':{'color':'brown'},
-            },
-            "do_predict":{
-                'do_predict':{'color':'brown'},
-            },
-        }
     }
 
     stoploss = -0.05
     use_sell_signal = True
-    startup_candle_count: int = 1000 
-
+    startup_candle_count: int = 1000
 
     def informative_pairs(self):
-        pairs = self.freqai_info['corr_pairlist'] 
+        pairs = self.freqai_info["corr_pairlist"]
         informative_pairs = []
         for tf in self.timeframes:
             informative_pairs.append([(pair, tf) for pair in pairs])
         return informative_pairs
 
-    def populate_any_indicators(self, pair, df, tf, informative=None,coin=''):
+    def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
         """
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add
@@ -70,110 +68,116 @@ class FreqaiExampleStrategy(IStrategy):
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 
-        informative[coin+'rsi'] = ta.RSI(informative, timeperiod=14)
-        informative[coin+'mfi'] = ta.MFI(informative, timeperiod=25)
-        informative[coin+'adx'] = ta.ADX(informative, window=20)
+        informative[coin + "rsi"] = ta.RSI(informative, timeperiod=14)
+        informative[coin + "mfi"] = ta.MFI(informative, timeperiod=25)
+        informative[coin + "adx"] = ta.ADX(informative, window=20)
 
-        informative[coin+'20sma'] = ta.SMA(informative,timeperiod=20)
-        informative[coin+'21ema'] = ta.EMA(informative,timeperiod=21)
-        informative[coin+'bmsb'] = np.where(informative[coin+'20sma'].lt(informative[coin+'21ema']),1,0)
-        informative[coin+'close_over_20sma'] = informative['close']/informative[coin+'20sma']
+        informative[coin + "20sma"] = ta.SMA(informative, timeperiod=20)
+        informative[coin + "21ema"] = ta.EMA(informative, timeperiod=21)
+        informative[coin + "bmsb"] = np.where(
+            informative[coin + "20sma"].lt(informative[coin + "21ema"]), 1, 0
+        )
+        informative[coin + "close_over_20sma"] = informative["close"] / informative[coin + "20sma"]
 
-        informative[coin+'mfi'] = ta.MFI(informative, timeperiod=25)
+        informative[coin + "mfi"] = ta.MFI(informative, timeperiod=25)
 
-        informative[coin+'ema21'] = ta.EMA(informative, timeperiod=21)
-        informative[coin+'sma20'] = ta.SMA(informative, timeperiod=20)
+        informative[coin + "ema21"] = ta.EMA(informative, timeperiod=21)
+        informative[coin + "sma20"] = ta.SMA(informative, timeperiod=20)
         stoch = ta.STOCHRSI(informative, 15, 20, 2, 2)
-        informative[coin+'srsi-fk'] = stoch['fastk']
-        informative[coin+'srsi-fd'] = stoch['fastd']
+        informative[coin + "srsi-fk"] = stoch["fastk"]
+        informative[coin + "srsi-fd"] = stoch["fastd"]
 
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)
-        informative[coin+'bb_lowerband'] = bollinger['lower']
-        informative[coin+'bb_middleband'] = bollinger['mid']
-        informative[coin+'bb_upperband'] = bollinger['upper']
-        informative[coin+'bb_width'] = ((informative[coin+"bb_upperband"] - informative[coin+"bb_lowerband"]) / informative[coin+"bb_middleband"])
-        informative[coin+'close-bb_lower'] = informative['close'] / informative[coin+'bb_lowerband']
+        informative[coin + "bb_lowerband"] = bollinger["lower"]
+        informative[coin + "bb_middleband"] = bollinger["mid"]
+        informative[coin + "bb_upperband"] = bollinger["upper"]
+        informative[coin + "bb_width"] = (
+            informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
+        ) / informative[coin + "bb_middleband"]
+        informative[coin + "close-bb_lower"] = (
+            informative["close"] / informative[coin + "bb_lowerband"]
+        )
 
-        informative[coin+'roc'] = ta.ROC(informative, timeperiod=3)
-        informative[coin+'adx'] = ta.ADX(informative, window=14)
+        informative[coin + "roc"] = ta.ROC(informative, timeperiod=3)
+        informative[coin + "adx"] = ta.ADX(informative, window=14)
 
         macd = ta.MACD(informative)
-        informative[coin+'macd'] = macd['macd']
-        informative[coin+'pct-change'] = informative['close'].pct_change()
-        informative[coin+'relative_volume'] = informative['volume'] / informative['volume'].rolling(10).mean()
+        informative[coin + "macd"] = macd["macd"]
+        informative[coin + "pct-change"] = informative["close"].pct_change()
+        informative[coin + "relative_volume"] = (
+            informative["volume"] / informative["volume"].rolling(10).mean()
+        )
 
-        informative[coin+'pct-change'] = informative['close'].pct_change()
+        informative[coin + "pct-change"] = informative["close"].pct_change()
 
         indicators = [col for col in informative if col.startswith(coin)]
 
-        for n in range(self.freqai_info['feature_parameters']['shift']+1):
-            if n==0: continue
+        for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
+            if n == 0:
+                continue
             informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix('_shift-'+str(n))
-            informative = pd.concat((informative,informative_shift),axis=1)
+            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+            informative = pd.concat((informative, informative_shift), axis=1)
 
-        df = merge_informative_pair(df, informative, self.config['timeframe'], tf, ffill=True)
-        skip_columns = [(s + '_'+tf) for s in
-                        ['date', 'open', 'high', 'low', 'close', 'volume']]
+        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+        skip_columns = [(s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]]
         df = df.drop(columns=skip_columns)
 
         return df
 
-
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         # the configuration file parameters are stored here
-        self.freqai_info = self.config['freqai']
+        self.freqai_info = self.config["freqai"]
 
         # the model is instantiated here
         self.model = CustomModel(self.config)
 
-        print('Populating indicators...')
+        print("Populating indicators...")
 
-        # the following loops are necessary for building the features 
+        # the following loops are necessary for building the features
         # indicated by the user in the configuration file.
-        for tf in self.freqai_info['timeframes']:
-            dataframe = self.populate_any_indicators(metadata['pair'],
-                                                        dataframe.copy(), tf)
-            for i in self.freqai_info['corr_pairlist']:
-                dataframe = self.populate_any_indicators(i,
-                            dataframe.copy(), tf, coin=i.split("/")[0]+'-')
+        for tf in self.freqai_info["timeframes"]:
+            dataframe = self.populate_any_indicators(metadata["pair"], dataframe.copy(), tf)
+            for i in self.freqai_info["corr_pairlist"]:
+                dataframe = self.populate_any_indicators(
+                    i, dataframe.copy(), tf, coin=i.split("/")[0] + "-"
+                )
 
-        # the model will return 4 values, its prediction, an indication of whether or not the prediction 
-        # should be accepted, the target mean/std values from the labels used during each training period.
-        (dataframe['prediction'], dataframe['do_predict'], 
-            dataframe['target_mean'], dataframe['target_std']) = self.model.bridge.start(dataframe, metadata)
+        # the model will return 4 values, its prediction, an indication of whether or not the
+        # prediction should be accepted, the target mean/std values from the labels used during
+        # each training period.
+        (
+            dataframe["prediction"],
+            dataframe["do_predict"],
+            dataframe["target_mean"],
+            dataframe["target_std"],
+        ) = self.model.bridge.start(dataframe, metadata)
 
-        dataframe['target_roi'] = dataframe['target_mean']+dataframe['target_std']*0.5
-        dataframe['sell_roi'] = dataframe['target_mean']-dataframe['target_std']*1.5
+        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"] * 0.5
+        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"] * 1.5
         return dataframe
-
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         buy_conditions = [
-                    (dataframe['prediction'] > dataframe['target_roi'])
-                    &
-                    (dataframe['do_predict'] == 1)
+            (dataframe["prediction"] > dataframe["target_roi"]) & (dataframe["do_predict"] == 1)
         ]
 
         if buy_conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, buy_conditions), 'buy'] = 1
+            dataframe.loc[reduce(lambda x, y: x | y, buy_conditions), "buy"] = 1
 
         return dataframe
 
-
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-       # sell_goal = eval('self.'+metadata['pair'].split("/")[0]+'_sell_goal.value')
+        # sell_goal = eval('self.'+metadata['pair'].split("/")[0]+'_sell_goal.value')
         sell_conditions = [
-                    (dataframe['prediction'] < dataframe['sell_roi'])
-                    &
-                    (dataframe['do_predict'] == 1)
+            (dataframe["prediction"] < dataframe["sell_roi"]) & (dataframe["do_predict"] == 1)
         ]
         if sell_conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, sell_conditions), 'sell'] = 1
+            dataframe.loc[reduce(lambda x, y: x | y, sell_conditions), "sell"] = 1
 
         return dataframe
 
     def get_ticker_indicator(self):
-        return int(self.config['timeframe'][:-1])
+        return int(self.config["timeframe"][:-1])
