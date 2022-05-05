@@ -49,12 +49,10 @@
         }
     ],
     "freqai": {
-        "btc_pair": "BTC/USDT",
         "timeframes": [
             "5m",
             "15m"
         ],
-        "full_timerange": "20210601-20210901",
         "train_period": 30,
         "backtest_period": 7,
         "identifier": "example",
@@ -74,7 +72,6 @@
             "LINK/USDT",
             "DOT/USDT"
         ],
-        "training_timerange": "20211220-20220117",
         "feature_parameters": {
             "period": 12,
             "shift": 1,
