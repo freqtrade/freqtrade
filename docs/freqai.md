@@ -49,9 +49,8 @@ config setup includes:
 ```json
     "freqai": {
                 "timeframes" : ["5m","15m","4h"],
-                "full_timerange" : "20211220-20220220",
-                "train_period" : "month",
-                "backtest_period" : "week",
+                "train_period" : 30,
+                "backtest_period" : 7,
                 "identifier" :  "unique-id",
                 "base_features": [
                         "rsi",
@@ -63,18 +62,18 @@ config setup includes:
                         "LINK/USD",
                         "BNB/USD"
                 ],
-                "train_params" : {
+                "feature_parameters" : {
                         "period": 24,
                         "shift": 2,
                         "drop_features": false,
                         "DI_threshold": 1,
                         "weight_factor":  0,
                 },
-                "SPLIT_PARAMS" : {
+                "data_split_parameters" : {
                     "test_size": 0.25,
                     "random_state": 42
                 },
-                "CLASSIFIER_PARAMS" : {
+                "model_training_parameters" : {
                     "n_estimators": 100,
                     "random_state": 42,
                     "learning_rate": 0.02,
@@ -110,11 +109,11 @@ no. `timeframes` * no. `base_features` * no. `corr_pairlist` * no. `shift`_
 
 ### Deciding the sliding training window and backtesting duration
 
-`full_timerange` lets the user set the full backtesting range to train and
-backtest through. Meanwhile `train_period` is the sliding training window and
-`backtest_period` is the sliding backtesting window. In the present example,
-the user is asking Freqai to train and backtest the range of `20211220-20220220` (`month`).
-The user wishes to backtest each `week` with a newly trained model. This means that
+Users define the backtesting timerange with the typical `--timerange` parameter in the user
+configuration file. `train_period` is the duration of the sliding training window, while
+`backtest_period` is the sliding backtesting window, both in number of days. In the present example,
+the user is asking Freqai to use a training period of 30 days and backtest the subsequent 7 days.
+This means that if the user sets `--timerange 20210501-20210701`, 
 Freqai will train 8 separate models (because the full range comprises 8 weeks),
 and then backtest the subsequent week associated with each of the 8 training
 data set timerange months. Users can think of this as a "sliding window" which
@@ -128,7 +127,7 @@ month of data.
 The freqai training/backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel ExamplePredictionModel
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel ExamplePredictionModel --timerange 20210501-20210701
 ```
 
 where the user needs to have a FreqaiExampleStrategy that fits to the requirements outlined
@@ -178,19 +177,7 @@ and `make_labels()` to let them customize various aspects of their training proc
 
 ### Running the model live
 
-After the user has designed a desirable featureset, Freqai can be run in dry/live
-using the typical trade command:
-
-```bash
-freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.json --training_timerange '20211220-20220120'
-```
-
-Where the user has now specified exactly which of the models from the sliding window
-that they wish to run live using `--training_timerange` (typically this would be the most
-recent model trained). As of right now, freqai will
-not automatically retain itself, so the user needs to manually retrain and then
-reload the config file with a new `--training_timerange` in order to update the
-model.
+TODO: Freqai is not automated for live yet. 
 
 
 ## Data anylsis techniques
@@ -207,12 +194,6 @@ than past data via an exponential function:
 $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
 where $W_i$ is the weight of data point $i$ in a total set of $n$ data points._
-
-`drop_features` tells Freqai to train the model on the user defined features,
-followed by a feature importance evaluation where it drops the top and bottom
-performing features (there is evidence to suggest the top features may not be
-helpful in equity/crypto trading since the ultimate objective is to predict low
-frequency patterns, source: numerai)._
 
 Finally, `period` defines the offset used for the `labels`. In the present example,
 the user is asking for `labels` that are 24 candles in the future.
