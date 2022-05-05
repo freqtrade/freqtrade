@@ -36,7 +36,7 @@ class ExamplePredictionModel(IFreqaiModel):
         self.dh.data["s_mean"] = dataframe["s"].mean()
         self.dh.data["s_std"] = dataframe["s"].std()
 
-        logger.info("label mean", self.dh.data["s_mean"], "label std", self.dh.data["s_std"])
+        # logger.info("label mean", self.dh.data["s_mean"], "label std", self.dh.data["s_std"])
 
         return dataframe["s"]
 
@@ -77,11 +77,10 @@ class ExamplePredictionModel(IFreqaiModel):
         if self.feature_parameters["DI_threshold"]:
             self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
 
-        logger.info("length of train data", len(data_dictionary["train_features"]))
+        logger.info("length of train data %s", len(data_dictionary["train_features"]))
 
         model = self.fit(data_dictionary)
 
-        logger.info("Finished training")
         logger.info(f'--------------------done training {metadata["pair"]}--------------------')
 
         return model

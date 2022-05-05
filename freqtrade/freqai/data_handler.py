@@ -36,6 +36,7 @@ class DataHandler:
             config["freqai"]["backtest_period"],
         )
         self.data: Dict[Any, Any] = {}
+        self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
         self.freq_config = config["freqai"]
         self.predictions = np.array([])
@@ -57,10 +58,6 @@ class DataHandler:
             self.model_path.mkdir(parents=True, exist_ok=True)
 
         save_path = Path(self.model_path)
-
-        # if not os.path.exists(self.model_path):
-        #     os.mkdir(self.model_path)
-        # save_path = self.model_path + self.model_filename
 
         # Save the trained model
         dump(model, save_path / str(self.model_filename + "_model.joblib"))
@@ -179,10 +176,8 @@ class DataHandler:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
             logger.info(
-                "dropped",
+                "dropped %s training points due to NaNs, ensure all historical data downloaded",
                 len(unfiltered_dataframe) - len(filtered_dataframe),
-                "training data points due to NaNs, ensure you have downloaded",
-                "all historical training data",
             )
             self.data["filter_drop_index_training"] = drop_index
 
@@ -197,12 +192,9 @@ class DataHandler:
             drop_index = ~drop_index
             self.do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
             logger.info(
-                "dropped",
+                "dropped %s of %s prediction data points due to NaNs.",
                 len(self.do_predict) - self.do_predict.sum(),
-                "of",
                 len(filtered_dataframe),
-                "prediction data points due to NaNs. These are protected from prediction",
-                "with do_predict vector returned to strategy.",
             )
 
         return filtered_dataframe, labels
@@ -353,8 +345,8 @@ class DataHandler:
         pca2 = PCA(n_components=n_keep_components)
         self.data["n_kept_components"] = n_keep_components
         pca2 = pca2.fit(self.data_dictionary["train_features"])
-        logger.info("reduced feature dimension by", n_components - n_keep_components)
-        logger.info("explained variance", np.sum(pca2.explained_variance_ratio_))
+        logger.info("reduced feature dimension by %s", n_components - n_keep_components)
+        logger.info("explained variance %f", np.sum(pca2.explained_variance_ratio_))
         train_components = pca2.transform(self.data_dictionary["train_features"])
         test_components = pca2.transform(self.data_dictionary["test_features"])
 
@@ -383,7 +375,7 @@ class DataHandler:
         logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=-1)
         avg_mean_dist = pairwise.mean(axis=1).mean()
-        logger.info("avg_mean_dist", avg_mean_dist)
+        logger.info("avg_mean_dist %s", avg_mean_dist)
 
         return avg_mean_dist
 
@@ -411,9 +403,8 @@ class DataHandler:
             do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
 
             logger.info(
-                "remove_outliers() tossed",
+                "remove_outliers() tossed %s predictions",
                 len(do_predict) - do_predict.sum(),
-                "predictions because they were beyond 3 std deviations from training data.",
             )
             self.do_predict += do_predict
             self.do_predict -= 1
@@ -475,7 +466,7 @@ class DataHandler:
                     for p in config["freqai"]["corr_pairlist"]:
                         features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
 
-        logger.info("number of features", len(features))
+        logger.info("number of features %s", len(features))
         return features
 
     def check_if_pred_in_training_spaces(self) -> None:
@@ -486,7 +477,6 @@ class DataHandler:
         from the training data set.
         """
 
-        logger.info("checking if prediction features are in AOA")
         distance = pairwise_distances(
             self.data_dictionary["train_features"],
             self.data_dictionary["prediction_features"],
@@ -501,9 +491,8 @@ class DataHandler:
         )
 
         logger.info(
-            "Distance checker tossed",
+            "Distance checker tossed %s predictions for being too far from training data",
             len(do_predict) - do_predict.sum(),
-            "predictions for being too far from training data",
         )
 
         self.do_predict += do_predict
