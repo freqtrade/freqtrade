@@ -866,7 +866,6 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self):
-
         # We need at least 2 entry orders for averaging amounts and rates.
         # TODO: this condition could probably be removed
         if len(self.select_filled_orders(self.entry_side)) < 2:
