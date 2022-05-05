@@ -816,9 +816,7 @@ class Backtesting:
                 # Update trade open_rate on first filled order
                 # this is for cases where adjust_entry_order might have replaced the
                 # initial order from trade opening
-                if len(trade.select_filled_orders(trade.entry_side)) == 1:
-                    trade.open_rate = order.price
-                order.close_bt_order(current_time)
+                order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
             trade.orders.append(order)
@@ -1052,7 +1050,7 @@ class Backtesting:
                     # 3. Process entry orders.
                     order = trade.select_order(trade.entry_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
-                        order.close_bt_order(current_time)
+                        order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
                         LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
