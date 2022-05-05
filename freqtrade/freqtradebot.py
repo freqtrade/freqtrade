@@ -1578,7 +1578,6 @@ class FreqtradeBot(LoggingMixin):
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
                 trade.set_isolated_liq(self.exchange.get_liquidation_price(
-
                     leverage=trade.leverage,
                     pair=trade.pair,
                     amount=trade.amount,
