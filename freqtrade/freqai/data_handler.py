@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import pickle as pk
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -30,21 +31,26 @@ class DataHandler:
 
     def __init__(self, config: Dict[str, Any], dataframe: DataFrame):
         self.full_dataframe = dataframe
-        (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
-            config["freqai"]["full_timerange"],
-            config["freqai"]["train_period"],
-            config["freqai"]["backtest_period"],
-        )
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
-        self.freq_config = config["freqai"]
+        self.freqai_config = config["freqai"]
         self.predictions = np.array([])
         self.do_predict = np.array([])
         self.target_mean = np.array([])
         self.target_std = np.array([])
         self.model_path = Path()
         self.model_filename = ""
+
+        self.full_timerange = self.create_fulltimerange(
+            self.config["timerange"], self.freqai_config["train_period"]
+        )
+
+        (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
+            self.full_timerange,
+            config["freqai"]["train_period"],
+            config["freqai"]["backtest_period"],
+        )
 
     def save_data(self, model: Any) -> None:
         """
@@ -538,6 +544,29 @@ class DataHandler:
         self.target_std = np.append(filler, self.target_std)
 
         return
+
+    def create_fulltimerange(self, backtest_tr: str, backtest_period: int) -> str:
+        backtest_timerange = TimeRange.parse_timerange(backtest_tr)
+
+        backtest_timerange.startts = backtest_timerange.startts - backtest_period * SECONDS_IN_DAY
+        start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
+        stop = datetime.datetime.utcfromtimestamp(backtest_timerange.stopts)
+        full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
+
+        self.full_path = Path(
+            self.config["user_data_dir"]
+            / "models"
+            / str(full_timerange + self.freqai_config["identifier"])
+        )
+
+        if not self.full_path.is_dir():
+            self.full_path.mkdir(parents=True, exist_ok=True)
+            shutil.copy(
+                Path(self.config["config_files"][0]).name,
+                Path(self.full_path / self.config["config_files"][0]),
+            )
+
+        return full_timerange
 
     def np_encoder(self, object):
         if isinstance(object, np.generic):

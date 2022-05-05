@@ -1,6 +1,5 @@
 import gc
 import logging
-import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -32,23 +31,12 @@ class IFreqaiModel(ABC):
         self.data_split_parameters = config["freqai"]["data_split_parameters"]
         self.model_training_parameters = config["freqai"]["model_training_parameters"]
         self.feature_parameters = config["freqai"]["feature_parameters"]
-        self.full_path = Path(
-            config["user_data_dir"]
-            / "models"
-            / str(self.freqai_info["full_timerange"] + self.freqai_info["identifier"])
-        )
+        self.backtest_timerange = config["timerange"]
 
         self.time_last_trained = None
         self.current_time = None
         self.model = None
         self.predictions = None
-
-        if not self.full_path.is_dir():
-            self.full_path.mkdir(parents=True, exist_ok=True)
-            shutil.copy(
-                self.config["config_files"][0],
-                Path(self.full_path / self.config["config_files"][0]),
-            )
 
     def start(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -82,12 +70,11 @@ class IFreqaiModel(ABC):
             gc.collect()
             # self.config['timerange'] = tr_train
             self.dh.data = {}  # clean the pair specific data between models
-            self.freqai_info["training_timerange"] = tr_train
+            self.training_timerange = tr_train
             dataframe_train = self.dh.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = self.dh.slice_dataframe(tr_backtest, dataframe)
             logger.info("training %s for %s", self.pair, tr_train)
-            # self.dh.model_path = self.full_path + "/" + "sub-train" + "-" + str(tr_train) + "/"
-            self.dh.model_path = Path(self.full_path / str("sub-train" + "-" + str(tr_train)))
+            self.dh.model_path = Path(self.dh.full_path / str("sub-train" + "-" + str(tr_train)))
             if not self.model_exists(self.pair, training_timerange=tr_train):
                 self.model = self.train(dataframe_train, metadata)
                 self.dh.save_data(self.model)

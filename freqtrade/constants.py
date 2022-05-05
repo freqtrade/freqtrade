@@ -478,13 +478,11 @@ CONF_SCHEMA = {
             "type": "object",
             "properties": {
                 "timeframes": {"type": "list"},
-                "full_timerange": {"type": "str"},
                 "train_period": {"type": "integer", "default": 0},
                 "backtest_period": {"type": "integer", "default": 7},
                 "identifier": {"type": "str", "default": "example"},
                 "base_features": {"type": "list"},
                 "corr_pairlist": {"type": "list"},
-                "training_timerange": {"type": "string", "default": None},
                 "feature_parameters": {
                     "type": "object",
                     "properties": {
