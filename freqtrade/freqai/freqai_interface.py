@@ -69,12 +69,7 @@ class IFreqaiModel(ABC):
         self.pair = metadata["pair"]
         self.dh = DataHandler(self.config, dataframe)
 
-        logger.info(
-            "going to train",
-            len(self.dh.training_timeranges),
-            "timeranges:",
-            self.dh.training_timeranges,
-        )
+        logger.info("going to train %s timeranges", len(self.dh.training_timeranges))
 
         # Loop enforcing the sliding window training/backtesting paragigm
         # tr_train is the training time range e.g. 1 historical month
@@ -90,14 +85,14 @@ class IFreqaiModel(ABC):
             self.freqai_info["training_timerange"] = tr_train
             dataframe_train = self.dh.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = self.dh.slice_dataframe(tr_backtest, dataframe)
-            logger.info("training", self.pair, "for", tr_train)
+            logger.info("training %s for %s", self.pair, tr_train)
             # self.dh.model_path = self.full_path + "/" + "sub-train" + "-" + str(tr_train) + "/"
             self.dh.model_path = Path(self.full_path / str("sub-train" + "-" + str(tr_train)))
             if not self.model_exists(self.pair, training_timerange=tr_train):
                 self.model = self.train(dataframe_train, metadata)
                 self.dh.save_data(self.model)
             else:
-                self.model = self.dh.load_data(self.dh.model_path)
+                self.model = self.dh.load_data()
 
             preds, do_preds = self.predict(dataframe_backtest)
 
@@ -167,7 +162,7 @@ class IFreqaiModel(ABC):
         path_to_modelfile = Path(self.dh.model_path / str(self.dh.model_filename + "_model.joblib"))
         file_exists = path_to_modelfile.is_file()
         if file_exists:
-            logger.info("Found model at", self.dh.model_path / self.dh.model_filename)
+            logger.info("Found model at %s", self.dh.model_path / self.dh.model_filename)
         else:
-            logger.info("Could not find model at", self.dh.model_path / self.dh.model_filename)
+            logger.info("Could not find model at %s", self.dh.model_path / self.dh.model_filename)
         return file_exists
