@@ -14,7 +14,7 @@ class Strategy003(WAOStrategy):
     brain = 'Freq_Strategy003'
 
     def __init__(self, config: dict):
-        super().__init__(config, self.brain, 20)
+        super().__init__(config, self.brain, 20, 0.1)
 
     """
     Strategy 003

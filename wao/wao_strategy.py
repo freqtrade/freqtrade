@@ -15,9 +15,9 @@ class WAOStrategy(IStrategy):
         'stoploss_on_exchange': False
     }
 
-    def __init__(self, config: dict, brain, time_out_hours):
+    def __init__(self, config: dict, brain, time_out_hours, dup):
         super().__init__(config)
-        self.controller = WAOStrategyController(brain, time_out_hours)
+        self.controller = WAOStrategyController(brain, time_out_hours, dup)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, entry_tag: Optional[str],
