@@ -4,10 +4,12 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
-import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
 
+from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 
@@ -37,8 +39,9 @@ class IFreqaiModel(ABC):
         self.current_time = None
         self.model = None
         self.predictions = None
+        self.live_trained_timerange = None
 
-    def start(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def start(self, dataframe: DataFrame, metadata: dict, dp: DataProvider) -> DataFrame:
         """
         Entry point to the FreqaiModel, it will train a new model if
         necesssary before making the prediction.
@@ -56,6 +59,9 @@ class IFreqaiModel(ABC):
         """
         self.pair = metadata["pair"]
         self.dh = FreqaiDataKitchen(self.config, dataframe)
+
+        if dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+            logger.info('testing live')
 
         logger.info("going to train %s timeranges", len(self.dh.training_timeranges))
 
@@ -99,7 +105,7 @@ class IFreqaiModel(ABC):
         :dataframe: the full dataframe for the present training period
         """
 
-        return dataframe
+        return
 
     @abstractmethod
     def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Any:
@@ -124,8 +130,10 @@ class IFreqaiModel(ABC):
         all the training and test data/labels.
         """
 
+        return
+
     @abstractmethod
-    def predict(self, dataframe: DataFrame) -> Tuple[np.array, np.array]:
+    def predict(self, dataframe: DataFrame) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
