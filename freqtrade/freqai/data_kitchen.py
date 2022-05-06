@@ -317,11 +317,14 @@ class FreqaiDataKitchen:
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
 
             # associated backtest period
+
+            timerange_backtest.startts = timerange_train.stopts
+
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            timerange_backtest.startts = timerange_train.stopts
-            timerange_backtest.stopts = timerange_backtest.startts + bt_period
+            else:
+                timerange_backtest.stopts = timerange_backtest.startts + bt_period
 
             start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
