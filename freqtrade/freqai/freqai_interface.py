@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from freqtrade.freqai.data_handler import DataHandler
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 
 pd.options.mode.chained_assignment = None
@@ -55,7 +55,7 @@ class IFreqaiModel(ABC):
         :metadata: pair metadataa coming from strategy.
         """
         self.pair = metadata["pair"]
-        self.dh = DataHandler(self.config, dataframe)
+        self.dh = FreqaiDataKitchen(self.config, dataframe)
 
         logger.info("going to train %s timeranges", len(self.dh.training_timeranges))
 

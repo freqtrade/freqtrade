@@ -22,7 +22,7 @@ SECONDS_IN_DAY = 86400
 logger = logging.getLogger(__name__)
 
 
-class DataHandler:
+class FreqaiDataKitchen:
     """
     Class designed to handle all the data for the IFreqaiModel class model.
     Functionalities include holding, saving, loading, and analyzing the data.
@@ -291,32 +291,48 @@ class DataHandler:
         bt_period = bt_split * SECONDS_IN_DAY
 
         full_timerange = TimeRange.parse_timerange(tr)
+        config_timerange = TimeRange.parse_timerange(self.config["timerange"])
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
 
         tr_training_list = []
         tr_backtesting_list = []
         first = True
+        # within_config_timerange = True
         while True:
             if not first:
                 timerange_train.startts = timerange_train.startts + bt_period
             timerange_train.stopts = timerange_train.startts + train_period
 
-            # if a full training period doesnt fit, we stop
-            if timerange_train.stopts > full_timerange.stopts:
-                break
+            # make sure we finish with a full backtest
+            # if timerange_train.stopts > config_timerange.stopts - bt_period:
+            #     within_config_timerange = False
+            # timerange_train.stopts = config_timerange.stopts - bt_period
+            # # if a full training period doesnt fit, we stop
+            # if timerange_train.stopts > full_timerange.stopts:
+            #     break
             first = False
             start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_train.stopts)
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
 
             # associated backtest period
+            if timerange_backtest.stopts > config_timerange.stopts:
+                timerange_backtest.stopts = config_timerange.stopts
+
             timerange_backtest.startts = timerange_train.stopts
             timerange_backtest.stopts = timerange_backtest.startts + bt_period
+
             start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
             tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
 
+            # ensure we are predicting on exactly same amount of data as requested by user defined
+            #  --timerange
+            if timerange_backtest.stopts == config_timerange.stopts:
+                break
+
+        print(tr_training_list, tr_backtesting_list)
         return tr_training_list, tr_backtesting_list
 
     def slice_dataframe(self, tr: str, df: DataFrame) -> DataFrame:
