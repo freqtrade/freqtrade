@@ -84,10 +84,13 @@ class IFreqaiModel(ABC):
             preds, do_preds = self.predict(dataframe_backtest)
 
             self.dh.append_predictions(preds, do_preds, len(dataframe_backtest))
+            print('predictions', len(self.dh.full_predictions),
+                  'do_predict', len(self.dh.full_do_predict))
 
         self.dh.fill_predictions(len(dataframe))
 
-        return self.dh.predictions, self.dh.do_predict, self.dh.target_mean, self.dh.target_std
+        return (self.dh.full_predictions, self.dh.full_do_predict,
+                self.dh.full_target_mean, self.dh.full_target_std)
 
     def make_labels(self, dataframe: DataFrame) -> DataFrame:
         """

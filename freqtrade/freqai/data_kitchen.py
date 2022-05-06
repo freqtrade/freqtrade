@@ -39,6 +39,10 @@ class FreqaiDataKitchen:
         self.do_predict = np.array([])
         self.target_mean = np.array([])
         self.target_std = np.array([])
+        self.full_predictions = np.array([])
+        self.full_do_predict = np.array([])
+        self.full_target_mean = np.array([])
+        self.full_target_std = np.array([])
         self.model_path = Path()
         self.model_filename = ""
 
@@ -313,11 +317,10 @@ class FreqaiDataKitchen:
 
             timerange_backtest.startts = timerange_train.stopts
 
+            timerange_backtest.stopts = timerange_backtest.startts + bt_period
+
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
-
-            else:
-                timerange_backtest.stopts = timerange_backtest.startts + bt_period
 
             start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
@@ -328,7 +331,7 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts == config_timerange.stopts:
                 break
 
-        # print(tr_training_list, tr_backtesting_list)
+        print(tr_training_list, tr_backtesting_list)
         return tr_training_list, tr_backtesting_list
 
     def slice_dataframe(self, tr: str, df: DataFrame) -> DataFrame:
@@ -536,10 +539,10 @@ class FreqaiDataKitchen:
         ones = np.ones(len_dataframe)
         s_mean, s_std = ones * self.data["s_mean"], ones * self.data["s_std"]
 
-        self.predictions = np.append(self.predictions, predictions)
-        self.do_predict = np.append(self.do_predict, do_predict)
-        self.target_mean = np.append(self.target_mean, s_mean)
-        self.target_std = np.append(self.target_std, s_std)
+        self.full_predictions = np.append(self.full_predictions, predictions)
+        self.full_do_predict = np.append(self.full_do_predict, do_predict)
+        self.full_target_mean = np.append(self.full_target_mean, s_mean)
+        self.full_target_std = np.append(self.full_target_std, s_std)
 
         return
 
@@ -549,11 +552,11 @@ class FreqaiDataKitchen:
         when it goes back to the strategy. These rows are not included in the backtest.
         """
 
-        filler = np.zeros(len_dataframe - len(self.predictions))  # startup_candle_count
-        self.predictions = np.append(filler, self.predictions)
-        self.do_predict = np.append(filler, self.do_predict)
-        self.target_mean = np.append(filler, self.target_mean)
-        self.target_std = np.append(filler, self.target_std)
+        filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
+        self.full_predictions = np.append(filler, self.full_predictions)
+        self.full_do_predict = np.append(filler, self.full_do_predict)
+        self.full_target_mean = np.append(filler, self.full_target_mean)
+        self.full_target_std = np.append(filler, self.full_target_std)
 
         return
 
