@@ -719,13 +719,13 @@ class DigDeeperStrategy(IStrategy):
 The `adjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
 Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
 
-Orders can ba cancelled out of this callback by returning `None`.
+Orders can be cancelled out of this callback by returning `None`.
 
 Returning `current_order_rate` will keep the order on the exchange "as is".
 Returning any other price will cancel the existing order, and replace it with a new order.
 
 The trade open-date (`trade.open_date_utc`) will remain at the time of the very first order placed.
-Please makes sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.
+Please make sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.
 
 !!! Warning "Regular timeout"
     Entry `unfilledtimeout` mechanism (as well as `check_entry_timeout()`) takes precedence over this.
