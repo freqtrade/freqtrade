@@ -204,9 +204,9 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        if self.config.get('freqai', {}).get('train_period') > 0:
-            self.required_startup += int((self.config['freqai']['train_period'] * 86400) /
-                                         timeframe_to_seconds(self.config['timeframe']))
+        if self.config.get('freqai') is not None:
+            self.required_startup += int((self.config.get('freqai', {}).get('train_period') *
+                                         86400) / timeframe_to_seconds(self.config['timeframe']))
             logger.info("Increasing startup_candle_count for freqai to %s", self.required_startup)
             self.config['startup_candle_count'] = self.required_startup
 
