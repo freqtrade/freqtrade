@@ -13,7 +13,7 @@ def bot_loop_start(self, **kwargs) -> None:
     pass
 
 def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate: float,
-                       entry_tag: 'Optional[str]', **kwargs) -> float:
+                       entry_tag: Optional[str], **kwargs) -> float:
     """
     Custom entry price logic, returning the new entry price.
 
@@ -30,7 +30,7 @@ def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate:
     """
     return proposed_rate
 
-def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+def adjust_entry_price(self, trade: 'Trade', order: 'Optional[Order]', pair: str,
                         current_time: datetime, proposed_rate: float, current_order_rate: float,
                         entry_tag: Optional[str], side: str, **kwargs) -> float:
     """
@@ -81,7 +81,7 @@ def custom_exit_price(self, pair: str, trade: 'Trade',
 
 def custom_stake_amount(self, pair: str, current_time: 'datetime', current_rate: float,
                         proposed_stake: float, min_stake: float, max_stake: float,
-                        side: str, entry_tag: 'Optional[str]', **kwargs) -> float:
+                        side: str, entry_tag: Optional[str], **kwargs) -> float:
     """
     Customize stake size for each new trade.
 
@@ -146,7 +146,7 @@ def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', curre
     return None
 
 def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                        time_in_force: str, current_time: datetime, entry_tag: 'Optional[str]',
+                        time_in_force: str, current_time: datetime, entry_tag: Optional[str],
                         side: str, **kwargs) -> bool:
     """
     Called right before placing a entry order.
@@ -245,7 +245,7 @@ def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
 
 def adjust_trade_position(self, trade: 'Trade', current_time: 'datetime',
                           current_rate: float, current_profit: float, min_stake: float,
-                          max_stake: float, **kwargs) -> 'Optional[float]':
+                          max_stake: float, **kwargs) -> Optional[float]:
     """
     Custom trade adjustment logic, returning the stake amount that a trade should be increased.
     This means extra buy orders with additional fees.
