@@ -831,6 +831,9 @@ class LocalTrade():
             interest_rate=(interest_rate or self.interest_rate)
         )
 
+        if len(self.select_filled_orders(self.entry_side)) == 0:
+            return 0.0
+
         if self.is_short:
             profit = self.open_trade_value - close_trade_value
         else:
@@ -857,9 +860,10 @@ class LocalTrade():
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and self.open_trade_value == 0.0)
+        no_filled_orders = (len(self.select_filled_orders(self.entry_side)) == 0)
         leverage = self.leverage or 1.0
 
-        if (short_close_zero or long_close_zero):
+        if (short_close_zero or long_close_zero or no_filled_orders):
             return 0.0
         else:
             if self.is_short:
