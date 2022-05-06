@@ -110,8 +110,6 @@ class IFreqaiModel(ABC):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        return Any
-
     @abstractmethod
     def fit(self) -> Any:
         """
@@ -123,8 +121,6 @@ class IFreqaiModel(ABC):
         all the training and test data/labels.
         """
 
-        return Any
-
     @abstractmethod
     def predict(self, dataframe: DataFrame) -> Tuple[np.array, np.array]:
         """
@@ -135,8 +131,6 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
-
-        return np.array([]), np.array([])
 
     def model_exists(self, pair: str, training_timerange: str) -> bool:
         """
