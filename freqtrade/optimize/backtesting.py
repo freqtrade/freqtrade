@@ -813,9 +813,6 @@ class Backtesting:
                 cost=stake_amount + trade.fee_open,
             )
             if pos_adjust and self._get_order_filled(order.price, row):
-                # Update trade open_rate on first filled order
-                # this is for cases where adjust_entry_order might have replaced the
-                # initial order from trade opening
                 order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)

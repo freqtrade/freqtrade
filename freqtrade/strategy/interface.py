@@ -476,7 +476,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Entry price re-adjustment logic, returning the user desired limit price.
-        This only executes when a order was already placed, still open(unfilled fully or partially)
+        This only executes when a order was already placed, still open (unfilled fully or partially)
         and not timed out on subsequent candles after entry trigger.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-callbacks/

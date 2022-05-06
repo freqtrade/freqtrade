@@ -719,14 +719,17 @@ class DigDeeperStrategy(IStrategy):
 The `adjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
 Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
 
-!!! Note "Simple Order Cancelation"
-    This also allows simple cancelation without an replacement order. This behavior occurs when `None` is returned.
+Orders can ba cancelled out of this callback by returning `None`.
 
-!!! Note "Maintaining Order"
-    Maintaining existing order on exchange is facilitated. This behavior occurs when `order.price` is returned.
+Returning `current_order_rate` will keep the order on the exchange "as is".
+Returning any other price will cancel the existing order, and replace it with a new order.
 
-!!! Warning 
-    Entry `unfilledtimeout` mechanism takes precedence over this. Be sure to update timeout values to match your expectancy.
+The trade open-date (`trade.open_date_utc`) will remain at the time of the very first order placed.
+Please makes sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.
+
+!!! Warning "Regular timeout"
+    Entry `unfilledtimeout` mechanism (as well as `check_entry_timeout()`) takes precedence over this.
+    Entry Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.
 
 ```python
 from freqtrade.persistence import Trade
@@ -741,7 +744,7 @@ class AwesomeStrategy(IStrategy):
                            entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Entry price re-adjustment logic, returning the user desired limit price.
-        This only executes when a order was already placed, still open(unfilled fully or partially)
+        This only executes when a order was already placed, still open (unfilled fully or partially)
         and not timed out on subsequent candles after entry trigger.
 
         When not implemented by a strategy, returns current_order_rate as default.
