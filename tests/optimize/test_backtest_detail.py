@@ -783,6 +783,34 @@ tc49 = BTContainer(data=[
     trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
 )
 
+# Test 50: Custom-entry-price below all candles - readjust order cancels order
+tc50 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust - cancel order
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=4200, adjust_entry_price=None,
+    trades=[]
+)
+
+# Test 51: Custom-entry-price below all candles - readjust order leaves order in place and timeout.
+tc51 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust - cancel order
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=4200, adjust_entry_price=4200,
+    trades=[]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -834,6 +862,8 @@ TESTS = [
     tc47,
     tc48,
     tc49,
+    tc50,
+    tc51,
 ]
 
 
