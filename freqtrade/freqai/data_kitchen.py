@@ -304,13 +304,6 @@ class FreqaiDataKitchen:
                 timerange_train.startts = timerange_train.startts + bt_period
             timerange_train.stopts = timerange_train.startts + train_period
 
-            # make sure we finish with a full backtest
-            # if timerange_train.stopts > config_timerange.stopts - bt_period:
-            #     within_config_timerange = False
-            # timerange_train.stopts = config_timerange.stopts - bt_period
-            # # if a full training period doesnt fit, we stop
-            # if timerange_train.stopts > full_timerange.stopts:
-            #     break
             first = False
             start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_train.stopts)
@@ -335,7 +328,7 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts == config_timerange.stopts:
                 break
 
-        print(tr_training_list, tr_backtesting_list)
+        # print(tr_training_list, tr_backtesting_list)
         return tr_training_list, tr_backtesting_list
 
     def slice_dataframe(self, tr: str, df: DataFrame) -> DataFrame:
