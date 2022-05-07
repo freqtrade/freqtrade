@@ -494,3 +494,4 @@ TradeList = List[List]
 
 LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
+BuySell = Literal['buy', 'sell']

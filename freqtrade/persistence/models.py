@@ -13,7 +13,7 @@ from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES, LongShort
+from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES, BuySell, LongShort
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -386,7 +386,7 @@ class LocalTrade():
             return "buy"
 
     @property
-    def exit_side(self) -> str:
+    def exit_side(self) -> BuySell:
         if self.is_short:
             return "buy"
         else:

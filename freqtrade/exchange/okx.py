@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 
 import ccxt
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
@@ -52,7 +53,7 @@ class Okx(Exchange):
         return params
 
     @retrier
-    def _lev_prep(self, pair: str, leverage: float, side: str):
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
         if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
             try:
                 # TODO-lev: Test me properly (check mgnMode passed)

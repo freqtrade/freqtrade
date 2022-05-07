@@ -13,7 +13,7 @@ from schedule import Scheduler
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.constants import LongShort
+from freqtrade.constants import BuySell, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -594,7 +594,8 @@ class FreqtradeBot(LoggingMixin):
         """
         time_in_force = self.strategy.order_time_in_force['entry']
 
-        [side, name] = ['sell', 'Short'] if is_short else ['buy', 'Long']
+        side: BuySell = 'sell' if is_short else 'buy'
+        name = 'Short' if is_short else 'Long'
         trade_side: LongShort = 'short' if is_short else 'long'
         pos_adjust = trade is not None
 
