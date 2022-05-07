@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import ccxt
 from pandas import DataFrame
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
@@ -95,7 +96,7 @@ class Kraken(Exchange):
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float,
-                 order_types: Dict, side: str, leverage: float) -> Dict:
+                 order_types: Dict, side: BuySell, leverage: float) -> Dict:
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
@@ -165,12 +166,14 @@ class Kraken(Exchange):
 
     def _get_params(
         self,
+        side: BuySell,
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = 'gtc'
     ) -> Dict:
         params = super()._get_params(
+            side=side,
             ordertype=ordertype,
             leverage=leverage,
             reduceOnly=reduceOnly,

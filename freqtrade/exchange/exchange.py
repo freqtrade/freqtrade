@@ -198,6 +198,7 @@ class Exchange:
 
         if self.trading_mode != TradingMode.SPOT:
             self.fill_leverage_tiers()
+        self.additional_exchange_init()
 
     def __del__(self):
         """
@@ -293,6 +294,14 @@ class Exchange:
     def precisionMode(self) -> str:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
+
+    def additional_exchange_init(self) -> None:
+        """
+        Additional exchange initialization logic.
+        .api will be available at this point.
+        Must be overridden in child methods if required.
+        """
+        pass
 
     def _log_exchange_response(self, endpoint, response) -> None:
         """ Log exchange responses """
@@ -937,13 +946,14 @@ class Exchange:
 
     # Order handling
 
-    def _lev_prep(self, pair: str, leverage: float, side: str):
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
         if self.trading_mode != TradingMode.SPOT:
             self.set_margin_mode(pair, self.margin_mode)
             self._set_leverage(leverage, pair)
 
     def _get_params(
         self,
+        side: BuySell,
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
@@ -973,7 +983,7 @@ class Exchange:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
             return dry_order
 
-        params = self._get_params(ordertype, leverage, reduceOnly, time_in_force)
+        params = self._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
@@ -1058,7 +1068,7 @@ class Exchange:
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict,
-                 side: str, leverage: float) -> Dict:
+                 side: BuySell, leverage: float) -> Dict:
         """
         creates a stoploss order.
         requires `_ft_has['stoploss_order_types']` to be set as a dict mapping limit and market

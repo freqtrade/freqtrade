@@ -35,14 +35,48 @@ class Okx(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
+    net_only = True
+
+    @retrier
+    def additional_exchange_init(self) -> None:
+        """
+        Additional exchange initialization logic.
+        .api will be available at this point.
+        Must be overridden in child methods if required.
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
+                accounts = self._api.fetch_accounts()
+                if len(accounts) > 0:
+                    self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def _get_posSide(self, side: BuySell, reduceOnly: bool):
+        if self.net_only:
+            return 'net'
+        if not reduceOnly:
+            # Enter
+            return 'long' if side == 'buy' else 'short'
+        else:
+            # Exit
+            return 'long' if side == 'sell' else 'short'
+
     def _get_params(
         self,
+        side: BuySell,
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = 'gtc',
     ) -> Dict:
         params = super()._get_params(
+            side=side,
             ordertype=ordertype,
             leverage=leverage,
             reduceOnly=reduceOnly,
@@ -50,6 +84,7 @@ class Okx(Exchange):
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params['tdMode'] = self.margin_mode.value
+            params['posSide'] = self._get_posSide(side, reduceOnly)
         return params
 
     @retrier
@@ -62,7 +97,7 @@ class Okx(Exchange):
                     symbol=pair,
                     params={
                         "mgnMode": self.margin_mode.value,
-                        # "posSide": "net"",
+                        "posSide": self._get_posSide(side, False),
                     })
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
