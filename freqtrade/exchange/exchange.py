@@ -92,8 +92,8 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
-        self._api: ccxt.Exchange = None
-        self._api_async: ccxt_async.Exchange = None
+        self._api: ccxt.Exchange
+        self._api_async: ccxt_async.Exchange
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
@@ -291,7 +291,7 @@ class Exchange:
         return self._markets
 
     @property
-    def precisionMode(self) -> str:
+    def precisionMode(self) -> int:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
 
@@ -322,7 +322,7 @@ class Exchange:
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
             timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
-    def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
+    def get_markets(self, base_currencies: List[str] = [], quote_currencies: List[str] = [],
                     spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
                     tradable_only: bool = True,
                     active_only: bool = False) -> Dict[str, Any]:
@@ -1718,7 +1718,7 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
-                                        until_ms: int = None
+                                        until_ms: Optional[int] = None
                                         ) -> Tuple[str, str, str, List]:
         """
         Download historic ohlcv
@@ -1779,7 +1779,7 @@ class Exchange:
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True,
-                             drop_incomplete: bool = None
+                             drop_incomplete: Optional[bool] = None
                              ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result

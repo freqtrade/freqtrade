@@ -27,7 +27,7 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
         return True
     logger.info("Checking exchange...")
 
-    exchange = config.get('exchange', {}).get('name').lower()
+    exchange = config.get('exchange', {}).get('name', '').lower()
     if not exchange:
         raise OperationalException(
             f'This command requires a configured exchange. You should either use '
