@@ -17,6 +17,7 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
+* [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
 
 !!! Tip "Callback calling sequence"
@@ -711,6 +712,69 @@ class DigDeeperStrategy(IStrategy):
 
         return None
 
+```
+
+## Adjust Entry Price
+
+The `adjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
+Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
+
+Orders can be cancelled out of this callback by returning `None`.
+
+Returning `current_order_rate` will keep the order on the exchange "as is".
+Returning any other price will cancel the existing order, and replace it with a new order.
+
+The trade open-date (`trade.open_date_utc`) will remain at the time of the very first order placed.
+Please make sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.
+
+!!! Warning "Regular timeout"
+    Entry `unfilledtimeout` mechanism (as well as `check_entry_timeout()`) takes precedence over this.
+    Entry Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.
+
+```python
+from freqtrade.persistence import Trade
+from datetime import timedelta
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float, current_order_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+        """
+        Entry price re-adjustment logic, returning the user desired limit price.
+        This only executes when a order was already placed, still open (unfilled fully or partially)
+        and not timed out on subsequent candles after entry trigger.
+
+        When not implemented by a strategy, returns current_order_rate as default.
+        If current_order_rate is returned then the existing order is maintained.
+        If None is returned then order gets canceled but not replaced by a new one.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: Trade object.
+        :param order: Order object
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.
+        :param current_order_rate: Rate of the existing order in place.
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+
+        """
+        # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
+            # just cancel the order if it has been filled more than half of the amount
+            if order.filled > order.remaining:
+                return None
+            else:
+                dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+                current_candle = dataframe.iloc[-1].squeeze()
+                # desired price
+                return current_candle['sma_200']
+        # default: maintain existing order
+        return current_order_rate
 ```
 
 ## Leverage Callback

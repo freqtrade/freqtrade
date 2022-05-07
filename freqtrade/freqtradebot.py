@@ -22,6 +22,7 @@ from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, 
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -190,8 +191,8 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
-            # Check and handle any timed out open orders
-            self.check_handle_timedout()
+            # Check for exchange cancelations, timeouts and user requested replace
+            self.manage_open_orders()
 
         # Protect from collisions with force_exit.
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
@@ -1115,13 +1116,13 @@ class FreqtradeBot(LoggingMixin):
             return True
         return False
 
-    def check_handle_timedout(self) -> None:
+    def manage_open_orders(self) -> None:
         """
-        Check if any orders are timed out and cancel if necessary
-        :param timeoutvalue: Number of minutes until order is considered timed out
+        Management of open orders on exchange. Unfilled orders might be cancelled if timeout
+        was met or replaced if there's a new candle and user has requested it.
+        Timeout setting takes priority over limit order adjustment request.
         :return: None
         """
-
         for trade in Trade.get_open_order_trades():
             try:
                 if not trade.open_order_id:
@@ -1132,33 +1133,87 @@ class FreqtradeBot(LoggingMixin):
                 continue
 
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
-            is_entering = order['side'] == trade.entry_side
             not_closed = order['status'] == 'open' or fully_cancelled
-            max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
-
             order_obj = trade.select_order_by_order_id(trade.open_order_id)
 
-            if not_closed and (fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
-                trade, order_obj, datetime.now(timezone.utc)))
-            ):
-                if is_entering:
-                    self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+            if not_closed:
+                if fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
+                   trade, order_obj, datetime.now(timezone.utc))):
+                    self.handle_timedout_order(order, trade)
                 else:
-                    canceled = self.handle_cancel_exit(
-                        trade, order, constants.CANCEL_REASON['TIMEOUT'])
-                    canceled_count = trade.get_exit_order_count()
-                    max_timeouts = self.config.get(
-                        'unfilledtimeout', {}).get('exit_timeout_count', 0)
-                    if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
-                        logger.warning(f'Emergency exiting trade {trade}, as the exit order '
-                                       f'timed out {max_timeouts} times.')
-                        try:
-                            self.execute_trade_exit(
-                                trade, order.get('price'),
-                                exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
-                        except DependencyException as exception:
-                            logger.warning(
-                                f'Unable to emergency sell trade {trade.pair}: {exception}')
+                    self.replace_order(order, order_obj, trade)
+
+    def handle_timedout_order(self, order: Dict, trade: Trade) -> None:
+        """
+        Check if current analyzed order timed out and cancel if necessary.
+        :param order: Order dict grabbed with exchange.fetch_order()
+        :param trade: Trade object.
+        :return: None
+        """
+        if order['side'] == trade.entry_side:
+            self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+        else:
+            canceled = self.handle_cancel_exit(
+                trade, order, constants.CANCEL_REASON['TIMEOUT'])
+            canceled_count = trade.get_exit_order_count()
+            max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
+            if canceled and max_timeouts > 0 and canceled_count >= max_timeouts:
+                logger.warning(f'Emergency exiting trade {trade}, as the exit order '
+                               f'timed out {max_timeouts} times.')
+                try:
+                    self.execute_trade_exit(
+                        trade, order['price'],
+                        exit_check=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
+                except DependencyException as exception:
+                    logger.warning(
+                        f'Unable to emergency sell trade {trade.pair}: {exception}')
+
+    def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
+        """
+        Check if current analyzed entry order should be replaced or simply cancelled.
+        To simply cancel the existing order(no replacement) adjust_entry_price() should return None
+        To maintain existing order adjust_entry_price() should return order_obj.price
+        To replace existing order adjust_entry_price() should return desired price for limit order
+        :param order: Order dict grabbed with exchange.fetch_order()
+        :param order_obj: Order object.
+        :param trade: Trade object.
+        :return: None
+        """
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                  self.strategy.timeframe)
+        latest_candle_open_date = analyzed_df.iloc[-1]['date'] if len(analyzed_df) > 0 else None
+        latest_candle_close_date = timeframe_to_next_date(self.strategy.timeframe,
+                                                          latest_candle_open_date)
+        # Check if new candle
+        if order_obj and latest_candle_close_date > order_obj.order_date_utc:
+            # New candle
+            proposed_rate = self.exchange.get_rate(
+                trade.pair, side='entry', is_short=trade.is_short, refresh=True)
+            adjusted_entry_price = strategy_safe_wrapper(self.strategy.adjust_entry_price,
+                                                         default_retval=order_obj.price)(
+                trade=trade, order=order_obj, pair=trade.pair,
+                current_time=datetime.now(timezone.utc), proposed_rate=proposed_rate,
+                current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
+                side=trade.entry_side)
+
+            full_cancel = False
+            cancel_reason = constants.CANCEL_REASON['REPLACE']
+            if not adjusted_entry_price:
+                full_cancel = True if trade.nr_of_successful_entries == 0 else False
+                cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
+            if order_obj.price != adjusted_entry_price:
+                # cancel existing order if new price is supplied or None
+                self.handle_cancel_enter(trade, order, cancel_reason,
+                                         allow_full_cancel=full_cancel)
+                if adjusted_entry_price:
+                    # place new order only if new price is supplied
+                    self.execute_entry(
+                        pair=trade.pair,
+                        stake_amount=(order_obj.remaining * order_obj.price),
+                        price=adjusted_entry_price,
+                        trade=trade,
+                        is_short=trade.is_short
+                    )
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -1180,7 +1235,10 @@ class FreqtradeBot(LoggingMixin):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
         Trade.commit()
 
-    def handle_cancel_enter(self, trade: Trade, order: Dict, reason: str) -> bool:
+    def handle_cancel_enter(
+            self, trade: Trade, order: Dict, reason: str,
+            allow_full_cancel: Optional[bool] = True
+    ) -> bool:
         """
         Buy cancel - cancel order
         :return: True if order was fully cancelled
@@ -1218,9 +1276,10 @@ class FreqtradeBot(LoggingMixin):
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
-            logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
             # if trade is not partially completed and it's the only order, just delete the trade
-            if len(trade.orders) <= 1:
+            open_order_count = len([order for order in trade.orders if order.status == 'open'])
+            if open_order_count <= 1 and allow_full_cancel:
+                logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
                 trade.delete()
                 was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"

@@ -713,18 +713,24 @@ class Backtesting:
 
     def _enter_trade(self, pair: str, row: Tuple, direction: LongShort,
                      stake_amount: Optional[float] = None,
-                     trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+                     trade: Optional[LocalTrade] = None,
+                     requested_rate: Optional[float] = None,
+                     requested_stake: Optional[float] = None) -> Optional[LocalTrade]:
 
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
         order_type = self.strategy.order_types['entry']
-        pos_adjust = trade is not None
+        pos_adjust = trade is not None and requested_rate is None
 
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
             pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
             order_type
         )
+
+        # replace proposed rate if another rate was requested
+        propose_rate = requested_rate if requested_rate else propose_rate
+        stake_amount = requested_stake if requested_stake else stake_amount
 
         if not stake_amount:
             # In case of pos adjust, still return the original trade
@@ -807,7 +813,7 @@ class Backtesting:
                 cost=stake_amount + trade.fee_open,
             )
             if pos_adjust and self._get_order_filled(order.price, row):
-                order.close_bt_order(current_time)
+                order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
             trade.orders.append(order)
@@ -867,28 +873,76 @@ class Backtesting:
             self.protections.stop_per_pair(pair, current_time, side)
             self.protections.global_stop(current_time, side)
 
-    def check_order_cancel(self, trade: LocalTrade, current_time) -> bool:
+    def manage_open_orders(self, trade: LocalTrade, current_time, row: Tuple) -> bool:
         """
-        Check if an order has been canceled.
-        Returns True if the trade should be Deleted (initial order was canceled).
+        Check if any open order needs to be cancelled or replaced.
+        Returns True if the trade should be deleted.
         """
         for order in [o for o in trade.orders if o.ft_is_open]:
+            if self.check_order_cancel(trade, order, current_time):
+                # delete trade due to order timeout
+                return True
+            elif self.check_order_replace(trade, order, current_time, row):
+                # delete trade due to user request
+                return True
+        # default maintain trade
+        return False
 
-            timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
-            if timedout:
-                if order.side == trade.entry_side:
-                    self.timedout_entry_orders += 1
-                    if trade.nr_of_successful_entries == 0:
-                        # Remove trade due to entry timeout expiration.
-                        return True
-                    else:
-                        # Close additional entry order
-                        del trade.orders[trade.orders.index(order)]
-                if order.side == trade.exit_side:
-                    self.timedout_exit_orders += 1
-                    # Close exit order and retry exiting on next signal.
+    def check_order_cancel(self, trade: LocalTrade, order: Order, current_time) -> bool:
+        """
+        Check if current analyzed order has to be canceled.
+        Returns True if the trade should be Deleted (initial order was canceled).
+        """
+        timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
+        if timedout:
+            if order.side == trade.entry_side:
+                self.timedout_entry_orders += 1
+                if trade.nr_of_successful_entries == 0:
+                    # Remove trade due to entry timeout expiration.
+                    return True
+                else:
+                    # Close additional entry order
                     del trade.orders[trade.orders.index(order)]
+            if order.side == trade.exit_side:
+                self.timedout_exit_orders += 1
+                # Close exit order and retry exiting on next signal.
+                del trade.orders[trade.orders.index(order)]
 
+        return False
+
+    def check_order_replace(self, trade: LocalTrade, order: Order, current_time,
+                            row: Tuple) -> bool:
+        """
+        Check if current analyzed entry order has to be replaced and do so.
+        If user requested cancellation and there are no filled orders in the trade will
+        instruct caller to delete the trade.
+        Returns True if the trade should be deleted.
+        """
+        # only check on new candles for open entry orders
+        if order.side == trade.entry_side and current_time > order.order_date_utc:
+            requested_rate = strategy_safe_wrapper(self.strategy.adjust_entry_price,
+                                                   default_retval=order.price)(
+                trade=trade, order=order, pair=trade.pair, current_time=current_time,
+                proposed_rate=row[OPEN_IDX], current_order_rate=order.price,
+                entry_tag=trade.enter_tag, side=trade.trade_direction
+            )  # default value is current order price
+
+            # cancel existing order whenever a new rate is requested (or None)
+            if requested_rate == order.price:
+                # assumption: there can't be multiple open entry orders at any given time
+                return False
+            else:
+                del trade.orders[trade.orders.index(order)]
+
+            # place new order if result was not None
+            if requested_rate:
+                self._enter_trade(pair=trade.pair, row=row, trade=trade,
+                                  requested_rate=requested_rate,
+                                  requested_stake=(order.remaining * order.price),
+                                  direction='short' if trade.is_short else 'long')
+            else:
+                # assumption: there can't be multiple open entry orders at any given time
+                return (trade.nr_of_successful_entries == 0)
         return False
 
     def validate_row(
@@ -960,9 +1014,9 @@ class Backtesting:
                 self.dataprovider._set_dataframe_max_index(row_index)
 
                 for t in list(open_trades[pair]):
-                    # 1. Cancel expired entry/exit orders.
-                    if self.check_order_cancel(t, current_time):
-                        # Close trade due to entry timeout expiration.
+                    # 1. Manage currently open orders of active trades
+                    if self.manage_open_orders(t, current_time, row):
+                        # Close trade
                         open_trade_count -= 1
                         open_trades[pair].remove(t)
                         self.wallets.update()
@@ -993,7 +1047,7 @@ class Backtesting:
                     # 3. Process entry orders.
                     order = trade.select_order(trade.entry_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
-                        order.close_bt_order(current_time)
+                        order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
                         LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
