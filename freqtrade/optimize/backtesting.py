@@ -144,7 +144,7 @@ class Backtesting:
         self.init_backtest()
 
     def __del__(self):
-        logger.info('Inside Backtesting.__del__()')
+        logger.debug('Inside Backtesting.__del__()')
         self.cleanup()
 
     @staticmethod
@@ -152,7 +152,7 @@ class Backtesting:
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
-        logger.info('Cleaned Backtest')
+        logger.debug('Cleaned Backtest')
 
     def init_backtest_detail(self):
         # Load detail timeframe if specified
@@ -282,8 +282,8 @@ class Backtesting:
 
             if unavailable_pairs:
                 raise OperationalException(
-                        f"Pairs {', '.join(unavailable_pairs)} got no leverage tiers available. "
-                        "It is therefore impossible to backtest with this pair at the moment.")
+                    f"Pairs {', '.join(unavailable_pairs)} got no leverage tiers available. "
+                    "It is therefore impossible to backtest with this pair at the moment.")
         else:
             self.futures_data = {}
 
