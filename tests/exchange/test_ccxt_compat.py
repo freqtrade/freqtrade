@@ -135,6 +135,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         class_mocker.patch(
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
+        class_mocker.patch('freqtrade.exchange.okx.Okx.additional_exchange_init')
         exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 
         yield exchange, request.param

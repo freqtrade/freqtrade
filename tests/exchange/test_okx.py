@@ -205,6 +205,7 @@ def test_additional_exchange_init_okx(default_conf, mocker):
                   'mgnIsoMode': 'automatic',
                   'posMode': 'long_short_mode',
                   'uid': '2555'}}])
+    default_conf['dry_run'] = False
     exchange = get_patched_exchange(mocker, default_conf, id="okx", api_mock=api_mock)
     assert api_mock.fetch_accounts.call_count == 0
     exchange.trading_mode = TradingMode.FUTURES
