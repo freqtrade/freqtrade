@@ -429,7 +429,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.custom_sell(pair, trade, current_time, current_rate, current_profit, **kwargs)
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Customize stake size for each new trade.
@@ -447,8 +447,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         return proposed_stake
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
-                              max_stake: float, **kwargs) -> Optional[float]:
+                              current_rate: float, current_profit: float,
+                              min_stake: Optional[float], max_stake: float,
+                              **kwargs) -> Optional[float]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.

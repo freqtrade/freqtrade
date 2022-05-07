@@ -656,7 +656,7 @@ class DigDeeperStrategy(IStrategy):
 
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         # We need to leave most of the funds for possible further DCA orders
@@ -664,7 +664,7 @@ class DigDeeperStrategy(IStrategy):
         return proposed_stake / self.max_dca_multiplier
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
+                              current_rate: float, current_profit: float, min_stake: Optional[float],
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.

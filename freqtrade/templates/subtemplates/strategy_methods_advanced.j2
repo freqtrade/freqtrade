@@ -13,7 +13,7 @@ def bot_loop_start(self, **kwargs) -> None:
     pass
 
 def custom_entry_price(self, pair: str, current_time: 'datetime', proposed_rate: float,
-                       entry_tag: Optional[str], **kwargs) -> float:
+                       entry_tag: 'Optional[str]', side: str, **kwargs) -> float:
     """
     Custom entry price logic, returning the new entry price.
 
@@ -80,8 +80,8 @@ def custom_exit_price(self, pair: str, trade: 'Trade',
     return proposed_rate
 
 def custom_stake_amount(self, pair: str, current_time: 'datetime', current_rate: float,
-                        proposed_stake: float, min_stake: float, max_stake: float,
-                        side: str, entry_tag: Optional[str], **kwargs) -> float:
+                        proposed_stake: float, min_stake: Optional[float], max_stake: float,
+                        entry_tag: 'Optional[str]', side: str, **kwargs) -> float:
     """
     Customize stake size for each new trade.
 
@@ -244,8 +244,8 @@ def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
     return False
 
 def adjust_trade_position(self, trade: 'Trade', current_time: 'datetime',
-                          current_rate: float, current_profit: float, min_stake: float,
-                          max_stake: float, **kwargs) -> Optional[float]:
+                          current_rate: float, current_profit: float, min_stake: Optional[float],
+                          max_stake: float, **kwargs) -> 'Optional[float]':
     """
     Custom trade adjustment logic, returning the stake amount that a trade should be increased.
     This means extra buy orders with additional fees.
