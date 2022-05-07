@@ -500,7 +500,8 @@ class Backtesting:
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            trade=trade,  # type: ignore[arg-type]
+            current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
             current_profit=current_profit, min_stake=min_stake,
             max_stake=min(max_stake, stake_available))
 
@@ -566,7 +567,8 @@ class Backtesting:
                 if order_type == 'limit':
                     close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                        default_retval=close_rate)(
-                        pair=trade.pair, trade=trade,
+                        pair=trade.pair,
+                        trade=trade,  # type: ignore[arg-type]
                         current_time=exit_candle_time,
                         proposed_rate=close_rate, current_profit=current_profit,
                         exit_tag=exit_reason)
@@ -580,7 +582,10 @@ class Backtesting:
             time_in_force = self.strategy.order_time_in_force['exit']
 
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
-                    pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
+                    pair=trade.pair,
+                    trade=trade,  # type: ignore[arg-type]
+                    order_type='limit',
+                    amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
                     sell_reason=exit_reason,  # deprecated
@@ -656,7 +661,7 @@ class Backtesting:
             return self._get_exit_trade_entry_for_candle(trade, row)
 
     def get_valid_price_and_stake(
-        self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
+        self, pair: str, row: Tuple, propose_rate: float, stake_amount_inp: Optional[float],
         direction: LongShort, current_time: datetime, entry_tag: Optional[str],
         trade: Optional[LocalTrade], order_type: str
     ) -> Tuple[float, float, float, float]:
@@ -694,6 +699,8 @@ class Backtesting:
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
+        elif stake_amount_inp is not None:
+            stake_amount = stake_amount_inp
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair, propose_rate, -0.05, leverage=leverage) or 0
@@ -901,7 +908,9 @@ class Backtesting:
         Check if current analyzed order has to be canceled.
         Returns True if the trade should be Deleted (initial order was canceled).
         """
-        timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
+        timedout = self.strategy.ft_check_timed_out(
+            trade,  # type: ignore[arg-type]
+            order, current_time)
         if timedout:
             if order.side == trade.entry_side:
                 self.timedout_entry_orders += 1
@@ -930,7 +939,8 @@ class Backtesting:
         if order.side == trade.entry_side and current_time > order.order_date_utc:
             requested_rate = strategy_safe_wrapper(self.strategy.adjust_entry_price,
                                                    default_retval=order.price)(
-                trade=trade, order=order, pair=trade.pair, current_time=current_time,
+                trade=trade,  # type: ignore[arg-type]
+                order=order, pair=trade.pair, current_time=current_time,
                 proposed_rate=row[OPEN_IDX], current_order_rate=order.price,
                 entry_tag=trade.enter_tag, side=trade.trade_direction
             )  # default value is current order price
