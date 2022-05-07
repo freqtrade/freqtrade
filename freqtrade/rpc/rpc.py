@@ -177,16 +177,20 @@ class RPC:
                         current_rate = NAN
                 else:
                     current_rate = trade.close_rate
-                current_profit = trade.calc_profit_ratio(current_rate)
-                current_profit_abs = trade.calc_profit(current_rate)
-                current_profit_fiat: Optional[float] = None
-                # Calculate fiat profit
-                if self._fiat_converter:
-                    current_profit_fiat = self._fiat_converter.convert_amount(
-                        current_profit_abs,
-                        self._freqtrade.config['stake_currency'],
-                        self._freqtrade.config['fiat_display_currency']
-                    )
+                if len(trade.select_filled_orders(trade.entry_side)) > 0:
+                    logger.warning(trade.select_filled_orders(trade.entry_side))
+                    current_profit = trade.calc_profit_ratio(current_rate)
+                    current_profit_abs = trade.calc_profit(current_rate)
+                    current_profit_fiat: Optional[float] = None
+                    # Calculate fiat profit
+                    if self._fiat_converter:
+                        current_profit_fiat = self._fiat_converter.convert_amount(
+                            current_profit_abs,
+                            self._freqtrade.config['stake_currency'],
+                            self._freqtrade.config['fiat_display_currency']
+                        )
+                else:
+                    current_profit = current_profit_abs = current_profit_fiat = 0.0
 
                 # Calculate guaranteed profit (in case of trailing stop)
                 stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
@@ -235,8 +239,12 @@ class RPC:
                         trade.pair, side='exit', is_short=trade.is_short, refresh=False)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                if len(trade.select_filled_orders(trade.entry_side)) > 0:
+                    trade_profit = trade.calc_profit(current_rate)
+                    profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                else:
+                    trade_profit = 0.0
+                    profit_str = f'{0.0:.2f}'
                 direction_str = ('S' if trade.is_short else 'L') if nonspot else ''
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
@@ -244,7 +252,7 @@ class RPC:
                         stake_currency,
                         fiat_display_currency
                     )
-                    if fiat_profit and not isnan(fiat_profit):
+                    if not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
