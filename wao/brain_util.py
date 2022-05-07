@@ -3,7 +3,6 @@ import threading
 import watchdog
 import os
 import time
-import datetime
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
 import pickle
@@ -30,7 +29,7 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
-    Config.ROMEO_D_UP_PERCENTAGE = dup
+    Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
 
     romeo = Romeo.instance(is_test_mode, True)
     BrainConfig.ROMEO_POOL[coin] = romeo
