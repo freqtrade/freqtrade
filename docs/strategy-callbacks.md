@@ -765,7 +765,7 @@ class AwesomeStrategy(IStrategy):
         """
         # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
         if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
-            # just cancel the order if it has been filled more than half of the ammount
+            # just cancel the order if it has been filled more than half of the amount
             if order.filled > order.remaining:
                 return None
             else:

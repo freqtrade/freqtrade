@@ -934,7 +934,7 @@ class Backtesting:
             else:
                 del trade.orders[trade.orders.index(order)]
 
-            # place new order if None was not returned
+            # place new order if result was not None
             if requested_rate:
                 self._enter_trade(pair=trade.pair, row=row, trade=trade,
                                   requested_rate=requested_rate,
