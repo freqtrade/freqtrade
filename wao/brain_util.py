@@ -3,7 +3,6 @@ import threading
 import watchdog
 import os
 import time
-import datetime
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
 import pickle
@@ -14,13 +13,13 @@ from romeo import Romeo, RomeoExitPriceType
 from backtest_signal import BacktestSignal
 
 
-def write_to_backtest_table(timestamp, coin, brain, time_out_hours, type):
+def write_to_backtest_table(timestamp, coin, brain, time_out_hours, dup, type):
     print("STEP [1]++++++++++++++++++++++++++++++++++++" + ", write_to_backtest_table")
-    BrainConfig.BACKTEST_SIGNAL_LIST.append(BacktestSignal(brain, coin, type, time_out_hours, timestamp=timestamp))
+    BrainConfig.BACKTEST_SIGNAL_LIST.append(BacktestSignal(brain, coin, type, time_out_hours, dup, timestamp=timestamp))
     pickle.dump(BrainConfig.BACKTEST_SIGNAL_LIST, open(BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH, 'wb'))
 
 
-def perform_execute_buy(coin, brain, time_out_hours):
+def perform_execute_buy(coin, brain, time_out_hours, dup):
     is_test_mode = False
     if BrainConfig.MODE == Config.MODE_TEST:
         is_test_mode = True
@@ -30,6 +29,7 @@ def perform_execute_buy(coin, brain, time_out_hours):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
+    Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
 
     romeo = Romeo.instance(is_test_mode, True)
     BrainConfig.ROMEO_POOL[coin] = romeo

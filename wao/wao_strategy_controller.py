@@ -12,9 +12,10 @@ from config import Config
 
 class WAOStrategyController:
 
-    def __init__(self, brain, time_out_hours):
+    def __init__(self, brain, time_out_hours, dup):
         self.brain = brain
         self.time_out_hours = time_out_hours
+        self.dup = dup
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
         setup_429()
         clear_cumulative_value()
@@ -28,7 +29,7 @@ class WAOStrategyController:
         print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
               ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, "buy")
+            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, self.dup, "buy")
         else:
             self.__buy_execute(coin)
 
@@ -36,7 +37,7 @@ class WAOStrategyController:
         print("WAOStrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
         if BrainConfig.IS_BACKTEST:
-            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, "sell")
+            write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, self.dup, "sell")
         else:
             perform_execute_sell(coin)
             self.__remove_from_pool(coin)
@@ -44,9 +45,9 @@ class WAOStrategyController:
     def __buy_execute(self, coin):
         if Config.IS_PARALLEL_EXECUTION:
             threading.Thread(target=perform_execute_buy,
-                             args=(coin, self.brain, self.time_out_hours)).start()
+                             args=(coin, self.brain, self.time_out_hours, self.dup)).start()
         else:
-            perform_execute_buy(coin, self.brain, self.time_out_hours)
+            perform_execute_buy(coin, self.brain, self.time_out_hours, self.dup)
 
     def __remove_from_pool(self, coin):
         if self.is_romeo_alive(coin):
