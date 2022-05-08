@@ -38,8 +38,8 @@ class StoplossGuard(IProtection):
         return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
                 f'locking for {self._stop_duration} min.')
 
-    def _stoploss_guard(
-            self, date_now: datetime, pair: Optional[str], side: str) -> Optional[ProtectionReturn]:
+    def _stoploss_guard(self, date_now: datetime, pair: Optional[str],
+                        side: LongShort) -> Optional[ProtectionReturn]:
         """
         Evaluate recent trades
         """

@@ -172,6 +172,7 @@ def api_delete_backtest(ws_mode=Depends(is_webserver_mode)):
             "status_msg": "Backtest running",
         }
     if ApiServer._bt:
+        ApiServer._bt.cleanup()
         del ApiServer._bt
         ApiServer._bt = None
         del ApiServer._bt_data

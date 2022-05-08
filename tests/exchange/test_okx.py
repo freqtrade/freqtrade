@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock, PropertyMock
 
+import pytest
+
 from freqtrade.enums import MarginMode, TradingMode
 from tests.conftest import get_patched_exchange
+from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
 def test_get_maintenance_ratio_and_amt_okx(
@@ -168,6 +171,70 @@ def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
     assert exchange.get_max_pair_stake_amount('BTC/USDT', 1.0, 10.0) == 100000000
 
     assert exchange.get_max_pair_stake_amount('TTT/USDT', 1.0) == float('inf')  # Not in tiers
+
+
+@pytest.mark.parametrize('mode,side,reduceonly,result', [
+    ('net', 'buy', False, 'net'),
+    ('net', 'sell', True, 'net'),
+    ('net', 'sell', False, 'net'),
+    ('net', 'buy', True, 'net'),
+    ('longshort', 'buy', False, 'long'),
+    ('longshort', 'sell', True, 'long'),
+    ('longshort', 'sell', False, 'short'),
+    ('longshort', 'buy', True, 'short'),
+])
+def test__get_posSide(default_conf, mocker, mode, side, reduceonly, result):
+
+    exchange = get_patched_exchange(mocker, default_conf, id="okx")
+    exchange.net_only = mode == 'net'
+    assert exchange._get_posSide(side, reduceonly) == result
+
+
+def test_additional_exchange_init_okx(default_conf, mocker):
+    api_mock = MagicMock()
+    api_mock.fetch_accounts = MagicMock(return_value=[
+        {'id': '2555',
+         'type': '2',
+         'currency': None,
+         'info': {'acctLv': '2',
+                  'autoLoan': False,
+                  'ctIsoMode': 'automatic',
+                  'greeksType': 'PA',
+                  'level': 'Lv1',
+                  'levelTmp': '',
+                  'mgnIsoMode': 'automatic',
+                  'posMode': 'long_short_mode',
+                  'uid': '2555'}}])
+    default_conf['dry_run'] = False
+    exchange = get_patched_exchange(mocker, default_conf, id="okx", api_mock=api_mock)
+    assert api_mock.fetch_accounts.call_count == 0
+    exchange.trading_mode = TradingMode.FUTURES
+    # Default to netOnly
+    assert exchange.net_only
+    exchange.additional_exchange_init()
+    assert api_mock.fetch_accounts.call_count == 1
+    assert not exchange.net_only
+
+    api_mock.fetch_accounts = MagicMock(return_value=[
+            {'id': '2555',
+             'type': '2',
+             'currency': None,
+             'info': {'acctLv': '2',
+                      'autoLoan': False,
+                      'ctIsoMode': 'automatic',
+                      'greeksType': 'PA',
+                      'level': 'Lv1',
+                      'levelTmp': '',
+                      'mgnIsoMode': 'automatic',
+                      'posMode': 'net_mode',
+                      'uid': '2555'}}])
+    exchange.additional_exchange_init()
+    assert api_mock.fetch_accounts.call_count == 1
+    assert exchange.net_only
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'okx',
+                           "additional_exchange_init", "fetch_accounts")
 
 
 def test_load_leverage_tiers_okx(default_conf, mocker, markets):

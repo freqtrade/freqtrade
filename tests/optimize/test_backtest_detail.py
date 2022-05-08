@@ -754,6 +754,62 @@ tc47 = BTContainer(data=[
     trades=[]
 )
 
+# Test 48: Custom-entry-price below all candles - readjust order
+tc48 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # timeout
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 1],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.087,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=4200, adjust_entry_price=5200,
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=False)]
+)
+
+
+# Test 49: Custom-entry-price short above all candles - readjust order
+tc49 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+    [1, 5000, 5200, 4951, 5000, 6172, 0, 0, 0, 0],  # timeout
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 0, 0, 0],  # Order readjust
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 1],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.05,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=5300, adjust_entry_price=5000,
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
+)
+
+# Test 50: Custom-entry-price below all candles - readjust order cancels order
+tc50 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],  # Enter long - place order
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # Order readjust - cancel order
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=4200, adjust_entry_price=None,
+    trades=[]
+)
+
+# Test 51: Custom-entry-price below all candles - readjust order leaves order in place and timeout.
+tc51 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],  # Enter long - place order
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # Order readjust - replace order
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust - maintain order
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],  # Timeout
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.0,
+    use_exit_signal=True, timeout=60,
+    custom_entry_price=4200, adjust_entry_price=4100,
+    trades=[]
+)
 
 TESTS = [
     tc0,
@@ -804,6 +860,10 @@ TESTS = [
     tc45,
     tc46,
     tc47,
+    tc48,
+    tc49,
+    tc50,
+    tc51,
 ]
 
 
@@ -817,6 +877,11 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
     default_conf["timeframe"] = tests_timeframe
     default_conf["trailing_stop"] = data.trailing_stop
     default_conf["trailing_only_offset_is_reached"] = data.trailing_only_offset_is_reached
+    if data.timeout:
+        default_conf['unfilledtimeout'].update({
+            'entry': data.timeout,
+            'exit': data.timeout,
+        })
     # Only add this to configuration If it's necessary
     if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
@@ -840,6 +905,8 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         backtesting.strategy.custom_entry_price = MagicMock(return_value=data.custom_entry_price)
     if data.custom_exit_price:
         backtesting.strategy.custom_exit_price = MagicMock(return_value=data.custom_exit_price)
+    backtesting.strategy.adjust_entry_price = MagicMock(return_value=data.adjust_entry_price)
+
     backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     backtesting.strategy.leverage = lambda **kwargs: data.leverage
     caplog.set_level(logging.DEBUG)
