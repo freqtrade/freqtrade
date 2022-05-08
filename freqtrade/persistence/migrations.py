@@ -99,7 +99,7 @@ def migrate_trades_and_orders_table(
     liquidation_price = get_column_def(cols, 'liquidation_price',
                                        get_column_def(cols, 'isolated_liq', 'null'))
     # sqlite does not support literals for booleans
-    is_short = get_column_def(cols, 'is_short', '0')
+    is_short = get_column_def(cols, 'is_short', 'false')
 
     # Margin Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
