@@ -96,6 +96,8 @@ def protections(self):
 `LowProfitPairs` uses all trades for a pair within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the overall profit ratio.
 If that ratio is below `required_profit`, that pair will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
 
+For futures bots, setting `only_per_side` will make the bot only consider one side, and will then only lock this one side, allowing for example shorts to continue after a series of long losses.
+
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
 ``` python
@@ -107,7 +109,8 @@ def protections(self):
             "lookback_period_candles": 6,
             "trade_limit": 2,
             "stop_duration": 60,
-            "required_profit": 0.02
+            "required_profit": 0.02,
+            "only_per_pair": False,
         }
     ]
 ```

@@ -327,7 +327,7 @@ jobs:
     # Discord notification can't handle schedule events
     if: (github.event_name != 'schedule')
     permissions:
-      repository-projects: read  
+      repository-projects: read
     steps:
 
     - name: Check user permission
@@ -419,7 +419,7 @@ jobs:
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
       with:
           severity: info
           details: Deploy Succeeded!

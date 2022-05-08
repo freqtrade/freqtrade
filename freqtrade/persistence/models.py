@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
-                                 LongShort)
+                                 BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -221,11 +221,15 @@ class Order(_DECL_BASE):
             'remaining': self.remaining,
         }
 
-    def close_bt_order(self, close_date: datetime):
+    def close_bt_order(self, close_date: datetime, trade: 'LocalTrade'):
         self.order_filled_date = close_date
         self.filled = self.amount
         self.status = 'closed'
         self.ft_is_open = False
+        if (self.ft_order_side == trade.entry_side
+                and len(trade.select_filled_orders(trade.entry_side)) == 1):
+            trade.open_rate = self.price
+            trade.recalc_open_trade_value()
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -389,7 +393,7 @@ class LocalTrade():
             return "buy"
 
     @property
-    def exit_side(self) -> str:
+    def exit_side(self) -> BuySell:
         if self.is_short:
             return "buy"
         else:
