@@ -178,7 +178,6 @@ class RPC:
                 else:
                     current_rate = trade.close_rate
                 if len(trade.select_filled_orders(trade.entry_side)) > 0:
-                    logger.warning(trade.select_filled_orders(trade.entry_side))
                     current_profit = trade.calc_profit_ratio(current_rate)
                     current_profit_abs = trade.calc_profit(current_rate)
                     current_profit_fiat: Optional[float] = None

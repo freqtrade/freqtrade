@@ -233,8 +233,19 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*no active trade*'):
         rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
-
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
     freqtradebot.enter_positions()
+
+    result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    assert "Since" in headers
+    assert "Pair" in headers
+    assert 'instantly' == result[0][2]
+    assert 'ETH/BTC' in result[0][1]
+    assert '0.00' == result[0][3]
+    assert isnan(fiat_profit_sum)
+
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
+    freqtradebot.process()
 
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
@@ -243,8 +254,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41%' == result[0][3]
     assert isnan(fiat_profit_sum)
-    # Test with fiatconvert
 
+    # Test with fiatconvert
     rpc._fiat_converter = CryptoToFiatConverter()
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
