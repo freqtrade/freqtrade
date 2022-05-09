@@ -24,7 +24,8 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "BTC/USDT"
+            "BTC/USDT",
+            "ETH/USDT"
         ],
         "pair_blacklist": []
     },
@@ -55,7 +56,7 @@
         ],
         "train_period": 30,
         "backtest_period": 7,
-        "identifier": "livetest5",
+        "identifier": "new_corrlist",
         "live_trained_timerange": "20220330-20220429",
         "live_full_backtestrange": "20220302-20220501",
         "base_features": [

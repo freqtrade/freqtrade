@@ -142,8 +142,11 @@ class FreqaiExampleStrategy(IStrategy):
         # the following loops are necessary for building the features
         # indicated by the user in the configuration file.
         for tf in self.freqai_info["timeframes"]:
-            # dataframe = self.populate_any_indicators(metadata["pair"], dataframe.copy(), tf)
+            dataframe = self.populate_any_indicators(self.pair, dataframe.copy(), tf,
+                                                     coin=self.pair.split("/")[0] + "-")
             for pair in self.freqai_info["corr_pairlist"]:
+                if metadata['pair'] in pair:
+                    continue  # do not include whitelisted pair twice if it is in corr_pairlist
                 dataframe = self.populate_any_indicators(
                     pair, dataframe.copy(), tf, coin=pair.split("/")[0] + "-"
                 )

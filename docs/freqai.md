@@ -65,8 +65,6 @@ config setup includes:
                 "feature_parameters" : {
                         "period": 24,
                         "shift": 2,
-                        "drop_features": false,
-                        "DI_threshold": 1,
                         "weight_factor":  0,
                 },
                 "data_split_parameters" : {
@@ -79,8 +77,7 @@ config setup includes:
                     "learning_rate": 0.02,
                     "task_type": "CPU",
                 },
-        },
-
+        }
 ```
 
 ### Building the feature set
@@ -153,8 +150,6 @@ The Freqai strategy requires the user to include the following lines of code in 
                 # the following loops are necessary for building the features 
                 # indicated by the user in the configuration file.
                 for tf in self.freqai_info['timeframes']:
-                        dataframe = self.populate_any_indicators(metadata['pair'],
-                                                                dataframe.copy(), tf)
                         for i in self.freqai_info['corr_pairlist']:
                         dataframe = self.populate_any_indicators(i,
                                         dataframe.copy(), tf, coin=i.split("/")[0]+'-')
@@ -177,8 +172,36 @@ and `make_labels()` to let them customize various aspects of their training proc
 
 ### Running the model live
 
-TODO: Freqai is not automated for live yet. 
+Freqai can be run dry/live using the following command
 
+```bash
+freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel ExamplePredictionModel
+```
+
+By default, Freqai will not find find any existing models and will start by training a new one 
+given the user configuration settings. Following training, it will use that model to predict for the
+duration of `backtest_period`. After a full `backtest_period` has elapsed, Freqai will auto retrain 
+a new model, and begin making predictions with the updated model. 
+
+If the user wishes to start dry/live from a saved model, the following configuration 
+parameters need to be set:
+
+```json
+    "freqai": {
+        "identifier": "example",
+        "live_trained_timerange": "20220330-20220429",
+        "live_full_backtestrange": "20220302-20220501"
+    }
+```
+
+Where the `identifier` is the same identifier which was set during the backtesting/training. Meanwhile,
+the `live_trained_timerange` is the sub-trained timerange (the training window) which was set 
+during backtesting/training. These are available to the user inside `user_data/models/*/sub-train-*`. 
+`live_full_backtestrange` was the full data range assocaited with the backtest/training (the full time 
+window that the training window and backtesting windows slide through). These values can be located 
+inside the `user_data/models/` directory. In this case, although Freqai will initiate with a 
+pretrained model, if a full `backtest_period` has elapsed since the end of the user set 
+`live_trained_timerange`, it will self retrain. 
 
 ## Data anylsis techniques
 ### Controlling the model learning process
@@ -226,12 +249,49 @@ $$ DI_k = d_k/\overline{d} $$
 Equity and crypto markets suffer from a high level of non-patterned noise in the
 form of outlier data points. The dissimilarity index allows predictions which
 are outliers and not existent in the model feature space, to be thrown out due
-to low levels of certainty. The user can tweak the DI with `DI_threshold` to increase
-or decrease the extrapolation of the trained model.
+to low levels of certainty. Activating the Dissimilarity Index can be achieved with:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+                "DI_threshold": 1
+        }
+    }
+```
+
+The user can tweak the DI with `DI_threshold` to increase or decrease the extrapolation of the 
+trained model.
 
 ### Reducing data dimensionality with Principal Component Analysis
 
-TO BE WRITTEN
+Users can reduce the dimensionality of their features by activating the `principal_component_analysis`:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+                "principal_component_analysis": true
+        }
+    }
+```
+
+Which will perform PCA on the features and reduce the dimensionality of the data so that the explained
+variance of the data set is >= 0.999. 
+
+### Removing outliers based on feature statistical distributions
+
+The user can tell Freqai to remove outlier data points from the trainig/test data sets by setting:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+                "remove_outliers": true
+        }
+    }
+```
+
+Freqai will check the statistical distributions of each feature (or component if the user activated
+`principal_component_analysis`) and remove any data point that sits more than 3 standard deviations away 
+from the mean. 
 
 ## Additional information
 ### Feature standardization
@@ -242,5 +302,5 @@ data only. This includes all test data and unseen prediction data (dry/live/back
 ### File structure
 
 `user_data_dir/models/` contains all the data associated with the trainings and
-backtestings. This file structure is heavily controlled and read by the `DataHandler()`
+backtestings. This file structure is heavily controlled and read by the `FreqaiDataKitchen()`
 and should thus not be modified. 

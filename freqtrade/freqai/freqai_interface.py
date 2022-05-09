@@ -93,7 +93,7 @@ class IFreqaiModel(ABC):
             else:
                 self.model = self.dh.load_data()
 
-            preds, do_preds = self.predict(dataframe_backtest)
+            preds, do_preds = self.predict(dataframe_backtest, metadata)
 
             self.dh.append_predictions(preds, do_preds, len(dataframe_backtest))
             print('predictions', len(self.dh.full_predictions),
@@ -120,13 +120,13 @@ class IFreqaiModel(ABC):
         if retrain or not file_exists:
             self.dh.download_new_data_for_retraining(new_trained_timerange, metadata)
             # dataframe = download-data
-            corr_dataframes, pair_dataframes = self.dh.load_pairs_histories(new_trained_timerange,
+            corr_dataframes, base_dataframes = self.dh.load_pairs_histories(new_trained_timerange,
                                                                             metadata)
 
             unfiltered_dataframe = self.dh.use_strategy_to_populate_indicators(strategy,
-                                                                               metadata,
                                                                                corr_dataframes,
-                                                                               pair_dataframes)
+                                                                               base_dataframes,
+                                                                               metadata)
 
             self.model = self.train(unfiltered_dataframe, metadata)
             self.dh.save_data(self.model)
@@ -134,7 +134,7 @@ class IFreqaiModel(ABC):
             self.freqai_info
 
         self.model = self.dh.load_data()
-        preds, do_preds = self.predict(dataframe)
+        preds, do_preds = self.predict(dataframe, metadata)
         self.dh.append_predictions(preds, do_preds, len(dataframe))
         # dataframe should have len 1 here
 
@@ -175,7 +175,7 @@ class IFreqaiModel(ABC):
         return
 
     @abstractmethod
-    def predict(self, dataframe: DataFrame) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+    def predict(self, dataframe: DataFrame, metadata: dict) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
