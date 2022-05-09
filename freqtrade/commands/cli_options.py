@@ -106,6 +106,11 @@ AVAILABLE_CLI_OPTIONS = {
         f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
         metavar='PATH',
     ),
+    "db_url_from": Arg(
+        '--db-url-from',
+        help='Source db url to use when migrating database systems.',
+        metavar='PATH',
+    ),
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
