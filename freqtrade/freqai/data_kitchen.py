@@ -485,7 +485,7 @@ class FreqaiDataKitchen:
 
         return
 
-    def build_feature_list(self, config: dict) -> list:
+    def build_feature_list(self, config: dict, metadata: dict) -> list:
         """
         Build the list of features that will be used to filter
         the full dataframe. Feature list is construced from the
@@ -501,8 +501,10 @@ class FreqaiDataKitchen:
                     shift = ""
                     if n > 0:
                         shift = "_shift-" + str(n)
-                    # features.append(ft + shift + "_" + tf)
+                    features.append(metadata['pair'].split("/")[0] + "-" + ft + shift + "_" + tf)
                     for p in config["freqai"]["corr_pairlist"]:
+                        if metadata['pair'] in p:
+                            continue  # avoid duplicate features
                         features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
 
         # logger.info("number of features %s", len(features))
@@ -640,9 +642,10 @@ class FreqaiDataKitchen:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
                                                   self.config, validate=False)
-        pairs = self.freqai_config['corr_pairlist'] + [metadata['pair']]
+        pairs = self.freqai_config['corr_pairlist']
+        if metadata['pair'] not in pairs:
+            pairs += metadata['pair']  # dont include pair twice
         timerange = TimeRange.parse_timerange(new_timerange)
-        # data_handler = get_datahandler(datadir, data_format)
 
         refresh_backtest_ohlcv_data(
                         exchange, pairs=pairs, timeframes=self.freqai_config['timeframes'],
@@ -656,33 +659,45 @@ class FreqaiDataKitchen:
     def load_pairs_histories(self, new_timerange: str, metadata: dict) -> Tuple[Dict[Any, Any],
                                                                                 DataFrame]:
         corr_dataframes: Dict[Any, Any] = {}
-        # pair_dataframes: Dict[Any, Any] = {}
+        base_dataframes: Dict[Any, Any] = {}
         pairs = self.freqai_config['corr_pairlist']  # + [metadata['pair']]
         timerange = TimeRange.parse_timerange(new_timerange)
 
-        for p in pairs:
-            corr_dataframes[p] = {}
-            for tf in self.freqai_config['timeframes']:
+        for tf in self.freqai_config['timeframes']:
+            base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
+                                                    timeframe=tf,
+                                                    pair=metadata['pair'], timerange=timerange)
+            for p in pairs:
+                if metadata['pair'] in p:
+                    continue  # dont repeat anything from whitelist
+                corr_dataframes[p] = {}
                 corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
                                                            timeframe=tf,
                                                            pair=p, timerange=timerange)
 
-        base_dataframe = [dataframe for key, dataframe in corr_dataframes.items()
-                          if metadata['pair'] in key]
+        # base_dataframe = [dataframe for key, dataframe in corr_dataframes.items()
+        #                  if metadata['pair'] in key]
 
         # [0] indexes the lowest tf for the basepair
-        return corr_dataframes, base_dataframe[0][self.config['timeframe']]
+        return corr_dataframes, base_dataframes
 
-    def use_strategy_to_populate_indicators(self, strategy: IStrategy, metadata: dict,
+    def use_strategy_to_populate_indicators(self, strategy: IStrategy,
                                             corr_dataframes: dict,
-                                            dataframe: DataFrame) -> DataFrame:
+                                            base_dataframes: dict,
+                                            metadata: dict) -> DataFrame:
 
-        # dataframe = pair_dataframes[0]  # this is the base tf pair df
+        dataframe = base_dataframes[self.config['timeframe']]
 
         for tf in self.freqai_config["timeframes"]:
-            # dataframe = strategy.populate_any_indicators(metadata["pair"], dataframe.copy,
-            #                                              tf, pair_dataframes[tf])
+            dataframe = strategy.populate_any_indicators(metadata['pair'],
+                                                         dataframe.copy(),
+                                                         tf,
+                                                         base_dataframes[tf],
+                                                         coin=metadata['pair'].split("/")[0] + "-"
+                                                         )
             for i in self.freqai_config["corr_pairlist"]:
+                if metadata['pair'] in i:
+                    continue  # dont repeat anything from whitelist
                 dataframe = strategy.populate_any_indicators(i,
                                                              dataframe.copy(),
                                                              tf,
