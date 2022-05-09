@@ -6,7 +6,7 @@
 
 coveralls==3.3.1
 flake8==4.0.1
-flake8-tidy-imports==4.6.0
+flake8-tidy-imports==4.7.0
 mypy==0.950
 pre-commit==2.18.1
 pytest==7.1.2
