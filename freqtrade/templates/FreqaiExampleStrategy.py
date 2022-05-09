@@ -44,13 +44,16 @@ class FreqaiExampleStrategy(IStrategy):
 
     stoploss = -0.05
     use_sell_signal = True
-    startup_candle_count: int = 1000
+    startup_candle_count: int = 300
 
     def informative_pairs(self):
-        pairs = self.freqai_info["corr_pairlist"]
+        pairs = self.config["freqai"]["corr_pairlist"]
         informative_pairs = []
-        for tf in self.timeframes:
-            informative_pairs.append([(pair, tf) for pair in pairs])
+        for tf in self.config["freqai"]["timeframes"]:
+            # informative_pairs.append((self.pair, tf))
+            # informative_pairs.append([(pair, tf) for pair in pairs])
+            for pair in pairs:
+                informative_pairs.append((pair, tf))
         return informative_pairs
 
     def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
@@ -129,6 +132,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         # the configuration file parameters are stored here
         self.freqai_info = self.config["freqai"]
+        self.pair = metadata['pair']
 
         # the model is instantiated here
         self.model = CustomModel(self.config)
@@ -138,12 +142,13 @@ class FreqaiExampleStrategy(IStrategy):
         # the following loops are necessary for building the features
         # indicated by the user in the configuration file.
         for tf in self.freqai_info["timeframes"]:
-            dataframe = self.populate_any_indicators(metadata["pair"], dataframe.copy(), tf)
-            for i in self.freqai_info["corr_pairlist"]:
+            # dataframe = self.populate_any_indicators(metadata["pair"], dataframe.copy(), tf)
+            for pair in self.freqai_info["corr_pairlist"]:
                 dataframe = self.populate_any_indicators(
-                    i, dataframe.copy(), tf, coin=i.split("/")[0] + "-"
+                    pair, dataframe.copy(), tf, coin=pair.split("/")[0] + "-"
                 )
 
+        print('dataframe_built')
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.
@@ -152,7 +157,7 @@ class FreqaiExampleStrategy(IStrategy):
             dataframe["do_predict"],
             dataframe["target_mean"],
             dataframe["target_std"],
-        ) = self.model.bridge.start(dataframe, metadata)
+        ) = self.model.bridge.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"] * 0.5
         dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"] * 1.5

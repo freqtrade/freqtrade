@@ -8,9 +8,9 @@ import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
 
-from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.strategy.interface import IStrategy
 
 
 pd.options.mode.chained_assignment = None
@@ -33,15 +33,14 @@ class IFreqaiModel(ABC):
         self.data_split_parameters = config["freqai"]["data_split_parameters"]
         self.model_training_parameters = config["freqai"]["model_training_parameters"]
         self.feature_parameters = config["freqai"]["feature_parameters"]
-        self.backtest_timerange = config["timerange"]
+        # self.backtest_timerange = config["timerange"]
 
         self.time_last_trained = None
         self.current_time = None
         self.model = None
         self.predictions = None
-        self.live_trained_timerange = None
 
-    def start(self, dataframe: DataFrame, metadata: dict, dp: DataProvider) -> DataFrame:
+    def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """
         Entry point to the FreqaiModel, it will train a new model if
         necesssary before making the prediction.
@@ -57,11 +56,18 @@ class IFreqaiModel(ABC):
         the model.
         :metadata: pair metadataa coming from strategy.
         """
-        self.pair = metadata["pair"]
-        self.dh = FreqaiDataKitchen(self.config, dataframe)
 
-        if dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            logger.info('testing live')
+        live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+
+        self.pair = metadata["pair"]
+        self.dh = FreqaiDataKitchen(self.config, dataframe, live)
+
+        if live:
+            # logger.info('testing live')
+            self.start_live(dataframe, metadata, strategy)
+
+            return (self.dh.full_predictions, self.dh.full_do_predict,
+                    self.dh.full_target_mean, self.dh.full_target_std)
 
         logger.info("going to train %s timeranges", len(self.dh.training_timeranges))
 
@@ -97,6 +103,42 @@ class IFreqaiModel(ABC):
 
         return (self.dh.full_predictions, self.dh.full_do_predict,
                 self.dh.full_target_mean, self.dh.full_target_std)
+
+    def start_live(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> None:
+
+        self.dh.set_paths()
+
+        file_exists = self.model_exists(metadata['pair'],
+                                        training_timerange=self.freqai_info[
+                                                           'live_trained_timerange'])
+
+        (retrain,
+         new_trained_timerange) = self.dh.check_if_new_training_required(self.freqai_info[
+                                                                        'live_trained_timerange'],
+                                                                         metadata)
+
+        if retrain or not file_exists:
+            self.dh.download_new_data_for_retraining(new_trained_timerange, metadata)
+            # dataframe = download-data
+            corr_dataframes, pair_dataframes = self.dh.load_pairs_histories(new_trained_timerange,
+                                                                            metadata)
+
+            unfiltered_dataframe = self.dh.use_strategy_to_populate_indicators(strategy,
+                                                                               metadata,
+                                                                               corr_dataframes,
+                                                                               pair_dataframes)
+
+            self.model = self.train(unfiltered_dataframe, metadata)
+            self.dh.save_data(self.model)
+
+            self.freqai_info
+
+        self.model = self.dh.load_data()
+        preds, do_preds = self.predict(dataframe)
+        self.dh.append_predictions(preds, do_preds, len(dataframe))
+        # dataframe should have len 1 here
+
+        return
 
     def make_labels(self, dataframe: DataFrame) -> DataFrame:
         """

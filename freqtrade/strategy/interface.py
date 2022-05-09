@@ -532,6 +532,22 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
+    def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
+                                informative: DataFrame = None, coin: str = "") -> DataFrame:
+        """
+        Function designed to automatically generate, name and merge features
+        from user indicated timeframes in the configuration file. User can add
+        additional features here, but must follow the naming convention.
+        Defined in IStrategy because Freqai needs to know it exists.
+        :params:
+        :pair: pair to be used as informative
+        :df: strategy dataframe which will receive merges from informatives
+        :tf: timeframe of the dataframe which will modify the feature names
+        :informative: the dataframe associated with the informative pair
+        :coin: the name of the coin which will modify the feature names.
+        """
+        return df
+
 ###
 # END - Intended to be overridden by strategy
 ###

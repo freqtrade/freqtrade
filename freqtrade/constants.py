@@ -440,6 +440,8 @@ CONF_SCHEMA = {
                 "train_period": {"type": "integer", "default": 0},
                 "backtest_period": {"type": "integer", "default": 7},
                 "identifier": {"type": "str", "default": "example"},
+                "live_trained_timerange": {"type": "str"},
+                "live_full_backtestrange": {"type": "str"},
                 "base_features": {"type": "list"},
                 "corr_pairlist": {"type": "list"},
                 "feature_parameters": {

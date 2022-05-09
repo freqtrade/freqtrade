@@ -13,7 +13,7 @@
         "exit": 30
     },
     "exchange": {
-        "name": "ftx",
+        "name": "binance",
         "key": "",
         "secret": "",
         "ccxt_config": {
@@ -55,7 +55,9 @@
         ],
         "train_period": 30,
         "backtest_period": 7,
-        "identifier": "example",
+        "identifier": "livetest5",
+        "live_trained_timerange": "20220330-20220429",
+        "live_full_backtestrange": "20220302-20220501",
         "base_features": [
             "rsi",
             "close_over_20sma",
@@ -68,6 +70,7 @@
             "macd"
         ],
         "corr_pairlist": [
+            "BTC/USDT",
             "ETH/USDT",
             "LINK/USDT",
             "DOT/USDT"
