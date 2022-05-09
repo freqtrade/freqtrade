@@ -25,5 +25,5 @@ nbconvert==6.5.0
 types-cachetools==5.0.1
 types-filelock==3.2.5
 types-requests==2.27.25
-types-tabulate==0.8.8
+types-tabulate==0.8.9
 types-python-dateutil==2.8.15
