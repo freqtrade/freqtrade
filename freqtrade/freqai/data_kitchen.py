@@ -16,6 +16,10 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.history import load_pair_history
+from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
+from freqtrade.resolvers import ExchangeResolver
+from freqtrade.strategy.interface import IStrategy
 
 
 SECONDS_IN_DAY = 86400
@@ -30,7 +34,7 @@ class FreqaiDataKitchen:
     author: Robert Caulk, rob.caulk@gmail.com
     """
 
-    def __init__(self, config: Dict[str, Any], dataframe: DataFrame):
+    def __init__(self, config: Dict[str, Any], dataframe: DataFrame, live: bool = False):
         self.full_dataframe = dataframe
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
@@ -45,17 +49,29 @@ class FreqaiDataKitchen:
         self.full_target_mean: npt.ArrayLike = np.array([])
         self.full_target_std: npt.ArrayLike = np.array([])
         self.model_path = Path()
-        self.model_filename = ""
+        self.model_filename: str = ""
 
-        self.full_timerange = self.create_fulltimerange(
-            self.config["timerange"], self.freqai_config["train_period"]
-        )
+        if not live:
+            self.full_timerange = self.create_fulltimerange(self.config["timerange"],
+                                                            self.freqai_config["train_period"]
+                                                            )
 
-        (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
-            self.full_timerange,
-            config["freqai"]["train_period"],
-            config["freqai"]["backtest_period"],
-        )
+            (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
+                self.full_timerange,
+                config["freqai"]["train_period"],
+                config["freqai"]["backtest_period"],
+            )
+
+    def set_paths(self) -> None:
+        self.full_path = Path(self.config['user_data_dir'] /
+                              "models" /
+                              str(self.freqai_config['live_full_backtestrange'] +
+                                  self.freqai_config['identifier']))
+
+        self.model_path = Path(self.full_path / str("sub-train" + "-" +
+                               str(self.freqai_config['live_trained_timerange'])))
+
+        return
 
     def save_data(self, model: Any) -> None:
         """
@@ -187,10 +203,10 @@ class FreqaiDataKitchen:
             labels = labels[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
-            logger.info(
-                "dropped %s training points due to NaNs, ensure all historical data downloaded",
-                len(unfiltered_dataframe) - len(filtered_dataframe),
-            )
+            # logger.info(
+            #     "dropped %s training points due to NaNs, ensure all historical data downloaded",
+            #     len(unfiltered_dataframe) - len(filtered_dataframe),
+            # )
             self.data["filter_drop_index_training"] = drop_index
 
         else:
@@ -485,11 +501,11 @@ class FreqaiDataKitchen:
                     shift = ""
                     if n > 0:
                         shift = "_shift-" + str(n)
-                    features.append(ft + shift + "_" + tf)
+                    # features.append(ft + shift + "_" + tf)
                     for p in config["freqai"]["corr_pairlist"]:
                         features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
 
-        logger.info("number of features %s", len(features))
+        # logger.info("number of features %s", len(features))
         return features
 
     def check_if_pred_in_training_spaces(self) -> None:
@@ -513,10 +529,10 @@ class FreqaiDataKitchen:
             0,
         )
 
-        logger.info(
-            "Distance checker tossed %s predictions for being too far from training data",
-            len(do_predict) - do_predict.sum(),
-        )
+        # logger.info(
+        #     "Distance checker tossed %s predictions for being too far from training data",
+        #     len(do_predict) - do_predict.sum(),
+        # )
 
         self.do_predict += do_predict
         self.do_predict -= 1
@@ -577,14 +593,104 @@ class FreqaiDataKitchen:
             / str(full_timerange + self.freqai_config["identifier"])
         )
 
+        config_path = Path(self.config["config_files"][0])
+
         if not self.full_path.is_dir():
             self.full_path.mkdir(parents=True, exist_ok=True)
             shutil.copy(
-                Path(self.config["config_files"][0]).name,
-                Path(self.full_path / self.config["config_files"][0]),
+                config_path.name,
+                Path(self.full_path / config_path.parts[-1]),
             )
 
         return full_timerange
+
+    def check_if_new_training_required(self, training_timerange: str,
+                                       metadata: dict) -> Tuple[bool, str]:
+
+        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+
+        trained_timerange = TimeRange.parse_timerange(training_timerange)
+
+        elapsed_time = (time - trained_timerange.stopts) / SECONDS_IN_DAY
+
+        trained_timerange.startts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
+        trained_timerange.stopts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
+        start = datetime.datetime.utcfromtimestamp(trained_timerange.startts)
+        stop = datetime.datetime.utcfromtimestamp(trained_timerange.stopts)
+
+        new_trained_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
+
+        retrain = elapsed_time > self.freqai_config['backtest_period']
+
+        if retrain:
+            coin, _ = metadata['pair'].split("/")
+            # set the new model_path
+            self.model_path = Path(self.full_path / str("sub-train" + "-" +
+                                   str(new_trained_timerange)))
+
+            self.model_filename = "cb_" + coin.lower() + "_" + new_trained_timerange
+            # this is not persistent at the moment TODO
+            self.freqai_config['live_trained_timerange'] = new_trained_timerange
+            # enables persistence, but not fully implemented into save/load data yer
+            self.data['live_trained_timerange'] = new_trained_timerange
+
+        return retrain, new_trained_timerange
+
+    def download_new_data_for_retraining(self, new_timerange: str, metadata: dict) -> None:
+
+        exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
+                                                  self.config, validate=False)
+        pairs = self.freqai_config['corr_pairlist'] + [metadata['pair']]
+        timerange = TimeRange.parse_timerange(new_timerange)
+        # data_handler = get_datahandler(datadir, data_format)
+
+        refresh_backtest_ohlcv_data(
+                        exchange, pairs=pairs, timeframes=self.freqai_config['timeframes'],
+                        datadir=self.config['datadir'], timerange=timerange,
+                        new_pairs_days=self.config['new_pairs_days'],
+                        erase=False, data_format=self.config['dataformat_ohlcv'],
+                        trading_mode=self.config.get('trading_mode', 'spot'),
+                        prepend=self.config.get('prepend_data', False)
+                    )
+
+    def load_pairs_histories(self, new_timerange: str, metadata: dict) -> Tuple[Dict[Any, Any],
+                                                                                DataFrame]:
+        corr_dataframes: Dict[Any, Any] = {}
+        # pair_dataframes: Dict[Any, Any] = {}
+        pairs = self.freqai_config['corr_pairlist']  # + [metadata['pair']]
+        timerange = TimeRange.parse_timerange(new_timerange)
+
+        for p in pairs:
+            corr_dataframes[p] = {}
+            for tf in self.freqai_config['timeframes']:
+                corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
+                                                           timeframe=tf,
+                                                           pair=p, timerange=timerange)
+
+        base_dataframe = [dataframe for key, dataframe in corr_dataframes.items()
+                          if metadata['pair'] in key]
+
+        # [0] indexes the lowest tf for the basepair
+        return corr_dataframes, base_dataframe[0][self.config['timeframe']]
+
+    def use_strategy_to_populate_indicators(self, strategy: IStrategy, metadata: dict,
+                                            corr_dataframes: dict,
+                                            dataframe: DataFrame) -> DataFrame:
+
+        # dataframe = pair_dataframes[0]  # this is the base tf pair df
+
+        for tf in self.freqai_config["timeframes"]:
+            # dataframe = strategy.populate_any_indicators(metadata["pair"], dataframe.copy,
+            #                                              tf, pair_dataframes[tf])
+            for i in self.freqai_config["corr_pairlist"]:
+                dataframe = strategy.populate_any_indicators(i,
+                                                             dataframe.copy(),
+                                                             tf,
+                                                             corr_dataframes[i][tf],
+                                                             coin=i.split("/")[0] + "-"
+                                                             )
+
+        return dataframe
 
     def np_encoder(self, object):
         if isinstance(object, np.generic):

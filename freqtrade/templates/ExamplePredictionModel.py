@@ -124,7 +124,7 @@ class ExamplePredictionModel(IFreqaiModel):
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
-        logger.info("--------------------Starting prediction--------------------")
+        # logger.info("--------------------Starting prediction--------------------")
 
         original_feature_list = self.dh.build_feature_list(self.config)
         filtered_dataframe, _ = self.dh.filter_features(
@@ -151,8 +151,8 @@ class ExamplePredictionModel(IFreqaiModel):
         predictions = self.model.predict(self.dh.data_dictionary["prediction_features"])
 
         # compute the non-standardized predictions
-        predictions = predictions * self.dh.data["labels_std"] + self.dh.data["labels_mean"]
+        self.dh.predictions = predictions * self.dh.data["labels_std"] + self.dh.data["labels_mean"]
 
-        logger.info("--------------------Finished prediction--------------------")
+        # logger.info("--------------------Finished prediction--------------------")
 
-        return (predictions, self.dh.do_predict)
+        return (self.dh.predictions, self.dh.do_predict)
