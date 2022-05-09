@@ -14,11 +14,13 @@ from freqtrade.commands import (start_backtesting_show, start_convert_data, star
                                 start_list_exchanges, start_list_markets, start_list_strategies,
                                 start_list_timeframes, start_new_strategy, start_show_trades,
                                 start_test_pairlist, start_trading, start_webserver)
+from freqtrade.commands.db_commands import start_db_convert
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence.models import init_db
 from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_args, log_has,
                             log_has_re, patch_exchange, patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -1458,3 +1460,28 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     assert sbr.call_count == 1
     out, err = capsys.readouterr()
     assert "Pairs for Strategy" in out
+
+
+def test_start_db_convert(mocker, fee, tmpdir, caplog):
+    db_src_file = Path(f"{tmpdir}/db.sqlite")
+    db_from = f"sqlite:///{db_src_file}"
+    db_target_file = Path(f"{tmpdir}/db_target.sqlite")
+    db_to = f"sqlite:///{db_target_file}"
+    args = [
+        "db-convert",
+        "--db-url-from",
+        db_from,
+        "--db-url",
+        db_to,
+    ]
+
+    assert not db_src_file.is_file()
+    init_db(db_from, False)
+
+    create_mock_trades(fee)
+    assert db_src_file.is_file()
+    assert not db_target_file.is_file()
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_db_convert(pargs)
+    assert db_target_file.is_file()
