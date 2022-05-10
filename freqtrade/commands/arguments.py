@@ -82,7 +82,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe", "plot_auto_open", ]
 
-ARGS_INSTALL_DB = ["db_url", "db_url_from"]
+ARGS_CONVERT_DB = ["db_url", "db_url_from"]
 
 ARGS_INSTALL_UI = ["erase_ui_only", "ui_version"]
 
@@ -183,15 +183,14 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.commands import (start_backtesting, start_backtesting_show,
-                                        start_convert_data, start_convert_trades,
-                                        start_create_userdir, start_db_convert, start_download_data,
-                                        start_edge, start_hyperopt, start_hyperopt_list,
-                                        start_hyperopt_show, start_install_ui, start_list_data,
-                                        start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_list_timeframes,
-                                        start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_test_pairlist,
-                                        start_trading, start_webserver)
+                                        start_convert_data, start_convert_db, start_convert_trades,
+                                        start_create_userdir, start_download_data, start_edge,
+                                        start_hyperopt, start_hyperopt_list, start_hyperopt_show,
+                                        start_install_ui, start_list_data, start_list_exchanges,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes, start_new_config, start_new_strategy,
+                                        start_plot_dataframe, start_plot_profit, start_show_trades,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -379,11 +378,11 @@ class Arguments:
 
         # Add db-convert subcommand
         convert_db = subparsers.add_parser(
-            "db-convert",
+            "convert-db",
             help="Migrate database to different system",
         )
-        convert_db.set_defaults(func=start_db_convert)
-        self._build_args(optionlist=ARGS_INSTALL_DB, parser=convert_db)
+        convert_db.set_defaults(func=start_convert_db)
+        self._build_args(optionlist=ARGS_CONVERT_DB, parser=convert_db)
 
         # Add install-ui subcommand
         install_ui_cmd = subparsers.add_parser(

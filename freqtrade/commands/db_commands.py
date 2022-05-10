@@ -8,7 +8,7 @@ from freqtrade.enums.runmode import RunMode
 logger = logging.getLogger(__name__)
 
 
-def start_db_convert(args: Dict[str, Any]) -> None:
+def start_convert_db(args: Dict[str, Any]) -> None:
     from sqlalchemy.orm import make_transient
 
     from freqtrade.persistence import Trade, init_db
