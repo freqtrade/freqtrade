@@ -150,7 +150,6 @@ class Configuration:
         self._args_to_config(config, argname='db_url_from',
                              logstring='Parameter --db-url-from detected ...')
 
-
         if config.get('force_entry_enable', False):
             logger.warning('`force_entry_enable` RPC message enabled.')
 

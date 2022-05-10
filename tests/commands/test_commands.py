@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -21,6 +22,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.models import init_db
+from freqtrade.persistence.pairlock_middleware import PairLocks
 from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_args, log_has,
                             log_has_re, patch_exchange, patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -1479,9 +1481,14 @@ def test_start_convert_db(mocker, fee, tmpdir, caplog):
     init_db(db_from, False)
 
     create_mock_trades(fee)
+
+    PairLocks.timeframe = '5m'
+    PairLocks.lock_pair('XRP/USDT', datetime.now(), 'Random reason 125', side='long')
     assert db_src_file.is_file()
     assert not db_target_file.is_file()
+
     pargs = get_args(args)
     pargs['config'] = None
     start_convert_db(pargs)
+
     assert db_target_file.is_file()
