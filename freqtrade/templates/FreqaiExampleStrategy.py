@@ -47,12 +47,15 @@ class FreqaiExampleStrategy(IStrategy):
     startup_candle_count: int = 300
 
     def informative_pairs(self):
-        pairs = self.config["freqai"]["corr_pairlist"]
+        whitelist_pairs = self.dp.current_whitelist()
+        corr_pairs = self.config["freqai"]["corr_pairlist"]
         informative_pairs = []
         for tf in self.config["freqai"]["timeframes"]:
-            # informative_pairs.append((self.pair, tf))
-            # informative_pairs.append([(pair, tf) for pair in pairs])
-            for pair in pairs:
+            for pair in whitelist_pairs:
+                informative_pairs.append((pair, tf))
+            for pair in corr_pairs:
+                if pair in whitelist_pairs:
+                    continue  # avoid duplication
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
