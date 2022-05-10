@@ -46,7 +46,7 @@ def get_last_sequence_ids(engine, trade_back_name, order_back_name):
     return order_id, trade_id
 
 
-def set_sequence_ids(engine, order_id, trade_id):
+def set_sequence_ids(engine, order_id, trade_id, pairlock_id=None):
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:
@@ -54,6 +54,9 @@ def set_sequence_ids(engine, order_id, trade_id):
                 connection.execute(text(f"ALTER SEQUENCE orders_id_seq RESTART WITH {order_id}"))
             if trade_id:
                 connection.execute(text(f"ALTER SEQUENCE trades_id_seq RESTART WITH {trade_id}"))
+            if pairlock_id:
+                connection.execute(
+                    text(f"ALTER SEQUENCE pairlocks_id_seq RESTART WITH {pairlock_id}"))
 
 
 def drop_index_on_table(engine, inspector, table_bak_name):
