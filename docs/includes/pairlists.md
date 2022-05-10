@@ -44,7 +44,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 ```json
 "pairlists": [
     {"method": "StaticPairList"}
-    ],
+],
 ```
 
 By default, only currently enabled pairs are allowed.
