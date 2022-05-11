@@ -108,7 +108,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "db_url_from": Arg(
         '--db-url-from',
-        help='Source db url to use when migrating database systems.',
+        help='Source db url to use when migrating a database.',
         metavar='PATH',
     ),
     "sd_notify": Arg(

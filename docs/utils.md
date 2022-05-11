@@ -569,7 +569,7 @@ optional arguments:
                       deployments (default: `sqlite:///tradesv3.sqlite` for
                       Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
                       Dry Run).
-  --db-url-from PATH  Source db url to use when migrating database systems.
+  --db-url-from PATH  Source db url to use when migrating a database.
 ```
 
 !!! Warning
