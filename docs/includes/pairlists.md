@@ -44,7 +44,7 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 ```json
 "pairlists": [
     {"method": "StaticPairList"}
-    ],
+],
 ```
 
 By default, only currently enabled pairs are allowed.
@@ -181,7 +181,7 @@ Example to remove the first 10 pairs from the pairlist:
     `VolumeFilter`.
 
 !!! Note
-    An offset larger then the total length of the incoming pairlist will result in an empty pairlist.
+    An offset larger than the total length of the incoming pairlist will result in an empty pairlist.
 
 #### PerformanceFilter
 

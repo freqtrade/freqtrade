@@ -20,7 +20,7 @@ class Okx(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 300,
+        "ohlcv_candle_limit": 100,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }

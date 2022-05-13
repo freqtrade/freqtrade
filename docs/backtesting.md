@@ -466,7 +466,7 @@ You can get an overview over daily / weekly or monthly results by using the `--b
 To visualize daily and weekly breakdowns, you can use the following:
 
 ``` bash
-freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
+freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day week
 ```
 
 ``` output
@@ -482,7 +482,7 @@ freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
 
 ```
 
-The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day.
+The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day. Below that there will be a second table for the summarized values of weeks indicated by the date of the closing Sunday. The same would apply to a monthly breakdown indicated by the last day of the month.
 
 ### Backtest result caching
 

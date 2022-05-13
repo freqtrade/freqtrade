@@ -6,9 +6,9 @@
 
 coveralls==3.3.1
 flake8==4.0.1
-flake8-tidy-imports==4.6.0
+flake8-tidy-imports==4.7.0
 mypy==0.950
-pre-commit==2.18.1
+pre-commit==2.19.0
 pytest==7.1.2
 pytest-asyncio==0.18.3
 pytest-cov==3.0.0
@@ -25,5 +25,5 @@ nbconvert==6.5.0
 types-cachetools==5.0.1
 types-filelock==3.2.5
 types-requests==2.27.25
-types-tabulate==0.8.8
-types-python-dateutil==2.8.14
+types-tabulate==0.8.9
+types-python-dateutil==2.8.15

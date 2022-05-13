@@ -147,6 +147,9 @@ class Configuration:
             config.update({'db_url': self.args['db_url']})
             logger.info('Parameter --db-url detected ...')
 
+        self._args_to_config(config, argname='db_url_from',
+                             logstring='Parameter --db-url-from detected ...')
+
         if config.get('force_entry_enable', False):
             logger.warning('`force_entry_enable` RPC message enabled.')
 

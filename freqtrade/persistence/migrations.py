@@ -46,7 +46,7 @@ def get_last_sequence_ids(engine, trade_back_name, order_back_name):
     return order_id, trade_id
 
 
-def set_sequence_ids(engine, order_id, trade_id):
+def set_sequence_ids(engine, order_id, trade_id, pairlock_id=None):
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:
@@ -54,6 +54,9 @@ def set_sequence_ids(engine, order_id, trade_id):
                 connection.execute(text(f"ALTER SEQUENCE orders_id_seq RESTART WITH {order_id}"))
             if trade_id:
                 connection.execute(text(f"ALTER SEQUENCE trades_id_seq RESTART WITH {trade_id}"))
+            if pairlock_id:
+                connection.execute(
+                    text(f"ALTER SEQUENCE pairlocks_id_seq RESTART WITH {pairlock_id}"))
 
 
 def drop_index_on_table(engine, inspector, table_bak_name):
@@ -99,7 +102,10 @@ def migrate_trades_and_orders_table(
     liquidation_price = get_column_def(cols, 'liquidation_price',
                                        get_column_def(cols, 'isolated_liq', 'null'))
     # sqlite does not support literals for booleans
-    is_short = get_column_def(cols, 'is_short', '0')
+    if engine.name == 'postgresql':
+        is_short = get_column_def(cols, 'is_short', 'false')
+    else:
+        is_short = get_column_def(cols, 'is_short', '0')
 
     # Margin Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')

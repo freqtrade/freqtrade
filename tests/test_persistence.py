@@ -1416,14 +1416,14 @@ def test_migrate_set_sequence_ids():
     engine = MagicMock()
     engine.begin = MagicMock()
     engine.name = 'postgresql'
-    set_sequence_ids(engine, 22, 55)
+    set_sequence_ids(engine, 22, 55, 5)
 
     assert engine.begin.call_count == 1
     engine.reset_mock()
     engine.begin.reset_mock()
 
     engine.name = 'somethingelse'
-    set_sequence_ids(engine, 22, 55)
+    set_sequence_ids(engine, 22, 55, 6)
 
     assert engine.begin.call_count == 0
 
