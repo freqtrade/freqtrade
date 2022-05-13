@@ -522,7 +522,7 @@ tc32 = BTContainer(data=[
     trailing_stop_positive=0.03,
     trades=[
         BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3, is_short=True)
-    ]
+]
 )
 
 # Test 33: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
@@ -662,7 +662,7 @@ tc41 = BTContainer(data=[
     custom_entry_price=4000,
     trades=[
         BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1, is_short=True)
-    ]
+]
 )
 
 # Test 42: Custom-entry-price around candle low
@@ -933,3 +933,5 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)
         assert res.is_short == trade.is_short
+    backtesting.cleanup()
+    del backtesting
