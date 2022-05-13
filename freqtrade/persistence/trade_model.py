@@ -4,15 +4,13 @@ This module contains the class to persist trades into SQLite
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from math import isclose
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         UniqueConstraint, desc, func)
 from sqlalchemy.orm import Query, relationship
 
-from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
-                                 BuySell, LongShort)
+from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES, BuySell, LongShort
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -203,7 +201,6 @@ class LocalTrade():
     trades: List['LocalTrade'] = []
     trades_open: List['LocalTrade'] = []
     total_profit: float = 0
-    realized_profit: float = 0
 
     id: int = 0
 
@@ -404,7 +401,6 @@ class LocalTrade():
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.close_date else None,
-            'realized_profit': self.realized_profit or 0.0,
             'close_rate': self.close_rate,
             'close_rate_requested': self.close_rate_requested,
             'close_profit': self.close_profit,  # Deprecated
@@ -569,23 +565,14 @@ class LocalTrade():
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            # condition to avoid reset value when updating fees
-            if self.open_order_id == order.order_id:
-                self.open_order_id = None
-            else:
-                logger.warning(
-                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
+            self.open_order_id = None
             self.recalc_trade_from_orders()
         elif order.ft_order_side == self.exit_side:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
-            if isclose(order.safe_amount_after_fee,
-                       self.amount, abs_tol=MATH_CLOSE_PREC):
-                self.close(order.safe_price)
-            else:
-                self.process_exit_sub_trade(order)
+            self.close(order.safe_price)
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -597,35 +584,6 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
-    def process_exit_sub_trade(self, order: Order, is_closed: bool = True) -> None:
-        exit_amount = order.safe_amount_after_fee
-        exit_rate = order.safe_price
-        exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
-        profit = self.calc_profit2(self.open_rate, exit_rate, exit_amount) * int(self.leverage)
-        if self.is_short:
-            profit *= -1
-        if is_closed:
-            self.amount -= exit_amount
-            self.stake_amount = self.open_rate * self.amount
-            self.realized_profit += profit
-            logger.info(
-                'Processed exit sub trade for %s',
-                self
-            )
-        self.close_profit_abs = profit
-        if self.is_short:
-            self.close_profit = (exit_stake_amount - profit) / exit_stake_amount - 1
-        else:
-            self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
-
-        self.recalc_open_trade_value()
-
-    def calc_profit2(self, open_rate: float, close_rate: float,
-                     amount: float) -> float:
-        return float(Decimal(amount)
-                     * (Decimal(1 - self.fee_close) * Decimal(close_rate)
-                        - Decimal(1 + self.fee_open) * Decimal(open_rate)))
-
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
@@ -634,7 +592,7 @@ class LocalTrade():
         self.close_rate = rate
         self.close_date = self.close_date or datetime.utcnow()
         self.close_profit = self.calc_profit_ratio()
-        self.close_profit_abs = self.calc_profit() + self.realized_profit
+        self.close_profit_abs = self.calc_profit()
         self.is_open = False
         self.exit_order_status = 'closed'
         self.open_order_id = None
@@ -848,22 +806,19 @@ class LocalTrade():
 
         total_amount = 0.0
         total_stake = 0.0
-        avg_price = None
-
         for o in self.orders:
-            if o.ft_is_open or not o.filled:
+            if (o.ft_is_open or
+                    (o.ft_order_side != self.entry_side) or
+                    (o.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
             tmp_amount = o.safe_amount_after_fee
-            tmp_price = o.safe_price
-            is_exit = o.ft_order_side != self.enter_side
-            side = -1 if is_exit else 1
+            tmp_price = o.average or o.price
+            if o.filled is not None:
+                tmp_amount = o.filled
             if tmp_amount > 0.0 and tmp_price is not None:
-                total_amount += tmp_amount * side
-                price = avg_price if is_exit else tmp_price
-                total_stake += price * tmp_amount * side
-                if total_amount > 0:
-                    avg_price = total_stake / total_amount
+                total_amount += tmp_amount
+                total_stake += tmp_price * tmp_amount
 
         if total_amount > 0:
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
@@ -895,7 +850,7 @@ class LocalTrade():
         """
         orders = self.orders
         if order_side:
-            orders = [o for o in orders if o.ft_order_side == order_side]
+            orders = [o for o in self.orders if o.ft_order_side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
@@ -910,9 +865,9 @@ class LocalTrade():
         :return: array of Order objects
         """
         return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
-                and o.ft_is_open is False
-                and o.filled
-                and o.status in NON_OPEN_EXCHANGE_STATES]
+                and o.ft_is_open is False and
+                (o.filled or 0) > 0 and
+                o.status in NON_OPEN_EXCHANGE_STATES]
 
     @property
     def nr_of_successful_entries(self) -> int:
@@ -1062,7 +1017,6 @@ class Trade(_DECL_BASE, LocalTrade):
     open_trade_value = Column(Float)
     close_rate: Optional[float] = Column(Float)
     close_rate_requested = Column(Float)
-    realized_profit = Column(Float, default=0.0)
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
@@ -1108,7 +1062,6 @@ class Trade(_DECL_BASE, LocalTrade):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.realized_profit = 0
         self.recalc_open_trade_value()
 
     def delete(self) -> None:
