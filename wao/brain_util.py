@@ -5,6 +5,7 @@ import os
 import time
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
+from wao.notifier import post_request
 import pickle
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
@@ -32,6 +33,7 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
 
     romeo = Romeo.instance(is_test_mode, True)
+    post_request(str(romeo.__hash__()))
     BrainConfig.ROMEO_POOL[coin] = romeo
     romeo.start()
 
