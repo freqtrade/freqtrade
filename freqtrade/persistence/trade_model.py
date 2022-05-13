@@ -656,7 +656,7 @@ class LocalTrade():
     def recalc_open_trade_value(self) -> None:
         """
         Recalculate open_trade_value.
-        Must be called whenever open_rate, fee_open or is_short is changed.
+        Must be called whenever open_rate, fee_open is changed.
         """
         self.open_trade_value = self._calc_open_trade_value()
 
