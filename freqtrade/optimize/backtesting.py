@@ -548,7 +548,7 @@ class Backtesting:
                 # Custom exit pricing only for exit-signals
                 if order_type == 'limit':
                     close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                      default_retval=close_rate)(
+                                                       default_retval=close_rate)(
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
                         proposed_rate=close_rate, current_profit=current_profit,
