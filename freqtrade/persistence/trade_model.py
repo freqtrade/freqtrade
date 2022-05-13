@@ -581,6 +581,12 @@ class LocalTrade():
                 payment = "BUY" if self.is_short else "SELL"
                 # * On margin shorts, you buy a little bit more than the amount (amount + interest)
                 logger.info(f'{order.order_type.upper()}_{payment} has been fulfilled for {self}.')
+            # condition to avoid reset value when updating fees
+            if self.open_order_id == order.order_id:
+                self.open_order_id = None
+            else:
+                logger.warning(
+                    f'Got different open_order_id {self.open_order_id} != {order.order_id}')
             if isclose(order.safe_amount_after_fee,
                        self.amount, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)

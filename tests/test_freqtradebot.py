@@ -3213,7 +3213,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,
+        'stake_amount': pytest.approx(60),
     } == last_msg
 
 
@@ -3275,7 +3275,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,
+        'stake_amount': pytest.approx(60),
             } == last_msg
 
 
@@ -3358,7 +3358,7 @@ def test_execute_trade_exit_custom_exit_price(
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,
+        'stake_amount': pytest.approx(60),
     } == last_msg
 
 
@@ -3428,7 +3428,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,
+        'stake_amount': pytest.approx(60),
     } == last_msg
 
 
@@ -3688,7 +3688,7 @@ def test_execute_trade_exit_market_order(
         'close_date': ANY,
         'close_rate': ANY,
         'sub_trade': False,
-        'stake_amount': 60.0,
+        'stake_amount': pytest.approx(60),
 
     } == last_msg
 
@@ -5613,7 +5613,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.stake_amount == bid * amount
     assert not trade.fee_updated('buy')
 
-    freqtrade.check_handle_timedout()
+    freqtrade.manage_open_orders()
 
     trade = Trade.query.first()
     assert trade

@@ -549,7 +549,7 @@ class FreqtradeBot(LoggingMixin):
                     return
                 else:
                     logger.debug("Max adjustment entries is set to unlimited.")
-            self.execute_entry(trade.pair, stake_amount, current_entry_rate,
+            self.execute_entry(trade.pair, stake_amount, None and current_entry_rate,
                                trade=trade, is_short=trade.is_short)
 
         if stake_amount is not None and stake_amount < 0.0:
