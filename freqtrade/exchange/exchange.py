@@ -630,7 +630,8 @@ class Exchange:
             if required_candle_call_count > 5:
                 # Only allow 5 calls per pair to somewhat limit the impact
                 raise OperationalException(
-                    f"This strategy requires {startup_candles} candles to start, which is more than 5x "
+                    f"This strategy requires {startup_candles} candles to start, "
+                    "which is more than 5x "
                     f"the amount of candles {self.name} provides for {timeframe}.")
         elif required_candle_call_count > 1:
             raise OperationalException(

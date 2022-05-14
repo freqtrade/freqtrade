@@ -41,11 +41,13 @@ class Okx(Exchange):
     net_only = True
 
     def ohlcv_candle_limit(
-                self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
         """
         Exchange ohlcv candle limit
-        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
-        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        OKX has the following behaviour:
+        * 300 candles for uptodate data
+        * 100 candles for historic data
+        * 100 candles for additional candles (not futures or spot).
         :param timeframe: Timeframe to check
         :param candle_type: Candle-type
         :param since_ms: Candle-type
