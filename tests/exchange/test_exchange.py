@@ -1882,7 +1882,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv(
         pair,
         "5m",
@@ -1948,7 +1948,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_ty
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv_as_df(
         pair,
         "5m",
@@ -2002,7 +2002,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
         )
     # Required candles
     candles = (end_ts - start_ts) / 300_000
-    exp = candles // exchange.ohlcv_candle_limit('5m') + 1
+    exp = candles // exchange.ohlcv_candle_limit('5m', CandleType.SPOT) + 1
 
     # Depending on the exchange, this should be called between 1 and 6 times.
     assert exchange._api_async.fetch_ohlcv.call_count == exp
@@ -3349,7 +3349,7 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
             expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
             # This should only run for bittrex
             assert exchange_name == 'bittrex'
-        assert exchange.ohlcv_candle_limit(timeframe) == expected
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == expected
 
 
 def test_timeframe_to_minutes():

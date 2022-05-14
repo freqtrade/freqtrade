@@ -310,7 +310,7 @@ class Exchange:
             logger.info(f"API {endpoint}: {response}")
 
     def ohlcv_candle_limit(
-            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int]) -> int:
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
         """
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits

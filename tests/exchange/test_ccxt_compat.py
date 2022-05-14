@@ -232,7 +232,8 @@ class TestCCXTExchange():
         assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
         # assert len(exchange.klines(pair_tf)) > 200
         # Assume 90% uptime ...
-        assert len(exchange.klines(pair_tf)) > exchange.ohlcv_candle_limit(timeframe) * 0.90
+        assert len(exchange.klines(pair_tf)) > exchange.ohlcv_candle_limit(
+            timeframe, CandleType.SPOT) * 0.90
         # Check if last-timeframe is within the last 2 intervals
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
