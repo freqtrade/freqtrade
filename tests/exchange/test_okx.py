@@ -20,14 +20,17 @@ def test_okx_ohlcv_candle_limit(default_conf, mocker):
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES) == 300
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.MARK) == 100
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUNDING_RATE) == 100
+
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, start_time) == 100
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES, start_time) == 100
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.MARK, start_time) == 100
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUNDING_RATE, start_time) == 100
         one_call = int((datetime.now(timezone.utc) - timedelta(
             minutes=290 * timeframe_to_minutes(timeframe))).timestamp() * 1000)
+
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, one_call) == 300
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES, one_call) == 300
+
         one_call = int((datetime.now(timezone.utc) - timedelta(
             minutes=320 * timeframe_to_minutes(timeframe))).timestamp() * 1000)
         assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, one_call) == 100

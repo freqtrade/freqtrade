@@ -10,7 +10,7 @@ from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange import timeframe_to_minutes
+from freqtrade.exchange.exchange import date_minus_candles
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class Okx(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 300,  # Warning, special case with data prior to X months
+        "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }
@@ -53,15 +53,13 @@ class Okx(Exchange):
         :param since_ms: Candle-type
         :return: Candle limit as integer
         """
-        now = datetime.now(timezone.utc)
-        offset_mins = timeframe_to_minutes(timeframe) * self._ft_has['ohlcv_candle_limit']
-        if since_ms and since_ms < ((now - timedelta(minutes=offset_mins)).timestamp() * 1000):
-            return 100
-        if candle_type not in (CandleType.FUTURES, CandleType.SPOT):
-            return 100
+        if (
+            candle_type in (CandleType.FUTURES, CandleType.SPOT) and
+            (not since_ms or since_ms > (date_minus_candles(timeframe, 300).timestamp() * 1000))
+        ):
+            return 300
 
-        return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
-            timeframe, self._ft_has.get('ohlcv_candle_limit')))
+        return super().ohlcv_candle_limit(timeframe, candle_type, since_ms)
 
     @retrier
     def additional_exchange_init(self) -> None:
