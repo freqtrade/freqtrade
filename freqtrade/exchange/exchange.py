@@ -2687,9 +2687,10 @@ def timeframe_to_msecs(timeframe: str) -> int:
 
 def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     """
-    Use Timeframe and determine last possible candle.
+    Use Timeframe and determine the candle start date for this date.
+    Does not round when given a candle start date.
     :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to utcnow()
+    :param date: date to use. Defaults to now(utc)
     :returns: date of previous candle (with utc timezone)
     """
     if not date:
@@ -2704,7 +2705,7 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     """
     Use Timeframe and determine next candle.
     :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to utcnow()
+    :param date: date to use. Defaults to now(utc)
     :returns: date of next candle (with utc timezone)
     """
     if not date:
@@ -2712,6 +2713,23 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def date_minus_candles(
+        timeframe: str, candle_count: int, date: Optional[datetime] = None) -> datetime:
+    """
+    subtract X candles from a date.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param candle_count: Amount of candles to subtract.
+    :param date: date to use. Defaults to now(utc)
+
+    """
+    if not date:
+        date = datetime.now(timezone.utc)
+
+    tf_min = timeframe_to_minutes(timeframe)
+    new_date = timeframe_to_prev_date(timeframe, date) - timedelta(minutes=tf_min * candle_count)
+    return new_date
 
 
 def market_is_active(market: Dict) -> bool:

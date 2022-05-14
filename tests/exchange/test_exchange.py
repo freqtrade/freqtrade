@@ -17,9 +17,9 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOr
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_credentials)
-from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
-                                         timeframe_to_next_date, timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+from freqtrade.exchange.exchange import (date_minus_candles, market_is_active, timeframe_to_minutes,
+                                         timeframe_to_msecs, timeframe_to_next_date,
+                                         timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
@@ -3429,6 +3429,17 @@ def test_timeframe_to_next_date():
 
     date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
+
+
+def test_date_minus_candles():
+
+    date = datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)
+
+    assert date_minus_candles("5m", 3, date) == date - timedelta(minutes=15)
+    assert date_minus_candles("5m", 5, date) == date - timedelta(minutes=25)
+    assert date_minus_candles("1m", 6, date) == date - timedelta(minutes=6)
+    assert date_minus_candles("1h", 3, date) == date - timedelta(hours=3, minutes=25)
+    assert date_minus_candles("1h", 3) == timeframe_to_prev_date('1h') - timedelta(hours=3)
 
 
 @pytest.mark.parametrize(
