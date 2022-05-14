@@ -309,12 +309,15 @@ class Exchange:
         if self.log_responses:
             logger.info(f"API {endpoint}: {response}")
 
-    def ohlcv_candle_limit(self, timeframe: str) -> int:
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int]) -> int:
         """
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
+        :param candle_type: Candle-type
+        :param since_ms: Candle-type
         :return: Candle limit as integer
         """
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
@@ -616,7 +619,7 @@ class Exchange:
         Checks if required startup_candles is more than ohlcv_candle_limit().
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
         """
-        candle_limit = self.ohlcv_candle_limit(timeframe)
+        candle_limit = self.ohlcv_candle_limit(timeframe, self._config['candle_type_def'], None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
         # Allow 5 calls to the exchange per pair
@@ -1708,7 +1711,8 @@ class Exchange:
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
 
-        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
+            timeframe, candle_type, since_ms)
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
@@ -1744,7 +1748,8 @@ class Exchange:
         if (not since_ms
                 and (self._ft_has["ohlcv_require_since"] or self.required_candle_call_count > 1)):
             # Multiple calls for one pair - to get more history
-            one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
+            one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
+                timeframe, candle_type, since_ms)
             move_to = one_call * self.required_candle_call_count
             now = timeframe_to_next_date(timeframe)
             since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
@@ -1862,7 +1867,9 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
-            candle_limit = self.ohlcv_candle_limit(timeframe)
+            candle_limit = self.ohlcv_candle_limit(
+                timeframe, candle_type=candle_type, since_ms=since_ms)
+
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
             if candle_type != CandleType.FUNDING_RATE:

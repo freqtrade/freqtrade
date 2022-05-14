@@ -1,13 +1,16 @@
 import logging
-from typing import Dict, List, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Tuple
 
 import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange import timeframe_to_minutes
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +23,7 @@ class Okx(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 100,
+        "ohlcv_candle_limit": 300,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }
@@ -36,6 +39,27 @@ class Okx(Exchange):
     ]
 
     net_only = True
+
+    def ohlcv_candle_limit(
+                self, timeframe: str, candle_type: CandleType, since_ms: Optional[int]) -> int:
+        """
+        Exchange ohlcv candle limit
+        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
+        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        :param timeframe: Timeframe to check
+        :param candle_type: Candle-type
+        :param since_ms: Candle-type
+        :return: Candle limit as integer
+        """
+        now = datetime.now(timezone.utc)
+        offset_mins = timeframe_to_minutes(timeframe) * self._ft_has['ohlcv_candle_limit']
+        if since_ms and since_ms < ((now - timedelta(minutes=offset_mins)).timestamp() * 1000):
+            return 100
+        if candle_type not in (CandleType.FUTURES, CandleType.SPOT):
+            return 100
+
+        return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
+            timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
     @retrier
     def additional_exchange_init(self) -> None:
