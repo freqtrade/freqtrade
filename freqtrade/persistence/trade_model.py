@@ -502,6 +502,7 @@ class LocalTrade():
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
             return
+        refresh = False if self.nr_of_successful_entries > 0 else refresh
 
         leverage = self.leverage or 1.0
         if self.is_short:
