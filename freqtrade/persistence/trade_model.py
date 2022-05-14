@@ -491,7 +491,7 @@ class LocalTrade():
         self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
-                         initial: bool = False) -> None:
+                         initial: bool = False, refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
@@ -516,8 +516,7 @@ class LocalTrade():
                 new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None:
-            logger.debug(f"{self.pair} - Assigning new stoploss...")
+        if self.initial_stop_loss_pct is None or refresh:
             self._set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             self.initial_stop_loss_pct = -1 * abs(stoploss)

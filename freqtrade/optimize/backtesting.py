@@ -780,6 +780,8 @@ class Backtesting:
                     # interest_rate=interest_rate,
                     orders=[],
                 )
+            elif trade.nr_of_successful_entries == 0:
+                trade.open_rate = propose_rate
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
@@ -940,6 +942,8 @@ class Backtesting:
                                   requested_rate=requested_rate,
                                   requested_stake=(order.remaining * order.price),
                                   direction='short' if trade.is_short else 'long')
+                trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss,
+                                       initial=False, refresh=True)
             else:
                 # assumption: there can't be multiple open entry orders at any given time
                 return (trade.nr_of_successful_entries == 0)
