@@ -64,6 +64,7 @@ class Exchange:
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
+        "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
         "ohlcv_partial_candle": True,
         "ohlcv_require_since": False,
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -621,13 +622,17 @@ class Exchange:
         # Allow 5 calls to the exchange per pair
         required_candle_call_count = int(
             (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
+        if self._ft_has['ohlcv_has_history']:
 
-        if required_candle_call_count > 5:
-            # Only allow 5 calls per pair to somewhat limit the impact
+            if required_candle_call_count > 5:
+                # Only allow 5 calls per pair to somewhat limit the impact
+                raise OperationalException(
+                    f"This strategy requires {startup_candles} candles to start, which is more than 5x "
+                    f"the amount of candles {self.name} provides for {timeframe}.")
+        elif required_candle_call_count > 1:
             raise OperationalException(
-                f"This strategy requires {startup_candles} candles to start, which is more than 5x "
+                f"This strategy requires {startup_candles} candles to start, which is more than "
                 f"the amount of candles {self.name} provides for {timeframe}.")
-
         if required_candle_call_count > 1:
             logger.warning(f"Using {required_candle_call_count} calls to get OHLCV. "
                            f"This can result in slower operations for the bot. Please check "

@@ -219,7 +219,7 @@ class TestCCXTExchange():
                     assert len(l2['asks']) == next_limit
                     assert len(l2['asks']) == next_limit
 
-    def test_fetch_ohlcv(self, exchange):
+    def test_ccxt_fetch_ohlcv(self, exchange):
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']

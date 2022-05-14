@@ -1084,6 +1084,13 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     with pytest.raises(OperationalException, match=r'This strategy requires 6000.*'):
         Exchange(default_conf)
 
+    # Emulate kraken mode
+    ex._ft_has['ohlcv_has_history'] = False
+    with pytest.raises(OperationalException,
+                       match=r'This strategy requires 2500.*, '
+                             r'which is more than the amount.*'):
+        ex.validate_required_startup_candles(2500, '5m')
+
 
 def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)

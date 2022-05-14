@@ -835,6 +835,23 @@ def test_download_data_trades(mocker, caplog):
         start_download_data(pargs)
 
 
+def test_download_data_data_invalid(mocker):
+    patch_exchange(mocker, id="kraken")
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "download-data",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    with pytest.raises(OperationalException, match=r"Historic klines not available for .*"):
+        start_download_data(pargs)
+
+
 def test_start_convert_trades(mocker, caplog):
     convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
                                 MagicMock(return_value=[]))
