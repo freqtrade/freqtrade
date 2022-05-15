@@ -82,6 +82,11 @@ class StrategyTestV3(IStrategy):
     #         })
     #     return prot
 
+    bot_started = False
+
+    def bot_start(self):
+        self.bot_started = True
+
     def informative_pairs(self):
 
         return []
@@ -183,7 +188,7 @@ class StrategyTestV3(IStrategy):
                               current_profit: float, min_stake: float, max_stake: float, **kwargs):
 
         if current_profit < -0.0075:
-            orders = trade.select_filled_orders(trade.enter_side)
+            orders = trade.select_filled_orders(trade.entry_side)
             return round(orders[0].cost, 0)
 
         return None

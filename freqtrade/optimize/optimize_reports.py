@@ -9,10 +9,10 @@ from pandas import DataFrame, to_datetime
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
-from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
-                                       calculate_max_drawdown)
-from freqtrade.misc import (decimals_per_coin, file_dump_json, get_backtest_metadata_filename,
-                            round_coin_value)
+from freqtrade.data.metrics import (calculate_cagr, calculate_csum, calculate_market_change,
+                                    calculate_max_drawdown)
+from freqtrade.misc import decimals_per_coin, file_dump_joblib, file_dump_json, round_coin_value
+from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,29 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
+
+
+def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> Path:
+    """
+    Stores backtest trade signal candles
+    :param recordfilename: Path object, which can either be a filename or a directory.
+        Filenames will be appended with a timestamp right before the suffix
+        while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
+        as filename
+    :param stats: Dict containing the backtesting signal candles
+    """
+    if recordfilename.is_dir():
+        filename = (recordfilename /
+                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl')
+    else:
+        filename = Path.joinpath(
+            recordfilename.parent,
+            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl'
+        )
+
+    file_dump_joblib(filename, candles)
+
+    return filename
 
 
 def _get_line_floatfmt(stake_currency: str) -> List[str]:
@@ -166,7 +189,7 @@ def generate_tag_metrics(tag_type: str,
         return []
 
 
-def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
+def generate_exit_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
     """
     Generate small table outlining Backtest results
     :param max_open_trades: Max_open_trades parameter
@@ -175,8 +198,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
     """
     tabular_data = []
 
-    for reason, count in results['sell_reason'].value_counts().iteritems():
-        result = results.loc[results['sell_reason'] == reason]
+    for reason, count in results['exit_reason'].value_counts().iteritems():
+        result = results.loc[results['exit_reason'] == reason]
 
         profit_mean = result['profit_ratio'].mean()
         profit_sum = result['profit_ratio'].sum()
@@ -184,7 +207,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 
         tabular_data.append(
             {
-                'sell_reason': reason,
+                'exit_reason': reason,
                 'trades': count,
                 'wins': len(result[result['profit_abs'] > 0]),
                 'draws': len(result[result['profit_abs'] == 0]),
@@ -241,7 +264,7 @@ def generate_edge_table(results: dict) -> str:
 
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
-                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
 def _get_resample_from_period(period: str) -> str:
@@ -382,7 +405,7 @@ def generate_strategy_stats(pairlist: List[str],
     enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
                                              results=results, skip_nan=False)
 
-    exit_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
+    exit_reason_stats = generate_exit_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
                                               starting_balance=start_balance,
@@ -406,7 +429,7 @@ def generate_strategy_stats(pairlist: List[str],
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
         'results_per_enter_tag': enter_tag_results,
-        'sell_reason_summary': exit_reason_stats,
+        'exit_reason_summary': exit_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
 
@@ -423,6 +446,7 @@ def generate_strategy_stats(pairlist: List[str],
         'profit_total_abs': results['profit_abs'].sum(),
         'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
         'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
+        'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
         'backtest_start': min_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_start_ts': int(min_date.timestamp() * 1000),
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
@@ -460,10 +484,10 @@ def generate_strategy_stats(pairlist: List[str],
         'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached', False),
         'use_custom_stoploss': config.get('use_custom_stoploss', False),
         'minimal_roi': config['minimal_roi'],
-        'use_sell_signal': config['use_sell_signal'],
-        'sell_profit_only': config['sell_profit_only'],
-        'sell_profit_offset': config['sell_profit_offset'],
-        'ignore_roi_if_buy_signal': config['ignore_roi_if_buy_signal'],
+        'use_exit_signal': config['use_exit_signal'],
+        'exit_profit_only': config['exit_profit_only'],
+        'exit_profit_offset': config['exit_profit_offset'],
+        'ignore_roi_if_entry_signal': config['ignore_roi_if_entry_signal'],
         **daily_stats,
         **trade_stats
     }
@@ -474,9 +498,12 @@ def generate_strategy_stats(pairlist: List[str],
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance)
+        (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
+             results, value_col='profit_abs', starting_balance=start_balance, relative=True)
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
+            'max_relative_drawdown': max_relative_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
             'drawdown_start_ts': drawdown_start.timestamp() * 1000,
@@ -497,6 +524,7 @@ def generate_strategy_stats(pairlist: List[str],
         strat_stats.update({
             'max_drawdown': 0.0,
             'max_drawdown_account': 0.0,
+            'max_relative_drawdown': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
             'max_drawdown_high': 0.0,
@@ -572,7 +600,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+def text_table_exit_reason(exit_reason_stats: List[Dict[str, Any]], stake_currency: str) -> str:
     """
     Generate small table outlining Backtest results
     :param sell_reason_stats: Exit reason metrics
@@ -590,12 +618,12 @@ def text_table_exit_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t['sell_reason'], t['trades'],
+        t.get('exit_reason', t.get('sell_reason')), t['trades'],
         _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
-    ] for t in sell_reason_stats]
+    ] for t in exit_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
@@ -705,6 +733,26 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                        strat_results['stake_currency'])),
         ] if strat_results.get('trade_count_short', 0) > 0 else []
 
+        drawdown_metrics = []
+        if 'max_relative_drawdown' in strat_results:
+            # Compatibility to show old hyperopt results
+            drawdown_metrics.append(
+                ('Max % of account underwater', f"{strat_results['max_relative_drawdown']:.2%}")
+            )
+        drawdown_metrics.extend([
+            ('Absolute Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
+            if 'max_drawdown_account' in strat_results else (
+                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
+            ('Absolute Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+                                                   strat_results['stake_currency'])),
+            ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
+                                               strat_results['stake_currency'])),
+            ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
+                                              strat_results['stake_currency'])),
+            ('Drawdown Start', strat_results['drawdown_start']),
+            ('Drawdown End', strat_results['drawdown_end']),
+        ])
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
@@ -723,6 +771,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
+            ('CAGR %', f"{strat_results['cagr']:.2%}" if 'cagr' in strat_results else 'N/A'),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',
              f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),
@@ -759,18 +808,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
-            # Compatibility to show old hyperopt results
-            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
-            if 'max_drawdown_account' in strat_results else (
-                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
-            ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
-                                          strat_results['stake_currency'])),
-            ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
-                                               strat_results['stake_currency'])),
-            ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
-                                              strat_results['stake_currency'])),
-            ('Drawdown Start', strat_results['drawdown_start']),
-            ('Drawdown End', strat_results['drawdown_end']),
+            *drawdown_metrics,
             ('Market change', f"{strat_results['market_change']:.2%}"),
         ]
 
@@ -813,7 +851,8 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
             print(' ENTER TAG STATS '.center(len(table.splitlines()[0]), '='))
         print(table)
 
-    table = text_table_exit_reason(sell_reason_stats=results['sell_reason_summary'],
+    exit_reasons = results.get('exit_reason_summary', results.get('sell_reason_summary'))
+    table = text_table_exit_reason(exit_reason_stats=exit_reasons,
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
         print(' EXIT REASON STATS '.center(len(table.splitlines()[0]), '='))

@@ -64,7 +64,10 @@ Binance supports [time_in_force](configuration.md#understand-order_time_in_force
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
 Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
-### Binance Futures' order pricing
+### Binance Futures
+
+Binance has specific (unfortunately complex) [Futures Trading Quantitative Rules](https://www.binance.com/en/support/faq/4f462ebe6ff445d4a170be7d9e897272) which need to be followed, and which prohibit a too low stake-amount (among others) for too many orders.
+Violating these rules will result in a trading restriction.
 
 When trading on Binance Futures market, orderbook must be used because there is no price ticker data for futures.
 
@@ -226,6 +229,11 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
 
 !!! Warning
     OKX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
+
+!!! Warning "Futures"
+    OKX Futures has the concept of "position mode" - which can be Net or long/short (hedge mode).
+    Freqtrade supports both modes - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
+    OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
 
 ## Gate.io
 

@@ -39,6 +39,14 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
+### Experimentally, freqtrade also supports futures on the following exchanges
+
+- [X] [Binance](https://www.binance.com/)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [OKX](https://okx.com/).
+
+Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
+
 ### Community tested
 
 Exchanges confirmed working by the community:
@@ -129,6 +137,7 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 - `/status <trade_id>|[table]`: Lists all or specific open trades.
 - `/profit [<n>]`: Lists cumulative profit from all finished trades, over the last n days.
 - `/forceexit <trade_id>|all`: Instantly exits the given trade (Ignoring `minimum_roi`).
+- `/fx <trade_id>|all`: Alias to `/forceexit`
 - `/performance`: Show performance of each finished trade grouped by pair
 - `/balance`: Show account balance per currency.
 - `/daily <n>`: Shows profit or loss per day, over the last n days.

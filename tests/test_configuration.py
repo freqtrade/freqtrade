@@ -18,7 +18,8 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
 from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
-from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
+from freqtrade.configuration.load_config import (load_config_file, load_file, load_from_files,
+                                                 log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -160,7 +161,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch(
-        'freqtrade.configuration.configuration.load_config_file',
+        'freqtrade.configuration.load_config.load_config_file',
         configsmock
     )
 
@@ -191,7 +192,7 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
 
     configsmock = MagicMock(side_effect=config_files)
-    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
+    mocker.patch('freqtrade.configuration.load_config.load_config_file', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json', 'test2_conf.json'])
 
@@ -206,6 +207,33 @@ def test_from_config(default_conf, mocker, caplog) -> None:
     assert isinstance(validated_conf['user_data_dir'], Path)
 
 
+def test_from_recursive_files(testdatadir) -> None:
+    files = testdatadir / "testconfigs/testconfig.json"
+
+    conf = Configuration.from_files([files])
+
+    assert conf
+    # Exchange comes from "the first config"
+    assert conf['exchange']
+    # Pricing comes from the 2nd config
+    assert conf['entry_pricing']
+    assert conf['entry_pricing']['price_side'] == "same"
+    assert conf['exit_pricing']
+    # The other key comes from pricing2, which is imported by pricing.json.
+    # pricing.json is a level higher, therefore wins.
+    assert conf['exit_pricing']['price_side'] == "same"
+
+    assert len(conf['config_files']) == 4
+    assert 'testconfig.json' in conf['config_files'][0]
+    assert 'test_pricing_conf.json' in conf['config_files'][1]
+    assert 'test_base_config.json' in conf['config_files'][2]
+    assert 'test_pricing2_conf.json' in conf['config_files'][3]
+
+    files = testdatadir / "testconfigs/recursive.json"
+    with pytest.raises(OperationalException, match="Config loop detected."):
+        load_from_files([files])
+
+
 def test_print_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     # Delete non-json elements from default_conf
@@ -214,7 +242,7 @@ def test_print_config(default_conf, mocker, caplog) -> None:
 
     configsmock = MagicMock(side_effect=config_files)
     mocker.patch('freqtrade.configuration.configuration.create_datadir', lambda c, x: x)
-    mocker.patch('freqtrade.configuration.configuration.load_config_file', configsmock)
+    mocker.patch('freqtrade.configuration.configuration.load_from_files', configsmock)
 
     validated_conf = Configuration.from_files(['test_conf.json'])
 
@@ -772,15 +800,15 @@ def test_set_logfile(default_conf, mocker, tmpdir):
 
 
 def test_load_config_warn_forcebuy(default_conf, mocker, caplog) -> None:
-    default_conf['forcebuy_enable'] = True
+    default_conf['force_entry_enable'] = True
     patched_configuration_load_config_file(mocker, default_conf)
 
     args = Arguments(['trade']).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf.get('forcebuy_enable')
-    assert log_has('`forcebuy` RPC message enabled.', caplog)
+    assert validated_conf.get('force_entry_enable')
+    assert log_has('`force_entry_enable` RPC message enabled.', caplog)
 
 
 def test_validate_default_conf(default_conf) -> None:
@@ -868,15 +896,15 @@ def test_validate_tsl(default_conf):
 
 def test_validate_edge2(edge_conf):
     edge_conf.update({
-        "use_sell_signal": True,
+        "use_exit_signal": True,
     })
     # Passes test
     validate_config_consistency(edge_conf)
 
     edge_conf.update({
-        "use_sell_signal": False,
+        "use_exit_signal": False,
     })
-    with pytest.raises(OperationalException, match="Edge requires `use_sell_signal` to be True, "
+    with pytest.raises(OperationalException, match="Edge requires `use_exit_signal` to be True, "
                        "otherwise no sells will happen."):
         validate_config_consistency(edge_conf)
 
@@ -977,7 +1005,7 @@ def test__validate_order_types(default_conf, caplog) -> None:
     assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for order_types is.*", caplog)
     assert conf['order_types']['entry'] == 'limit'
     assert conf['order_types']['exit'] == 'market'
-    assert conf['order_types']['forceentry'] == 'limit'
+    assert conf['order_types']['force_entry'] == 'limit'
     assert 'buy' not in conf['order_types']
     assert 'sell' not in conf['order_types']
     assert 'forcebuy' not in conf['order_types']
@@ -1238,14 +1266,8 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-    ("ask_strategy", "use_sell_signal", True,
-     None, "use_sell_signal", False),
-    ("ask_strategy", "sell_profit_only", True,
-     None, "sell_profit_only", False),
-    ("ask_strategy", "sell_profit_offset", 0.1,
-     None, "sell_profit_offset", 0.01),
-    ("ask_strategy", "ignore_roi_if_buy_signal", True,
-     None, "ignore_roi_if_buy_signal", False),
+    ("webhook", "webhookbuy", 'testWEbhook',
+     "webhook", "webhookentry", 'testWEbhook'),
     ("ask_strategy", "ignore_buying_expired_candle_after", 5,
      None, "ignore_buying_expired_candle_after", 6),
 ])

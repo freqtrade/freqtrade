@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04 ]
+        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
@@ -70,7 +70,7 @@ jobs:
       if: matrix.python-version == '3.9'
 
     - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.9')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -100,7 +100,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -158,16 +158,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-
-    - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
-      env:
-        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
-        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
-      run: |
-        # Allow failure for coveralls
-        coveralls -v  || true
+        pytest --random-order
 
     - name: Backtesting
       run: |
@@ -229,7 +220,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order
 
     - name: Backtesting
       run: |
@@ -249,7 +240,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -258,6 +249,21 @@ jobs:
           severity: error
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  mypy_version_check:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: pre-commit dependencies
+      run: |
+        pip install pyaml
+        python build_helpers/pre_commit_update.py
 
   docs_check:
     runs-on: ubuntu-20.04
@@ -271,7 +277,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: "3.10"
 
     - name: Documentation build
       run: |
@@ -288,6 +294,9 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
+    permissions:
+      actions: write  # for rokroskar/workflow-run-cleanup-action to obtain workflow name & cancel it
+      contents: read  # for rokroskar/workflow-run-cleanup-action to obtain branch
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
@@ -298,8 +307,12 @@ jobs:
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
+    # Discord notification can't handle schedule events
+    if: (github.event_name != 'schedule')
+    permissions:
+      repository-projects: read
     steps:
 
     - name: Check user permission
@@ -319,7 +332,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -330,7 +343,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: "3.9"
 
     - name: Extract branch name
       shell: bash
@@ -391,7 +404,7 @@ jobs:
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
       with:
           severity: info
           details: Deploy Succeeded!

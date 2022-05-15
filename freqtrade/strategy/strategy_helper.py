@@ -56,12 +56,18 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 
     # Combine the 2 dataframes
     # all indicators on the informative sample MUST be calculated before this point
-    dataframe = pd.merge(dataframe, informative, left_on='date',
-                         right_on=date_merge, how='left')
+    if ffill:
+        # https://pandas.pydata.org/docs/user_guide/merging.html#timeseries-friendly-merging
+        # merge_ordered - ffill method is 2.5x faster than seperate ffill()
+        dataframe = pd.merge_ordered(dataframe, informative, fill_method="ffill", left_on='date',
+                                     right_on=date_merge, how='left')
+    else:
+        dataframe = pd.merge(dataframe, informative, left_on='date',
+                             right_on=date_merge, how='left')
     dataframe = dataframe.drop(date_merge, axis=1)
 
-    if ffill:
-        dataframe = dataframe.ffill()
+    # if ffill:
+    #     dataframe = dataframe.ffill()
 
     return dataframe
 
@@ -93,9 +99,9 @@ def stoploss_from_open(
         return 1
 
     if is_short is True:
-        stoploss = -1+((1-open_relative_stop)/(1-current_profit))
+        stoploss = -1 + ((1 - open_relative_stop) / (1 - current_profit))
     else:
-        stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+        stoploss = 1 - ((1 + open_relative_stop) / (1 + current_profit))
 
     # negative stoploss values indicate the requested stop price is higher/lower
     # (long/short) than the current price

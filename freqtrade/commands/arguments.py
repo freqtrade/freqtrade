@@ -12,7 +12,7 @@ from freqtrade.constants import DEFAULT_CONFIG
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
-ARGS_STRATEGY = ["strategy", "strategy_path"]
+ARGS_STRATEGY = ["strategy", "strategy_path", "recursive_strategy_search"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
@@ -37,7 +37,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
+ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized",
+                        "recursive_strategy_search"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
@@ -71,7 +72,8 @@ ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs", "trading_mode"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "include_inactive",
                       "timerange", "download_trades", "exchange", "timeframes",
-                      "erase", "dataformat_ohlcv", "dataformat_trades", "trading_mode"]
+                      "erase", "dataformat_ohlcv", "dataformat_trades", "trading_mode",
+                      "prepend_data"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
@@ -80,7 +82,9 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe", "plot_auto_open", ]
 
-ARGS_INSTALL_UI = ["erase_ui_only", 'ui_version']
+ARGS_CONVERT_DB = ["db_url", "db_url_from"]
+
+ARGS_INSTALL_UI = ["erase_ui_only", "ui_version"]
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
@@ -179,7 +183,7 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.commands import (start_backtesting, start_backtesting_show,
-                                        start_convert_data, start_convert_trades,
+                                        start_convert_data, start_convert_db, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
                                         start_hyperopt, start_hyperopt_list, start_hyperopt_show,
                                         start_install_ui, start_list_data, start_list_exchanges,
@@ -371,6 +375,14 @@ class Arguments:
         )
         test_pairlist_cmd.set_defaults(func=start_test_pairlist)
         self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
+
+        # Add db-convert subcommand
+        convert_db = subparsers.add_parser(
+            "convert-db",
+            help="Migrate database to different system",
+        )
+        convert_db.set_defaults(func=start_convert_db)
+        self._build_args(optionlist=ARGS_CONVERT_DB, parser=convert_db)
 
         # Add install-ui subcommand
         install_ui_cmd = subparsers.add_parser(

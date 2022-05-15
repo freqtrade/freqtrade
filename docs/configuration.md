@@ -11,7 +11,7 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command-line option.
 
-If you used the [Quick start](installation.md/#quick-start) method for installing 
+If you used the [Quick start](installation.md/#quick-start) method for installing
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
 If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
@@ -53,14 +53,63 @@ FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
 
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
+You can specify additional configuration files in `add_config_files`. Files specified in this parameter will be loaded and merged with the initial config file. The files are resolved relative to the initial configuration file.
+This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
+
 !!! Tip "Use multiple configuration files to keep secrets secret"
     You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+
+    ``` json title="user_data/config.json"
+    "add_config_files": [
+        "config-private.json"
+    ]
+    ```
+
+    ``` bash
+    freqtrade trade --config user_data/config.json <...>
+    ```
+
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
 
     ``` bash
     freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
     ```
-    The 2nd file should only specify what you intend to override.
-    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    This is equivalent to the example above - but `config-private.json` is specified as cli argument.
+
+??? Note "config collision handling"
+    If the same configuration setting takes place in both `config.json` and `config-import.json`, then the parent configuration wins.
+    In the below case, `max_open_trades` would be 3 after the merging - as the reusable "import" configuration has this key overwritten.
+
+    ``` json title="user_data/config.json"
+    {
+        "max_open_trades": 3,
+        "stake_currency": "USDT",
+        "add_config_files": [
+            "config-import.json"
+        ]
+    }
+    ```
+
+    ``` json title="user_data/config-import.json"
+    {
+        "max_open_trades": 10,
+        "stake_amount": "unlimited",
+    }
+    ```
+
+    Resulting combined configuration:
+
+    ``` json title="Result"
+    {
+        "max_open_trades": 10,
+        "stake_currency": "USDT",
+        "stake_amount": "unlimited"
+    }
+    ```
 
 ## Configuration parameters
 
@@ -92,7 +141,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
 | `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
-| `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to exit a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `stoploss` |  **Required.** Value as ratio of the stoploss used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
 | `trailing_stop` | Enables trailing stoploss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md#trailing-stop-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Boolean
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-custom-positive-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Float
@@ -105,7 +154,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `unfilledtimeout.entry` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled entry order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.exit` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled exit order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.unit` | Unit to use in unfilledtimeout setting. Note: If you set unfilledtimeout.unit to "seconds", "internals.process_throttle_secs" must be inferior or equal to timeout [Strategy Override](#parameters-in-the-strategy). <br> *Defaults to `minutes`.* <br> **Datatype:** String
-| `unfilledtimeout.exit_timeout_count` | How many times can exit orders time out. Once this number of timeouts is reached, an emergency sell is triggered. 0 to disable and allow unlimited order cancels. [Strategy Override](#parameters-in-the-strategy).<br>*Defaults to `0`.* <br> **Datatype:** Integer
+| `unfilledtimeout.exit_timeout_count` | How many times can exit orders time out. Once this number of timeouts is reached, an emergency exit is triggered. 0 to disable and allow unlimited order cancels. [Strategy Override](#parameters-in-the-strategy).<br>*Defaults to `0`.* <br> **Datatype:** Integer
 | `entry_pricing.price_side` | Select the side of the spread the bot should look at to get the entry rate. [More information below](#buy-price-side).<br> *Defaults to `same`.* <br> **Datatype:** String (either `ask`, `bid`, `same` or `other`).
 | `entry_pricing.price_last_balance` | **Required.** Interpolate the bidding price. More information [below](#entry-price-without-orderbook-enabled).
 | `entry_pricing.use_order_book` | Enable entering using the rates in [Order Book Entry](#entry-price-with-orderbook-enabled). <br> *Defaults to `True`.*<br> **Datatype:** Boolean
@@ -115,15 +164,16 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exit_pricing.price_side` | Select the side of the spread the bot should look at to get the exit rate. [More information below](#exit-price-side).<br> *Defaults to `same`.* <br> **Datatype:** String (either `ask`, `bid`, `same` or `other`).
 | `exit_pricing.price_last_balance` | Interpolate the exiting price. More information [below](#exit-price-without-orderbook-enabled).
 | `exit_pricing.use_order_book` | Enable exiting of open trades using [Order Book Exit](#exit-price-with-orderbook-enabled). <br> *Defaults to `True`.*<br> **Datatype:** Boolean
-| `exit_pricing.order_book_top` | Bot will use the top N rate in Order Book "price_side" to sell. I.e. a value of 2 will allow the bot to pick the 2nd ask rate in [Order Book Exit](#exit-price-with-orderbook-enabled)<br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
-| `use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
-| `sell_profit_only` | Wait until the bot reaches `sell_profit_offset` before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
-| `sell_profit_offset` | Sell-signal is only active above this value. Only active in combination with `sell_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
-| `ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `exit_pricing.order_book_top` | Bot will use the top N rate in Order Book "price_side" to exit. I.e. a value of 2 will allow the bot to pick the 2nd ask rate in [Order Book Exit](#exit-price-with-orderbook-enabled)<br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
+| `use_exit_signal` | Use exit signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
+| `exit_profit_only` | Wait until the bot reaches `exit_profit_offset` before taking an exit decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `exit_profit_offset` | Exit-signal is only active above this value. Only active in combination with `exit_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
+| `ignore_roi_if_entry_signal` | Do not exit if the entry signal is still active. This setting takes preference over `minimal_roi` and `use_exit_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
 | `order_types` | Configure order-types depending on the action (`"entry"`, `"exit"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for entry and exit orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `custom_price_max_distance_ratio` | Configure maximum distance ratio between current and custom entry or exit price. <br>*Defaults to `0.02` 2%).*<br> **Datatype:** Positive float
+| `recursive_strategy_search` | Set to `true` to recursively search sub-directories inside `user_data/strategies` for a strategy. <br> **Datatype:** Boolean
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> **Datatype:** Boolean
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -150,10 +200,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `telegram.balance_dust_level` | Dust-level (in stake currency) - currencies with a balance below this will not be shown by `/balance`. <br> **Datatype:** float
 | `webhook.enabled` | Enable usage of Webhook notifications <br> **Datatype:** Boolean
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
-| `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
-| `webhook.webhookbuycancel` | Payload to send on buy order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
-| `webhook.webhooksell` | Payload to send on sell. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
-| `webhook.webhooksellcancel` | Payload to send on sell order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookentry` | Payload to send on entry. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookentrycancel` | Payload to send on entry order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookentryfill` | Payload to send on entry order filled. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookexit` | Payload to send on exit. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookexitcancel` | Payload to send on exit order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
+| `webhook.webhookexitfill` | Payload to send on exit order filled. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** Boolean
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** IPv4
@@ -164,7 +216,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
 | `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
-| `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
+| `force_entry_enable` | Enables the RPC Commands to force a Trade entry. More information below. <br> **Datatype:** Boolean
 | `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
@@ -173,6 +225,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
+| `add_config_files` | Additional config files. These files will be loaded and merged with the current config file. The files are resolved relative to the initial file.<br> *Defaults to `[]`*. <br> **Datatype:** List of strings
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
@@ -196,10 +249,10 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `unfilledtimeout`
 * `disable_dataframe_checks`
-* `use_sell_signal`
-* `sell_profit_only`
-* `sell_profit_offset`
-* `ignore_roi_if_buy_signal`
+- `use_exit_signal`
+* `exit_profit_only`
+- `exit_profit_offset`
+- `ignore_roi_if_entry_signal`
 * `ignore_buying_expired_candle_after`
 * `position_adjustment_enable`
 * `max_entry_position_adjustment`
@@ -328,10 +381,10 @@ See the example below:
 
 ```json
 "minimal_roi": {
-    "40": 0.0,    # Sell after 40 minutes if the profit is not negative
-    "30": 0.01,   # Sell after 30 minutes if there is at least 1% profit
-    "20": 0.02,   # Sell after 20 minutes if there is at least 2% profit
-    "0":  0.04    # Sell immediately if there is at least 4% profit
+    "40": 0.0,    # Exit after 40 minutes if the profit is not negative
+    "30": 0.01,   # Exit after 30 minutes if there is at least 1% profit
+    "20": 0.02,   # Exit after 20 minutes if there is at least 2% profit
+    "0":  0.04    # Exit immediately if there is at least 4% profit
 },
 ```
 
@@ -340,14 +393,14 @@ This parameter can be set in either Strategy or Configuration file. If you use i
 `minimal_roi` value from the strategy file.
 If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 10}` is used, and minimal ROI is disabled unless your trade generates 1000% profit.
 
-!!! Note "Special case to forcesell after a specific time"
-    A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
+!!! Note "Special case to forceexit after a specific time"
+    A special case presents using `"<N>": -1` as ROI. This forces the bot to exit a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-exit.
 
-### Understand forcebuy_enable
+### Understand force_entry_enable
 
-The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram and REST API.
+The `force_entry_enable` configuration parameter enables the usage of force-enter (`/forcelong`, `/forceshort`) commands via Telegram and REST API.
 For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
-For example, you can send `/forcebuy ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
+For example, you can send `/forceenter ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular exit-signal (ROI, stoploss, /forceexit) appears.
 
 This can be dangerous with some strategies, so use with care.
 
@@ -374,18 +427,17 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`entry`, `exit`, `stoploss`, `emergencyexit`, `forceexit`, `forceentry`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`entry`, `exit`, `stoploss`, `emergency_exit`, `force_exit`, `force_entry`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
-This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using market orders. It also allows to set the
-stoploss "on exchange" which means stoploss order would be placed immediately once
-the buy order is fulfilled.
+This allows to enter using limit orders, exit using limit-orders, and create stoplosses using market orders.
+It also allows to set the
+stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled.
 
 `order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
 
 If this is configured, the following 4 values (`entry`, `exit`, `stoploss` and `stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
 
-For information on (`emergencyexit`,`forceexit`, `forceentry`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
+For information on (`emergency_exit`,`force_exit`, `force_entry`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
 
 Syntax for Strategy:
 
@@ -393,9 +445,9 @@ Syntax for Strategy:
 order_types = {
     "entry": "limit",
     "exit": "limit",
-    "emergencyexit": "market",
-    "forceentry": "market",
-    "forceexit": "market",
+    "emergency_exit": "market",
+    "force_entry": "market",
+    "force_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60,
@@ -409,9 +461,9 @@ Configuration:
 "order_types": {
     "entry": "limit",
     "exit": "limit",
-    "emergencyexit": "market",
-    "forceentry": "market",
-    "forceexit": "market",
+    "emergency_exit": "market",
+    "force_entry": "market",
+    "force_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -434,7 +486,7 @@ Configuration:
     If `stoploss_on_exchange` is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.
 
 !!! Warning "Warning: stoploss_on_exchange failures"
-    If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will sell the asset using a market order. The order-type for the emergency-sell can be changed by setting the `emergencyexit` value in the `order_types` dictionary - however, this is not advised.
+    If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will exit the trade using a market order. The order-type for the emergency-exit can be changed by setting the `emergency_exit` value in the `order_types` dictionary - however, this is not advised.
 
 ### Understand order_time_in_force
 

@@ -4,7 +4,9 @@
 # --- Do not remove these libs ---
 import numpy as np  # noqa
 import pandas as pd  # noqa
-from pandas import DataFrame
+from pandas import DataFrame  # noqa
+from datetime import datetime  # noqa
+from typing import Optional  # noqa
 
 from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
@@ -65,9 +67,9 @@ class {{ strategy }}(IStrategy):
     process_only_new_candles = False
 
     # These values can be overridden in the config.
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = False
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = False
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30

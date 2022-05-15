@@ -13,6 +13,16 @@
     Please only use advanced trading modes when you know how freqtrade (and your strategy) works.
     Also, never risk more than what you can afford to lose.
 
+Please read the [strategy migration guide](strategy_migration.md#strategy-migration-between-v2-and-v3) to migrate your strategy from a freqtrade v2 strategy, to v3 strategy that can short and trade futures.
+
+## Shorting
+
+Shorting is not possible when trading with [`trading_mode`](#understand-tradingmode) set to `spot`. To short trade, `trading_mode` must be set to `margin`(currently unavailable) or [`futures`](#futures), with [`margin_mode`](#margin-mode) set to `cross`(currently unavailable) or [`isolated`](#isolated-margin-mode)
+
+For a strategy to short, the strategy class must set the class variable `can_short = True`
+
+Please read [strategy customization](strategy-customization.md#entry-signal-rules) for instructions on how to set signals to enter and exit short trades.
+
 ## Understand `trading_mode`
 
 The possible values are: `spot` (default), `margin`(*Currently unavailable*) or `futures`.

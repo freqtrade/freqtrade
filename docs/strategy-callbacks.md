@@ -7,6 +7,7 @@ Depending on the callback used, they may be called when entering / exiting a tra
 
 Currently available callbacks:
 
+* [`bot_start()`](#bot-start)
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#stake-size-management)
 * [`custom_exit()`](#custom-exit-signal)
@@ -16,11 +17,35 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
+* [`adjust_entry_price()`](#adjust-entry-price)
 * [`leverage()`](#leverage-callback)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
 
+## Bot start
+
+A simple callback which is called once when the strategy is loaded.
+This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set
+
+``` python
+import requests
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def bot_start(self, **kwargs) -> None:
+        """
+        Called only once after bot instantiation.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        if self.config['runmode'].value in ('live', 'dry_run'):
+            # Assign this to the class by using self.*
+            # can then be used by populate_* methods
+            self.cust_remote_data = requests.get('https://some_remote_source.example.com')
+
+```
 ## Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
@@ -84,16 +109,17 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
-Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
+Allows to define custom exit signals, indicating that specified position should be sold. This is very useful when we need to customize exit conditions for each individual trade, or if you need trade data to make an exit decision.
 
 For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using custom_exit() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using `custom_exit()` signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
-    Returning a (none-empty) `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+    Returning a (none-empty) `string` or `True` from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (`use_exit_signal=False`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+    `custom_exit()` will ignore `exit_profit_only`, and will always be called unless `use_exit_signal=False`, even if there is a new enter signal.
 
-An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
+An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:
 
 ``` python
 class AwesomeStrategy(IStrategy):
@@ -121,11 +147,11 @@ See [Dataframe access](strategy-advanced.md#dataframe-access) for more informati
 
 ## Custom stoploss
 
-Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
+Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.
 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
 
-The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade).
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade), and is still mandatory.
 
 The method must return a stoploss value (float / number) as a percentage of the current price.
 E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
@@ -364,36 +390,36 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
-                           entry_tag: Optional[str], **kwargs) -> float:
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
-        
+
         return new_entryprice
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
-                          current_profit: float, **kwargs) -> float:
+                          current_profit: float, exit_tag: Optional[str], **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
         new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
-        
+
         return new_exitprice
 
 ```
 
 !!! Warning
-    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.  
-    **Example**:  
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
+    **Example**:
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
 !!! Warning "Backtesting"
     Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
     Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
-    `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
+    `custom_exit_price()` is only called for sells of type exit_signal and Custom exit. All other exit-types will use regular backtesting prices.
 
 ## Custom order timeout rules
 
@@ -417,7 +443,7 @@ The function must return either `True` (cancel order) or `False` (keep order ali
 
 ``` python
 from datetime import datetime, timedelta
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, Order
 
 class AwesomeStrategy(IStrategy):
 
@@ -429,7 +455,7 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: 'Trade', order: dict, 
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                             current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -440,7 +466,7 @@ class AwesomeStrategy(IStrategy):
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: Trade, order: 'Order',
                            current_time: datetime, **kwargs) -> bool:
         if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
@@ -458,7 +484,7 @@ class AwesomeStrategy(IStrategy):
 
 ``` python
 from datetime import datetime
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, Order
 
 class AwesomeStrategy(IStrategy):
 
@@ -470,22 +496,22 @@ class AwesomeStrategy(IStrategy):
         'exit': 60 * 25
     }
 
-    def check_entry_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_entry_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                             current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 2% above the order.
-        if current_price > order['price'] * 1.02:
+        if current_price > order.price * 1.02:
             return True
         return False
 
 
-    def check_exit_timeout(self, pair: str, trade: Trade, order: dict,
+    def check_exit_timeout(self, pair: str, trade: 'Trade', order: 'Order',
                            current_time: datetime, **kwargs) -> bool:
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 2% below the order.
-        if current_price < order['price'] * 0.98:
+        if current_price < order.price * 0.98:
             return True
         return False
 ```
@@ -507,7 +533,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
                             side: str, **kwargs) -> bool:
         """
         Called right before placing a entry order.
@@ -564,13 +590,13 @@ class AwesomeStrategy(IStrategy):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'sell_signal', 'force_sell', 'emergency_sell']
+                           'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the sell-order is placed on the exchange.
+        :return bool: When True is returned, then the exit-order is placed on the exchange.
             False aborts the process
         """
-        if exit_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
+        if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)
@@ -615,35 +641,35 @@ from freqtrade.persistence import Trade
 
 
 class DigDeeperStrategy(IStrategy):
-    
+
     position_adjustment_enable = True
-    
+
     # Attempts to handle large drops with DCA. High stoploss is required.
     stoploss = -0.30
-    
+
     # ... populate_* methods
-    
+
     # Example specific variables
     max_entry_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
-    
+
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
-        
+
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
         return proposed_stake / self.max_dca_multiplier
-        
+
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
                               current_rate: float, current_profit: float, min_stake: float,
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
- 
+
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Current buy rate.
@@ -653,7 +679,7 @@ class DigDeeperStrategy(IStrategy):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
         """
-        
+
         if current_profit > -0.05:
             return None
 
@@ -665,7 +691,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        filled_entries = trade.select_filled_orders(trade.enter_side)
+        filled_entries = trade.select_filled_orders(trade.entry_side)
         count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
@@ -686,6 +712,69 @@ class DigDeeperStrategy(IStrategy):
 
         return None
 
+```
+
+## Adjust Entry Price
+
+The `adjust_entry_price()` callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
+Be aware that `custom_entry_price()` is still the one dictating initial entry limit order price target at the time of entry trigger.
+
+Orders can be cancelled out of this callback by returning `None`.
+
+Returning `current_order_rate` will keep the order on the exchange "as is".
+Returning any other price will cancel the existing order, and replace it with a new order.
+
+The trade open-date (`trade.open_date_utc`) will remain at the time of the very first order placed.
+Please make sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.
+
+!!! Warning "Regular timeout"
+    Entry `unfilledtimeout` mechanism (as well as `check_entry_timeout()`) takes precedence over this.
+    Entry Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.
+
+```python
+from freqtrade.persistence import Trade
+from datetime import timedelta
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float, current_order_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+        """
+        Entry price re-adjustment logic, returning the user desired limit price.
+        This only executes when a order was already placed, still open (unfilled fully or partially)
+        and not timed out on subsequent candles after entry trigger.
+
+        When not implemented by a strategy, returns current_order_rate as default.
+        If current_order_rate is returned then the existing order is maintained.
+        If None is returned then order gets canceled but not replaced by a new one.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: Trade object.
+        :param order: Order object
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.
+        :param current_order_rate: Rate of the existing order in place.
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+
+        """
+        # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc:
+            # just cancel the order if it has been filled more than half of the amount
+            if order.filled > order.remaining:
+                return None
+            else:
+                dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+                current_candle = dataframe.iloc[-1].squeeze()
+                # desired price
+                return current_candle['sma_200']
+        # default: maintain existing order
+        return current_order_rate
 ```
 
 ## Leverage Callback

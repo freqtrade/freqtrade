@@ -83,6 +83,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Reset sample files to their original state.',
         action='store_true',
     ),
+    "recursive_strategy_search": Arg(
+        '--recursive-strategy-search',
+        help='Recursively search for a strategy in the strategies folder.',
+        action='store_true',
+    ),
     # Main options
     "strategy": Arg(
         '-s', '--strategy',
@@ -99,6 +104,11 @@ AVAILABLE_CLI_OPTIONS = {
         help=f'Override trades database URL, this is useful in custom deployments '
         f'(default: `{constants.DEFAULT_DB_PROD_URL}` for Live Run mode, '
         f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
+        metavar='PATH',
+    ),
+    "db_url_from": Arg(
+        '--db-url-from',
+        help='Source db url to use when migrating a database.',
         metavar='PATH',
     ),
     "sd_notify": Arg(
@@ -437,6 +447,11 @@ AVAILABLE_CLI_OPTIONS = {
                  '6h', '8h', '12h', '1d', '3d', '1w', '2w', '1M', '1y'],
         default=['1m', '5m'],
         nargs='+',
+    ),
+    "prepend_data": Arg(
+        '--prepend',
+        help='Allow data prepending.',
+        action='store_true',
     ),
     "erase": Arg(
         '--erase',

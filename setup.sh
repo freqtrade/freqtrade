@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 9 10 8
+    for v in 10 9 8
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -51,6 +51,7 @@ function updateenv() {
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
     read -p "Do you want to install dependencies for dev [y/N]? "
+    dev=$REPLY
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
@@ -88,6 +89,13 @@ function updateenv() {
     fi
     echo "pip install completed"
     echo
+    if [[ $dev =~ ^[Yy]$ ]]; then
+        ${PYTHON} -m pre_commit install
+        if [ $? -ne 0 ]; then
+            echo "Failed installing pre-commit"
+            exit 1
+        fi
+    fi
 }
 
 # Install tab lib
@@ -147,7 +155,7 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
+    sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git curl $(echo lib${PYTHON}-dev ${PYTHON}-venv)
     install_talib
 }
 

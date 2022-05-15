@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 import ccxt
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
@@ -20,6 +21,7 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
+        "ohlcv_require_since": True,
         "ohlcv_volume_currency": "quote",
         "mark_ohlcv_price": "index",
         "mark_ohlcv_timeframe": "1h",
@@ -43,7 +45,7 @@ class Ftx(Exchange):
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float,
-                 order_types: Dict, side: str, leverage: float) -> Dict:
+                 order_types: Dict, side: BuySell, leverage: float) -> Dict:
         """
         Creates a stoploss order.
         depending on order_types.stoploss configuration, uses 'market' or limit order.

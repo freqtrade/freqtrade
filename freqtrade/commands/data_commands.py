@@ -79,12 +79,19 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 data_format_trades=config['dataformat_trades'],
             )
         else:
+            if not exchange._ft_has.get('ohlcv_has_history', True):
+                raise OperationalException(
+                    f"Historic klines not available for {exchange.name}. "
+                    "Please use `--dl-trades` instead for this exchange "
+                    "(will unfortunately take a long time)."
+                    )
             pairs_not_available = refresh_backtest_ohlcv_data(
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
                 new_pairs_days=config['new_pairs_days'],
                 erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
                 trading_mode=config.get('trading_mode', 'spot'),
+                prepend=config.get('prepend_data', False)
             )
 
     except KeyboardInterrupt:

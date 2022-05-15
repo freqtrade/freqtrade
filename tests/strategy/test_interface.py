@@ -503,15 +503,15 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.exit_flag is True
-    assert res.exit_type == ExitType.CUSTOM_SELL
-    assert res.exit_reason == 'custom_sell'
+    assert res.exit_type == ExitType.CUSTOM_EXIT
+    assert res.exit_reason == 'custom_exit'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.exit_flag is True
     assert res.exit_reason == 'hello world'
 
@@ -520,10 +520,10 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.exit_flag is True
     assert res.exit_reason == 'h' * 64
-    assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
+    assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
 @pytest.mark.parametrize('side', TRADE_SIDES)
@@ -666,27 +666,27 @@ def test_is_pair_locked(default_conf):
 
     assert not strategy.is_pair_locked(pair)
     # latest candle is from 14:20, lock goes to 14:30
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-10))
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-10))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-50))
 
     # latest candle is from 14:25 (lock should be lifted)
     # Since this is the "new candle" available at 14:30
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-4))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-4))
 
     # Should not be locked after time expired
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=10))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=10))
 
     # Change timeframe to 15m
     strategy.timeframe = '15m'
     # Candle from 14:14 - lock goes until 14:30
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-16))
-    assert strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15, seconds=-2))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-16))
+    assert strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-15, seconds=-2))
     # Candle from 14:15 - lock goes until 14:30
-    assert not strategy.is_pair_locked(pair, lock_time + timedelta(minutes=-15))
+    assert not strategy.is_pair_locked(pair, candle_date=lock_time + timedelta(minutes=-15))
 
 
 def test_is_informative_pairs_callback(default_conf):
-    default_conf.update({'strategy': 'TestStrategyLegacyV1'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     # Should return empty
     # Uses fallback to base implementation

@@ -15,10 +15,10 @@
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
-    "use_sell_signal": true,
-    "sell_profit_only": false,
-    "sell_profit_offset": 0.0,
-    "ignore_roi_if_buy_signal": false,
+    "use_exit_signal": true,
+    "exit_profit_only": false,
+    "exit_profit_offset": 0.0,
+    "ignore_roi_if_entry_signal": false,
     "ignore_buying_expired_candle_after": 300,
     "trading_mode": "spot",
     "margin_mode": "",
@@ -54,9 +54,9 @@
     "order_types": {
         "entry": "limit",
         "exit": "limit",
-        "emergencyexit": "market",
-        "forceexit": "market",
-        "forceentry": "market",
+        "emergency_exit": "market",
+        "force_exit": "market",
+        "force_entry": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60,
@@ -139,21 +139,21 @@
             "status": "on",
             "warning": "on",
             "startup": "on",
-            "buy": "on",
-            "buy_fill": "on",
-            "sell": {
+            "entry": "on",
+            "entry_fill": "on",
+            "exit": {
                 "roi": "off",
-                "emergency_sell": "off",
-                "force_sell": "off",
-                "sell_signal": "off",
+                "emergency_exit": "off",
+                "force_exit": "off",
+                "exit_signal": "off",
                 "trailing_stop_loss": "off",
                 "stop_loss": "off",
                 "stoploss_on_exchange": "off",
-                "custom_sell": "off"
+                "custom_exit": "off"
             },
-            "sell_fill": "on",
-            "buy_cancel": "on",
-            "sell_cancel": "on",
+            "exit_fill": "on",
+            "entry_cancel": "on",
+            "exit_cancel": "on",
             "protection_trigger": "off",
             "protection_trigger_global": "on"
         },
@@ -174,7 +174,7 @@
     "bot_name": "freqtrade",
     "db_url": "sqlite:///tradesv3.sqlite",
     "initial_state": "running",
-    "forcebuy_enable": false,
+    "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5,
         "heartbeat_interval": 60
@@ -182,6 +182,8 @@
     "disable_dataframe_checks": false,
     "strategy": "SampleStrategy",
     "strategy_path": "user_data/strategies/",
+    "recursive_strategy_search": false,
+    "add_config_files": [],
     "dataformat_ohlcv": "json",
     "dataformat_trades": "jsongz"
 }

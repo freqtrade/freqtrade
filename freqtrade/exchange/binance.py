@@ -95,6 +95,7 @@ class Binance(Exchange):
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
+                                        until_ms: int = None
                                         ) -> Tuple[str, str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
@@ -115,7 +116,8 @@ class Binance(Exchange):
             since_ms=since_ms,
             is_new_pair=is_new_pair,
             raise_=raise_,
-            candle_type=candle_type
+            candle_type=candle_type,
+            until_ms=until_ms,
         )
 
     def funding_fee_cutoff(self, open_date: datetime):

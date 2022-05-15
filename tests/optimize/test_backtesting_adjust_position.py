@@ -14,7 +14,7 @@ from tests.conftest import patch_exchange
 
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -60,7 +60,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'trade_duration': [200, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'sell_reason': [ExitType.ROI.value, ExitType.ROI.value],
+         'exit_reason': [ExitType.ROI.value, ExitType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],

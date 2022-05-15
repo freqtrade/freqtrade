@@ -26,6 +26,9 @@ Alternatively (e.g. if your system is not supported by the setup.sh script), fol
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
 
+Then install the git hook scripts by running `pre-commit install`, so your changes will be verified locally before committing.
+This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.
+
 Before opening a pull request, please familiarize yourself with our [Contributing Guidelines](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md).
 
 ### Devcontainer setup
@@ -197,11 +200,12 @@ For that reason, they must implement the following methods:
 * `global_stop()`
 * `stop_per_pair()`.
 
-`global_stop()` and `stop_per_pair()` must return a ProtectionReturn tuple, which consists of:
+`global_stop()` and `stop_per_pair()` must return a ProtectionReturn object, which consists of:
 
 * lock pair - boolean
 * lock until - datetime - until when should the pair be locked (will be rounded up to the next new candle)
 * reason - string, used for logging and storage in the database
+* lock_side - long, short or '*'.
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 
@@ -220,13 +224,13 @@ Protections can have 2 different ways to stop trading for a limited :
 ##### Protections - per pair
 
 Protections that implement the per pair approach must set `has_local_stop=True`.
-The method `stop_per_pair()` will be called whenever a trade closed (sell order completed).
+The method `stop_per_pair()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - global protection
 
 These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
 Global protection must set `has_global_stop=True` to be evaluated for global stops.
-The method `global_stop()` will be called whenever a trade closed (sell order completed).
+The method `global_stop()` will be called whenever a trade closed (exit order completed).
 
 ##### Protections - calculating lock end time
 
@@ -264,7 +268,7 @@ Additional tests / steps to complete:
 * Check if balance shows correctly (*)
 * Create market order (*)
 * Create limit order (*)
-* Complete trade (buy + sell) (*)
+* Complete trade (enter + exit) (*)
   * Compare result calculation between exchange and bot
   * Ensure fees are applied correctly (check the database against the exchange)
 

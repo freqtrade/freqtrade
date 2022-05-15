@@ -1,18 +1,18 @@
 """
-MaxDrawDownHyperOptLoss
+MaxDrawDownRelativeHyperOptLoss
 
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
-from datetime import datetime
+from typing import Dict
 
 from pandas import DataFrame
 
-from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.data.metrics import calculate_underwater
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
-class MaxDrawDownHyperOptLoss(IHyperOptLoss):
+class MaxDrawDownRelativeHyperOptLoss(IHyperOptLoss):
 
     """
     Defines the loss function for hyperopt.
@@ -22,8 +22,7 @@ class MaxDrawDownHyperOptLoss(IHyperOptLoss):
     """
 
     @staticmethod
-    def hyperopt_loss_function(results: DataFrame, trade_count: int,
-                               min_date: datetime, max_date: datetime,
+    def hyperopt_loss_function(results: DataFrame, config: Dict,
                                *args, **kwargs) -> float:
 
         """
@@ -34,8 +33,15 @@ class MaxDrawDownHyperOptLoss(IHyperOptLoss):
         """
         total_profit = results['profit_abs'].sum()
         try:
-            max_drawdown = calculate_max_drawdown(results, value_col='profit_abs')
-        except ValueError:
-            # No losing trade, therefore no drawdown.
+            drawdown_df = calculate_underwater(
+                results,
+                value_col='profit_abs',
+                starting_balance=config['dry_run_wallet']
+            )
+            max_drawdown = abs(min(drawdown_df['drawdown']))
+            relative_drawdown = max(drawdown_df['drawdown_relative'])
+            if max_drawdown == 0:
+                return -total_profit
+            return -total_profit / max_drawdown / relative_drawdown
+        except (Exception, ValueError):
             return -total_profit
-        return -total_profit / max_drawdown[0]

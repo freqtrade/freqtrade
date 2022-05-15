@@ -7,8 +7,9 @@ import logging
 import tempfile
 from base64 import urlsafe_b64decode
 from inspect import getfullargspec
+from os import walk
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
 from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
@@ -85,10 +86,10 @@ class StrategyResolver(IResolver):
                       ("protections",                     None),
                       ("startup_candle_count",            None),
                       ("unfilledtimeout",                 None),
-                      ("use_sell_signal",                 True),
-                      ("sell_profit_only",                False),
-                      ("ignore_roi_if_buy_signal",        False),
-                      ("sell_profit_offset",              0.0),
+                      ("use_exit_signal",                 True),
+                      ("exit_profit_only",                False),
+                      ("ignore_roi_if_entry_signal",      False),
+                      ("exit_profit_offset",              0.0),
                       ("disable_dataframe_checks",        False),
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
@@ -173,6 +174,12 @@ class StrategyResolver(IResolver):
     def validate_strategy(strategy: IStrategy) -> IStrategy:
         if strategy.config.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             # Require new method
+            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only', True)
+            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset', True)
+            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal', True)
+            warn_deprecated_setting(strategy, 'ignore_roi_if_buy_signal',
+                                    'ignore_roi_if_entry_signal', True)
+
             if not check_override(strategy, IStrategy, 'populate_entry_trend'):
                 raise OperationalException("`populate_entry_trend` must be implemented.")
             if not check_override(strategy, IStrategy, 'populate_exit_trend'):
@@ -187,9 +194,16 @@ class StrategyResolver(IResolver):
             if check_override(strategy, IStrategy, 'custom_sell'):
                 raise OperationalException(
                     "Please migrate your implementation of `custom_sell` to `custom_exit`.")
+
         else:
             # TODO: Implementing one of the following methods should show a deprecation warning
             #  buy_trend and sell_trend, custom_sell
+            warn_deprecated_setting(strategy, 'sell_profit_only', 'exit_profit_only')
+            warn_deprecated_setting(strategy, 'sell_profit_offset', 'exit_profit_offset')
+            warn_deprecated_setting(strategy, 'use_sell_signal', 'use_exit_signal')
+            warn_deprecated_setting(strategy, 'ignore_roi_if_buy_signal',
+                                    'ignore_roi_if_entry_signal')
+
             if (
                 not check_override(strategy, IStrategy, 'populate_buy_trend')
                 and not check_override(strategy, IStrategy, 'populate_entry_trend')
@@ -203,15 +217,19 @@ class StrategyResolver(IResolver):
                 raise OperationalException(
                     "`populate_exit_trend` or `populate_sell_trend` must be implemented.")
 
-            strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
-            strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
-            strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
+            _populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
+            _buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
+            _sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
             if any(x == 2 for x in [
-                strategy._populate_fun_len,
-                strategy._buy_fun_len,
-                strategy._sell_fun_len
+                _populate_fun_len,
+                _buy_fun_len,
+                _sell_fun_len
             ]):
-                strategy.INTERFACE_VERSION = 1
+                raise OperationalException(
+                    "Strategy Interface v1 is no longer supported. "
+                    "Please update your strategy to implement "
+                    "`populate_indicators`, `populate_entry_trend` and `populate_exit_trend` "
+                    "with the metadata argument. ")
         return strategy
 
     @staticmethod
@@ -224,10 +242,19 @@ class StrategyResolver(IResolver):
         :param extra_dir: additional directory to search for the given strategy
         :return: Strategy instance or None
         """
+        if config.get('recursive_strategy_search', False):
+            extra_dirs: List[str] = [
+                path[0] for path in walk(f"{config['user_data_dir']}/{USERPATH_STRATEGIES}")
+            ]  # sub-directories
+        else:
+            extra_dirs = []
+
+        if extra_dir:
+            extra_dirs.append(extra_dir)
 
         abs_paths = StrategyResolver.build_search_paths(config,
                                                         user_subdir=USERPATH_STRATEGIES,
-                                                        extra_dir=extra_dir)
+                                                        extra_dirs=extra_dirs)
 
         if ":" in strategy_name:
             logger.info("loading base64 encoded strategy")
@@ -260,6 +287,15 @@ class StrategyResolver(IResolver):
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
             "or contains Python code errors."
         )
+
+
+def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False):
+    if hasattr(strategy, old):
+        errormsg = f"DEPRECATED: Using '{old}' moved to '{new}'."
+        if error:
+            raise OperationalException(errormsg)
+        logger.warning(errormsg)
+        setattr(strategy, new, getattr(strategy, f'{old}'))
 
 
 def check_override(object, parentclass, attribute):

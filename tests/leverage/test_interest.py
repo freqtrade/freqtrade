@@ -6,7 +6,7 @@ import pytest
 from freqtrade.leverage import interest
 
 
-ten_mins = Decimal(1/6)
+ten_mins = Decimal(1 / 6)
 five_hours = Decimal(5.0)
 twentyfive_hours = Decimal(25.0)
 

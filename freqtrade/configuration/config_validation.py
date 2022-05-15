@@ -39,7 +39,7 @@ def _extend_validator(validator_class):
 FreqtradeValidator = _extend_validator(Draft4Validator)
 
 
-def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
+def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> Dict[str, Any]:
     """
     Validate the configuration follow the Config Schema
     :param conf: Config in JSON format
@@ -49,7 +49,10 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
     if conf.get('runmode', RunMode.OTHER) in (RunMode.DRY_RUN, RunMode.LIVE):
         conf_schema['required'] = constants.SCHEMA_TRADE_REQUIRED
     elif conf.get('runmode', RunMode.OTHER) in (RunMode.BACKTEST, RunMode.HYPEROPT):
-        conf_schema['required'] = constants.SCHEMA_BACKTEST_REQUIRED
+        if preliminary:
+            conf_schema['required'] = constants.SCHEMA_BACKTEST_REQUIRED
+        else:
+            conf_schema['required'] = constants.SCHEMA_BACKTEST_REQUIRED_FINAL
     else:
         conf_schema['required'] = constants.SCHEMA_MINIMAL_REQUIRED
     try:
@@ -64,7 +67,7 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
         )
 
 
-def validate_config_consistency(conf: Dict[str, Any]) -> None:
+def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False) -> None:
     """
     Validate the configuration consistency.
     Should be ran after loading both configuration and strategy,
@@ -85,7 +88,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
-    validate_config_schema(conf)
+    validate_config_schema(conf, preliminary=preliminary)
 
 
 def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
@@ -94,8 +97,8 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
     :raise: OperationalException if config validation failed
     """
     if (not conf.get('edge', {}).get('enabled')
-       and conf.get('max_open_trades') == float('inf')
-       and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
+        and conf.get('max_open_trades') == float('inf')
+            and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
         raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
@@ -154,9 +157,9 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if not conf.get('use_sell_signal', True):
+    if not conf.get('use_exit_signal', True):
         raise OperationalException(
-            "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."
+            "Edge requires `use_exit_signal` to be True, otherwise no sells will happen."
         )
 
 
@@ -219,6 +222,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
     _validate_order_types(conf)
     _validate_unfilledtimeout(conf)
     _validate_pricing_rules(conf)
+    _strategy_settings(conf)
 
 
 def _validate_time_in_force(conf: Dict[str, Any]) -> None:
@@ -243,7 +247,9 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
 def _validate_order_types(conf: Dict[str, Any]) -> None:
 
     order_types = conf.get('order_types', {})
-    if any(x in order_types for x in ['buy', 'sell', 'emergencysell', 'forcebuy', 'forcesell']):
+    old_order_types = ['buy', 'sell', 'emergencysell', 'forcebuy',
+                       'forcesell', 'emergencyexit', 'forceexit', 'forceentry']
+    if any(x in order_types for x in old_order_types):
         if conf.get('trading_mode', TradingMode.SPOT) != TradingMode.SPOT:
             raise OperationalException(
                 "Please migrate your order_types settings to use the new wording.")
@@ -255,9 +261,12 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
             for o, n in [
                 ('buy', 'entry'),
                 ('sell', 'exit'),
-                ('emergencysell', 'emergencyexit'),
-                ('forcesell', 'forceexit'),
-                ('forcebuy', 'forceentry'),
+                ('emergencysell', 'emergency_exit'),
+                ('forcesell', 'force_exit'),
+                ('forcebuy', 'force_entry'),
+                ('emergencyexit', 'emergency_exit'),
+                ('forceexit', 'force_exit'),
+                ('forceentry', 'force_entry'),
             ]:
 
                 process_deprecated_setting(conf, 'order_types', o, 'order_types', n)
@@ -312,3 +321,12 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
                 else:
                     process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']
+
+
+def _strategy_settings(conf: Dict[str, Any]) -> None:
+
+    process_deprecated_setting(conf, None, 'use_sell_signal', None, 'use_exit_signal')
+    process_deprecated_setting(conf, None, 'sell_profit_only', None, 'exit_profit_only')
+    process_deprecated_setting(conf, None, 'sell_profit_offset', None, 'exit_profit_offset')
+    process_deprecated_setting(conf, None, 'ignore_roi_if_buy_signal',
+                               None, 'ignore_roi_if_entry_signal')

@@ -147,8 +147,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
-| `forceenter <pair> [rate]` | Instantly enters the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `forceenter <pair> [rate]` | Instantly enters the given pair. Rate is optional. (`force_entry_enable` must be set to True)
+| `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`force_entry_enable` must be set to True)
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
@@ -223,8 +223,8 @@ forceenter
         :param side: 'long' or 'short'
         :param price: Optional - price to buy
 
-forcesell
-	Force-sell a trade.
+forceexit
+	Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
 

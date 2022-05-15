@@ -12,14 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 def check_conflicting_settings(config: Dict[str, Any],
-                               section_old: str, name_old: str,
+                               section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str) -> None:
     section_new_config = config.get(section_new, {}) if section_new else config
-    section_old_config = config.get(section_old, {})
+    section_old_config = config.get(section_old, {}) if section_old else config
     if name_new in section_new_config and name_old in section_old_config:
         new_name = f"{section_new}.{name_new}" if section_new else f"{name_new}"
+        old_name = f"{section_old}.{name_old}" if section_old else f"{name_old}"
         raise OperationalException(
-            f"Conflicting settings `{new_name}` and `{section_old}.{name_old}` "
+            f"Conflicting settings `{new_name}` and `{old_name}` "
             "(DEPRECATED) detected in the configuration file. "
             "This deprecated setting will be removed in the next versions of Freqtrade. "
             f"Please delete it from your configuration and use the `{new_name}` "
@@ -47,17 +48,18 @@ def process_removed_setting(config: Dict[str, Any],
 
 
 def process_deprecated_setting(config: Dict[str, Any],
-                               section_old: str, name_old: str,
+                               section_old: Optional[str], name_old: str,
                                section_new: Optional[str], name_new: str
                                ) -> None:
     check_conflicting_settings(config, section_old, name_old, section_new, name_new)
-    section_old_config = config.get(section_old, {})
+    section_old_config = config.get(section_old, {}) if section_old else config
 
     if name_old in section_old_config:
+        section_1 = f"{section_old}.{name_old}" if section_old else f"{name_old}"
         section_2 = f"{section_new}.{name_new}" if section_new else f"{name_new}"
         logger.warning(
             "DEPRECATED: "
-            f"The `{section_old}.{name_old}` setting is deprecated and "
+            f"The `{section_1}` setting is deprecated and "
             "will be removed in the next versions of Freqtrade. "
             f"Please use the `{section_2}` setting in your configuration instead."
         )
@@ -72,25 +74,51 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     # Kept for future deprecated / moved settings
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
     #                            'experimental', 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
-                               None, 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
-                               None, 'sell_profit_only')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_offset',
-                               None, 'sell_profit_offset')
-    process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
-                               None, 'ignore_roi_if_buy_signal')
+
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
                                None, 'ignore_buying_expired_candle_after')
 
-    # Legacy way - having them in experimental ...
-    process_removed_setting(config, 'experimental', 'use_sell_signal',
-                            None, 'use_sell_signal')
-    process_removed_setting(config, 'experimental', 'sell_profit_only',
-                            None, 'sell_profit_only')
-    process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
-                            None, 'ignore_roi_if_buy_signal')
+    process_deprecated_setting(config, None, 'forcebuy_enable', None, 'force_entry_enable')
 
+    # New settings
+    if config.get('telegram'):
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell',
+                                   'notification_settings', 'exit')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell_fill',
+                                   'notification_settings', 'exit_fill')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'sell_cancel',
+                                   'notification_settings', 'exit_cancel')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy',
+                                   'notification_settings', 'entry')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy_fill',
+                                   'notification_settings', 'entry_fill')
+        process_deprecated_setting(config['telegram'], 'notification_settings', 'buy_cancel',
+                                   'notification_settings', 'entry_cancel')
+    if config.get('webhook'):
+        process_deprecated_setting(config, 'webhook', 'webhookbuy', 'webhook', 'webhookentry')
+        process_deprecated_setting(config, 'webhook', 'webhookbuycancel',
+                                   'webhook', 'webhookentrycancel')
+        process_deprecated_setting(config, 'webhook', 'webhookbuyfill',
+                                   'webhook', 'webhookentryfill')
+        process_deprecated_setting(config, 'webhook', 'webhooksell', 'webhook', 'webhookexit')
+        process_deprecated_setting(config, 'webhook', 'webhooksellcancel',
+                                   'webhook', 'webhookexitcancel')
+        process_deprecated_setting(config, 'webhook', 'webhooksellfill',
+                                   'webhook', 'webhookexitfill')
+
+    # Legacy way - having them in experimental ...
+
+    process_removed_setting(config, 'experimental', 'use_sell_signal', None, 'use_exit_signal')
+    process_removed_setting(config, 'experimental', 'sell_profit_only', None, 'exit_profit_only')
+    process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
+                            None, 'ignore_roi_if_entry_signal')
+
+    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'exit_sell_signal')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_only', None, 'exit_profit_only')
+    process_removed_setting(config, 'ask_strategy', 'sell_profit_offset',
+                            None, 'exit_profit_offset')
+    process_removed_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
+                            None, 'ignore_roi_if_entry_signal')
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
         raise OperationalException(

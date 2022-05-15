@@ -10,7 +10,7 @@ import warnings
 from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import progressbar
 import rapidjson
@@ -114,8 +114,8 @@ class Hyperopt:
         self.position_stacking = self.config.get('position_stacking', False)
 
         if HyperoptTools.has_space(self.config, 'sell'):
-            # Make sure use_sell_signal is enabled
-            self.config['use_sell_signal'] = True
+            # Make sure use_exit_signal is enabled
+            self.config['use_exit_signal'] = True
 
         self.print_all = self.config.get('print_all', False)
         self.hyperopt_table_header = 0
@@ -290,7 +290,7 @@ class Hyperopt:
             self.assign_params(params_dict, 'protection')
 
         if HyperoptTools.has_space(self.config, 'roi'):
-            self.backtesting.strategy.minimal_roi = (  # type: ignore
+            self.backtesting.strategy.minimal_roi = (
                 self.custom_hyperopt.generate_roi_table(params_dict))
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
@@ -409,6 +409,51 @@ class Hyperopt:
         # Store non-trimmed data - will be trimmed after signal generation.
         dump(preprocessed, self.data_pickle_file)
 
+    def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
+        """
+        Enforce points returned from `self.opt.ask` have not been already evaluated
+
+        Steps:
+        1. Try to get points using `self.opt.ask` first
+        2. Discard the points that have already been evaluated
+        3. Retry using `self.opt.ask` up to 3 times
+        4. If still some points are missing in respect to `n_points`, random sample some points
+        5. Repeat until at least `n_points` points in the `asked_non_tried` list
+        6. Return a list with length truncated at `n_points`
+        """
+        def unique_list(a_list):
+            new_list = []
+            for item in a_list:
+                if item not in new_list:
+                    new_list.append(item)
+            return new_list
+        i = 0
+        asked_non_tried: List[List[Any]] = []
+        is_random: List[bool] = []
+        while i < 5 and len(asked_non_tried) < n_points:
+            if i < 3:
+                self.opt.cache_ = {}
+                asked = unique_list(self.opt.ask(n_points=n_points * 5))
+                is_random = [False for _ in range(len(asked))]
+            else:
+                asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
+                is_random = [True for _ in range(len(asked))]
+            is_random += [rand for x, rand in zip(asked, is_random)
+                          if x not in self.opt.Xi
+                          and x not in asked_non_tried]
+            asked_non_tried += [x for x in asked
+                                if x not in self.opt.Xi
+                                and x not in asked_non_tried]
+            i += 1
+
+        if asked_non_tried:
+            return (
+                asked_non_tried[:min(len(asked_non_tried), n_points)],
+                is_random[:min(len(asked_non_tried), n_points)]
+            )
+        else:
+            return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -420,9 +465,10 @@ class Hyperopt:
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange.close()
-        self.backtesting.exchange._api = None  # type: ignore
-        self.backtesting.exchange._api_async = None  # type: ignore
+        self.backtesting.exchange._api = None
+        self.backtesting.exchange._api_async = None
         self.backtesting.exchange.loop = None  # type: ignore
+        self.backtesting.exchange._loop_lock = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
 
@@ -473,7 +519,7 @@ class Hyperopt:
                         n_rest = (i + 1) * jobs - self.total_epochs
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
-                        asked = self.opt.ask(n_points=current_jobs)
+                        asked, is_random = self.get_asked_points(n_points=current_jobs)
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
                         self.opt.tell(asked, [v['loss'] for v in f_val])
 
@@ -492,6 +538,7 @@ class Hyperopt:
                             # evaluations can take different time. Here they are aligned in the
                             # order they will be shown to the user.
                             val['is_best'] = is_best
+                            val['is_random'] = is_random[j]
                             self.print_results(val)
 
                             if is_best:
