@@ -42,7 +42,7 @@ class ExamplePredictionModel(IFreqaiModel):
 
     def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Tuple[DataFrame, DataFrame]:
         """
-        Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
+        Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
         :params:
         :unfiltered_dataframe: Full dataframe for the current training period

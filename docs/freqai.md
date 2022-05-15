@@ -4,8 +4,9 @@
         Freqai is still experimental, and should be used at the user's own discretion.
 
 Freqai is a module designed to automate a variety of tasks associated with
-training a regressor to predict signals based on input features. Among the
-the features includes:
+training a regressor to predict signals based on input features.
+
+Among the the features included:
 
 * Easy large feature set construction based on simple user input
 * Sweep model training and backtesting to simulate consistent model retraining through time
@@ -16,6 +17,7 @@ the features includes:
 * Cleaning of NaNs from the data set before training and prediction.
 
 TODO:
+
 * live is not automated, still some architectural work to be done
 
 ## Background and vocabulary
@@ -43,7 +45,7 @@ directly influence nodal weights within the model.
 
 ## Install prerequisites
 
-Use `pip` to install the prerequisities with:
+Use `pip` to install the prerequisites with:
 
 `pip install -r requirements-freqai.txt`
 
@@ -62,7 +64,9 @@ FreqaiExampleStrategy --freqaimodel CatboostPredictionModel --strategy-path freq
 ```
 
 ## Configuring the bot
+
 ### Example config file
+
 The user interface is isolated to the typical config file. A typical Freqai
 config setup includes:
 
@@ -152,8 +156,8 @@ data set timerange months. Users can think of this as a "sliding window" which
 emulates Freqai retraining itself once per week in live using the previous
 month of data.
 
-
 ## Running Freqai
+
 ### Training and backtesting
 
 The freqai training/backtesting module can be executed with the following command:
@@ -196,6 +200,7 @@ The Freqai strategy requires the user to include the following lines of code in 
 
                 return dataframe
 ```
+
 The user should also include `populate_any_indicators()` from `templates/FreqaiExampleStrategy.py` which builds 
 the feature set with a proper naming convention for the IFreqaiModel to use later.
 
@@ -216,7 +221,7 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 By default, Freqai will not find find any existing models and will start by training a new one 
 given the user configuration settings. Following training, it will use that model to predict for the
 duration of `backtest_period`. After a full `backtest_period` has elapsed, Freqai will auto retrain 
-a new model, and begin making predictions with the updated model. 
+a new model, and begin making predictions with the updated model.
 
 If the user wishes to start dry/live from a saved model, the following configuration 
 parameters need to be set:
@@ -232,13 +237,14 @@ parameters need to be set:
 Where the `identifier` is the same identifier which was set during the backtesting/training. Meanwhile,
 the `live_trained_timerange` is the sub-trained timerange (the training window) which was set 
 during backtesting/training. These are available to the user inside `user_data/models/*/sub-train-*`. 
-`live_full_backtestrange` was the full data range assocaited with the backtest/training (the full time 
+`live_full_backtestrange` was the full data range associated with the backtest/training (the full time 
 window that the training window and backtesting windows slide through). These values can be located 
 inside the `user_data/models/` directory. In this case, although Freqai will initiate with a 
-pretrained model, if a full `backtest_period` has elapsed since the end of the user set 
-`live_trained_timerange`, it will self retrain. 
+pre-trained model, if a full `backtest_period` has elapsed since the end of the user set 
+`live_trained_timerange`, it will self retrain.
 
 ## Data anylsis techniques
+
 ### Controlling the model learning process
 
 The user can define model settings for the data split `data_split_parameters` and learning parameters
@@ -258,7 +264,7 @@ the user is asking for `labels` that are 24 candles in the future.
 
 ### Removing outliers with the Dissimilarity Index
 
-The Dissimilarity Index (DI) aims to quantiy the uncertainty associated with each
+The Dissimilarity Index (DI) aims to quantity the uncertainty associated with each
 prediction by the model. To do so, Freqai measures the distance between each training
 data point and all other training data points:
 
@@ -310,11 +316,11 @@ Users can reduce the dimensionality of their features by activating the `princip
 ```
 
 Which will perform PCA on the features and reduce the dimensionality of the data so that the explained
-variance of the data set is >= 0.999. 
+variance of the data set is >= 0.999.
 
 ### Removing outliers based on feature statistical distributions
 
-The user can tell Freqai to remove outlier data points from the trainig/test data sets by setting:
+The user can tell Freqai to remove outlier data points from the training/test data sets by setting:
 
 ```json
     "freqai": {
@@ -326,9 +332,10 @@ The user can tell Freqai to remove outlier data points from the trainig/test dat
 
 Freqai will check the statistical distributions of each feature (or component if the user activated
 `principal_component_analysis`) and remove any data point that sits more than 3 standard deviations away 
-from the mean. 
+from the mean.
 
 ## Additional information
+
 ### Feature standardization
 
 The feature set created by the user is automatically standardized to the training
@@ -337,5 +344,5 @@ data only. This includes all test data and unseen prediction data (dry/live/back
 ### File structure
 
 `user_data_dir/models/` contains all the data associated with the trainings and
-backtestings. This file structure is heavily controlled and read by the `FreqaiDataKitchen()`
-and should thus not be modified. 
+backtests. This file structure is heavily controlled and read by the `FreqaiDataKitchen()`
+and should thus not be modified.
