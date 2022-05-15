@@ -1414,6 +1414,7 @@ class FreqtradeBot(LoggingMixin):
             open_date=trade.open_date_utc,
         )
         exit_type = 'exit'
+        exit_reason = exit_tag or exit_check.exit_reason
         if exit_check.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
@@ -1431,7 +1432,7 @@ class FreqtradeBot(LoggingMixin):
             pair=trade.pair, trade=trade,
             current_time=datetime.now(timezone.utc),
             proposed_rate=proposed_limit_rate, current_profit=current_profit,
-            exit_tag=exit_check.exit_reason)
+            exit_tag=exit_reason)
 
         limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 
@@ -1448,8 +1449,8 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force, exit_reason=exit_check.exit_reason,
-                sell_reason=exit_check.exit_reason,  # sellreason -> compatibility
+                time_in_force=time_in_force, exit_reason=exit_reason,
+                sell_reason=exit_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
@@ -1478,7 +1479,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.exit_order_status = ''
         trade.close_rate_requested = limit
-        trade.exit_reason = exit_tag or exit_check.exit_reason
+        trade.exit_reason = exit_reason
 
         # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
