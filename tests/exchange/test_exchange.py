@@ -939,6 +939,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
 
 def test_validate_timeframes_not_in_config(default_conf, mocker):
+    # TODO: this test does not assert ...
     del default_conf["timeframe"]
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
@@ -954,6 +955,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
+    mocker.patch('freqtrade.exchange.Exchange.validate_required_startup_candles')
     Exchange(default_conf)
 
 

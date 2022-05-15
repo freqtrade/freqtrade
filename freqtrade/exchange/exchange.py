@@ -622,7 +622,8 @@ class Exchange:
 
         candle_limit = self.ohlcv_candle_limit(
             timeframe, self._config['candle_type_def'],
-            date_minus_candles(timeframe, startup_candles))
+            int(date_minus_candles(timeframe, startup_candles).timestamp() * 1000)
+            if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
         # Allow 5 calls to the exchange per pair
