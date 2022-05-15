@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04 ]
+        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
@@ -70,7 +70,7 @@ jobs:
       if: matrix.python-version == '3.9'
 
     - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.9')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -157,23 +157,8 @@ jobs:
         pip install -e .
 
     - name: Tests
-      if: (runner.os != 'Linux' || matrix.python-version != '3.8')
       run: |
         pytest --random-order
-
-    - name: Tests (with cov)
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
-      run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-
-    - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
-      env:
-        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
-        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
-      run: |
-        # Allow failure for coveralls
-        coveralls -v  || true
 
     - name: Backtesting
       run: |
@@ -273,7 +258,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: "3.10"
 
     - name: pre-commit dependencies
       run: |
@@ -292,7 +277,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: "3.10"
 
     - name: Documentation build
       run: |
@@ -358,7 +343,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: "3.9"
 
     - name: Extract branch name
       shell: bash
