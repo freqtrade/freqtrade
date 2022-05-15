@@ -273,7 +273,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: 3.10
 
     - name: pre-commit dependencies
       run: |
@@ -292,7 +292,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.9
+        python-version: 3.10
 
     - name: Documentation build
       run: |
@@ -358,7 +358,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: 3.9
 
     - name: Extract branch name
       shell: bash
