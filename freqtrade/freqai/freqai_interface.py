@@ -43,7 +43,7 @@ class IFreqaiModel(ABC):
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """
         Entry point to the FreqaiModel, it will train a new model if
-        necesssary before making the prediction.
+        necessary before making the prediction.
         The backtesting and training paradigm is a sliding training window
         with a following backtest window. Both windows slide according to the
         length of the backtest window. This function is not intended to be
@@ -54,7 +54,7 @@ class IFreqaiModel(ABC):
         :dataframe: Full dataframe coming from strategy - it contains entire
         backtesting timerange + additional historical data necessary to train
         the model.
-        :metadata: pair metadataa coming from strategy.
+        :metadata: pair metadata coming from strategy.
         """
 
         live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
@@ -71,7 +71,7 @@ class IFreqaiModel(ABC):
 
         logger.info("going to train %s timeranges", len(self.dh.training_timeranges))
 
-        # Loop enforcing the sliding window training/backtesting paragigm
+        # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
         # following tr_train. Both of these windows slide through the
