@@ -54,9 +54,11 @@ An example strategy, example prediction model, and example config can all be fou
 `config_examples/config_freqai.example.json`, respectively. Assuming the user has downloaded
 the necessary data, Freqai can be executed from these templates with:
 
-`freqtrade backtesting --config config_examples/config_freqai.example.json--strategy 
+```bash
+freqtrade backtesting --config config_examples/config_freqai.example.json--strategy 
 ExampleFreqaiStrategy --freqaimodel ExamplePredictionModel
---freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates`
+--freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates
+```
 
 ## Configuring the bot
 ### Example config file
