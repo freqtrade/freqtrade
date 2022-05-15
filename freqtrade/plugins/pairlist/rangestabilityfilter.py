@@ -33,12 +33,12 @@ class RangeStabilityFilter(IPairList):
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
+        candle_limit = exchange.ohlcv_candle_limit('1d', self._config['candle_type_def'])
         if self._days < 1:
             raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
-        if self._days > exchange.ohlcv_candle_limit('1d'):
+        if self._days > candle_limit:
             raise OperationalException("RangeStabilityFilter requires lookback_days to not "
-                                       "exceed exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit('1d')})")
+                                       f"exceed exchange max request size ({candle_limit})")
 
     @property
     def needstickers(self) -> bool:

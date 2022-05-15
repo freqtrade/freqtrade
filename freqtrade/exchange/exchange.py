@@ -64,6 +64,7 @@ class Exchange:
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
+        "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
         "ohlcv_partial_candle": True,
         "ohlcv_require_since": False,
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -308,12 +309,15 @@ class Exchange:
         if self.log_responses:
             logger.info(f"API {endpoint}: {response}")
 
-    def ohlcv_candle_limit(self, timeframe: str) -> int:
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
         """
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
+        :param candle_type: Candle-type
+        :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
@@ -615,19 +619,28 @@ class Exchange:
         Checks if required startup_candles is more than ohlcv_candle_limit().
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
         """
-        candle_limit = self.ohlcv_candle_limit(timeframe)
+
+        candle_limit = self.ohlcv_candle_limit(
+            timeframe, self._config['candle_type_def'],
+            int(date_minus_candles(timeframe, startup_candles).timestamp() * 1000)
+            if timeframe else None)
         # Require one more candle - to account for the still open candle.
         candle_count = startup_candles + 1
         # Allow 5 calls to the exchange per pair
         required_candle_call_count = int(
             (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
+        if self._ft_has['ohlcv_has_history']:
 
-        if required_candle_call_count > 5:
-            # Only allow 5 calls per pair to somewhat limit the impact
+            if required_candle_call_count > 5:
+                # Only allow 5 calls per pair to somewhat limit the impact
+                raise OperationalException(
+                    f"This strategy requires {startup_candles} candles to start, "
+                    "which is more than 5x "
+                    f"the amount of candles {self.name} provides for {timeframe}.")
+        elif required_candle_call_count > 1:
             raise OperationalException(
-                f"This strategy requires {startup_candles} candles to start, which is more than 5x "
+                f"This strategy requires {startup_candles} candles to start, which is more than "
                 f"the amount of candles {self.name} provides for {timeframe}.")
-
         if required_candle_call_count > 1:
             logger.warning(f"Using {required_candle_call_count} calls to get OHLCV. "
                            f"This can result in slower operations for the bot. Please check "
@@ -1703,7 +1716,8 @@ class Exchange:
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
 
-        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
+            timeframe, candle_type, since_ms)
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
@@ -1739,7 +1753,8 @@ class Exchange:
         if (not since_ms
                 and (self._ft_has["ohlcv_require_since"] or self.required_candle_call_count > 1)):
             # Multiple calls for one pair - to get more history
-            one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
+            one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
+                timeframe, candle_type, since_ms)
             move_to = one_call * self.required_candle_call_count
             now = timeframe_to_next_date(timeframe)
             since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
@@ -1857,7 +1872,9 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
-            candle_limit = self.ohlcv_candle_limit(timeframe)
+            candle_limit = self.ohlcv_candle_limit(
+                timeframe, candle_type=candle_type, since_ms=since_ms)
+
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
             if candle_type != CandleType.FUNDING_RATE:
@@ -2674,9 +2691,10 @@ def timeframe_to_msecs(timeframe: str) -> int:
 
 def timeframe_to_prev_date(timeframe: str, date: datetime = None) -> datetime:
     """
-    Use Timeframe and determine last possible candle.
+    Use Timeframe and determine the candle start date for this date.
+    Does not round when given a candle start date.
     :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to utcnow()
+    :param date: date to use. Defaults to now(utc)
     :returns: date of previous candle (with utc timezone)
     """
     if not date:
@@ -2691,7 +2709,7 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     """
     Use Timeframe and determine next candle.
     :param timeframe: timeframe in string format (e.g. "5m")
-    :param date: date to use. Defaults to utcnow()
+    :param date: date to use. Defaults to now(utc)
     :returns: date of next candle (with utc timezone)
     """
     if not date:
@@ -2699,6 +2717,23 @@ def timeframe_to_next_date(timeframe: str, date: datetime = None) -> datetime:
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, date.timestamp() * 1000,
                                                   ROUND_UP) // 1000
     return datetime.fromtimestamp(new_timestamp, tz=timezone.utc)
+
+
+def date_minus_candles(
+        timeframe: str, candle_count: int, date: Optional[datetime] = None) -> datetime:
+    """
+    subtract X candles from a date.
+    :param timeframe: timeframe in string format (e.g. "5m")
+    :param candle_count: Amount of candles to subtract.
+    :param date: date to use. Defaults to now(utc)
+
+    """
+    if not date:
+        date = datetime.now(timezone.utc)
+
+    tf_min = timeframe_to_minutes(timeframe)
+    new_date = timeframe_to_prev_date(timeframe, date) - timedelta(minutes=tf_min * candle_count)
+    return new_date
 
 
 def market_is_active(market: Dict) -> bool:
