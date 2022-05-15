@@ -317,7 +317,7 @@ class Exchange:
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
         :param candle_type: Candle-type
-        :param since_ms: Candle-type
+        :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(

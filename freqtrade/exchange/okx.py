@@ -49,7 +49,7 @@ class Okx(Exchange):
         * 100 candles for additional candles (not futures or spot).
         :param timeframe: Timeframe to check
         :param candle_type: Candle-type
-        :param since_ms: Candle-type
+        :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
         if (
