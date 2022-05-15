@@ -372,11 +372,15 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.enter_positions()
 
     assert len(Trade.get_trades().all()) == 1
-    trade = Trade.get_trades().first()
+    trade: Trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
     assert trade.open_order_id is not None
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 1.96
+    assert trade.stop_loss_pct is None
+    assert trade.stop_loss == 0.0
+    assert trade.initial_stop_loss == 0.0
+    assert trade.initial_stop_loss_pct is None
     # No adjustment
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -392,6 +396,10 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_order_id is not None
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.96
+    assert trade.stop_loss_pct is None
+    assert trade.stop_loss == 0.0
+    assert trade.initial_stop_loss == 0.0
+    assert trade.initial_stop_loss_pct is None
 
     # Fill order
     mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
@@ -401,6 +409,10 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_order_id is None
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.99
+    assert trade.stop_loss_pct == -0.1
+    assert trade.stop_loss == 1.99 * 0.9
+    assert trade.initial_stop_loss == 1.99 * 0.9
+    assert trade.initial_stop_loss_pct == -0.1
 
     # 2nd order - not filling
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=120)

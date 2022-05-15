@@ -812,11 +812,11 @@ class Backtesting:
                 remaining=amount,
                 cost=stake_amount + trade.fee_open,
             )
+            trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.price, row):
                 order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
-            trade.orders.append(order)
             trade.recalc_trade_from_orders()
 
         return trade
