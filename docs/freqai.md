@@ -57,7 +57,7 @@ the necessary data, Freqai can be executed from these templates with:
 ```bash
 freqtrade backtesting --config config_examples/config_freqai.example.json --strategy 
 FreqaiExampleStrategy --freqaimodel ExamplePredictionModel
---freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates
+--freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates --timerange 20220101-220201
 ```
 
 ## Configuring the bot
