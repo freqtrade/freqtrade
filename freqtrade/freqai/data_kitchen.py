@@ -598,7 +598,7 @@ class FreqaiDataKitchen:
         if not self.full_path.is_dir():
             self.full_path.mkdir(parents=True, exist_ok=True)
             shutil.copy(
-                config_path.name,
+                config_path.resolve(),
                 Path(self.full_path / config_path.parts[-1]),
             )
 
