@@ -113,8 +113,6 @@ class FreqaiDataKitchen:
         with open(self.model_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
             self.training_features_list = self.data["training_features_list"]
-            # if self.data.get("training_features_list"):
-            #     self.training_features_list = [*self.data.get("training_features_list")]
 
         self.data_dictionary["train_features"] = pd.read_pickle(
             self.model_path / str(self.model_filename + "_trained_df.pkl")

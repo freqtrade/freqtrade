@@ -42,8 +42,8 @@ class ExamplePredictionModel(IFreqaiModel):
 
     def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Tuple[DataFrame, DataFrame]:
         """
-        Filter the training data and train a model to it. Train makes heavy use of the datahandler
-        for storing, saving, loading, and managed.
+        Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
+        for storing, saving, loading, and analyzing the data.
         :params:
         :unfiltered_dataframe: Full dataframe for the current training period
         :metadata: pair metadata from strategy.

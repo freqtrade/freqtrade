@@ -41,6 +41,23 @@ in the model.
 intermediate performance of the model during training. This data does not
 directly influence nodal weights within the model.
 
+## Install prerequisites
+
+Use `pip` to install the prerequisities with:
+
+`pip install -r requirements-freqai.txt`
+
+## Running from the example files
+
+An example strategy, example prediction model, and example config can all be found in 
+`freqtrade/templates/ExampleFreqaiStrategy.py`, `freqtrade/templates/ExamplePredictionModel.py`, 
+`config_examples/config_freqai.example.json`, respectively. Assuming the user has downloaded
+the necessary data, Freqai can be executed from these templates with:
+
+`freqtrade backtesting --config config_examples/config_freqai.example.json--strategy 
+ExampleFreqaiStrategy --freqaimodel ExamplePredictionModel
+--freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates`
+
 ## Configuring the bot
 ### Example config file
 The user interface is isolated to the typical config file. A typical Freqai
