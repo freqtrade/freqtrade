@@ -1410,7 +1410,7 @@ class Telegram(RPCHandler):
                                  "Optionally takes a rate at which to sell "
                                  "(only applies to limit orders).` \n")
         message = (
-            "_BotControl_\n"
+            "_Bot Control_\n"
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
