@@ -153,6 +153,7 @@ class Order(_DECL_BASE):
                 and len(trade.select_filled_orders(trade.entry_side)) == 1):
             trade.open_rate = self.price
             trade.recalc_open_trade_value()
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -502,7 +503,7 @@ class LocalTrade():
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
             return
-        refresh = False if self.nr_of_successful_entries > 0 else refresh
+        refresh = True if refresh and self.nr_of_successful_entries == 1 else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
