@@ -320,6 +320,7 @@ A backtesting result will look like that:
 | Avg. Duration Loser         | 6:55:00             |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
+| Canceled Trade Entries      | 123                 |
 |                             |                     |
 | Min balance                 | 0.00945123 BTC      |
 | Max balance                 | 0.01846651 BTC      |
