@@ -368,6 +368,7 @@ def test_hyperopt_format_results(hyperopt):
         'rejected_signals': 2,
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
+        'canceled_trade_entries': 0,
         'backtest_start_time': 1619718665,
         'backtest_end_time': 1619718665,
     }
@@ -438,6 +439,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'rejected_signals': 20,
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
+        'canceled_trade_entries': 0,
         'final_balance': 1000,
     }
 
