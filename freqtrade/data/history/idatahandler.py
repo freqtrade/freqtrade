@@ -98,8 +98,7 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: True when deleted, false if file did not exist.
         """
-        filename = self._pair_data_filename(
-            self._datadir, pair, self.timeframe_to_file(timeframe), candle_type)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         if filename.exists():
             filename.unlink()
             return True
@@ -194,10 +193,14 @@ class IDataHandler(ABC):
         datadir: Path,
         pair: str,
         timeframe: str,
-        candle_type: CandleType
+        candle_type: CandleType,
+        no_timeframe_modify: bool = False
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
         candle = ""
+        if not no_timeframe_modify:
+            timeframe = cls.timeframe_to_file(timeframe)
+
         if candle_type != CandleType.SPOT:
             datadir = datadir.joinpath('futures')
             candle = f"-{candle_type}"

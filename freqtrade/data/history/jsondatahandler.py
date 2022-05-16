@@ -77,8 +77,7 @@ class JsonDataHandler(IDataHandler):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
-        filename = self._pair_data_filename(
-            self._datadir, pair, self.timeframe_to_file(timeframe), candle_type)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
         _data = data.copy()
         # Convert date to int
@@ -105,11 +104,11 @@ class JsonDataHandler(IDataHandler):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(
-            self._datadir, pair, self.timeframe_to_file(timeframe), candle_type=candle_type)
+            self._datadir, pair, timeframe, candle_type=candle_type)
         if not filename.exists():
             # Fallback mode for 1M files
             filename = self._pair_data_filename(
-                self._datadir, pair, timeframe, candle_type=candle_type)
+                self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True)
             if not filename.exists():
                 return DataFrame(columns=self._columns)
         try:

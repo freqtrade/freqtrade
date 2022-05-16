@@ -77,8 +77,7 @@ class HDF5DataHandler(IDataHandler):
         key = self._pair_ohlcv_key(pair, timeframe)
         _data = data.copy()
 
-        filename = self._pair_data_filename(
-            self._datadir, pair, self.timeframe_to_file(timeframe), candle_type)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
 
         _data.loc[:, self._columns].to_hdf(
@@ -105,14 +104,14 @@ class HDF5DataHandler(IDataHandler):
         filename = self._pair_data_filename(
             self._datadir,
             pair,
-            self.timeframe_to_file(timeframe),
+            timeframe,
             candle_type=candle_type
         )
 
         if not filename.exists():
             # Fallback mode for 1M files
             filename = self._pair_data_filename(
-                self._datadir, pair, timeframe, candle_type=candle_type)
+                self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True)
             if not filename.exists():
                 return pd.DataFrame(columns=self._columns)
         where = []

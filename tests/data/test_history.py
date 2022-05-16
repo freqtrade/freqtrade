@@ -173,7 +173,7 @@ def test_json_pair_data_filename(pair, timeframe, expected_result, candle_type):
     fn = JsonDataHandler._pair_data_filename(
         Path('freqtrade/hello/world'),
         pair,
-        JsonDataHandler.timeframe_to_file(timeframe),
+        timeframe,
         CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)
@@ -181,7 +181,7 @@ def test_json_pair_data_filename(pair, timeframe, expected_result, candle_type):
     fn = JsonGzDataHandler._pair_data_filename(
         Path('freqtrade/hello/world'),
         pair,
-        JsonGzDataHandler.timeframe_to_file(timeframe),
+        timeframe,
         candle_type=CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)
