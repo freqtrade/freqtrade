@@ -9,7 +9,7 @@ aiohttp==3.8.1
 SQLAlchemy==1.4.36
 python-telegram-bot==13.11
 arrow==1.2.2
-cachetools==4.2.2
+cachetools==5.1.0
 requests==2.27.1
 urllib3==1.26.9
 jsonschema==4.5.1
