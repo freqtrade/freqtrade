@@ -297,6 +297,7 @@ class Backtesting:
         self.rejected_trades = 0
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0
+        self.canceled_trade_entries = 0
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -884,6 +885,7 @@ class Backtesting:
                 return True
             elif self.check_order_replace(trade, order, current_time, row):
                 # delete trade due to user request
+                self.canceled_trade_entries += 1
                 return True
         # default maintain trade
         return False
@@ -1087,6 +1089,7 @@ class Backtesting:
             'rejected_signals': self.rejected_trades,
             'timedout_entry_orders': self.timedout_entry_orders,
             'timedout_exit_orders': self.timedout_exit_orders,
+            'canceled_trade_entries': self.canceled_trade_entries,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 
