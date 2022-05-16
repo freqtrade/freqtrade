@@ -1457,6 +1457,23 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def _get_price_side(self, side: str, is_short: bool, conf_strategy: Dict) -> str:
+        price_side = conf_strategy['price_side']
+
+        if price_side in ('same', 'other'):
+            price_map = {
+                ('entry', 'long', 'same'): 'bid',
+                ('entry', 'long', 'other'): 'ask',
+                ('entry', 'short', 'same'): 'ask',
+                ('entry', 'short', 'other'): 'bid',
+                ('exit', 'long', 'same'): 'ask',
+                ('exit', 'long', 'other'): 'bid',
+                ('exit', 'short', 'same'): 'bid',
+                ('exit', 'short', 'other'): 'ask',
+            }
+            price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
+        return price_side
+
     def get_rate(self, pair: str, refresh: bool,
                  side: EntryExit, is_short: bool) -> float:
         """
@@ -1483,20 +1500,7 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
-        price_side = conf_strategy['price_side']
-
-        if price_side in ('same', 'other'):
-            price_map = {
-                ('entry', 'long', 'same'): 'bid',
-                ('entry', 'long', 'other'): 'ask',
-                ('entry', 'short', 'same'): 'ask',
-                ('entry', 'short', 'other'): 'bid',
-                ('exit', 'long', 'same'): 'ask',
-                ('exit', 'long', 'other'): 'bid',
-                ('exit', 'short', 'same'): 'bid',
-                ('exit', 'short', 'other'): 'ask',
-            }
-            price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
+        price_side = self._get_price_side(side, is_short, conf_strategy)
 
         price_side_word = price_side.capitalize()
 
