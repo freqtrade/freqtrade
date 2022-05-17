@@ -1169,6 +1169,8 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
         'canceled_trade_entries': 0,
+        'canceled_entry_orders': 0,
+        'replaced_entry_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -1282,6 +1284,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1292,6 +1296,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1435,6 +1441,8 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1445,6 +1453,8 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1540,6 +1550,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         },
         {
@@ -1550,6 +1562,8 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
             'timedout_entry_orders': 0,
             'timedout_exit_orders': 0,
             'canceled_trade_entries': 0,
+            'canceled_entry_orders': 0,
+            'replaced_entry_orders': 0,
             'final_balance': 1000,
         }
     ])
@@ -1614,6 +1628,8 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
         'canceled_trade_entries': 0,
+        'canceled_entry_orders': 0,
+        'replaced_entry_orders': 0,
         'final_balance': 1000,
     })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
