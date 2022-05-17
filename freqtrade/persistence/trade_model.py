@@ -108,7 +108,7 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
 
-        if 'timestamp' in order and order['timestamp'] is not None:
+        if 'timestamp' in order and order['timestamp']:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
         self.ft_is_open = True
@@ -476,7 +476,7 @@ class LocalTrade():
         Method you should use to set self.stop_loss.
         Assures stop_loss is not passed the liquidation price
         """
-        if self.liquidation_price is not None:
+        if self.liquidation_price:
             if self.is_short:
                 sl = min(stop_loss, self.liquidation_price)
             else:
@@ -611,24 +611,22 @@ class LocalTrade():
         if self.entry_side == side and self.fee_open_currency is None:
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
-            if fee_rate is not None:
+            if fee_rate:
                 self.fee_open = fee_rate
                 # Assume close-fee will fall into the same fee category and take an educated guess
                 self.fee_close = fee_rate
         elif self.exit_side == side and self.fee_close_currency is None:
             self.fee_close_cost = fee_cost
             self.fee_close_currency = fee_currency
-            if fee_rate is not None:
+            if fee_rate:
                 self.fee_close = fee_rate
 
     def fee_updated(self, side: str) -> bool:
         """
         Verify if this side (buy / sell) has already been updated
         """
-        if self.entry_side == side:
-            return self.fee_open_currency is not None
-        elif self.exit_side == side:
-            return self.fee_close_currency is not None
+        if side in (self.entry_side, self.exit_side):
+            return bool(self.fee_open_currency)
         else:
             return False
 
@@ -815,9 +813,9 @@ class LocalTrade():
 
             tmp_amount = o.safe_amount_after_fee
             tmp_price = o.average or o.price
-            if o.filled is not None:
+            if o.filled:
                 tmp_amount = o.filled
-            if tmp_amount > 0.0 and tmp_price is not None:
+            if tmp_amount > 0.0 and tmp_price:
                 total_amount += tmp_amount
                 total_stake += tmp_price * tmp_amount
 
@@ -828,7 +826,7 @@ class LocalTrade():
             self.amount = total_amount
             self.fee_open_cost = self.fee_open * self.stake_amount
             self.recalc_open_trade_value()
-            if self.stop_loss_pct is not None and self.open_rate is not None:
+            if self.stop_loss_pct and self.open_rate:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
 
     def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
@@ -852,7 +850,7 @@ class LocalTrade():
         orders = self.orders
         if order_side:
             orders = [o for o in self.orders if o.ft_order_side == order_side]
-        if is_open is not None:
+        if is_open:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
             return orders[-1]
@@ -925,7 +923,7 @@ class LocalTrade():
         """
 
         # Offline mode - without database
-        if is_open is not None:
+        if is_open:
             if is_open:
                 sel_trades = LocalTrade.trades_open
             else:
@@ -1097,7 +1095,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 trade_filter.append(Trade.open_date > open_date)
             if close_date:
                 trade_filter.append(Trade.close_date > close_date)
-            if is_open is not None:
+            if is_open:
                 trade_filter.append(Trade.is_open.is_(is_open))
             return Trade.get_trades(trade_filter).all()
         else:
@@ -1120,7 +1118,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
         if not Trade.use_db:
             raise NotImplementedError('`Trade.get_trades()` not supported in backtesting mode.')
-        if trade_filter is not None:
+        if trade_filter:
             if not isinstance(trade_filter, list):
                 trade_filter = [trade_filter]
             return Trade.query.filter(*trade_filter)
@@ -1224,7 +1222,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if(pair):
             filters.append(Trade.pair == pair)
 
         enter_tag_perf = Trade.query.with_entities(
@@ -1239,7 +1237,7 @@ class Trade(_DECL_BASE, LocalTrade):
 
         return [
             {
-                'enter_tag': enter_tag if enter_tag is not None else "Other",
+                'enter_tag': enter_tag if enter_tag else "Other",
                 'profit_ratio': profit,
                 'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
@@ -1257,7 +1255,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if(pair):
             filters.append(Trade.pair == pair)
 
         sell_tag_perf = Trade.query.with_entities(
@@ -1272,7 +1270,7 @@ class Trade(_DECL_BASE, LocalTrade):
 
         return [
             {
-                'exit_reason': exit_reason if exit_reason is not None else "Other",
+                'exit_reason': exit_reason if exit_reason else "Other",
                 'profit_ratio': profit,
                 'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
@@ -1290,7 +1288,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if(pair):
             filters.append(Trade.pair == pair)
 
         mix_tag_perf = Trade.query.with_entities(
@@ -1307,10 +1305,10 @@ class Trade(_DECL_BASE, LocalTrade):
 
         return_list: List[Dict] = []
         for id, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
-            enter_tag = enter_tag if enter_tag is not None else "Other"
-            exit_reason = exit_reason if exit_reason is not None else "Other"
+            enter_tag = enter_tag if enter_tag else "Other"
+            exit_reason = exit_reason if exit_reason else "Other"
 
-            if(exit_reason is not None and enter_tag is not None):
+            if(exit_reason and enter_tag):
                 mix_tag = enter_tag + " " + exit_reason
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):

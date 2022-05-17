@@ -99,11 +99,11 @@ class VolatilityFilter(IPairList):
         """
         # Check symbol in cache
         cached_res = self._pair_cache.get(pair, None)
-        if cached_res is not None:
+        if cached_res:
             return cached_res
 
         result = False
-        if daily_candles is not None and not daily_candles.empty:
+        if daily_candles and not daily_candles.empty:
             returns = (np.log(daily_candles.close / daily_candles.close.shift(-1)))
             returns.fillna(0, inplace=True)
 

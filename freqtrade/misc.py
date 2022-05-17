@@ -157,7 +157,7 @@ def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
             # get node or create one
             node = destination.setdefault(key, {})
             deep_merge_dicts(value, node, allow_null_overrides)
-        elif value is not None or allow_null_overrides:
+        elif value or allow_null_overrides:
             destination[key] = value
 
     return destination
@@ -176,10 +176,10 @@ def safe_value_fallback(obj: dict, key1: str, key2: str, default_value=None):
     Then search key2 in obj - return that if it's not none - then use default_value.
     Else falls back to None.
     """
-    if key1 in obj and obj[key1] is not None:
+    if key1 in obj and obj[key1]:
         return obj[key1]
     else:
-        if key2 in obj and obj[key2] is not None:
+        if key2 in obj and obj[key2]:
             return obj[key2]
     return default_value
 
@@ -191,10 +191,10 @@ def safe_value_fallback2(dict1: dict, dict2: dict, key1: str, key2: str, default
     Else falls back to None.
 
     """
-    if key1 in dict1 and dict1[key1] is not None:
+    if key1 in dict1 and dict1[key1]:
         return dict1[key1]
     else:
-        if key2 in dict2 and dict2[key2] is not None:
+        if key2 in dict2 and dict2[key2]:
             return dict2[key2]
     return default_value
 

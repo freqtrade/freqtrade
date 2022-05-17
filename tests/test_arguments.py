@@ -131,7 +131,7 @@ def test_parse_args_backtesting_custom() -> None:
     assert call_args['config'] == ['test_conf.json']
     assert call_args['verbosity'] == 0
     assert call_args['command'] == 'backtesting'
-    assert call_args['func'] is not None
+    assert call_args['func']
     assert call_args['timeframe'] == '1m'
     assert type(call_args['strategy_list']) is list
     assert len(call_args['strategy_list']) == 2
@@ -150,7 +150,7 @@ def test_parse_args_hyperopt_custom() -> None:
     assert call_args['verbosity'] == 0
     assert call_args['command'] == 'hyperopt'
     assert call_args['spaces'] == ['buy']
-    assert call_args['func'] is not None
+    assert call_args['func']
     assert callable(call_args['func'])
 
 

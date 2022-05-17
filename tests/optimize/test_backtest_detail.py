@@ -914,7 +914,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
             'exit': data.timeout,
         })
     # Only add this to configuration If it's necessary
-    if data.trailing_stop_positive is not None:
+    if data.trailing_stop_positive:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["use_exit_signal"] = data.use_exit_signal

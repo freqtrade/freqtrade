@@ -224,7 +224,7 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
                 # This strategy is not present in analyzed backtest.
                 continue
 
-            if min_backtest_date is not None:
+            if min_backtest_date:
                 backtest_date = strategy_metadata['backtest_start_time']
                 backtest_date = datetime.fromtimestamp(backtest_date, tz=timezone.utc)
                 if backtest_date < min_backtest_date:

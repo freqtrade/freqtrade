@@ -108,7 +108,7 @@ class AgeFilter(IPairList):
         if pair in self._symbolsChecked:
             return True
 
-        if daily_candles is not None:
+        if daily_candles:
             if (
                 len(daily_candles) >= self._min_days_listed
                 and (not self._max_days_listed or len(daily_candles) <= self._max_days_listed)

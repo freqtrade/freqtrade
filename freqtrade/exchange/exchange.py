@@ -383,8 +383,8 @@ class Exchange:
         Ensures that Configured mode aligns to
         """
         return (
-            market.get('quote', None) is not None
-            and market.get('base', None) is not None
+            market.get('quote', None)
+            and market.get('base', None)
             and (self.precisionMode != TICK_SIZE
                  # Too low precision will falsify calculations
                  or market.get('precision', {}).get('price', None) > 1e-11)
@@ -403,7 +403,7 @@ class Exchange:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
             contract_size: float = 1.0
-            if market['contractSize'] is not None:
+            if market['contractSize']:
                 # ccxt has contractSize in markets as string
                 contract_size = float(market['contractSize'])
             return contract_size
@@ -419,11 +419,11 @@ class Exchange:
         return trades
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
-        if 'symbol' in order and order['symbol'] is not None:
+        if 'symbol' in order and order['symbol']:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
                 for prop in ['amount', 'cost', 'filled', 'remaining']:
-                    if prop in order and order[prop] is not None:
+                    if prop in order and order[prop]:
                         order[prop] = order[prop] * contract_size
         return order
 
@@ -680,7 +680,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        if self.markets[pair]['precision']['amount'] is not None:
+        if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
                                                 counting_mode=self.precisionMode,
@@ -760,7 +760,7 @@ class Exchange:
 
         stake_limits = []
         limits = market['limits']
-        if (limits['cost'][limit] is not None):
+        if (limits['cost'][limit]):
             stake_limits.append(
                 self._contracts_to_amount(
                     pair,
@@ -768,7 +768,7 @@ class Exchange:
                 )
             )
 
-        if (limits['amount'][limit] is not None):
+        if (limits['amount'][limit]):
             stake_limits.append(
                 self._contracts_to_amount(
                     pair,
@@ -1593,7 +1593,7 @@ class Exchange:
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
-            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+            if self._config['dry_run'] and self._config.get('fee', None):
                 return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
@@ -1619,10 +1619,10 @@ class Exchange:
         """
         if not isinstance(order, dict):
             return False
-        return ('fee' in order and order['fee'] is not None
+        return ('fee' in order and order['fee']
                 and (order['fee'].keys() >= {'currency', 'cost'})
-                and order['fee']['currency'] is not None
-                and order['fee']['cost'] is not None
+                and order['fee']['currency']
+                and order['fee']['cost']
                 )
 
     def calculate_fee_rate(self, order: Dict) -> Optional[float]:
@@ -1630,7 +1630,7 @@ class Exchange:
         Calculate fee rate if it's not given by the exchange.
         :param order: Order or trade (one trade) dict
         """
-        if order['fee'].get('rate') is not None:
+        if order['fee'].get('rate'):
             return order['fee'].get('rate')
         fee_curr = order['fee']['currency']
         # Calculate fee based on order details
@@ -1870,7 +1870,7 @@ class Exchange:
         """
         try:
             # Fetch OHLCV asynchronously
-            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms is not None else ''
+            s = '(' + arrow.get(since_ms // 1000).isoformat() + ') ' if since_ms else ''
             logger.debug(
                 "Fetching pair %s, interval %s, since %s %s...",
                 pair, timeframe, since_ms, s
@@ -1941,7 +1941,7 @@ class Exchange:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair,  since,
-                    '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
+                    '(' + arrow.get(since // 1000).isoformat() + ') ' if since else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
             trades = self._trades_contracts_to_amount(trades)
@@ -2263,7 +2263,7 @@ class Exchange:
 
         elif self.trading_mode == TradingMode.MARGIN:  # Search markets.limits for max lev
             market = self.markets[pair]
-            if market['limits']['leverage']['max'] is not None:
+            if market['limits']['leverage']['max']:
                 return market['limits']['leverage']['max']
             else:
                 return 1.0  # Default if max leverage cannot be found
@@ -2630,7 +2630,7 @@ def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     """
     Return the list of all exchanges known to ccxt
     """
-    return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
+    return ccxt_module.exchanges if ccxt_module else ccxt.exchanges
 
 
 def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:

@@ -70,7 +70,7 @@ class PerformanceFilter(IPairList):
         sorted_df = list_df.merge(performance, on='pair', how='left')\
             .fillna(0).sort_values(by=['count', 'prior_idx'], ascending=True)\
             .sort_values(by=['profit_ratio'], ascending=False)
-        if self._min_profit is not None:
+        if self._min_profit:
             removed = sorted_df[sorted_df['profit_ratio'] < self._min_profit]
             for _, row in removed.iterrows():
                 self.log_once(

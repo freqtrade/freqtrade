@@ -374,7 +374,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(Trade.get_trades().all()) == 1
     trade: Trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct is None
@@ -385,7 +385,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     assert pytest.approx(trade.stake_amount) == 60
 
     # Cancel order and place new one
@@ -393,7 +393,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct is None
@@ -421,7 +421,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 3
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     assert trade.open_rate == 1.99
     assert trade.orders[-1].price == 1.96
     assert trade.orders[-1].cost == 120
@@ -432,7 +432,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 4
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     assert trade.open_rate == 1.99
     assert trade.orders[-1].price == 1.95
     assert pytest.approx(trade.orders[-1].cost) == 120

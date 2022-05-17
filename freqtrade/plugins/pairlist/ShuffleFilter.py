@@ -44,7 +44,7 @@ class ShuffleFilter(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return (f"{self.name} - Shuffling pairs" +
-                (f", seed = {self._seed}." if self._seed is not None else "."))
+                (f", seed = {self._seed}." if self._seed else "."))
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """

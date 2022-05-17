@@ -63,7 +63,7 @@ class Gateio(Exchange):
                 for idx, trade in enumerate(trades):
                     if trade.get('fee', {}).get('cost') is None:
                         takerOrMaker = trade.get('takerOrMaker', 'taker')
-                        if pair_fees.get(takerOrMaker) is not None:
+                        if pair_fees.get(takerOrMaker):
                             trades[idx]['fee'] = {
                                 'currency': self.get_pair_quote_currency(pair),
                                 'cost': trade['cost'] * pair_fees[takerOrMaker],

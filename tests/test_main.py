@@ -38,7 +38,7 @@ def test_parse_args_backtesting(mocker) -> None:
     assert call_args['config'] == ['config.json']
     assert call_args['verbosity'] == 0
     assert call_args['command'] == 'backtesting'
-    assert call_args['func'] is not None
+    assert call_args['func']
     assert callable(call_args['func'])
     assert call_args['timeframe'] is None
 
@@ -55,7 +55,7 @@ def test_main_start_hyperopt(mocker) -> None:
     assert call_args['config'] == ['config.json']
     assert call_args['verbosity'] == 0
     assert call_args['command'] == 'hyperopt'
-    assert call_args['func'] is not None
+    assert call_args['func']
     assert callable(call_args['func'])
 
 

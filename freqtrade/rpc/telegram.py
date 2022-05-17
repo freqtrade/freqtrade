@@ -493,12 +493,12 @@ class Telegram(RPCHandler):
 
                 if r['is_open']:
                     if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
-                            and r['initial_stop_loss_ratio'] is not None):
+                            and r['initial_stop_loss_ratio']):
                         # Adding initial stoploss only if it is different from stoploss
                         lines.append("*Initial Stoploss:* `{initial_stop_loss_abs:.8f}` "
                                      "`({initial_stop_loss_ratio:.2%})`")
 
-                    # Adding stoploss and stoploss percentage only if it is not None
+                    # Adding stoploss and stoploss percentage only if it
                     lines.append("*Stoploss:* `{stop_loss_abs:.8f}` " +
                                  ("`({stop_loss_ratio:.2%})`" if r['stop_loss_ratio'] else ""))
                     lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
@@ -792,9 +792,9 @@ class Telegram(RPCHandler):
         duration_msg = tabulate(
             [
                 ['Wins', str(timedelta(seconds=durations['wins']))
-                 if durations['wins'] is not None else 'N/A'],
+                 if durations['wins'] else 'N/A'],
                 ['Losses', str(timedelta(seconds=durations['losses']))
-                 if durations['losses'] is not None else 'N/A']
+                 if durations['losses'] else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )
@@ -1488,7 +1488,7 @@ class Telegram(RPCHandler):
         """
         strategy_version = self._rpc._freqtrade.strategy.version()
         version_string = f'*Version:* `{__version__}`'
-        if strategy_version is not None:
+        if strategy_version:
             version_string += f', *Strategy version: * `{strategy_version}`'
 
         self._send_msg(version_string)
@@ -1591,7 +1591,7 @@ class Telegram(RPCHandler):
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton("Refresh", callback_data=callback_path)]])
         else:
-            if keyboard is not None:
+            if keyboard:
                 reply_markup = InlineKeyboardMarkup(keyboard, resize_keyboard=True)
             else:
                 reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)

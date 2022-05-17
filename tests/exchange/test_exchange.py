@@ -2384,7 +2384,7 @@ def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
     caplog.set_level(logging.DEBUG)
 
     default_conf['exit_pricing']['price_side'] = side
-    if last_ab is not None:
+    if last_ab:
         default_conf['exit_pricing']['price_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})

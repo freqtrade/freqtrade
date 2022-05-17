@@ -160,7 +160,7 @@ def test_check_available_stake_amount(
 
     for i in range(0, max_open):
 
-        if expected[i] is not None:
+        if expected[i]:
             limit_buy_order_usdt_open['id'] = str(i)
             result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT')
             assert pytest.approx(result) == expected[i]
@@ -257,18 +257,18 @@ def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -
     freqtrade.enter_positions()
     trade = Trade.query.first()
 
-    assert trade is not None
+    assert trade
     assert trade.stake_amount == 60.0
     assert trade.is_open
-    assert trade.open_date is not None
+    assert trade.open_date
 
     freqtrade.enter_positions()
     trade = Trade.query.order_by(Trade.id.desc()).first()
 
-    assert trade is not None
+    assert trade
     assert trade.stake_amount == 60.0
     assert trade.is_open
-    assert trade.open_date is not None
+    assert trade.open_date
 
     assert Trade.total_open_trades_stakes() == 120.0
 
@@ -296,10 +296,10 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
 
     trade = Trade.query.first()
     trade.is_short = is_short
-    assert trade is not None
+    assert trade
     assert pytest.approx(trade.stake_amount) == 60.0
     assert trade.is_open
-    assert trade.open_date is not None
+    assert trade.open_date
     assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
@@ -553,10 +553,10 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert len(trades) == 1
     trade = trades[0]
-    assert trade is not None
+    assert trade
     assert pytest.approx(trade.stake_amount) == default_conf_usdt['stake_amount']
     assert trade.is_open
-    assert trade.open_date is not None
+    assert trade.open_date
     assert trade.exchange == 'binance'
     assert trade.open_rate == ticker_usdt.return_value[ticker_side]
     assert isclose(trade.amount, 60 / ticker_usdt.return_value[ticker_side])
@@ -2150,7 +2150,7 @@ def test_handle_trade(
     assert trade.close_rate == 2.0 if is_short else 2.2
     assert trade.close_profit == close_profit
     assert trade.calc_profit() == 5.685
-    assert trade.close_date is not None
+    assert trade.close_date
     assert trade.exit_reason == 'sell_signal1'
 
 
@@ -4348,8 +4348,8 @@ def test_get_real_amount_multi(
 
     assert trade.fee_open == expected_fee
     assert trade.fee_close == expected_fee
-    assert trade.fee_open_cost is not None
-    assert trade.fee_open_currency is not None
+    assert trade.fee_open_cost
+    assert trade.fee_open_currency
     assert trade.fee_close_cost is None
     assert trade.fee_close_currency is None
 
@@ -4540,10 +4540,10 @@ def test_order_book_depth_of_market(
         assert trade is None
     else:
         trade.is_short = is_short
-        assert trade is not None
+        assert trade
         assert pytest.approx(trade.stake_amount) == 60.0
         assert trade.is_open
-        assert trade.open_date is not None
+        assert trade.open_date
         assert trade.exchange == 'binance'
 
         assert len(Trade.query.all()) == 1
@@ -4853,15 +4853,15 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, f
         if trade.is_open:
             # Exclude Trade 4 - as the order is still open.
             if trade.select_order(entry_side(is_short), False):
-                assert trade.fee_open_cost is not None
-                assert trade.fee_open_currency is not None
+                assert trade.fee_open_cost
+                assert trade.fee_open_currency
             else:
                 assert trade.fee_open_cost is None
                 assert trade.fee_open_currency is None
 
         else:
-            assert trade.fee_close_cost is not None
-            assert trade.fee_close_currency is not None
+            assert trade.fee_close_cost
+            assert trade.fee_close_currency
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -4954,7 +4954,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_fo.call_count == 1
     assert mock_uts.call_count == 1
     # Found open buy order
-    assert trade.open_order_id is not None
+    assert trade.open_order_id
     assert trade.stoploss_order_id is None
 
     caplog.clear()
@@ -4973,7 +4973,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 2
     # stoploss_order_id is "refound" and added to the trade
     assert trade.open_order_id is None
-    assert trade.stoploss_order_id is not None
+    assert trade.stoploss_order_id
 
     caplog.clear()
     mock_fo.reset_mock()

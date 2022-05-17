@@ -534,12 +534,12 @@ class FreqtradeBot(LoggingMixin):
             current_profit=current_profit, min_stake=min_stake_amount,
             max_stake=min(max_stake_amount, stake_available))
 
-        if stake_amount is not None and stake_amount > 0.0:
+        if stake_amount and stake_amount > 0.0:
             # We should increase our position
             self.execute_entry(trade.pair, stake_amount, price=current_rate,
                                trade=trade, is_short=trade.is_short)
 
-        if stake_amount is not None and stake_amount < 0.0:
+        if stake_amount and stake_amount < 0.0:
             # We should decrease our position
             # TODO: Selling part of the trade not implemented yet.
             logger.error(f"Unable to decrease trade position / sell partially"
@@ -600,7 +600,7 @@ class FreqtradeBot(LoggingMixin):
         side: BuySell = 'sell' if is_short else 'buy'
         name = 'Short' if is_short else 'Long'
         trade_side: LongShort = 'short' if is_short else 'long'
-        pos_adjust = trade is not None
+        pos_adjust = trade
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
             pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust)
@@ -1116,7 +1116,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_exit.exit_flag:
             logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
-                        f'Tag: {exit_tag if exit_tag is not None else "None"}')
+                        f'Tag: {exit_tag if exit_tag else "None"}')
             self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
             return True
         return False
@@ -1769,7 +1769,7 @@ class FreqtradeBot(LoggingMixin):
             if self.exchange.order_has_fee(exectrade):
                 fee_cost_, fee_currency, fee_rate_ = self.exchange.extract_cost_curr_rate(exectrade)
                 fee_cost += fee_cost_
-                if fee_rate_ is not None:
+                if fee_rate_:
                     fee_rate_array.append(fee_rate_)
                 # only applies if fee is in quote currency!
                 if trade_base_currency == fee_currency:
@@ -1778,7 +1778,7 @@ class FreqtradeBot(LoggingMixin):
         if fee_currency:
             # fee_rate should use mean
             fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
-            if fee_rate is not None and fee_rate < 0.02:
+            if fee_rate and fee_rate < 0.02:
                 # Only update if fee-rate is < 2%
                 trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 

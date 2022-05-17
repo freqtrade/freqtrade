@@ -407,7 +407,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     ]
     for line in exists:
         assert log_has(line, caplog)
-    assert backtesting.strategy.dp._pairlists is not None
+    assert backtesting.strategy.dp._pairlists
     assert backtesting.strategy.bot_loop_start.call_count == 1
     assert sbs.call_count == 1
     assert sbc.call_count == 1
@@ -540,7 +540,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is None
     LocalTrade.trades_open.pop()
     trade = backtesting._enter_trade(pair, row=row, direction='long')
-    assert trade is not None
+    assert trade
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
     backtesting.wallets.update()
@@ -716,7 +716,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
     # No data available.
     res = backtesting._get_exit_trade_entry(trade, row_sell)
-    assert res is not None
+    assert res
     assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
 
@@ -735,12 +735,12 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     backtesting.detail_data[pair] = row_detail
 
     res = backtesting._get_exit_trade_entry(trade, row_sell)
-    assert res is not None
+    assert res
     assert res.exit_reason == ExitType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
     sell_order = res.select_order('sell', True)
-    assert sell_order is not None
+    assert sell_order
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -801,7 +801,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate
-        assert ln is not None
+        assert ln
         assert round(ln.iloc[0]["open"], 6) == round(t["open_rate"], 6)
         # check close trade rate alignes to close rate or is between high and low
         ln = data_pair.loc[data_pair["date"] == t["close_date"]]

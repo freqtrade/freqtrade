@@ -123,7 +123,7 @@ class Backtesting:
         if len(self.pairlists.whitelist) == 0:
             raise OperationalException("No pair in whitelist.")
 
-        if config.get('fee', None) is not None:
+        if config.get('fee', None):
             self.fee = config['fee']
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
@@ -403,7 +403,7 @@ class Backtesting:
             if (
                 not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                 and self.strategy.trailing_only_offset_is_reached
-                and self.strategy.trailing_stop_positive_offset is not None
+                and self.strategy.trailing_stop_positive_offset
                 and self.strategy.trailing_stop_positive
             ):
                 # Worst case: price reaches stop_positive_offset and dives down.
@@ -434,7 +434,7 @@ class Backtesting:
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
         roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
-        if roi is not None and roi_entry is not None:
+        if roi and roi_entry:
             if roi == -1 and roi_entry % self.timeframe_min == 0:
                 # When force_exiting with ROI=-1, the roi time will always be equal to trade_dur.
                 # If that entry is a multiple of the timeframe (so on candle open)
@@ -501,11 +501,11 @@ class Backtesting:
             max_stake=min(max_stake, stake_available))
 
         # Check if we should increase our position
-        if stake_amount is not None and stake_amount > 0.0:
+        if stake_amount and stake_amount > 0.0:
 
             pos_trade = self._enter_trade(
                 trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade)
-            if pos_trade is not None:
+            if pos_trade:
                 self.wallets.update()
                 return pos_trade
 
@@ -553,7 +553,7 @@ class Backtesting:
                 # row has the length for an exit tag column
                 if(
                     len(row) > EXIT_TAG_IDX
-                    and row[EXIT_TAG_IDX] is not None
+                    and row[EXIT_TAG_IDX]
                     and len(row[EXIT_TAG_IDX]) > 0
                     and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
                 ):
@@ -671,7 +671,7 @@ class Backtesting:
             else:
                 propose_rate = min(propose_rate, row[HIGH_IDX])
 
-        pos_adjust = trade is not None
+        pos_adjust = trade
         leverage = trade.leverage if trade else 1.0
         if not pos_adjust:
             try:
@@ -724,7 +724,7 @@ class Backtesting:
         entry_tag = row[ENTER_TAG_IDX] if len(row) >= ENTER_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
         order_type = self.strategy.order_types['entry']
-        pos_adjust = trade is not None and requested_rate is None
+        pos_adjust = trade and requested_rate is None
 
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
             pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
@@ -1036,7 +1036,7 @@ class Backtesting:
                     (position_stacking or len(open_trades[pair]) == 0)
                     and self.trade_slot_available(max_open_trades, open_trade_count_start)
                     and current_time != end_date
-                    and trade_dir is not None
+                    and trade_dir
                     and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
                 ):
                     trade = self._enter_trade(pair, row, trade_dir)
@@ -1199,7 +1199,7 @@ class Backtesting:
         # Load previous result that will be updated incrementally.
         # This can be circumvented in certain instances in combination with downloading more data
         min_backtest_date = self._get_min_cached_backtest_date()
-        if min_backtest_date is not None:
+        if min_backtest_date:
             self.results = find_existing_backtest_stats(
                 self.config['user_data_dir'] / 'backtest_results', self.run_ids, min_backtest_date)
 

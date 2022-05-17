@@ -141,7 +141,7 @@ class Arguments:
         if ('config' in parsed_arg and parsed_arg.config is None):
             conf_required = ('command' in parsed_arg and parsed_arg.command in NO_CONF_REQURIED)
 
-            if 'user_data_dir' in parsed_arg and parsed_arg.user_data_dir is not None:
+            if 'user_data_dir' in parsed_arg and parsed_arg.user_data_dir:
                 user_dir = parsed_arg.user_data_dir
             else:
                 # Default case

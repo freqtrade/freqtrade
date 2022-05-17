@@ -112,7 +112,7 @@ class Okx(Exchange):
 
     @retrier
     def _lev_prep(self, pair: str, leverage: float, side: BuySell):
-        if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
+        if self.trading_mode != TradingMode.SPOT and self.margin_mode:
             try:
                 # TODO-lev: Test me properly (check mgnMode passed)
                 self._api.set_leverage(

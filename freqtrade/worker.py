@@ -118,7 +118,7 @@ class Worker:
             if (now - self._heartbeat_msg) > self._heartbeat_interval:
                 version = __version__
                 strategy_version = self.freqtrade.strategy.version()
-                if (strategy_version is not None):
+                if (strategy_version):
                     version += ', strategy_version: ' + strategy_version
                 logger.info(f"Bot heartbeat. PID={getpid()}, "
                             f"version='{version}', state='{state.name}'")

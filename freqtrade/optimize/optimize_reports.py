@@ -644,7 +644,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [
-            t['key'] if t['key'] is not None and len(
+            t['key'] if t['key'] and len(
                 t['key']) > 0 else "OTHER",
             t['trades'],
             t['profit_mean_pct'],
@@ -849,8 +849,8 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if (results.get('results_per_enter_tag') is not None
-            or results.get('results_per_buy_tag') is not None):
+    if (results.get('results_per_enter_tag')
+            or results.get('results_per_buy_tag')):
         # results_per_buy_tag is deprecated and should be removed 2 versions after short golive.
         table = text_table_tags(
             "enter_tag",

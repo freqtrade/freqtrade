@@ -85,7 +85,7 @@ class NumericParameter(BaseParameter):
         :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.*.
         """
-        if high is not None and isinstance(low, Sequence):
+        if high and isinstance(low, Sequence):
             raise OperationalException(f'{self.__class__.__name__} space invalid.')
         if high is None or isinstance(low, Sequence):
             if not isinstance(low, Sequence) or len(low) != 2:
@@ -335,7 +335,7 @@ class HyperStrategyMixin:
                 attr = getattr(cls, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
                     if (attr_name.startswith(category + '_')
-                            and attr.category is not None and attr.category != category):
+                            and attr.category and attr.category != category):
                         raise OperationalException(
                             f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
                     if (category == attr.category or

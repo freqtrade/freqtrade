@@ -458,8 +458,7 @@ class Configuration:
                         sample: logfun=len (prints the length of the found
                         configuration instead of the content)
         """
-        if (argname in self.args and self.args[argname] is not None
-           and self.args[argname] is not False):
+        if self.args.get(argname):
 
             config.update({argname: self.args[argname]})
             if logfun:

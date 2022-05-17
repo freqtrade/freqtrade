@@ -147,7 +147,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     conf['dry_run_wallet'] = 100
     conf['max_open_trades'] = 2
     conf['tradable_balance_ratio'] = balance_ratio
-    if capital is not None:
+    if capital:
         conf['available_capital'] = capital
 
     freqtrade = get_patched_freqtradebot(mocker, conf)

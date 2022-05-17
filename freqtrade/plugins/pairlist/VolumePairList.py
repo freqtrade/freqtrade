@@ -134,7 +134,7 @@ class VolumePairList(IPairList):
                 filtered_tickers = [
                     v for k, v in tickers.items()
                     if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v[self._sort_key] is not None)
+                        and (self._use_range or v[self._sort_key])
                         and v['symbol'] in _pairlist)]
                 pairlist = [s['symbol'] for s in filtered_tickers]
             else:
@@ -192,7 +192,7 @@ class VolumePairList(IPairList):
                     p['symbol'], self._lookback_timeframe, self._def_candletype
                     ) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
-                if pair_candles is not None and not pair_candles.empty:
+                if pair_candles and not pair_candles.empty:
                     if self._exchange._ft_has["ohlcv_volume_currency"] == "base":
                         pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']
                                                          + pair_candles['close']) / 3

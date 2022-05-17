@@ -173,12 +173,12 @@ class TestCCXTExchange():
         tickers = exchange.get_tickers()
         assert pair in tickers
         assert 'ask' in tickers[pair]
-        assert tickers[pair]['ask'] is not None
+        assert tickers[pair]['ask']
         assert 'bid' in tickers[pair]
-        assert tickers[pair]['bid'] is not None
+        assert tickers[pair]['bid']
         assert 'quoteVolume' in tickers[pair]
         if EXCHANGES[exchangename].get('hasQuoteVolume'):
-            assert tickers[pair]['quoteVolume'] is not None
+            assert tickers[pair]['quoteVolume']
 
     def test_ccxt_fetch_ticker(self, exchange):
         exchange, exchangename = exchange
@@ -186,12 +186,12 @@ class TestCCXTExchange():
 
         ticker = exchange.fetch_ticker(pair)
         assert 'ask' in ticker
-        assert ticker['ask'] is not None
+        assert ticker['ask']
         assert 'bid' in ticker
-        assert ticker['bid'] is not None
+        assert ticker['bid']
         assert 'quoteVolume' in ticker
         if EXCHANGES[exchangename].get('hasQuoteVolume'):
-            assert ticker['quoteVolume'] is not None
+            assert ticker['quoteVolume']
 
     def test_ccxt_fetch_l2_orderbook(self, exchange):
         exchange, exchangename = exchange

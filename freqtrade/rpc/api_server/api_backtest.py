@@ -34,7 +34,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     settings = dict(bt_settings)
     # Pydantic models will contain all keys, but non-provided ones are None
     for setting in settings.keys():
-        if settings[setting] is not None:
+        if settings[setting]:
             btconfig[setting] = settings[setting]
     try:
         btconfig['stake_amount'] = float(btconfig['stake_amount'])

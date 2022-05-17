@@ -45,7 +45,7 @@ def test_search_all_strategies_with_failed():
     assert len(strategies) == 6
     # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
-    assert len([x for x in strategies if x['class'] is not None]) == 5
+    assert len([x for x in strategies if x['class']]) == 5
     assert len([x for x in strategies if x['class'] is None]) == 1
 
 

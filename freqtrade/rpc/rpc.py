@@ -200,7 +200,7 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(dict(
-                    close_profit=trade.close_profit if trade.close_profit is not None else None,
+                    close_profit=trade.close_profit if trade.close_profit else None,
                     current_rate=current_rate,
                     current_profit=current_profit,  # Deprecated
                     current_profit_pct=round(current_profit * 100, 2),  # Deprecated
@@ -257,9 +257,9 @@ class RPC:
                             else fiat_profit_sum + fiat_profit
                 detail_trade = [
                     f'{trade.id} {direction_str}',
-                    trade.pair + ('*' if (trade.open_order_id is not None
+                    trade.pair + ('*' if (trade.open_order_id
                                           and trade.close_rate_requested is None) else '')
-                    + ('**' if (trade.close_rate_requested is not None) else ''),
+                    + ('**' if (trade.close_rate_requested) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ]
@@ -300,7 +300,7 @@ class RPC:
                 Trade.close_date < (profitday + timedelta(days=1))
             ]).order_by(Trade.close_date).all()
             curdayprofit = sum(
-                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs)
             profit_days[profitday] = {
                 'amount': curdayprofit,
                 'trades': len(trades)
@@ -343,7 +343,7 @@ class RPC:
                 Trade.close_date < (profitweek + timedelta(weeks=1))
             ]).order_by(Trade.close_date).all()
             curweekprofit = sum(
-                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs)
             profit_weeks[profitweek] = {
                 'amount': curweekprofit,
                 'trades': len(trades)
@@ -385,7 +385,7 @@ class RPC:
                 Trade.close_date < (profitmonth + relativedelta(months=1))
             ]).order_by(Trade.close_date).all()
             curmonthprofit = sum(
-                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
+                trade.close_profit_abs for trade in trades if trade.close_profit_abs)
             profit_months[profitmonth] = {
                 'amount': curmonthprofit,
                 'trades': len(trades)
@@ -450,7 +450,7 @@ class RPC:
         # Duration
         dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
         for trade in trades:
-            if trade.close_date is not None and trade.open_date is not None:
+            if trade.close_date and trade.open_date:
                 trade_dur = (trade.close_date - trade.open_date).total_seconds()
                 dur[trade_win_loss(trade)].append(trade_dur)
 
@@ -612,9 +612,9 @@ class RPC:
             currencies.append({
                 'currency': coin,
                 # TODO: The below can be simplified if we don't assign None to values.
-                'free': balance.free if balance.free is not None else 0,
-                'balance': balance.total if balance.total is not None else 0,
-                'used': balance.used if balance.used is not None else 0,
+                'free': balance.free if balance.free else 0,
+                'balance': balance.total if balance.total else 0,
+                'used': balance.used if balance.used else 0,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
                 'side': 'long',

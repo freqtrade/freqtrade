@@ -1004,7 +1004,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and bound_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
-                if self.trailing_stop_positive is not None and bound_profit > sl_offset:
+                if self.trailing_stop_positive and bound_profit > sl_offset:
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.2%}")
@@ -1079,7 +1079,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         side = 'entry' if order.ft_order_side == trade.entry_side else 'exit'
 
         timeout = self.config.get('unfilledtimeout', {}).get(side)
-        if timeout is not None:
+        if timeout:
             timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
             timeout_kwargs = {timeout_unit: -timeout}
             timeout_threshold = current_time + timedelta(**timeout_kwargs)

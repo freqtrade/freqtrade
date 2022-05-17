@@ -621,7 +621,7 @@ def test_download_trades_history(trades_history, mocker, default_conf, testdatad
     assert ght_mock.call_count == 1
     # Check this in seconds - since we had to convert to seconds above too.
     assert int(ght_mock.call_args_list[0][1]['since'] // 1000) == since_time2 - 5
-    assert ght_mock.call_args_list[0][1]['from_id'] is not None
+    assert ght_mock.call_args_list[0][1]['from_id']
 
     file1.unlink()
 

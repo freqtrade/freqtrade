@@ -128,10 +128,10 @@ class StrategyResolver(IResolver):
         elif hasattr(strategy, attribute):
             val = getattr(strategy, attribute)
             # None's cannot exist in the config, so do not copy them
-            if val is not None:
+            if val:
                 config[attribute] = val
         # Explicitly check for None here as other "falsy" values are possible
-        elif default is not None:
+        elif default:
             setattr(strategy, attribute, default)
             config[attribute] = default
 

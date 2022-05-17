@@ -258,8 +258,8 @@ def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = Tru
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
-    is_short1 = is_short if is_short is not None else True
-    is_short2 = is_short if is_short is not None else False
+    is_short1 = is_short if is_short else True
+    is_short2 = is_short if is_short else False
     # Simulate dry_run entries
     trade = mock_trade_1(fee, is_short1)
     add_trade(trade)

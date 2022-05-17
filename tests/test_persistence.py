@@ -501,7 +501,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.open_order_id is None
     assert trade.close_rate == close_rate
     assert trade.close_profit == profit
-    assert trade.close_date is not None
+    assert trade.close_date
     assert log_has_re(f"LIMIT_{exit_side.upper()} has been fulfilled for "
                       r"Trade\(id=2, pair=ADA/USDT, amount=30.00000000, "
                       f"is_short={is_short}, leverage={lev}, open_rate={open_rate}0000000, "
@@ -547,7 +547,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     assert trade.open_order_id is None
     assert trade.close_rate == 2.2
     assert trade.close_profit == round(0.0945137157107232, 8)
-    assert trade.close_date is not None
+    assert trade.close_date
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
                       r"pair=ADA/USDT, amount=30.00000000, is_short=False, leverage=1.0, "
                       r"open_rate=2.00000000, open_since=.*\).",
@@ -632,7 +632,7 @@ def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade.close(2.2)
     assert trade.is_open is False
     assert trade.close_profit == round(0.0945137157107232, 8)
-    assert trade.close_date is not None
+    assert trade.close_date
 
     new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
     assert trade.close_date != new_date
@@ -2042,7 +2042,7 @@ def test_fee_updated(fee):
     trade.update_fee(0.15, 'BTC', 0.0075, 'buy')
     assert trade.fee_updated('buy')
     assert not trade.fee_updated('sell')
-    assert trade.fee_open_currency is not None
+    assert trade.fee_open_currency
     assert trade.fee_close_currency is None
 
     trade.update_fee(0.15, 'ABC', 0.0075, 'sell')
@@ -2204,7 +2204,7 @@ def test_update_order_from_ccxt(caplog):
     assert o.price == 1234.5
     assert o.filled == 9
     assert o.remaining == 11
-    assert o.order_date is not None
+    assert o.order_date
     assert o.ft_is_open
     assert o.order_filled_date is None
 
@@ -2220,7 +2220,7 @@ def test_update_order_from_ccxt(caplog):
     assert o.filled == 20.0
     assert o.remaining == 0.0
     assert not o.ft_is_open
-    assert o.order_filled_date is not None
+    assert o.order_filled_date
 
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
@@ -2246,7 +2246,7 @@ def test_select_order(fee, is_short):
     order = trades[0].select_order(trades[0].entry_side, True)
     assert order is None
     order = trades[0].select_order(trades[0].entry_side, False)
-    assert order is not None
+    assert order
     order = trades[0].select_order(trades[0].exit_side, None)
     assert order is None
 
@@ -2254,17 +2254,17 @@ def test_select_order(fee, is_short):
     order = trades[1].select_order(trades[1].entry_side, True)
     assert order is None
     order = trades[1].select_order(trades[1].entry_side, False)
-    assert order is not None
+    assert order
     order = trades[1].select_order(trades[1].entry_side, None)
-    assert order is not None
+    assert order
     order = trades[1].select_order(trades[1].exit_side, True)
     assert order is None
     order = trades[1].select_order(trades[1].exit_side, False)
-    assert order is not None
+    assert order
 
     # Has open buy order
     order = trades[3].select_order(trades[3].entry_side, True)
-    assert order is not None
+    assert order
     order = trades[3].select_order(trades[3].entry_side, False)
     assert order is None
 
@@ -2272,15 +2272,15 @@ def test_select_order(fee, is_short):
     order = trades[4].select_order(trades[4].entry_side, True)
     assert order is None
     order = trades[4].select_order(trades[4].entry_side, False)
-    assert order is not None
+    assert order
 
     trades[4].orders[1].ft_order_side = trades[4].exit_side
     order = trades[4].select_order(trades[4].exit_side, True)
-    assert order is not None
+    assert order
 
     trades[4].orders[1].ft_order_side = 'stoploss'
     order = trades[4].select_order('stoploss', None)
-    assert order is not None
+    assert order
     assert order.ft_order_side == 'stoploss'
 
 
@@ -2685,7 +2685,7 @@ def test_select_filled_orders(fee):
 
     # Closed buy order, no sell order
     orders = trades[0].select_filled_orders('buy')
-    assert orders is not None
+    assert orders
     assert len(orders) == 1
     order = orders[0]
     assert order.amount > 0
@@ -2694,30 +2694,30 @@ def test_select_filled_orders(fee):
     assert order.ft_order_side == 'buy'
     assert order.status == 'closed'
     orders = trades[0].select_filled_orders('sell')
-    assert orders is not None
+    assert orders
     assert len(orders) == 0
 
     # closed buy order, and closed sell order
     orders = trades[1].select_filled_orders('buy')
-    assert orders is not None
+    assert orders
     assert len(orders) == 1
 
     orders = trades[1].select_filled_orders('sell')
-    assert orders is not None
+    assert orders
     assert len(orders) == 1
 
     # Has open buy order
     orders = trades[3].select_filled_orders('buy')
-    assert orders is not None
+    assert orders
     assert len(orders) == 0
     orders = trades[3].select_filled_orders('sell')
-    assert orders is not None
+    assert orders
     assert len(orders) == 0
 
     # Open sell order
     orders = trades[4].select_filled_orders('buy')
-    assert orders is not None
+    assert orders
     assert len(orders) == 1
     orders = trades[4].select_filled_orders('sell')
-    assert orders is not None
+    assert orders
     assert len(orders) == 0

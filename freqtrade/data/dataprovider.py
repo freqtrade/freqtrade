@@ -141,7 +141,7 @@ class DataProvider:
                 df, date = self.__cached_pairs[pair_key]
             else:
                 df, date = self.__cached_pairs[pair_key]
-                if self.__slice_index is not None:
+                if self.__slice_index:
                     max_index = self.__slice_index
                     df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
             return df, date

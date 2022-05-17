@@ -1169,7 +1169,7 @@ def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           )
     whitelist_conf['pairlists'] = [pairlistconfig]
 
-    if desc_expected is not None:
+    if desc_expected:
         freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
         short_desc = str(freqtrade.pairlists.short_desc())
         assert short_desc == desc_expected

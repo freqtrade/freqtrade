@@ -97,11 +97,11 @@ class RangeStabilityFilter(IPairList):
         """
         # Check symbol in cache
         cached_res = self._pair_cache.get(pair, None)
-        if cached_res is not None:
+        if cached_res:
             return cached_res
 
         result = False
-        if daily_candles is not None and not daily_candles.empty:
+        if daily_candles and not daily_candles.empty:
             highest_high = daily_candles['high'].max()
             lowest_low = daily_candles['low'].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
