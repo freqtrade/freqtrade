@@ -542,6 +542,13 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
+            if self.strategy.max_entry_position_adjustment > -1:
+                count_of_entries = trade.nr_of_successful_entries
+                if count_of_entries > self.strategy.max_entry_position_adjustment:
+                    logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
+                    return
+                else:
+                    logger.debug("Max adjustment entries is set to unlimited.")
             self.execute_entry(trade.pair, stake_amount, price=current_entry_rate,
                                trade=trade, is_short=trade.is_short)
 
