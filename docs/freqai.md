@@ -4,7 +4,7 @@
         Freqai is still experimental, and should be used at the user's own discretion.
 
 Freqai is a module designed to automate a variety of tasks associated with
-training a regressor to predict signals based on input features.
+training a predictive model to provide signals based on input features.
 
 Among the the features included:
 
@@ -15,10 +15,16 @@ Among the the features included:
 * Automatic file management for storage of models to be reused during live
 * Smart and safe data standardization
 * Cleaning of NaNs from the data set before training and prediction.
+* Automated live retraining (still VERY experimental. Proceed with caution.)
 
-TODO:
+## General approach
 
-* live is not automated, still some architectural work to be done
+The user provides FreqAI with a set of custom indicators (created inside the strategy the same way
+a typical Freqtrade strategy is created) as well as a target value (typically some price change into
+the future). FreqAI trains a model to predict the target value based on the input of custom indicators. 
+FreqAI will train and save a new model for each pair in the config whitelist. 
+Users employ FreqAI to backtest a strategy (emulate reality with retraining a model as new data is 
+introduced) and run the model live to generate buy and sell signals. 
 
 ## Background and vocabulary
 
@@ -58,9 +64,7 @@ An example strategy, an example prediction model, and example config can all be 
 the necessary data, Freqai can be executed from these templates with:
 
 ```bash
-freqtrade backtesting --config config_examples/config_freqai.example.json --strategy 
-FreqaiExampleStrategy --freqaimodel CatboostPredictionModel --strategy-path freqtrade/templates 
---timerange 20220101-220201
+freqtrade backtesting --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel CatboostPredictionModel --strategy-path freqtrade/templates --timerange 20220101-20220201
 ```
 
 ## Configuring the bot
@@ -163,12 +167,21 @@ month of data.
 The freqai training/backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel ExamplePredictionModel --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel CatboostPredictionModel --timerange 20210501-20210701
 ```
 
-where the user needs to have a FreqaiExampleStrategy that fits to the requirements outlined
-below. The ExamplePredictionModel is a user built class which lets users design their 
-own training procedures and data analysis. 
+If this command has never been executed with the existing config file, then it will train a new model 
+for each pair, for each backtesting window within the bigger `--timerange`._
+
+---
+**NOTE**
+Once the training is completed, the user can execute this again with the same config file and 
+FreqAI will find the trained models and load them instead of spending time training. This is useful 
+if the user wants to tweak (or even hyperopt) buy and sell criteria inside the strategy. IF the user
+*wants* to retrain a new model with the same config file, then he/she should simply change the `identifier`. 
+This way, the user can return to using any model they wish by simply changing the `identifier`.
+
+---
 
 ### Building a freqai strategy
 
@@ -264,7 +277,7 @@ the user is asking for `labels` that are 24 candles in the future.
 
 ### Removing outliers with the Dissimilarity Index
 
-The Dissimilarity Index (DI) aims to quantity the uncertainty associated with each
+The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each
 prediction by the model. To do so, Freqai measures the distance between each training
 data point and all other training data points:
 
