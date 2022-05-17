@@ -442,7 +442,6 @@ CONF_SCHEMA = {
                 "identifier": {"type": "str", "default": "example"},
                 "live_trained_timerange": {"type": "str"},
                 "live_full_backtestrange": {"type": "str"},
-                "base_features": {"type": "list"},
                 "corr_pairlist": {"type": "list"},
                 "feature_parameters": {
                     "type": "object",

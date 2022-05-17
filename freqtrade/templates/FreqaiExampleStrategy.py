@@ -62,8 +62,11 @@ class FreqaiExampleStrategy(IStrategy):
     def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
         """
         Function designed to automatically generate, name and merge features
-        from user indicated timeframes in the configuration file. User can add
-        additional features here, but must follow the naming convention.
+        from user indicated timeframes in the configuration file. User controls the indicators
+        passed to the training/prediction by prepending indicators with `'%-' + coin `
+        (see convention below). I.e. user should not prepend any supporting metrics
+        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
+        model.
         :params:
         :pair: pair to be used as informative
         :df: strategy dataframe which will receive merges from informatives
@@ -74,49 +77,50 @@ class FreqaiExampleStrategy(IStrategy):
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 
-        informative[coin + "rsi"] = ta.RSI(informative, timeperiod=14)
-        informative[coin + "mfi"] = ta.MFI(informative, timeperiod=25)
-        informative[coin + "adx"] = ta.ADX(informative, window=20)
+        informative['%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
+        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
+        informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
 
         informative[coin + "20sma"] = ta.SMA(informative, timeperiod=20)
         informative[coin + "21ema"] = ta.EMA(informative, timeperiod=21)
-        informative[coin + "bmsb"] = np.where(
+        informative['%-' + coin + "bmsb"] = np.where(
             informative[coin + "20sma"].lt(informative[coin + "21ema"]), 1, 0
         )
-        informative[coin + "close_over_20sma"] = informative["close"] / informative[coin + "20sma"]
+        informative['%-' + coin + "close_over_20sma"] = informative["close"] / informative[
+                                                                                    coin + "20sma"]
 
-        informative[coin + "mfi"] = ta.MFI(informative, timeperiod=25)
+        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
 
         informative[coin + "ema21"] = ta.EMA(informative, timeperiod=21)
         informative[coin + "sma20"] = ta.SMA(informative, timeperiod=20)
         stoch = ta.STOCHRSI(informative, 15, 20, 2, 2)
-        informative[coin + "srsi-fk"] = stoch["fastk"]
-        informative[coin + "srsi-fd"] = stoch["fastd"]
+        informative['%-' + coin + "srsi-fk"] = stoch["fastk"]
+        informative['%-' + coin + "srsi-fd"] = stoch["fastd"]
 
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)
         informative[coin + "bb_lowerband"] = bollinger["lower"]
         informative[coin + "bb_middleband"] = bollinger["mid"]
         informative[coin + "bb_upperband"] = bollinger["upper"]
-        informative[coin + "bb_width"] = (
+        informative['%-' + coin + "bb_width"] = (
             informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
         ) / informative[coin + "bb_middleband"]
-        informative[coin + "close-bb_lower"] = (
+        informative['%-' + coin + "close-bb_lower"] = (
             informative["close"] / informative[coin + "bb_lowerband"]
         )
 
-        informative[coin + "roc"] = ta.ROC(informative, timeperiod=3)
-        informative[coin + "adx"] = ta.ADX(informative, window=14)
+        informative['%-' + coin + "roc"] = ta.ROC(informative, timeperiod=3)
+        informative['%-' + coin + "adx"] = ta.ADX(informative, window=14)
 
         macd = ta.MACD(informative)
-        informative[coin + "macd"] = macd["macd"]
+        informative['%-' + coin + "macd"] = macd["macd"]
         informative[coin + "pct-change"] = informative["close"].pct_change()
-        informative[coin + "relative_volume"] = (
+        informative['%-' + coin + "relative_volume"] = (
             informative["volume"] / informative["volume"].rolling(10).mean()
         )
 
         informative[coin + "pct-change"] = informative["close"].pct_change()
 
-        indicators = [col for col in informative if col.startswith(coin)]
+        indicators = [col for col in informative if col.startswith('%')]
 
         for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
             if n == 0:
@@ -154,7 +158,6 @@ class FreqaiExampleStrategy(IStrategy):
                     pair, dataframe.copy(), tf, coin=pair.split("/")[0] + "-"
                 )
 
-        print('dataframe_built')
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.
@@ -181,7 +184,6 @@ class FreqaiExampleStrategy(IStrategy):
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # sell_goal = eval('self.'+metadata['pair'].split("/")[0]+'_sell_goal.value')
         sell_conditions = [
             (dataframe["prediction"] < dataframe["sell_roi"]) & (dataframe["do_predict"] == 1)
         ]

@@ -53,9 +53,8 @@ class CatboostPredictionModel(IFreqaiModel):
         logger.info("--------------------Starting training--------------------")
 
         # create the full feature list based on user config info
-        self.dh.training_features_list = self.dh.build_feature_list(self.config, metadata)
+        self.dh.training_features_list = self.dh.find_features(unfiltered_dataframe)
         unfiltered_labels = self.make_labels(unfiltered_dataframe)
-
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = self.dh.filter_features(
             unfiltered_dataframe,
@@ -127,7 +126,7 @@ class CatboostPredictionModel(IFreqaiModel):
 
         # logger.info("--------------------Starting prediction--------------------")
 
-        original_feature_list = self.dh.build_feature_list(self.config, metadata)
+        original_feature_list = self.dh.find_features(unfiltered_dataframe)
         filtered_dataframe, _ = self.dh.filter_features(
             unfiltered_dataframe, original_feature_list, training_filter=False
         )

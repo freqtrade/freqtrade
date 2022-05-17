@@ -483,30 +483,37 @@ class FreqaiDataKitchen:
 
         return
 
-    def build_feature_list(self, config: dict, metadata: dict) -> list:
-        """
-        Build the list of features that will be used to filter
-        the full dataframe. Feature list is construced from the
-        user configuration file.
-        :params:
-        :config: Canonical freqtrade config file containing all
-        user defined input in config['freqai] dictionary.
-        """
-        features = []
-        for tf in config["freqai"]["timeframes"]:
-            for ft in config["freqai"]["base_features"]:
-                for n in range(config["freqai"]["feature_parameters"]["shift"] + 1):
-                    shift = ""
-                    if n > 0:
-                        shift = "_shift-" + str(n)
-                    features.append(metadata['pair'].split("/")[0] + "-" + ft + shift + "_" + tf)
-                    for p in config["freqai"]["corr_pairlist"]:
-                        if metadata['pair'] in p:
-                            continue  # avoid duplicate features
-                        features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
-
-        # logger.info("number of features %s", len(features))
+    def find_features(self, dataframe: DataFrame) -> list:
+        column_names = dataframe.columns
+        features = [c for c in column_names if '%' in c]
+        assert features, ("Could not find any features!")
         return features
+
+    # def build_feature_list(self, config: dict, metadata: dict) -> list:
+    #     """
+    #     SUPERCEDED BY self.find_features()
+    #     Build the list of features that will be used to filter
+    #     the full dataframe. Feature list is construced from the
+    #     user configuration file.
+    #     :params:
+    #     :config: Canonical freqtrade config file containing all
+    #     user defined input in config['freqai] dictionary.
+    #     """
+    #     features = []
+    #     for tf in config["freqai"]["timeframes"]:
+    #         for ft in config["freqai"]["base_features"]:
+    #             for n in range(config["freqai"]["feature_parameters"]["shift"] + 1):
+    #                 shift = ""
+    #                 if n > 0:
+    #                     shift = "_shift-" + str(n)
+    #                 features.append(metadata['pair'].split("/")[0] + "-" + ft + shift + "_" + tf)
+    #                 for p in config["freqai"]["corr_pairlist"]:
+    #                     if metadata['pair'] in p:
+    #                         continue  # avoid duplicate features
+    #                     features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
+
+    #     # logger.info("number of features %s", len(features))
+    #     return features
 
     def check_if_pred_in_training_spaces(self) -> None:
         """

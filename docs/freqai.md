@@ -72,11 +72,6 @@ config setup includes:
                 "train_period" : 30,
                 "backtest_period" : 7,
                 "identifier" :  "unique-id",
-                "base_features": [
-                        "rsi",
-                        "mfi",
-                        "roc",
-                ],
                 "corr_pairlist": [
                         "ETH/USD",
                         "LINK/USD",
@@ -102,11 +97,31 @@ config setup includes:
 
 ### Building the feature set
 
-Most of these parameters are controlling the feature data set. The `base_features`
-indicates the basic indicators the user wishes to include in the feature set.
-The `timeframes` are the timeframes of each base_feature that the user wishes to
-include in the feature set. In the present case, the user is asking for the
-`5m`, `15m`, and `4h` timeframes of the `rsi`, `mfi`, `roc`, etc. to be included
+Most of these parameters are controlling the feature data set. Features are added by the user 
+inside the `populate_any_indicators()` method of the strategy by prepending indicators with `%`:
+
+```python
+    def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
+        informative['%-''%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
+        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
+        informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
+        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)
+        informative[coin + "bb_lowerband"] = bollinger["lower"]
+        informative[coin + "bb_middleband"] = bollinger["mid"]
+        informative[coin + "bb_upperband"] = bollinger["upper"]
+        informative['%-' + coin + "bb_width"] = (
+            informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
+        ) / informative[coin + "bb_middleband"]
+```
+The user of the present example does not want to pass the `bb_lowerband` as a feature to the model, 
+and has therefore not prepended it with `%`. The user does, however, wish to pass `bb_width` to the
+model for training/prediction and has therfore prepended it with `%`._
+
+(Please see the example script located in `freqtrade/templates/FreqaiExampleStrategy.py` for a full example of `populate_any_indicators()`)
+
+The `timeframes` from the example config above are the timeframes of each `populate_any_indicator()`
+ included metric for inclusion in the feature set. In the present case, the user is asking for the
+`5m`, `15m`, and `4h` timeframes of the `rsi`, `mfi`, `roc`, and `bb_width` to be included
 in the feature set.
 
 In addition, the user can ask for each of these features to be included from
