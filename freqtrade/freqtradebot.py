@@ -542,7 +542,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
-            self.execute_entry(trade.pair, stake_amount, price=current_rate,
+            self.execute_entry(trade.pair, stake_amount, price=current_entry_rate,
                                trade=trade, is_short=trade.is_short)
 
         if stake_amount is not None and stake_amount < 0.0:
