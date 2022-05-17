@@ -539,11 +539,11 @@ class Backtesting:
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
-                closerate = self._get_close_rate(row, trade, exit_, trade_dur)
+                close_rate = self._get_close_rate(row, trade, exit_, trade_dur)
             except ValueError:
                 return None
-            # call the custom exit price,with default value as previous closerate
-            current_profit = trade.calc_profit_ratio(closerate)
+            # call the custom exit price,with default value as previous close_rate
+            current_profit = trade.calc_profit_ratio(close_rate)
             order_type = self.strategy.order_types['exit']
             if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
                 # Checks and adds an exit tag, after checking that the length of the
@@ -557,24 +557,24 @@ class Backtesting:
                     exit_reason = row[EXIT_TAG_IDX]
                 # Custom exit pricing only for exit-signals
                 if order_type == 'limit':
-                    closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                      default_retval=closerate)(
+                    close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                       default_retval=close_rate)(
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
-                        proposed_rate=closerate, current_profit=current_profit,
+                        proposed_rate=close_rate, current_profit=current_profit,
                         exit_tag=exit_reason)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
-                        closerate = min(closerate, row[HIGH_IDX])
+                        close_rate = min(close_rate, row[HIGH_IDX])
                     else:
-                        closerate = max(closerate, row[LOW_IDX])
+                        close_rate = max(close_rate, row[LOW_IDX])
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
-                    rate=closerate,
+                    rate=close_rate,
                     time_in_force=time_in_force,
                     sell_reason=exit_reason,  # deprecated
                     exit_reason=exit_reason,
@@ -597,12 +597,12 @@ class Backtesting:
                 side=trade.exit_side,
                 order_type=order_type,
                 status="open",
-                price=closerate,
-                average=closerate,
+                price=close_rate,
+                average=close_rate,
                 amount=trade.amount,
                 filled=0,
                 remaining=trade.amount,
-                cost=trade.amount * closerate,
+                cost=trade.amount * close_rate,
             )
             trade.orders.append(order)
             return trade
