@@ -305,6 +305,7 @@ def test_amount_to_precision(
     (234.53, 4, 0.5, 235.0),
     (0.891534, 4, 0.0001, 0.8916),
     (64968.89, 4, 0.01, 64968.89),
+    (0.000000003483, 4, 1e-12, 0.000000003483),
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):

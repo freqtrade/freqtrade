@@ -16,8 +16,7 @@ import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
-from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
-                                            decimal_to_precision)
+from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_precision
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
@@ -704,10 +703,11 @@ class Exchange:
             #                                    counting_mode=self.precisionMode,
             #                                    ))
             if self.precisionMode == TICK_SIZE:
-                precision = self.markets[pair]['precision']['price']
-                missing = price % precision
-                if missing != 0:
-                    price = round(price - missing + precision, 10)
+                precision = Precise(str(self.markets[pair]['precision']['price']))
+                price_str = Precise(str(price))
+                missing = price_str % precision
+                if not missing == Precise("0"):
+                    price = round(float(str(price_str - missing + precision)), 14)
             else:
                 symbol_prec = self.markets[pair]['precision']['price']
                 big_price = price * pow(10, symbol_prec)
@@ -1457,6 +1457,23 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def _get_price_side(self, side: str, is_short: bool, conf_strategy: Dict) -> str:
+        price_side = conf_strategy['price_side']
+
+        if price_side in ('same', 'other'):
+            price_map = {
+                ('entry', 'long', 'same'): 'bid',
+                ('entry', 'long', 'other'): 'ask',
+                ('entry', 'short', 'same'): 'ask',
+                ('entry', 'short', 'other'): 'bid',
+                ('exit', 'long', 'same'): 'ask',
+                ('exit', 'long', 'other'): 'bid',
+                ('exit', 'short', 'same'): 'bid',
+                ('exit', 'short', 'other'): 'ask',
+            }
+            price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
+        return price_side
+
     def get_rate(self, pair: str, refresh: bool,
                  side: EntryExit, is_short: bool) -> float:
         """
@@ -1483,20 +1500,7 @@ class Exchange:
 
         conf_strategy = self._config.get(strat_name, {})
 
-        price_side = conf_strategy['price_side']
-
-        if price_side in ('same', 'other'):
-            price_map = {
-                ('entry', 'long', 'same'): 'bid',
-                ('entry', 'long', 'other'): 'ask',
-                ('entry', 'short', 'same'): 'ask',
-                ('entry', 'short', 'other'): 'bid',
-                ('exit', 'long', 'same'): 'ask',
-                ('exit', 'long', 'other'): 'bid',
-                ('exit', 'short', 'same'): 'bid',
-                ('exit', 'short', 'other'): 'ask',
-            }
-            price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
+        price_side = self._get_price_side(side, is_short, conf_strategy)
 
         price_side_word = price_side.capitalize()
 
