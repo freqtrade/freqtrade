@@ -1474,7 +1474,7 @@ class Exchange:
             price_side = price_map[(side, 'short' if is_short else 'long', price_side)]
         return price_side
 
-    def get_rate(self, pair: str, refresh: bool,  # noqa: max-complexity: 13
+    def get_rate(self, pair: str, refresh: bool,
                  side: EntryExit, is_short: bool,
                  order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
