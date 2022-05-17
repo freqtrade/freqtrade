@@ -535,6 +535,7 @@ class Backtesting:
 
         if exit_.exit_flag:
             trade.close_date = exit_candle_time
+            exit_reason = exit_.exit_reason
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
@@ -545,6 +546,15 @@ class Backtesting:
             current_profit = trade.calc_profit_ratio(close_rate)
             order_type = self.strategy.order_types['exit']
             if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
+                # Checks and adds an exit tag, after checking that the length of the
+                # row has the length for an exit tag column
+                if(
+                    len(row) > EXIT_TAG_IDX
+                    and row[EXIT_TAG_IDX] is not None
+                    and len(row[EXIT_TAG_IDX]) > 0
+                    and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
+                ):
+                    exit_reason = row[EXIT_TAG_IDX]
                 # Custom exit pricing only for exit-signals
                 if order_type == 'limit':
                     close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
@@ -552,7 +562,7 @@ class Backtesting:
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
                         proposed_rate=close_rate, current_profit=current_profit,
-                        exit_tag=exit_.exit_reason)
+                        exit_tag=exit_reason)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
@@ -566,22 +576,12 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
-                    sell_reason=exit_.exit_reason,  # deprecated
-                    exit_reason=exit_.exit_reason,
+                    sell_reason=exit_reason,  # deprecated
+                    exit_reason=exit_reason,
                     current_time=exit_candle_time):
                 return None
 
-            trade.exit_reason = exit_.exit_reason
-
-            # Checks and adds an exit tag, after checking that the length of the
-            # row has the length for an exit tag column
-            if(
-                len(row) > EXIT_TAG_IDX
-                and row[EXIT_TAG_IDX] is not None
-                and len(row[EXIT_TAG_IDX]) > 0
-                and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
-            ):
-                trade.exit_reason = row[EXIT_TAG_IDX]
+            trade.exit_reason = exit_reason
 
             self.order_id_counter += 1
             order = Order(
@@ -812,11 +812,11 @@ class Backtesting:
                 remaining=amount,
                 cost=stake_amount + trade.fee_open,
             )
+            trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.price, row):
                 order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
-            trade.orders.append(order)
             trade.recalc_trade_from_orders()
 
         return trade

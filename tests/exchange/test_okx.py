@@ -1,10 +1,40 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
 from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums.candletype import CandleType
+from freqtrade.exchange.exchange import timeframe_to_minutes
 from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+def test_okx_ohlcv_candle_limit(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, id='okx')
+    timeframes = ('1m', '5m', '1h')
+    start_time = int(datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
+
+    for timeframe in timeframes:
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == 300
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES) == 300
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.MARK) == 100
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUNDING_RATE) == 100
+
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, start_time) == 100
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES, start_time) == 100
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.MARK, start_time) == 100
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUNDING_RATE, start_time) == 100
+        one_call = int((datetime.now(timezone.utc) - timedelta(
+            minutes=290 * timeframe_to_minutes(timeframe))).timestamp() * 1000)
+
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, one_call) == 300
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES, one_call) == 300
+
+        one_call = int((datetime.now(timezone.utc) - timedelta(
+            minutes=320 * timeframe_to_minutes(timeframe))).timestamp() * 1000)
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT, one_call) == 100
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES, one_call) == 100
 
 
 def test_get_maintenance_ratio_and_amt_okx(

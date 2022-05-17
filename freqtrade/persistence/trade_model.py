@@ -153,6 +153,7 @@ class Order(_DECL_BASE):
                 and len(trade.select_filled_orders(trade.entry_side)) == 1):
             trade.open_rate = self.price
             trade.recalc_open_trade_value()
+            trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -491,7 +492,7 @@ class LocalTrade():
         self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
-                         initial: bool = False) -> None:
+                         initial: bool = False, refresh: bool = False) -> None:
         """
         This adjusts the stop loss to it's most recently observed setting
         :param current_price: Current rate the asset is traded
@@ -502,6 +503,7 @@ class LocalTrade():
         if initial and not (self.stop_loss is None or self.stop_loss == 0):
             # Don't modify if called with initial and nothing to do
             return
+        refresh = True if refresh and self.nr_of_successful_entries == 1 else False
 
         leverage = self.leverage or 1.0
         if self.is_short:
@@ -516,8 +518,7 @@ class LocalTrade():
                 new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
-        if self.initial_stop_loss_pct is None:
-            logger.debug(f"{self.pair} - Assigning new stoploss...")
+        if self.initial_stop_loss_pct is None or refresh:
             self._set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             self.initial_stop_loss_pct = -1 * abs(stoploss)
@@ -656,7 +657,7 @@ class LocalTrade():
     def recalc_open_trade_value(self) -> None:
         """
         Recalculate open_trade_value.
-        Must be called whenever open_rate, fee_open or is_short is changed.
+        Must be called whenever open_rate, fee_open is changed.
         """
         self.open_trade_value = self._calc_open_trade_value()
 
