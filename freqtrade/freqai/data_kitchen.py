@@ -312,6 +312,9 @@ class FreqaiDataKitchen:
 
         full_timerange = TimeRange.parse_timerange(tr)
         config_timerange = TimeRange.parse_timerange(self.config["timerange"])
+        if config_timerange.stopts == 0:
+            config_timerange.stopts = int(datetime.datetime.now(
+                                            tz=datetime.timezone.utc).timestamp())
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
 
@@ -588,6 +591,10 @@ class FreqaiDataKitchen:
 
     def create_fulltimerange(self, backtest_tr: str, backtest_period: int) -> str:
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
+
+        if backtest_timerange.stopts == 0:
+            backtest_timerange.stopts = int(datetime.datetime.now(
+                                            tz=datetime.timezone.utc).timestamp())
 
         backtest_timerange.startts = backtest_timerange.startts - backtest_period * SECONDS_IN_DAY
         start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
