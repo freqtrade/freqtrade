@@ -850,7 +850,7 @@ class LocalTrade():
         orders = self.orders
         if order_side:
             orders = [o for o in self.orders if o.ft_order_side == order_side]
-        if is_open:
+        if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
             return orders[-1]
