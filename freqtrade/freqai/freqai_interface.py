@@ -105,6 +105,11 @@ class IFreqaiModel(ABC):
                 self.dh.full_target_mean, self.dh.full_target_std)
 
     def start_live(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> None:
+        """
+        The main broad execution for dry/live. This function will check if a retraining should be
+        performed, and if so, retrain and reset the model.
+
+        """
 
         self.dh.set_paths()
 
@@ -119,7 +124,6 @@ class IFreqaiModel(ABC):
 
         if retrain or not file_exists:
             self.dh.download_new_data_for_retraining(new_trained_timerange, metadata)
-            # dataframe = download-data
             corr_dataframes, base_dataframes = self.dh.load_pairs_histories(new_trained_timerange,
                                                                             metadata)
 
@@ -131,12 +135,9 @@ class IFreqaiModel(ABC):
             self.model = self.train(unfiltered_dataframe, metadata)
             self.dh.save_data(self.model)
 
-            self.freqai_info
-
         self.model = self.dh.load_data()
         preds, do_preds = self.predict(dataframe, metadata)
         self.dh.append_predictions(preds, do_preds, len(dataframe))
-        # dataframe should have len 1 here
 
         return
 

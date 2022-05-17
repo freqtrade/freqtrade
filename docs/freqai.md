@@ -49,15 +49,16 @@ Use `pip` to install the prerequisities with:
 
 ## Running from the example files
 
-An example strategy, example prediction model, and example config can all be found in 
-`freqtrade/templates/ExampleFreqaiStrategy.py`, `freqtrade/templates/ExamplePredictionModel.py`, 
+An example strategy, an example prediction model, and example config can all be found in 
+`freqtrade/templates/ExampleFreqaiStrategy.py`, 
+`freqtrade/freqai/prediction_models/CatboostPredictionModel.py`, 
 `config_examples/config_freqai.example.json`, respectively. Assuming the user has downloaded
 the necessary data, Freqai can be executed from these templates with:
 
 ```bash
 freqtrade backtesting --config config_examples/config_freqai.example.json --strategy 
-FreqaiExampleStrategy --freqaimodel ExamplePredictionModel
---freqaimodel-path freqtrade/templates --strategy-path freqtrade/templates --timerange 20220101-220201
+FreqaiExampleStrategy --freqaimodel CatboostPredictionModel --strategy-path freqtrade/templates 
+--timerange 20220101-220201
 ```
 
 ## Configuring the bot
@@ -185,7 +186,7 @@ the feature set with a proper naming convention for the IFreqaiModel to use late
 
 ### Building an IFreqaiModel
 
-Freqai has a base example model in `templates/ExamplePredictionModel.py`, but users can customize and create
+Freqai has an example prediction model based on the popular `Catboost` regression (`freqai/prediction_models/CatboostPredictionModel.py`). However, users can customize and create
 their own prediction models using the `IFreqaiModel` class. Users are encouraged to inherit `train()`, `predict()`, 
 and `make_labels()` to let them customize various aspects of their training procedures.
 

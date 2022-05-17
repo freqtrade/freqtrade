@@ -24,7 +24,8 @@ class FreqaiModelResolver(IResolver):
     object_type = IFreqaiModel
     object_type_str = "FreqaiModel"
     user_subdir = USERPATH_FREQAIMODELS
-    initial_search_path = Path(__file__).parent.parent.joinpath("optimize").resolve()
+    initial_search_path = Path(__file__).parent.parent.joinpath(
+                                                       "freqai/prediction_models").resolve()
 
     @staticmethod
     def load_freqaimodel(config: Dict) -> IFreqaiModel:
