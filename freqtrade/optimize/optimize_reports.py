@@ -468,6 +468,7 @@ def generate_strategy_stats(pairlist: List[str],
         'rejected_signals': content['rejected_signals'],
         'timedout_entry_orders': content['timedout_entry_orders'],
         'timedout_exit_orders': content['timedout_exit_orders'],
+        'canceled_trade_entries': content['canceled_trade_entries'],
         'max_open_trades': max_open_trades,
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
@@ -801,6 +802,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
              f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
+            ('Canceled Trade Entries', strat_results.get('canceled_trade_entries', 'N/A')),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
