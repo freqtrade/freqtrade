@@ -522,7 +522,7 @@ tc32 = BTContainer(data=[
     trailing_stop_positive=0.03,
     trades=[
         BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3, is_short=True)
-    ]
+]
 )
 
 # Test 33: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
@@ -662,7 +662,7 @@ tc41 = BTContainer(data=[
     custom_entry_price=4000,
     trades=[
         BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1, is_short=True)
-    ]
+]
 )
 
 # Test 42: Custom-entry-price around candle low
@@ -762,7 +762,7 @@ tc48 = BTContainer(data=[
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust
     [3, 5100, 5100, 4650, 4750, 6172, 0, 1],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
-    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.087,
+    stop_loss=-0.2, roi={"0": 0.10}, profit_perc=-0.087,
     use_exit_signal=True, timeout=1000,
     custom_entry_price=4200, adjust_entry_price=5200,
     trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=False)]
@@ -777,7 +777,7 @@ tc49 = BTContainer(data=[
     [2, 4900, 5250, 4900, 5100, 6172, 0, 0, 0, 0],  # Order readjust
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 1],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0]],
-    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=0.05,
+    stop_loss=-0.2, roi={"0": 0.10}, profit_perc=0.05,
     use_exit_signal=True, timeout=1000,
     custom_entry_price=5300, adjust_entry_price=5000,
     trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=True)]
@@ -809,6 +809,35 @@ tc51 = BTContainer(data=[
     use_exit_signal=True, timeout=60,
     custom_entry_price=4200, adjust_entry_price=4100,
     trades=[]
+)
+
+# Test 52: Custom-entry-price below all candles - readjust order - stoploss
+tc52 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 4951, 5000, 6172, 0, 0],  # enter trade (signal on last candle)
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],  # Order readjust
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],  # stoploss hit?
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.03, roi={"0": 0.10}, profit_perc=-0.03,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=4200, adjust_entry_price=5200,
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2, is_short=False)]
+)
+
+
+# Test 53: Custom-entry-price short above all candles - readjust order - stoploss
+tc53 = BTContainer(data=[
+    # D   O     H     L     C    V    EL XL ES Xs  BT
+    [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+    [1, 5000, 5200, 4951, 5000, 6172, 0, 0, 0, 0],  # enter trade (signal on last candle)
+    [2, 4900, 5250, 4900, 5100, 6172, 0, 0, 0, 0],  # Order readjust
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 1],  # stoploss hit?
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0]],
+    stop_loss=-0.03, roi={"0": 0.10}, profit_perc=-0.03,
+    use_exit_signal=True, timeout=1000,
+    custom_entry_price=5300, adjust_entry_price=5000,
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2, is_short=True)]
 )
 
 TESTS = [
@@ -864,6 +893,8 @@ TESTS = [
     tc49,
     tc50,
     tc51,
+    tc52,
+    tc53,
 ]
 
 
@@ -933,3 +964,5 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)
         assert res.is_short == trade.is_short
+    backtesting.cleanup()
+    del backtesting

@@ -17,9 +17,9 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOr
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_credentials)
-from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
-                                         timeframe_to_next_date, timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+from freqtrade.exchange.exchange import (date_minus_candles, market_is_active, timeframe_to_minutes,
+                                         timeframe_to_msecs, timeframe_to_next_date,
+                                         timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
@@ -356,6 +356,7 @@ def test_amount_to_precision(
     (234.53, 4, 0.5, 235.0),
     (0.891534, 4, 0.0001, 0.8916),
     (64968.89, 4, 0.01, 64968.89),
+    (0.000000003483, 4, 1e-12, 0.000000003483),
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
@@ -990,6 +991,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
 
 def test_validate_timeframes_not_in_config(default_conf, mocker):
+    # TODO: this test does not assert ...
     del default_conf["timeframe"]
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
@@ -1005,6 +1007,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
+    mocker.patch('freqtrade.exchange.Exchange.validate_required_startup_candles')
     Exchange(default_conf)
 
 
@@ -1134,6 +1137,13 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     default_conf['startup_candle_count'] = 6000
     with pytest.raises(OperationalException, match=r'This strategy requires 6000.*'):
         Exchange(default_conf)
+
+    # Emulate kraken mode
+    ex._ft_has['ohlcv_has_history'] = False
+    with pytest.raises(OperationalException,
+                       match=r'This strategy requires 2500.*, '
+                             r'which is more than the amount.*'):
+        ex.validate_required_startup_candles(2500, '5m')
 
 
 def test_exchange_has(default_conf, mocker):
@@ -1926,7 +1936,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv(
         pair,
         "5m",
@@ -1992,7 +2002,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_ty
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv_as_df(
         pair,
         "5m",
@@ -2046,7 +2056,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
         )
     # Required candles
     candles = (end_ts - start_ts) / 300_000
-    exp = candles // exchange.ohlcv_candle_limit('5m') + 1
+    exp = candles // exchange.ohlcv_candle_limit('5m', CandleType.SPOT) + 1
 
     # Depending on the exchange, this should be called between 1 and 6 times.
     assert exchange._api_async.fetch_ohlcv.call_count == exp
@@ -3417,7 +3427,7 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
             expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
             # This should only run for bittrex
             assert exchange_name == 'bittrex'
-        assert exchange.ohlcv_candle_limit(timeframe) == expected
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == expected
 
 
 def test_timeframe_to_minutes():
@@ -3497,6 +3507,17 @@ def test_timeframe_to_next_date():
 
     date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
+
+
+def test_date_minus_candles():
+
+    date = datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)
+
+    assert date_minus_candles("5m", 3, date) == date - timedelta(minutes=15)
+    assert date_minus_candles("5m", 5, date) == date - timedelta(minutes=25)
+    assert date_minus_candles("1m", 6, date) == date - timedelta(minutes=6)
+    assert date_minus_candles("1h", 3, date) == date - timedelta(hours=3, minutes=25)
+    assert date_minus_candles("1h", 3) == timeframe_to_prev_date('1h') - timedelta(hours=3)
 
 
 @pytest.mark.parametrize(

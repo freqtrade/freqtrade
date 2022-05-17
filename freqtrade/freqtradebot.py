@@ -542,15 +542,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
-            if self.strategy.max_entry_position_adjustment > -1:
-                count_of_entries = trade.nr_of_successful_entries
-                if count_of_entries > self.strategy.max_entry_position_adjustment:
-                    logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
-                    return
-                else:
-                    logger.debug("Max adjustment entries is set to unlimited.")
-            self.execute_entry(trade.pair, stake_amount, None and current_entry_rate,
-                               trade=trade, is_short=trade.is_short)
+            self.execute_entry(trade.pair, stake_amount, trade=trade, is_short=trade.is_short)
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
@@ -608,6 +600,7 @@ class FreqtradeBot(LoggingMixin):
         ordertype: Optional[str] = None,
         enter_tag: Optional[str] = None,
         trade: Optional[Trade] = None,
+        order_adjust: bool = False
     ) -> bool:
         """
         Executes a limit buy for the given pair
@@ -623,7 +616,7 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade_side, enter_tag, trade)
+            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust)
 
         if not stake_amount:
             return False
@@ -768,23 +761,26 @@ class FreqtradeBot(LoggingMixin):
         self, pair: str, price: Optional[float], stake_amount: float,
         trade_side: LongShort,
         entry_tag: Optional[str],
-        trade: Optional[Trade]
+        trade: Optional[Trade],
+        order_adjust: bool,
     ) -> Tuple[float, float, float]:
 
         if price:
             enter_limit_requested = price
         else:
             # Calculate price
-            proposed_enter_rate = self.exchange.get_rate(
+            enter_limit_requested = self.exchange.get_rate(
                 pair, side='entry', is_short=(trade_side == 'short'), refresh=True)
+        if not order_adjust:
+            # Don't call custom_entry_price in order-adjust scenario
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
-                                                       default_retval=proposed_enter_rate)(
+                                                       default_retval=enter_limit_requested)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_enter_rate, entry_tag=entry_tag,
+                proposed_rate=enter_limit_requested, entry_tag=entry_tag,
                 side=trade_side,
             )
 
-            enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
+            enter_limit_requested = self.get_valid_price(custom_entry_price, enter_limit_requested)
 
         if not enter_limit_requested:
             raise PricingError('Could not determine entry price.')
@@ -1238,7 +1234,8 @@ class FreqtradeBot(LoggingMixin):
                         stake_amount=(order_obj.remaining * order_obj.price),
                         price=adjusted_entry_price,
                         trade=trade,
-                        is_short=trade.is_short
+                        is_short=trade.is_short,
+                        order_adjust=True,
                     )
 
     def cancel_all_open_orders(self) -> None:
@@ -1437,6 +1434,7 @@ class FreqtradeBot(LoggingMixin):
             open_date=trade.open_date_utc,
         )
         exit_type = 'exit'
+        exit_reason = exit_tag or exit_check.exit_reason
         if exit_check.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
@@ -1454,7 +1452,7 @@ class FreqtradeBot(LoggingMixin):
             pair=trade.pair, trade=trade,
             current_time=datetime.now(timezone.utc),
             proposed_rate=proposed_limit_rate, current_profit=current_profit,
-            exit_tag=exit_check.exit_reason)
+            exit_tag=exit_reason)
 
         limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 
@@ -1472,8 +1470,8 @@ class FreqtradeBot(LoggingMixin):
         if not sub_trade_amt and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force, exit_reason=exit_check.exit_reason,
-                sell_reason=exit_check.exit_reason,  # sellreason -> compatibility
+                time_in_force=time_in_force, exit_reason=exit_reason,
+                sell_reason=exit_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
@@ -1502,7 +1500,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.exit_order_status = ''
         trade.close_rate_requested = limit
-        trade.exit_reason = exit_tag or exit_check.exit_reason
+        trade.exit_reason = exit_reason
 
         # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),

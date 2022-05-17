@@ -84,12 +84,13 @@ class VolumePairList(IPairList):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
 
+        candle_limit = exchange.ohlcv_candle_limit(
+            self._lookback_timeframe, self._config['candle_type_def'])
         if self._lookback_period < 0:
             raise OperationalException("VolumeFilter requires lookback_period to be >= 0")
-        if self._lookback_period > exchange.ohlcv_candle_limit(self._lookback_timeframe):
+        if self._lookback_period > candle_limit:
             raise OperationalException("VolumeFilter requires lookback_period to not "
-                                       "exceed exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit(self._lookback_timeframe)})")
+                                       f"exceed exchange max request size ({candle_limit})")
 
     @property
     def needstickers(self) -> bool:

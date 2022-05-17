@@ -6,7 +6,7 @@
 
 coveralls==3.3.1
 flake8==4.0.1
-flake8-tidy-imports==4.7.0
+flake8-tidy-imports==4.8.0
 mypy==0.950
 pre-commit==2.19.0
 pytest==7.1.2
@@ -16,7 +16,7 @@ pytest-mock==3.7.0
 pytest-random-order==1.0.4
 isort==5.10.1
 # For datetime mocking
-time-machine==2.6.0
+time-machine==2.7.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==6.5.0

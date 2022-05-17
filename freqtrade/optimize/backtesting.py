@@ -297,6 +297,9 @@ class Backtesting:
         self.rejected_trades = 0
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0
+        self.canceled_trade_entries = 0
+        self.canceled_entry_orders = 0
+        self.replaced_entry_orders = 0
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -548,6 +551,7 @@ class Backtesting:
 
         if exit_.exit_flag:
             trade.close_date = exit_candle_time
+            exit_reason = exit_.exit_reason
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
@@ -558,13 +562,23 @@ class Backtesting:
             current_profit = trade.calc_profit_ratio(close_rate)
             order_type = self.strategy.order_types['exit']
             if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
+                # Checks and adds an exit tag, after checking that the length of the
+                # row has the length for an exit tag column
+                if(
+                    len(row) > EXIT_TAG_IDX
+                    and row[EXIT_TAG_IDX] is not None
+                    and len(row[EXIT_TAG_IDX]) > 0
+                    and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
+                ):
+                    exit_reason = row[EXIT_TAG_IDX]
                 # Custom exit pricing only for exit-signals
                 if order_type == 'limit':
                     close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                        default_retval=close_rate)(
                         pair=trade.pair, trade=trade,
                         current_time=exit_candle_time,
-                        proposed_rate=close_rate, current_profit=current_profit)
+                        proposed_rate=close_rate, current_profit=current_profit,
+                        exit_tag=exit_.exit_reason)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
@@ -578,24 +592,36 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
-                    sell_reason=exit_.exit_reason,  # deprecated
-                    exit_reason=exit_.exit_reason,
+                    sell_reason=exit_reason,  # deprecated
+                    exit_reason=exit_reason,
                     current_time=exit_candle_time):
                 return None
 
-            trade.exit_reason = exit_.exit_reason
+            trade.exit_reason = exit_reason
 
-            # Checks and adds an exit tag, after checking that the length of the
-            # row has the length for an exit tag column
-            if(
-                len(row) > EXIT_TAG_IDX
-                and row[EXIT_TAG_IDX] is not None
-                and len(row[EXIT_TAG_IDX]) > 0
-                and exit_.exit_type in (ExitType.EXIT_SIGNAL,)
-            ):
-                trade.exit_reason = row[EXIT_TAG_IDX]
-
-            return self._exit_trade(trade, row, close_rate)
+            self.order_id_counter += 1
+            order = Order(
+                id=self.order_id_counter,
+                ft_trade_id=trade.id,
+                order_date=exit_candle_time,
+                order_update_date=exit_candle_time,
+                ft_is_open=True,
+                ft_pair=trade.pair,
+                order_id=str(self.order_id_counter),
+                symbol=trade.pair,
+                ft_order_side=trade.exit_side,
+                side=trade.exit_side,
+                order_type=order_type,
+                status="open",
+                price=close_rate,
+                average=close_rate,
+                amount=trade.amount,
+                filled=0,
+                remaining=trade.amount,
+                cost=trade.amount * close_rate,
+            )
+            trade.orders.append(order)
+            return trade
 
         return None
 
@@ -831,11 +857,11 @@ class Backtesting:
                 remaining=amount,
                 cost=stake_amount + trade.fee_open,
             )
+            trade.orders.append(order)
             if pos_adjust and self._get_order_filled(order.price, row):
                 order.close_bt_order(current_time, trade)
             else:
                 trade.open_order_id = str(self.order_id_counter)
-            trade.orders.append(order)
             trade.recalc_trade_from_orders()
 
         return trade
@@ -903,6 +929,7 @@ class Backtesting:
                 return True
             elif self.check_order_replace(trade, order, current_time, row):
                 # delete trade due to user request
+                self.canceled_trade_entries += 1
                 return True
         # default maintain trade
         return False
@@ -952,6 +979,7 @@ class Backtesting:
                 return False
             else:
                 del trade.orders[trade.orders.index(order)]
+                self.canceled_entry_orders += 1
 
             # place new order if result was not None
             if requested_rate:
@@ -959,6 +987,7 @@ class Backtesting:
                                   requested_rate=requested_rate,
                                   requested_stake=(order.remaining * order.price),
                                   direction='short' if trade.is_short else 'long')
+                self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
                 return (trade.nr_of_successful_entries == 0)
@@ -1112,6 +1141,9 @@ class Backtesting:
             'rejected_signals': self.rejected_trades,
             'timedout_entry_orders': self.timedout_entry_orders,
             'timedout_exit_orders': self.timedout_exit_orders,
+            'canceled_trade_entries': self.canceled_trade_entries,
+            'canceled_entry_orders': self.canceled_entry_orders,
+            'replaced_entry_orders': self.replaced_entry_orders,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 

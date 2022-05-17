@@ -160,17 +160,17 @@ This filter allows freqtrade to ignore pairs until they have been listed for at 
 
 Offsets an incoming pairlist by a given `offset` value.
 
-As an example it can be used in conjunction with `VolumeFilter` to remove the top X volume pairs. Or to split
-a larger pairlist on two bot instances.
+As an example it can be used in conjunction with `VolumeFilter` to remove the top X volume pairs. Or to split a larger pairlist on two bot instances.
 
-Example to remove the first 10 pairs from the pairlist:
+Example to remove the first 10 pairs from the pairlist, and takes the next 20 (taking items 10-30 of the initial list):
 
 ```json
 "pairlists": [
     // ...
     {
         "method": "OffsetFilter",
-        "offset": 10
+        "offset": 10,
+        "number_assets": 20
     }
 ],
 ```
