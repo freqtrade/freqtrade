@@ -87,7 +87,7 @@ class Backtesting:
         self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
-        if self.config.get('strategy_list', None):
+        if self.config.get('strategy_list'):
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -123,7 +123,7 @@ class Backtesting:
         if len(self.pairlists.whitelist) == 0:
             raise OperationalException("No pair in whitelist.")
 
-        if config.get('fee', None) is not None:
+        if config.get('fee') is not None:
             self.fee = config['fee']
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])

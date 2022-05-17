@@ -67,7 +67,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
+        init_db(self.config['db_url'], clean_open_orders=self.config['dry_run'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -638,7 +638,7 @@ class FreqtradeBot(LoggingMixin):
         )
         order_obj = Order.parse_from_ccxt_object(order, pair, side)
         order_id = order['id']
-        order_status = order.get('status', None)
+        order_status = order.get('status')
         logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
 
         # we assume the order is executed at the price requested
@@ -845,7 +845,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'fiat_currency': self.config.get('fiat_display_currency'),
             'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
@@ -874,7 +874,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'fiat_currency': self.config.get('fiat_display_currency'),
             'amount': trade.amount,
             'open_date': trade.open_date,
             'current_rate': current_rate,
@@ -1529,7 +1529,7 @@ class FreqtradeBot(LoggingMixin):
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'fiat_currency': self.config.get('fiat_display_currency'),
         }
 
         if 'fiat_display_currency' in self.config:
@@ -1578,7 +1578,7 @@ class FreqtradeBot(LoggingMixin):
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'fiat_currency': self.config.get('fiat_display_currency'),
             'reason': reason,
         }
 
@@ -1640,7 +1640,7 @@ class FreqtradeBot(LoggingMixin):
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             # If a entry order was closed, force update on stoploss on exchange
-            if order.get('side', None) == trade.entry_side:
+            if order.get('side') == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()

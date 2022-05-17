@@ -96,7 +96,7 @@ class RPC:
         """
         self._freqtrade = freqtrade
         self._config: Dict[str, Any] = freqtrade.config
-        if self._config.get('fiat_display_currency', None):
+        if self._config.get('fiat_display_currency'):
             self._fiat_converter = CryptoToFiatConverter()
 
     @staticmethod
@@ -600,7 +600,7 @@ class RPC:
             else:
                 try:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
-                    rate = tickers.get(pair, {}).get('last', None)
+                    rate = tickers.get(pair, {}).get('last')
                     if rate:
                         if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                             rate = 1.0 / rate

@@ -21,7 +21,7 @@ class PerformanceFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._minutes = pairlistconfig.get('minutes', 0)
-        self._min_profit = pairlistconfig.get('min_profit', None)
+        self._min_profit = pairlistconfig.get('min_profit')
 
     @property
     def needstickers(self) -> bool:

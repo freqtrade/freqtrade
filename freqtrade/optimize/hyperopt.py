@@ -455,7 +455,7 @@ class Hyperopt:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
 
     def start(self) -> None:
-        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
+        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state'))
         logger.info(f"Using optimizer random state: {self.random_state}")
         self.hyperopt_table_header = -1
         # Initialize spaces ...
