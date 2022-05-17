@@ -298,6 +298,8 @@ class Backtesting:
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0
         self.canceled_trade_entries = 0
+        self.canceled_entry_orders = 0
+        self.replaced_entry_orders = 0
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -935,6 +937,7 @@ class Backtesting:
                 return False
             else:
                 del trade.orders[trade.orders.index(order)]
+                self.canceled_entry_orders += 1
 
             # place new order if result was not None
             if requested_rate:
@@ -942,6 +945,7 @@ class Backtesting:
                                   requested_rate=requested_rate,
                                   requested_stake=(order.remaining * order.price),
                                   direction='short' if trade.is_short else 'long')
+                self.replaced_entry_orders += 1
             else:
                 # assumption: there can't be multiple open entry orders at any given time
                 return (trade.nr_of_successful_entries == 0)
@@ -1090,6 +1094,8 @@ class Backtesting:
             'timedout_entry_orders': self.timedout_entry_orders,
             'timedout_exit_orders': self.timedout_exit_orders,
             'canceled_trade_entries': self.canceled_trade_entries,
+            'canceled_entry_orders': self.canceled_entry_orders,
+            'replaced_entry_orders': self.replaced_entry_orders,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 

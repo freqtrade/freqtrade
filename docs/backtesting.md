@@ -320,7 +320,9 @@ A backtesting result will look like that:
 | Avg. Duration Loser         | 6:55:00             |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
-| Canceled Trade Entries      | 123                 |
+| Canceled Trade Entries      | 34                  |
+| Canceled Entry Orders       | 123                 |
+| Replaced Entry Orders       | 89                  |
 |                             |                     |
 | Min balance                 | 0.00945123 BTC      |
 | Max balance                 | 0.01846651 BTC      |
@@ -417,7 +419,9 @@ It contains some useful key metrics about performance of your strategy on backte
 | Avg. Duration Loser         | 6:55:00             |
 | Rejected Entry signals      | 3089                |
 | Entry/Exit Timeouts         | 0 / 0               |
-| Canceled Trade Entries      | 123                 |
+| Canceled Trade Entries      | 34                  |
+| Canceled Entry Orders       | 123                 |
+| Replaced Entry Orders       | 89                  |
 |                             |                     |
 | Min balance                 | 0.00945123 BTC      |
 | Max balance                 | 0.01846651 BTC      |
@@ -450,6 +454,8 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
 - `Canceled Trade Entries`: Number of trades that have been canceled by user request via `adjust_entry_price`.
+- `Canceled Entry Orders`: Number of entry orders that have been canceled by user request via `adjust_entry_price`.
+- `Replaced Entry Orders`: Number of entry orders that have been replaced by user request via `adjust_entry_price`.
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
 - `Max % of account underwater`: Maximum percentage your account has decreased from the top since the simulation started.
 Calculated as the maximum of `(Max Balance - Current Balance) / (Max Balance)`.

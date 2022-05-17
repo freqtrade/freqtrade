@@ -469,6 +469,8 @@ def generate_strategy_stats(pairlist: List[str],
         'timedout_entry_orders': content['timedout_entry_orders'],
         'timedout_exit_orders': content['timedout_exit_orders'],
         'canceled_trade_entries': content['canceled_trade_entries'],
+        'canceled_entry_orders': content['canceled_entry_orders'],
+        'replaced_entry_orders': content['replaced_entry_orders'],
         'max_open_trades': max_open_trades,
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
@@ -754,6 +756,12 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Drawdown End', strat_results['drawdown_end']),
         ])
 
+        entry_adjustment_metrics = [
+            ('Canceled Trade Entries', strat_results.get('canceled_trade_entries', 'N/A')),
+            ('Canceled Entry Orders', strat_results.get('canceled_entry_orders', 'N/A')),
+            ('Replaced Entry Orders', strat_results.get('replaced_entry_orders', 'N/A')),
+        ] if strat_results.get('canceled_entry_orders', 0) > 0 else []
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
@@ -802,7 +810,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
              f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
-            ('Canceled Trade Entries', strat_results.get('canceled_trade_entries', 'N/A')),
+            *entry_adjustment_metrics,
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
