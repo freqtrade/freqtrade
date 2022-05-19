@@ -1495,7 +1495,7 @@ def test_start_convert_db(mocker, fee, tmpdir, caplog):
     ]
 
     assert not db_src_file.is_file()
-    init_db(db_from, False)
+    init_db(db_from)
 
     create_mock_trades(fee)
 

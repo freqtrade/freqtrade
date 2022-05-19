@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 from freqtrade import constants
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, init_db
 from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
 from freqtrade.persistence.models import PairLock
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
@@ -24,7 +24,7 @@ spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURE
 
 def test_init_create_session(default_conf):
     # Check if init create a session
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
     assert hasattr(Trade, '_session')
     assert 'scoped_session' in type(Trade._session).__name__
 
@@ -36,7 +36,7 @@ def test_init_custom_db_url(default_conf, tmpdir):
 
     default_conf.update({'db_url': f'sqlite:///{filename}'})
 
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
     assert Path(filename).is_file()
     r = Trade._session.execute(text("PRAGMA journal_mode"))
     assert r.first() == ('wal',)
@@ -45,10 +45,10 @@ def test_init_custom_db_url(default_conf, tmpdir):
 def test_init_invalid_db_url():
     # Update path to a value other than default, but still in-memory
     with pytest.raises(OperationalException, match=r'.*no valid database URL*'):
-        init_db('unknown:///some.url', True)
+        init_db('unknown:///some.url')
 
     with pytest.raises(OperationalException, match=r'Bad db-url.*For in-memory database, pl.*'):
-        init_db('sqlite:///', True)
+        init_db('sqlite:///')
 
 
 def test_init_prod_db(default_conf, mocker):
@@ -57,7 +57,7 @@ def test_init_prod_db(default_conf, mocker):
 
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
     assert create_engine_mock.call_count == 1
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
@@ -70,7 +70,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
         'db_url': f'sqlite:///{filename}'
     })
 
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
     assert Path(filename).is_file()
 
 
@@ -1260,7 +1260,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
         connection.execute(text("create table trades_bak1 as select * from trades"))
     # Run init to test migration
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
 
     assert len(Trade.query.filter(Trade.id == 1).all()) == 1
     trade = Trade.query.filter(Trade.id == 1).first()
@@ -1343,7 +1343,7 @@ def test_migrate_too_old(mocker, default_conf, fee, caplog):
 
     # Run init to test migration
     with pytest.raises(OperationalException, match=r'Your database seems to be very old'):
-        init_db(default_conf['db_url'], default_conf['dry_run'])
+        init_db(default_conf['db_url'])
 
 
 def test_migrate_get_last_sequence_ids():
@@ -1417,7 +1417,7 @@ def test_migrate_pairlocks(mocker, default_conf, fee, caplog):
         connection.execute(text(create_index2))
         connection.execute(text(create_index3))
 
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
 
     assert len(PairLock.query.all()) == 2
     assert len(PairLock.query.filter(PairLock.pair == '*').all()) == 1

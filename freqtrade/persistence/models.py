@@ -21,14 +21,12 @@ logger = logging.getLogger(__name__)
 _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls'
 
 
-def init_db(db_url: str, clean_open_orders: bool = False) -> None:
+def init_db(db_url: str) -> None:
     """
     Initializes this module with the given config,
     registers all known command handlers
     and starts polling for message updates
     :param db_url: Database to use
-    :param clean_open_orders: Remove open orders from the database.
-        Useful for dry-run or if all orders have been reset on the exchange.
     :return: None
     """
     kwargs = {}
