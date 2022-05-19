@@ -64,10 +64,6 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
 
-    # Clean dry_run DB if the db is not in-memory
-    if clean_open_orders and db_url != 'sqlite://':
-        clean_dry_run_db()
-
 
 def cleanup_db() -> None:
     """
@@ -76,14 +72,3 @@ def cleanup_db() -> None:
     """
     Trade.commit()
 
-
-def clean_dry_run_db() -> None:
-    """
-    Remove open_order_id from a Dry_run DB
-    :return: None
-    """
-    for trade in Trade.query.filter(Trade.open_order_id.isnot(None)).all():
-        # Check we are updating only a dry_run order not a prod one
-        if 'dry_run' in trade.open_order_id:
-            trade.open_order_id = None
-    Trade.commit()

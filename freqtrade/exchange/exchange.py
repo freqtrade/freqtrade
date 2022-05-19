@@ -953,6 +953,12 @@ class Exchange:
             order = self.check_dry_limit_order_filled(order)
             return order
         except KeyError as e:
+            from freqtrade.persistence import Order
+            order = Order.order_by_id(order_id)
+            if order:
+                x = order.to_ccxt_object()
+                self._dry_run_open_orders[order_id] = x
+                return x
             # Gracefully handle errors with dry-run orders.
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e

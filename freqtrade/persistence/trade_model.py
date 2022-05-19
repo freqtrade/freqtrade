@@ -118,6 +118,25 @@ class Order(_DECL_BASE):
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
+    def to_ccxt_object(self) -> Dict[str, Any]:
+        return {
+            'id': self.order_id,
+            'symbol': self.ft_pair,
+            'price': self.price,
+            'average': self.average,
+            'amount': self.amount,
+            'cost': self.cost,
+            'type': self.order_type,
+            'side': self.ft_order_side,
+            'filled': self.filled,
+            'remaining': self.remaining,
+            'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%3f'),
+            'timestamp': int(self.order_date_utc.timestamp() * 1000),
+            'status': self.status,
+            'fee': None,
+            'info': {},
+        }
+
     def to_json(self, entry_side: str) -> Dict[str, Any]:
         return {
             'pair': self.ft_pair,
@@ -189,6 +208,14 @@ class Order(_DECL_BASE):
         :return: List of open orders
         """
         return Order.query.filter(Order.ft_is_open.is_(True)).all()
+
+    @staticmethod
+    def order_by_id(order_id: str) -> Optional['Order']:
+        """
+        Retrieve order based on order_id
+        :return: Order or None
+        """
+        return Order.query.filter(Order.order_id == order_id).first()
 
 
 class LocalTrade():
