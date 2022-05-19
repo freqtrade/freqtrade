@@ -92,6 +92,11 @@ class IFreqaiModel(ABC):
                 self.dh.save_data(self.model)
             else:
                 self.model = self.dh.load_data()
+                strategy_provided_features = self.dh.find_features(dataframe_train)
+                if strategy_provided_features != self.dh.training_features_list:
+                    logger.info("User changed input features, retraining model.")
+                    self.model = self.train(dataframe_train, metadata)
+                    self.dh.save_data(self.model)
 
             preds, do_preds = self.predict(dataframe_backtest, metadata)
 
