@@ -583,7 +583,7 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 * Market orders fill based on orderbook volume the moment the order is placed.
 * Limit orders fill once the price reaches the defined level - or time out based on `unfilledtimeout` settings.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
-* Open orders (not trades, which are stored in the database) are reset on bot restart.
+* Open orders (not trades, which are stored in the database) are kept open after bot restarts, with the assumption that they were not filled while being offline.
 
 ## Switch to production mode
 

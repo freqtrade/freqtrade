@@ -69,4 +69,3 @@ def cleanup_db() -> None:
     :return: None
     """
     Trade.commit()
-
