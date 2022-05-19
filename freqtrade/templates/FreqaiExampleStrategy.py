@@ -59,6 +59,9 @@ class FreqaiExampleStrategy(IStrategy):
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
+    def bot_start(self):
+        self.model = CustomModel(self.config)
+
     def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
         """
         Function designed to automatically generate, name and merge features
@@ -140,9 +143,6 @@ class FreqaiExampleStrategy(IStrategy):
         # the configuration file parameters are stored here
         self.freqai_info = self.config["freqai"]
         self.pair = metadata['pair']
-
-        # the model is instantiated here
-        self.model = CustomModel(self.config)
 
         print("Populating indicators...")
 

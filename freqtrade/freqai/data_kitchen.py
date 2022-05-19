@@ -50,8 +50,9 @@ class FreqaiDataKitchen:
         self.full_target_std: npt.ArrayLike = np.array([])
         self.model_path = Path()
         self.model_filename: str = ""
-
-        if not live:
+        self.model_dictionary: Dict[Any, Any] = {}
+        self.live = live
+        if not self.live:
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
                                                             self.freqai_config["train_period"]
                                                             )
@@ -88,8 +89,8 @@ class FreqaiDataKitchen:
 
         # Save the trained model
         dump(model, save_path / str(self.model_filename + "_model.joblib"))
-        self.data["model_path"] = self.model_path
-        self.data["model_filename"] = self.model_filename
+        self.data["model_path"] = str(self.model_path)
+        self.data["model_filename"] = str(self.model_filename)
         self.data["training_features_list"] = list(self.data_dictionary["train_features"].columns)
         # store the metadata
         with open(save_path / str(self.model_filename + "_metadata.json"), "w") as fp:
@@ -100,6 +101,9 @@ class FreqaiDataKitchen:
             save_path / str(self.model_filename + "_trained_df.pkl")
         )
 
+        if self.live:
+            self.model_dictionary[self.model_filename] = model
+
         return
 
     def load_data(self) -> Any:
@@ -108,7 +112,6 @@ class FreqaiDataKitchen:
         :returns:
         :model: User trained model which can be inferenced for new predictions
         """
-        model = load(self.model_path / str(self.model_filename + "_model.joblib"))
 
         with open(self.model_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
@@ -118,8 +121,20 @@ class FreqaiDataKitchen:
             self.model_path / str(self.model_filename + "_trained_df.pkl")
         )
 
-        self.model_path = self.data["model_path"]
+        self.model_path = Path(self.data["model_path"])
         self.model_filename = self.data["model_filename"]
+
+        # try to access model in memory instead of loading object from disk to save time
+        if self.live and self.model_filename in self.model_dictionary:
+            model = self.model_dictionary[self.model_filename]
+        else:
+            model = load(self.model_path / str(self.model_filename + "_model.joblib"))
+
+        assert model, (
+                       f"Unable to load model, ensure model exists at "
+                       f"{self.model_path} "
+                      )
+
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             self.pca = pk.load(
                 open(self.model_path / str(self.model_filename + "_pca_object.pkl"), "rb")
@@ -682,7 +697,8 @@ class FreqaiDataKitchen:
             for p in pairs:
                 if metadata['pair'] in p:
                     continue  # dont repeat anything from whitelist
-                corr_dataframes[p] = {}
+                if p not in corr_dataframes:
+                    corr_dataframes[p] = {}
                 corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
                                                            timeframe=tf,
                                                            pair=p, timerange=timerange)
