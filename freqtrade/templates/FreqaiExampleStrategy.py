@@ -144,8 +144,6 @@ class FreqaiExampleStrategy(IStrategy):
         self.freqai_info = self.config["freqai"]
         self.pair = metadata['pair']
 
-        print("Populating indicators...")
-
         # the following loops are necessary for building the features
         # indicated by the user in the configuration file.
         for tf in self.freqai_info["timeframes"]:
