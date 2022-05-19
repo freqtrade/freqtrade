@@ -2671,3 +2671,21 @@ def test_select_filled_orders(fee):
     orders = trades[4].select_filled_orders('sell')
     assert orders is not None
     assert len(orders) == 0
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_order_to_ccxt(limit_buy_order_open):
+
+    order = Order.parse_from_ccxt_object(limit_buy_order_open, 'mocked', 'buy')
+    order.query.session.add(order)
+    Order.query.session.commit()
+
+    order_resp = Order.order_by_id(limit_buy_order_open['id'])
+    assert order_resp
+
+    raw_order = order_resp.to_ccxt_object()
+    del raw_order['fee']
+    del raw_order['datetime']
+    del raw_order['info']
+    del limit_buy_order_open['datetime']
+    assert raw_order == limit_buy_order_open

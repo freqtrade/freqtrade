@@ -1616,6 +1616,7 @@ def limit_buy_order_open():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'average': None,
         'filled': 0.0,
         'cost': 0.0009999,
         'remaining': 90.99181073,

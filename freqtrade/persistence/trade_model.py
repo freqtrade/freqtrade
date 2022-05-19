@@ -130,7 +130,7 @@ class Order(_DECL_BASE):
             'side': self.ft_order_side,
             'filled': self.filled,
             'remaining': self.remaining,
-            'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%3f'),
+            'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f'),
             'timestamp': int(self.order_date_utc.timestamp() * 1000),
             'status': self.status,
             'fee': None,
