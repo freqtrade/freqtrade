@@ -956,9 +956,9 @@ class Exchange:
             from freqtrade.persistence import Order
             order = Order.order_by_id(order_id)
             if order:
-                x = order.to_ccxt_object()
-                self._dry_run_open_orders[order_id] = x
-                return x
+                ccxt_order = order.to_ccxt_object()
+                self._dry_run_open_orders[order_id] = ccxt_order
+                return ccxt_order
             # Gracefully handle errors with dry-run orders.
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
