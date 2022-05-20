@@ -2808,6 +2808,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
                                      until=trades_history[-1][0])
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
@@ -2973,6 +2974,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_order(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = True
@@ -3025,6 +3027,7 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
                            order_id='_', pair='TKN/BTC')
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     # Don't test FTX here - that needs a separate test
