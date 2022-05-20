@@ -174,6 +174,7 @@ def test_stoploss_adjust_ftx(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_ftx(default_conf, mocker, limit_sell_order, limit_buy_order):
     default_conf['dry_run'] = True
     order = MagicMock()

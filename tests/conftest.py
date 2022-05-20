@@ -384,7 +384,7 @@ def patch_coingekko(mocker) -> None:
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
 
 
 @pytest.fixture(scope="function")
@@ -1616,6 +1616,7 @@ def limit_buy_order_open():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'average': None,
         'filled': 0.0,
         'cost': 0.0009999,
         'remaining': 90.99181073,

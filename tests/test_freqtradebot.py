@@ -3044,6 +3044,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     trade.entry_side = "buy"
     trade.open_rate = 200
     trade.entry_side = "buy"
+    trade.open_order_id = "open_order_noop"
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
@@ -4786,9 +4787,6 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     freqtrade.config['dry_run'] = False
     freqtrade.startup_update_open_orders()
 
-    assert log_has_re(r"Error updating Order .*", caplog)
-    caplog.clear()
-
     assert len(Order.get_open_orders()) == 3
     matching_buy_order = mock_order_4(is_short=is_short)
     matching_buy_order.update({
@@ -4798,6 +4796,11 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     freqtrade.startup_update_open_orders()
     # Only stoploss and sell orders are kept open
     assert len(Order.get_open_orders()) == 2
+
+    caplog.clear()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
+    freqtrade.startup_update_open_orders()
+    assert log_has_re(r"Error updating Order .*", caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
