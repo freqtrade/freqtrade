@@ -280,10 +280,6 @@ class Backtesting:
                         and len(funding_rates_dict[pair]) == 0
                         and "futures_funding_rate" in self.config):
                     mark_rates_dict[pair]["open_fund"] = self.config.get('futures_funding_rate')
-                    mark_rates_dict[pair]["close_fund"] = 0.0
-                    mark_rates_dict[pair]["high_fund"] = 0.0
-                    mark_rates_dict[pair]["low_fund"] = 0.0
-                    mark_rates_dict[pair]["volume_fund"] = 0.0
                     mark_rates_dict[pair].rename(
                         columns={'open': 'open_mark',
                                  'close': 'close_mark',
@@ -297,7 +293,7 @@ class Backtesting:
                     if "futures_funding_rate" in self.config:
                         self.futures_data[pair] = mark_rates_dict[pair].merge(
                             funding_rates_dict[pair], on='date',
-                            how="outer", suffixes=["_mark", "_fund"]).fillna(
+                            how="outer", suffixes=["_mark", "_fund"])['open_fund'].fillna(
                                 self.config.get('futures_funding_rate'))
                     else:
                         self.futures_data[pair] = mark_rates_dict[pair].merge(
