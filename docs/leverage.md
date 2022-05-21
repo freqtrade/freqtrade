@@ -107,7 +107,7 @@ For futures data, exchanges commonly provide the futures candles, the marks, and
 
 !!! Warning "This will mean your backtests are inaccurate."
     This will not overwrite funding rates that are available from the exchange, but bear in mind that setting a false funding rate will mean backtesting results will be inaccurate for historical timeranges where funding rates are not available.
-    
+
 ### Developer
 
 #### Margin mode
