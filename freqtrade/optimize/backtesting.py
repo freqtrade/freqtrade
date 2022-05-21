@@ -276,30 +276,11 @@ class Backtesting:
                     unavailable_pairs.append(pair)
                     continue
 
-                if (pair in mark_rates_dict
-                        and len(funding_rates_dict[pair]) == 0
-                        and "futures_funding_rate" in self.config):
-                    mark_rates_dict[pair]["open_fund"] = self.config.get('futures_funding_rate')
-                    mark_rates_dict[pair].rename(
-                        columns={'open': 'open_mark',
-                                 'close': 'close_mark',
-                                 'high': 'high_mark',
-                                 'low': 'low_mark',
-                                 'volume': 'volume_mark'},
-                        inplace=True)
-
-                    self.futures_data[pair] = mark_rates_dict[pair]
-                else:
-                    if "futures_funding_rate" in self.config:
-                        self.futures_data[pair] = mark_rates_dict[pair].merge(
-                            funding_rates_dict[pair], on='date',
-                            how="outer", suffixes=["_mark", "_fund"])['open_fund'].fillna(
-                                self.config.get('futures_funding_rate'))
-                    else:
-                        self.futures_data[pair] = self.exchange.combine_funding_and_mark(
-                            funding_rates=funding_rates_dict[pair],
-                            mark_rates=mark_rates_dict[pair]
-                        )
+                self.futures_data[pair] = self.exchange.combine_funding_and_mark(
+                    funding_rates=funding_rates_dict[pair],
+                    mark_rates=mark_rates_dict[pair],
+                    futures_funding_rate=self.config.get('futures_funding_rate'),
+                )
 
             if unavailable_pairs:
                 raise OperationalException(

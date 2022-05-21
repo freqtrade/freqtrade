@@ -2413,14 +2413,33 @@ class Exchange:
         )
 
     @staticmethod
-    def combine_funding_and_mark(funding_rates: DataFrame, mark_rates: DataFrame) -> DataFrame:
+    def combine_funding_and_mark(funding_rates: DataFrame, mark_rates: DataFrame,
+                                 futures_funding_rate: Optional[int] = None) -> DataFrame:
         """
         Combine funding-rates and mark-rates dataframes
         :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
         :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param futures_funding_rate: Fake funding rate to use if funding_rates are not available
         """
+        if futures_funding_rate is None:
+            return mark_rates.merge(
+                funding_rates, on='date', how="inner", suffixes=["_mark", "_fund"])
+        else:
+            if len(funding_rates) == 0:
+                # No funding rate candles - full fillup with fallback variable
+                mark_rates['open_fund'] = futures_funding_rate
+                return mark_rates.rename(
+                        columns={'open': 'open_mark',
+                                 'close': 'close_mark',
+                                 'high': 'high_mark',
+                                 'low': 'low_mark',
+                                 'volume': 'volume_mark'})
 
-        return mark_rates.merge(funding_rates, on='date', how="inner", suffixes=["_mark", "_fund"])
+            else:
+                # Fill up missing funding_rate candles with fallback value
+                return mark_rates.merge(
+                    funding_rates, on='date', how="outer", suffixes=["_mark", "_fund"]
+                    )['open_fund'].fillna(futures_funding_rate)
 
     def calculate_funding_fees(
         self,
