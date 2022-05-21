@@ -2420,7 +2420,7 @@ class Exchange:
         :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
         """
 
-        return funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+        return mark_rates.merge(funding_rates, on='date', how="inner", suffixes=["_mark", "_fund"])
 
     def calculate_funding_fees(
         self,

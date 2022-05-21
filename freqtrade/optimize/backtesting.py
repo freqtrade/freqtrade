@@ -296,9 +296,10 @@ class Backtesting:
                             how="outer", suffixes=["_mark", "_fund"])['open_fund'].fillna(
                                 self.config.get('futures_funding_rate'))
                     else:
-                        self.futures_data[pair] = mark_rates_dict[pair].merge(
-                            funding_rates_dict[pair], on='date',
-                            how="inner", suffixes=["_mark", "_fund"])
+                        self.futures_data[pair] = self.exchange.combine_funding_and_mark(
+                            funding_rates=funding_rates_dict[pair],
+                            mark_rates=mark_rates_dict[pair]
+                        )
 
             if unavailable_pairs:
                 raise OperationalException(
