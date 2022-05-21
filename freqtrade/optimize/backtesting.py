@@ -279,7 +279,7 @@ class Backtesting:
                 self.futures_data[pair] = self.exchange.combine_funding_and_mark(
                     funding_rates=funding_rates_dict[pair],
                     mark_rates=mark_rates_dict[pair],
-                    futures_funding_rate=self.config.get('futures_funding_rate'),
+                    futures_funding_rate=self.config.get('futures_funding_rate', None),
                 )
 
             if unavailable_pairs:
