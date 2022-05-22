@@ -527,15 +527,23 @@ class Backtesting:
             if check_adjust_entry:
                 trade = self._get_adjust_trade_entry_for_candle(trade, row)
 
-        exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
         exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
-        exit_ = self.strategy.should_exit(
-            trade, row[OPEN_IDX], exit_candle_time,  # type: ignore
+        exits = self.strategy.should_exit(
+            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
             enter=enter, exit_=exit_sig,
             low=row[LOW_IDX], high=row[HIGH_IDX]
         )
+        for exit_ in exits:
+            t = self._get_exit_for_signal(trade, row, exit_)
+            if t:
+                return t
+        return None
 
+    def _get_exit_for_signal(self, trade: LocalTrade, row: Tuple,
+                             exit_: ExitCheckTuple) -> Optional[LocalTrade]:
+
+        exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         if exit_.exit_flag:
             trade.close_date = exit_candle_time
             exit_reason = exit_.exit_reason
