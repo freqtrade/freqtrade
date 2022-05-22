@@ -1117,7 +1117,7 @@ class FreqtradeBot(LoggingMixin):
         for should_exit in exits:
             if should_exit.exit_flag:
                 logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
-                            f'Tag: {exit_tag if exit_tag is not None else "None"}')
+                            f'{f" Tag: {exit_tag}" if exit_tag is not None else ""}')
                 exited = self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
                 if exited:
                     return True
@@ -1407,7 +1407,7 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param exit_check: CheckTuple with signal and reason
-        :return: True if it succeeds (supported) False (not supported)
+        :return: True if it succeeds False
         """
         trade.funding_fees = self.exchange.get_funding_fees(
             pair=trade.pair,
@@ -1454,7 +1454,7 @@ class FreqtradeBot(LoggingMixin):
                 time_in_force=time_in_force, exit_reason=exit_reason,
                 sell_reason=exit_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of exiting {trade.pair}")
+            logger.info(f"User requested abortion of {trade.pair} exit.")
             return False
 
         try:

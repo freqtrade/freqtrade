@@ -530,8 +530,9 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Exit-reason does not explain if a trade was positive or negative, just what triggered the exit (this can look odd if negative ROI values are used)
 - Evaluation sequence (if multiple signals happen on the same candle)
   - Exit-signal
-  - ROI (if not stoploss)
   - Stoploss
+  - ROI
+  - Trailing stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.
