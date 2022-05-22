@@ -1019,7 +1019,7 @@ class FreqtradeBot(LoggingMixin):
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                     reason='Auto lock')
-            self._notify_exit(trade, "stoploss")
+            self._notify_exit(trade, "stoploss", True)
             return True
 
         if trade.open_order_id or not trade.is_open:
