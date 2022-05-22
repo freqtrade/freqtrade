@@ -29,7 +29,7 @@ class CatboostPredictionModel(IFreqaiModel):
             dataframe["close"]
             .shift(-self.feature_parameters["period"])
             .rolling(self.feature_parameters["period"])
-            .max()
+            .mean()
             / dataframe["close"]
             - 1
         )
@@ -68,15 +68,11 @@ class CatboostPredictionModel(IFreqaiModel):
         # standardize all data based on train_dataset only
         data_dictionary = self.dh.standardize_data(data_dictionary)
 
-        # optional additional data cleaning
-        if self.feature_parameters["principal_component_analysis"]:
-            self.dh.principal_component_analysis()
-        if self.feature_parameters["remove_outliers"]:
-            self.dh.remove_outliers(predict=False)
-        if self.feature_parameters["DI_threshold"]:
-            self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
+        # optional additional data cleaning/analysis
+        self.data_cleaning_train()
 
-        logger.info("length of train data %s", len(data_dictionary["train_features"]))
+        logger.info(f'Training model on {len(self.dh.training_features_list)} features')
+        logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
 
@@ -86,9 +82,7 @@ class CatboostPredictionModel(IFreqaiModel):
 
     def fit(self, data_dictionary: Dict) -> Any:
         """
-        Most regressors use the same function names and arguments e.g. user
-        can drop in LGBMRegressor in place of CatBoostRegressor and all data
-        management will be properly handled by Freqai.
+        User sets up the training and test data to fit their desired model here
         :params:
         :data_dictionary: the dictionary constructed by DataHandler to hold
         all the training and test data/labels.
@@ -133,7 +127,51 @@ class CatboostPredictionModel(IFreqaiModel):
         filtered_dataframe = self.dh.standardize_data_from_metadata(filtered_dataframe)
         self.dh.data_dictionary["prediction_features"] = filtered_dataframe
 
-        # optional additional data cleaning
+        # optional additional data cleaning/analysis
+        self.data_cleaning_predict(filtered_dataframe)
+
+        predictions = self.model.predict(self.dh.data_dictionary["prediction_features"])
+
+        # compute the non-standardized predictions
+        self.dh.predictions = (predictions + 1) * (self.dh.data["labels_max"] -
+                                                   self.dh.data["labels_min"]) / 2 + self.dh.data[
+                                                                                     "labels_min"]
+
+        # logger.info("--------------------Finished prediction--------------------")
+
+        return (self.dh.predictions, self.dh.do_predict)
+
+    def data_cleaning_train(self) -> None:
+        """
+        User can add data analysis and cleaning here.
+        Any function inside this method should drop training data points from the filtered_dataframe
+        based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
+        of how outlier data points are dropped from the dataframe used for training.
+        """
+        if self.feature_parameters["principal_component_analysis"]:
+            self.dh.principal_component_analysis()
+
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     self.dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     self.dh.remove_outliers(predict=False)
+
+        if self.feature_parameters["use_SVM_to_remove_outliers"]:
+            self.dh.use_SVM_to_remove_outliers(predict=False)
+        if self.feature_parameters["DI_threshold"]:
+            self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
+
+    def data_cleaning_predict(self, filtered_dataframe: DataFrame) -> None:
+        """
+        User can add data analysis and cleaning here.
+        These functions each modify self.dh.do_predict, which is a dataframe with equal length
+        to the number of candles coming from and returning to the strategy. Inside do_predict,
+         1 allows prediction and < 0 signals to the strategy that the model is not confident in
+         the prediction.
+         See FreqaiDataKitchen::remove_outliers() for an example
+        of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
+        for buy signals.
+        """
         if self.feature_parameters["principal_component_analysis"]:
             pca_components = self.dh.pca.transform(filtered_dataframe)
             self.dh.data_dictionary["prediction_features"] = pd.DataFrame(
@@ -142,17 +180,13 @@ class CatboostPredictionModel(IFreqaiModel):
                 index=filtered_dataframe.index,
             )
 
-        if self.feature_parameters["remove_outliers"]:
-            self.dh.remove_outliers(predict=True)  # creates dropped index
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     self.dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     self.dh.remove_outliers(predict=True)  # creates dropped index
+
+        if self.feature_parameters["use_SVM_to_remove_outliers"]:
+            self.dh.use_SVM_to_remove_outliers(predict=True)
 
         if self.feature_parameters["DI_threshold"]:
             self.dh.check_if_pred_in_training_spaces()  # sets do_predict
-
-        predictions = self.model.predict(self.dh.data_dictionary["prediction_features"])
-
-        # compute the non-standardized predictions
-        self.dh.predictions = predictions * self.dh.data["labels_std"] + self.dh.data["labels_mean"]
-
-        # logger.info("--------------------Finished prediction--------------------")
-
-        return (self.dh.predictions, self.dh.do_predict)

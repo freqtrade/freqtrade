@@ -331,21 +331,21 @@ Users can reduce the dimensionality of their features by activating the `princip
 Which will perform PCA on the features and reduce the dimensionality of the data so that the explained
 variance of the data set is >= 0.999.
 
-### Removing outliers based on feature statistical distributions
+### Removing outliers using a Support Vector Machine (SVM)
 
 The user can tell Freqai to remove outlier data points from the training/test data sets by setting:
 
 ```json
     "freqai": {
         "feature_parameters" : {
-                "remove_outliers": true
+            "use_SVM_to_remove_outliers: true
         }
     }
 ```
 
-Freqai will check the statistical distributions of each feature (or component if the user activated
-`principal_component_analysis`) and remove any data point that sits more than 3 standard deviations away 
-from the mean.
+Freqai will train an SVM on the training data (or components if the user activated
+`principal_component_analysis`) and remove any data point that it deems to be sit beyond the 
+feature space.
 
 ## Additional information
 

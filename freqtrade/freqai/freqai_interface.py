@@ -62,6 +62,7 @@ class IFreqaiModel(ABC):
         self.predictions = None
         self.training_on_separate_thread = False
         self.retrain = False
+        self.first = True
 
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """
@@ -80,12 +81,12 @@ class IFreqaiModel(ABC):
         :metadata: pair metadata coming from strategy.
         """
 
-        live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
 
         self.pair = metadata["pair"]
-        self.dh = FreqaiDataKitchen(self.config, dataframe, live)
+        self.dh = FreqaiDataKitchen(self.config, dataframe, self.live)
 
-        if live:
+        if self.live:
             # logger.info('testing live')
             self.start_live(dataframe, metadata, strategy)
 
@@ -115,11 +116,12 @@ class IFreqaiModel(ABC):
                 self.dh.save_data(self.model)
             else:
                 self.model = self.dh.load_data()
-                strategy_provided_features = self.dh.find_features(dataframe_train)
-                if strategy_provided_features != self.dh.training_features_list:
-                    logger.info("User changed input features, retraining model.")
-                    self.model = self.train(dataframe_train, metadata)
-                    self.dh.save_data(self.model)
+                # strategy_provided_features = self.dh.find_features(dataframe_train)
+                # # TOFIX doesnt work with PCA
+                # if strategy_provided_features != self.dh.training_features_list:
+                #     logger.info("User changed input features, retraining model.")
+                #     self.model = self.train(dataframe_train, metadata)
+                #     self.dh.save_data(self.model)
 
             preds, do_preds = self.predict(dataframe_backtest, metadata)
 
@@ -148,7 +150,7 @@ class IFreqaiModel(ABC):
         if not self.training_on_separate_thread:
             # this will also prevent other pairs from trying to train simultaneously.
             (self.retrain,
-             new_trained_timerange) = self.dh.check_if_new_training_required(self.freqai_info[
+             self.new_trained_timerange) = self.dh.check_if_new_training_required(self.freqai_info[
                                                                         'live_trained_timerange'],
                                                                         metadata)
         else:
@@ -156,14 +158,19 @@ class IFreqaiModel(ABC):
             self.retrain = False
 
         if self.retrain or not file_exists:
-            self.training_on_separate_thread = True  # acts like a lock
-            self.retrain_model_on_separate_thread(new_trained_timerange, metadata, strategy)
+            if self.first:
+                self.train_model_in_series(self.new_trained_timerange, metadata, strategy)
+                self.first = False
+            else:
+                self.training_on_separate_thread = True  # acts like a lock
+                self.retrain_model_on_separate_thread(self.new_trained_timerange,
+                                                      metadata, strategy)
 
         self.model = self.dh.load_data()
 
         strategy_provided_features = self.dh.find_features(dataframe)
         if strategy_provided_features != self.dh.training_features_list:
-            self.train_model_in_series(new_trained_timerange, metadata, strategy)
+            self.train_model_in_series(self.new_trained_timerange, metadata, strategy)
 
         preds, do_preds = self.predict(dataframe, metadata)
         self.dh.append_predictions(preds, do_preds, len(dataframe))
@@ -215,12 +222,36 @@ class IFreqaiModel(ABC):
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
+    @abstractmethod
+    def data_cleaning_train(self) -> None:
+        """
+        User can add data analysis and cleaning here.
+        Any function inside this method should drop training data points from the filtered_dataframe
+        based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
+        of how outlier data points are dropped from the dataframe used for training.
+        """
+
+    @abstractmethod
+    def data_cleaning_predict(self) -> None:
+        """
+        User can add data analysis and cleaning here.
+        These functions each modify self.dh.do_predict, which is a dataframe with equal length
+        to the number of candles coming from and returning to the strategy. Inside do_predict,
+         1 allows prediction and < 0 signals to the strategy that the model is not confident in
+         the prediction.
+         See FreqaiDataKitchen::remove_outliers() for an example
+        of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
+        for buy signals.
+        """
+
     def model_exists(self, pair: str, training_timerange: str) -> bool:
         """
         Given a pair and path, check if a model already exists
         :param pair: pair e.g. BTC/USD
         :param path: path to model
         """
+        if self.live and training_timerange is None:
+            return False
         coin, _ = pair.split("/")
         self.dh.model_filename = "cb_" + coin.lower() + "_" + training_timerange
         path_to_modelfile = Path(self.dh.model_path / str(self.dh.model_filename + "_model.joblib"))
@@ -265,3 +296,4 @@ class IFreqaiModel(ABC):
 
         self.model = self.train(unfiltered_dataframe, metadata)
         self.dh.save_data(self.model)
+        self.retrain = False
