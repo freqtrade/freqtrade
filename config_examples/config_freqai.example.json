@@ -71,7 +71,8 @@
             "DI_threshold": 1,
             "weight_factor": 0,
             "principal_component_analysis": false,
-            "use_SVM_to_remove_outliers": false
+            "use_SVM_to_remove_outliers": false,
+            "stratify": 0
         },
         "data_split_parameters": {
             "test_size": 0.25,

@@ -151,7 +151,8 @@ no. `timeframes` * no. `base_features` * no. `corr_pairlist` * no. `shift`_
 
 Users define the backtesting timerange with the typical `--timerange` parameter in the user
 configuration file. `train_period` is the duration of the sliding training window, while
-`backtest_period` is the sliding backtesting window, both in number of days. In the present example,
+`backtest_period` is the sliding backtesting window, both in number of days (backtest_period can be
+a float to indicate sub daily retraining in live/dry mode). In the present example,
 the user is asking Freqai to use a training period of 30 days and backtest the subsequent 7 days.
 This means that if the user sets `--timerange 20210501-20210701`, 
 Freqai will train 8 separate models (because the full range comprises 8 weeks),
@@ -346,6 +347,22 @@ The user can tell Freqai to remove outlier data points from the training/test da
 Freqai will train an SVM on the training data (or components if the user activated
 `principal_component_analysis`) and remove any data point that it deems to be sit beyond the 
 feature space.
+
+## Stratifying the data
+
+The user can stratify the training/testing data using:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+            "stratify": 3
+        }
+    }
+```
+
+which will split the data chronolocially so that every X data points is a testing data point. In the
+present example, the user is asking for every third data point in the dataframe to be used for 
+testing, the other points are used for training.
 
 ## Additional information
 

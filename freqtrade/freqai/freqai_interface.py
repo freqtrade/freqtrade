@@ -11,6 +11,7 @@ import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
 
+from freqtrade.configuration import TimeRange
 from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
@@ -63,6 +64,12 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
+        self.timestamp = 0
+        if self.freqai_info['live_trained_timerange']:
+            self.new_trained_timerange = TimeRange.parse_timerange(
+                                                   self.freqai_info['live_trained_timerange'])
+        else:
+            self.new_trained_timerange = TimeRange()
 
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """
@@ -150,9 +157,10 @@ class IFreqaiModel(ABC):
         if not self.training_on_separate_thread:
             # this will also prevent other pairs from trying to train simultaneously.
             (self.retrain,
-             self.new_trained_timerange) = self.dh.check_if_new_training_required(self.freqai_info[
-                                                                        'live_trained_timerange'],
-                                                                        metadata)
+             self.new_trained_timerange,
+             self.timestamp) = self.dh.check_if_new_training_required(self.new_trained_timerange,
+                                                                      metadata,
+                                                                      timestamp=self.timestamp)
         else:
             logger.info("FreqAI training a new model on background thread.")
             self.retrain = False
@@ -250,7 +258,7 @@ class IFreqaiModel(ABC):
         :param pair: pair e.g. BTC/USD
         :param path: path to model
         """
-        if self.live and training_timerange is None:
+        if self.live and training_timerange == "":
             return False
         coin, _ = pair.split("/")
         self.dh.model_filename = "cb_" + coin.lower() + "_" + training_timerange
@@ -263,7 +271,7 @@ class IFreqaiModel(ABC):
         return file_exists
 
     @threaded
-    def retrain_model_on_separate_thread(self, new_trained_timerange: str, metadata: dict,
+    def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, metadata: dict,
                                          strategy: IStrategy):
 
         # with nostdout():
@@ -282,7 +290,7 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
 
-    def train_model_in_series(self, new_trained_timerange: str, metadata: dict,
+    def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,
                               strategy: IStrategy):
 
         self.dh.download_new_data_for_retraining(new_trained_timerange, metadata)

@@ -438,7 +438,7 @@ CONF_SCHEMA = {
             "properties": {
                 "timeframes": {"type": "list"},
                 "train_period": {"type": "integer", "default": 0},
-                "backtest_period": {"type": "integer", "default": 7},
+                "backtest_period": {"type": "float", "default": 7},
                 "identifier": {"type": "str", "default": "example"},
                 "live_trained_timerange": {"type": "str"},
                 "live_full_backtestrange": {"type": "str"},
@@ -451,7 +451,7 @@ CONF_SCHEMA = {
                         "DI_threshold": {"type": "integer", "default": 0},
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
-                        "remove_outliers": {"type": "boolean", "default": False},
+                        "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
                     },
                 },
                 "data_split_parameters": {

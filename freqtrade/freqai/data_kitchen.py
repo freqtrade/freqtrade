@@ -689,50 +689,58 @@ class FreqaiDataKitchen:
 
         return full_timerange
 
-    def check_if_new_training_required(self, training_timerange: str,
-                                       metadata: dict) -> Tuple[bool, str]:
+    def check_if_new_training_required(self, trained_timerange: TimeRange,
+                                       metadata: dict,
+                                       timestamp: int = 0) -> Tuple[bool, TimeRange, int]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
-        if training_timerange:  # user passed no live_trained_timerange in config
-            trained_timerange = TimeRange.parse_timerange(training_timerange)
+        if trained_timerange.startts != 0:
+            # trained_timerange = TimeRange.parse_timerange(training_timerange)
+            # keep hour available incase user wants to train multiple times per day
+            # training_timerange is a str for day range only, so we add the extra hours
+            # original_stop_seconds = trained_timerange.stopts
+            # trained_timerange.stopts += int(timestamp - original_stop_seconds)
+            # trained_timerange.startts += int(timestamp - original_stop_seconds)
             elapsed_time = (time - trained_timerange.stopts) / SECONDS_IN_DAY
-            trained_timerange.startts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
-            trained_timerange.stopts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
             retrain = elapsed_time > self.freqai_config['backtest_period']
-        else:
-            trained_timerange = TimeRange.parse_timerange("20000101-20000201")
+            if retrain:
+                trained_timerange.startts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
+                trained_timerange.stopts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
+        else:  # user passed no live_trained_timerange in config
+            trained_timerange = TimeRange.parse_timerange("20000101-20000201")  # arbitrary date
             trained_timerange.startts = int(time - self.freqai_config['train_period'] *
                                             SECONDS_IN_DAY)
             trained_timerange.stopts = int(time)
             retrain = True
 
-        start = datetime.datetime.utcfromtimestamp(trained_timerange.startts)
-        stop = datetime.datetime.utcfromtimestamp(trained_timerange.stopts)
-        new_trained_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
+        timestamp = trained_timerange.stopts
+        # start = datetime.datetime.utcfromtimestamp(trained_timerange.startts)
+        # stop = datetime.datetime.utcfromtimestamp(trained_timerange.stopts)
+        # new_trained_timerange_str = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         if retrain:
             coin, _ = metadata['pair'].split("/")
             # set the new model_path
             self.model_path = Path(self.full_path / str("sub-train" + "-" +
-                                   str(new_trained_timerange)))
+                                   str(timestamp)))
 
-            self.model_filename = "cb_" + coin.lower() + "_" + new_trained_timerange
+            self.model_filename = "cb_" + coin.lower() + "_" + str(timestamp)
             # this is not persistent at the moment TODO
-            self.freqai_config['live_trained_timerange'] = new_trained_timerange
+            self.freqai_config['live_trained_timerange'] = str(timestamp)
             # enables persistence, but not fully implemented into save/load data yer
-            self.data['live_trained_timerange'] = new_trained_timerange
+            self.data['live_trained_timerange'] = str(timestamp)
 
-        return retrain, new_trained_timerange
+        return retrain, trained_timerange, timestamp
 
-    def download_new_data_for_retraining(self, new_timerange: str, metadata: dict) -> None:
+    def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
                                                   self.config, validate=False)
         pairs = self.freqai_config['corr_pairlist']
         if metadata['pair'] not in pairs:
             pairs += metadata['pair']  # dont include pair twice
-        timerange = TimeRange.parse_timerange(new_timerange)
+        # timerange = TimeRange.parse_timerange(new_timerange)
 
         refresh_backtest_ohlcv_data(
                         exchange, pairs=pairs, timeframes=self.freqai_config['timeframes'],
@@ -743,12 +751,12 @@ class FreqaiDataKitchen:
                         prepend=self.config.get('prepend_data', False)
                     )
 
-    def load_pairs_histories(self, new_timerange: str, metadata: dict) -> Tuple[Dict[Any, Any],
-                                                                                DataFrame]:
+    def load_pairs_histories(self, timerange: TimeRange, metadata: dict) -> Tuple[Dict[Any, Any],
+                                                                                  DataFrame]:
         corr_dataframes: Dict[Any, Any] = {}
         base_dataframes: Dict[Any, Any] = {}
         pairs = self.freqai_config['corr_pairlist']  # + [metadata['pair']]
-        timerange = TimeRange.parse_timerange(new_timerange)
+        # timerange = TimeRange.parse_timerange(new_timerange)
 
         for tf in self.freqai_config['timeframes']:
             base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
@@ -763,10 +771,6 @@ class FreqaiDataKitchen:
                                                            timeframe=tf,
                                                            pair=p, timerange=timerange)
 
-        # base_dataframe = [dataframe for key, dataframe in corr_dataframes.items()
-        #                  if metadata['pair'] in key]
-
-        # [0] indexes the lowest tf for the basepair
         return corr_dataframes, base_dataframes
 
     def use_strategy_to_populate_indicators(self, strategy: IStrategy,
