@@ -696,28 +696,19 @@ class FreqaiDataKitchen:
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
         if trained_timerange.startts != 0:
-            # trained_timerange = TimeRange.parse_timerange(training_timerange)
-            # keep hour available incase user wants to train multiple times per day
-            # training_timerange is a str for day range only, so we add the extra hours
-            # original_stop_seconds = trained_timerange.stopts
-            # trained_timerange.stopts += int(timestamp - original_stop_seconds)
-            # trained_timerange.startts += int(timestamp - original_stop_seconds)
             elapsed_time = (time - trained_timerange.stopts) / SECONDS_IN_DAY
             retrain = elapsed_time > self.freqai_config['backtest_period']
             if retrain:
                 trained_timerange.startts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
                 trained_timerange.stopts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
         else:  # user passed no live_trained_timerange in config
-            trained_timerange = TimeRange.parse_timerange("20000101-20000201")  # arbitrary date
+            trained_timerange = TimeRange()
             trained_timerange.startts = int(time - self.freqai_config['train_period'] *
                                             SECONDS_IN_DAY)
             trained_timerange.stopts = int(time)
             retrain = True
 
         timestamp = trained_timerange.stopts
-        # start = datetime.datetime.utcfromtimestamp(trained_timerange.startts)
-        # stop = datetime.datetime.utcfromtimestamp(trained_timerange.stopts)
-        # new_trained_timerange_str = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         if retrain:
             coin, _ = metadata['pair'].split("/")
