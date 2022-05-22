@@ -18,3 +18,6 @@ class ExitCheckTuple:
 
     def __eq__(self, other):
         return self.exit_type == other.exit_type and self.exit_reason == other.exit_reason
+
+    def __repr__(self):
+        return f"ExitCheckTuple({self.exit_type}, {self.exit_reason})"

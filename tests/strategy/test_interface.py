@@ -525,7 +525,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
-def test_should_sell(default_conf, fee, caplog) -> None:
+def test_should_sell(default_conf, fee) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
@@ -561,22 +561,24 @@ def test_should_sell(default_conf, fee, caplog) -> None:
                                low=None, high=None)
     assert len(res) == 2
     assert res == [
-        ExitCheckTuple(exit_type=ExitType.ROI),
         ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
         ]
 
     strategy.custom_exit = MagicMock(return_value='hello world')
-
+    # custom-exit and exit-signal is first
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
     assert len(res) == 3
     assert res == [
         ExitCheckTuple(exit_type=ExitType.CUSTOM_EXIT, exit_reason='hello world'),
-        ExitCheckTuple(exit_type=ExitType.ROI),
         ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
         ]
 
+    strategy.stop_loss_reached = MagicMock(
+            return_value=ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS))
     # Regular exit signal
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=True,
@@ -585,7 +587,7 @@ def test_should_sell(default_conf, fee, caplog) -> None:
     assert res == [
         ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
         ExitCheckTuple(exit_type=ExitType.ROI),
-        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
         ]
 
     # Regular exit signal, no ROI
@@ -596,8 +598,9 @@ def test_should_sell(default_conf, fee, caplog) -> None:
     assert len(res) == 2
     assert res == [
         ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
-        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
         ]
+
 
 @pytest.mark.parametrize('side', TRADE_SIDES)
 def test_leverage_callback(default_conf, side) -> None:

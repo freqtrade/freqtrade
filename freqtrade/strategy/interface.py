@@ -942,15 +942,22 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         # Sequence:
         # Exit-signal
-        # ROI (if not stoploss)
         # Stoploss
-        if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
+        # ROI
+        # Trailing stoploss
+
+        if stoplossflag.exit_type == ExitType.STOP_LOSS:
+
+            logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
+            exits.append(stoplossflag)
+
+        if roi_reached:
             logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
             exits.append(ExitCheckTuple(exit_type=ExitType.ROI))
 
-        if stoplossflag.exit_flag:
+        if stoplossflag.exit_type == ExitType.TRAILING_STOP_LOSS:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
+            logger.debug(f"{trade.pair} - Trailing stoploss hit.")
             exits.append(stoplossflag)
 
         return exits
