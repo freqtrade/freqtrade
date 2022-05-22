@@ -15,3 +15,6 @@ class ExitCheckTuple:
     @property
     def exit_flag(self):
         return self.exit_type != ExitType.NONE
+
+    def __eq__(self, other):
+        return self.exit_type == other.exit_type and self.exit_reason == other.exit_reason

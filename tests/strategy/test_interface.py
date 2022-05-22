@@ -525,6 +525,80 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
+def test_should_sell(default_conf, fee, caplog) -> None:
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+    now = arrow.utcnow().datetime
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+
+    assert res == []
+    strategy.min_roi_reached = MagicMock(return_value=True)
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 1
+    assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
+
+    strategy.min_roi_reached = MagicMock(return_value=True)
+    strategy.stop_loss_reached = MagicMock(
+        return_value=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ]
+
+    strategy.custom_exit = MagicMock(return_value='hello world')
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.CUSTOM_EXIT, exit_reason='hello world'),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ]
+
+    # Regular exit signal
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ]
+
+    # Regular exit signal, no ROI
+    strategy.min_roi_reached = MagicMock(return_value=False)
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ]
+
 @pytest.mark.parametrize('side', TRADE_SIDES)
 def test_leverage_callback(default_conf, side) -> None:
     default_conf['strategy'] = 'StrategyTestV2'
