@@ -26,11 +26,10 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     if method in no_unlimited_runmodes.keys():
         from freqtrade.data.btanalysis import get_latest_backtest_filename
 
-        btp = Path(config.get('user_data_dir'), "backtest_results")
-        btfile = get_latest_backtest_filename(btp)
+        btfile = get_latest_backtest_filename(config['user_data_dir'] / 'backtest_results')
         signals_file = f"{os.path.basename(os.path.splitext(btfile)[0])}_signals.pkl"
 
-        if (not os.path.exists(Path(btp, signals_file))):
+        if (not os.path.exists(config['user_data_dir'] / 'backtest_results' / signals_file)):
             raise OperationalException(
                 "Cannot find latest backtest signals file. Run backtesting with --export signals."
             )
