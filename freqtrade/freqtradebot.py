@@ -299,7 +299,8 @@ class FreqtradeBot(LoggingMixin):
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
 
-                self.update_trade_state(order.trade, order.order_id, fo)
+                self.update_trade_state(order.trade, order.order_id, fo,
+                                        stoploss_order=(order.ft_order_side == 'stoploss'))
 
             except ExchangeError as e:
 
@@ -1663,7 +1664,7 @@ class FreqtradeBot(LoggingMixin):
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair, trade.trade_direction)
-        elif send_msg and not trade.open_order_id:
+        elif send_msg and not trade.open_order_id and not stoploss_order:
             # Enter fill
             self._notify_enter(trade, order, fill=True)
 
