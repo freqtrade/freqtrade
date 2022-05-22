@@ -495,34 +495,33 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.exit_flag is False
-    assert res.exit_type == ExitType.NONE
+    assert res == []
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_flag is True
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_reason == 'custom_exit'
+    assert res[0].exit_flag is True
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_reason == 'custom_exit'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'hello world'
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'h' * 64
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'h' * 64
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
 
 
