@@ -1,14 +1,13 @@
-import joblib
 import logging
 import os
-
 from pathlib import Path
 from typing import List, Optional
 
+import joblib
 import pandas as pd
 from tabulate import tabulate
 
-from freqtrade.data.btanalysis import (load_backtest_data, get_latest_backtest_filename)
+from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
 from freqtrade.exceptions import OperationalException
 
 
