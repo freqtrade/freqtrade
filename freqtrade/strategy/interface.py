@@ -82,7 +82,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     }
 
     # run "populate_indicators" only for new candle
-    process_only_new_candles: bool = False
+    process_only_new_candles: bool = True
 
     use_exit_signal: bool
     exit_profit_only: bool
