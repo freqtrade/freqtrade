@@ -16,8 +16,8 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
-                                      DecimalParameter, IntParameter, RealParameter)
+from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
+                                           DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
