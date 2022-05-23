@@ -207,7 +207,7 @@ class Backtesting:
         if self.config.get('freqai') is not None:
             self.required_startup += int((self.config.get('freqai', {}).get('train_period') *
                                          86400) / timeframe_to_seconds(self.config['timeframe']))
-            logger.info("Increasing startup_candle_count for freqai to %s", self.required_startup)
+            logger.info(f'Increasing startup_candle_count for freqai to {self.required_startup}')
             self.config['startup_candle_count'] = self.required_startup
 
         data = history.load_data(

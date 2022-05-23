@@ -43,6 +43,7 @@ class FreqaiDataKitchen:
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
+        self.assert_config(self.config, live)
         self.freqai_config = config["freqai"]
         self.predictions: npt.ArrayLike = np.array([])
         self.do_predict: npt.ArrayLike = np.array([])
@@ -59,7 +60,7 @@ class FreqaiDataKitchen:
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
-                                                            self.freqai_config["train_period"]
+                                                            self.freqai_config.get("train_period")
                                                             )
 
             (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
@@ -68,14 +69,33 @@ class FreqaiDataKitchen:
                 config["freqai"]["backtest_period"],
             )
 
+    def assert_config(self, config: Dict[str, Any], live: bool) -> None:
+        assert config.get('freqai'), "No Freqai parameters found in config file."
+        assert config.get('freqai', {}).get('train_period'), ("No Freqai train_period found in"
+                                                              "config file.")
+        assert type(config.get('freqai', {})
+                    .get('train_period')) is int, ('Can only train on full day period.'
+                                                   'No fractional days permitted.')
+        assert config.get('freqai', {}).get('backtest_period'), ("No Freqai backtest_period found"
+                                                                 "in config file.")
+        if not live:
+            assert type(config.get('freqai', {})
+                        .get('backtest_period')) is int, ('Can only backtest on full day'
+                                                          'backtest_period. Only live/dry mode'
+                                                          'allows fractions of days')
+        assert config.get('freqai', {}).get('identifier'), ("No Freqai identifier found in config"
+                                                            "file.")
+        assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai feature_parameters"
+                                                                    "found in config file.")
+
     def set_paths(self) -> None:
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
-                              str(self.freqai_config['live_full_backtestrange'] +
-                                  self.freqai_config['identifier']))
+                              str(self.freqai_config.get('live_full_backtestrange') +
+                                  self.freqai_config.get('identifier')))
 
         self.model_path = Path(self.full_path / str("sub-train" + "-" +
-                               str(self.freqai_config['live_trained_timerange'])))
+                               str(self.freqai_config.get('live_trained_timerange'))))
 
         return
 
@@ -117,7 +137,7 @@ class FreqaiDataKitchen:
         # do not want them having to edit the default save/load methods here. Below is an example
         # of what we do NOT want.
 
-        # if self.freqai_config['feature_parameters']['determine_statistical_distributions']:
+        # if self.freqai_config.get('feature_parameters','determine_statistical_distributions'):
         #     self.data_dictionary["upper_quantiles"].to_pickle(
         #         save_path / str(self.model_filename + "_upper_quantiles.pkl")
         #     )
@@ -147,7 +167,7 @@ class FreqaiDataKitchen:
         # do not want them having to edit the default save/load methods here. Below is an example
         # of what we do NOT want.
 
-        # if self.freqai_config['feature_parameters']['determine_statistical_distributions']:
+        # if self.freqai_config.get('feature_parameters','determine_statistical_distributions'):
         #     self.data_dictionary["upper_quantiles"] = pd.read_pickle(
         #         self.model_path / str(self.model_filename + "_upper_quantiles.pkl")
         #     )
@@ -193,15 +213,15 @@ class FreqaiDataKitchen:
         """
 
         weights: npt.ArrayLike
-        if self.config["freqai"]["feature_parameters"]["weight_factor"] > 0:
+        if self.freqai_config["feature_parameters"].get("weight_factor", 0) > 0:
             weights = self.set_weights_higher_recent(len(filtered_dataframe))
         else:
             weights = np.ones(len(filtered_dataframe))
 
-        if self.config["freqai"]["feature_parameters"]["stratify"] > 0:
+        if self.freqai_config["feature_parameters"].get("stratify", 0) > 0:
             stratification = np.zeros(len(filtered_dataframe))
             for i in range(1, len(stratification)):
-                if i % self.config["freqai"]["feature_parameters"]["stratify"] == 0:
+                if i % self.freqai_config.get("feature_parameters", {}).get("stratify", 0) == 0:
                     stratification[i] = 1
 
         (
@@ -525,6 +545,14 @@ class FreqaiDataKitchen:
 
         return None
 
+    def pca_transform(self, filtered_dataframe: DataFrame) -> None:
+        pca_components = self.pca.transform(filtered_dataframe)
+        self.data_dictionary["prediction_features"] = pd.DataFrame(
+            data=pca_components,
+            columns=["PC" + str(i) for i in range(0, self.data["n_kept_components"])],
+            index=filtered_dataframe.index,
+        )
+
     def compute_distances(self) -> float:
         logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=-1)
@@ -675,7 +703,7 @@ class FreqaiDataKitchen:
         self.full_path = Path(
             self.config["user_data_dir"]
             / "models"
-            / str(full_timerange + self.freqai_config["identifier"])
+            / str(full_timerange + self.freqai_config.get("identifier"))
         )
 
         config_path = Path(self.config["config_files"][0])
@@ -696,13 +724,15 @@ class FreqaiDataKitchen:
 
         if trained_timerange.startts != 0:
             elapsed_time = (time - trained_timerange.stopts) / SECONDS_IN_DAY
-            retrain = elapsed_time > self.freqai_config['backtest_period']
+            retrain = elapsed_time > self.freqai_config.get('backtest_period')
             if retrain:
-                trained_timerange.startts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
-                trained_timerange.stopts += self.freqai_config['backtest_period'] * SECONDS_IN_DAY
+                trained_timerange.startts += self.freqai_config.get(
+                                             'backtest_period', 0) * SECONDS_IN_DAY
+                trained_timerange.stopts += self.freqai_config.get(
+                                            'backtest_period', 0) * SECONDS_IN_DAY
         else:  # user passed no live_trained_timerange in config
             trained_timerange = TimeRange()
-            trained_timerange.startts = int(time - self.freqai_config['train_period'] *
+            trained_timerange.startts = int(time - self.freqai_config.get('train_period') *
                                             SECONDS_IN_DAY)
             trained_timerange.stopts = int(time)
             retrain = True
@@ -725,13 +755,13 @@ class FreqaiDataKitchen:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
                                                   self.config, validate=False)
-        pairs = self.freqai_config['corr_pairlist']
+        pairs = self.freqai_config.get('corr_pairlist', [])
         if metadata['pair'] not in pairs:
             pairs += metadata['pair']  # dont include pair twice
         # timerange = TimeRange.parse_timerange(new_timerange)
 
         refresh_backtest_ohlcv_data(
-                        exchange, pairs=pairs, timeframes=self.freqai_config['timeframes'],
+                        exchange, pairs=pairs, timeframes=self.freqai_config.get('timeframes'),
                         datadir=self.config['datadir'], timerange=timerange,
                         new_pairs_days=self.config['new_pairs_days'],
                         erase=False, data_format=self.config['dataformat_ohlcv'],
@@ -743,21 +773,22 @@ class FreqaiDataKitchen:
                                                                                   DataFrame]:
         corr_dataframes: Dict[Any, Any] = {}
         base_dataframes: Dict[Any, Any] = {}
-        pairs = self.freqai_config['corr_pairlist']  # + [metadata['pair']]
+        pairs = self.freqai_config.get('corr_pairlist', [])  # + [metadata['pair']]
         # timerange = TimeRange.parse_timerange(new_timerange)
 
-        for tf in self.freqai_config['timeframes']:
+        for tf in self.freqai_config.get('timeframes'):
             base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
                                                     timeframe=tf,
                                                     pair=metadata['pair'], timerange=timerange)
-            for p in pairs:
-                if metadata['pair'] in p:
-                    continue  # dont repeat anything from whitelist
-                if p not in corr_dataframes:
-                    corr_dataframes[p] = {}
-                corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
-                                                           timeframe=tf,
-                                                           pair=p, timerange=timerange)
+            if pairs:
+                for p in pairs:
+                    if metadata['pair'] in p:
+                        continue  # dont repeat anything from whitelist
+                    if p not in corr_dataframes:
+                        corr_dataframes[p] = {}
+                    corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
+                                                               timeframe=tf,
+                                                               pair=p, timerange=timerange)
 
         return corr_dataframes, base_dataframes
 
@@ -767,23 +798,25 @@ class FreqaiDataKitchen:
                                             metadata: dict) -> DataFrame:
 
         dataframe = base_dataframes[self.config['timeframe']]
+        pairs = self.freqai_config.get("corr_pairlist", [])
 
-        for tf in self.freqai_config["timeframes"]:
+        for tf in self.freqai_config.get("timeframes"):
             dataframe = strategy.populate_any_indicators(metadata['pair'],
                                                          dataframe.copy(),
                                                          tf,
                                                          base_dataframes[tf],
                                                          coin=metadata['pair'].split("/")[0] + "-"
                                                          )
-            for i in self.freqai_config["corr_pairlist"]:
-                if metadata['pair'] in i:
-                    continue  # dont repeat anything from whitelist
-                dataframe = strategy.populate_any_indicators(i,
-                                                             dataframe.copy(),
-                                                             tf,
-                                                             corr_dataframes[i][tf],
-                                                             coin=i.split("/")[0] + "-"
-                                                             )
+            if pairs:
+                for i in pairs:
+                    if metadata['pair'] in i:
+                        continue  # dont repeat anything from whitelist
+                    dataframe = strategy.populate_any_indicators(i,
+                                                                 dataframe.copy(),
+                                                                 tf,
+                                                                 corr_dataframes[i][tf],
+                                                                 coin=i.split("/")[0] + "-"
+                                                                 )
 
         return dataframe
 

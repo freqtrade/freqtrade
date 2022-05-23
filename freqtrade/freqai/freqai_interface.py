@@ -20,7 +20,7 @@ from freqtrade.strategy.interface import IStrategy
 pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 
-# FIXME: suppress stdout for background training
+# FIXME: suppress stdout for background training?
 # class DummyFile(object):
 #     def write(self, x): pass
 
@@ -51,6 +51,7 @@ class IFreqaiModel(ABC):
     def __init__(self, config: Dict[str, Any]) -> None:
 
         self.config = config
+        self.assert_config(self.config)
         self.freqai_info = config["freqai"]
         self.data_split_parameters = config["freqai"]["data_split_parameters"]
         self.model_training_parameters = config["freqai"]["model_training_parameters"]
@@ -64,11 +65,24 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
-        if self.freqai_info['live_trained_timerange']:
+        if self.freqai_info.get('live_trained_timerange'):
             self.new_trained_timerange = TimeRange.parse_timerange(
                                                    self.freqai_info['live_trained_timerange'])
         else:
             self.new_trained_timerange = TimeRange()
+
+    def assert_config(self, config: Dict[str, Any]) -> None:
+
+        assert config.get('freqai'), "No Freqai parameters found in config file."
+        assert config.get('freqai', {}).get('data_split_parameters'), ("No Freqai"
+                                                                       "data_split_parameters"
+                                                                       "in config file.")
+        assert config.get('freqai', {}).get('model_training_parameters'), ("No Freqai"
+                                                                           "modeltrainingparameters"
+                                                                           "found in config file.")
+        assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai"
+                                                                    "feature_parameters found in"
+                                                                    "config file.")
 
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """
@@ -192,55 +206,30 @@ class IFreqaiModel(ABC):
 
         return
 
-    @abstractmethod
-    def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Any:
-        """
-        Filter the training data and train a model to it. Train makes heavy use of the datahandler
-        for storing, saving, loading, and analyzing the data.
-        :params:
-        :unfiltered_dataframe: Full dataframe for the current training period
-        :metadata: pair metadata from strategy.
-        :returns:
-        :model: Trained model which can be used to inference (self.predict)
-        """
-
-    @abstractmethod
-    def fit(self) -> Any:
-        """
-        Most regressors use the same function names and arguments e.g. user
-        can drop in LGBMRegressor in place of CatBoostRegressor and all data
-        management will be properly handled by Freqai.
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
-        """
-
-        return
-
-    @abstractmethod
-    def predict(self, dataframe: DataFrame, metadata: dict) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
-        """
-        Filter the prediction features data and predict with it.
-        :param: unfiltered_dataframe: Full dataframe for the current backtest period.
-        :return:
-        :predictions: np.array of predictions
-        :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
-        data (NaNs) or felt uncertain about data (PCA and DI index)
-        """
-
-    @abstractmethod
     def data_cleaning_train(self) -> None:
         """
-        User can add data analysis and cleaning here.
+        Base data cleaning method for train
         Any function inside this method should drop training data points from the filtered_dataframe
         based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
         of how outlier data points are dropped from the dataframe used for training.
         """
+        if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
+            self.dh.principal_component_analysis()
 
-    @abstractmethod
-    def data_cleaning_predict(self) -> None:
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     self.dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     self.dh.remove_outliers(predict=False)
+
+        if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
+            self.dh.use_SVM_to_remove_outliers(predict=False)
+
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
+            self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
+
+    def data_cleaning_predict(self, filtered_dataframe: DataFrame) -> None:
         """
-        User can add data analysis and cleaning here.
+        Base data cleaning method for predict.
         These functions each modify self.dh.do_predict, which is a dataframe with equal length
         to the number of candles coming from and returning to the strategy. Inside do_predict,
          1 allows prediction and < 0 signals to the strategy that the model is not confident in
@@ -249,6 +238,19 @@ class IFreqaiModel(ABC):
         of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
         for buy signals.
         """
+        if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
+            self.dh.pca_transform()
+
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     self.dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     self.dh.remove_outliers(predict=True)  # creates dropped index
+
+        if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
+            self.dh.use_SVM_to_remove_outliers(predict=True)
+
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
+            self.dh.check_if_pred_in_training_spaces()  # sets do_predict
 
     def model_exists(self, pair: str, training_timerange: str) -> bool:
         """
@@ -303,3 +305,42 @@ class IFreqaiModel(ABC):
         self.model = self.train(unfiltered_dataframe, metadata)
         self.dh.save_data(self.model)
         self.retrain = False
+
+    # Methods which are overridden by user made prediction models.
+    # See freqai/prediction_models/CatboostPredictionModlel.py for an example.
+
+    @abstractmethod
+    def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Any:
+        """
+        Filter the training data and train a model to it. Train makes heavy use of the datahandler
+        for storing, saving, loading, and analyzing the data.
+        :params:
+        :unfiltered_dataframe: Full dataframe for the current training period
+        :metadata: pair metadata from strategy.
+        :returns:
+        :model: Trained model which can be used to inference (self.predict)
+        """
+
+    @abstractmethod
+    def fit(self) -> Any:
+        """
+        Most regressors use the same function names and arguments e.g. user
+        can drop in LGBMRegressor in place of CatBoostRegressor and all data
+        management will be properly handled by Freqai.
+        :params:
+        :data_dictionary: the dictionary constructed by DataHandler to hold
+        all the training and test data/labels.
+        """
+
+        return
+
+    @abstractmethod
+    def predict(self, dataframe: DataFrame, metadata: dict) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+        """
+        Filter the prediction features data and predict with it.
+        :param: unfiltered_dataframe: Full dataframe for the current backtest period.
+        :return:
+        :predictions: np.array of predictions
+        :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
+        data (NaNs) or felt uncertain about data (PCA and DI index)
+        """

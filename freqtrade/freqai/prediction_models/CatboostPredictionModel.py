@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict, Tuple
 
-import pandas as pd
 from catboost import CatBoostRegressor, Pool
 from pandas import DataFrame
 
@@ -149,7 +148,7 @@ class CatboostPredictionModel(IFreqaiModel):
         based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
         of how outlier data points are dropped from the dataframe used for training.
         """
-        if self.feature_parameters["principal_component_analysis"]:
+        if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
             self.dh.principal_component_analysis()
 
         # if self.feature_parameters["determine_statistical_distributions"]:
@@ -157,9 +156,10 @@ class CatboostPredictionModel(IFreqaiModel):
         # if self.feature_parameters["remove_outliers"]:
         #     self.dh.remove_outliers(predict=False)
 
-        if self.feature_parameters["use_SVM_to_remove_outliers"]:
+        if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
             self.dh.use_SVM_to_remove_outliers(predict=False)
-        if self.feature_parameters["DI_threshold"]:
+
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
             self.dh.data["avg_mean_dist"] = self.dh.compute_distances()
 
     def data_cleaning_predict(self, filtered_dataframe: DataFrame) -> None:
@@ -173,21 +173,16 @@ class CatboostPredictionModel(IFreqaiModel):
         of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
         for buy signals.
         """
-        if self.feature_parameters["principal_component_analysis"]:
-            pca_components = self.dh.pca.transform(filtered_dataframe)
-            self.dh.data_dictionary["prediction_features"] = pd.DataFrame(
-                data=pca_components,
-                columns=["PC" + str(i) for i in range(0, self.dh.data["n_kept_components"])],
-                index=filtered_dataframe.index,
-            )
+        if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
+            self.dh.pca_transform()
 
         # if self.feature_parameters["determine_statistical_distributions"]:
         #     self.dh.determine_statistical_distributions()
         # if self.feature_parameters["remove_outliers"]:
         #     self.dh.remove_outliers(predict=True)  # creates dropped index
 
-        if self.feature_parameters["use_SVM_to_remove_outliers"]:
+        if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
             self.dh.use_SVM_to_remove_outliers(predict=True)
 
-        if self.feature_parameters["DI_threshold"]:
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
             self.dh.check_if_pred_in_training_spaces()  # sets do_predict
