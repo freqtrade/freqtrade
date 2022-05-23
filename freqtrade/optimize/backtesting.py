@@ -275,8 +275,12 @@ class Backtesting:
                 if pair not in self.exchange._leverage_tiers:
                     unavailable_pairs.append(pair)
                     continue
-                self.futures_data[pair] = funding_rates_dict[pair].merge(
-                    mark_rates_dict[pair], on='date', how="inner", suffixes=["_fund", "_mark"])
+
+                self.futures_data[pair] = self.exchange.combine_funding_and_mark(
+                    funding_rates=funding_rates_dict[pair],
+                    mark_rates=mark_rates_dict[pair],
+                    futures_funding_rate=self.config.get('futures_funding_rate', None),
+                )
 
             if unavailable_pairs:
                 raise OperationalException(
