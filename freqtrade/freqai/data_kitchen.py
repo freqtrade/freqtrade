@@ -19,6 +19,7 @@ from sklearn.model_selection import train_test_split
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_pair_history
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
+from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
 
@@ -33,13 +34,13 @@ logger = logging.getLogger(__name__)
 
 class FreqaiDataKitchen:
     """
-    Class designed to handle all the data for the IFreqaiModel class model.
+    Class designed to analyze data for a single pair. Employed by the IFreqaiModel class.
     Functionalities include holding, saving, loading, and analyzing the data.
     author: Robert Caulk, rob.caulk@gmail.com
     """
 
-    def __init__(self, config: Dict[str, Any], dataframe: DataFrame, live: bool = False):
-        self.full_dataframe = dataframe
+    def __init__(self, config: Dict[str, Any], data_drawer: FreqaiDataDrawer, live: bool = False,
+                 pair: str = ''):
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
@@ -53,10 +54,10 @@ class FreqaiDataKitchen:
         self.full_do_predict: npt.ArrayLike = np.array([])
         self.full_target_mean: npt.ArrayLike = np.array([])
         self.full_target_std: npt.ArrayLike = np.array([])
-        self.model_path = Path()
+        self.data_path = Path()
         self.model_filename: str = ""
-        self.model_dictionary: Dict[Any, Any] = {}
         self.live = live
+        self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
@@ -68,6 +69,8 @@ class FreqaiDataKitchen:
                 config["freqai"]["train_period"],
                 config["freqai"]["backtest_period"],
             )
+
+        self.data_drawer = data_drawer
 
     def assert_config(self, config: Dict[str, Any], live: bool) -> None:
         assert config.get('freqai'), "No Freqai parameters found in config file."
@@ -88,18 +91,18 @@ class FreqaiDataKitchen:
         assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai feature_parameters"
                                                                     "found in config file.")
 
-    def set_paths(self) -> None:
+    def set_paths(self, trained_timestamp: int = None) -> None:
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
                               str(self.freqai_config.get('live_full_backtestrange') +
                                   self.freqai_config.get('identifier')))
 
-        self.model_path = Path(self.full_path / str("sub-train" + "-" +
-                               str(self.freqai_config.get('live_trained_timerange'))))
+        self.data_path = Path(self.full_path / str("sub-train" + "-" + self.pair.split("/")[0] +
+                              str(trained_timestamp)))
 
         return
 
-    def save_data(self, model: Any) -> None:
+    def save_data(self, model: Any, coin: str = '') -> None:
         """
         Saves all data associated with a model for a single sub-train time range
         :params:
@@ -107,10 +110,10 @@ class FreqaiDataKitchen:
         predictions
         """
 
-        if not self.model_path.is_dir():
-            self.model_path.mkdir(parents=True, exist_ok=True)
+        if not self.data_path.is_dir():
+            self.data_path.mkdir(parents=True, exist_ok=True)
 
-        save_path = Path(self.model_path)
+        save_path = Path(self.data_path)
 
         # Save the trained model
         dump(model, save_path / str(self.model_filename + "_model.joblib"))
@@ -118,7 +121,7 @@ class FreqaiDataKitchen:
         if self.svm_model is not None:
             dump(self.svm_model, save_path / str(self.model_filename + "_svm_model.joblib"))
 
-        self.data["model_path"] = str(self.model_path)
+        self.data["data_path"] = str(self.data_path)
         self.data["model_filename"] = str(self.model_filename)
         self.data["training_features_list"] = list(self.data_dictionary["train_features"].columns)
         # store the metadata
@@ -131,7 +134,10 @@ class FreqaiDataKitchen:
         )
 
         if self.live:
-            self.model_dictionary[self.model_filename] = model
+            self.data_drawer.model_dictionary[self.model_filename] = model
+            self.data_drawer.pair_dict[coin]['model_filename'] = self.model_filename
+            self.data_drawer.pair_dict[coin]['data_path'] = str(self.data_path)
+            self.data_drawer.save_drawer_to_disk()
 
         # TODO add a helper function to let user save/load any data they are custom adding. We
         # do not want them having to edit the default save/load methods here. Below is an example
@@ -148,19 +154,23 @@ class FreqaiDataKitchen:
 
         return
 
-    def load_data(self) -> Any:
+    def load_data(self, coin: str = '') -> Any:
         """
         loads all data required to make a prediction on a sub-train time range
         :returns:
         :model: User trained model which can be inferenced for new predictions
         """
 
-        with open(self.model_path / str(self.model_filename + "_metadata.json"), "r") as fp:
+        if self.live:
+            self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
+            self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
+
+        with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
             self.training_features_list = self.data["training_features_list"]
 
         self.data_dictionary["train_features"] = pd.read_pickle(
-            self.model_path / str(self.model_filename + "_trained_df.pkl")
+            self.data_path / str(self.model_filename + "_trained_df.pkl")
         )
 
         # TODO add a helper function to let user save/load any data they are custom adding. We
@@ -169,34 +179,34 @@ class FreqaiDataKitchen:
 
         # if self.freqai_config.get('feature_parameters','determine_statistical_distributions'):
         #     self.data_dictionary["upper_quantiles"] = pd.read_pickle(
-        #         self.model_path / str(self.model_filename + "_upper_quantiles.pkl")
+        #         self.data_path / str(self.model_filename + "_upper_quantiles.pkl")
         #     )
 
         #     self.data_dictionary["lower_quantiles"] = pd.read_pickle(
-        #         self.model_path / str(self.model_filename + "_lower_quantiles.pkl")
+        #         self.data_path / str(self.model_filename + "_lower_quantiles.pkl")
         #     )
 
-        self.model_path = Path(self.data["model_path"])
-        self.model_filename = self.data["model_filename"]
+        # self.data_path = Path(self.data["data_path"])
+        # self.model_filename = self.data["model_filename"]
 
         # try to access model in memory instead of loading object from disk to save time
-        if self.live and self.model_filename in self.model_dictionary:
-            model = self.model_dictionary[self.model_filename]
+        if self.live and self.model_filename in self.data_drawer.model_dictionary:
+            model = self.data_drawer.model_dictionary[self.model_filename]
         else:
-            model = load(self.model_path / str(self.model_filename + "_model.joblib"))
+            model = load(self.data_path / str(self.model_filename + "_model.joblib"))
 
-        if Path(self.model_path / str(self.model_filename +
+        if Path(self.data_path / str(self.model_filename +
                 "_svm_model.joblib")).resolve().exists():
-            self.svm_model = load(self.model_path / str(self.model_filename + "_svm_model.joblib"))
+            self.svm_model = load(self.data_path / str(self.model_filename + "_svm_model.joblib"))
 
         assert model, (
                        f"Unable to load model, ensure model exists at "
-                       f"{self.model_path} "
+                       f"{self.data_path} "
                       )
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             self.pca = pk.load(
-                open(self.model_path / str(self.model_filename + "_pca_object.pkl"), "rb")
+                open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "rb")
             )
 
         return model
@@ -539,9 +549,9 @@ class FreqaiDataKitchen:
 
         logger.info(f'PCA reduced total features from  {n_components} to {n_keep_components}')
 
-        if not self.model_path.is_dir():
-            self.model_path.mkdir(parents=True, exist_ok=True)
-        pk.dump(pca2, open(self.model_path / str(self.model_filename + "_pca_object.pkl"), "wb"))
+        if not self.data_path.is_dir():
+            self.data_path.mkdir(parents=True, exist_ok=True)
+        pk.dump(pca2, open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "wb"))
 
         return None
 
@@ -717,39 +727,50 @@ class FreqaiDataKitchen:
 
         return full_timerange
 
-    def check_if_new_training_required(self, trained_timerange: TimeRange,
-                                       metadata: dict) -> Tuple[bool, TimeRange]:
+    def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-
-        if trained_timerange.startts != 0:
-            elapsed_time = (time - trained_timerange.stopts) / SECONDS_IN_DAY
+        trained_timerange = TimeRange()
+        if trained_timestamp != 0:
+            elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
             retrain = elapsed_time > self.freqai_config.get('backtest_period')
             if retrain:
-                trained_timerange.startts += self.freqai_config.get(
-                                             'backtest_period', 0) * SECONDS_IN_DAY
-                trained_timerange.stopts += self.freqai_config.get(
-                                            'backtest_period', 0) * SECONDS_IN_DAY
+                trained_timerange.startts = int(time - self.freqai_config.get(
+                                             'backtest_period', 0) * SECONDS_IN_DAY)
+                trained_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
-            trained_timerange = TimeRange()
             trained_timerange.startts = int(time - self.freqai_config.get('train_period') *
                                             SECONDS_IN_DAY)
             trained_timerange.stopts = int(time)
             retrain = True
 
-        if retrain:
-            coin, _ = metadata['pair'].split("/")
-            # set the new model_path
-            self.model_path = Path(self.full_path / str("sub-train" + "-" +
-                                   str(int(trained_timerange.stopts))))
+        # if retrain:
+        #     coin, _ = metadata['pair'].split("/")
+        #     # set the new data_path
+        #     self.data_path = Path(self.full_path / str("sub-train" + "-" +
+        #                            str(int(trained_timerange.stopts))))
 
-            self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
-            # this is not persistent at the moment TODO
-            self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
-            # enables persistence, but not fully implemented into save/load data yer
-            self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
+        #     self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
+        #     # this is not persistent at the moment TODO
+        #     self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
+        #     # enables persistence, but not fully implemented into save/load data yer
+        #     self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
         return retrain, trained_timerange
+
+    def set_new_model_names(self, metadata: dict, trained_timerange: TimeRange):
+
+        coin, _ = metadata['pair'].split("/")
+        # set the new data_path
+        self.data_path = Path(self.full_path / str("sub-train" + "-" +
+                              metadata['pair'].split("/")[0] +
+                              str(int(trained_timerange.stopts))))
+
+        self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
+        # this is not persistent at the moment TODO
+        self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
+        # enables persistence, but not fully implemented into save/load data yer
+        self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
     def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
 
