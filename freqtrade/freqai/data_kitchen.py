@@ -690,8 +690,7 @@ class FreqaiDataKitchen:
         return full_timerange
 
     def check_if_new_training_required(self, trained_timerange: TimeRange,
-                                       metadata: dict,
-                                       timestamp: int = 0) -> Tuple[bool, TimeRange, int]:
+                                       metadata: dict) -> Tuple[bool, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
@@ -708,21 +707,19 @@ class FreqaiDataKitchen:
             trained_timerange.stopts = int(time)
             retrain = True
 
-        timestamp = trained_timerange.stopts
-
         if retrain:
             coin, _ = metadata['pair'].split("/")
             # set the new model_path
             self.model_path = Path(self.full_path / str("sub-train" + "-" +
-                                   str(timestamp)))
+                                   str(int(trained_timerange.stopts))))
 
-            self.model_filename = "cb_" + coin.lower() + "_" + str(timestamp)
+            self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
             # this is not persistent at the moment TODO
-            self.freqai_config['live_trained_timerange'] = str(timestamp)
+            self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
             # enables persistence, but not fully implemented into save/load data yer
-            self.data['live_trained_timerange'] = str(timestamp)
+            self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
-        return retrain, trained_timerange, timestamp
+        return retrain, trained_timerange
 
     def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
 

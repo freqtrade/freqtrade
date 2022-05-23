@@ -64,7 +64,6 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
-        self.timestamp = 0
         if self.freqai_info['live_trained_timerange']:
             self.new_trained_timerange = TimeRange.parse_timerange(
                                                    self.freqai_info['live_trained_timerange'])
@@ -157,10 +156,9 @@ class IFreqaiModel(ABC):
         if not self.training_on_separate_thread:
             # this will also prevent other pairs from trying to train simultaneously.
             (self.retrain,
-             self.new_trained_timerange,
-             self.timestamp) = self.dh.check_if_new_training_required(self.new_trained_timerange,
-                                                                      metadata,
-                                                                      timestamp=self.timestamp)
+             self.new_trained_timerange) = self.dh.check_if_new_training_required(
+                                                   self.new_trained_timerange,
+                                                   metadata)
         else:
             logger.info("FreqAI training a new model on background thread.")
             self.retrain = False
