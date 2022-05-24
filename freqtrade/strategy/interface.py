@@ -16,7 +16,7 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirecti
                              SignalType, TradingMode)
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
-from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -429,7 +429,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.custom_sell(pair, trade, current_time, current_rate, current_profit, **kwargs)
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
         """
         Customize stake size for each new trade.
@@ -447,8 +447,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         return proposed_stake
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
-                              max_stake: float, **kwargs) -> Optional[float]:
+                              current_rate: float, current_profit: float,
+                              min_stake: Optional[float], max_stake: float,
+                              **kwargs) -> Optional[float]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
@@ -917,19 +918,20 @@ class IStrategy(ABC, HyperStrategyMixin):
             if exit_ and not enter:
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
-                custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
+                reason_cust = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=current_time,
                     current_rate=current_rate, current_profit=current_profit)
-                if custom_reason:
+                if reason_cust:
                     exit_signal = ExitType.CUSTOM_EXIT
-                    if isinstance(custom_reason, str):
-                        if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
+                    if isinstance(reason_cust, str):
+                        custom_reason = reason_cust
+                        if len(reason_cust) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom exit reason returned from '
                                            f'custom_exit is too long and was trimmed'
                                            f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
-                            custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
+                            custom_reason = reason_cust[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
-                        custom_reason = None
+                        custom_reason = ''
             if (
                 exit_signal == ExitType.CUSTOM_EXIT
                 or (exit_signal == ExitType.EXIT_SIGNAL
@@ -1075,7 +1077,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ft_check_timed_out(self, trade: LocalTrade, order: Order,
+    def ft_check_timed_out(self, trade: Trade, order: Order,
                            current_time: datetime) -> bool:
         """
         FT Internal method.
