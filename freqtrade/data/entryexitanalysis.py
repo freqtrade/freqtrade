@@ -97,15 +97,12 @@ def _do_group_table_output(bigdf, glist):
                                                    'count',
                                                    lambda x: sum(x > 0),
                                                    lambda x: sum(x <= 0)]})
-
-        new = pd.merge(new, wins, left_index=True, right_index=True)
-        new = pd.merge(new, loss, left_index=True, right_index=True)
+        new = pd.concat([new, wins, loss], axis=1).fillna(0)
 
         new['profit_tot'] = new['profit_abs_wins'] - abs(new['profit_abs_loss'])
-
-        new['wl_ratio_pct'] = (new.iloc[:, 1] / new.iloc[:, 0] * 100)
-        new['avg_win'] = (new['profit_abs_wins'] / new.iloc[:, 1])
-        new['avg_loss'] = (new['profit_abs_loss'] / new.iloc[:, 2])
+        new['wl_ratio_pct'] = (new.iloc[:, 1] / new.iloc[:, 0] * 100).fillna(0)
+        new['avg_win'] = (new['profit_abs_wins'] / new.iloc[:, 1]).fillna(0)
+        new['avg_loss'] = (new['profit_abs_loss'] / new.iloc[:, 2]).fillna(0)
 
         new.columns = ['total_num_buys', 'wins', 'losses', 'profit_abs_wins', 'profit_abs_loss',
                        'profit_tot', 'wl_ratio_pct', 'avg_win', 'avg_loss']
@@ -249,6 +246,7 @@ def process_entry_exit_reasons(backtest_dir: Path,
         signal_candles = _load_signal_candles(backtest_dir)
         analysed_trades_dict = _process_candles_and_indicators(pairlist, strategy_name,
                                                                trades, signal_candles)
+
         _print_results(analysed_trades_dict,
                        strategy_name,
                        analysis_groups,

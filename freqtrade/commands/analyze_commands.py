@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -26,12 +25,17 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     if method in no_unlimited_runmodes.keys():
         from freqtrade.data.btanalysis import get_latest_backtest_filename
 
-        btfile = get_latest_backtest_filename(config['user_data_dir'] / 'backtest_results')
-        signals_file = f"{os.path.basename(os.path.splitext(btfile)[0])}_signals.pkl"
+        btfile = Path(get_latest_backtest_filename(config['user_data_dir'] / 'backtest_results'))
+        signals_file = f"{btfile.stem}_signals.pkl"
 
-        if (not os.path.exists(config['user_data_dir'] / 'backtest_results' / signals_file)):
+        if (not (config['user_data_dir'] / 'backtest_results' / signals_file).exists()):
             raise OperationalException(
                 "Cannot find latest backtest signals file. Run backtesting with --export signals."
+            )
+
+        if ('strategy' not in config):
+            raise OperationalException(
+                "No strategy defined. Use --strategy or supply in config."
             )
 
     return config
@@ -47,6 +51,8 @@ def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
 
     # Initialize configuration
     config = setup_analyze_configuration(args, RunMode.BACKTEST)
+
+    print(config)
 
     logger.info('Starting freqtrade in analysis mode')
 

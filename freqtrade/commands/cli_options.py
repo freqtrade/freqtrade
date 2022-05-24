@@ -644,5 +644,6 @@ AVAILABLE_CLI_OPTIONS = {
         help=("Comma separated list of indicators to analyse. ",
               "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
         nargs='?',
+        default='',
     ),
 }
