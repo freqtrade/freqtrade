@@ -105,11 +105,11 @@ config setup includes:
 
 ### Building the feature set
 
-Most of these parameters are controlling the feature data set. Features are added by the user 
-inside the `populate_any_indicators()` method of the strategy by prepending indicators with `%`:
+Features are added by the user inside the `populate_any_indicators()` method of the strategy 
+by prepending indicators with `%`:
 
 ```python
-    def populate_any_indicators(self, pair, df, tf, informative=None, coin=""):
+    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
         informative['%-''%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
         informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
         informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
@@ -120,10 +120,45 @@ inside the `populate_any_indicators()` method of the strategy by prepending indi
         informative['%-' + coin + "bb_width"] = (
             informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
         ) / informative[coin + "bb_middleband"]
+
+
+        
+        # The following code automatically adds features according to the `shift` parameter passed
+        # in the config. Do not remove
+        indicators = [col for col in informative if col.startswith('%')]
+        for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
+            if n == 0:
+                continue
+            informative_shift = informative[indicators].shift(n)
+            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+            informative = pd.concat((informative, informative_shift), axis=1)
+
+        # The following code safely merges into the base timeframe.
+        # Do not remove.
+        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+        skip_columns = [(s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]]
+        df = df.drop(columns=skip_columns)
 ```
 The user of the present example does not want to pass the `bb_lowerband` as a feature to the model, 
 and has therefore not prepended it with `%`. The user does, however, wish to pass `bb_width` to the
 model for training/prediction and has therfore prepended it with `%`._
+
+Note: features **must** be defined in `populate_any_indicators()`. Making features in `populate_indicators()`
+will fail in live/dry. If the user wishes to add generalized features that are not associated with 
+a specific pair or timeframe, they should use the following structure inside `populate_any_indicators()`
+(as exemplified in `freqtrade/templates/FreqaiExampleStrategy.py`:
+
+```python
+    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
+
+
+        # Add generalized indicators here (because in live, it will call only this function to populate 
+        # indicators for retraining). Notice how we ensure not to add them multiple times by associating
+        # these generalized indicators to the basepair/timeframe
+        if pair == metadata['pair'] and tf == self.timeframe:
+            df['%-day_of_week'] = (df["date"].dt.dayofweek + 1) / 7
+            df['%-hour_of_day'] = (df['date'].dt.hour + 1) / 25
+
 
 (Please see the example script located in `freqtrade/templates/FreqaiExampleStrategy.py` for a full example of `populate_any_indicators()`)
 

@@ -823,7 +823,9 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config.get("corr_pairlist", [])
 
         for tf in self.freqai_config.get("timeframes"):
-            dataframe = strategy.populate_any_indicators(metadata['pair'],
+            dataframe = strategy.populate_any_indicators(
+                                                         metadata,
+                                                         metadata['pair'],
                                                          dataframe.copy(),
                                                          tf,
                                                          base_dataframes[tf],
@@ -833,7 +835,9 @@ class FreqaiDataKitchen:
                 for i in pairs:
                     if metadata['pair'] in i:
                         continue  # dont repeat anything from whitelist
-                    dataframe = strategy.populate_any_indicators(i,
+                    dataframe = strategy.populate_any_indicators(
+                                                                 metadata,
+                                                                 i,
                                                                  dataframe.copy(),
                                                                  tf,
                                                                  corr_dataframes[i][tf],

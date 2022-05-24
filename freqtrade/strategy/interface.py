@@ -532,7 +532,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
-    def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
+    def populate_any_indicators(self, metadata: dict, pair: str, df: DataFrame, tf: str,
                                 informative: DataFrame = None, coin: str = "") -> DataFrame:
         """
         Function designed to automatically generate, name and merge features
