@@ -395,7 +395,7 @@ class LocalTrade():
         )
 
     def to_json(self) -> Dict[str, Any]:
-        filled_orders = self.select_filled_orders()
+        filled_orders = self.select_filled_or_open_orders()
         orders = [order.to_json(self.entry_side) for order in filled_orders]
 
         return {
@@ -897,6 +897,21 @@ class LocalTrade():
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
                 o.status in NON_OPEN_EXCHANGE_STATES]
+
+    def select_filled_or_open_orders(self) -> List['Order']:
+        """
+        Finds filled or open orders
+        :param order_side: Side of the order (either 'buy', 'sell', or None)
+        :return: array of Order objects
+        """
+        return [o for o in self.orders if
+                (
+                    o.ft_is_open is False
+                    and (o.filled or 0) > 0
+                    and o.status in NON_OPEN_EXCHANGE_STATES
+                    )
+                or (o.ft_is_open is True and o.status is not None)
+                ]
 
     @property
     def nr_of_successful_entries(self) -> int:
