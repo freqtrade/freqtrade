@@ -73,7 +73,8 @@ class IFreqaiModel(ABC):
         #     self.new_trained_timerange = TimeRange()
 
         self.set_full_path()
-        self.data_drawer = FreqaiDataDrawer(Path(self.full_path))
+        self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
+                                            self.config['exchange']['pair_whitelist'])
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -110,8 +111,9 @@ class IFreqaiModel(ABC):
         # FreqaiDataKitchen is reinstantiated for each coin
         if self.live:
             self.data_drawer.set_pair_dict_info(metadata)
+            print('Current train queue:', self.data_drawer.training_queue)
             if (not self.training_on_separate_thread and
-                    self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
+                    self.data_drawer.training_queue == 1):
 
                 self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                             self.live, metadata["pair"])
@@ -323,8 +325,9 @@ class IFreqaiModel(ABC):
 
         dh.set_new_model_names(metadata, new_trained_timerange)
 
-        # set this coin to lower priority to allow other coins in white list to get trained
-        self.data_drawer.pair_dict[metadata['pair']]['priority'] = 0
+        # send the pair to the end of the queue so other coins can take on the background thread
+        # retraining
+        self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
 
         dh.save_data(self.model, coin=metadata['pair'])
 
