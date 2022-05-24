@@ -24,6 +24,7 @@ class FreqaiDataDrawer:
         self.pair_dict: Dict[str, Any] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
         self.model_dictionary: Dict[str, Any] = {}
+        self.pair_data_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.load_drawer_from_disk()
 

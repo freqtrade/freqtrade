@@ -91,14 +91,15 @@ class FreqaiDataKitchen:
         assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai feature_parameters"
                                                                     "found in config file.")
 
-    def set_paths(self, trained_timestamp: int = None) -> None:
+    def set_paths(self, metadata: dict, trained_timestamp: int = None,) -> None:
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
                               str(self.freqai_config.get('live_full_backtestrange') +
                                   self.freqai_config.get('identifier')))
 
-        self.data_path = Path(self.full_path / str("sub-train" + "-" + self.pair.split("/")[0] +
-                              str(trained_timestamp)))
+        self.data_path = Path(self.full_path / str("sub-train" + "-" +
+                                                   metadata['pair'].split("/")[0] +
+                                                   str(trained_timestamp)))
 
         return
 

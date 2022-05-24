@@ -4,6 +4,7 @@ from typing import Any, Dict, Tuple
 from catboost import CatBoostRegressor, Pool
 from pandas import DataFrame
 
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 
 
@@ -17,7 +18,7 @@ class CatboostPredictionModel(IFreqaiModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def make_labels(self, dataframe: DataFrame) -> DataFrame:
+    def make_labels(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
         """
         User defines the labels here (target values).
         :params:
@@ -32,14 +33,15 @@ class CatboostPredictionModel(IFreqaiModel):
             / dataframe["close"]
             - 1
         )
-        self.dh.data["s_mean"] = dataframe["s"].mean()
-        self.dh.data["s_std"] = dataframe["s"].std()
+        dh.data["s_mean"] = dataframe["s"].mean()
+        dh.data["s_std"] = dataframe["s"].std()
 
-        # logger.info("label mean", self.dh.data["s_mean"], "label std", self.dh.data["s_std"])
+        # logger.info("label mean", dh.data["s_mean"], "label std", dh.data["s_std"])
 
         return dataframe["s"]
 
-    def train(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Tuple[DataFrame, DataFrame]:
+    def train(self, unfiltered_dataframe: DataFrame,
+              metadata: dict, dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
         for storing, saving, loading, and analyzing the data.
@@ -52,25 +54,25 @@ class CatboostPredictionModel(IFreqaiModel):
         logger.info("--------------------Starting training--------------------")
 
         # create the full feature list based on user config info
-        self.dh.training_features_list = self.dh.find_features(unfiltered_dataframe)
-        unfiltered_labels = self.make_labels(unfiltered_dataframe)
+        dh.training_features_list = dh.find_features(unfiltered_dataframe)
+        unfiltered_labels = self.make_labels(unfiltered_dataframe, dh)
         # filter the features requested by user in the configuration file and elegantly handle NaNs
-        features_filtered, labels_filtered = self.dh.filter_features(
+        features_filtered, labels_filtered = dh.filter_features(
             unfiltered_dataframe,
-            self.dh.training_features_list,
+            dh.training_features_list,
             unfiltered_labels,
             training_filter=True,
         )
 
         # split data into train/test data.
-        data_dictionary = self.dh.make_train_test_datasets(features_filtered, labels_filtered)
+        data_dictionary = dh.make_train_test_datasets(features_filtered, labels_filtered)
         # standardize all data based on train_dataset only
-        data_dictionary = self.dh.standardize_data(data_dictionary)
+        data_dictionary = dh.standardize_data(data_dictionary)
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_train()
+        self.data_cleaning_train(dh)
 
-        logger.info(f'Training model on {len(self.dh.training_features_list)} features')
+        logger.info(f'Training model on {len(dh.training_features_list)} features')
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
@@ -107,8 +109,8 @@ class CatboostPredictionModel(IFreqaiModel):
 
         return model
 
-    def predict(self, unfiltered_dataframe: DataFrame, metadata: dict) -> Tuple[DataFrame,
-                                                                                DataFrame]:
+    def predict(self, unfiltered_dataframe: DataFrame,
+                dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
@@ -120,23 +122,22 @@ class CatboostPredictionModel(IFreqaiModel):
 
         # logger.info("--------------------Starting prediction--------------------")
 
-        original_feature_list = self.dh.find_features(unfiltered_dataframe)
-        filtered_dataframe, _ = self.dh.filter_features(
+        original_feature_list = dh.find_features(unfiltered_dataframe)
+        filtered_dataframe, _ = dh.filter_features(
             unfiltered_dataframe, original_feature_list, training_filter=False
         )
-        filtered_dataframe = self.dh.standardize_data_from_metadata(filtered_dataframe)
-        self.dh.data_dictionary["prediction_features"] = filtered_dataframe
+        filtered_dataframe = dh.standardize_data_from_metadata(filtered_dataframe)
+        dh.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(filtered_dataframe)
+        self.data_cleaning_predict(dh)
 
-        predictions = self.model.predict(self.dh.data_dictionary["prediction_features"])
+        predictions = self.model.predict(dh.data_dictionary["prediction_features"])
 
         # compute the non-standardized predictions
-        self.dh.predictions = (predictions + 1) * (self.dh.data["labels_max"] -
-                                                   self.dh.data["labels_min"]) / 2 + self.dh.data[
-                                                                                     "labels_min"]
+        dh.predictions = (predictions + 1) * (dh.data["labels_max"] -
+                                              dh.data["labels_min"]) / 2 + dh.data["labels_min"]
 
         # logger.info("--------------------Finished prediction--------------------")
 
-        return (self.dh.predictions, self.dh.do_predict)
+        return (dh.predictions, dh.do_predict)
