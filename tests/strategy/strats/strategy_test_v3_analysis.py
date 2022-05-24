@@ -1,12 +1,9 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
-from datetime import datetime
-
 import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.persistence import Trade
 from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
                                 RealParameter)
 
@@ -176,20 +173,3 @@ class StrategyTestV3Analysis(IStrategy):
             ['exit_long', 'exit_tag']] = 1, 'exit_tag_short'
 
         return dataframe
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, side: str,
-                 **kwargs) -> float:
-        # Return 3.0 in all cases.
-        # Bot-logic must make sure it's an allowed leverage and eventually adjust accordingly.
-
-        return 3.0
-
-    def adjust_trade_position(self, trade: Trade, current_time: datetime, current_rate: float,
-                              current_profit: float, min_stake: float, max_stake: float, **kwargs):
-
-        if current_profit < -0.0075:
-            orders = trade.select_filled_orders(trade.entry_side)
-            return round(orders[0].cost, 0)
-
-        return None
