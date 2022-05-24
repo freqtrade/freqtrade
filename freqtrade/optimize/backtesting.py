@@ -661,7 +661,7 @@ class Backtesting:
             return self._get_exit_trade_entry_for_candle(trade, row)
 
     def get_valid_price_and_stake(
-        self, pair: str, row: Tuple, propose_rate: float, stake_amount_inp: Optional[float],
+        self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
         direction: LongShort, current_time: datetime, entry_tag: Optional[str],
         trade: Optional[LocalTrade], order_type: str
     ) -> Tuple[float, float, float, float]:
@@ -699,8 +699,6 @@ class Backtesting:
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
-        elif stake_amount_inp is not None:
-            stake_amount = stake_amount_inp
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair, propose_rate, -0.05, leverage=leverage) or 0
@@ -737,8 +735,9 @@ class Backtesting:
         order_type = self.strategy.order_types['entry']
         pos_adjust = trade is not None and requested_rate is None
 
+        stake_amount_ = stake_amount or (trade.stake_amount if trade else 0.0)
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
-            pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
+            pair, row, row[OPEN_IDX], stake_amount_, direction, current_time, entry_tag, trade,
             order_type
         )
 
