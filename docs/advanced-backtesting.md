@@ -22,23 +22,19 @@ DataFrame of the candles that resulted in buy signals. Depending on how many buy
 makes, this file may get quite large, so periodically check your `user_data/backtest_results`
 folder to delete old exports.
 
-To analyze the buy tags, we need to use the `buy_reasons.py` script from
-[froggleston's repo](https://github.com/froggleston/freqtrade-buyreasons). Follow the instructions
-in their README to copy the script into your `freqtrade/scripts/` folder.
-
 Before running your next backtest, make sure you either delete your old backtest results or run
 backtesting with the `--cache none` option to make sure no cached results are used.
 
 If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` file in the
 `user_data/backtest_results` folder.
 
-Now run the `buy_reasons.py` script, supplying a few options:
+To analyze the entry/exit tags, we now need to use the `freqtrade analysis` command:
 
 ``` bash
-python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4
+freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4
 ```
 
-The `-g` option is used to specify the various tabular outputs, ranging from the simplest (0)
+The `--analysis_groups` option is used to specify the various tabular outputs, ranging from the simplest (0)
 to the most detailed per pair, per buy and per sell tag (4). More options are available by
 running with the `-h` option.
 
@@ -54,18 +50,18 @@ To show only certain buy and sell tags in the displayed output, use the followin
 For example:
 
 ```bash
-python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss"
+freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss"
 ```
 
 ### Outputting signal candle indicators
 
-The real power of the buy_reasons.py script comes from the ability to print out the indicator
+The real power of `freqtrade analysis` comes from the ability to print out the indicator
 values present on signal candles to allow fine-grained investigation and tuning of buy signal
 indicators. To print out a column for a given set of indicators, use the `--indicator-list`
 option:
 
 ```bash
-python3 scripts/buy_reasons.py -c <config.json> -s <strategy_name> -t <timerange> -g0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
+freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main

@@ -15,10 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 def _load_signal_candles(backtest_dir: Path):
-    scpf = Path(backtest_dir,
-                os.path.splitext(
-                    get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
-                )
+
+    if backtest_dir.is_dir():
+        scpf = Path(backtest_dir,
+                    os.path.splitext(
+                        get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
+                    )
+    else:
+        scpf = Path(os.path.splitext(
+                        get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
+                    )
+
+    print(scpf)
     try:
         scp = open(scpf, "rb")
         signal_candles = joblib.load(scp)
@@ -246,7 +254,6 @@ def process_entry_exit_reasons(backtest_dir: Path,
         signal_candles = _load_signal_candles(backtest_dir)
         analysed_trades_dict = _process_candles_and_indicators(pairlist, strategy_name,
                                                                trades, signal_candles)
-
         _print_results(analysed_trades_dict,
                        strategy_name,
                        analysis_groups,
