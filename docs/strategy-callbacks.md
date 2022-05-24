@@ -563,6 +563,14 @@ class AwesomeStrategy(IStrategy):
 
 `confirm_trade_exit()` can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
 
+`confirm_trade_exit()` may be called multiple times within one iteration for the same trade if different exit-reasons apply.
+The exit-reasons (if applicable) will be in the following sequence:
+
+* `exit_signal` / `custom_exit`
+* `stop_loss`
+* `roi`
+* `trailing_stop_loss`
+
 ``` python
 from freqtrade.persistence import Trade
 
@@ -604,6 +612,9 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
+
+!!! Warning
+    `confirm_trade_exit()` can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
 
 ## Adjust trade position
 

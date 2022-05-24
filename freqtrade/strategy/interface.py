@@ -878,16 +878,16 @@ class IStrategy(ABC, HyperStrategyMixin):
     def should_exit(self, trade: Trade, rate: float, current_time: datetime, *,
                     enter: bool, exit_: bool,
                     low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> ExitCheckTuple:
+                    force_stoploss: float = 0) -> List[ExitCheckTuple]:
         """
         This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
         :param low: Only used during backtesting to simulate (long)stoploss/(short)ROI
         :param high: Only used during backtesting, to simulate (short)stoploss/(long)ROI
         :param force_stoploss: Externally provided stoploss
-        :return: True if trade should be exited, False otherwise
+        :return: List of exit reasons - or empty list.
         """
-
+        exits: List[ExitCheckTuple] = []
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
@@ -938,24 +938,29 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
-                return ExitCheckTuple(exit_type=exit_signal, exit_reason=custom_reason)
+                exits.append(ExitCheckTuple(exit_type=exit_signal, exit_reason=custom_reason))
 
         # Sequence:
         # Exit-signal
-        # ROI (if not stoploss)
         # Stoploss
-        if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
-            return ExitCheckTuple(exit_type=ExitType.ROI)
+        # ROI
+        # Trailing stoploss
 
-        if stoplossflag.exit_flag:
+        if stoplossflag.exit_type == ExitType.STOP_LOSS:
 
             logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
-            return stoplossflag
+            exits.append(stoplossflag)
 
-        # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No exit signal.")
-        return ExitCheckTuple(exit_type=ExitType.NONE)
+        if roi_reached:
+            logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
+            exits.append(ExitCheckTuple(exit_type=ExitType.ROI))
+
+        if stoplossflag.exit_type == ExitType.TRAILING_STOP_LOSS:
+
+            logger.debug(f"{trade.pair} - Trailing stoploss hit.")
+            exits.append(stoplossflag)
+
+        return exits
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
