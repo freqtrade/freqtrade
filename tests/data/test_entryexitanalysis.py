@@ -69,7 +69,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         '--export', 'signals',
         '--cache', 'none',
         '--strategy-list',
-        'StrategyTestV3',
+        'StrategyTestV3Analysis',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -85,7 +85,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         '--datadir', str(testdatadir),
         '--analysis_groups', '0',
         '--strategy',
-        'StrategyTestV3',
+        'StrategyTestV3Analysis',
     ]
     args = get_args(args)
     start_analysis_entries_exits(args)

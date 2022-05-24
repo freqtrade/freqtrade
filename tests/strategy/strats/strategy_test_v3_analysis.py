@@ -11,7 +11,7 @@ from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter
                                 RealParameter)
 
 
-class StrategyTestV3(IStrategy):
+class StrategyTestV3Analysis(IStrategy):
     """
     Strategy used by tests freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
@@ -143,13 +143,13 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 65) &
                 (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
-            'enter_long'] = 1
+            ['enter_long', 'enter_tag']] = 1, 'enter_tag_long'
 
         dataframe.loc[
             (
                 qtpylib.crossed_below(dataframe['rsi'], self.sell_rsi.value)
             ),
-            'enter_short'] = 1
+            ['enter_short', 'enter_tag']] = 1, 'enter_tag_short'
 
         return dataframe
 
@@ -167,13 +167,13 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 70) &
                 (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
-            'exit_long'] = 1
+            ['exit_long', 'exit_tag']] = 1, 'exit_tag_long'
 
         dataframe.loc[
             (
                 qtpylib.crossed_above(dataframe['rsi'], self.buy_rsi.value)
             ),
-            'exit_short'] = 1
+            ['exit_long', 'exit_tag']] = 1, 'exit_tag_short'
 
         return dataframe
 
@@ -193,7 +193,3 @@ class StrategyTestV3(IStrategy):
             return round(orders[0].cost, 0)
 
         return None
-
-
-class StrategyTestV3Futures(StrategyTestV3):
-    can_short = True

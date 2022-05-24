@@ -1384,12 +1384,16 @@ def test_api_strategies(botclient):
     rc = client_get(client, f"{BASE_URI}/strategies")
 
     assert_response(rc)
+
+    print(rc.json())
+
     assert rc.json() == {'strategies': [
         'HyperoptableStrategy',
         'InformativeDecoratorTest',
         'StrategyTestV2',
         'StrategyTestV3',
-        'StrategyTestV3Futures',
+        'StrategyTestV3Analysis',
+        'StrategyTestV3Futures'
     ]}
 
 
