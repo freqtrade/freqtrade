@@ -51,7 +51,9 @@ class CatboostPredictionModel(IFreqaiModel):
         :returns:
         :model: Trained model which can be used to inference (self.predict)
         """
-        logger.info("--------------------Starting training--------------------")
+
+        logger.info('--------------------Starting training'
+                    f'{metadata["pair"]} --------------------')
 
         # create the full feature list based on user config info
         dh.training_features_list = dh.find_features(unfiltered_dataframe)

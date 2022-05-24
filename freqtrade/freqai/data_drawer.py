@@ -56,5 +56,18 @@ class FreqaiDataDrawer:
             model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
             coin_first = self.pair_dict[metadata['pair']]['first'] = True
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
+            self.pair_dict[metadata['pair']]['priority'] = 1
 
         return model_filename, trained_timestamp, coin_first
+
+    def set_pair_dict_info(self, metadata: dict) -> None:
+        pair_in_dict = self.pair_dict.get(metadata['pair'])
+        if pair_in_dict:
+            return
+        else:
+            self.pair_dict[metadata['pair']] = {}
+            self.pair_dict[metadata['pair']]['model_filename'] = ''
+            self.pair_dict[metadata['pair']]['first'] = True
+            self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
+            self.pair_dict[metadata['pair']]['priority'] = 1
+            return

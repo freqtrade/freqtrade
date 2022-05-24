@@ -109,7 +109,10 @@ class IFreqaiModel(ABC):
 
         # FreqaiDataKitchen is reinstantiated for each coin
         if self.live:
-            if not self.training_on_separate_thread:
+            self.data_drawer.set_pair_dict_info(metadata)
+            if (not self.training_on_separate_thread and
+                    self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
+
                 self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                             self.live, metadata["pair"])
                 dh = self.start_live(dataframe, metadata, strategy, self.dh)
@@ -212,6 +215,7 @@ class IFreqaiModel(ABC):
 
         else:
             logger.info("FreqAI training a new model on background thread.")
+            self.data_drawer.pair_dict[metadata['pair']]['priority'] = 1
 
         self.model = dh.load_data(coin=metadata['pair'])
 
@@ -319,6 +323,9 @@ class IFreqaiModel(ABC):
 
         dh.set_new_model_names(metadata, new_trained_timerange)
 
+        # set this coin to lower priority to allow other coins in white list to get trained
+        self.data_drawer.pair_dict[metadata['pair']]['priority'] = 0
+
         dh.save_data(self.model, coin=metadata['pair'])
 
         self.training_on_separate_thread = False
@@ -344,6 +351,7 @@ class IFreqaiModel(ABC):
         dh.set_new_model_names(metadata, new_trained_timerange)
 
         self.data_drawer.pair_dict[metadata['pair']]['first'] = False
+
         dh.save_data(self.model, coin=metadata['pair'])
         self.retrain = False
 
