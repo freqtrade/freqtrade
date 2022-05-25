@@ -110,7 +110,7 @@ by prepending indicators with `%`:
 
 ```python
     def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
-        informative['%-''%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
+        informative['%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
         informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
         informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)

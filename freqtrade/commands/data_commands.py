@@ -51,7 +51,6 @@ def start_download_data(args: Dict[str, Any]) -> None:
     markets = [p for p, m in exchange.markets.items() if market_is_active(m)
                or config.get('include_inactive')]
     if config.get('freqai') is not None:
-        assert config['freqai'].get('corr_pairlist'), "No corr_pairlist found in config."
         full_pairs = config['pairs'] + [pair for pair in config['freqai']['corr_pairlist']
                                         if pair not in config['pairs']]
         expanded_pairs = expand_pairlist(full_pairs, markets)
