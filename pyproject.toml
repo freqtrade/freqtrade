@@ -42,3 +42,11 @@ ignore_errors = true
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pyright]
+include = ["freqtrade"]
+exclude = [
+  "**/__pycache__",
+  "build_helpers/*.py",
+]
+ignore = ["freqtrade/vendor/**"]

@@ -868,8 +868,8 @@ class LocalTrade():
                 return o
         return None
 
-    def select_order(
-            self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:
+    def select_order(self, order_side: Optional[str] = None,
+                     is_open: Optional[bool] = None) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: ft_order_side of the order (either 'buy', 'sell' or 'stoploss')
