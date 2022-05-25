@@ -12,7 +12,7 @@ from tests.conftest import get_args, patch_exchange, patched_configuration_load_
 
 
 @pytest.fixture(autouse=True)
-def backtesting_cleanup() -> None:
+def entryexitanalysis_cleanup() -> None:
     yield None
 
     Backtesting.cleanup()
@@ -103,5 +103,3 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
     captured = capsys.readouterr()
     assert 'enter_tag_long' in captured.out
     assert '34.049' in captured.out
-
-    Backtesting.cleanup()
