@@ -123,7 +123,7 @@ class FreqtradeBot(LoggingMixin):
                     self._schedule.every().day.at(t).do(update)
         self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
-        self.strategy.bot_start()
+        self.strategy.ft_bot_start()
 
     def notify_status(self, msg: str) -> None:
         """

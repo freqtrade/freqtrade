@@ -144,6 +144,13 @@ class IStrategy(ABC, HyperStrategyMixin):
                     informative_data.candle_type = config['candle_type_def']
                 self._ft_informative.append((informative_data, cls_method))
 
+    def ft_bot_start(self, **kwargs) -> None:
+        """
+        Strategy init - runs after dataprovider has been added.
+        Must call bot_start()
+        """
+        strategy_safe_wrapper(self.bot_start)()
+
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
