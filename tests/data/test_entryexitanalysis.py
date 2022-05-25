@@ -2,11 +2,20 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
+import pytest
 
 from freqtrade.commands.analyze_commands import start_analysis_entries_exits
 from freqtrade.commands.optimize_commands import start_backtesting
 from freqtrade.enums import ExitType
+from freqtrade.optimize.backtesting import Backtesting
 from tests.conftest import get_args, patch_exchange, patched_configuration_load_config_file
+
+
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
 
 
 def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, capsys):
@@ -18,7 +27,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         'analysis_groups': "0",
         'enter_reason_list': "all",
         'exit_reason_list': "all",
-        'indicator_list': "bb_upperband,ema_10"
+        'indicator_list': "rsi"
     })
     patch_exchange(mocker)
     result1 = pd.DataFrame({'pair': ['ETH/BTC', 'LTC/BTC'],
@@ -84,6 +93,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--analysis_groups', '0',
+        '--indicator_list', 'rsi',
         '--strategy',
         'StrategyTestV3Analysis',
     ]
@@ -92,3 +102,6 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
 
     captured = capsys.readouterr()
     assert 'enter_tag_long' in captured.out
+    assert '34.049' in captured.out
+
+    Backtesting.cleanup()

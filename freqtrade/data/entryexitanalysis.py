@@ -26,7 +26,6 @@ def _load_signal_candles(backtest_dir: Path):
                         get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
                     )
 
-    print(scpf)
     try:
         scp = open(scpf, "rb")
         signal_candles = joblib.load(scp)
@@ -213,11 +212,9 @@ def _print_results(analysed_trades, stratname, group,
                     if ind in bigdf:
                         available_inds.append(ind)
                 ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
-                print(tabulate(bigdf[ilist].sort_values(['exit_reason']),
-                      headers='keys', tablefmt='psql', showindex=False))
+                _print_table(bigdf[ilist], sortcols=['exit_reason'], show_index=False)
         else:
-            print(tabulate(bigdf[columns].sort_values(['pair']),
-                  headers='keys', tablefmt='psql', showindex=False))
+            _print_table(bigdf[columns], sortcols=['pair'], show_index=False)
     else:
         print("\\_ No trades to show")
 
