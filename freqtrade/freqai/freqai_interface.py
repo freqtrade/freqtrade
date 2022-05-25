@@ -21,18 +21,6 @@ from freqtrade.strategy.interface import IStrategy
 pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 
-# FIXME: suppress stdout for background training?
-# class DummyFile(object):
-#     def write(self, x): pass
-
-
-# @contextlib.contextmanager
-# def nostdout():
-#     save_stdout = sys.stdout
-#     sys.stdout = DummyFile()
-#     yield
-#     sys.stdout = save_stdout
-
 
 def threaded(fn):
     def wrapper(*args, **kwargs):
@@ -57,8 +45,6 @@ class IFreqaiModel(ABC):
         self.data_split_parameters = config["freqai"]["data_split_parameters"]
         self.model_training_parameters = config["freqai"]["model_training_parameters"]
         self.feature_parameters = config["freqai"]["feature_parameters"]
-        # self.backtest_timerange = config["timerange"]
-
         self.time_last_trained = None
         self.current_time = None
         self.model = None
@@ -66,12 +52,6 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
-        # if self.freqai_info.get('live_trained_timerange'):
-        #     self.new_trained_timerange = TimeRange.parse_timerange(
-        #                                            self.freqai_info['live_trained_timerange'])
-        # else:
-        #     self.new_trained_timerange = TimeRange()
-
         self.set_full_path()
         self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
                                             self.config['exchange']['pair_whitelist'])
@@ -93,12 +73,7 @@ class IFreqaiModel(ABC):
         """
         Entry point to the FreqaiModel from a specific pair, it will train a new model if
         necessary before making the prediction.
-        The backtesting and training paradigm is a sliding training window
-        with a following backtest window. Both windows slide according to the
-        length of the backtest window. This function is not intended to be
-        overridden by children of IFreqaiModel, but technically, it can be
-        if the user wishes to make deeper changes to the sliding window
-        logic.
+
         :params:
         :dataframe: Full dataframe coming from strategy - it contains entire
         backtesting timerange + additional historical data necessary to train
@@ -108,10 +83,12 @@ class IFreqaiModel(ABC):
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
 
-        # FreqaiDataKitchen is reinstantiated for each coin
+        # For live, we may be training new models on a separate thread while other pairs still need
+        # to inference their historical models. Here we use a training queue system to handle this
+        # and we keep the flag self.training_on_separate_threaad in the current object to help
+        # determine what the current pair will do
         if self.live:
             self.data_drawer.set_pair_dict_info(metadata)
-            print('Current train queue:', self.data_drawer.training_queue)
             if (not self.training_on_separate_thread and
                     self.data_drawer.training_queue == 1):
 
@@ -124,13 +101,38 @@ class IFreqaiModel(ABC):
                                                self.live, metadata["pair"])
                 dh = self.start_live(dataframe, metadata, strategy, self.dh_fg)
 
-            return (dh.full_predictions, dh.full_do_predict,
-                    dh.full_target_mean, dh.full_target_std)
+            # return (dh.full_predictions, dh.full_do_predict,
+            #         dh.full_target_mean, dh.full_target_std)
 
-        # Backtesting only
-        self.dh = FreqaiDataKitchen(self.config, self.data_drawer, self.live, metadata["pair"])
+        # For backtesting, each pair enters and then gets trained for each window along the
+        # sliding window defined by "train_period" (training window) and "backtest_period"
+        # (backtest window, i.e. window immediately following the training window).
+        # FreqAI slides the window and sequentially builds the backtesting results before returning
+        # the concatenated results for the full backtesting period back to the strategy.
+        else:
+            self.dh = FreqaiDataKitchen(self.config, self.data_drawer, self.live, metadata["pair"])
+            logger.info(f'Training {len(self.dh.training_timeranges)} timeranges')
+            dh = self.start_backtesting(dataframe, metadata, self.dh)
 
-        logger.info(f'Training {len(self.dh.training_timeranges)} timeranges')
+        return (dh.full_predictions, dh.full_do_predict,
+                dh.full_target_mean, dh.full_target_std)
+
+    def start_backtesting(self, dataframe: DataFrame, metadata: dict,
+                          dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
+        """
+        The main broad execution for backtesting. For backtesting, each pair enters and then gets
+        trained for each window along the sliding window defined by "train_period" (training window)
+        and "backtest_period" (backtest window, i.e. window immediately following the
+        training window). FreqAI slides the window and sequentially builds the backtesting results
+        before returning the concatenated results for the full backtesting period back to the
+        strategy.
+        :params:
+        dataframe: DataFrame = strategy passed dataframe
+        metadata: Dict = pair metadata
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :returns:
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        """
 
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
@@ -138,49 +140,54 @@ class IFreqaiModel(ABC):
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(
-            self.dh.training_timeranges, self.dh.backtesting_timeranges
+            dh.training_timeranges, dh.backtesting_timeranges
         ):
             gc.collect()
-            # self.config['timerange'] = tr_train
-            self.dh.data = {}  # clean the pair specific data between models
+            dh.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
-            dataframe_train = self.dh.slice_dataframe(tr_train, dataframe)
-            dataframe_backtest = self.dh.slice_dataframe(tr_backtest, dataframe)
+            dataframe_train = dh.slice_dataframe(tr_train, dataframe)
+            dataframe_backtest = dh.slice_dataframe(tr_backtest, dataframe)
             logger.info("training %s for %s", metadata["pair"], tr_train)
             trained_timestamp = TimeRange.parse_timerange(tr_train)
-            self.dh.data_path = Path(self.dh.full_path /
-                                     str("sub-train" + "-" + metadata['pair'].split("/")[0] +
-                                         str(int(trained_timestamp.stopts))))
-            if not self.model_exists(metadata["pair"], self.dh,
+            dh.data_path = Path(dh.full_path /
+                                str("sub-train" + "-" + metadata['pair'].split("/")[0] +
+                                    str(int(trained_timestamp.stopts))))
+            if not self.model_exists(metadata["pair"], dh,
                                      trained_timestamp=trained_timestamp.stopts):
-                self.model = self.train(dataframe_train, metadata, self.dh)
-                self.dh.save_data(self.model)
+                self.model = self.train(dataframe_train, metadata, dh)
+                dh.save_data(self.model)
             else:
-                self.model = self.dh.load_data()
+                self.model = dh.load_data()
+
                 # strategy_provided_features = self.dh.find_features(dataframe_train)
-                # # TOFIX doesnt work with PCA
+                # # FIXME doesnt work with PCA
                 # if strategy_provided_features != self.dh.training_features_list:
                 #     logger.info("User changed input features, retraining model.")
                 #     self.model = self.train(dataframe_train, metadata)
                 #     self.dh.save_data(self.model)
 
-            preds, do_preds = self.predict(dataframe_backtest, self.dh)
+            preds, do_preds = self.predict(dataframe_backtest, dh)
 
-            self.dh.append_predictions(preds, do_preds, len(dataframe_backtest))
-            print('predictions', len(self.dh.full_predictions),
-                  'do_predict', len(self.dh.full_do_predict))
+            dh.append_predictions(preds, do_preds, len(dataframe_backtest))
+            print('predictions', len(dh.full_predictions),
+                  'do_predict', len(dh.full_do_predict))
 
-        self.dh.fill_predictions(len(dataframe))
+        dh.fill_predictions(len(dataframe))
 
-        return (self.dh.full_predictions, self.dh.full_do_predict,
-                self.dh.full_target_mean, self.dh.full_target_std)
+        return dh
 
     def start_live(self, dataframe: DataFrame, metadata: dict,
                    strategy: IStrategy, dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
         """
         The main broad execution for dry/live. This function will check if a retraining should be
         performed, and if so, retrain and reset the model.
-
+        :params:
+        dataframe: DataFrame = strategy passed dataframe
+        metadata: Dict = pair metadata
+        strategy: IStrategy = currently employed strategy
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :returns:
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
         (model_filename,
@@ -190,22 +197,16 @@ class IFreqaiModel(ABC):
         if not self.training_on_separate_thread:
             file_exists = False
 
-            if trained_timestamp != 0:
+            if trained_timestamp != 0:  # historical model available
                 dh.set_paths(metadata, trained_timestamp)
-                # data_drawer thinks the file eixts, verify here
                 file_exists = self.model_exists(metadata['pair'],
                                                 dh,
                                                 trained_timestamp=trained_timestamp,
                                                 model_filename=model_filename)
 
-            # if not self.training_on_separate_thread:
-            # this will also prevent other pairs from trying to train simultaneously.
             (self.retrain,
              new_trained_timerange) = dh.check_if_new_training_required(trained_timestamp)
             dh.set_paths(metadata, new_trained_timerange.stopts)
-            # if self.training_on_separate_thread:
-            #     logger.info("FreqAI training a new model on background thread.")
-            #     self.retrain = False
 
             if self.retrain or not file_exists:
                 if coin_first:
@@ -217,10 +218,10 @@ class IFreqaiModel(ABC):
 
         else:
             logger.info("FreqAI training a new model on background thread.")
-            self.data_drawer.pair_dict[metadata['pair']]['priority'] = 1
 
         self.model = dh.load_data(coin=metadata['pair'])
 
+        # FIXME
         # strategy_provided_features = dh.find_features(dataframe)
         # if strategy_provided_features != dh.training_features_list:
         #     self.train_model_in_series(new_trained_timerange, metadata, strategy)
@@ -240,16 +241,16 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
             dh.principal_component_analysis()
 
-        # if self.feature_parameters["determine_statistical_distributions"]:
-        #     dh.determine_statistical_distributions()
-        # if self.feature_parameters["remove_outliers"]:
-        #     dh.remove_outliers(predict=False)
-
         if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
             dh.use_SVM_to_remove_outliers(predict=False)
 
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
             dh.data["avg_mean_dist"] = dh.compute_distances()
+
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     dh.remove_outliers(predict=False)
 
     def data_cleaning_predict(self, dh: FreqaiDataKitchen) -> None:
         """
@@ -265,16 +266,16 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
             dh.pca_transform()
 
-        # if self.feature_parameters["determine_statistical_distributions"]:
-        #     dh.determine_statistical_distributions()
-        # if self.feature_parameters["remove_outliers"]:
-        #     dh.remove_outliers(predict=True)  # creates dropped index
-
         if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
             dh.use_SVM_to_remove_outliers(predict=True)
 
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold'):
-            dh.check_if_pred_in_training_spaces()  # sets do_predict
+            dh.check_if_pred_in_training_spaces()
+
+        # if self.feature_parameters["determine_statistical_distributions"]:
+        #     dh.determine_statistical_distributions()
+        # if self.feature_parameters["remove_outliers"]:
+        #     dh.remove_outliers(predict=True)  # creates dropped index
 
     def model_exists(self, pair: str, dh: FreqaiDataKitchen, trained_timestamp: int = None,
                      model_filename: str = '') -> bool:
@@ -285,8 +286,6 @@ class IFreqaiModel(ABC):
         """
         coin, _ = pair.split("/")
 
-        # if self.live and trained_timestamp == 0:
-        #     dh.model_filename = model_filename
         if not self.live:
             dh.model_filename = model_filename = "cb_" + coin.lower() + "_" + str(trained_timestamp)
 
@@ -312,7 +311,6 @@ class IFreqaiModel(ABC):
         dh.download_new_data_for_retraining(new_trained_timerange, metadata)
         corr_dataframes, base_dataframes = dh.load_pairs_histories(new_trained_timerange,
                                                                    metadata)
-
         unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
                                                                       corr_dataframes,
                                                                       base_dataframes,
@@ -322,13 +320,8 @@ class IFreqaiModel(ABC):
 
         self.data_drawer.pair_dict[metadata['pair']][
                                    'trained_timestamp'] = new_trained_timerange.stopts
-
         dh.set_new_model_names(metadata, new_trained_timerange)
-
-        # send the pair to the end of the queue so other coins can take on the background thread
-        # retraining
         self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
-
         dh.save_data(self.model, coin=metadata['pair'])
 
         self.training_on_separate_thread = False
@@ -350,11 +343,8 @@ class IFreqaiModel(ABC):
 
         self.data_drawer.pair_dict[metadata['pair']][
                                    'trained_timestamp'] = new_trained_timerange.stopts
-
         dh.set_new_model_names(metadata, new_trained_timerange)
-
         self.data_drawer.pair_dict[metadata['pair']]['first'] = False
-
         dh.save_data(self.model, coin=metadata['pair'])
         self.retrain = False
 
@@ -380,7 +370,7 @@ class IFreqaiModel(ABC):
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
         management will be properly handled by Freqai.
         :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
+        data_dictionary: Dict = the dictionary constructed by DataHandler to hold
         all the training and test data/labels.
         """
 
@@ -391,11 +381,13 @@ class IFreqaiModel(ABC):
                 dh: FreqaiDataKitchen) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
-        :param: unfiltered_dataframe: Full dataframe for the current backtest period.
+        :param:
+        unfiltered_dataframe: Full dataframe for the current backtest period.
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         :return:
         :predictions: np.array of predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
-        data (NaNs) or felt uncertain about data (PCA and DI index)
+        data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
 
     @abstractmethod
@@ -403,7 +395,8 @@ class IFreqaiModel(ABC):
         """
         User defines the labels here (target values).
         :params:
-        :dataframe: the full dataframe for the present training period
+        dataframe: DataFrame = the full dataframe for the present training period
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
         return
