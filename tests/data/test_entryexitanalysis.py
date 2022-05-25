@@ -102,4 +102,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
 
     captured = capsys.readouterr()
     assert 'enter_tag_long' in captured.out
+    assert 'ETH/BTC' in captured.out
     assert '34.049' in captured.out
+    assert 'LTC/BTC' in captured.out
+    assert '54.3204' in captured.out
