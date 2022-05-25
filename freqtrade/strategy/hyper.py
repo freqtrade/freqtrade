@@ -69,7 +69,7 @@ class HyperStrategyMixin:
     @classmethod
     def detect_all_parameters(cls) -> Dict:
         """ Detect all parameters and return them as a list"""
-        params: Dict = {
+        params: Dict[str, Any] = {
             'buy': list(cls.detect_parameters('buy')),
             'sell': list(cls.detect_parameters('sell')),
             'protection': list(cls.detect_parameters('protection')),
@@ -148,7 +148,7 @@ class HyperStrategyMixin:
         """
         Returns list of Parameters that are not part of the current optimize job
         """
-        params = {
+        params: Dict[str, Dict] = {
             'buy': {},
             'sell': {},
             'protection': {},

@@ -97,6 +97,8 @@ class NumericParameter(BaseParameter):
 class IntParameter(NumericParameter):
     default: int
     value: int
+    low: int
+    high: int
 
     def __init__(self, low: Union[int, Sequence[int]], high: Optional[int] = None, *, default: int,
                  space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):

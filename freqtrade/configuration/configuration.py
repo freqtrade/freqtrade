@@ -490,7 +490,8 @@ class Configuration:
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
             config['pairs'] = load_file(pairs_file)
-            config['pairs'].sort()
+            if isinstance(config['pairs'], list):
+                config['pairs'].sort()
             return
 
         if 'config' in self.args and self.args['config']:
@@ -501,5 +502,5 @@ class Configuration:
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
                 config['pairs'] = load_file(pairs_file)
-                if 'pairs' in config:
+                if 'pairs' in config and isinstance(config['pairs'], list):
                     config['pairs'].sort()
