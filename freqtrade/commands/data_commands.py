@@ -50,7 +50,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
     markets = [p for p, m in exchange.markets.items() if market_is_active(m)
                or config.get('include_inactive')]
-    if config.get('freqai') is not None:
+    if config.get('freqai', {}):
         full_pairs = config['pairs'] + [pair for pair in config['freqai']['corr_pairlist']
                                         if pair not in config['pairs']]
         expanded_pairs = expand_pairlist(full_pairs, markets)
