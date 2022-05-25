@@ -74,8 +74,7 @@ class FreqaiDataKitchen:
     def set_paths(self, metadata: dict, trained_timestamp: int = None,) -> None:
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
-                              str(self.freqai_config.get('live_full_backtestrange') +
-                                  self.freqai_config.get('identifier')))
+                              str(self.freqai_config.get('identifier')))
 
         self.data_path = Path(self.full_path / str("sub-train" + "-" +
                                                    metadata['pair'].split("/")[0] +
@@ -114,11 +113,11 @@ class FreqaiDataKitchen:
             save_path / str(self.model_filename + "_trained_df.pkl")
         )
 
-        if self.live:
-            self.data_drawer.model_dictionary[self.model_filename] = model
-            self.data_drawer.pair_dict[coin]['model_filename'] = self.model_filename
-            self.data_drawer.pair_dict[coin]['data_path'] = str(self.data_path)
-            self.data_drawer.save_drawer_to_disk()
+        # if self.live:
+        self.data_drawer.model_dictionary[self.model_filename] = model
+        self.data_drawer.pair_dict[coin]['model_filename'] = self.model_filename
+        self.data_drawer.pair_dict[coin]['data_path'] = str(self.data_path)
+        self.data_drawer.save_drawer_to_disk()
 
         # TODO add a helper function to let user save/load any data they are custom adding. We
         # do not want them having to edit the default save/load methods here. Below is an example
@@ -142,9 +141,9 @@ class FreqaiDataKitchen:
         :model: User trained model which can be inferenced for new predictions
         """
 
-        if self.live:
-            self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
-            self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
+        # if self.live:
+        self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
+        self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
 
         with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
@@ -696,7 +695,7 @@ class FreqaiDataKitchen:
         self.full_path = Path(
             self.config["user_data_dir"]
             / "models"
-            / str(full_timerange + self.freqai_config.get("identifier"))
+            / str(self.freqai_config.get("identifier"))
         )
 
         config_path = Path(self.config["config_files"][0])
@@ -750,10 +749,10 @@ class FreqaiDataKitchen:
                               str(int(trained_timerange.stopts))))
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
-        # this is not persistent at the moment TODO
-        self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
+
+        # self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
         # enables persistence, but not fully implemented into save/load data yer
-        self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
+        # self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
     def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
 

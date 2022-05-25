@@ -55,10 +55,9 @@
             "15m"
         ],
         "train_period": 30,
-        "backtest_period": 7,
+        "backtest_period": 10,
         "identifier": "example",
-        "live_trained_timerange": "",
-        "live_full_backtestrange": "",
+        "live_trained_timestamp": 0,
         "corr_pairlist": [
             "BTC/USDT",
             "ETH/USDT",

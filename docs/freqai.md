@@ -158,7 +158,7 @@ a specific pair or timeframe, they should use the following structure inside `po
         if pair == metadata['pair'] and tf == self.timeframe:
             df['%-day_of_week'] = (df["date"].dt.dayofweek + 1) / 7
             df['%-hour_of_day'] = (df['date'].dt.hour + 1) / 25
-
+```
 
 (Please see the example script located in `freqtrade/templates/FreqaiExampleStrategy.py` for a full example of `populate_any_indicators()`)
 
@@ -270,27 +270,22 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 By default, Freqai will not find find any existing models and will start by training a new one 
 given the user configuration settings. Following training, it will use that model to predict for the
 duration of `backtest_period`. After a full `backtest_period` has elapsed, Freqai will auto retrain 
-a new model, and begin making predictions with the updated model.
+a new model, and begin making predictions with the updated model. FreqAI in live mode permits
+the user to use fractional days (i.e. 0.1) in the `backtest_period`, which enables more frequent 
+retraining. 
 
-If the user wishes to start dry/live from a saved model, the following configuration 
-parameters need to be set:
+If the user wishes to start dry/live from a backtested saved model, the user only needs to reuse
+the same `identifier` parameter
 
 ```json
     "freqai": {
         "identifier": "example",
-        "live_trained_timerange": "20220330-20220429",
-        "live_full_backtestrange": "20220302-20220501"
     }
 ```
 
-Where the `identifier` is the same identifier which was set during the backtesting/training. Meanwhile,
-the `live_trained_timerange` is the sub-trained timerange (the training window) which was set 
-during backtesting/training. These are available to the user inside `user_data/models/*/sub-train-*`. 
-`live_full_backtestrange` was the full data range associated with the backtest/training (the full time 
-window that the training window and backtesting windows slide through). These values can be located 
-inside the `user_data/models/` directory. In this case, although Freqai will initiate with a 
-pre-trained model, if a full `backtest_period` has elapsed since the end of the user set 
-`live_trained_timerange`, it will self retrain.
+In this case, although Freqai will initiate with a 
+pre-trained model, it will still check to see how much time has elapsed since the model was trained,
+and if a full `backtest_period` has elapsed since the end of the loaded model, FreqAI will self retrain.
 
 ## Data anylsis techniques
 

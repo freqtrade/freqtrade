@@ -77,13 +77,13 @@ class IFreqaiModel(ABC):
         """
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
+        self.data_drawer.set_pair_dict_info(metadata)
 
         # For live, we may be training new models on a separate thread while other pairs still need
         # to inference their historical models. Here we use a training queue system to handle this
         # and we keep the flag self.training_on_separate_threaad in the current object to help
         # determine what the current pair will do
         if self.live:
-            self.data_drawer.set_pair_dict_info(metadata)
             if (not self.training_on_separate_thread and
                     self.data_drawer.training_queue == 1):
 
@@ -137,6 +137,7 @@ class IFreqaiModel(ABC):
         for tr_train, tr_backtest in zip(
             dh.training_timeranges, dh.backtesting_timeranges
         ):
+            (_, _, _) = self.data_drawer.get_pair_dict_info(metadata)
             gc.collect()
             dh.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
@@ -150,9 +151,12 @@ class IFreqaiModel(ABC):
             if not self.model_exists(metadata["pair"], dh,
                                      trained_timestamp=trained_timestamp.stopts):
                 self.model = self.train(dataframe_train, metadata, dh)
-                dh.save_data(self.model)
+                self.data_drawer.pair_dict[metadata['pair']][
+                                        'trained_timestamp'] = trained_timestamp.stopts
+                dh.set_new_model_names(metadata, trained_timestamp)
+                dh.save_data(self.model, metadata['pair'])
             else:
-                self.model = dh.load_data()
+                self.model = dh.load_data(metadata['pair'])
 
                 # strategy_provided_features = self.dh.find_features(dataframe_train)
                 # # FIXME doesnt work with PCA
@@ -295,8 +299,7 @@ class IFreqaiModel(ABC):
     def set_full_path(self) -> None:
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
-                              str(self.freqai_info.get('live_full_backtestrange') +
-                                  self.freqai_info.get('identifier')))
+                              str(self.freqai_info.get('identifier')))
 
     @threaded
     def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, metadata: dict,
