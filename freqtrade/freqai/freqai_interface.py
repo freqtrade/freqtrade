@@ -13,6 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.enums import RunMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
@@ -57,18 +58,11 @@ class IFreqaiModel(ABC):
                                             self.config['exchange']['pair_whitelist'])
 
     def assert_config(self, config: Dict[str, Any]) -> None:
-        if not config.get('freqai'):
-            logger.error('No Freqai parameters found in config file.')
-        # assert config.get('freqai'), "No Freqai parameters found in config file."
-        # assert config.get('freqai', {}).get('data_split_parameters'), ("No Freqai"
-        #                                                                "data_split_parameters"
-        #                                                                "in config file.")
-        # assert config.get('freqai', {}).get('model_training_parameters'), ("No Freqai"
-        #                                                                 "modeltrainingparameters"
-        #                                                                  "found in config file.")
-        # assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai"
-        #                                                             "feature_parameters found in"
-        #                                                             "config file.")
+
+        if not config.get('freqai', {}):
+            raise OperationalException(
+                "No freqai parameters found in configuration file."
+            )
 
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """

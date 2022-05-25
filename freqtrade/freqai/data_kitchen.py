@@ -44,7 +44,6 @@ class FreqaiDataKitchen:
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
-        self.assert_config(self.config, live)
         self.freqai_config = config["freqai"]
         self.predictions: npt.ArrayLike = np.array([])
         self.do_predict: npt.ArrayLike = np.array([])
@@ -71,28 +70,6 @@ class FreqaiDataKitchen:
             )
 
         self.data_drawer = data_drawer
-
-    def assert_config(self, config: Dict[str, Any], live: bool) -> None:
-        if not config.get('freqai'):
-            logger.error('No Freqai parameters found in config file.')
-
-        # assert config.get('freqai'), "No Freqai parameters found in config file."
-        # assert config.get('freqai', {}).get('train_period'), ("No Freqai train_period found in"
-        #                                                       "config file.")
-        # assert type(config.get('freqai', {})
-        #             .get('train_period')) is int, ('Can only train on full day period.'
-        #                                            'No fractional days permitted.')
-        # assert config.get('freqai', {}).get('backtest_period'), ("No Freqai backtest_period found"
-        #                                                          "in config file.")
-        # if not live:
-        #     assert type(config.get('freqai', {})
-        #                 .get('backtest_period')) is int, ('Can only backtest on full day'
-        #                                                   'backtest_period. Only live/dry mode'
-        #                                                   'allows fractions of days')
-        # assert config.get('freqai', {}).get('identifier'), ("No Freqai identifier found in config"
-        #                                                     "file.")
-        # assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai feature_parameters"
-        #                                                             "found in config file.")
 
     def set_paths(self, metadata: dict, trained_timestamp: int = None,) -> None:
         self.full_path = Path(self.config['user_data_dir'] /

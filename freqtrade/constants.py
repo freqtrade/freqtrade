@@ -515,6 +515,17 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dataformat_trades',
 ]
 
+SCHEMA_FREQAI_REQUIRED = [
+    'timeframes',
+    'train_period',
+    'backtest_period',
+    'identifier',
+    'corr_pairlist',
+    'feature_parameters',
+    'data_split_parameters',
+    'model_training_parameters'
+]
+
 CANCEL_REASON = {
     "TIMEOUT": "cancelled due to timeout",
     "PARTIALLY_FILLED_KEEP_OPEN": "partially filled - keeping order open",

@@ -85,6 +85,7 @@ def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False)
     _validate_unlimited_amount(conf)
     _validate_ask_orderbook(conf)
     validate_migrated_strategy_settings(conf)
+    _validate_freqai(conf)
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
@@ -161,6 +162,21 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
         raise OperationalException(
             "Edge requires `use_exit_signal` to be True, otherwise no sells will happen."
         )
+
+
+def _validate_freqai(conf: Dict[str, Any]) -> None:
+    """
+    Freqai param validator
+    """
+
+    if not conf.get('freqai', {}):
+        return
+
+    for param in constants.SCHEMA_FREQAI_REQUIRED:
+        if param not in conf.get('freqai', {}):
+            raise OperationalException(
+                f'{param} not found in Freqai config'
+            )
 
 
 def _validate_whitelist(conf: Dict[str, Any]) -> None:
