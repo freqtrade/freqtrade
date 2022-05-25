@@ -57,17 +57,18 @@ class IFreqaiModel(ABC):
                                             self.config['exchange']['pair_whitelist'])
 
     def assert_config(self, config: Dict[str, Any]) -> None:
-
-        assert config.get('freqai'), "No Freqai parameters found in config file."
-        assert config.get('freqai', {}).get('data_split_parameters'), ("No Freqai"
-                                                                       "data_split_parameters"
-                                                                       "in config file.")
-        assert config.get('freqai', {}).get('model_training_parameters'), ("No Freqai"
-                                                                           "modeltrainingparameters"
-                                                                           "found in config file.")
-        assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai"
-                                                                    "feature_parameters found in"
-                                                                    "config file.")
+        if not config.get('freqai'):
+            logger.error('No Freqai parameters found in config file.')
+        # assert config.get('freqai'), "No Freqai parameters found in config file."
+        # assert config.get('freqai', {}).get('data_split_parameters'), ("No Freqai"
+        #                                                                "data_split_parameters"
+        #                                                                "in config file.")
+        # assert config.get('freqai', {}).get('model_training_parameters'), ("No Freqai"
+        #                                                                 "modeltrainingparameters"
+        #                                                                  "found in config file.")
+        # assert config.get('freqai', {}).get('feature_parameters'), ("No Freqai"
+        #                                                             "feature_parameters found in"
+        #                                                             "config file.")
 
     def start(self, dataframe: DataFrame, metadata: dict, strategy: IStrategy) -> DataFrame:
         """

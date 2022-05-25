@@ -62,7 +62,6 @@
         "corr_pairlist": [
             "BTC/USDT",
             "ETH/USDT",
-            "LINK/USDT",
             "DOT/USDT"
         ],
         "feature_parameters": {
