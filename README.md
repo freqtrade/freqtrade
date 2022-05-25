@@ -35,7 +35,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
-### Experimentally, freqtrade also supports futures on the following exchanges
+### Supported Futures Exchanges (experimental)
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
