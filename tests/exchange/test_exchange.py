@@ -2155,6 +2155,8 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 
 @pytest.mark.asyncio
 async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
+    from freqtrade.exchange.common import _reset_logging_mixin
+    _reset_logging_mixin()
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.DDoSProtection(

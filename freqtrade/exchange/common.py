@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 __logging_mixin = None
 
 
+def _reset_logging_mixin():
+    """
+    Reset global logging mixin - used in tests only.
+    """
+    global __logging_mixin
+    __logging_mixin = LoggingMixin(logger)
+
+
 def _get_logging_mixin():
     # Logging-mixin to cache kucoin responses
     # Only to be used in retrier
