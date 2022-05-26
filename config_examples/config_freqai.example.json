@@ -1,7 +1,7 @@
 {
     "max_open_trades": 1,
     "stake_currency": "USDT",
-    "stake_amount": 800,
+    "stake_amount": 900,
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
@@ -24,8 +24,7 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "BTC/USDT",
-            "ETH/USDT"
+            "BTC/USDT"
         ],
         "pair_blacklist": []
     },
@@ -55,7 +54,7 @@
             "15m"
         ],
         "train_period": 30,
-        "backtest_period": 10,
+        "backtest_period": 7,
         "identifier": "example",
         "live_trained_timestamp": 0,
         "corr_pairlist": [
@@ -64,16 +63,16 @@
             "DOT/USDT"
         ],
         "feature_parameters": {
-            "period": 12,
+            "period": 24,
             "shift": 1,
-            "DI_threshold": 1,
-            "weight_factor": 0,
+            "DI_threshold": 0,
+            "weight_factor": 0.9,
             "principal_component_analysis": false,
-            "use_SVM_to_remove_outliers": false,
-            "stratify": 0
+            "use_SVM_to_remove_outliers": true,
+            "stratify": 3
         },
         "data_split_parameters": {
-            "test_size": 0.25,
+            "test_size": 0.33,
             "random_state": 1
         },
         "model_training_parameters": {

@@ -221,33 +221,43 @@ This way, the user can return to using any model they wish by simply changing th
 
 ### Building a freqai strategy
 
-The Freqai strategy requires the user to include the following lines of code in `populate_ any _indicators()`
+The Freqai strategy requires the user to include the following lines of code in the strategy:
 
 ```python
-        from freqtrade.freqai.strategy_bridge import CustomModel
+    from freqtrade.freqai.strategy_bridge import CustomModel
 
-        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-                # the configuration file parameters are stored here
-                self.freqai_info = self.config['freqai']
+    def informative_pairs(self):
+        whitelist_pairs = self.dp.current_whitelist()
+        corr_pairs = self.config["freqai"]["corr_pairlist"]
+        informative_pairs = []
+        for tf in self.config["freqai"]["timeframes"]:
+            for pair in whitelist_pairs:
+                informative_pairs.append((pair, tf))
+            for pair in corr_pairs:
+                if pair in whitelist_pairs:
+                    continue  # avoid duplication
+                informative_pairs.append((pair, tf))
+        return informative_pairs
 
-                # the model is instantiated here
-                self.model = CustomModel(self.config)
+    def bot_start(self):
+        self.model = CustomModel(self.config)
 
-                print('Populating indicators...')
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            self.freqai_info = self.config['freqai']
 
-                # the following loops are necessary for building the features 
-                # indicated by the user in the configuration file.
-                for tf in self.freqai_info['timeframes']:
-                        for i in self.freqai_info['corr_pairlist']:
-                        dataframe = self.populate_any_indicators(i,
-                                        dataframe.copy(), tf, coin=i.split("/")[0]+'-')
+            # the following loops are necessary for building the features 
+            # indicated by the user in the configuration file.
+            for tf in self.freqai_info['timeframes']:
+                    for i in self.freqai_info['corr_pairlist']:
+                    dataframe = self.populate_any_indicators(i,
+                                    dataframe.copy(), tf, coin=i.split("/")[0]+'-')
 
-                # the model will return 4 values, its prediction, an indication of whether or not the prediction 
-                # should be accepted, the target mean/std values from the labels used during each training period.
-                (dataframe['prediction'], dataframe['do_predict'], 
-                        dataframe['target_mean'], dataframe['target_std']) = self.model.bridge.start(dataframe, metadata)
+            # the model will return 4 values, its prediction, an indication of whether or not the prediction 
+            # should be accepted, the target mean/std values from the labels used during each training period.
+            (dataframe['prediction'], dataframe['do_predict'], 
+                    dataframe['target_mean'], dataframe['target_std']) = self.model.bridge.start(dataframe, metadata)
 
-                return dataframe
+            return dataframe
 ```
 
 The user should also include `populate_any_indicators()` from `templates/FreqaiExampleStrategy.py` which builds 
@@ -314,7 +324,7 @@ data point and all other training data points:
 
 $$ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} $$
 
-where $d_{ab}$ is the distance between the standardized points $a$ and $b$. $p$
+where $d_{ab}$ is the distance between the normalized points $a$ and $b$. $p$
 is the number of features i.e. the length of the vector $X$. The
 characteristic distance, $\overline{d}$ for a set of training data points is simply the mean
 of the average distances:
@@ -392,13 +402,63 @@ The user can stratify the training/testing data using:
 
 which will split the data chronolocially so that every X data points is a testing data point. In the
 present example, the user is asking for every third data point in the dataframe to be used for 
-testing, the other points are used for training.
+testing, the other points are used for training. 
+
+<!-- ## Dynamic target expectation
+
+The labels used for model training have a unique statistical distribution for each separate model training. 
+We can use this information to know if our current prediction is in the realm of what the model was trained on, 
+and if so, what is the statistical probability of the current prediction. With this information, we can
+make more informed prediction._
+FreqAI builds this label distribution and provides a quantile to the strategy, which can be optionally used as a
+dynamic threshold. The `target_quantile: X` means that X% of the labels are below this value. So setting:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+            "target_quantile": 0.9
+        }
+    }
+```
+
+Means the user will get back in the strategy the label threshold at which 90% of the labels were 
+below this value. An example usage in the strategy may look something like:
+
+```python
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        # ... #
+
+        (
+            dataframe["prediction"],
+            dataframe["do_predict"],
+            dataframe["target_upper_quantile"],
+            dataframe["target_lower_quantile"],
+        ) = self.model.bridge.start(dataframe, metadata, self)
+
+        return dataframe
+
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        buy_conditions = [
+            (dataframe["prediction"] > dataframe["target_upper_quantile"]) & (dataframe["do_predict"] == 1)
+        ]
+
+        if buy_conditions:
+            dataframe.loc[reduce(lambda x, y: x | y, buy_conditions), "buy"] = 1
+
+        return dataframe
+
+``` -->
+
+
 
 ## Additional information
 
-### Feature standardization
+### Feature normalization
 
-The feature set created by the user is automatically standardized to the training
+The feature set created by the user is automatically normalized to the training
 data only. This includes all test data and unseen prediction data (dry/live/backtest).
 
 ### File structure

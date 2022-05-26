@@ -158,12 +158,7 @@ class IFreqaiModel(ABC):
             else:
                 self.model = dh.load_data(metadata['pair'])
 
-                # strategy_provided_features = self.dh.find_features(dataframe_train)
-                # # FIXME doesnt work with PCA
-                # if strategy_provided_features != self.dh.training_features_list:
-                #     logger.info("User changed input features, retraining model.")
-                #     self.model = self.train(dataframe_train, metadata)
-                #     self.dh.save_data(self.model)
+            self.check_if_feature_list_matches_strategy(dataframe_train, dh)
 
             preds, do_preds = self.predict(dataframe_backtest, dh)
 
@@ -220,15 +215,22 @@ class IFreqaiModel(ABC):
 
         self.model = dh.load_data(coin=metadata['pair'])
 
-        # FIXME
-        # strategy_provided_features = dh.find_features(dataframe)
-        # if strategy_provided_features != dh.training_features_list:
-        #     self.train_model_in_series(new_trained_timerange, metadata, strategy)
+        self.check_if_feature_list_matches_strategy(dataframe, dh)
 
         preds, do_preds = self.predict(dataframe, dh)
         dh.append_predictions(preds, do_preds, len(dataframe))
 
         return dh
+
+    def check_if_feature_list_matches_strategy(self, dataframe: DataFrame,
+                                               dh: FreqaiDataKitchen) -> None:
+        strategy_provided_features = dh.find_features(dataframe)
+        if strategy_provided_features != dh.training_features_list:
+            raise OperationalException("Trying to access pretrained model with `identifier` "
+                                       "but found different features furnished by current strategy."
+                                       "Change `identifer` to train from scratch, or ensure the"
+                                       "strategy is furnishing the same features as the pretrained"
+                                       "model")
 
     def data_cleaning_train(self, dh: FreqaiDataKitchen) -> None:
         """
@@ -237,6 +239,7 @@ class IFreqaiModel(ABC):
         based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
         of how outlier data points are dropped from the dataframe used for training.
         """
+
         if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
             dh.principal_component_analysis()
 

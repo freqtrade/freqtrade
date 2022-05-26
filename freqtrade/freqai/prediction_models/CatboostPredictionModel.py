@@ -33,10 +33,6 @@ class CatboostPredictionModel(IFreqaiModel):
             / dataframe["close"]
             - 1
         )
-        dh.data["s_mean"] = dataframe["s"].mean()
-        dh.data["s_std"] = dataframe["s"].std()
-
-        # logger.info("label mean", dh.data["s_mean"], "label std", dh.data["s_std"])
 
         return dataframe["s"]
 
@@ -68,8 +64,9 @@ class CatboostPredictionModel(IFreqaiModel):
 
         # split data into train/test data.
         data_dictionary = dh.make_train_test_datasets(features_filtered, labels_filtered)
-        # standardize all data based on train_dataset only
-        data_dictionary = dh.standardize_data(data_dictionary)
+        dh.fit_labels()  # fit labels to a cauchy distribution so we know what to expect in strategy
+        # normalize all data based on train_dataset only
+        data_dictionary = dh.normalize_data(data_dictionary)
 
         # optional additional data cleaning/analysis
         self.data_cleaning_train(dh)
@@ -128,7 +125,7 @@ class CatboostPredictionModel(IFreqaiModel):
         filtered_dataframe, _ = dh.filter_features(
             unfiltered_dataframe, original_feature_list, training_filter=False
         )
-        filtered_dataframe = dh.standardize_data_from_metadata(filtered_dataframe)
+        filtered_dataframe = dh.normalize_data_from_metadata(filtered_dataframe)
         dh.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
@@ -136,7 +133,7 @@ class CatboostPredictionModel(IFreqaiModel):
 
         predictions = self.model.predict(dh.data_dictionary["prediction_features"])
 
-        # compute the non-standardized predictions
+        # compute the non-normalized predictions
         dh.predictions = (predictions + 1) * (dh.data["labels_max"] -
                                               dh.data["labels_min"]) / 2 + dh.data["labels_min"]
 

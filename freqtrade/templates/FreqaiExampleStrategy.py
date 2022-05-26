@@ -178,8 +178,8 @@ class FreqaiExampleStrategy(IStrategy):
             dataframe["target_std"],
         ) = self.model.bridge.start(dataframe, metadata, self)
 
-        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"] * 1.5
-        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"] * 1
+        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"]
+        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

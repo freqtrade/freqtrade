@@ -141,9 +141,9 @@ class FreqaiDataKitchen:
         :model: User trained model which can be inferenced for new predictions
         """
 
-        # if self.live:
-        self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
-        self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
+        if self.live:
+            self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
+            self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
 
         with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
@@ -329,42 +329,6 @@ class FreqaiDataKitchen:
         :data_dictionary: updated dictionary with standardized values.
         """
         # standardize the data by training stats
-        train_mean = data_dictionary["train_features"].mean()
-        train_std = data_dictionary["train_features"].std()
-        data_dictionary["train_features"] = (
-            data_dictionary["train_features"] - train_mean
-        ) / train_std
-        data_dictionary["test_features"] = (
-            data_dictionary["test_features"] - train_mean
-        ) / train_std
-
-        train_labels_std = data_dictionary["train_labels"].std()
-        train_labels_mean = data_dictionary["train_labels"].mean()
-        data_dictionary["train_labels"] = (
-            data_dictionary["train_labels"] - train_labels_mean
-        ) / train_labels_std
-        data_dictionary["test_labels"] = (
-            data_dictionary["test_labels"] - train_labels_mean
-        ) / train_labels_std
-
-        for item in train_std.keys():
-            self.data[item + "_std"] = train_std[item]
-            self.data[item + "_mean"] = train_mean[item]
-
-        self.data["labels_std"] = train_labels_std
-        self.data["labels_mean"] = train_labels_mean
-
-        return data_dictionary
-
-    def standardize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
-        """
-        Standardize all data in the data_dictionary according to the training dataset
-        :params:
-        :data_dictionary: dictionary containing the cleaned and split training/test data/labels
-        :returns:
-        :data_dictionary: updated dictionary with standardized values.
-        """
-        # standardize the data by training stats
         train_max = data_dictionary["train_features"].max()
         train_min = data_dictionary["train_features"].min()
         data_dictionary["train_features"] = 2 * (
@@ -392,9 +356,9 @@ class FreqaiDataKitchen:
 
         return data_dictionary
 
-    def standardize_data_from_metadata(self, df: DataFrame) -> DataFrame:
+    def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
         """
-        Standardizes a set of data using the mean and standard deviation from
+        Normalize a set of data using the mean and standard deviation from
         the associated training data.
         :params:
         :df: Dataframe to be standardized
@@ -403,19 +367,6 @@ class FreqaiDataKitchen:
         for item in df.keys():
             df[item] = 2 * (df[item] - self.data[item + "_min"]) / (self.data[item + "_max"] -
                                                                     self.data[item + '_min']) - 1
-
-        return df
-
-    def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
-        """
-        Normalizes a set of data using the mean and standard deviation from
-        the associated training data.
-        :params:
-        :df: Dataframe to be standardized
-        """
-
-        for item in df.keys():
-            df[item] = (df[item] - self.data[item + "_mean"]) / self.data[item + "_std"]
 
         return df
 
@@ -657,12 +608,12 @@ class FreqaiDataKitchen:
         """
 
         ones = np.ones(len_dataframe)
-        s_mean, s_std = ones * self.data["s_mean"], ones * self.data["s_std"]
+        target_mean, target_std = ones * self.data["target_mean"], ones * self.data["target_std"]
 
         self.full_predictions = np.append(self.full_predictions, predictions)
         self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        self.full_target_mean = np.append(self.full_target_mean, s_mean)
-        self.full_target_std = np.append(self.full_target_std, s_std)
+        self.full_target_mean = np.append(self.full_target_mean, target_mean)
+        self.full_target_std = np.append(self.full_target_std, target_std)
 
         return
 
@@ -827,6 +778,23 @@ class FreqaiDataKitchen:
 
         return dataframe
 
+    def fit_labels(self) -> None:
+        import scipy as spy
+
+        f = spy.stats.norm.fit(self.data_dictionary["train_labels"])
+
+        # KEEPME incase we want to let user start to grab quantiles.
+        # upper_q = spy.stats.norm.ppf(self.freqai_config['feature_parameters'][
+        #                                                   'target_quantile'], *f)
+        # lower_q = spy.stats.norm.ppf(1 - self.freqai_config['feature_parameters'][
+        #                                                       'target_quantile'], *f)
+
+        self.data["target_mean"], self.data["target_std"] = f[0], f[1]
+        # self.data["upper_quantile"] = upper_q
+        # self.data["lower_quantile"] = lower_q
+
+        return
+
     def np_encoder(self, object):
         if isinstance(object, np.generic):
             return object.item()
@@ -968,3 +936,52 @@ class FreqaiDataKitchen:
     #         )
 
     #     return
+
+    # def standardize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
+    #     """
+    #     standardize all data in the data_dictionary according to the training dataset
+    #     :params:
+    #     :data_dictionary: dictionary containing the cleaned and split training/test data/labels
+    #     :returns:
+    #     :data_dictionary: updated dictionary with standardized values.
+    #     """
+    #     # standardize the data by training stats
+    #     train_mean = data_dictionary["train_features"].mean()
+    #     train_std = data_dictionary["train_features"].std()
+    #     data_dictionary["train_features"] = (
+    #         data_dictionary["train_features"] - train_mean
+    #     ) / train_std
+    #     data_dictionary["test_features"] = (
+    #         data_dictionary["test_features"] - train_mean
+    #     ) / train_std
+
+    #     train_labels_std = data_dictionary["train_labels"].std()
+    #     train_labels_mean = data_dictionary["train_labels"].mean()
+    #     data_dictionary["train_labels"] = (
+    #         data_dictionary["train_labels"] - train_labels_mean
+    #     ) / train_labels_std
+    #     data_dictionary["test_labels"] = (
+    #         data_dictionary["test_labels"] - train_labels_mean
+    #     ) / train_labels_std
+
+    #     for item in train_std.keys():
+    #         self.data[item + "_std"] = train_std[item]
+    #         self.data[item + "_mean"] = train_mean[item]
+
+    #     self.data["labels_std"] = train_labels_std
+    #     self.data["labels_mean"] = train_labels_mean
+
+    #     return data_dictionary
+
+    # def standardize_data_from_metadata(self, df: DataFrame) -> DataFrame:
+    # """
+    # Normalizes a set of data using the mean and standard deviation from
+    # the associated training data.
+    # :params:
+    # :df: Dataframe to be standardized
+    # """
+
+    # for item in df.keys():
+    #     df[item] = (df[item] - self.data[item + "_mean"]) / self.data[item + "_std"]
+
+    # return df
