@@ -144,7 +144,6 @@ class StrategyTestV3(IStrategy):
                 (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
             'enter_long'] = 1
-
         dataframe.loc[
             (
                 qtpylib.crossed_below(dataframe['rsi'], self.sell_rsi.value)
