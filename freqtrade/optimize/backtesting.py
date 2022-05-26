@@ -506,8 +506,7 @@ class Backtesting:
             current_profit=current_profit, min_stake=min_stake,
             max_stake=min(max_stake, stake_available),
             current_entry_rate=current_rate, current_exit_rate=current_rate,
-            max_entry_stake=min(max_stake, stake_available),
-            max_exit_stake=min(max_stake, stake_available))
+            current_entry_profit=current_profit, current_exit_profit=current_profit)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:

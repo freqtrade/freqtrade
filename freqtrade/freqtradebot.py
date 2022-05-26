@@ -526,7 +526,6 @@ class FreqtradeBot(LoggingMixin):
                                                                  current_exit_rate,
                                                                  self.strategy.stoploss)
         max_entry_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_entry_rate)
-        max_exit_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_exit_rate)
         stake_available = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
@@ -535,10 +534,7 @@ class FreqtradeBot(LoggingMixin):
             current_profit=current_entry_profit, min_stake=min_entry_stake,
             max_stake=min(max_entry_stake, stake_available),
             current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate,
-            current_entry_profit=current_entry_profit, current_exit_profit=current_exit_profit,
-            min_entry_stake=min_entry_stake, min_exit_stake=min_exit_stake,
-            max_entry_stake=min(max_entry_stake, stake_available),
-            max_exit_stake=min(max_exit_stake, stake_available)
+            current_entry_profit=current_entry_profit, current_exit_profit=current_exit_profit
         )
 
         if stake_amount is not None and stake_amount > 0.0:
@@ -555,10 +551,9 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            # Strategy should return value as Decimal for accuracy.
             amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
             if (trade.amount - amount) * current_exit_rate < min_exit_stake:
-                logger.info('Remaining amount would be too small')
+                logger.info('Remaining amount would be too small.')
                 return
             if amount > trade.amount:
                 logger.info(
