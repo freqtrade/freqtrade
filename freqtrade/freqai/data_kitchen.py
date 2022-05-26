@@ -19,6 +19,7 @@ from sklearn.model_selection import train_test_split
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history import load_pair_history
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
@@ -59,6 +60,11 @@ class FreqaiDataKitchen:
         self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
+            if config.get('freqai', {}).get('backtest_period') is not int:
+                raise OperationalException('backtest_period < 1,'
+                                           'Can only backtest on full day increments'
+                                           'backtest_period. Only live/dry mode'
+                                           'allows fractions of days')
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
                                                             self.freqai_config.get("train_period")
                                                             )
