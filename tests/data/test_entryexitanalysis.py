@@ -18,7 +18,7 @@ def entryexitanalysis_cleanup() -> None:
     Backtesting.cleanup()
 
 
-def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, capsys):
+def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmpdir, capsys):
     default_conf.update({
         "use_exit_signal": True,
         "exit_profit_only": False,
@@ -72,6 +72,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         'backtesting',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
+        '--user-data-dir', str(tmpdir),
         '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
         '--timeframe', '5m',
         '--timerange', '1515560100-1517287800',
@@ -92,6 +93,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, cap
         'analysis',
         '--config', 'config.json',
         '--datadir', str(testdatadir),
+        '--user-data-dir', str(tmpdir),
         '--analysis_groups', '0',
         '--indicator_list', 'rsi',
         '--strategy',
