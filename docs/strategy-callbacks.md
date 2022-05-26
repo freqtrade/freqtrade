@@ -563,6 +563,14 @@ class AwesomeStrategy(IStrategy):
 
 `confirm_trade_exit()` can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
 
+`confirm_trade_exit()` may be called multiple times within one iteration for the same trade if different exit-reasons apply.
+The exit-reasons (if applicable) will be in the following sequence:
+
+* `exit_signal` / `custom_exit`
+* `stop_loss`
+* `roi`
+* `trailing_stop_loss`
+
 ``` python
 from freqtrade.persistence import Trade
 
@@ -604,6 +612,9 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
+
+!!! Warning
+    `confirm_trade_exit()` can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
 
 ## Adjust trade position
 
@@ -656,7 +667,7 @@ class DigDeeperStrategy(IStrategy):
 
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         # We need to leave most of the funds for possible further DCA orders
@@ -664,7 +675,7 @@ class DigDeeperStrategy(IStrategy):
         return proposed_stake / self.max_dca_multiplier
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
+                              current_rate: float, current_profit: float, min_stake: Optional[float],
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.

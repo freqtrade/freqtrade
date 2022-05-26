@@ -16,8 +16,8 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
-                                      DecimalParameter, IntParameter, RealParameter)
+from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
+                                           DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
@@ -495,35 +495,111 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.exit_flag is False
-    assert res.exit_type == ExitType.NONE
+    assert res == []
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_flag is True
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_reason == 'custom_exit'
+    assert res[0].exit_flag is True
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_reason == 'custom_exit'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'hello world'
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'h' * 64
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'h' * 64
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
+
+
+def test_should_sell(default_conf, fee) -> None:
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+    now = arrow.utcnow().datetime
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+
+    assert res == []
+    strategy.min_roi_reached = MagicMock(return_value=True)
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 1
+    assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
+
+    strategy.min_roi_reached = MagicMock(return_value=True)
+    strategy.stop_loss_reached = MagicMock(
+        return_value=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ]
+
+    strategy.custom_exit = MagicMock(return_value='hello world')
+    # custom-exit and exit-signal is first
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.CUSTOM_EXIT, exit_reason='hello world'),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ]
+
+    strategy.stop_loss_reached = MagicMock(
+            return_value=ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS))
+    # Regular exit signal
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
+        ]
+
+    # Regular exit signal, no ROI
+    strategy.min_roi_reached = MagicMock(return_value=False)
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
+        ]
 
 
 @pytest.mark.parametrize('side', TRADE_SIDES)

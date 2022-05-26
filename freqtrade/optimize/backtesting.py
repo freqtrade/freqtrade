@@ -187,7 +187,7 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
-        self.strategy.bot_start()
+        self.strategy.ft_bot_start()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):
@@ -275,8 +275,12 @@ class Backtesting:
                 if pair not in self.exchange._leverage_tiers:
                     unavailable_pairs.append(pair)
                     continue
-                self.futures_data[pair] = funding_rates_dict[pair].merge(
-                    mark_rates_dict[pair], on='date', how="inner", suffixes=["_fund", "_mark"])
+
+                self.futures_data[pair] = self.exchange.combine_funding_and_mark(
+                    funding_rates=funding_rates_dict[pair],
+                    mark_rates=mark_rates_dict[pair],
+                    futures_funding_rate=self.config.get('futures_funding_rate', None),
+                )
 
             if unavailable_pairs:
                 raise OperationalException(
@@ -497,7 +501,8 @@ class Backtesting:
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
+            trade=trade,  # type: ignore[arg-type]
+            current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
             max_stake=min(max_stake, stake_available),
             current_entry_rate=current_rate, current_exit_rate=current_rate,
@@ -540,15 +545,23 @@ class Backtesting:
             if check_adjust_entry:
                 trade = self._get_adjust_trade_entry_for_candle(trade, row)
 
-        exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
         exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
-        exit_ = self.strategy.should_exit(
-            trade, row[OPEN_IDX], exit_candle_time,  # type: ignore
+        exits = self.strategy.should_exit(
+            trade, row[OPEN_IDX], row[DATE_IDX].to_pydatetime(),  # type: ignore
             enter=enter, exit_=exit_sig,
             low=row[LOW_IDX], high=row[HIGH_IDX]
         )
+        for exit_ in exits:
+            t = self._get_exit_for_signal(trade, row, exit_)
+            if t:
+                return t
+        return None
 
+    def _get_exit_for_signal(self, trade: LocalTrade, row: Tuple,
+                             exit_: ExitCheckTuple) -> Optional[LocalTrade]:
+
+        exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         if exit_.exit_flag:
             trade.close_date = exit_candle_time
             exit_reason = exit_.exit_reason
@@ -575,7 +588,8 @@ class Backtesting:
                 if order_type == 'limit':
                     close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                        default_retval=close_rate)(
-                        pair=trade.pair, trade=trade,
+                        pair=trade.pair,
+                        trade=trade,  # type: ignore[arg-type]
                         current_time=exit_candle_time,
                         proposed_rate=close_rate, current_profit=current_profit,
                         exit_tag=exit_reason)
@@ -589,7 +603,10 @@ class Backtesting:
             time_in_force = self.strategy.order_time_in_force['exit']
 
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
-                    pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
+                    pair=trade.pair,
+                    trade=trade,  # type: ignore[arg-type]
+                    order_type='limit',
+                    amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
                     sell_reason=exit_reason,  # deprecated
@@ -694,7 +711,7 @@ class Backtesting:
             return self._get_exit_trade_entry_for_candle(trade, row)
 
     def get_valid_price_and_stake(
-        self, pair: str, row: Tuple, propose_rate: float, stake_amount: Optional[float],
+        self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
         direction: LongShort, current_time: datetime, entry_tag: Optional[str],
         trade: Optional[LocalTrade], order_type: str
     ) -> Tuple[float, float, float, float]:
@@ -768,8 +785,9 @@ class Backtesting:
         order_type = self.strategy.order_types['entry']
         pos_adjust = trade is not None and requested_rate is None
 
+        stake_amount_ = stake_amount or (trade.stake_amount if trade else 0.0)
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
-            pair, row, row[OPEN_IDX], stake_amount, direction, current_time, entry_tag, trade,
+            pair, row, row[OPEN_IDX], stake_amount_, direction, current_time, entry_tag, trade,
             order_type
         )
 
@@ -939,7 +957,9 @@ class Backtesting:
         Check if current analyzed order has to be canceled.
         Returns True if the trade should be Deleted (initial order was canceled).
         """
-        timedout = self.strategy.ft_check_timed_out(trade, order, current_time)
+        timedout = self.strategy.ft_check_timed_out(
+            trade,  # type: ignore[arg-type]
+            order, current_time)
         if timedout:
             if order.side == trade.entry_side:
                 self.timedout_entry_orders += 1
@@ -968,7 +988,8 @@ class Backtesting:
         if order.side == trade.entry_side and current_time > order.order_date_utc:
             requested_rate = strategy_safe_wrapper(self.strategy.adjust_entry_price,
                                                    default_retval=order.price)(
-                trade=trade, order=order, pair=trade.pair, current_time=current_time,
+                trade=trade,  # type: ignore[arg-type]
+                order=order, pair=trade.pair, current_time=current_time,
                 proposed_rate=row[OPEN_IDX], current_order_rate=order.price,
                 entry_tag=trade.enter_tag, side=trade.trade_direction
             )  # default value is current order price

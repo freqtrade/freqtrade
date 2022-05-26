@@ -302,12 +302,12 @@ CONF_SCHEMA = {
                         'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
-                            'default': 'off'
+                            'default': 'on'
                         },
                         'protection_trigger': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
-                            'default': 'off'
+                            'default': 'on'
                         },
                         'protection_trigger_global': {
                             'type': 'string',

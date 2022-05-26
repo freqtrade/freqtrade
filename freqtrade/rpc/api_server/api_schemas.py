@@ -256,6 +256,7 @@ class TradeSchema(BaseModel):
 
     leverage: Optional[float]
     interest_rate: Optional[float]
+    liquidation_price: Optional[float]
     funding_fees: Optional[float]
     trading_mode: Optional[TradingMode]
 
