@@ -60,7 +60,7 @@ class FreqaiDataKitchen:
         self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
-            if config.get('freqai', {}).get('backtest_period') is not int:
+            if config.get('freqai', {}).get('backtest_period') < 1:
                 raise OperationalException('backtest_period < 1,'
                                            'Can only backtest on full day increments'
                                            'backtest_period. Only live/dry mode'
