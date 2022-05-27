@@ -1562,16 +1562,14 @@ class Exchange:
         entry_pricing = self._config.get('entry_pricing', {})
         exit_pricing = self._config.get('exit_pricing', {})
         order_book = ticker = None
-        if entry_pricing.get('use_order_book', False):
+        if not entry_rate and entry_pricing.get('use_order_book', False):
             order_book_top = max(entry_pricing.get('order_book_top', 1),
                                  exit_pricing.get('order_book_top', 1))
             order_book = self.fetch_l2_order_book(pair, order_book_top)
-            if not entry_rate:
-                entry_rate = self.get_rate(pair, refresh, 'entry', is_short, order_book=order_book)
-        else:
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, order_book=order_book)
+        elif not entry_rate:
             ticker = self.fetch_ticker(pair)
-            if not entry_rate:
-                entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
         if not exit_rate:
             exit_rate = self.get_rate(pair, refresh, 'exit',
                                       is_short, order_book=order_book, ticker=ticker)

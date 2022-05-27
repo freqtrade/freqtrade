@@ -2525,15 +2525,20 @@ def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
     assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
+    api_mock.fetch_l2_order_book.reset_mock()
+    api_mock.fetch_ticker.reset_mock()
     assert exchange.get_rates('ETH/BTC', refresh=False, is_short=False)[0] == expected
     assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+    assert api_mock.fetch_ticker.call_count == 0
     # Running a 2nd time with Refresh on!
     caplog.clear()
+
     assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
-    api_mock.fetch_l2_order_book.call_count = int(use_order_book)
-    api_mock.fetch_ticker.call_count = 1
+    assert api_mock.fetch_l2_order_book.call_count == int(use_order_book)
+    assert api_mock.fetch_ticker.call_count == 1
 
 
 @pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
@@ -2564,12 +2569,15 @@ def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
+    api_mock.fetch_l2_order_book.reset_mock()
+    api_mock.fetch_ticker.reset_mock()
+
     rate = exchange.get_rates(pair, refresh=False, is_short=False)[1]
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
-    api_mock.fetch_l2_order_book.call_count = int(use_order_book)
-    api_mock.fetch_ticker.call_count = 1
+    assert api_mock.fetch_l2_order_book.call_count == 0
+    assert api_mock.fetch_ticker.call_count == 0
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
