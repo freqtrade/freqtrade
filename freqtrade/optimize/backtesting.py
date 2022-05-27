@@ -604,7 +604,7 @@ class Backtesting:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair,
                     trade=trade,  # type: ignore[arg-type]
-                    order_type='limit',
+                    order_type=order_type,
                     amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
@@ -615,30 +615,7 @@ class Backtesting:
 
             trade.exit_reason = exit_reason
 
-            self.order_id_counter += 1
-            order = Order(
-                id=self.order_id_counter,
-                ft_trade_id=trade.id,
-                order_date=exit_candle_time,
-                order_update_date=exit_candle_time,
-                ft_is_open=True,
-                ft_pair=trade.pair,
-                order_id=str(self.order_id_counter),
-                symbol=trade.pair,
-                ft_order_side=trade.exit_side,
-                side=trade.exit_side,
-                order_type=order_type,
-                status="open",
-                price=close_rate,
-                average=close_rate,
-                amount=trade.amount,
-                filled=0,
-                remaining=trade.amount,
-                cost=trade.amount * close_rate,
-            )
-            trade.orders.append(order)
-            return trade
-
+            return self._exit_trade(trade, row, close_rate, trade.amount)
         return None
 
     def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
