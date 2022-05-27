@@ -612,7 +612,7 @@ def test_calc_open_close_trade_price(
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
+def test_trade_close(fee):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=60.0,

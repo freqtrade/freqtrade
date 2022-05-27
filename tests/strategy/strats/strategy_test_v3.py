@@ -185,9 +185,12 @@ class StrategyTestV3(IStrategy):
 
         return 3.0
 
-    def adjust_trade_position(self, trade: Trade, current_time: datetime, current_rate: float,
-                              current_profit: float,
-                              min_stake: Optional[float], max_stake: float, **kwargs):
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float,
+                              min_stake: Optional[float], max_stake: float,
+                              current_entry_rate: float, current_exit_rate: float,
+                              current_entry_profit: float, current_exit_profit: float,
+                              **kwargs) -> Optional[float]:
 
         if current_profit < -0.0075:
             orders = trade.select_filled_orders(trade.entry_side)
