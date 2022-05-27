@@ -714,7 +714,7 @@ class FreqaiDataKitchen:
     def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
-                                                  self.config, validate=False)
+                                                  self.config, validate=False, freqai=True)
         pairs = copy.deepcopy(self.freqai_config.get('corr_pairlist', []))
         if str(metadata['pair']) not in pairs:
             pairs.append(str(metadata['pair']))
