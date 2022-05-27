@@ -520,6 +520,11 @@ class Backtesting:
         if stake_amount is not None and stake_amount < 0.0:
             amount = abs(stake_amount) / current_rate
             if amount > trade.amount:
+                # selling more than available is not supported.
+                return trade
+            remaining = (trade.amount - amount) * current_rate
+            if remaining < min_stake:
+                # Remaining stake is too low to be sold.
                 return trade
             pos_trade = self._exit_trade(trade, row, current_rate, amount)
             if pos_trade is not None:
