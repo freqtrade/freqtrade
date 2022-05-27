@@ -3819,6 +3819,7 @@ def test_validate_trading_mode_and_margin_mode(
     ("bibox", "spot", {"has": {"fetchCurrencies": False}}),
     ("bibox", "margin", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "margin"}}),
     ("bibox", "futures", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "swap"}}),
+    ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
     ("ftx", "futures", {"options": {"defaultType": "swap"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),

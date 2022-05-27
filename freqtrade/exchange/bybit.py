@@ -29,3 +29,17 @@ class Bybit(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        # ccxt defaults to swap mode.
+        config = {}
+        if self.trading_mode == TradingMode.SPOT:
+            config.update({
+                "options": {
+                    "defaultType": "spot"
+                }
+            })
+        config.update(super()._ccxt_config)
+        return config
