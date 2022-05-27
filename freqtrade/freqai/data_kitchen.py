@@ -715,10 +715,9 @@ class FreqaiDataKitchen:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
                                                   self.config, validate=False)
-        pairs = self.freqai_config.get('corr_pairlist', [])
-        if metadata['pair'] not in pairs:
-            pairs += metadata['pair']  # dont include pair twice
-        # timerange = TimeRange.parse_timerange(new_timerange)
+        pairs = copy.deepcopy(self.freqai_config.get('corr_pairlist', []))
+        if str(metadata['pair']) not in pairs:
+            pairs.append(str(metadata['pair']))
 
         refresh_backtest_ohlcv_data(
                         exchange, pairs=pairs, timeframes=self.freqai_config.get('timeframes'),

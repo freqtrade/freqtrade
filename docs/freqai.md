@@ -400,7 +400,7 @@ The user can stratify the training/testing data using:
     }
 ```
 
-which will split the data chronolocially so that every X data points is a testing data point. In the
+which will split the data chronologically so that every X data points is a testing data point. In the
 present example, the user is asking for every third data point in the dataframe to be used for 
 testing, the other points are used for training. 
 
