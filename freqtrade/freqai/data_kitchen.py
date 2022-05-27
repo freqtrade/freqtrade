@@ -738,7 +738,9 @@ class FreqaiDataKitchen:
         for tf in self.freqai_config.get('timeframes'):
             base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
                                                     timeframe=tf,
-                                                    pair=metadata['pair'], timerange=timerange)
+                                                    pair=metadata['pair'], timerange=timerange,
+                                                    candle_type=self.config.get(
+                                                    'trading_mode', 'spot'))
             if pairs:
                 for p in pairs:
                     if metadata['pair'] in p:
@@ -747,7 +749,9 @@ class FreqaiDataKitchen:
                         corr_dataframes[p] = {}
                     corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
                                                                timeframe=tf,
-                                                               pair=p, timerange=timerange)
+                                                               pair=p, timerange=timerange,
+                                                               candle_type=self.config.get(
+                                                               'trading_mode', 'spot'))
 
         return corr_dataframes, base_dataframes
 
