@@ -552,13 +552,19 @@ class FreqtradeBot(LoggingMixin):
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
             amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
-            if (trade.amount - amount) * current_exit_rate < min_exit_stake:
-                logger.info('Remaining amount would be too small.')
-                return
             if amount > trade.amount:
+                # This is currently ineffective as remaining would become < min tradable
+                # Fixing this would require checking for 0.0 there -
+                # if we decide that this callback is allowed to "fully exit"
                 logger.info(
                     f"Adjusting amount to trade.amount as it is higher. {amount} > {trade.amount}")
                 amount = trade.amount
+
+            remaining = (trade.amount - amount) * current_exit_rate
+            if remaining < min_exit_stake:
+                logger.info(f'Remaining amount of {remaining} would be too small.')
+                return
+
             self.execute_trade_exit(trade, current_exit_rate, exit_check=ExitCheckTuple(
                 exit_type=ExitType.PARTIAL_EXIT), sub_trade_amt=amount)
 
