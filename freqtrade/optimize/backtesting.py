@@ -495,6 +495,7 @@ class Backtesting:
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
         current_rate = row[OPEN_IDX]
+        current_date = row[DATE_IDX].to_pydatetime()
         current_profit = trade.calc_profit_ratio(current_rate)
         min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
         max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
@@ -502,7 +503,7 @@ class Backtesting:
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             trade=trade,  # type: ignore[arg-type]
-            current_time=row[DATE_IDX].to_pydatetime(), current_rate=current_rate,
+            current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
             max_stake=min(max_stake, stake_available),
             current_entry_rate=current_rate, current_exit_rate=current_rate,
@@ -528,6 +529,11 @@ class Backtesting:
                 return trade
             pos_trade = self._exit_trade(trade, row, current_rate, amount)
             if pos_trade is not None:
+                order = pos_trade.orders[-1]
+                if self._get_order_filled(order.price, row):
+                    order.close_bt_order(current_date, trade)
+                    trade.process_exit_sub_trade(order)
+                    trade.recalc_trade_from_orders()
                 self.wallets.update()
                 return pos_trade
 
