@@ -477,6 +477,11 @@ class FreqaiDataKitchen:
             index=self.data_dictionary["train_features"].index,
         )
 
+        # keeping a copy of the non-transformed features so we can check for errors during
+        # model load from disk
+        self.data['training_features_list_raw'] = copy.deepcopy(self.training_features_list)
+        self.training_features_list = self.data_dictionary["train_features"].columns
+
         self.data_dictionary["test_features"] = pd.DataFrame(
             data=test_components,
             columns=["PC" + str(i) for i in range(0, n_keep_components)],
@@ -563,7 +568,8 @@ class FreqaiDataKitchen:
     def find_features(self, dataframe: DataFrame) -> list:
         column_names = dataframe.columns
         features = [c for c in column_names if '%' in c]
-        assert features, ("Could not find any features!")
+        if not features:
+            raise OperationalException("Could not find any features!")
         return features
 
     def check_if_pred_in_training_spaces(self) -> None:

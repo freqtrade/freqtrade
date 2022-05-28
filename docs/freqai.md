@@ -313,6 +313,8 @@ $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
 where $W_i$ is the weight of data point $i$ in a total set of $n$ data points._
 
+![weight-factor](assets/weights_factor.png)
+
 Finally, `period` defines the offset used for the `labels`. In the present example,
 the user is asking for `labels` that are 24 candles in the future.
 

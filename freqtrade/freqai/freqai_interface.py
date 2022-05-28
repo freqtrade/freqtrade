@@ -225,7 +225,11 @@ class IFreqaiModel(ABC):
     def check_if_feature_list_matches_strategy(self, dataframe: DataFrame,
                                                dh: FreqaiDataKitchen) -> None:
         strategy_provided_features = dh.find_features(dataframe)
-        if strategy_provided_features != dh.training_features_list:
+        if dh.data['training_features_list_raw']:
+            feature_list = dh.data['training_features_list_raw']
+        else:
+            feature_list = dh.training_features_list
+        if strategy_provided_features != feature_list:
             raise OperationalException("Trying to access pretrained model with `identifier` "
                                        "but found different features furnished by current strategy."
                                        "Change `identifer` to train from scratch, or ensure the"
@@ -254,7 +258,7 @@ class IFreqaiModel(ABC):
         # if self.feature_parameters["remove_outliers"]:
         #     dh.remove_outliers(predict=False)
 
-    def data_cleaning_predict(self, dh: FreqaiDataKitchen) -> None:
+    def data_cleaning_predict(self, dh: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
         These functions each modify dh.do_predict, which is a dataframe with equal length
@@ -266,7 +270,7 @@ class IFreqaiModel(ABC):
         for buy signals.
         """
         if self.freqai_info.get('feature_parameters', {}).get('principal_component_analysis'):
-            dh.pca_transform()
+            dh.pca_transform(dataframe)
 
         if self.freqai_info.get('feature_parameters', {}).get('use_SVM_to_remove_outliers'):
             dh.use_SVM_to_remove_outliers(predict=True)

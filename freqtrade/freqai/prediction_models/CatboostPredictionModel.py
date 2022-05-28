@@ -71,7 +71,8 @@ class CatboostPredictionModel(IFreqaiModel):
         # optional additional data cleaning/analysis
         self.data_cleaning_train(dh)
 
-        logger.info(f'Training model on {len(dh.training_features_list)} features')
+        logger.info(f'Training model on {len(dh.data_dictionary["train_features"].columns)}'
+                    'features')
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
@@ -129,7 +130,7 @@ class CatboostPredictionModel(IFreqaiModel):
         dh.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dh)
+        self.data_cleaning_predict(dh, filtered_dataframe)
 
         predictions = self.model.predict(dh.data_dictionary["prediction_features"])
 
