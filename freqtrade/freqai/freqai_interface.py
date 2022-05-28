@@ -85,7 +85,7 @@ class IFreqaiModel(ABC):
         # determine what the current pair will do
         if self.live:
             if (not self.training_on_separate_thread and
-                    self.data_drawer.training_queue == 1):
+                    self.data_drawer.training_queue[metadata['pair']] == 1):
 
                 self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                             self.live, metadata["pair"])
@@ -321,16 +321,26 @@ class IFreqaiModel(ABC):
                                                                       base_dataframes,
                                                                       metadata)
 
-        self.model = self.train(unfiltered_dataframe, metadata, dh)
+        try:
+            model = self.train(unfiltered_dataframe, metadata, dh)
+        except ValueError:
+            logger.warning('Value error encountered during training')
+            self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+            self.training_on_separate_thread = False
+            self.retrain = False
+            return
 
         self.data_drawer.pair_dict[metadata['pair']][
                                    'trained_timestamp'] = new_trained_timerange.stopts
         dh.set_new_model_names(metadata, new_trained_timerange)
-        self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
-        dh.save_data(self.model, coin=metadata['pair'])
+        logger.info('Training queue'
+                    f'{sorted(self.data_drawer.training_queue.items(), key=lambda item: item[1])}')
+        dh.save_data(model, coin=metadata['pair'])
 
+        self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
         self.training_on_separate_thread = False
         self.retrain = False
+        return
 
     def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,
                               strategy: IStrategy, dh: FreqaiDataKitchen):
@@ -344,13 +354,13 @@ class IFreqaiModel(ABC):
                                                                       base_dataframes,
                                                                       metadata)
 
-        self.model = self.train(unfiltered_dataframe, metadata, dh)
+        model = self.train(unfiltered_dataframe, metadata, dh)
 
         self.data_drawer.pair_dict[metadata['pair']][
                                    'trained_timestamp'] = new_trained_timerange.stopts
         dh.set_new_model_names(metadata, new_trained_timerange)
         self.data_drawer.pair_dict[metadata['pair']]['first'] = False
-        dh.save_data(self.model, coin=metadata['pair'])
+        dh.save_data(model, coin=metadata['pair'])
         self.retrain = False
 
     # Methods which are overridden by user made prediction models.
