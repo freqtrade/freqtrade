@@ -717,10 +717,12 @@ class FreqaiDataKitchen:
         # enables persistence, but not fully implemented into save/load data yer
         # self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
-    def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict) -> None:
+    def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict,
+                                         strategy: IStrategy) -> None:
 
         exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
                                                   self.config, validate=False, freqai=True)
+        # exchange = strategy.dp._exchange # closes ccxt session
         pairs = copy.deepcopy(self.freqai_config.get('corr_pairlist', []))
         if str(metadata['pair']) not in pairs:
             pairs.append(str(metadata['pair']))
@@ -766,7 +768,7 @@ class FreqaiDataKitchen:
                                             base_dataframes: dict,
                                             metadata: dict) -> DataFrame:
 
-        dataframe = base_dataframes[self.config['timeframe']]
+        dataframe = base_dataframes[self.config['timeframe']].copy()
         pairs = self.freqai_config.get("corr_pairlist", [])
 
         for tf in self.freqai_config.get("timeframes"):

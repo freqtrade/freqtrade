@@ -28,7 +28,7 @@ class FreqaiDataDrawer:
         self.full_path = full_path
         self.load_drawer_from_disk()
         self.training_queue: Dict[str, int] = {}
-        self.create_training_queue(pair_whitelist)
+        # self.create_training_queue(pair_whitelist)
 
     def load_drawer_from_disk(self):
         exists = Path(self.full_path / str('pair_dictionary.json')).resolve().exists()
@@ -58,7 +58,6 @@ class FreqaiDataDrawer:
             model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
             coin_first = self.pair_dict[metadata['pair']]['first'] = True
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
-            self.pair_dict[metadata['pair']]['priority'] = 1
 
         return model_filename, trained_timestamp, coin_first
 
@@ -71,17 +70,16 @@ class FreqaiDataDrawer:
             self.pair_dict[metadata['pair']]['model_filename'] = ''
             self.pair_dict[metadata['pair']]['first'] = True
             self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
-            self.pair_dict[metadata['pair']]['priority'] = 1
+            self.pair_dict[metadata['pair']]['priority'] = len(self.pair_dict)
             return
 
-    def create_training_queue(self, pairs: list) -> None:
-        for i, pair in enumerate(pairs):
-            self.training_queue[pair] = i + 1
+    # def create_training_queue(self, pairs: list) -> None:
+    #     for i, pair in enumerate(pairs):
+    #         self.training_queue[pair] = i + 1
 
     def pair_to_end_of_training_queue(self, pair: str) -> None:
         # march all pairs up in the queue
-        for p in self.training_queue:
-            self.training_queue[p] -= 1
-
+        for p in self.pair_dict:
+            self.pair_dict[p]['priority'] -= 1
         # send pair to end of queue
-        self.training_queue[pair] = len(self.training_queue)
+        self.pair_dict[pair]['priority'] = len(self.pair_dict)

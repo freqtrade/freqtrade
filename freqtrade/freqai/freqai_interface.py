@@ -85,7 +85,7 @@ class IFreqaiModel(ABC):
         # determine what the current pair will do
         if self.live:
             if (not self.training_on_separate_thread and
-                    self.data_drawer.training_queue[metadata['pair']] == 1):
+                    self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
 
                 self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                             self.live, metadata["pair"])
@@ -313,13 +313,22 @@ class IFreqaiModel(ABC):
                                          strategy: IStrategy, dh: FreqaiDataKitchen):
 
         # with nostdout():
-        dh.download_new_data_for_retraining(new_trained_timerange, metadata)
+        dh.download_new_data_for_retraining(new_trained_timerange, metadata, strategy)
         corr_dataframes, base_dataframes = dh.load_pairs_histories(new_trained_timerange,
                                                                    metadata)
-        unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
-                                                                      corr_dataframes,
-                                                                      base_dataframes,
-                                                                      metadata)
+
+        # protecting from common benign errors associated with grabbing new data from exchange:
+        try:
+            unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
+                                                                          corr_dataframes,
+                                                                          base_dataframes,
+                                                                          metadata)
+        except Exception:
+            logger.warning('Mismatched sizes encountered in strategy')
+            self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+            self.training_on_separate_thread = False
+            self.retrain = False
+            return
 
         try:
             model = self.train(unfiltered_dataframe, metadata, dh)
@@ -333,8 +342,8 @@ class IFreqaiModel(ABC):
         self.data_drawer.pair_dict[metadata['pair']][
                                    'trained_timestamp'] = new_trained_timerange.stopts
         dh.set_new_model_names(metadata, new_trained_timerange)
-        logger.info('Training queue'
-                    f'{sorted(self.data_drawer.training_queue.items(), key=lambda item: item[1])}')
+        # logger.info('Training queue'
+        #             f'{sorted(self.data_drawer.pair_dict.items(), key=lambda item: item[1])}')
         dh.save_data(model, coin=metadata['pair'])
 
         self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
@@ -345,7 +354,7 @@ class IFreqaiModel(ABC):
     def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,
                               strategy: IStrategy, dh: FreqaiDataKitchen):
 
-        dh.download_new_data_for_retraining(new_trained_timerange, metadata)
+        dh.download_new_data_for_retraining(new_trained_timerange, metadata, strategy)
         corr_dataframes, base_dataframes = dh.load_pairs_histories(new_trained_timerange,
                                                                    metadata)
 
@@ -363,7 +372,7 @@ class IFreqaiModel(ABC):
         dh.save_data(model, coin=metadata['pair'])
         self.retrain = False
 
-    # Methods which are overridden by user made prediction models.
+    # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModlel.py for an example.
 
     @abstractmethod
