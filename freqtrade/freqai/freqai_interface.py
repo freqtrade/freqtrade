@@ -325,7 +325,7 @@ class IFreqaiModel(ABC):
                                                                           metadata)
         except Exception:
             logger.warning('Mismatched sizes encountered in strategy')
-            self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False
             return
@@ -334,7 +334,7 @@ class IFreqaiModel(ABC):
             model = self.train(unfiltered_dataframe, metadata, dh)
         except ValueError:
             logger.warning('Value error encountered during training')
-            self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False
             return
