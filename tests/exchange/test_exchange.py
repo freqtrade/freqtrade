@@ -17,9 +17,9 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOr
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_credentials)
-from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
-                                         timeframe_to_next_date, timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+from freqtrade.exchange.exchange import (date_minus_candles, market_is_active, timeframe_to_minutes,
+                                         timeframe_to_msecs, timeframe_to_next_date,
+                                         timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
@@ -99,6 +99,8 @@ def test_remove_credentials(default_conf, caplog) -> None:
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+    aei_mock = mocker.patch('freqtrade.exchange.Exchange.additional_exchange_init')
+
     caplog.set_level(logging.INFO)
     conf = copy.deepcopy(default_conf)
     conf['exchange']['ccxt_async_config'] = {'aiohttp_trust_env': True, 'asyncio_loop': True}
@@ -108,6 +110,7 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
         caplog)
     assert ex._api_async.aiohttp_trust_env
     assert not ex._api.aiohttp_trust_env
+    assert aei_mock.call_count == 1
 
     # Reset logging and config
     caplog.clear()
@@ -302,6 +305,7 @@ def test_amount_to_precision(
     (234.53, 4, 0.5, 235.0),
     (0.891534, 4, 0.0001, 0.8916),
     (64968.89, 4, 0.01, 64968.89),
+    (0.000000003483, 4, 1e-12, 0.000000003483),
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
@@ -936,6 +940,7 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
 
 def test_validate_timeframes_not_in_config(default_conf, mocker):
+    # TODO: this test does not assert ...
     del default_conf["timeframe"]
     api_mock = MagicMock()
     id_mock = PropertyMock(return_value='test_exchange')
@@ -951,6 +956,7 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
+    mocker.patch('freqtrade.exchange.Exchange.validate_required_startup_candles')
     Exchange(default_conf)
 
 
@@ -1080,6 +1086,13 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     default_conf['startup_candle_count'] = 6000
     with pytest.raises(OperationalException, match=r'This strategy requires 6000.*'):
         Exchange(default_conf)
+
+    # Emulate kraken mode
+    ex._ft_has['ohlcv_has_history'] = False
+    with pytest.raises(OperationalException,
+                       match=r'This strategy requires 2500.*, '
+                             r'which is more than the amount.*'):
+        ex.validate_required_startup_candles(2500, '5m')
 
 
 def test_exchange_has(default_conf, mocker):
@@ -1872,7 +1885,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv(
         pair,
         "5m",
@@ -1938,7 +1951,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_ty
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m', CandleType.SPOT) * 1.8
     ret = exchange.get_historic_ohlcv_as_df(
         pair,
         "5m",
@@ -1982,6 +1995,20 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     # Call with very old timestamp - causes tons of requests
     assert exchange._api_async.fetch_ohlcv.call_count > 200
     assert res[0] == ohlcv[0]
+
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    end_ts = 1_500_500_000_000
+    start_ts = 1_500_000_000_000
+    respair, restf, _, res = await exchange._async_get_historic_ohlcv(
+        pair, "5m", since_ms=start_ts, candle_type=candle_type, is_new_pair=False,
+        until_ms=end_ts
+        )
+    # Required candles
+    candles = (end_ts - start_ts) / 300_000
+    exp = candles // exchange.ohlcv_candle_limit('5m', CandleType.SPOT) + 1
+
+    # Depending on the exchange, this should be called between 1 and 6 times.
+    assert exchange._api_async.fetch_ohlcv.call_count == exp
 
 
 @pytest.mark.parametrize('candle_type', [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
@@ -2128,6 +2155,8 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 
 @pytest.mark.asyncio
 async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
+    from freqtrade.exchange.common import _reset_logging_mixin
+    _reset_logging_mixin()
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
     api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.DDoSProtection(
@@ -2781,6 +2810,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
                                      until=trades_history[-1][0])
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
@@ -2946,6 +2976,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_order(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = True
@@ -2998,6 +3029,7 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
                            order_id='_', pair='TKN/BTC')
 
 
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
     # Don't test FTX here - that needs a separate test
@@ -3325,7 +3357,7 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
             expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
             # This should only run for bittrex
             assert exchange_name == 'bittrex'
-        assert exchange.ohlcv_candle_limit(timeframe) == expected
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.SPOT) == expected
 
 
 def test_timeframe_to_minutes():
@@ -3405,6 +3437,17 @@ def test_timeframe_to_next_date():
 
     date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=timezone.utc)
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
+
+
+def test_date_minus_candles():
+
+    date = datetime(2019, 8, 12, 13, 25, 0, tzinfo=timezone.utc)
+
+    assert date_minus_candles("5m", 3, date) == date - timedelta(minutes=15)
+    assert date_minus_candles("5m", 5, date) == date - timedelta(minutes=25)
+    assert date_minus_candles("1m", 6, date) == date - timedelta(minutes=6)
+    assert date_minus_candles("1h", 3, date) == date - timedelta(hours=3, minutes=25)
+    assert date_minus_candles("1h", 3) == timeframe_to_prev_date('1h') - timedelta(hours=3)
 
 
 @pytest.mark.parametrize(
@@ -3776,6 +3819,7 @@ def test_validate_trading_mode_and_margin_mode(
     ("bibox", "spot", {"has": {"fetchCurrencies": False}}),
     ("bibox", "margin", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "margin"}}),
     ("bibox", "futures", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "swap"}}),
+    ("bybit", "spot", {"options": {"defaultType": "spot"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
     ("ftx", "futures", {"options": {"defaultType": "swap"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),
@@ -3872,6 +3916,70 @@ def test_calculate_funding_fees(
             close_date=trade_date,
             time_in_ratio=time_in_ratio,
         ) == kraken_fee
+
+
+@pytest.mark.parametrize(
+    'mark_price,funding_rate,futures_funding_rate', [
+        (1000, 0.001, None),
+        (1000, 0.001, 0.01),
+        (1000, 0.001, 0.0),
+        (1000, 0.001, -0.01),
+    ])
+def test_combine_funding_and_mark(
+    default_conf,
+    mocker,
+    funding_rate,
+    mark_price,
+    futures_funding_rate,
+):
+    exchange = get_patched_exchange(mocker, default_conf)
+    prior2_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc) - timedelta(hours=2))
+    prior_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc) - timedelta(hours=1))
+    trade_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc))
+    funding_rates = DataFrame([
+        {'date': prior2_date, 'open': funding_rate},
+        {'date': prior_date, 'open': funding_rate},
+        {'date': trade_date, 'open': funding_rate},
+    ])
+    mark_rates = DataFrame([
+        {'date': prior2_date, 'open': mark_price},
+        {'date': prior_date, 'open': mark_price},
+        {'date': trade_date, 'open': mark_price},
+    ])
+
+    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+    assert 'open_mark' in df.columns
+    assert 'open_fund' in df.columns
+    assert len(df) == 3
+
+    funding_rates = DataFrame([
+        {'date': trade_date, 'open': funding_rate},
+    ])
+    mark_rates = DataFrame([
+        {'date': prior2_date, 'open': mark_price},
+        {'date': prior_date, 'open': mark_price},
+        {'date': trade_date, 'open': mark_price},
+    ])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+
+    if futures_funding_rate is not None:
+        assert len(df) == 3
+        assert df.iloc[0]['open_fund'] == futures_funding_rate
+        assert df.iloc[1]['open_fund'] == futures_funding_rate
+        assert df.iloc[2]['open_fund'] == funding_rate
+    else:
+        assert len(df) == 1
+
+    # Empty funding rates
+    funding_rates = DataFrame([], columns=['date', 'open'])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_rates, futures_funding_rate)
+    if futures_funding_rate is not None:
+        assert len(df) == 3
+        assert df.iloc[0]['open_fund'] == futures_funding_rate
+        assert df.iloc[1]['open_fund'] == futures_funding_rate
+        assert df.iloc[2]['open_fund'] == futures_funding_rate
+    else:
+        assert len(df) == 0
 
 
 def test_get_or_calculate_liquidation_price(mocker, default_conf):
@@ -4744,8 +4852,10 @@ def test__get_params(mocker, default_conf, exchange_name):
 
     if exchange_name == 'okx':
         params2['tdMode'] = 'isolated'
+        params2['posSide'] = 'net'
 
     assert exchange._get_params(
+        side="buy",
         ordertype='market',
         reduceOnly=False,
         time_in_force='gtc',
@@ -4753,6 +4863,7 @@ def test__get_params(mocker, default_conf, exchange_name):
     ) == params1
 
     assert exchange._get_params(
+        side="buy",
         ordertype='market',
         reduceOnly=False,
         time_in_force='ioc',
@@ -4760,6 +4871,7 @@ def test__get_params(mocker, default_conf, exchange_name):
     ) == params1
 
     assert exchange._get_params(
+        side="buy",
         ordertype='limit',
         reduceOnly=False,
         time_in_force='gtc',
@@ -4772,6 +4884,7 @@ def test__get_params(mocker, default_conf, exchange_name):
     exchange._params = {'test': True}
 
     assert exchange._get_params(
+        side="buy",
         ordertype='limit',
         reduceOnly=True,
         time_in_force='ioc',

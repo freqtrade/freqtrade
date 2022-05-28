@@ -256,6 +256,7 @@ class TradeSchema(BaseModel):
 
     leverage: Optional[float]
     interest_rate: Optional[float]
+    liquidation_price: Optional[float]
     funding_fees: Optional[float]
     trading_mode: Optional[TradingMode]
 
@@ -291,6 +292,7 @@ class LockModel(BaseModel):
     lock_time: str
     lock_timestamp: int
     pair: str
+    side: str
     reason: str
 
 

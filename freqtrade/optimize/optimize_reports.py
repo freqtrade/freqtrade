@@ -468,6 +468,9 @@ def generate_strategy_stats(pairlist: List[str],
         'rejected_signals': content['rejected_signals'],
         'timedout_entry_orders': content['timedout_entry_orders'],
         'timedout_exit_orders': content['timedout_exit_orders'],
+        'canceled_trade_entries': content['canceled_trade_entries'],
+        'canceled_entry_orders': content['canceled_entry_orders'],
+        'replaced_entry_orders': content['replaced_entry_orders'],
         'max_open_trades': max_open_trades,
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
@@ -498,9 +501,12 @@ def generate_strategy_stats(pairlist: List[str],
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance)
+        (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
+             results, value_col='profit_abs', starting_balance=start_balance, relative=True)
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
+            'max_relative_drawdown': max_relative_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
             'drawdown_start_ts': drawdown_start.timestamp() * 1000,
@@ -521,6 +527,7 @@ def generate_strategy_stats(pairlist: List[str],
         strat_stats.update({
             'max_drawdown': 0.0,
             'max_drawdown_account': 0.0,
+            'max_relative_drawdown': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
             'max_drawdown_high': 0.0,
@@ -729,6 +736,32 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                        strat_results['stake_currency'])),
         ] if strat_results.get('trade_count_short', 0) > 0 else []
 
+        drawdown_metrics = []
+        if 'max_relative_drawdown' in strat_results:
+            # Compatibility to show old hyperopt results
+            drawdown_metrics.append(
+                ('Max % of account underwater', f"{strat_results['max_relative_drawdown']:.2%}")
+            )
+        drawdown_metrics.extend([
+            ('Absolute Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
+            if 'max_drawdown_account' in strat_results else (
+                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
+            ('Absolute Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+                                                   strat_results['stake_currency'])),
+            ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
+                                               strat_results['stake_currency'])),
+            ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
+                                              strat_results['stake_currency'])),
+            ('Drawdown Start', strat_results['drawdown_start']),
+            ('Drawdown End', strat_results['drawdown_end']),
+        ])
+
+        entry_adjustment_metrics = [
+            ('Canceled Trade Entries', strat_results.get('canceled_trade_entries', 'N/A')),
+            ('Canceled Entry Orders', strat_results.get('canceled_entry_orders', 'N/A')),
+            ('Replaced Entry Orders', strat_results.get('replaced_entry_orders', 'N/A')),
+        ] if strat_results.get('canceled_entry_orders', 0) > 0 else []
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
@@ -777,6 +810,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Entry/Exit Timeouts',
              f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
              f"{strat_results.get('timedout_exit_orders', 'N/A')}"),
+            *entry_adjustment_metrics,
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
@@ -784,18 +818,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
-            # Compatibility to show old hyperopt results
-            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
-            if 'max_drawdown_account' in strat_results else (
-                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
-            ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
-                                          strat_results['stake_currency'])),
-            ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
-                                               strat_results['stake_currency'])),
-            ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
-                                              strat_results['stake_currency'])),
-            ('Drawdown Start', strat_results['drawdown_start']),
-            ('Drawdown End', strat_results['drawdown_end']),
+            *drawdown_metrics,
             ('Market change', f"{strat_results['market_change']:.2%}"),
         ]
 

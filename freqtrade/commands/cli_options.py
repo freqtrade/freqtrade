@@ -106,6 +106,11 @@ AVAILABLE_CLI_OPTIONS = {
         f'`{constants.DEFAULT_DB_DRYRUN_URL}` for Dry Run).',
         metavar='PATH',
     ),
+    "db_url_from": Arg(
+        '--db-url-from',
+        help='Source db url to use when migrating a database.',
+        metavar='PATH',
+    ),
     "sd_notify": Arg(
         '--sd-notify',
         help='Notify systemd service manager.',
@@ -442,6 +447,11 @@ AVAILABLE_CLI_OPTIONS = {
                  '6h', '8h', '12h', '1d', '3d', '1w', '2w', '1M', '1y'],
         default=['1m', '5m'],
         nargs='+',
+    ),
+    "prepend_data": Arg(
+        '--prepend',
+        help='Allow data prepending.',
+        action='store_true',
     ),
     "erase": Arg(
         '--erase',

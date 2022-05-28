@@ -200,11 +200,12 @@ For that reason, they must implement the following methods:
 * `global_stop()`
 * `stop_per_pair()`.
 
-`global_stop()` and `stop_per_pair()` must return a ProtectionReturn tuple, which consists of:
+`global_stop()` and `stop_per_pair()` must return a ProtectionReturn object, which consists of:
 
 * lock pair - boolean
 * lock until - datetime - until when should the pair be locked (will be rounded up to the next new candle)
 * reason - string, used for logging and storage in the database
+* lock_side - long, short or '*'.
 
 The `until` portion should be calculated using the provided `calculate_lock_end()` method.
 
@@ -312,6 +313,32 @@ print(datetime.utcnow())
 The output will show the last entry from the Exchange as well as the current UTC date.
 If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting `"ohlcv_partial_candle"` from the exchange-class untouched / True). Otherwise, set `"ohlcv_partial_candle"` to `False` to not drop Candles (shown in the example above).
 Another way is to run this command multiple times in a row and observe if the volume is changing (while the date remains the same).
+
+### Update binance cached leverage tiers
+
+Updating leveraged tiers should be done regularly - and requires an authenticated account with futures enabled.
+
+``` python
+import ccxt
+import json
+from pathlib import Path
+
+exchange = ccxt.binance({
+    'apiKey': '<apikey>',
+    'secret': '<secret>'
+    'options': {'defaultType': 'future'}
+    })
+_ = exchange.load_markets()
+
+lev_tiers = exchange.fetch_leverage_tiers()
+
+# Assumes this is running in the root of the repository.
+file = Path('freqtrade/exchange/binance_leverage_tiers.json')
+json.dump(lev_tiers, file.open('w'), indent=2)
+
+```
+
+This file should then be contributed upstream, so others can benefit from this, too.
 
 ## Updating example notebooks
 

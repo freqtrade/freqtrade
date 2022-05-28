@@ -147,6 +147,9 @@ class Configuration:
             config.update({'db_url': self.args['db_url']})
             logger.info('Parameter --db-url detected ...')
 
+        self._args_to_config(config, argname='db_url_from',
+                             logstring='Parameter --db-url-from detected ...')
+
         if config.get('force_entry_enable', False):
             logger.warning('`force_entry_enable` RPC message enabled.')
 
@@ -393,6 +396,8 @@ class Configuration:
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 
+        self._args_to_config(config, argname='prepend_data',
+                             logstring='Prepend detected. Allowing data prepending.')
         self._args_to_config(config, argname='erase',
                              logstring='Erase detected. Deleting existing data.')
 
@@ -485,7 +490,8 @@ class Configuration:
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
             config['pairs'] = load_file(pairs_file)
-            config['pairs'].sort()
+            if isinstance(config['pairs'], list):
+                config['pairs'].sort()
             return
 
         if 'config' in self.args and self.args['config']:
@@ -496,5 +502,5 @@ class Configuration:
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
                 config['pairs'] = load_file(pairs_file)
-                if 'pairs' in config:
+                if 'pairs' in config and isinstance(config['pairs'], list):
                     config['pairs'].sort()

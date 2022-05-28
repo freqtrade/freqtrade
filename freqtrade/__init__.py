@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = '2022.4.2'
+__version__ = '2022.5'
 
 if 'dev' in __version__:
     try:

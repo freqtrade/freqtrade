@@ -22,10 +22,6 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 ![freqtrade screenshot](assets/freqtrade-screenshot.png)
 
-## Sponsored promotion
-
-[![tokenbot-promo](assets/TokenBot-Freqtrade-banner.png)](https://tokenbot.com/?utm_source=github&utm_medium=freqtrade&utm_campaign=algodevs)
-
 ## Features
 
 - Develop your Strategy: Write your strategy in python, using [pandas](https://pandas.pydata.org/). Example strategies to inspire you are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
@@ -51,7 +47,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
-### Experimentally, freqtrade also supports futures on the following exchanges:
+### Supported Futures Exchanges (experimental)
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)

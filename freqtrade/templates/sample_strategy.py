@@ -62,7 +62,7 @@ class SampleStrategy(IStrategy):
     timeframe = '5m'
 
     # Run "populate_indicators()" only for new candle.
-    process_only_new_candles = False
+    process_only_new_candles = True
 
     # These values can be overridden in the config.
     use_exit_signal = True

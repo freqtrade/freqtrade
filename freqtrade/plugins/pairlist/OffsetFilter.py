@@ -19,6 +19,7 @@ class OffsetFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._offset = pairlistconfig.get('offset', 0)
+        self._number_pairs = pairlistconfig.get('number_assets', 0)
 
         if self._offset < 0:
             raise OperationalException("OffsetFilter requires offset to be >= 0")
@@ -36,7 +37,9 @@ class OffsetFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - Offseting pairs by {self._offset}."
+        if self._number_pairs:
+            return f"{self.name} - Taking {self._number_pairs} Pairs, starting from {self._offset}."
+        return f"{self.name} - Offsetting pairs by {self._offset}."
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -50,5 +53,9 @@ class OffsetFilter(IPairList):
             self.log_once(f"Offset of {self._offset} is larger than " +
                           f"pair count of {len(pairlist)}", logger.warning)
         pairs = pairlist[self._offset:]
+        if self._number_pairs:
+            pairs = pairs[:self._number_pairs]
+
         self.log_once(f"Searching {len(pairs)} pairs: {pairs}", logger.info)
+
         return pairs

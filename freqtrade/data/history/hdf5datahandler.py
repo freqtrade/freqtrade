@@ -40,7 +40,7 @@ class HDF5DataHandler(IDataHandler):
         return [
             (
                 cls.rebuild_pair_from_filename(match[1]),
-                match[2],
+                cls.rebuild_timeframe_from_filename(match[2]),
                 CandleType.from_string(match[3])
             ) for match in _tmp if match and len(match.groups()) > 1]
 
@@ -109,7 +109,11 @@ class HDF5DataHandler(IDataHandler):
         )
 
         if not filename.exists():
-            return pd.DataFrame(columns=self._columns)
+            # Fallback mode for 1M files
+            filename = self._pair_data_filename(
+                self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True)
+            if not filename.exists():
+                return pd.DataFrame(columns=self._columns)
         where = []
         if timerange:
             if timerange.starttype == 'date':

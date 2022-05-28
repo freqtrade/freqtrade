@@ -34,6 +34,7 @@ def test_validate_order_types_gateio(default_conf, mocker):
         ExchangeResolver.load_exchange('gateio', default_conf, True)
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_gateio(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='gateio')
 

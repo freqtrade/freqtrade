@@ -119,6 +119,7 @@ This subcommand is useful for finding problems in your environment with loading 
 usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                  [-d PATH] [--userdir PATH]
                                  [--strategy-path PATH] [-1] [--no-color]
+                                 [--recursive-strategy-search]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -126,6 +127,9 @@ optional arguments:
   -1, --one-column      Print output in one column.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
+  --recursive-strategy-search
+                        Recursively search for a strategy in the strategies
+                        folder.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -134,9 +138,10 @@ Common arguments:
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
@@ -548,6 +553,27 @@ Show whitelist when using a [dynamic pairlist](plugins.md#pairlists).
 ```
 freqtrade test-pairlist --config config.json --quote USDT BTC
 ```
+
+## Convert database
+
+`freqtrade convert-db` can be used to convert your database from one system to another (sqlite -> postgres, postgres -> other postgres), migrating all trades, orders and Pairlocks.
+
+Please refer to the [SQL cheatsheet](sql_cheatsheet.md#use-a-different-database-system) to learn about requirements for different database systems.
+
+```
+usage: freqtrade convert-db [-h] [--db-url PATH] [--db-url-from PATH]
+
+optional arguments:
+  -h, --help          show this help message and exit
+  --db-url PATH       Override trades database URL, this is useful in custom
+                      deployments (default: `sqlite:///tradesv3.sqlite` for
+                      Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for
+                      Dry Run).
+  --db-url-from PATH  Source db url to use when migrating a database.
+```
+
+!!! Warning
+    Please ensure to only use this on an empty target database. Freqtrade will perform a regular migration, but may fail if entries already existed.
 
 ## Webserver mode
 
