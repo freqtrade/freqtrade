@@ -1540,6 +1540,7 @@ class FreqtradeBot(LoggingMixin):
             profit_rate = order.safe_price
 
             if not fill:
+                # TODO: this call is wrong here.
                 trade.process_exit_sub_trade(order, is_closed=False)
 
             profit_ratio = trade.close_profit

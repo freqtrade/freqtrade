@@ -632,6 +632,9 @@ class LocalTrade():
         Trade.commit()
 
     def process_exit_sub_trade(self, order: Order, is_closed: bool = True) -> None:
+        """
+        Recalculate trade amount and realized profit after partial exit
+        """
         exit_amount = order.safe_amount_after_fee
         exit_rate = order.safe_price
         exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
@@ -642,10 +645,7 @@ class LocalTrade():
             self.amount -= exit_amount
             self.stake_amount = self.open_rate * self.amount
             self.realized_profit += profit
-            logger.info(
-                'Processed exit sub trade for %s',
-                self
-            )
+            # logger.info(f"Processed exit sub trade for {self}")
         self.close_profit_abs = profit
         if self.is_short:
             self.close_profit = (exit_stake_amount - profit) / exit_stake_amount - 1
