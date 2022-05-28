@@ -1133,7 +1133,6 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = "100"
-
     trade.orders.append(Order(
         ft_order_side='stoploss',
         order_id='100',
@@ -3277,7 +3276,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'close_rate': ANY,
         'sub_trade': False,
         'stake_amount': pytest.approx(60),
-            } == last_msg
+    } == last_msg
 
 
 @pytest.mark.parametrize(

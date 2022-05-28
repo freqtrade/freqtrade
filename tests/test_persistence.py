@@ -2411,7 +2411,7 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
-    # Just to make sure non partial sell orders are ignored, let's calculate one more time.
+    # Just to make sure full sell orders are ignored, let's calculate one more time.
 
     sell1 = Order(
         ft_order_side='sell',
@@ -2574,7 +2574,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
-    # Just to make sure non partial exit orders are ignored, let's calculate one more time.
+    # Reduce position - this will reduce amount again.
     sell1 = Order(
         ft_order_side=exit_side,
         ft_pair=trade.pair,

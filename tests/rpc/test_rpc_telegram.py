@@ -474,7 +474,6 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.orders[0] = oobj
         trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
@@ -592,7 +591,6 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.orders[0] = oobj
         trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
@@ -713,7 +711,6 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
 
     trades = Trade.query.all()
     for trade in trades:
-        trade.orders[0] = oobj
         trade.update_trade(oobj)
         trade.update_trade(oobjs)
         trade.close_date = datetime.utcnow()
@@ -2000,14 +1997,15 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'open_date': arrow.utcnow().shift(hours=-1)
     })
 
-    assert msg_mock.call_args[0][0] \
-        == f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n' \
-           f'*Enter Tag:* `{enter_signal}`\n' \
-           '*Amount:* `1333.33333333`\n' \
-           f"{leverage_text}" \
-           '*Open Rate:* `0.00001099`\n' \
-           '*Total:* `(0.01465333 BTC, 180.895 USD)`\n' \
-           '*Balance:* `(0.01465333 BTC, 180.895 USD)`'
+    assert msg_mock.call_args[0][0] == (
+        f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        '*Amount:* `1333.33333333`\n'
+        f"{leverage_text}"
+        '*Open Rate:* `0.00001099`\n'
+        '*Total:* `(0.01465333 BTC, 180.895 USD)`\n'
+        '*Balance:* `(0.01465333 BTC, 180.895 USD)`'
+    )
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -2076,18 +2074,18 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'stake_amount': 1234,
         'sub_trade': True
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Cumulative Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Enter Tag:* `buy_signal1`\n'
-            '*Exit Reason:* `stop_loss`\n'
-            '*Direction:* `Long`\n'
-            '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Remaining:* `(1234 ETH, -24.812 USD)`'
-            )
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Cumulative Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+        '*Enter Tag:* `buy_signal1`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Direction:* `Long`\n'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Close Rate:* `0.00003201`\n'
+        '*Remaining:* `(1234 ETH, -24.812 USD)`'
+        )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -2110,18 +2108,18 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
-            '*Enter Tag:* `buy_signal1`\n'
-            '*Exit Reason:* `stop_loss`\n'
-            '*Direction:* `Long`\n'
-            '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
-            )
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
+        '*Enter Tag:* `buy_signal1`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Direction:* `Long`\n'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Close Rate:* `0.00003201`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
+    )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
