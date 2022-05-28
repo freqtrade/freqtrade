@@ -482,8 +482,7 @@ class Telegram(RPCHandler):
                 lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
         return lines
 
-    @authorized_only
-    def _status(self, update: Update, context: CallbackContext) -> None: # noqa: max-complexity: 13
+    def _status(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status.
         Returns the current TradeThread status
@@ -495,7 +494,15 @@ class Telegram(RPCHandler):
         if context.args and 'table' in context.args:
             self._status_table(update, context)
             return
+        else:
+            self._status_msg(update, context)
 
+    @authorized_only
+    def _status_msg(self, update: Update, context: CallbackContext) -> None:
+        """
+        handler for `/status` and `/status <id>`.
+
+        """
         try:
 
             # Check if there's at least one numerical ID provided.
@@ -570,7 +577,6 @@ class Telegram(RPCHandler):
         except RPCException as e:
             self._send_msg(str(e))
 
-    @authorized_only
     def _status_table(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status table.
