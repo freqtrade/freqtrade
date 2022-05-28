@@ -225,7 +225,7 @@ class IFreqaiModel(ABC):
     def check_if_feature_list_matches_strategy(self, dataframe: DataFrame,
                                                dh: FreqaiDataKitchen) -> None:
         strategy_provided_features = dh.find_features(dataframe)
-        if dh.data['training_features_list_raw']:
+        if 'training_features_list_raw' in dh.data:
             feature_list = dh.data['training_features_list_raw']
         else:
             feature_list = dh.training_features_list
