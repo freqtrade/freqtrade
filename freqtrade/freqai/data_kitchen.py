@@ -675,7 +675,7 @@ class FreqaiDataKitchen:
     def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-        trained_timerange = TimeRange('date', 'date')
+        trained_timerange = TimeRange()
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
             retrain = elapsed_time > self.freqai_config.get('backtest_period')

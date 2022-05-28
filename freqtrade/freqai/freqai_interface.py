@@ -187,7 +187,8 @@ class IFreqaiModel(ABC):
         (model_filename,
          trained_timestamp,
          coin_first) = self.data_drawer.get_pair_dict_info(metadata)
-
+        if self.training_on_separate_thread:
+            print('debug_here')
         if not self.training_on_separate_thread:
             file_exists = False
 
