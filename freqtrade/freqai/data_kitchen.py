@@ -681,7 +681,7 @@ class FreqaiDataKitchen:
             retrain = elapsed_time > self.freqai_config.get('backtest_period')
             if retrain:
                 trained_timerange.startts = int(time - self.freqai_config.get(
-                                             'backtest_period', 0) * SECONDS_IN_DAY)
+                                             'train_period', 0) * SECONDS_IN_DAY)
                 trained_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
             trained_timerange.startts = int(time - self.freqai_config.get('train_period') *
