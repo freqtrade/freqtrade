@@ -418,7 +418,7 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_entry_details(self, filled_orders: List, quote_currency: str, is_open: bool):
+    def _prepare_order_details(self, filled_orders: List, quote_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
@@ -427,17 +427,16 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if not order['ft_is_entry']:
-                continue
+            wording = 'Entry' if order['ft_is_entry'] else 'Exit'
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["filled"] or order["amount"]
             cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
-                lines.append(f"*Entry #{x+1}:*")
+                lines.append(f"*{wording} #{x+1}:*")
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
-                lines.append(f"*Average Entry Price:* {cur_entry_average}")
+                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                lines.append(f"*Average Price:* {cur_entry_average}")
             else:
                 sumA = 0
                 sumB = 0
@@ -451,21 +450,24 @@ class Telegram(RPCHandler):
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                dur_entry = cur_entry_datetime - arrow.get(
-                    filled_orders[x - 1]["order_filled_date"])
-                days = dur_entry.days
-                hours, remainder = divmod(dur_entry.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                lines.append(f"*Entry #{x+1}:* at {minus_on_entry:.2%} avg profit")
+                lines.append(f"*{wording} #{x+1}:* at {minus_on_entry:.2%} avg profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
-                lines.append(f"*Average Entry Price:* {cur_entry_average} "
+                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                lines.append(f"*Average {wording} Price:* {cur_entry_average} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
-                lines.append(f"*Order filled at:* {order['order_filled_date']}")
-                lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
+                lines.append(f"*Order filled:* {order['order_filled_date']}")
+
+                # TODO: is this really useful?
+                # dur_entry = cur_entry_datetime - arrow.get(
+                #     filled_orders[x - 1]["order_filled_date"])
+                # days = dur_entry.days
+                # hours, remainder = divmod(dur_entry.seconds, 3600)
+                # minutes, seconds = divmod(remainder, 60)
+                # lines.append(
+                # f"({days}d {hours}h {minutes}m {seconds}s from previous {wording.lower()})")
         return lines
 
     def _status(self, update: Update, context: CallbackContext) -> None:
@@ -550,7 +552,7 @@ class Telegram(RPCHandler):
                         else:
                             lines.append("*Open Order:* `{open_order}`")
 
-                lines_detail = self._prepare_entry_details(
+                lines_detail = self._prepare_order_details(
                     r['orders'], r['quote_currency'], r['is_open'])
                 lines.extend(lines_detail if lines_detail else "")
 
