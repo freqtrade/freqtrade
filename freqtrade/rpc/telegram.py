@@ -317,10 +317,10 @@ class Telegram(RPCHandler):
         )
         if msg['type'] == RPCMessageType.EXIT:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                        f"*Close Rate:* `{msg['limit']:.8f}`")
+                        f"*Exit Rate:* `{msg['limit']:.8f}`")
 
         elif msg['type'] == RPCMessageType.EXIT_FILL:
-            message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
+            message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
         if msg.get('sub_trade'):
             if self._rpc._fiat_converter:
                 msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(

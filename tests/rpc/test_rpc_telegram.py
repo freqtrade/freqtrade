@@ -2044,7 +2044,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
         '*Duration:* `1:00:00 (60.0 min)`'
     )
 
@@ -2082,7 +2082,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
         '*Remaining:* `(1234 ETH, -24.812 USD)`'
         )
 
@@ -2116,7 +2116,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
         '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
     )
     # Reset singleton function to avoid random breaks
@@ -2197,7 +2197,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         f"{leverage_text}"
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
-        '*Close Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
         '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
     )
 
@@ -2323,7 +2323,7 @@ def test_send_msg_sell_notification_no_fiat(
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
         '*Duration:* `2:35:03 (155.1 min)`'
     )
 
