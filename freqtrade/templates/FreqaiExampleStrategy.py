@@ -269,8 +269,17 @@ class FreqaiExampleStrategy(IStrategy):
         else:
             roi_decay += self.linear_roi_offset.value
 
-        if current_profit > roi_price:  # roi_decay:
-            with self.model.bridge.lock:
-                self.model.bridge.data_drawer.pair_dict[pair]['prediction' + entry_tag] = 0
-                self.model.bridge.data_drawer.save_drawer_to_disk()
+        if current_profit > roi_price:
             return 'roi_custom_win'
+
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, exit_reason: str,
+                           current_time, **kwargs) -> bool:
+
+        entry_tag = trade.enter_tag
+
+        with self.model.bridge.lock:
+            self.model.bridge.data_drawer.pair_dict[pair]['prediction' + entry_tag] = 0
+            self.model.bridge.data_drawer.save_drawer_to_disk()
+
+        return True
