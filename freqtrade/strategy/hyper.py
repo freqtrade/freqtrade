@@ -85,6 +85,27 @@ class HyperStrategyMixin:
 
         return params
 
+    def ft_load_hyper_params_from_file(self) -> None:
+        """ Load Parameters from parameter file"""
+        if self._ft_params_from_file:
+            # Set parameters from Hyperopt results file
+            params = self._ft_params_from_file
+            self.minimal_roi = params.get('roi', getattr(self, 'minimal_roi', {}))
+
+            self.stoploss = params.get('stoploss', {}).get(
+                'stoploss', getattr(self, 'stoploss', -0.1))
+            trailing = params.get('trailing', {})
+            self.trailing_stop = trailing.get(
+                'trailing_stop', getattr(self, 'trailing_stop', False))
+            self.trailing_stop_positive = trailing.get(
+                'trailing_stop_positive', getattr(self, 'trailing_stop_positive', None))
+            self.trailing_stop_positive_offset = trailing.get(
+                'trailing_stop_positive_offset',
+                getattr(self, 'trailing_stop_positive_offset', 0))
+            self.trailing_only_offset_is_reached = trailing.get(
+                'trailing_only_offset_is_reached',
+                getattr(self, 'trailing_only_offset_is_reached', 0.0))
+
     def ft_load_hyper_params(self, hyperopt: bool = False) -> None:
         """
         Load Hyperoptable parameters
