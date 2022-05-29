@@ -190,7 +190,8 @@ class IFreqaiModel(ABC):
          trained_timestamp,
          coin_first) = self.data_drawer.get_pair_dict_info(metadata)
 
-        if not self.training_on_separate_thread:
+        if (not self.training_on_separate_thread and
+                self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available
