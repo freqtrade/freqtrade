@@ -44,7 +44,7 @@ class FreqaiExampleStrategy(IStrategy):
 
     process_only_new_candles = False
     stoploss = -0.05
-    use_sell_signal = True
+    use_exit_signal = True
     startup_candle_count: int = 300
 
     def informative_pairs(self):
@@ -182,7 +182,7 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         buy_conditions = [
             (dataframe["prediction"] > dataframe["target_roi"]) & (dataframe["do_predict"] == 1)
@@ -193,7 +193,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         sell_conditions = [
             (dataframe["do_predict"] <= 0)
         ]
