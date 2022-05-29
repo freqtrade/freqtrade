@@ -1706,19 +1706,25 @@ class FreqtradeBot(LoggingMixin):
             # Updating wallets when order is closed
             self.wallets.update()
 
-        sub_trade = not isclose(order_obj.safe_amount_after_fee,
+        self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
+
+        return False
+
+    def order_close_notify(
+            self, trade: Trade, order: Order, stoploss_order: bool, send_msg: bool):
+        """send "fill" notifications"""
+
+        sub_trade = not isclose(order.safe_amount_after_fee,
                                 trade.amount, abs_tol=constants.MATH_CLOSE_PREC)
-        if order_obj.ft_order_side == trade.exit_side:
+        if order.ft_order_side == trade.exit_side:
             # Exit notification
             if send_msg and not stoploss_order and not trade.open_order_id:
-                self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order_obj)
+                self._notify_exit(trade, '', fill=True, sub_trade=sub_trade, order=order)
             if not trade.is_open:
                 self.handle_protections(trade.pair, trade.trade_direction)
         elif send_msg and not trade.open_order_id and not stoploss_order:
             # Enter fill
-            self._notify_enter(trade, order_obj, fill=True, sub_trade=sub_trade)
-
-        return False
+            self._notify_enter(trade, order, fill=True, sub_trade=sub_trade)
 
     def handle_protections(self, pair: str, side: LongShort) -> None:
         prot_trig = self.protections.stop_per_pair(pair, side=side)
