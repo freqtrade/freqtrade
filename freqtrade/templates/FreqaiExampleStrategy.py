@@ -252,7 +252,7 @@ class FreqaiExampleStrategy(IStrategy):
                 self.model.bridge.data_drawer.save_drawer_to_disk()
         else:
             if pair_dict[pair]['prediction' + entry_tag] > 0:
-                roi_price = abs(trade_candle['prediction' + entry_tag])
+                roi_price = abs(trade_candle['prediction'])
             else:
                 with self.model.bridge.lock:
                     self.model.bridge.data_drawer.pair_dict[pair][
