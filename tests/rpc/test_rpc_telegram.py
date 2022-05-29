@@ -2003,8 +2003,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
         '*Open Rate:* `0.00001099`\n'
-        '*Total:* `(0.01465333 BTC, 180.895 USD)`\n'
-        '*Balance:* `(0.01465333 BTC, 180.895 USD)`'
+        '*Total:* `(0.01465333 BTC, 180.895 USD)`'
     )
 
 

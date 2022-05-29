@@ -248,30 +248,16 @@ class Telegram(RPCHandler):
 
         if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-            total = msg['amount'] * msg['open_rate']
         elif msg['type'] in [RPCMessageType.ENTRY]:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-            total = msg['amount'] * msg['limit']
-        if self._rpc._fiat_converter:
-            total_fiat = self._rpc._fiat_converter.convert_amount(
-                total, msg['stake_currency'], msg['fiat_currency'])
-        else:
-            total_fiat = 0
-        message += f"*Total:* `({round_coin_value(total, msg['stake_currency'])}"
+
+        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(total_fiat, msg['fiat_currency'])}"
+            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
 
         message += ")`"
-        if msg.get('sub_trade'):
-            bal = round_coin_value(msg['stake_amount'], msg['stake_currency'])
-            message += f"\n*Balance:* `({bal}"
-
-            if msg.get('fiat_currency', None):
-                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-
-            message += ")`"
         return message
 
     def _format_exit_msg(self, msg: Dict[str, Any]) -> str:
