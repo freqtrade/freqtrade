@@ -56,7 +56,6 @@ def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
 
     process_entry_exit_reasons(Path(config['user_data_dir'], 'backtest_results'),
                                config['exchange']['pair_whitelist'],
-                               config['strategy'],
                                config['analysis_groups'],
                                config['enter_reason_list'],
                                config['exit_reason_list'],

@@ -15,14 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 def _load_signal_candles(backtest_dir: Path):
-
     if backtest_dir.is_dir():
         scpf = Path(backtest_dir,
                     Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl"
                     )
     else:
         scpf = Path(Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl")
-    print(scpf)
+
     try:
         scp = open(scpf, "rb")
         signal_candles = joblib.load(scp)
@@ -154,7 +153,6 @@ def _do_group_table_output(bigdf, glist):
 def _print_results(analysed_trades, stratname, analysis_groups,
                    enter_reason_list, exit_reason_list,
                    indicator_list, columns=None):
-
     if columns is None:
         columns = ['pair', 'open_date', 'close_date', 'profit_abs', 'enter_reason', 'exit_reason']
 
@@ -209,26 +207,25 @@ def _print_table(df, sortcols=None, show_index=False):
 
 def process_entry_exit_reasons(backtest_dir: Path,
                                pairlist: List[str],
-                               strategy_name: str,
                                analysis_groups: Optional[str] = "0,1,2",
                                enter_reason_list: Optional[str] = "all",
                                exit_reason_list: Optional[str] = "all",
                                indicator_list: Optional[str] = None):
-
     try:
-        bt_stats = load_backtest_stats(backtest_dir)
-        logger.info(bt_stats)
-        # strategy_name = bt_stats['something']
-        trades = load_backtest_data(backtest_dir, strategy_name)
+        backtest_stats = load_backtest_stats(backtest_dir)
+        for strategy_name, results in backtest_stats['strategy'].items():
+            trades = load_backtest_data(backtest_dir, strategy_name)
+
+            if not trades.empty:
+                signal_candles = _load_signal_candles(backtest_dir)
+                analysed_trades_dict = _process_candles_and_indicators(pairlist, strategy_name,
+                                                                       trades, signal_candles)
+                _print_results(analysed_trades_dict,
+                               strategy_name,
+                               analysis_groups,
+                               enter_reason_list,
+                               exit_reason_list,
+                               indicator_list)
+
     except ValueError as e:
         raise OperationalException(e) from e
-    if not trades.empty:
-        signal_candles = _load_signal_candles(backtest_dir)
-        analysed_trades_dict = _process_candles_and_indicators(pairlist, strategy_name,
-                                                               trades, signal_candles)
-        _print_results(analysed_trades_dict,
-                       strategy_name,
-                       analysis_groups,
-                       enter_reason_list,
-                       exit_reason_list,
-                       indicator_list)
