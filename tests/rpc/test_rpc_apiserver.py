@@ -1385,8 +1385,6 @@ def test_api_strategies(botclient):
 
     assert_response(rc)
 
-    print(rc.json())
-
     assert rc.json() == {'strategies': [
         'HyperoptableStrategy',
         'InformativeDecoratorTest',

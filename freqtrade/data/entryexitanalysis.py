@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -19,14 +18,11 @@ def _load_signal_candles(backtest_dir: Path):
 
     if backtest_dir.is_dir():
         scpf = Path(backtest_dir,
-                    os.path.splitext(
-                        get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
+                    Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl"
                     )
     else:
-        scpf = Path(os.path.splitext(
-                        get_latest_backtest_filename(backtest_dir))[0] + "_signals.pkl"
-                    )
-
+        scpf = Path(Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl")
+    print(scpf)
     try:
         scp = open(scpf, "rb")
         signal_candles = joblib.load(scp)
