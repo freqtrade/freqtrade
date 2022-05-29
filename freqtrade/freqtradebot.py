@@ -1708,10 +1708,12 @@ class FreqtradeBot(LoggingMixin):
 
         sub_trade = not isclose(order_obj.safe_amount_after_fee,
                                 trade.amount, abs_tol=constants.MATH_CLOSE_PREC)
-        if not trade.is_open:
+        if order_obj.ft_order_side == trade.exit_side:
+            # Exit notification
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True, sub_trade=sub_trade, order=order_obj)
-            self.handle_protections(trade.pair, trade.trade_direction)
+            if not trade.is_open:
+                self.handle_protections(trade.pair, trade.trade_direction)
         elif send_msg and not trade.open_order_id and not stoploss_order:
             # Enter fill
             self._notify_enter(trade, order_obj, fill=True, sub_trade=sub_trade)
