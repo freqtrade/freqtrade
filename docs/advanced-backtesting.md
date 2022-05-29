@@ -28,40 +28,47 @@ backtesting with the `--cache none` option to make sure no cached results are us
 If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` file in the
 `user_data/backtest_results` folder.
 
-To analyze the entry/exit tags, we now need to use the `freqtrade analysis` command:
+To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command:
 
 ``` bash
-freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4
 ```
 
-The `--analysis_groups` option is used to specify the various tabular outputs, ranging from the simplest (0)
-to the most detailed per pair, per buy and per sell tag (4). More options are available by
-running with the `-h` option.
+This command will read from the last backtesting results. The `--analysis-groups` option is
+used to specify the various tabular outputs showing the profit fo each group or trade,
+ranging from the simplest (0) to the most detailed per pair, per buy and per sell tag (4):
+
+* 1: profit summaries grouped by enter_tag
+* 2: profit summaries grouped by enter_tag and exit_tag
+* 3: profit summaries grouped by pair and enter_tag
+* 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
+
+More options are available by running with the `-h` option.
 
 ### Tuning the buy tags and sell tags to display
 
 To show only certain buy and sell tags in the displayed output, use the following two options:
 
 ```
---enter_reason_list : Comma separated list of enter signals to analyse. Default: "all"
---exit_reason_list : Comma separated list of exit signals to analyse. Default: "stop_loss,trailing_stop_loss"
+--enter-reason-list : Comma separated list of enter signals to analyse. Default: "all"
+--exit-reason-list : Comma separated list of exit signals to analyse. Default: "stop_loss,trailing_stop_loss"
 ```
 
 For example:
 
 ```bash
-freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss"
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4 --enter-reason-list "enter_tag_a,enter_tag_b" --exit-reason-list "roi,custom_exit_tag_a,stop_loss"
 ```
 
 ### Outputting signal candle indicators
 
-The real power of `freqtrade analysis` comes from the ability to print out the indicator
+The real power of `freqtrade backtesting-analysis` comes from the ability to print out the indicator
 values present on signal candles to allow fine-grained investigation and tuning of buy signal
 indicators. To print out a column for a given set of indicators, use the `--indicator-list`
 option:
 
 ```bash
-freqtrade analysis -c <config.json> -s <strategy_name> --analysis_groups 0,1,2,3,4 --enter_reason_list "enter_tag_a,enter_tag_b" --exit_reason_list "roi,custom_exit_tag_a,stop_loss" --indicator_list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4 --enter-reason-list "enter_tag_a,enter_tag_b" --exit-reason-list "roi,custom_exit_tag_a,stop_loss" --indicator-list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main
