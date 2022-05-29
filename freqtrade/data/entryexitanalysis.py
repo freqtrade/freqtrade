@@ -7,7 +7,8 @@ import joblib
 import pandas as pd
 from tabulate import tabulate
 
-from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
+from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
+                                       load_backtest_stats)
 from freqtrade.exceptions import OperationalException
 
 
@@ -49,8 +50,8 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
                                                               pair,
                                                               trades,
                                                               signal_candles[strategy_name][pair])
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Cannot process entry/exit reasons for {strategy_name}: ", e)
 
     return analysed_trades_dict
 
@@ -82,104 +83,79 @@ def _analyze_candles_and_indicators(pair, trades, signal_candles):
                 try:
                     trades_red = pd.merge(trades_red, trades_inds, on='signal_date', how='outer')
                 except Exception as e:
-                    print(e)
+                    raise e
         return trades_red
     else:
         return pd.DataFrame()
 
 
 def _do_group_table_output(bigdf, glist):
-    if "0" in glist:
-        wins = bigdf.loc[bigdf['profit_abs'] >= 0] \
-                    .groupby(['enter_reason']) \
-                    .agg({'profit_abs': ['sum']})
+    for g in glist:
+        # 0: summary wins/losses grouped by enter tag
+        if g == "0":
+            group_mask = ['enter_reason']
+            wins = bigdf.loc[bigdf['profit_abs'] >= 0] \
+                        .groupby(group_mask) \
+                        .agg({'profit_abs': ['sum']})
 
-        wins.columns = ['profit_abs_wins']
-        loss = bigdf.loc[bigdf['profit_abs'] < 0] \
-                    .groupby(['enter_reason']) \
-                    .agg({'profit_abs': ['sum']})
-        loss.columns = ['profit_abs_loss']
+            wins.columns = ['profit_abs_wins']
+            loss = bigdf.loc[bigdf['profit_abs'] < 0] \
+                        .groupby(group_mask) \
+                        .agg({'profit_abs': ['sum']})
+            loss.columns = ['profit_abs_loss']
 
-        new = bigdf.groupby(['enter_reason']).agg({'profit_abs': [
-                                                   'count',
-                                                   lambda x: sum(x > 0),
-                                                   lambda x: sum(x <= 0)]})
-        new = pd.concat([new, wins, loss], axis=1).fillna(0)
+            new = bigdf.groupby(group_mask).agg({'profit_abs': [
+                                                    'count',
+                                                    lambda x: sum(x > 0),
+                                                    lambda x: sum(x <= 0)]})
+            new = pd.concat([new, wins, loss], axis=1).fillna(0)
 
-        new['profit_tot'] = new['profit_abs_wins'] - abs(new['profit_abs_loss'])
-        new['wl_ratio_pct'] = (new.iloc[:, 1] / new.iloc[:, 0] * 100).fillna(0)
-        new['avg_win'] = (new['profit_abs_wins'] / new.iloc[:, 1]).fillna(0)
-        new['avg_loss'] = (new['profit_abs_loss'] / new.iloc[:, 2]).fillna(0)
+            new['profit_tot'] = new['profit_abs_wins'] - abs(new['profit_abs_loss'])
+            new['wl_ratio_pct'] = (new.iloc[:, 1] / new.iloc[:, 0] * 100).fillna(0)
+            new['avg_win'] = (new['profit_abs_wins'] / new.iloc[:, 1]).fillna(0)
+            new['avg_loss'] = (new['profit_abs_loss'] / new.iloc[:, 2]).fillna(0)
 
-        new.columns = ['total_num_buys', 'wins', 'losses', 'profit_abs_wins', 'profit_abs_loss',
-                       'profit_tot', 'wl_ratio_pct', 'avg_win', 'avg_loss']
+            new.columns = ['total_num_buys', 'wins', 'losses', 'profit_abs_wins', 'profit_abs_loss',
+                           'profit_tot', 'wl_ratio_pct', 'avg_win', 'avg_loss']
 
-        sortcols = ['total_num_buys']
+            sortcols = ['total_num_buys']
 
-        _print_table(new, sortcols, show_index=True)
-    if "1" in glist:
-        new = bigdf.groupby(['enter_reason']) \
-                   .agg({'profit_abs': ['count', 'sum', 'median', 'mean'],
-                         'profit_ratio': ['sum', 'median', 'mean']}
-                        ).reset_index()
-        new.columns = ['enter_reason', 'num_buys', 'profit_abs_sum', 'profit_abs_median',
-                       'profit_abs_mean', 'median_profit_pct', 'mean_profit_pct',
-                       'total_profit_pct']
-        sortcols = ['profit_abs_sum', 'enter_reason']
+            _print_table(new, sortcols, show_index=True)
 
-        new['median_profit_pct'] = new['median_profit_pct'] * 100
-        new['mean_profit_pct'] = new['mean_profit_pct'] * 100
-        new['total_profit_pct'] = new['total_profit_pct'] * 100
-
-        _print_table(new, sortcols)
-    if "2" in glist:
-        new = bigdf.groupby(['enter_reason', 'exit_reason']) \
-                   .agg({'profit_abs': ['count', 'sum', 'median', 'mean'],
-                         'profit_ratio': ['sum', 'median', 'mean']}
-                        ).reset_index()
-        new.columns = ['enter_reason', 'exit_reason', 'num_buys', 'profit_abs_sum',
-                       'profit_abs_median', 'profit_abs_mean', 'median_profit_pct',
-                       'mean_profit_pct', 'total_profit_pct']
-        sortcols = ['profit_abs_sum', 'enter_reason']
-
-        new['median_profit_pct'] = new['median_profit_pct'] * 100
-        new['mean_profit_pct'] = new['mean_profit_pct'] * 100
-        new['total_profit_pct'] = new['total_profit_pct'] * 100
-
-        _print_table(new, sortcols)
-    if "3" in glist:
-        new = bigdf.groupby(['pair', 'enter_reason']) \
-                   .agg({'profit_abs': ['count', 'sum', 'median', 'mean'],
+        else:
+            agg_mask = {'profit_abs': ['count', 'sum', 'median', 'mean'],
                         'profit_ratio': ['sum', 'median', 'mean']}
-                        ).reset_index()
-        new.columns = ['pair', 'enter_reason', 'num_buys', 'profit_abs_sum',
-                       'profit_abs_median', 'profit_abs_mean', 'median_profit_pct',
-                       'mean_profit_pct', 'total_profit_pct']
-        sortcols = ['profit_abs_sum', 'enter_reason']
+            agg_cols = ['num_buys', 'profit_abs_sum', 'profit_abs_median',
+                        'profit_abs_mean', 'median_profit_pct', 'mean_profit_pct',
+                        'total_profit_pct']
+            sortcols = ['profit_abs_sum', 'enter_reason']
 
-        new['median_profit_pct'] = new['median_profit_pct'] * 100
-        new['mean_profit_pct'] = new['mean_profit_pct'] * 100
-        new['total_profit_pct'] = new['total_profit_pct'] * 100
+            # 1: profit summaries grouped by enter_tag
+            if g == "1":
+                group_mask = ['enter_reason']
 
-        _print_table(new, sortcols)
-    if "4" in glist:
-        new = bigdf.groupby(['pair', 'enter_reason', 'exit_reason']) \
-                   .agg({'profit_abs': ['count', 'sum', 'median', 'mean'],
-                         'profit_ratio': ['sum', 'median', 'mean']}
-                        ).reset_index()
-        new.columns = ['pair', 'enter_reason', 'exit_reason', 'num_buys', 'profit_abs_sum',
-                       'profit_abs_median', 'profit_abs_mean', 'median_profit_pct',
-                       'mean_profit_pct', 'total_profit_pct']
-        sortcols = ['profit_abs_sum', 'enter_reason']
+            # 2: profit summaries grouped by enter_tag and exit_tag
+            if g == "2":
+                group_mask = ['enter_reason', 'exit_reason']
 
-        new['median_profit_pct'] = new['median_profit_pct'] * 100
-        new['mean_profit_pct'] = new['mean_profit_pct'] * 100
-        new['total_profit_pct'] = new['total_profit_pct'] * 100
+            # 3: profit summaries grouped by pair and enter_tag
+            if g == "3":
+                group_mask = ['pair', 'enter_reason']
 
-        _print_table(new, sortcols)
+            # 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
+            if g == "4":
+                group_mask = ['pair', 'enter_reason', 'exit_reason']
+
+            new = bigdf.groupby(group_mask).agg(agg_mask).reset_index()
+            new.columns = group_mask + agg_cols
+            new['median_profit_pct'] = new['median_profit_pct'] * 100
+            new['mean_profit_pct'] = new['mean_profit_pct'] * 100
+            new['total_profit_pct'] = new['total_profit_pct'] * 100
+
+            _print_table(new, sortcols)
 
 
-def _print_results(analysed_trades, stratname, group,
+def _print_results(analysed_trades, stratname, analysis_groups,
                    enter_reason_list, exit_reason_list,
                    indicator_list, columns=None):
 
@@ -191,8 +167,8 @@ def _print_results(analysed_trades, stratname, group,
         bigdf = pd.concat([bigdf, trades], ignore_index=True)
 
     if bigdf.shape[0] > 0 and ('enter_reason' in bigdf.columns):
-        if group is not None:
-            glist = group.split(",")
+        if analysis_groups is not None:
+            glist = analysis_groups.split(",")
             _do_group_table_output(bigdf, glist)
 
         if enter_reason_list is not None and not enter_reason_list == "all":
@@ -244,6 +220,9 @@ def process_entry_exit_reasons(backtest_dir: Path,
                                indicator_list: Optional[str] = None):
 
     try:
+        bt_stats = load_backtest_stats(backtest_dir)
+        logger.info(bt_stats)
+        # strategy_name = bt_stats['something']
         trades = load_backtest_data(backtest_dir, strategy_name)
     except ValueError as e:
         raise OperationalException(e) from e

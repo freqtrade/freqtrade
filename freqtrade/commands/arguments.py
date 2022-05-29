@@ -101,8 +101,8 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "print_json", "hyperoptexportfilename", "hyperopt_show_no_header",
                       "disableparamexport", "backtest_breakdown"]
 
-ARGS_ANALYZE_ENTRIES_EXITS = ["analysis_groups", "enter_reason_list",
-                              "exit_reason_list", "indicator_list"]
+ARGS_ANALYZE_ENTRIES_EXITS = ["analysis-groups", "enter-reason-list",
+                              "exit-reason-list", "indicator-list"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
@@ -421,7 +421,7 @@ class Arguments:
         self._build_args(optionlist=ARGS_WEBSERVER, parser=webserver_cmd)
 
         # Add backtesting analysis subcommand
-        analysis_cmd = subparsers.add_parser('analysis', help='Analysis module.',
+        analysis_cmd = subparsers.add_parser('analysis', help='Backtest Analysis module.',
                                              parents=[_common_parser, _strategy_parser])
         analysis_cmd.set_defaults(func=start_analysis_entries_exits)
         self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)

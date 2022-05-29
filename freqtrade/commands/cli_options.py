@@ -615,7 +615,7 @@ AVAILABLE_CLI_OPTIONS = {
         action="store_true",
     ),
     "analysis_groups": Arg(
-        "--analysis_groups",
+        "--analysis-groups",
         help=("grouping output - ",
               "0: simple wins/losses by enter tag, ",
               "1: by enter_tag, ",
@@ -626,21 +626,21 @@ AVAILABLE_CLI_OPTIONS = {
         default="0,1,2",
     ),
     "enter_reason_list": Arg(
-        "--enter_reason_list",
+        "--enter-reason-list",
         help=("Comma separated list of entry signals to analyse. Default: all. ",
               "e.g. 'entry_tag_a,entry_tag_b'"),
         nargs='?',
         default='all',
     ),
     "exit_reason_list": Arg(
-        "--exit_reason_list",
+        "--exit-reason-list",
         help=("Comma separated list of exit signals to analyse. Default: all. ",
               "e.g. 'exit_tag_a,roi,stop_loss,trailing_stop_loss'"),
         nargs='?',
         default='all',
     ),
     "indicator_list": Arg(
-        "--indicator_list",
+        "--indicator-list",
         help=("Comma separated list of indicators to analyse. ",
               "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
         nargs='?',

@@ -24,10 +24,10 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         "exit_profit_only": False,
         "exit_profit_offset": 0.0,
         "ignore_roi_if_entry_signal": False,
-        'analysis_groups': "0",
-        'enter_reason_list': "all",
-        'exit_reason_list': "all",
-        'indicator_list': "rsi"
+        'analysis-groups': "0",
+        'enter-reason-list': "all",
+        'exit-reason-list': "all",
+        'indicator-list': "rsi"
     })
     patch_exchange(mocker)
     result1 = pd.DataFrame({'pair': ['ETH/BTC', 'LTC/BTC'],
@@ -94,8 +94,8 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--user-data-dir', str(tmpdir),
-        '--analysis_groups', '0',
-        '--indicator_list', 'rsi',
+        '--analysis-groups', '0',
+        '--indicator-list', 'rsi',
         '--strategy',
         'StrategyTestV3Analysis',
     ]
