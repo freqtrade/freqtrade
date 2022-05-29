@@ -1,11 +1,13 @@
 {
-    "max_open_trades": 1,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "max_open_trades": 5,
     "stake_currency": "USDT",
-    "stake_amount": 900,
+    "stake_amount": 200,
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
-    "timeframe": "5m",
+    "timeframe": "3m",
     "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": true,
     "unfilledtimeout": {
@@ -13,7 +15,7 @@
         "exit": 30
     },
     "exchange": {
-        "name": "binance",
+        "name": "okx",
         "key": "",
         "secret": "",
         "ccxt_config": {
@@ -24,7 +26,15 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "BTC/USDT"
+            "AGLD/USDT:USDT",
+            "1INCH/USDT:USDT",
+            "AAVE/USDT:USDT",
+            "ALGO/USDT:USDT",
+            "ALPHA/USDT:USDT",
+            "API3/USDT:USDT",
+            "AVAX/USDT:USDT",
+            "AXS/USDT:USDT",
+            "BCH/USDT:USDT"
         ],
         "pair_blacklist": []
     },
@@ -39,7 +49,7 @@
         }
     },
     "exit_pricing": {
-        "price_side": "same",
+        "price_side": "other",
         "use_order_book": true,
         "order_book_top": 1
     },
@@ -50,26 +60,26 @@
     ],
     "freqai": {
         "timeframes": [
-            "5m",
-            "15m"
+            "3m",
+            "15m",
+            "1h"
         ],
-        "train_period": 30,
-        "backtest_period": 7,
+        "train_period": 20,
+        "backtest_period": 2,
         "identifier": "example",
         "live_trained_timestamp": 0,
         "corr_pairlist": [
-            "BTC/USDT",
-            "ETH/USDT",
-            "DOT/USDT"
+            "BTC/USDT:USDT",
+            "ETH/USDT:USDT"
         ],
         "feature_parameters": {
-            "period": 24,
-            "shift": 1,
+            "period": 20,
+            "shift": 2,
             "DI_threshold": 0,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": true,
-            "stratify": 3
+            "stratify": 0
         },
         "data_split_parameters": {
             "test_size": 0.33,
@@ -77,15 +87,7 @@
         },
         "model_training_parameters": {
             "n_estimators": 1000,
-            "random_state": 1,
-            "learning_rate": 0.1,
             "task_type": "CPU"
         }
-    },
-    "bot_name": "",
-    "initial_state": "running",
-    "forcebuy_enable": false,
-    "internals": {
-        "process_throttle_secs": 5
     }
 }

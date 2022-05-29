@@ -56,6 +56,7 @@ class IFreqaiModel(ABC):
         self.set_full_path()
         self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
                                             self.config['exchange']['pair_whitelist'])
+        self.lock = threading.Lock()
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 

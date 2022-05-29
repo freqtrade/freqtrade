@@ -7,8 +7,10 @@ import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.freqai.strategy_bridge import CustomModel
-from freqtrade.strategy import merge_informative_pair
+from freqtrade.persistence import Trade
+from freqtrade.strategy import DecimalParameter, IntParameter, merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -46,6 +48,11 @@ class FreqaiExampleStrategy(IStrategy):
     stoploss = -0.05
     use_sell_signal = True
     startup_candle_count: int = 300
+    can_short = False
+
+    linear_roi_offset = DecimalParameter(0.00, 0.02, default=0.005, space='sell',
+                                         optimize=False, load=True)
+    max_roi_time_long = IntParameter(0, 800, default=400, space='sell', optimize=False, load=True)
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
@@ -182,25 +189,88 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        buy_conditions = [
-            (dataframe["prediction"] > dataframe["target_roi"]) & (dataframe["do_predict"] == 1)
+        enter_long_conditions = [
+            df['do_predict'] == 1,
+            df['prediction'] > df["target_roi"]
         ]
 
-        if buy_conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, buy_conditions), "buy"] = 1
+        if enter_long_conditions:
+            df.loc[reduce(lambda x, y: x & y,
+                          enter_long_conditions), ["enter_long", "enter_tag"]] = (1, 'long')
 
-        return dataframe
-
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        sell_conditions = [
-            (dataframe["do_predict"] <= 0)
+        enter_short_conditions = [
+            df['do_predict'] == 1,
+            df['prediction'] < df["sell_roi"]
         ]
-        if sell_conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, sell_conditions), "sell"] = 1
 
-        return dataframe
+        if enter_short_conditions:
+            df.loc[reduce(lambda x, y: x & y,
+                          enter_short_conditions), ["enter_short", "enter_tag"]] = (1, 'short')
+
+        return df
+
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        exit_long_conditions = [
+            df['do_predict'] == 1,
+            df['prediction'] < df['sell_roi'] * 0.25
+        ]
+        if exit_long_conditions:
+            df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
+
+        exit_short_conditions = [
+            df['do_predict'] == 1,
+            df['prediction'] > df['target_roi'] * 0.25
+        ]
+        if exit_short_conditions:
+            df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
+
+        return df
 
     def get_ticker_indicator(self):
         return int(self.config["timeframe"][:-1])
+
+    def custom_exit(self, pair: str, trade: Trade, current_time, current_rate,
+                    current_profit, **kwargs):
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+
+        trade_date = timeframe_to_prev_date(self.config['timeframe'], trade.open_date_utc)
+        trade_candle = dataframe.loc[(dataframe['date'] == trade_date)]
+
+        if trade_candle.empty:
+            return None
+        trade_candle = trade_candle.squeeze()
+        pair_dict = self.model.bridge.data_drawer.pair_dict
+        entry_tag = trade.enter_tag
+
+        if 'prediction' + entry_tag not in pair_dict[pair]:
+            with self.model.bridge.lock:
+                self.model.bridge.data_drawer.pair_dict[pair][
+                    'prediction' + entry_tag] = abs(trade_candle['prediction'])
+                self.model.bridge.data_drawer.save_drawer_to_disk()
+        else:
+            if pair_dict[pair]['prediction' + entry_tag] > 0:
+                roi_price = abs(trade_candle['prediction' + entry_tag])
+            else:
+                with self.model.bridge.lock:
+                    self.model.bridge.data_drawer.pair_dict[pair][
+                        'prediction' + entry_tag] = abs(trade_candle['prediction'])
+                    self.model.bridge.data_drawer.save_drawer_to_disk()
+
+        roi_price = abs(trade_candle['prediction'])
+        roi_time = self.max_roi_time_long.value
+
+        roi_decay = roi_price * (1 - ((current_time - trade.open_date_utc).seconds) /
+                                 (roi_time * 60))
+        if roi_decay < 0:
+            roi_decay = self.linear_roi_offset.value
+        else:
+            roi_decay += self.linear_roi_offset.value
+
+        if current_profit > roi_price:  # roi_decay:
+            with self.model.bridge.lock:
+                self.model.bridge.data_drawer.pair_dict[pair]['prediction' + entry_tag] = 0
+                self.model.bridge.data_drawer.save_drawer_to_disk()
+            return 'roi_custom_win'

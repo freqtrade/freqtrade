@@ -109,4 +109,5 @@ target/
 !config_examples/config_ftx.example.json
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
-!config_examples/config_freqai.example.json
+!config_examples/config_freqai_futures.example.json
+!config_examples/config_freqai_spot.example.json
