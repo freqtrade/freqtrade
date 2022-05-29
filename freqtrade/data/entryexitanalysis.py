@@ -173,7 +173,7 @@ def _print_results(analysed_trades, stratname, analysis_groups,
             exit_reason_list = exit_reason_list.split(",")
             bigdf = bigdf.loc[(bigdf['exit_reason'].isin(exit_reason_list))]
 
-        if indicator_list is not None:
+        if indicator_list is not None and indicator_list != "":
             if indicator_list == "all":
                 print(bigdf)
             else:
@@ -183,8 +183,6 @@ def _print_results(analysed_trades, stratname, analysis_groups,
                         available_inds.append(ind)
                 ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
                 _print_table(bigdf[ilist], sortcols=['exit_reason'], show_index=False)
-        else:
-            _print_table(bigdf[columns], sortcols=['pair'], show_index=False)
     else:
         print("\\_ No trades to show")
 
