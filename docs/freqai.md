@@ -280,9 +280,10 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 By default, Freqai will not find find any existing models and will start by training a new one 
 given the user configuration settings. Following training, it will use that model to predict for the
 duration of `backtest_period`. After a full `backtest_period` has elapsed, Freqai will auto retrain 
-a new model, and begin making predictions with the updated model. FreqAI in live mode permits
-the user to use fractional days (i.e. 0.1) in the `backtest_period`, which enables more frequent 
-retraining. 
+a new model, and begin making predictions with the updated model. FreqAI backtesting and live both
+permit the user to use fractional days (i.e. 0.1) in the `backtest_period`, which enables more frequent 
+retraining. But the user should be careful that using a fractional `backtest_period` with a large
+`--timerange` in backtesting will result in a huge amount of required trainings/models.
 
 If the user wishes to start dry/live from a backtested saved model, the user only needs to reuse
 the same `identifier` parameter

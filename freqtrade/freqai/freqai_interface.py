@@ -142,10 +142,11 @@ class IFreqaiModel(ABC):
             gc.collect()
             dh.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
+            # self.training_timerange_timerange = tr_train
             dataframe_train = dh.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dh.slice_dataframe(tr_backtest, dataframe)
             logger.info("training %s for %s", metadata["pair"], tr_train)
-            trained_timestamp = TimeRange.parse_timerange(tr_train)
+            trained_timestamp = tr_train  # TimeRange.parse_timerange(tr_train)
             dh.data_path = Path(dh.full_path /
                                 str("sub-train" + "-" + metadata['pair'].split("/")[0] +
                                     str(int(trained_timestamp.stopts))))

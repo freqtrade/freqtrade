@@ -60,11 +60,11 @@ class FreqaiDataKitchen:
         self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
-            if config.get('freqai', {}).get('backtest_period') < 1:
-                raise OperationalException('backtest_period < 1,'
-                                           'Can only backtest on full day increments'
-                                           'backtest_period. Only live/dry mode'
-                                           'allows fractions of days')
+            # if config.get('freqai', {}).get('backtest_period') < 1:
+            #     raise OperationalException('backtest_period < 1,'
+            #                                'Can only backtest on full day increments'
+            #                                'backtest_period. Only live/dry mode'
+            #                                'allows fractions of days')
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
                                                             self.freqai_config.get("train_period")
                                                             )
@@ -401,6 +401,8 @@ class FreqaiDataKitchen:
 
         tr_training_list = []
         tr_backtesting_list = []
+        tr_training_list_timerange = []
+        tr_backtesting_list_timerange = []
         first = True
         # within_config_timerange = True
         while True:
@@ -412,6 +414,7 @@ class FreqaiDataKitchen:
             start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_train.stopts)
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
             # associated backtest period
 
@@ -425,16 +428,17 @@ class FreqaiDataKitchen:
             start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
             stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
             tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
+            tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
             # ensure we are predicting on exactly same amount of data as requested by user defined
             #  --timerange
             if timerange_backtest.stopts == config_timerange.stopts:
                 break
 
-        print(tr_training_list, tr_backtesting_list)
-        return tr_training_list, tr_backtesting_list
+        # print(tr_training_list, tr_backtesting_list)
+        return tr_training_list_timerange, tr_backtesting_list_timerange
 
-    def slice_dataframe(self, tr: str, df: DataFrame) -> DataFrame:
+    def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """
         Given a full dataframe, extract the user desired window
         :params:
@@ -442,7 +446,7 @@ class FreqaiDataKitchen:
         :df: Dataframe containing all candles to run the entire backtest. Here
         it is sliced down to just the present training period.
         """
-        timerange = TimeRange.parse_timerange(tr)
+        # timerange = TimeRange.parse_timerange(tr)
         start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
         stop = datetime.datetime.fromtimestamp(timerange.stopts, tz=datetime.timezone.utc)
         df = df.loc[df["date"] >= start, :]
