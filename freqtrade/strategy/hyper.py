@@ -31,7 +31,12 @@ class HyperStrategyMixin:
         self.ft_sell_params: List[BaseParameter] = []
         self.ft_protection_params: List[BaseParameter] = []
 
-        self._load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
+        params = self.load_params_from_file()
+        params = params.get('params', {})
+        self._ft_params_from_file = params
+
+        if config.get('runmode') != RunMode.BACKTEST:
+            self.ft_load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
@@ -80,21 +85,25 @@ class HyperStrategyMixin:
 
         return params
 
-    def _load_hyper_params(self, hyperopt: bool = False) -> None:
+    def ft_load_hyper_params(self, hyperopt: bool = False) -> None:
         """
         Load Hyperoptable parameters
+        Prevalence:
+        * Parameters from parameter file
+        * Parameters defined in parameters objects (buy_params, sell_params, ...)
+        * Parameter defaults
         """
-        params = self.load_params_from_file()
-        params = params.get('params', {})
-        self._ft_params_from_file = params
-        buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', {}))
-        sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', {}))
-        protection_params = deep_merge_dicts(params.get('protection', {}),
+
+        buy_params = deep_merge_dicts(self._ft_params_from_file.get('buy', {}),
+                                      getattr(self, 'buy_params', {}))
+        sell_params = deep_merge_dicts(self._ft_params_from_file.get('sell', {}),
+                                       getattr(self, 'sell_params', {}))
+        protection_params = deep_merge_dicts(self._ft_params_from_file.get('protection', {}),
                                              getattr(self, 'protection_params', {}))
 
-        self._load_params(buy_params, 'buy', hyperopt)
-        self._load_params(sell_params, 'sell', hyperopt)
-        self._load_params(protection_params, 'protection', hyperopt)
+        self._ft_load_params(buy_params, 'buy', hyperopt)
+        self._ft_load_params(sell_params, 'sell', hyperopt)
+        self._ft_load_params(protection_params, 'protection', hyperopt)
 
     def load_params_from_file(self) -> Dict:
         filename_str = getattr(self, '__file__', '')
@@ -117,7 +126,7 @@ class HyperStrategyMixin:
 
         return {}
 
-    def _load_params(self, params: Dict, space: str, hyperopt: bool = False) -> None:
+    def _ft_load_params(self, params: Dict, space: str, hyperopt: bool = False) -> None:
         """
         Set optimizable parameter values.
         :param params: Dictionary with new parameter values.

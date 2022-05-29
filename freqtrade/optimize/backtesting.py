@@ -187,6 +187,9 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        if self.dataprovider.runmode == RunMode.BACKTEST:
+            # in hyperopt mode - don't re-init params
+            self.strategy.ft_load_hyper_params(False)
         self.strategy.ft_bot_start()
 
     def _load_protections(self, strategy: IStrategy):
