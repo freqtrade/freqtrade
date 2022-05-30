@@ -95,18 +95,40 @@ class FreqaiDataDrawer:
         self.model_return_values[pair]['target_std'] = dh.full_target_std
 
     def append_model_predictions(self, pair: str, predictions, do_preds,
-                                 target_mean, target_std, dh) -> None:
+                                 target_mean, target_std, dh, len_df) -> None:
 
-        pred_store = self.model_return_values[pair]['predictions']
-        do_pred_store = self.model_return_values[pair]['do_preds']
-        tm_store = self.model_return_values[pair]['target_mean']
-        ts_store = self.model_return_values[pair]['target_std']
-        pred_store = np.append(pred_store[1:], predictions[-1])
-        do_pred_store = np.append(do_pred_store[1:], do_preds[-1])
-        tm_store = np.append(tm_store[1:], target_mean)
-        ts_store = np.append(ts_store[1:], target_std)
+        # strat seems to feed us variable sized dataframes - and since we are trying to build our
+        # own return array in the same shape, we need to figure out how the size has changed
+        # and adapt our stored/returned info accordingly.
+        length_difference = len(self.model_return_values[pair]['predictions']) - len_df
+        i = 0
 
-        dh.full_predictions = copy.deepcopy(pred_store)
-        dh.full_do_predict = copy.deepcopy(do_pred_store)
-        dh.full_target_mean = copy.deepcopy(tm_store)
-        dh.full_target_std = copy.deepcopy(ts_store)
+        if length_difference == 0:
+            i = 1
+        elif length_difference > 0:
+            i = length_difference + 1
+
+        self.model_return_values[pair]['predictions'] = np.append(
+            self.model_return_values[pair]['predictions'][i:], predictions[-1])
+        self.model_return_values[pair]['do_preds'] = np.append(
+            self.model_return_values[pair]['do_preds'][i:], do_preds[-1])
+        self.model_return_values[pair]['target_mean'] = np.append(
+            self.model_return_values[pair]['target_mean'][i:], target_mean)
+        self.model_return_values[pair]['target_std'] = np.append(
+            self.model_return_values[pair]['target_std'][i:], target_std)
+
+        if length_difference < 0:
+            prepend = np.zeros(abs(length_difference) - 1)
+            self.model_return_values[pair]['predictions'] = np.insert(
+                self.model_return_values[pair]['predictions'], 0, prepend)
+            self.model_return_values[pair]['do_preds'] = np.insert(
+                self.model_return_values[pair]['do_preds'], 0, prepend)
+            self.model_return_values[pair]['target_mean'] = np.insert(
+                self.model_return_values[pair]['target_mean'], 0, prepend)
+            self.model_return_values[pair]['target_std'] = np.insert(
+                self.model_return_values[pair]['target_std'], 0, prepend)
+
+        dh.full_predictions = copy.deepcopy(self.model_return_values[pair]['predictions'])
+        dh.full_do_predict = copy.deepcopy(self.model_return_values[pair]['do_preds'])
+        dh.full_target_mean = copy.deepcopy(self.model_return_values[pair]['target_mean'])
+        dh.full_target_std = copy.deepcopy(self.model_return_values[pair]['target_std'])

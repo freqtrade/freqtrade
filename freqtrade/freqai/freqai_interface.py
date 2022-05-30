@@ -228,7 +228,8 @@ class IFreqaiModel(ABC):
             preds, do_preds = self.predict(dataframe.iloc[-2:], dh)
             self.data_drawer.append_model_predictions(metadata['pair'], preds, do_preds,
                                                       dh.data["target_mean"],
-                                                      dh.data["target_std"], dh)
+                                                      dh.data["target_std"], dh,
+                                                      len(dataframe))
 
         return dh
 
