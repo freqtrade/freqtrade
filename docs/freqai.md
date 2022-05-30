@@ -391,7 +391,7 @@ Freqai will train an SVM on the training data (or components if the user activat
 `principal_component_analysis`) and remove any data point that it deems to be sit beyond the 
 feature space.
 
-## Stratifying the data
+### Stratifying the data
 
 The user can stratify the training/testing data using:
 
@@ -403,9 +403,25 @@ The user can stratify the training/testing data using:
     }
 ```
 
-which will split the data chronologically so that every X data points is a testing data point. In the
+which will split the data chronologically so that every Xth data points is a testing data point. In the
 present example, the user is asking for every third data point in the dataframe to be used for 
 testing, the other points are used for training. 
+
+### Setting up a follower
+
+The user can define:
+
+```json
+    "freqai": {
+        "follow_mode": true,
+        "identifier": "example"
+    }
+```
+
+to indicate to the bot that it should not train models, but instead should look for models trained 
+by a leader with the same `identifier`. In this example, the user has a leader bot with the 
+`identifier: "example"` already running or launching simultaneously as the present follower. 
+The follower will load models created by the leader and inference them to obtain predictions.
 
 <!-- ## Dynamic target expectation
 

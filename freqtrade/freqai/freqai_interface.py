@@ -54,9 +54,13 @@ class IFreqaiModel(ABC):
         self.retrain = False
         self.first = True
         self.set_full_path()
+        self.follow_mode = self.freqai_info.get('follow_mode', False)
         self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
-                                            self.config['exchange']['pair_whitelist'])
+                                            self.config['exchange']['pair_whitelist'],
+                                            self.follow_mode)
         self.lock = threading.Lock()
+        self.follow_mode = self.freqai_info.get('follow_mode', False)
+        self.identifier = self.freqai_info.get('identifier', 'no_id_provided')
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -105,7 +109,7 @@ class IFreqaiModel(ABC):
         # (backtest window, i.e. window immediately following the training window).
         # FreqAI slides the window and sequentially builds the backtesting results before returning
         # the concatenated results for the full backtesting period back to the strategy.
-        else:
+        elif not self.follow_mode:
             self.dh = FreqaiDataKitchen(self.config, self.data_drawer, self.live, metadata["pair"])
             logger.info(f'Training {len(self.dh.training_timeranges)} timeranges')
             dh = self.start_backtesting(dataframe, metadata, self.dh)
@@ -138,7 +142,7 @@ class IFreqaiModel(ABC):
         for tr_train, tr_backtest in zip(
             dh.training_timeranges, dh.backtesting_timeranges
         ):
-            (_, _, _) = self.data_drawer.get_pair_dict_info(metadata)
+            (_, _, _, _) = self.data_drawer.get_pair_dict_info(metadata)
             gc.collect()
             dh.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
@@ -188,9 +192,15 @@ class IFreqaiModel(ABC):
 
         (model_filename,
          trained_timestamp,
-         coin_first) = self.data_drawer.get_pair_dict_info(metadata)
+         coin_first,
+         return_null_array) = self.data_drawer.get_pair_dict_info(metadata)
 
-        if (not self.training_on_separate_thread):
+        # if the files do not yet exist, the follower returns null arrays to strategy
+        if self.follow_mode and return_null_array:
+            self.data_drawer.return_null_values_to_strategy(dataframe, dh)
+            return dh
+
+        if (not self.training_on_separate_thread and not self.follow_mode):
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available
@@ -212,8 +222,11 @@ class IFreqaiModel(ABC):
                     self.retrain_model_on_separate_thread(new_trained_timerange,
                                                           metadata, strategy, dh)
 
-        else:
+        elif self.training_on_separate_thread and not self.follow_mode:
             logger.info("FreqAI training a new model on background thread.")
+        elif self.follow_mode:
+            logger.info('FreqAI instance set to follow_mode, finding existing pair'
+                        f'using { self.identifier }')
 
         self.model = dh.load_data(coin=metadata['pair'])
 

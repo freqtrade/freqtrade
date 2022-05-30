@@ -7,6 +7,10 @@ from typing import Any, Dict, Tuple
 
 # import pickle as pk
 import numpy as np
+from pandas import DataFrame
+
+
+# from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +23,7 @@ class FreqaiDataDrawer:
     This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
     reinstantiated for each coin.
     """
-    def __init__(self, full_path: Path, pair_whitelist):
+    def __init__(self, full_path: Path, pair_whitelist, follow_mode: bool = False):
 
         # dictionary holding all pair metadata necessary to load in from disk
         self.pair_dict: Dict[str, Any] = {}
@@ -28,6 +32,7 @@ class FreqaiDataDrawer:
         self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
         self.full_path = full_path
+        self.follow_mode = follow_mode
         self.load_drawer_from_disk()
         self.training_queue: Dict[str, int] = {}
         # self.create_training_queue(pair_whitelist)
@@ -37,8 +42,12 @@ class FreqaiDataDrawer:
         if exists:
             with open(self.full_path / str('pair_dictionary.json'), "r") as fp:
                 self.pair_dict = json.load(fp)
-        else:
+        elif not self.follow_mode:
             logger.info("Could not find existing datadrawer, starting from scratch")
+        else:
+            logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
+                           'sending null values back to strategy')
+
         return exists
 
     def save_drawer_to_disk(self):
@@ -49,19 +58,25 @@ class FreqaiDataDrawer:
         if isinstance(object, np.generic):
             return object.item()
 
-    def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool]:
+    def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool, bool]:
         pair_in_dict = self.pair_dict.get(metadata['pair'])
+        return_null_array = False
         if pair_in_dict:
             model_filename = self.pair_dict[metadata['pair']]['model_filename']
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp']
             coin_first = self.pair_dict[metadata['pair']]['first']
-        else:
+        elif not self.follow_mode:
             self.pair_dict[metadata['pair']] = {}
             model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
             coin_first = self.pair_dict[metadata['pair']]['first'] = True
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
+        else:
+            logger.warning(f'Follow mode could not find current pair {metadata["pair"]} in'
+                           f'pair_dictionary at path {self.full_path}, sending null values'
+                           'back to strategy.')
+            return_null_array = True
 
-        return model_filename, trained_timestamp, coin_first
+        return model_filename, trained_timestamp, coin_first, return_null_array
 
     def set_pair_dict_info(self, metadata: dict) -> None:
         pair_in_dict = self.pair_dict.get(metadata['pair'])
@@ -93,6 +108,9 @@ class FreqaiDataDrawer:
         self.model_return_values[pair]['do_preds'] = dh.full_do_predict
         self.model_return_values[pair]['target_mean'] = dh.full_target_mean
         self.model_return_values[pair]['target_std'] = dh.full_target_std
+
+        # if not self.follow_mode:
+        #     self.save_model_return_values_to_disk()
 
     def append_model_predictions(self, pair: str, predictions, do_preds,
                                  target_mean, target_std, dh, len_df) -> None:
@@ -132,3 +150,33 @@ class FreqaiDataDrawer:
         dh.full_do_predict = copy.deepcopy(self.model_return_values[pair]['do_preds'])
         dh.full_target_mean = copy.deepcopy(self.model_return_values[pair]['target_mean'])
         dh.full_target_std = copy.deepcopy(self.model_return_values[pair]['target_std'])
+
+        # if not self.follow_mode:
+        #     self.save_model_return_values_to_disk()
+
+    def return_null_values_to_strategy(self, dataframe: DataFrame, dh) -> None:
+
+        len_df = len(dataframe)
+        dh.full_predictions = np.zeros(len_df)
+        dh.full_do_predict = np.zeros(len_df)
+        dh.full_target_mean = np.zeros(len_df)
+        dh.full_target_std = np.zeros(len_df)
+
+    # to be used if we want to send predictions directly to the follower instead of forcing
+    # follower to load models and inference
+    # def save_model_return_values_to_disk(self) -> None:
+    #     with open(self.full_path / str('model_return_values.json'), "w") as fp:
+    #         json.dump(self.model_return_values, fp, default=self.np_encoder)
+
+    # def load_model_return_values_from_disk(self, dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
+    #     exists = Path(self.full_path / str('model_return_values.json')).resolve().exists()
+    #     if exists:
+    #         with open(self.full_path / str('model_return_values.json'), "r") as fp:
+    #             self.model_return_values = json.load(fp)
+    #     elif not self.follow_mode:
+    #         logger.info("Could not find existing datadrawer, starting from scratch")
+    #     else:
+    #         logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
+    #                        'sending null values back to strategy')
+
+    #     return exists, dh

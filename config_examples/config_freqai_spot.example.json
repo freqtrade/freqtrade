@@ -56,7 +56,7 @@
             "15m",
             "4h"
         ],
-        "train_period": 60,
+        "train_period": 30,
         "backtest_period": 7,
         "identifier": "example",
         "live_trained_timestamp": 0,
