@@ -197,6 +197,7 @@ class IFreqaiModel(ABC):
 
         # if the files do not yet exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
+            logger.info('Returning null array from follower')
             self.data_drawer.return_null_values_to_strategy(dataframe, dh)
             return dh
 
@@ -225,6 +226,7 @@ class IFreqaiModel(ABC):
         elif self.training_on_separate_thread and not self.follow_mode:
             logger.info("FreqAI training a new model on background thread.")
         elif self.follow_mode:
+            dh.set_paths(metadata, trained_timestamp)
             logger.info('FreqAI instance set to follow_mode, finding existing pair'
                         f'using { self.identifier }')
 

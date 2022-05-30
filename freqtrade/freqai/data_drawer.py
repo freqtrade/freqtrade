@@ -60,7 +60,9 @@ class FreqaiDataDrawer:
 
     def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool, bool]:
         pair_in_dict = self.pair_dict.get(metadata['pair'])
+        data_path_set = self.pair_dict.get(metadata['pair'], {}).get('data_path', None)
         return_null_array = False
+
         if pair_in_dict:
             model_filename = self.pair_dict[metadata['pair']]['model_filename']
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp']
@@ -70,9 +72,10 @@ class FreqaiDataDrawer:
             model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
             coin_first = self.pair_dict[metadata['pair']]['first'] = True
             trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
-        else:
-            logger.warning(f'Follow mode could not find current pair {metadata["pair"]} in'
-                           f'pair_dictionary at path {self.full_path}, sending null values'
+
+        if not data_path_set and self.follow_mode:
+            logger.warning(f'Follower could not find current pair {metadata["pair"]} in '
+                           f'pair_dictionary at path {self.full_path}, sending null values '
                            'back to strategy.')
             return_null_array = True
 
