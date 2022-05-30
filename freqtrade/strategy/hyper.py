@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple
 
-from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
@@ -34,9 +33,7 @@ class HyperStrategyMixin:
         params = self.load_params_from_file()
         params = params.get('params', {})
         self._ft_params_from_file = params
-
-        if config.get('runmode') != RunMode.BACKTEST:
-            self.ft_load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
+        # Init/loading of parameters is done as part of ft_bot_start().
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
@@ -56,12 +53,11 @@ class HyperStrategyMixin:
         for par in params:
             yield par.name, par
 
-    @classmethod
-    def detect_parameters(cls, category: str) -> Iterator[Tuple[str, BaseParameter]]:
+    def detect_parameters(self, category: str) -> Iterator[Tuple[str, BaseParameter]]:
         """ Detect all parameters for 'category' """
-        for attr_name in dir(cls):
+        for attr_name in dir(self):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
-                attr = getattr(cls, attr_name)
+                attr = getattr(self, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
                     if (attr_name.startswith(category + '_')
                             and attr.category is not None and attr.category != category):
