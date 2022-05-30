@@ -46,6 +46,9 @@ class AwesomeStrategy(IStrategy):
             self.cust_remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
+
+During hyperopt, this runs only once at startup.
+
 ## Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).

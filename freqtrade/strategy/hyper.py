@@ -86,7 +86,10 @@ class HyperStrategyMixin:
         return params
 
     def ft_load_hyper_params_from_file(self) -> None:
-        """ Load Parameters from parameter file"""
+        """
+        Load Parameters from parameter file
+        Should/must run before config values are loaded in strategy_resolver.
+        """
         if self._ft_params_from_file:
             # Set parameters from Hyperopt results file
             params = self._ft_params_from_file
