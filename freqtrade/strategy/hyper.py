@@ -4,7 +4,7 @@ This module defines a base class for auto-hyperoptable strategies.
 """
 import logging
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple, Type, Union
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, json_load
@@ -53,27 +53,13 @@ class HyperStrategyMixin:
         for par in params:
             yield par.name, par
 
-    def detect_parameters(self, category: str) -> Iterator[Tuple[str, BaseParameter]]:
-        """ Detect all parameters for 'category' """
-        for attr_name in dir(self):
-            if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
-                attr = getattr(self, attr_name)
-                if issubclass(attr.__class__, BaseParameter):
-                    if (attr_name.startswith(category + '_')
-                            and attr.category is not None and attr.category != category):
-                        raise OperationalException(
-                            f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
-                    if (category == attr.category or
-                            (attr_name.startswith(category + '_') and attr.category is None)):
-                        yield attr_name, attr
-
     @classmethod
     def detect_all_parameters(cls) -> Dict:
         """ Detect all parameters and return them as a list"""
         params: Dict[str, Any] = {
-            'buy': list(cls.detect_parameters('buy')),
-            'sell': list(cls.detect_parameters('sell')),
-            'protection': list(cls.detect_parameters('protection')),
+            'buy': list(detect_parameters(cls, 'buy')),
+            'sell': list(detect_parameters(cls, 'sell')),
+            'protection': list(detect_parameters(cls, 'protection')),
         }
         params.update({
             'count': len(params['buy'] + params['sell'] + params['protection'])
@@ -155,7 +141,7 @@ class HyperStrategyMixin:
             logger.info(f"No params for {space} found, using default values.")
         param_container: List[BaseParameter] = getattr(self, f"ft_{space}_params")
 
-        for attr_name, attr in self.detect_parameters(space):
+        for attr_name, attr in detect_parameters(self, space):
             attr.name = attr_name
             attr.in_space = hyperopt and HyperoptTools.has_space(self.config, space)
             if not attr.category:
@@ -186,3 +172,25 @@ class HyperStrategyMixin:
             if not p.optimize or not p.in_space:
                 params[p.category][name] = p.value
         return params
+
+
+def detect_parameters(
+        obj: Union[HyperStrategyMixin, Type[HyperStrategyMixin]],
+        category: str
+        ) -> Iterator[Tuple[str, BaseParameter]]:
+    """
+    Detect all parameters for 'category' for "obj"
+    :param obj: Strategy object or class
+    :param category: category - usually `'buy', 'sell', 'protection',...
+    """
+    for attr_name in dir(obj):
+        if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
+            attr = getattr(obj, attr_name)
+            if issubclass(attr.__class__, BaseParameter):
+                if (attr_name.startswith(category + '_')
+                        and attr.category is not None and attr.category != category):
+                    raise OperationalException(
+                        f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
+                if (category == attr.category or
+                        (attr_name.startswith(category + '_') and attr.category is None)):
+                    yield attr_name, attr
