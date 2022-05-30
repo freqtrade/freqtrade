@@ -119,6 +119,10 @@ class FreqaiDataKitchen:
             save_path / str(self.model_filename + "_trained_df.pkl")
         )
 
+        if self.freqai_config.get('feature_parameters', {}).get('principal_component_analysis'):
+            pk.dump(self.pca, open(self.data_path /
+                    str(self.model_filename + "_pca_object.pkl"), "wb"))
+
         # if self.live:
         self.data_drawer.model_dictionary[self.model_filename] = model
         self.data_drawer.pair_dict[coin]['model_filename'] = self.model_filename
@@ -185,7 +189,8 @@ class FreqaiDataKitchen:
                 "_svm_model.joblib")).resolve().exists():
             self.svm_model = load(self.data_path / str(self.model_filename + "_svm_model.joblib"))
 
-        assert model, (
+        if not model:
+            raise OperationalException(
                        f"Unable to load model, ensure model exists at "
                        f"{self.data_path} "
                       )
@@ -499,7 +504,6 @@ class FreqaiDataKitchen:
 
         if not self.data_path.is_dir():
             self.data_path.mkdir(parents=True, exist_ok=True)
-        pk.dump(pca2, open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "wb"))
 
         return None
 
