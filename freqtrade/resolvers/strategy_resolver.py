@@ -47,7 +47,7 @@ class StrategyResolver(IResolver):
         strategy: IStrategy = StrategyResolver._load_strategy(
             strategy_name, config=config,
             extra_dir=config.get('strategy_path'))
-        strategy.ft_load_hyper_params_from_file()
+        strategy.ft_load_params_from_file()
         # Set attributes
         # Check if we need to override configuration
         #             (Attribute name,                    default,     subkey)

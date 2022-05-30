@@ -85,7 +85,7 @@ class HyperStrategyMixin:
 
         return params
 
-    def ft_load_hyper_params_from_file(self) -> None:
+    def ft_load_params_from_file(self) -> None:
         """
         Load Parameters from parameter file
         Should/must run before config values are loaded in strategy_resolver.
