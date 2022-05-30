@@ -7,6 +7,7 @@
     "dry_run": true,
     "timeframe": "5m",
     "dry_run_wallet": 4000,
+    "dataformat_ohlcv": "hdf5",
     "cancel_open_orders_on_exit": true,
     "unfilledtimeout": {
         "entry": 10,
@@ -24,7 +25,8 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "BTC/USDT"
+            "BTC/USDT",
+            "ETH/USDT"
         ],
         "pair_blacklist": []
     },
@@ -39,7 +41,7 @@
         }
     },
     "exit_pricing": {
-        "price_side": "same",
+        "price_side": "other",
         "use_order_book": true,
         "order_book_top": 1
     },
@@ -54,7 +56,7 @@
             "15m",
             "4h"
         ],
-        "train_period": 30,
+        "train_period": 60,
         "backtest_period": 7,
         "identifier": "example",
         "live_trained_timestamp": 0,
@@ -66,7 +68,7 @@
             "SOL/USDT"
         ],
         "feature_parameters": {
-            "period": 20,
+            "period": 500,
             "shift": 1,
             "DI_threshold": 0,
             "weight_factor": 0.9,

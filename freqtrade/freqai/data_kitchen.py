@@ -735,7 +735,7 @@ class FreqaiDataKitchen:
                         exchange, pairs=pairs, timeframes=self.freqai_config.get('timeframes'),
                         datadir=self.config['datadir'], timerange=timerange,
                         new_pairs_days=self.config['new_pairs_days'],
-                        erase=False, data_format=self.config['dataformat_ohlcv'],
+                        erase=False, data_format=self.config.get('dataformat_ohlcv', 'json'),
                         trading_mode=self.config.get('trading_mode', 'spot'),
                         prepend=self.config.get('prepend_data', False)
                     )
@@ -751,6 +751,8 @@ class FreqaiDataKitchen:
             base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
                                                     timeframe=tf,
                                                     pair=metadata['pair'], timerange=timerange,
+                                                    data_format=self.config.get(
+                                                    'dataformat_ohlcv', 'json'),
                                                     candle_type=self.config.get(
                                                     'trading_mode', 'spot'))
             if pairs:
@@ -762,6 +764,8 @@ class FreqaiDataKitchen:
                     corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
                                                                timeframe=tf,
                                                                pair=p, timerange=timerange,
+                                                               data_format=self.config.get(
+                                                               'dataformat_ohlcv', 'json'),
                                                                candle_type=self.config.get(
                                                                'trading_mode', 'spot'))
 
