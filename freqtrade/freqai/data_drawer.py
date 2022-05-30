@@ -86,14 +86,15 @@ class FreqaiDataDrawer:
         # send pair to end of queue
         self.pair_dict[pair]['priority'] = len(self.pair_dict)
 
-    def set_initial_return_values(self, pair, dh):
+    def set_initial_return_values(self, pair: str, dh):
+
         self.model_return_values[pair] = {}
         self.model_return_values[pair]['predictions'] = dh.full_predictions
         self.model_return_values[pair]['do_preds'] = dh.full_do_predict
         self.model_return_values[pair]['target_mean'] = dh.full_target_mean
         self.model_return_values[pair]['target_std'] = dh.full_target_std
 
-    def append_model_predictions(self, pair, predictions, do_preds,
+    def append_model_predictions(self, pair: str, predictions, do_preds,
                                  target_mean, target_std, dh) -> None:
 
         pred_store = self.model_return_values[pair]['predictions']
