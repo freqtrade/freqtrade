@@ -893,7 +893,7 @@ def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategy'})
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
-
+    strategy.ft_bot_start()
     with pytest.raises(OperationalException):
         next(strategy.enumerate_parameters('deadBeef'))
 
