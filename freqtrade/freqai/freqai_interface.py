@@ -219,8 +219,16 @@ class IFreqaiModel(ABC):
 
         self.check_if_feature_list_matches_strategy(dataframe, dh)
 
-        preds, do_preds = self.predict(dataframe, dh)
-        dh.append_predictions(preds, do_preds, len(dataframe))
+        if metadata['pair'] not in self.data_drawer.model_return_values:
+            preds, do_preds = self.predict(dataframe, dh)
+            dh.append_predictions(preds, do_preds, len(dataframe))
+            dh.fill_predictions(len(dataframe))
+            self.data_drawer.set_initial_return_values(metadata['pair'], dh)
+        else:
+            preds, do_preds = self.predict(dataframe.iloc[-2:], dh)
+            self.data_drawer.append_model_predictions(metadata['pair'], preds, do_preds,
+                                                      self.dh.data["target_mean"],
+                                                      self.dh.data["target_std"], dh)
 
         return dh
 

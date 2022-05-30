@@ -623,7 +623,7 @@ class FreqaiDataKitchen:
         Append backtest prediction from current backtest period to all previous periods
         """
 
-        ones = np.ones(len_dataframe)
+        ones = np.ones(len(predictions))
         target_mean, target_std = ones * self.data["target_mean"], ones * self.data["target_std"]
 
         self.full_predictions = np.append(self.full_predictions, predictions)

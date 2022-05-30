@@ -1,4 +1,5 @@
 
+import copy
 import json
 import logging
 from pathlib import Path
@@ -24,6 +25,7 @@ class FreqaiDataDrawer:
         self.pair_dict: Dict[str, Any] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
         self.model_dictionary: Dict[str, Any] = {}
+        self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.load_drawer_from_disk()
@@ -83,3 +85,27 @@ class FreqaiDataDrawer:
             self.pair_dict[p]['priority'] -= 1
         # send pair to end of queue
         self.pair_dict[pair]['priority'] = len(self.pair_dict)
+
+    def set_initial_return_values(self, pair, dh):
+        self.model_return_values[pair] = {}
+        self.model_return_values[pair]['predictions'] = dh.full_predictions
+        self.model_return_values[pair]['do_preds'] = dh.full_do_predict
+        self.model_return_values[pair]['target_mean'] = dh.full_target_mean
+        self.model_return_values[pair]['target_std'] = dh.full_target_std
+
+    def append_model_predictions(self, pair, predictions, do_preds,
+                                 target_mean, target_std, dh) -> None:
+
+        pred_store = self.model_return_values[pair]['predictions']
+        do_pred_store = self.model_return_values[pair]['do_preds']
+        tm_store = self.model_return_values[pair]['target_mean']
+        ts_store = self.model_return_values[pair]['target_std']
+        pred_store = np.append(pred_store[1:], predictions[-1])
+        do_pred_store = np.append(do_pred_store[1:], do_preds[-1])
+        tm_store = np.append(tm_store[1:], target_mean)
+        ts_store = np.append(ts_store[1:], target_std)
+
+        dh.full_predictions = copy.deepcopy(pred_store)
+        dh.full_do_predict = copy.deepcopy(do_pred_store)
+        dh.full_target_mean = copy.deepcopy(tm_store)
+        dh.full_target_std = copy.deepcopy(ts_store)
