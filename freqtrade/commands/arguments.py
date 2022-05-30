@@ -287,6 +287,14 @@ class Arguments:
         backtesting_show_cmd.set_defaults(func=start_backtesting_show)
         self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
 
+        # Add backtesting analysis subcommand
+        analysis_cmd = subparsers.add_parser('backtesting-analysis',
+                                             help='Backtest Analysis module.',
+                                             parents=[_common_parser])
+        analysis_cmd.set_defaults(func=start_analysis_entries_exits)
+        self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
+
+
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
                                          parents=[_common_parser, _strategy_parser])
@@ -419,10 +427,3 @@ class Arguments:
                                               parents=[_common_parser])
         webserver_cmd.set_defaults(func=start_webserver)
         self._build_args(optionlist=ARGS_WEBSERVER, parser=webserver_cmd)
-
-        # Add backtesting analysis subcommand
-        analysis_cmd = subparsers.add_parser('backtesting-analysis',
-                                             help='Backtest Analysis module.',
-                                             parents=[_common_parser, _strategy_parser])
-        analysis_cmd.set_defaults(func=start_analysis_entries_exits)
-        self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
