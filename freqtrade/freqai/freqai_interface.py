@@ -193,6 +193,8 @@ class IFreqaiModel(ABC):
         if self.follow_mode:
             # follower needs to load from disk to get any changes made by leader to pair_dict
             self.data_drawer.load_drawer_from_disk()
+            if self.freqai_info.get('purge_old_models', False):
+                self.data_drawer.purge_old_models()
 
         (model_filename,
          trained_timestamp,
