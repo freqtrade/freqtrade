@@ -785,7 +785,7 @@ class Telegram(RPCHandler):
                 headers=['Exit Reason', 'Exits', 'Wins', 'Losses']
             )
             if len(exit_reasons_tabulate) > 25:
-                self._send_msg(exit_reasons_msg, ParseMode.MARKDOWN)
+                self._send_msg(f"```\n{exit_reasons_msg}```", ParseMode.MARKDOWN)
                 exit_reasons_msg = ''
 
         durations = stats['durations']

@@ -224,12 +224,12 @@ def test_strategy_override_process_only_new_candles(caplog, default_conf):
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'process_only_new_candles': True
+        'process_only_new_candles': False
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.process_only_new_candles
-    assert log_has("Override strategy 'process_only_new_candles' with value in config file: True.",
+    assert not strategy.process_only_new_candles
+    assert log_has("Override strategy 'process_only_new_candles' with value in config file: False.",
                    caplog)
 
 

@@ -68,7 +68,8 @@ def load_data(datadir: Path,
               startup_candles: int = 0,
               fail_without_data: bool = False,
               data_format: str = 'json',
-              candle_type: CandleType = CandleType.SPOT
+              candle_type: CandleType = CandleType.SPOT,
+              user_futures_funding_rate: int = None,
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -100,6 +101,10 @@ def load_data(datadir: Path,
                                  )
         if not hist.empty:
             result[pair] = hist
+        else:
+            if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
+                logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
+                result[pair] = DataFrame(columns=["open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
@@ -277,6 +282,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
     candle_type = CandleType.get_default(trading_mode)
+    process = ''
     for idx, pair in enumerate(pairs, start=1):
         if pair not in exchange.markets:
             pairs_not_available.append(pair)

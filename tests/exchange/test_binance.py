@@ -154,6 +154,7 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     order = {
         'type': 'stop_loss_limit',
         'price': 1500,
+        'stopPrice': 1500,
         'info': {'stopPrice': 1500},
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
@@ -490,11 +491,11 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
     default_conf['margin_mode'] = MarginMode.ISOLATED
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_tiers()
-
-    leverage_tiers = leverage_tiers
-
+    assert len(exchange._leverage_tiers.keys()) > 100
     for key, value in leverage_tiers.items():
-        assert exchange._leverage_tiers[key] == value
+        v = exchange._leverage_tiers[key]
+        assert isinstance(v, list)
+        assert len(v) == len(value)
 
 
 def test__set_leverage_binance(mocker, default_conf):

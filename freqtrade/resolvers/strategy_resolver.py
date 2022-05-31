@@ -47,26 +47,7 @@ class StrategyResolver(IResolver):
         strategy: IStrategy = StrategyResolver._load_strategy(
             strategy_name, config=config,
             extra_dir=config.get('strategy_path'))
-
-        if strategy._ft_params_from_file:
-            # Set parameters from Hyperopt results file
-            params = strategy._ft_params_from_file
-            strategy.minimal_roi = params.get('roi', getattr(strategy, 'minimal_roi', {}))
-
-            strategy.stoploss = params.get('stoploss', {}).get(
-                'stoploss', getattr(strategy, 'stoploss', -0.1))
-            trailing = params.get('trailing', {})
-            strategy.trailing_stop = trailing.get(
-                'trailing_stop', getattr(strategy, 'trailing_stop', False))
-            strategy.trailing_stop_positive = trailing.get(
-                'trailing_stop_positive', getattr(strategy, 'trailing_stop_positive', None))
-            strategy.trailing_stop_positive_offset = trailing.get(
-                'trailing_stop_positive_offset',
-                getattr(strategy, 'trailing_stop_positive_offset', 0))
-            strategy.trailing_only_offset_is_reached = trailing.get(
-                'trailing_only_offset_is_reached',
-                getattr(strategy, 'trailing_only_offset_is_reached', 0.0))
-
+        strategy.ft_load_params_from_file()
         # Set attributes
         # Check if we need to override configuration
         #             (Attribute name,                    default,     subkey)

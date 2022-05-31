@@ -17,7 +17,7 @@ from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
-from freqtrade.strategy.hyper import IntParameter
+from freqtrade.strategy import IntParameter
 from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 

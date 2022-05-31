@@ -353,7 +353,7 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
                      Can also serve as protection to load the correct result.
     :return: Dataframe containing Trades
     """
-    init_db(db_url, clean_open_orders=False)
+    init_db(db_url)
 
     filters = []
     if strategy:

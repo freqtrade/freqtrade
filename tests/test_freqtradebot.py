@@ -1775,9 +1775,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
-        'info': {
-            'stopPrice': '2.178'
-        }
+        'stopPrice': '2.178'
     })
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_hanging)
@@ -3044,6 +3042,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     trade.entry_side = "buy"
     trade.open_rate = 200
     trade.entry_side = "buy"
+    trade.open_order_id = "open_order_noop"
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
@@ -3581,7 +3580,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     assert rpc_mock.call_count == 3
     assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.ENTRY
     assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.ENTRY_FILL
-    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT
+    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT_FILL
 
 
 @pytest.mark.parametrize(
@@ -4786,9 +4785,6 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     freqtrade.config['dry_run'] = False
     freqtrade.startup_update_open_orders()
 
-    assert log_has_re(r"Error updating Order .*", caplog)
-    caplog.clear()
-
     assert len(Order.get_open_orders()) == 3
     matching_buy_order = mock_order_4(is_short=is_short)
     matching_buy_order.update({
@@ -4798,6 +4794,11 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     freqtrade.startup_update_open_orders()
     # Only stoploss and sell orders are kept open
     assert len(Order.get_open_orders()) == 2
+
+    caplog.clear()
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
+    freqtrade.startup_update_open_orders()
+    assert log_has_re(r"Error updating Order .*", caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")

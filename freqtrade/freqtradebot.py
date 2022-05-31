@@ -67,7 +67,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
+        init_db(self.config.get('db_url', None))
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -123,7 +123,7 @@ class FreqtradeBot(LoggingMixin):
                     self._schedule.every().day.at(t).do(update)
         self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
-        self.strategy.bot_start()
+        self.strategy.ft_bot_start()
 
     def notify_status(self, msg: str) -> None:
         """
@@ -299,7 +299,8 @@ class FreqtradeBot(LoggingMixin):
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
 
-                self.update_trade_state(order.trade, order.order_id, fo)
+                self.update_trade_state(order.trade, order.order_id, fo,
+                                        stoploss_order=(order.ft_order_side == 'stoploss'))
 
             except ExchangeError as e:
 
@@ -1018,7 +1019,7 @@ class FreqtradeBot(LoggingMixin):
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                     reason='Auto lock')
-            self._notify_exit(trade, "stoploss")
+            self._notify_exit(trade, "stoploss", True)
             return True
 
         if trade.open_order_id or not trade.is_open:
@@ -1105,7 +1106,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Check and execute trade exit
         """
-        should_exit: ExitCheckTuple = self.strategy.should_exit(
+        exits: List[ExitCheckTuple] = self.strategy.should_exit(
             trade,
             exit_rate,
             datetime.now(timezone.utc),
@@ -1113,12 +1114,13 @@ class FreqtradeBot(LoggingMixin):
             exit_=exit_,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
-
-        if should_exit.exit_flag:
-            logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
-                        f'Tag: {exit_tag if exit_tag is not None else "None"}')
-            self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
-            return True
+        for should_exit in exits:
+            if should_exit.exit_flag:
+                logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
+                            f'{f" Tag: {exit_tag}" if exit_tag is not None else ""}')
+                exited = self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
+                if exited:
+                    return True
         return False
 
     def manage_open_orders(self) -> None:
@@ -1405,7 +1407,7 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param exit_check: CheckTuple with signal and reason
-        :return: True if it succeeds (supported) False (not supported)
+        :return: True if it succeeds False
         """
         trade.funding_fees = self.exchange.get_funding_fees(
             pair=trade.pair,
@@ -1452,7 +1454,7 @@ class FreqtradeBot(LoggingMixin):
                 time_in_force=time_in_force, exit_reason=exit_reason,
                 sell_reason=exit_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of exiting {trade.pair}")
+            logger.info(f"User requested abortion of {trade.pair} exit.")
             return False
 
         try:
@@ -1663,7 +1665,7 @@ class FreqtradeBot(LoggingMixin):
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair, trade.trade_direction)
-        elif send_msg and not trade.open_order_id:
+        elif send_msg and not trade.open_order_id and not stoploss_order:
             # Enter fill
             self._notify_enter(trade, order, fill=True)
 

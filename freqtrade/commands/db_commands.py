@@ -19,9 +19,9 @@ def start_convert_db(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    init_db(config['db_url'], False)
+    init_db(config['db_url'])
     session_target = Trade._session
-    init_db(config['db_url_from'], False)
+    init_db(config['db_url_from'])
     logger.info("Starting db migration.")
 
     trade_count = 0
