@@ -596,7 +596,7 @@ class FreqaiDataKitchen:
 
         do_predict = np.where(
             distance.min(axis=0) / self.data["avg_mean_dist"]
-            < self.config["freqai"]["feature_parameters"]["DI_threshold"],
+            < self.freqai_config.get("feature_parameters", {}).get("DI_threshold"),
             1,
             0,
         )

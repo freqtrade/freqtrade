@@ -190,6 +190,10 @@ class IFreqaiModel(ABC):
         dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
+        if self.follow_mode:
+            # follower needs to load off disk to get any changes made by leader to pair_dict
+            self.data_drawer.load_drawer_from_disk()
+
         (model_filename,
          trained_timestamp,
          coin_first,
@@ -376,6 +380,11 @@ class IFreqaiModel(ABC):
             self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
         self.training_on_separate_thread = False
         self.retrain = False
+
+        # each time we finish a training, we check the directory to purge old models.
+        if self.freqai_info.get('purge_old_models', False):
+            self.data_drawer.purge_old_models()
+
         return
 
     def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,

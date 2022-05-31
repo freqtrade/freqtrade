@@ -423,6 +423,21 @@ by a leader with the same `identifier`. In this example, the user has a leader b
 `identifier: "example"` already running or launching simultaneously as the present follower. 
 The follower will load models created by the leader and inference them to obtain predictions.
 
+### Purging old model data
+
+FreqAI stores new model files each time it retrains. These files become obsolete as new models 
+are trained and FreqAI adapts to the new market conditions. Users planning to leave FreqAI running 
+for extended periods of time with high frequency retraining should set `purge_old_models` in their 
+config:
+
+```json
+    "freqai": {
+        "purge_old_models": true,
+    }
+```
+
+which will automatically purge all models older than the two most recently trained ones.
+
 <!-- ## Dynamic target expectation
 
 The labels used for model training have a unique statistical distribution for each separate model training. 

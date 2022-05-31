@@ -1,7 +1,10 @@
 
+import collections
 import copy
 import json
 import logging
+import re
+import shutil
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -164,6 +167,42 @@ class FreqaiDataDrawer:
         dh.full_do_predict = np.zeros(len_df)
         dh.full_target_mean = np.zeros(len_df)
         dh.full_target_std = np.zeros(len_df)
+
+    def purge_old_models(self) -> None:
+
+        model_folders = [x for x in self.full_path.iterdir() if x.is_dir()]
+
+        pattern = re.compile(r"sub-train-(\w+)(\d{10})")
+
+        delete_dict: Dict[str, Any] = {}
+
+        for dir in model_folders:
+            result = pattern.match(str(dir.name))
+            if result is None:
+                break
+            coin = result.group(1)
+            timestamp = result.group(2)
+
+            if coin not in delete_dict:
+                delete_dict[coin] = {}
+                delete_dict[coin]['num_folders'] = 1
+                delete_dict[coin]['timestamps'] = {int(timestamp): dir}
+            else:
+                delete_dict[coin]['num_folders'] += 1
+                delete_dict[coin]['timestamps'][int(timestamp)] = dir
+
+        for coin in delete_dict:
+            if delete_dict[coin]['num_folders'] > 2:
+                sorted_dict = collections.OrderedDict(
+                    sorted(delete_dict[coin]['timestamps'].items()))
+                num_delete = len(sorted_dict) - 2
+                deleted = 0
+                for k, v in sorted_dict.items():
+                    if deleted >= num_delete:
+                        break
+                    logger.info(f'Freqai purging old model file {v}')
+                    shutil.rmtree(v)
+                    deleted += 1
 
     # to be used if we want to send predictions directly to the follower instead of forcing
     # follower to load models and inference
