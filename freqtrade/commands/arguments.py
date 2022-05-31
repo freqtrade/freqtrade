@@ -294,7 +294,6 @@ class Arguments:
         analysis_cmd.set_defaults(func=start_analysis_entries_exits)
         self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
 
-
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
                                          parents=[_common_parser, _strategy_parser])

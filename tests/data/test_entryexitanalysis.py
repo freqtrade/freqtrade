@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pandas as pd
@@ -82,13 +81,10 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--user-data-dir', str(tmpdir),
-        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
         '--timeframe', '5m',
         '--timerange', '1515560100-1517287800',
         '--export', 'signals',
         '--cache', 'none',
-        '--strategy-list',
-        'StrategyTestV3Analysis',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -104,13 +100,12 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
         '--datadir', str(testdatadir),
         '--user-data-dir', str(tmpdir),
     ]
-    strat_args = ['--strategy', 'StrategyTestV3Analysis']
 
     # test group 0 and indicator list
     args = get_args(base_args +
                     ['--analysis-groups', '0',
-                     '--indicator-list', 'close,rsi,profit_abs'] +
-                    strat_args)
+                     '--indicator-list', 'close,rsi,profit_abs']
+                    )
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'LTC/BTC' in captured.out
@@ -133,8 +128,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '47.0996' in captured.out
 
     # test group 1
-    args = get_args(base_args + ['--analysis-groups', '1'] +
-                    strat_args)
+    args = get_args(base_args + ['--analysis-groups', '1'])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'enter_tag_long_a' in captured.out
@@ -147,8 +141,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '0' in captured.out
 
     # test group 2
-    args = get_args(base_args + ['--analysis-groups', '2'] +
-                    strat_args)
+    args = get_args(base_args + ['--analysis-groups', '2'])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'enter_tag_long_a' in captured.out
@@ -163,8 +156,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '2.5' in captured.out
 
     # test group 3
-    args = get_args(base_args + ['--analysis-groups', '3'] +
-                    strat_args)
+    args = get_args(base_args + ['--analysis-groups', '3'])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'LTC/BTC' in captured.out
@@ -179,8 +171,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '2' in captured.out
 
     # test group 4
-    args = get_args(base_args + ['--analysis-groups', '4'] +
-                    strat_args)
+    args = get_args(base_args + ['--analysis-groups', '4'])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'LTC/BTC' in captured.out
