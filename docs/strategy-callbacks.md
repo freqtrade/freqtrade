@@ -549,10 +549,11 @@ class AwesomeStrategy(IStrategy):
 
         :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
-        :param amount: Amount in target (quote) currency that's going to be traded.
+        :param amount: Amount in target (base) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
@@ -586,7 +587,7 @@ class AwesomeStrategy(IStrategy):
                            rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a regular sell order.
+        Called right before placing a regular exit order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -594,9 +595,10 @@ class AwesomeStrategy(IStrategy):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be sold.
+        :param pair: Pair for trade that's about to be exited.
+        :param trade: trade object.
         :param order_type: Order type (as configured in order_types). usually limit or market.
-        :param amount: Amount in quote currency.
+        :param amount: Amount in base currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
@@ -604,7 +606,7 @@ class AwesomeStrategy(IStrategy):
                            'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the exit-order is placed on the exchange.
+        :return bool: When True, then the exit-order is placed on the exchange.
             False aborts the process
         """
         if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
