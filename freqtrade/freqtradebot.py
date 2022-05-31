@@ -852,6 +852,16 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
         }
 
+        # display the candle analyzed in telegram
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                  self.strategy.timeframe)
+        analyzed_candle = analyzed_df.iloc[-1] if len(analyzed_df) > 0 else None
+        if analyzed_candle is not None:
+            candle_columns = analyzed_candle[['date', 'open', 'high', 'low', 'close']]
+            msg.update({
+                'analyzed_candle': candle_columns.to_json(date_unit='s', date_format='iso')
+            })
+
         # Send the message
         self.rpc.send_msg(msg)
 
@@ -1538,6 +1548,16 @@ class FreqtradeBot(LoggingMixin):
         if 'fiat_display_currency' in self.config:
             msg.update({
                 'fiat_currency': self.config['fiat_display_currency'],
+            })
+
+        # display the candle analyzed in telegram
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                  self.strategy.timeframe)
+        analyzed_candle = analyzed_df.iloc[-1] if len(analyzed_df) > 0 else None
+        if analyzed_candle is not None:
+            candle_columns = analyzed_candle[['date', 'open', 'high', 'low', 'close']]
+            msg.update({
+                'analyzed_candle': candle_columns.to_json(date_unit='s', date_format='iso')
             })
 
         # Send the message

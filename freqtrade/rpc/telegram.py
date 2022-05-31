@@ -241,6 +241,8 @@ class Telegram(RPCHandler):
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
+        if msg.get('analyzed_candle'):
+            message += f"*Analyzed Candle:* `{msg['analyzed_candle']}`\n"
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
@@ -288,6 +290,12 @@ class Telegram(RPCHandler):
         message = (
             f"{msg['emoji']} *{msg['exchange']}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
+        )
+        if not is_fill and msg.get('analyzed_candle'):
+            message += (
+                f"*Analyzed Candle:* `{msg['analyzed_candle']}`\n"
+            )
+        message += (
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"
