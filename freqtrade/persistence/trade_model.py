@@ -15,6 +15,8 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.keyvalue import KeyValue
+from freqtrade.persistence.keyvalue_middleware import KeyValues
 
 
 logger = logging.getLogger(__name__)
@@ -206,6 +208,7 @@ class LocalTrade():
     id: int = 0
 
     orders: List[Order] = []
+    keyvalues: List[KeyValue] = []
 
     exchange: str = ''
     pair: str = ''
@@ -870,6 +873,12 @@ class LocalTrade():
                 (o.filled or 0) > 0 and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 
+    def set_kval(self, key: str, value: Any) -> None:
+        KeyValues.set_kval(key=key, value=value, trade_id=self.id)
+
+    def get_kval(self, key: Optional[str]) -> List[KeyValue]:
+        return KeyValues.get_kval(key=key, trade_id=self.id)
+
     @property
     def nr_of_successful_entries(self) -> int:
         """
@@ -1000,6 +1009,7 @@ class Trade(_DECL_BASE, LocalTrade):
     id = Column(Integer, primary_key=True)
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan", lazy="joined")
+    keyvalues = relationship("KeyValue", order_by="KeyValue.id", cascade="all, delete-orphan")
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)
@@ -1069,6 +1079,9 @@ class Trade(_DECL_BASE, LocalTrade):
 
         for order in self.orders:
             Order.query.session.delete(order)
+
+        for kval in self.keyvalues:
+            KeyValue.query.session.delete(kval)
 
         Trade.query.session.delete(self)
         Trade.commit()
@@ -1345,3 +1358,9 @@ class Trade(_DECL_BASE, LocalTrade):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
+
+    def set_kval(self, key: str, value: Any) -> None:
+        super().set_kval(key=key, value=value)
+
+    def get_kval(self, key: Optional[str]) -> List[KeyValue]:
+        return super().get_kval(key=key)

@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.persistence.keyvalue import KeyValue
 from freqtrade.persistence.migrations import check_migrate
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Order, Trade
@@ -59,6 +60,7 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     Trade.query = Trade._session.query_property()
     Order.query = Trade._session.query_property()
     PairLock.query = Trade._session.query_property()
+    KeyValue.query = Trade._session.query_property()
 
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
