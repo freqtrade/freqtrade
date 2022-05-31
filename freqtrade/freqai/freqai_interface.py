@@ -191,7 +191,7 @@ class IFreqaiModel(ABC):
         """
 
         if self.follow_mode:
-            # follower needs to load off disk to get any changes made by leader to pair_dict
+            # follower needs to load from disk to get any changes made by leader to pair_dict
             self.data_drawer.load_drawer_from_disk()
 
         (model_filename,
@@ -201,7 +201,7 @@ class IFreqaiModel(ABC):
 
         # if the files do not yet exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
-            logger.info('Returning null array from follower')
+            logger.info('Returning null array from follower to strategy')
             self.data_drawer.return_null_values_to_strategy(dataframe, dh)
             return dh
 

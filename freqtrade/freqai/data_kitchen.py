@@ -154,6 +154,11 @@ class FreqaiDataKitchen:
         if self.live:
             self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
             self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
+            if self.freqai_config.get('follow_mode', False):
+                # follower can be on a different system which is rsynced to the leader:
+                self.data_path = Path(self.config["user_data_dir"] /
+                                      "models" / self.data_path.parts[-2] /
+                                      self.data_path.parts[-1])
 
         with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
