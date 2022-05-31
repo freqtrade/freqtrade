@@ -932,11 +932,13 @@ class Backtesting:
                 else:
                     # Close additional entry order
                     del trade.orders[trade.orders.index(order)]
+                    trade.open_order_id = None
                     return False
             if order.side == trade.exit_side:
                 self.timedout_exit_orders += 1
                 # Close exit order and retry exiting on next signal.
                 del trade.orders[trade.orders.index(order)]
+                trade.open_order_id = None
                 return False
         return None
 
