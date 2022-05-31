@@ -50,7 +50,6 @@ class KeyValues():
     @staticmethod
     def set_kval(key: str, value: Any, trade_id: Optional[int] = None) -> None:
 
-        logger.warning(f"[set_kval] key: {key} trade_id: {trade_id} value: {value}")
         value_type = type(value).__name__
         value_db = None
 
