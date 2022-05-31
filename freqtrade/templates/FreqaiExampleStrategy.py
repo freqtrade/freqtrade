@@ -85,55 +85,58 @@ class FreqaiExampleStrategy(IStrategy):
         :informative: the dataframe associated with the informative pair
         :coin: the name of the coin which will modify the feature names.
         """
+
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 
-        informative['%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
-        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
-        informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
+        # first loop is automatically duplicating indicators for time periods
+        for t in np.arange(10, self.freqai_info["feature_parameters"]["indicator_max_period"],
+                           self.freqai_info["feature_parameters"]["indicator_interval"]):
 
-        informative[coin + "20sma"] = ta.SMA(informative, timeperiod=20)
-        informative[coin + "21ema"] = ta.EMA(informative, timeperiod=21)
-        informative['%-' + coin + "bmsb"] = np.where(
-            informative[coin + "20sma"].lt(informative[coin + "21ema"]), 1, 0
-        )
-        informative['%-' + coin + "close_over_20sma"] = informative["close"] / informative[
-                                                                                    coin + "20sma"]
+            t = int(t)
+            informative['%-' + coin + "rsi-period_" + str(t)] = ta.RSI(informative, timeperiod=t)
+            informative['%-' + coin + "mfi-period_" + str(t)] = ta.MFI(informative, timeperiod=t)
+            informative['%-' + coin + "adx-period_" + str(t)] = ta.ADX(informative, window=t)
+            informative[coin + "20sma-period_" + str(t)] = ta.SMA(informative, timeperiod=t)
+            informative[coin + "21ema-period_" + str(t)] = ta.EMA(informative, timeperiod=t)
+            informative['%-' + coin + "close_over_20sma-period_" +
+                        str(t)] = (informative["close"] /
+                                   informative[coin + "20sma-period_" + str(t)])
 
-        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
+            informative['%-' + coin + "mfi-period_" + str(t)] = ta.MFI(informative, timeperiod=t)
 
-        informative[coin + "ema21"] = ta.EMA(informative, timeperiod=21)
-        informative[coin + "sma20"] = ta.SMA(informative, timeperiod=20)
-        stoch = ta.STOCHRSI(informative, 15, 20, 2, 2)
-        informative['%-' + coin + "srsi-fk"] = stoch["fastk"]
-        informative['%-' + coin + "srsi-fd"] = stoch["fastd"]
+            informative[coin + "ema21-period_" + str(t)] = ta.EMA(informative, timeperiod=t)
+            informative[coin + "sma20-period_" + str(t)] = ta.SMA(informative, timeperiod=t)
 
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)
-        informative[coin + "bb_lowerband"] = bollinger["lower"]
-        informative[coin + "bb_middleband"] = bollinger["mid"]
-        informative[coin + "bb_upperband"] = bollinger["upper"]
-        informative['%-' + coin + "bb_width"] = (
-            informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
-        ) / informative[coin + "bb_middleband"]
-        informative['%-' + coin + "close-bb_lower"] = (
-            informative["close"] / informative[coin + "bb_lowerband"]
-        )
+            bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=t,
+                                                stds=2.2)
+            informative[coin + "bb_lowerband-period_" + str(t)] = bollinger["lower"]
+            informative[coin + "bb_middleband-period_" + str(t)] = bollinger["mid"]
+            informative[coin + "bb_upperband-period_" + str(t)] = bollinger["upper"]
+            informative['%-' + coin + "bb_width-period_" + str(t)] = (
+                informative[coin + "bb_upperband-period_" + str(t)] -
+                informative[coin + "bb_lowerband-period_" + str(t)]
+            ) / informative[coin + "bb_middleband-period_" + str(t)]
+            informative['%-' + coin + "close-bb_lower-period_" + str(t)] = (
+                informative["close"] / informative[coin + "bb_lowerband-period_" + str(t)]
+            )
 
-        informative['%-' + coin + "roc"] = ta.ROC(informative, timeperiod=3)
-        informative['%-' + coin + "adx"] = ta.ADX(informative, window=14)
+            informative['%-' + coin + "roc-period_" + str(t)] = ta.ROC(informative, timeperiod=t)
+            informative['%-' + coin + "adx-period_" + str(t)] = ta.ADX(informative, window=t)
 
-        macd = ta.MACD(informative)
-        informative['%-' + coin + "macd"] = macd["macd"]
-        informative[coin + "pct-change"] = informative["close"].pct_change()
-        informative['%-' + coin + "relative_volume"] = (
-            informative["volume"] / informative["volume"].rolling(10).mean()
-        )
+            macd = ta.MACD(informative, timeperiod=t)
+            informative['%-' + coin + "macd-period_" + str(t)] = macd["macd"]
 
-        informative[coin + "pct-change"] = informative["close"].pct_change()
+            informative['%-' + coin + "relative_volume-period_" + str(t)] = (
+                informative["volume"] / informative["volume"].rolling(t).mean()
+            )
 
-        # The following code automatically adds features according to the `shift` parameter passed
-        # in the config. Do not remove
+        informative['%-' + coin + "pct-change"] = informative["close"].pct_change()
+        informative['%-' + coin + "raw_volume"] = informative["volume"]
+        informative['%-' + coin + 'raw_price'] = informative['close']
+
         indicators = [col for col in informative if col.startswith('%')]
+        # This loop duplicates and shifts all indicators to add a sense of recency to data
         for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
             if n == 0:
                 continue
@@ -141,15 +144,12 @@ class FreqaiExampleStrategy(IStrategy):
             informative_shift = informative_shift.add_suffix("_shift-" + str(n))
             informative = pd.concat((informative, informative_shift), axis=1)
 
-        # The following code safely merges into the base timeframe.
-        # Do not remove.
         df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
         skip_columns = [(s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]]
         df = df.drop(columns=skip_columns)
 
-        # Add generalized indicators (not associated to any individual coin or timeframe) here
-        # because in live, it will call this function to populate
-        # indicators during training. Notice how we ensure not to add them multiple times
+        # Add generalized indicators here (because in live, it will call this function to populate
+        # indicators during training). Notice how we ensure not to add them multiple times
         if pair == metadata['pair'] and tf == self.timeframe:
             df['%-day_of_week'] = (df["date"].dt.dayofweek + 1) / 7
             df['%-hour_of_day'] = (df['date'].dt.hour + 1) / 25
@@ -314,10 +314,10 @@ class FreqaiExampleStrategy(IStrategy):
         last_candle = df.iloc[-1].squeeze()
 
         if side == 'long':
-            if last_candle['close'] > (last_candle['close'] * (1 + 0.0025)):
+            if rate > (last_candle['close'] * (1 + 0.0025)):
                 return False
         else:
-            if last_candle['close'] < (last_candle['close'] * (1 - 0.0025)):
+            if rate < (last_candle['close'] * (1 - 0.0025)):
                 return False
 
         return True

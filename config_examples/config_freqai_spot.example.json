@@ -7,7 +7,7 @@
     "dry_run": true,
     "timeframe": "5m",
     "dry_run_wallet": 4000,
-    "dataformat_ohlcv": "hdf5",
+    "dataformat_ohlcv": "json",
     "cancel_open_orders_on_exit": true,
     "unfilledtimeout": {
         "entry": 10,
@@ -51,6 +51,7 @@
         }
     ],
     "freqai": {
+        "startup_candles": 10000,
         "timeframes": [
             "5m",
             "15m",
@@ -74,7 +75,9 @@
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": false,
-            "stratify": 0
+            "stratify": 0,
+            "indicator_max_period": 50,
+            "indicator_interval": 10
         },
         "data_split_parameters": {
             "test_size": 0.33,

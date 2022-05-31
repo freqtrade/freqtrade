@@ -76,6 +76,7 @@ config setup includes:
 
 ```json
     "freqai": {
+                "startup_candles": 10000,
                 "timeframes" : ["5m","15m","4h"],
                 "train_period" : 30,
                 "backtest_period" : 7,
@@ -105,6 +106,7 @@ config setup includes:
 
 ### Building the feature set
 
+!! slightly out of date, please refer to templates/FreqaiExampleStrategy.py for updated method !!
 Features are added by the user inside the `populate_any_indicators()` method of the strategy 
 by prepending indicators with `%`:
 
@@ -194,7 +196,19 @@ Freqai will train 8 separate models (because the full range comprises 8 weeks),
 and then backtest the subsequent week associated with each of the 8 training
 data set timerange months. Users can think of this as a "sliding window" which
 emulates Freqai retraining itself once per week in live using the previous
-month of data.
+month of data._
+
+In live, the required training data is automatically computed and downloaded. However, in backtesting
+the user must manually enter the required number of `startup_candles` in the config. This value
+is used to increase the available data to FreqAI and should be sufficient to enable all indicators 
+to be NaN free at the beginning of the first training timerange. This boils down to identifying the 
+highest timeframe (`4h` in present example)  and the longest indicator period (25 in present example)
+and adding this to the `train_period`. The units need to be in the base candle time frame:_
+
+`startup_candles` = ( 4 hours * 25 max period * 60 minutes/hour + 30 day train_period * 1440 minutes per day ) / 5 min (base time frame) = 1488.
+
+!!! Note: in dry/live, this is all precomputed and handled automatically. Thus, `startup_candle` has no 
+influence on dry/live.
 
 ## Running Freqai
 

@@ -60,11 +60,6 @@ class FreqaiDataKitchen:
         self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
         if not self.live:
-            # if config.get('freqai', {}).get('backtest_period') < 1:
-            #     raise OperationalException('backtest_period < 1,'
-            #                                'Can only backtest on full day increments'
-            #                                'backtest_period. Only live/dry mode'
-            #                                'allows fractions of days')
             self.full_timerange = self.create_fulltimerange(self.config["timerange"],
                                                             self.freqai_config.get("train_period")
                                                             )
@@ -291,10 +286,16 @@ class FreqaiDataKitchen:
             labels = labels[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
-            # logger.info(
-            #     "dropped %s training points due to NaNs, ensure all historical data downloaded",
-            #     len(unfiltered_dataframe) - len(filtered_dataframe),
-            # )
+            logger.info(
+                f'dropped {len(unfiltered_dataframe) - len(filtered_dataframe)} training points'
+                f' due to NaNs in populated dataset {len(unfiltered_dataframe)}.'
+            )
+            if (1 - len(filtered_dataframe) / len(unfiltered_dataframe)) > 0.1 and self.live:
+                logger.warning(
+                    f' {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100} percent'
+                    ' of training data dropped due to NaNs, model may perform inconsistent'
+                    'with expectations'
+                )
             self.data["filter_drop_index_training"] = drop_index
 
         else:
@@ -685,10 +686,31 @@ class FreqaiDataKitchen:
 
         return full_timerange
 
-    def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool, TimeRange]:
+    def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
+                                                                              TimeRange, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         trained_timerange = TimeRange()
+        data_load_timerange = TimeRange()
+
+        # find the max indicator length required
+        max_timeframe_chars = self.freqai_config.get('timeframes')[-1]
+        max_period = self.freqai_config.get('feature_parameters', {}).get(
+                                            'indicator_max_period', 20)
+        additional_seconds = 0
+        if max_timeframe_chars[-1] == 'd':
+            additional_seconds = max_period * SECONDS_IN_DAY * int(max_timeframe_chars[-2])
+        elif max_timeframe_chars[-1] == 'h':
+            additional_seconds = max_period * 3600 * int(max_timeframe_chars[-2])
+        elif max_timeframe_chars[-1] == 'm':
+            if len(max_timeframe_chars) == 2:
+                additional_seconds = max_period * 60 * int(max_timeframe_chars[-2])
+            elif len(max_timeframe_chars) == 3:
+                additional_seconds = max_period * 60 * int(float(max_timeframe_chars[0:2]))
+            else:
+                logger.warning('FreqAI could not detect max timeframe and therefore may not '
+                               'download the proper amount of data for training')
+
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
             retrain = elapsed_time > self.freqai_config.get('backtest_period')
@@ -696,10 +718,22 @@ class FreqaiDataKitchen:
                 trained_timerange.startts = int(time - self.freqai_config.get(
                                              'train_period', 0) * SECONDS_IN_DAY)
                 trained_timerange.stopts = int(time)
+                # we want to load/populate indicators on more data than we plan to train on so
+                # because most of the indicators have a rolling timeperiod, and are thus NaNs
+                # unless they have data further back in time before the start of the train period
+                data_load_timerange.startts = int(time - self.freqai_config.get(
+                                             'train_period', 0) * SECONDS_IN_DAY
+                                             - additional_seconds)
+                data_load_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
             trained_timerange.startts = int(time - self.freqai_config.get('train_period') *
                                             SECONDS_IN_DAY)
             trained_timerange.stopts = int(time)
+
+            data_load_timerange.startts = int(time - self.freqai_config.get(
+                                            'train_period', 0) * SECONDS_IN_DAY
+                                            - additional_seconds)
+            data_load_timerange.stopts = int(time)
             retrain = True
 
         # if retrain:
@@ -714,7 +748,7 @@ class FreqaiDataKitchen:
         #     # enables persistence, but not fully implemented into save/load data yer
         #     self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
 
-        return retrain, trained_timerange
+        return retrain, trained_timerange, data_load_timerange
 
     def set_new_model_names(self, metadata: dict, trained_timerange: TimeRange):
 

@@ -1,4 +1,5 @@
 # import contextlib
+import datetime
 import gc
 import logging
 # import sys
@@ -149,8 +150,15 @@ class IFreqaiModel(ABC):
             # self.training_timerange_timerange = tr_train
             dataframe_train = dh.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dh.slice_dataframe(tr_backtest, dataframe)
-            logger.info("training %s for %s", metadata["pair"], tr_train)
+
             trained_timestamp = tr_train  # TimeRange.parse_timerange(tr_train)
+            tr_train_startts_str = datetime.datetime.utcfromtimestamp(
+                tr_train.startts).strftime('%Y-%m-%d %H:%M:%S')
+            tr_train_stopts_str = datetime.datetime.utcfromtimestamp(
+                tr_train.stopts).strftime('%Y-%m-%d %H:%M:%S')
+            logger.info("Training %s", metadata["pair"])
+            logger.info(f'Training {tr_train_startts_str} to {tr_train_stopts_str}')
+
             dh.data_path = Path(dh.full_path /
                                 str("sub-train" + "-" + metadata['pair'].split("/")[0] +
                                     str(int(trained_timestamp.stopts))))
@@ -218,16 +226,19 @@ class IFreqaiModel(ABC):
                                                 model_filename=model_filename)
 
             (self.retrain,
-             new_trained_timerange) = dh.check_if_new_training_required(trained_timestamp)
+             new_trained_timerange,
+             data_load_timerange) = dh.check_if_new_training_required(trained_timestamp)
             dh.set_paths(metadata, new_trained_timerange.stopts)
 
             if self.retrain or not file_exists:
                 if coin_first:
-                    self.train_model_in_series(new_trained_timerange, metadata, strategy, dh)
+                    self.train_model_in_series(new_trained_timerange, metadata,
+                                               strategy, dh, data_load_timerange)
                 else:
                     self.training_on_separate_thread = True  # acts like a lock
                     self.retrain_model_on_separate_thread(new_trained_timerange,
-                                                          metadata, strategy, dh)
+                                                          metadata, strategy,
+                                                          dh, data_load_timerange)
 
         elif self.training_on_separate_thread and not self.follow_mode:
             logger.info("FreqAI training a new model on background thread.")
@@ -342,11 +353,12 @@ class IFreqaiModel(ABC):
 
     @threaded
     def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, metadata: dict,
-                                         strategy: IStrategy, dh: FreqaiDataKitchen):
+                                         strategy: IStrategy, dh: FreqaiDataKitchen,
+                                         data_load_timerange: TimeRange):
 
         # with nostdout():
-        dh.download_new_data_for_retraining(new_trained_timerange, metadata, strategy)
-        corr_dataframes, base_dataframes = dh.load_pairs_histories(new_trained_timerange,
+        dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
+        corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
                                                                    metadata)
 
         # protecting from common benign errors associated with grabbing new data from exchange:
@@ -355,6 +367,8 @@ class IFreqaiModel(ABC):
                                                                           corr_dataframes,
                                                                           base_dataframes,
                                                                           metadata)
+            unfiltered_dataframe = dh.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
+
         except Exception:
             logger.warning('Mismatched sizes encountered in strategy')
             # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
@@ -390,16 +404,19 @@ class IFreqaiModel(ABC):
         return
 
     def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,
-                              strategy: IStrategy, dh: FreqaiDataKitchen):
+                              strategy: IStrategy, dh: FreqaiDataKitchen,
+                              data_load_timerange: TimeRange):
 
-        dh.download_new_data_for_retraining(new_trained_timerange, metadata, strategy)
-        corr_dataframes, base_dataframes = dh.load_pairs_histories(new_trained_timerange,
+        dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
+        corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
                                                                    metadata)
 
         unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
                                                                       corr_dataframes,
                                                                       base_dataframes,
                                                                       metadata)
+
+        unfiltered_dataframe = dh.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
         model = self.train(unfiltered_dataframe, metadata, dh)
 

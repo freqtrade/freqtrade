@@ -59,6 +59,7 @@
         }
     ],
     "freqai": {
+        "startup_candles": 10000,
         "timeframes": [
             "3m",
             "15m",
@@ -79,7 +80,9 @@
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": true,
-            "stratify": 0
+            "stratify": 0,
+            "indicator_max_period": 20,
+            "indicator_interval": 10
         },
         "data_split_parameters": {
             "test_size": 0.33,
