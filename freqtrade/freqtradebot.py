@@ -1203,15 +1203,15 @@ class FreqtradeBot(LoggingMixin):
                 current_order_rate=order_obj.price, entry_tag=trade.enter_tag,
                 side=trade.entry_side)
 
-            full_cancel = False
+            replacing = True
             cancel_reason = constants.CANCEL_REASON['REPLACE']
             if not adjusted_entry_price:
-                full_cancel = True if trade.nr_of_successful_entries == 0 else False
+                replacing = False
                 cancel_reason = constants.CANCEL_REASON['USER_CANCEL']
             if order_obj.price != adjusted_entry_price:
                 # cancel existing order if new price is supplied or None
                 self.handle_cancel_enter(trade, order, cancel_reason,
-                                         allow_full_cancel=full_cancel)
+                                         replacing=replacing)
                 if adjusted_entry_price:
                     # place new order only if new price is supplied
                     self.execute_entry(
@@ -1245,10 +1245,11 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_cancel_enter(
             self, trade: Trade, order: Dict, reason: str,
-            allow_full_cancel: Optional[bool] = True
+            replacing: Optional[bool] = False
     ) -> bool:
         """
         Buy cancel - cancel order
+        :param replacing: Replacing order - prevent trade deletion.
         :return: True if order was fully cancelled
         """
         was_trade_fully_canceled = False
@@ -1286,7 +1287,7 @@ class FreqtradeBot(LoggingMixin):
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             # if trade is not partially completed and it's the only order, just delete the trade
             open_order_count = len([order for order in trade.orders if order.status == 'open'])
-            if open_order_count <= 1 and allow_full_cancel:
+            if open_order_count <= 1 and trade.nr_of_successful_entries == 0 and not replacing:
                 logger.info(f'{side} order fully cancelled. Removing {trade} from database.')
                 trade.delete()
                 was_trade_fully_canceled = True
@@ -1295,7 +1296,7 @@ class FreqtradeBot(LoggingMixin):
                 # FIXME TODO: This could possibly reworked to not duplicate the code 15 lines below.
                 self.update_trade_state(trade, trade.open_order_id, corder)
                 trade.open_order_id = None
-                logger.info(f'Partial {side} order timeout for {trade}.')
+                logger.info(f'{side} Order timeout for {trade}.')
         else:
             # if trade is partially complete, edit the stake details for the trade
             # and close the order
