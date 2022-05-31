@@ -6,7 +6,7 @@ import pytest
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import get_patched_exchange
+from tests.conftest import get_mock_coro, get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -273,7 +273,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
         'fetchLeverageTiers': False,
         'fetchMarketLeverageTiers': True,
     })
-    api_mock.fetch_market_leverage_tiers = MagicMock(side_effect=[
+    api_mock.fetch_market_leverage_tiers = get_mock_coro(side_effect=[
         [
             {
                 'tier': 1,
