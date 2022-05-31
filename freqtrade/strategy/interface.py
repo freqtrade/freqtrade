@@ -14,6 +14,7 @@ from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, SignalTagType,
                              SignalType, TradingMode)
+from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.persistence import Order, PairLocks, Trade
@@ -150,6 +151,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Must call bot_start()
         """
         strategy_safe_wrapper(self.bot_start)()
+
+        self.ft_load_hyper_params(self.config.get('runmode') == RunMode.HYPEROPT)
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
