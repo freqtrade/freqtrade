@@ -56,7 +56,7 @@ class IFreqaiModel(ABC):
         self.set_full_path()
         self.follow_mode = self.freqai_info.get('follow_mode', False)
         self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
-                                            self.config['exchange']['pair_whitelist'],
+                                            self.config,
                                             self.follow_mode)
         self.lock = threading.Lock()
         self.follow_mode = self.freqai_info.get('follow_mode', False)

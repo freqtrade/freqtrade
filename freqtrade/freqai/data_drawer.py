@@ -26,16 +26,20 @@ class FreqaiDataDrawer:
     This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
     reinstantiated for each coin.
     """
-    def __init__(self, full_path: Path, pair_whitelist, follow_mode: bool = False):
+    def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
 
+        self.config = config
         # dictionary holding all pair metadata necessary to load in from disk
         self.pair_dict: Dict[str, Any] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
         self.model_dictionary: Dict[str, Any] = {}
         self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
+        self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.follow_mode = follow_mode
+        if follow_mode:
+            self.create_follower_dict()
         self.load_drawer_from_disk()
         self.training_queue: Dict[str, int] = {}
         # self.create_training_queue(pair_whitelist)
@@ -56,6 +60,29 @@ class FreqaiDataDrawer:
     def save_drawer_to_disk(self):
         with open(self.full_path / str('pair_dictionary.json'), "w") as fp:
             json.dump(self.pair_dict, fp, default=self.np_encoder)
+
+    def save_follower_dict_to_dist(self):
+        follower_name = self.config.get('bot_name', 'follower1')
+        with open(self.full_path / str('follower_dictionary-' +
+                                       follower_name + '.json'), "w") as fp:
+            json.dump(self.follower_dict, fp, default=self.np_encoder)
+
+    def create_follower_dict(self):
+        follower_name = self.config.get('bot_name', 'follower1')
+        whitelist_pairs = self.config.get('exchange', {}).get('pair_whitelist')
+
+        exists = Path(self.full_path / str('follower_dictionary-' +
+                                           follower_name + '.json')).resolve().exists()
+
+        if exists:
+            logger.info('Found an existing follower dictionary')
+
+        for pair in whitelist_pairs:
+            self.follower_dict[pair] = {}
+
+        with open(self.full_path / str('follower_dictionary-' +
+                                       follower_name + '.json'), "w") as fp:
+            json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def np_encoder(self, object):
         if isinstance(object, np.generic):

@@ -242,22 +242,33 @@ class FreqaiExampleStrategy(IStrategy):
         if trade_candle.empty:
             return None
         trade_candle = trade_candle.squeeze()
-        pair_dict = self.model.bridge.data_drawer.pair_dict
+
+        follow_mode = self.config.get('freqai', {}).get('follow_mode', False)
+
+        if not follow_mode:
+            pair_dict = self.model.bridge.data_drawer.pair_dict
+        else:
+            pair_dict = self.model.bridge.data_drawer.follower_dict
+
         entry_tag = trade.enter_tag
 
         if 'prediction' + entry_tag not in pair_dict[pair]:
             with self.model.bridge.lock:
-                self.model.bridge.data_drawer.pair_dict[pair][
-                    'prediction' + entry_tag] = abs(trade_candle['prediction'])
-                self.model.bridge.data_drawer.save_drawer_to_disk()
+                pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
+                if not follow_mode:
+                    self.model.bridge.data_drawer.save_drawer_to_disk()
+                else:
+                    self.model.bridge.data_drawer.save_follower_dict_to_dist()
         else:
             if pair_dict[pair]['prediction' + entry_tag] > 0:
                 roi_price = abs(trade_candle['prediction'])
             else:
                 with self.model.bridge.lock:
-                    self.model.bridge.data_drawer.pair_dict[pair][
-                        'prediction' + entry_tag] = abs(trade_candle['prediction'])
-                    self.model.bridge.data_drawer.save_drawer_to_disk()
+                    pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
+                    if not follow_mode:
+                        self.model.bridge.data_drawer.save_drawer_to_disk()
+                    else:
+                        self.model.bridge.data_drawer.save_follower_dict_to_dist()
 
         roi_price = abs(trade_candle['prediction'])
         roi_time = self.max_roi_time_long.value
@@ -269,17 +280,44 @@ class FreqaiExampleStrategy(IStrategy):
         else:
             roi_decay += self.linear_roi_offset.value
 
-        if current_profit > roi_price:
+        if current_profit > roi_decay:
             return 'roi_custom_win'
+
+        if current_profit < -roi_decay:
+            return 'roi_custom_loss'
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
                            rate: float, time_in_force: str, exit_reason: str,
                            current_time, **kwargs) -> bool:
 
         entry_tag = trade.enter_tag
+        follow_mode = self.config.get('freqai', {}).get('follow_mode', False)
+        if not follow_mode:
+            pair_dict = self.model.bridge.data_drawer.pair_dict
+        else:
+            pair_dict = self.model.bridge.data_drawer.follower_dict
 
         with self.model.bridge.lock:
-            self.model.bridge.data_drawer.pair_dict[pair]['prediction' + entry_tag] = 0
-            self.model.bridge.data_drawer.save_drawer_to_disk()
+            pair_dict[pair]['prediction' + entry_tag] = 0
+            if not follow_mode:
+                self.model.bridge.data_drawer.save_drawer_to_disk()
+            else:
+                self.model.bridge.data_drawer.save_follower_dict_to_dist()
+
+        return True
+
+    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                            time_in_force: str, current_time, entry_tag,
+                            side: str, **kwargs) -> bool:
+
+        df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = df.iloc[-1].squeeze()
+
+        if side == 'long':
+            if last_candle['close'] > (last_candle['close'] * (1 + 0.0025)):
+                return False
+        else:
+            if last_candle['close'] < (last_candle['close'] * (1 - 0.0025)):
+                return False
 
         return True
