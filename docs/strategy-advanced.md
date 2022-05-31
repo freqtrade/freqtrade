@@ -11,7 +11,7 @@ If you're just getting started, please be familiar with the methods described in
 !!! Tip
     You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
-## Storing information
+## Storing information (Non-Persistent)
 
 Storing information can be accomplished by creating a new dictionary within the strategy class.
 
@@ -39,6 +39,74 @@ class AwesomeStrategy(IStrategy):
 
 !!! Note
     If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+## Storing information (Persistent)
+
+Storing information can also be performed in a persistent manner. Freqtrade allows storing/retrieving user custom information associated with a specific trade.
+Using a trade object handle information can be stored using `trade_obj.set_kval(key='my_key', value=my_value)` and retrieved using `trade_obj.get_kval(key='my_key')`.
+Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object handle.
+For the data to be able to be stored within the database it must be serialized. This is done by converting it to a JSON formatted string.
+
+```python
+from freqtrade.persistence import Trade
+from datetime import timedelta
+
+class AwesomeStrategy(IStrategy):
+
+    def bot_loop_start(self, **kwargs) -> None:
+        for trade in Trade.get_open_order_trades():
+            fills = trade.select_filled_orders(trade.entry_side)
+            if trade.pair == 'ETH/USDT':
+                trade_entry_type = trade.get_kval(key='entry_type')
+                if trade_entry_type is None:
+                    trade_entry_type = 'breakout' if 'entry_1' in trade.enter_tag else 'dip'
+                elif fills > 1:
+                    trade_entry_type = 'buy_up'
+                trade.set_kval(key='entry_type', value=trade_entry_type)
+        return super().bot_loop_start(**kwargs)
+
+    def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
+                           current_time: datetime, proposed_rate: float, current_order_rate: float,
+                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+        # Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+        if pair == 'BTC/USDT' and entry_tag == 'long_sma200' and side == 'long' and (current_time - timedelta(minutes=10) > trade.open_date_utc and order.filled == 0.0:
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+            current_candle = dataframe.iloc[-1].squeeze()
+            # store information about entry adjustment
+            existing_count = trade.get_kval(key='num_entry_adjustments')
+            if not existing_count:
+                existing_count = 1
+            else:
+                existing_count += 1
+            trade.set_kval(key='num_entry_adjustments', value=existing_count)
+
+            # adjust order price
+            return current_candle['sma_200']
+
+        # default: maintain existing order
+        return current_order_rate
+
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):
+
+        entry_adjustment_count = trade.get_kval(key='num_entry_adjustments')
+        trade_entry_type = trade.get_kval(key='entry_type')
+        if entry_adjustment_count is None:
+            if current_profit > 0.01 and (current_time - timedelta(minutes=100) > trade.open_date_utc):
+                return True, 'exit_1'
+        else
+            if entry_adjustment_count > 0 and if current_profit > 0.05:
+                return True, 'exit_2'
+            if trade_entry_type == 'breakout' and current_profit > 0.1:
+                return True, 'exit_3
+
+        return False, None
+```
+
+!!! Note
+    It is recommended that simple data types are used `[bool, int, float, str]` to ensure no issues when serializing the data that needs to be stored.
+
+!!! Warning
+    If supplied data cannot be serialized a warning is logged and the entry for the specified `key` will contain `None` as data.
 
 ## Dataframe access
 
