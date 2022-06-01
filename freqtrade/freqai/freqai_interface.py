@@ -391,10 +391,11 @@ class IFreqaiModel(ABC):
         dh.set_new_model_names(metadata, new_trained_timerange)
         # logger.info('Training queue'
         #             f'{sorted(self.data_drawer.pair_dict.items(), key=lambda item: item[1])}')
-        dh.save_data(model, coin=metadata['pair'])
 
         if self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1:
-            self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+            with self.lock:
+                self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+        dh.save_data(model, coin=metadata['pair'])
         self.training_on_separate_thread = False
         self.retrain = False
 
