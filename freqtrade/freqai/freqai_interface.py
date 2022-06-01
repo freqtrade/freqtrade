@@ -215,7 +215,8 @@ class IFreqaiModel(ABC):
             self.data_drawer.return_null_values_to_strategy(dataframe, dh)
             return dh
 
-        if (not self.training_on_separate_thread and not self.follow_mode):
+        if (not self.training_on_separate_thread and not self.follow_mode
+                and self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available

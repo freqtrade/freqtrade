@@ -123,10 +123,6 @@ class FreqaiDataDrawer:
             self.pair_dict[metadata['pair']]['priority'] = len(self.pair_dict)
             return
 
-    # def create_training_queue(self, pairs: list) -> None:
-    #     for i, pair in enumerate(pairs):
-    #         self.training_queue[pair] = i + 1
-
     def pair_to_end_of_training_queue(self, pair: str) -> None:
         # march all pairs up in the queue
         for p in self.pair_dict:
