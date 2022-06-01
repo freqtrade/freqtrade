@@ -2,7 +2,6 @@
 Freqtrade is the main module of this bot. It contains the class Freqtrade()
 """
 import copy
-import json
 import logging
 import traceback
 from datetime import datetime, time, timezone
@@ -10,7 +9,6 @@ from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
-import requests
 from schedule import Scheduler
 
 from freqtrade import __version__, constants
@@ -35,6 +33,7 @@ from freqtrade.rpc import RPCManager
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
+
 
 logger = logging.getLogger(__name__)
 
@@ -380,9 +379,9 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
-    #
-    # BUY / enter positions / open trades logic and methods
-    #
+#
+# BUY / enter positions / open trades logic and methods
+#
 
     def enter_positions(self) -> int:
         """
@@ -490,9 +489,9 @@ class FreqtradeBot(LoggingMixin):
         else:
             return False
 
-    #
-    # BUY / increase positions / DCA logic and methods
-    #
+#
+# BUY / increase positions / DCA logic and methods
+#
     def process_open_trade_positions(self):
         """
         Tries to execute additional buy or sell orders for open trades (positions)
@@ -580,16 +579,16 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_entry(
-            self,
-            pair: str,
-            stake_amount: float,
-            price: Optional[float] = None,
-            *,
-            is_short: bool = False,
-            ordertype: Optional[str] = None,
-            enter_tag: Optional[str] = None,
-            trade: Optional[Trade] = None,
-            order_adjust: bool = False
+        self,
+        pair: str,
+        stake_amount: float,
+        price: Optional[float] = None,
+        *,
+        is_short: bool = False,
+        ordertype: Optional[str] = None,
+        enter_tag: Optional[str] = None,
+        trade: Optional[Trade] = None,
+        order_adjust: bool = False
     ) -> bool:
         """
         Executes a limit buy for the given pair
@@ -623,9 +622,9 @@ class FreqtradeBot(LoggingMixin):
 
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
-            pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-            time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
-            entry_tag=enter_tag, side=trade_side):
+                pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                entry_tag=enter_tag, side=trade_side):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         order = self.exchange.create_order(
@@ -747,11 +746,11 @@ class FreqtradeBot(LoggingMixin):
         return trade
 
     def get_valid_enter_price_and_stake(
-            self, pair: str, price: Optional[float], stake_amount: float,
-            trade_side: LongShort,
-            entry_tag: Optional[str],
-            trade: Optional[Trade],
-            order_adjust: bool,
+        self, pair: str, price: Optional[float], stake_amount: float,
+        trade_side: LongShort,
+        entry_tag: Optional[str],
+        trade: Optional[Trade],
+        order_adjust: bool,
     ) -> Tuple[float, float, float]:
 
         if price:
@@ -886,9 +885,9 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    #
-    # SELL / exit positions / close trades logic and methods
-    #
+#
+# SELL / exit positions / close trades logic and methods
+#
 
     def exit_positions(self, trades: List[Any]) -> int:
         """
@@ -1060,10 +1059,10 @@ class FreqtradeBot(LoggingMixin):
         # Finally we check if stoploss on exchange should be moved up because of trailing.
         # Triggered Orders are now real orders - so don't replace stoploss anymore
         if (
-                trade.is_open and stoploss_order
-                and stoploss_order.get('status_stop') != 'triggered'
-                and (self.config.get('trailing_stop', False)
-                     or self.config.get('use_custom_stoploss', False))
+            trade.is_open and stoploss_order
+            and stoploss_order.get('status_stop') != 'triggered'
+            and (self.config.get('trailing_stop', False)
+                 or self.config.get('use_custom_stoploss', False))
         ):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
@@ -1146,7 +1145,7 @@ class FreqtradeBot(LoggingMixin):
 
             if not_closed:
                 if fully_cancelled or (order_obj and self.strategy.ft_check_timed_out(
-                        trade, order_obj, datetime.now(timezone.utc))):
+                   trade, order_obj, datetime.now(timezone.utc))):
                     self.handle_timedout_order(order, trade)
                 else:
                     self.replace_order(order, order_obj, trade)
@@ -1425,7 +1424,7 @@ class FreqtradeBot(LoggingMixin):
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
         if (self.config['dry_run'] and exit_type == 'stoploss'
-                and self.strategy.order_types['stoploss_on_exchange']):
+           and self.strategy.order_types['stoploss_on_exchange']):
             limit = trade.stop_loss
 
         # set custom_exit_price if available
@@ -1544,43 +1543,6 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-        open_date = trade.open_date.strftime('%Y-%m-%d %H:%M:%S')
-        close_date = trade.close_date.strftime('%Y-%m-%d %H:%M:%S') if trade.close_date else None
-
-        # Send the message to the discord bot
-        embeds = [{
-            'title': '{} Trade: {}'.format(
-                'Profit' if profit_ratio > 0 else 'Loss',
-                trade.pair),
-            'color': (0x00FF00 if profit_ratio > 0 else 0xFF0000),
-            'fields': [
-                {'name': 'Trade ID', 'value': trade.id, 'inline': True},
-                {'name': 'Exchange', 'value': trade.exchange.capitalize(), 'inline': True},
-                {'name': 'Pair', 'value': trade.pair, 'inline': True},
-                {'name': 'Direction', 'value': 'Short' if trade.is_short else 'Long', 'inline': True},
-                {'name': 'Open rate', 'value': trade.open_rate, 'inline': True},
-                {'name': 'Close rate', 'value': trade.close_rate, 'inline': True},
-                {'name': 'Amount', 'value': trade.amount, 'inline': True},
-                {'name': 'Open order', 'value': trade.open_order_id, 'inline': True},
-                {'name': 'Open date', 'value': open_date, 'inline': True},
-                {'name': 'Close date', 'value': close_date, 'inline': True},
-                {'name': 'Profit', 'value': profit_trade, 'inline': True},
-                {'name': 'Profitability', 'value': '{:.2f}%'.format(profit_ratio * 100), 'inline': True},
-                {'name': 'Stake currency', 'value': self.config['stake_currency'], 'inline': True},
-                {'name': 'Fiat currency', 'value': self.config.get('fiat_display_currency', None), 'inline': True},
-                {'name': 'Buy Tag', 'value': trade.enter_tag, 'inline': True},
-                {'name': 'Sell Reason', 'value': trade.exit_reason, 'inline': True},
-                {'name': 'Strategy', 'value': trade.strategy, 'inline': True},
-                {'name': 'Timeframe', 'value': trade.timeframe, 'inline': True},
-            ],
-        }]
-        # convert all value in fields to string
-        for embed in embeds:
-            for field in embed['fields']:
-                field['value'] = str(field['value'])
-        if fill:
-            self.discord_send(embeds)
-
     def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
@@ -1631,9 +1593,9 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    #
-    # Common update trade state methods
-    #
+#
+# Common update trade state methods
+#
 
     def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
                            stoploss_order: bool = False, send_msg: bool = True) -> bool:
@@ -1856,22 +1818,3 @@ class FreqtradeBot(LoggingMixin):
         return max(
             min(valid_custom_price, max_custom_price_allowed),
             min_custom_price_allowed)
-
-    def discord_send(self, embeds):
-        if not 'discord' in self.config or self.config['discord']['enabled'] == False:
-            return
-        if self.config['runmode'].value in ('dry_run', 'live'):
-            webhook_url = self.config['discord']['webhook_url']
-
-            payload = {
-                "embeds": embeds
-            }
-
-            headers = {
-                "Content-Type": "application/json"
-            }
-
-            try:
-                requests.post(webhook_url, data=json.dumps(payload), headers=headers)
-            except Exception as e:
-                logger.error(f"Error sending discord message: {e}")
