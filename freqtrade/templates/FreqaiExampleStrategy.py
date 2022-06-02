@@ -43,9 +43,9 @@ class FreqaiExampleStrategy(IStrategy):
         },
     }
 
-    process_only_new_candles = False
+    process_only_new_candles = True
     stoploss = -0.05
-    use_sell_signal = True
+    use_exit_signal = True
     startup_candle_count: int = 300
     can_short = False
 
