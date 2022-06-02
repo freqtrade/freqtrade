@@ -234,20 +234,19 @@ class FreqaiExampleStrategy(IStrategy):
     def get_ticker_indicator(self):
         return int(self.config["timeframe"][:-1])
 
-    def custom_exit(
-        self, pair: str, trade: Trade, current_time, current_rate, current_profit, **kwargs
-    ):
+    def custom_exit(self, pair: str, trade: Trade, current_time, current_rate,
+                    current_profit, **kwargs):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
 
-        trade_date = timeframe_to_prev_date(self.config["timeframe"], trade.open_date_utc)
-        trade_candle = dataframe.loc[(dataframe["date"] == trade_date)]
+        trade_date = timeframe_to_prev_date(self.config['timeframe'], trade.open_date_utc)
+        trade_candle = dataframe.loc[(dataframe['date'] == trade_date)]
 
         if trade_candle.empty:
             return None
         trade_candle = trade_candle.squeeze()
 
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
+        follow_mode = self.config.get('freqai', {}).get('follow_mode', False)
 
         if not follow_mode:
             pair_dict = self.model.bridge.data_drawer.pair_dict
@@ -256,40 +255,30 @@ class FreqaiExampleStrategy(IStrategy):
 
         entry_tag = trade.enter_tag
 
-        if "prediction" + entry_tag not in pair_dict[pair]:
+        if ('prediction' + entry_tag not in pair_dict[pair] or
+                pair_dict[pair]['prediction' + entry_tag] == 0):
             with self.model.bridge.lock:
-                pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["prediction"])
+                pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
                 if not follow_mode:
                     self.model.bridge.data_drawer.save_drawer_to_disk()
                 else:
                     self.model.bridge.data_drawer.save_follower_dict_to_dist()
-        else:
-            if pair_dict[pair]["prediction" + entry_tag] > 0:
-                roi_price = abs(trade_candle["prediction"])
-            else:
-                with self.model.bridge.lock:
-                    pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["prediction"])
-                    if not follow_mode:
-                        self.model.bridge.data_drawer.save_drawer_to_disk()
-                    else:
-                        self.model.bridge.data_drawer.save_follower_dict_to_dist()
 
-        roi_price = abs(trade_candle["prediction"])
+        roi_price = pair_dict[pair]['prediction' + entry_tag]
         roi_time = self.max_roi_time_long.value
 
-        roi_decay = roi_price * (
-            1 - ((current_time - trade.open_date_utc).seconds) / (roi_time * 60)
-        )
+        roi_decay = roi_price * (1 - ((current_time - trade.open_date_utc).seconds) /
+                                 (roi_time * 60))
         if roi_decay < 0:
             roi_decay = self.linear_roi_offset.value
         else:
             roi_decay += self.linear_roi_offset.value
 
         if current_profit > roi_decay:
-            return "roi_custom_win"
+            return 'roi_custom_win'
 
         if current_profit < -roi_decay:
-            return "roi_custom_loss"
+            return 'roi_custom_loss'
 
     def confirm_trade_exit(
         self,
