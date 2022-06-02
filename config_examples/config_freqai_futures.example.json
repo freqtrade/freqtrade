@@ -82,7 +82,7 @@
             "use_SVM_to_remove_outliers": true,
             "stratify": 0,
             "indicator_max_period": 20,
-            "indicator_interval": 10
+            "indicator_periods": [10, 20, 30]
         },
         "data_split_parameters": {
             "test_size": 0.33,

@@ -1,7 +1,6 @@
 import logging
 from functools import reduce
 
-import numpy as np
 import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
@@ -90,8 +89,7 @@ class FreqaiExampleStrategy(IStrategy):
             informative = self.dp.get_pair_dataframe(pair, tf)
 
         # first loop is automatically duplicating indicators for time periods
-        for t in np.arange(10, self.freqai_info["feature_parameters"]["indicator_max_period"],
-                           self.freqai_info["feature_parameters"]["indicator_interval"]):
+        for t in self.freqai_info["feature_parameters"]["indicator_periods"]:
 
             t = int(t)
             informative['%-' + coin + "rsi-period_" + str(t)] = ta.RSI(informative, timeperiod=t)
