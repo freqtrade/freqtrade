@@ -216,7 +216,7 @@ class IFreqaiModel(ABC):
             return dh
 
         if (not self.training_on_separate_thread and not self.follow_mode
-                and self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1):
+                and self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1) or coin_first:
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available
