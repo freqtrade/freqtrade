@@ -54,7 +54,8 @@ class Discord(RPCHandler):
         if msg['type'] == RPCMessageType.EXIT_FILL:
             profit_ratio = msg.get('profit_ratio')
             open_date = msg.get('open_date').strftime('%Y-%m-%d %H:%M:%S')
-            close_date = msg.get('close_date').strftime('%Y-%m-%d %H:%M:%S') if msg.get('close_date') else ''
+            close_date = msg.get('close_date').strftime(
+                '%Y-%m-%d %H:%M:%S') if msg.get('close_date') else ''
 
             embeds = [{
                 'title': '{} Trade: {}'.format(
@@ -65,7 +66,8 @@ class Discord(RPCHandler):
                     {'name': 'Trade ID', 'value': msg.get('id'), 'inline': True},
                     {'name': 'Exchange', 'value': msg.get('exchange').capitalize(), 'inline': True},
                     {'name': 'Pair', 'value': msg.get('pair'), 'inline': True},
-                    {'name': 'Direction', 'value': 'Short' if msg.get('is_short') else 'Long', 'inline': True},
+                    {'name': 'Direction', 'value': 'Short' if msg.get(
+                        'is_short') else 'Long', 'inline': True},
                     {'name': 'Open rate', 'value': msg.get('open_rate'), 'inline': True},
                     {'name': 'Close rate', 'value': msg.get('close_rate'), 'inline': True},
                     {'name': 'Amount', 'value': msg.get('amount'), 'inline': True},
@@ -73,9 +75,11 @@ class Discord(RPCHandler):
                     {'name': 'Open date', 'value': open_date, 'inline': True},
                     {'name': 'Close date', 'value': close_date, 'inline': True},
                     {'name': 'Profit', 'value': msg.get('profit_amount'), 'inline': True},
-                    {'name': 'Profitability', 'value': '{:.2f}%'.format(profit_ratio * 100), 'inline': True},
+                    {'name': 'Profitability', 'value': '{:.2f}%'.format(
+                        profit_ratio * 100), 'inline': True},
                     {'name': 'Stake currency', 'value': msg.get('stake_currency'), 'inline': True},
-                    {'name': 'Fiat currency', 'value': msg.get('fiat_display_currency'), 'inline': True},
+                    {'name': 'Fiat currency', 'value': msg.get(
+                        'fiat_display_currency'), 'inline': True},
                     {'name': 'Buy Tag', 'value': msg.get('enter_tag'), 'inline': True},
                     {'name': 'Sell Reason', 'value': msg.get('exit_reason'), 'inline': True},
                     {'name': 'Strategy', 'value': self.strategy, 'inline': True},
@@ -96,6 +100,9 @@ class Discord(RPCHandler):
                 'Content-Type': 'application/json',
             }
             try:
-                requests.post(self.config['discord']['webhook_url'], data=json.dumps(payload), headers=headers)
+                requests.post(
+                    self.config['discord']['webhook_url'],
+                    data=json.dumps(payload),
+                    headers=headers)
             except Exception as e:
                 self.logger.error(f"Failed to send discord message: {e}")
