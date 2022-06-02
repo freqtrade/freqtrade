@@ -272,6 +272,7 @@ class FreqaiDataKitchen:
         :labels: labels cleaned of NaNs.
         """
         filtered_dataframe = unfiltered_dataframe.filter(training_feature_list, axis=1)
+        filtered_dataframe = filtered_dataframe.replace([np.inf, -np.inf], np.nan)
         drop_index = pd.isnull(filtered_dataframe).any(1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (
