@@ -35,6 +35,8 @@ class FreqaiDataDrawer:
         self.model_dictionary: Dict[str, Any] = {}
         self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
+        self.historic_data: Dict[str, Any] = {}
+        # self.populated_historic_data: Dict[str, Any] = {} ?
         self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.follow_mode = follow_mode
@@ -45,6 +47,12 @@ class FreqaiDataDrawer:
         # self.create_training_queue(pair_whitelist)
 
     def load_drawer_from_disk(self):
+        """
+        Locate and load a previously saved data drawer full of all pair model metadata in
+        present model folder.
+        :returns:
+        exists: bool = whether or not the drawer was located
+        """
         exists = Path(self.full_path / str('pair_dictionary.json')).resolve().exists()
         if exists:
             with open(self.full_path / str('pair_dictionary.json'), "r") as fp:
@@ -58,16 +66,25 @@ class FreqaiDataDrawer:
         return exists
 
     def save_drawer_to_disk(self):
+        """
+        Save data drawer full of all pair model metadata in present model folder.
+        """
         with open(self.full_path / str('pair_dictionary.json'), "w") as fp:
             json.dump(self.pair_dict, fp, default=self.np_encoder)
 
-    def save_follower_dict_to_dist(self):
+    def save_follower_dict_to_disk(self):
+        """
+        Save follower dictionary to disk (used by strategy for persistent prediction targets)
+        """
         follower_name = self.config.get('bot_name', 'follower1')
         with open(self.full_path / str('follower_dictionary-' +
                                        follower_name + '.json'), "w") as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def create_follower_dict(self):
+        """
+        Create or dictionary for each follower to maintain unique persistent prediction targets
+        """
         follower_name = self.config.get('bot_name', 'follower1')
         whitelist_pairs = self.config.get('exchange', {}).get('pair_whitelist')
 
@@ -89,6 +106,18 @@ class FreqaiDataDrawer:
             return object.item()
 
     def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool, bool]:
+        """
+        Locate and load existing model metadata from persistent storage. If not located,
+        create a new one and append the current pair to it and prepare it for its first
+        training
+        :params:
+        metadata: dict = strategy furnished pair metadata
+        :returns:
+        model_filename: str = unique filename used for loading persistent objects from disk
+        trained_timestamp: int = the last time the coin was trained
+        coin_first: bool = If the coin is fresh without metadata
+        return_null_array: bool = Follower could not find pair metadata
+        """
         pair_in_dict = self.pair_dict.get(metadata['pair'])
         data_path_set = self.pair_dict.get(metadata['pair'], {}).get('data_path', None)
         return_null_array = False
@@ -137,6 +166,7 @@ class FreqaiDataDrawer:
         self.model_return_values[pair]['do_preds'] = dh.full_do_predict
         self.model_return_values[pair]['target_mean'] = dh.full_target_mean
         self.model_return_values[pair]['target_std'] = dh.full_target_std
+        self.model_return_values[pair]['DI_values'] = dh.full_DI_values
 
         # if not self.follow_mode:
         #     self.save_model_return_values_to_disk()
@@ -157,6 +187,8 @@ class FreqaiDataDrawer:
 
         self.model_return_values[pair]['predictions'] = np.append(
             self.model_return_values[pair]['predictions'][i:], predictions[-1])
+        self.model_return_values[pair]['DI_values'] = np.append(
+            self.model_return_values[pair]['DI_values'][i:], dh.DI_values[-1])
         self.model_return_values[pair]['do_preds'] = np.append(
             self.model_return_values[pair]['do_preds'][i:], do_preds[-1])
         self.model_return_values[pair]['target_mean'] = np.append(
@@ -168,6 +200,8 @@ class FreqaiDataDrawer:
             prepend = np.zeros(abs(length_difference) - 1)
             self.model_return_values[pair]['predictions'] = np.insert(
                 self.model_return_values[pair]['predictions'], 0, prepend)
+            self.model_return_values[pair]['DI_values'] = np.insert(
+                self.model_return_values[pair]['DI_values'], 0, prepend)
             self.model_return_values[pair]['do_preds'] = np.insert(
                 self.model_return_values[pair]['do_preds'], 0, prepend)
             self.model_return_values[pair]['target_mean'] = np.insert(
@@ -179,6 +213,7 @@ class FreqaiDataDrawer:
         dh.full_do_predict = copy.deepcopy(self.model_return_values[pair]['do_preds'])
         dh.full_target_mean = copy.deepcopy(self.model_return_values[pair]['target_mean'])
         dh.full_target_std = copy.deepcopy(self.model_return_values[pair]['target_std'])
+        dh.full_DI_values = copy.deepcopy(self.model_return_values[pair]['DI_values'])
 
         # if not self.follow_mode:
         #     self.save_model_return_values_to_disk()
@@ -190,6 +225,7 @@ class FreqaiDataDrawer:
         dh.full_do_predict = np.zeros(len_df)
         dh.full_target_mean = np.zeros(len_df)
         dh.full_target_std = np.zeros(len_df)
+        dh.full_DI_values = np.zeros(len_df)
 
     def purge_old_models(self) -> None:
 
@@ -226,6 +262,12 @@ class FreqaiDataDrawer:
                     logger.info(f'Freqai purging old model file {v}')
                     shutil.rmtree(v)
                     deleted += 1
+
+    def update_follower_metadata(self):
+        # follower needs to load from disk to get any changes made by leader to pair_dict
+        self.load_drawer_from_disk()
+        if self.config.get('freqai', {})('purge_old_models', False):
+            self.purge_old_models()
 
     # to be used if we want to send predictions directly to the follower instead of forcing
     # follower to load models and inference

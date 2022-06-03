@@ -45,7 +45,7 @@ class FreqaiExampleStrategy(IStrategy):
 
     process_only_new_candles = False
     stoploss = -0.05
-    use_sell_signal = True
+    use_exit_signal = True
     startup_candle_count: int = 300
     can_short = False
 
@@ -176,12 +176,7 @@ class FreqaiExampleStrategy(IStrategy):
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.
-        (
-            dataframe["prediction"],
-            dataframe["do_predict"],
-            dataframe["target_mean"],
-            dataframe["target_std"],
-        ) = self.model.bridge.start(dataframe, metadata, self)
+        dataframe = self.model.bridge.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"]
         dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]

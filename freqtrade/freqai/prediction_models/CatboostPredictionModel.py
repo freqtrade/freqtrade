@@ -18,6 +18,17 @@ class CatboostPredictionModel(IFreqaiModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
+    def return_values(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
+
+        dataframe["prediction"] = dh.full_predictions
+        dataframe["do_predict"] = dh.full_do_predict
+        dataframe["target_mean"] = dh.full_target_mean
+        dataframe["target_std"] = dh.full_target_std
+        if self.freqai_info('feature_parameters', {}).get('DI-threshold', 0) > 0:
+            dataframe["DI"] = dh.full_DI_values
+
+        return dataframe
+
     def make_labels(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
         """
         User defines the labels here (target values).
