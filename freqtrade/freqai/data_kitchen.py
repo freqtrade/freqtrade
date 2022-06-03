@@ -743,7 +743,7 @@ class FreqaiDataKitchen:
                 logger.warning('FreqAI could not detect max timeframe and therefore may not '
                                'download the proper amount of data for training')
 
-        # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY} days')
+        logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY} days')
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
@@ -769,6 +769,13 @@ class FreqaiDataKitchen:
                                             - additional_seconds)
             data_load_timerange.stopts = int(time)
             retrain = True
+
+        logger.info(f'Total data download needed '
+                    f'{(data_load_timerange.stopts - data_load_timerange.startts)/SECONDS_IN_DAY} '
+                    ' days')
+        logger.info(f'Total training timerange '
+                    f'{(trained_timerange.stopts - trained_timerange.startts)/SECONDS_IN_DAY} '
+                    ' days')
 
         # if retrain:
         #     coin, _ = metadata['pair'].split("/")
