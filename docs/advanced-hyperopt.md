@@ -98,6 +98,23 @@ class MyAwesomeStrategy(IStrategy):
 !!! Note
     All overrides are optional and can be mixed/matched as necessary.
 
+### Dynamic parameters
+
+Parameters can also be defined dynamically, but must be available to the instance once the * [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
+
+``` python
+
+class MyAwesomeStrategy(IStrategy):
+
+    def bot_start(self, **kwargs) -> None:
+        self.buy_adx = IntParameter(20, 30, default=30, optimize=True)
+
+    # ...
+```
+
+!!! Warning
+    Parameters created this way will not show up in the `list-strategies` parameter count.
+
 ### Overriding Base estimator
 
 You can define your own estimator for Hyperopt by implementing `generate_estimator()` in the Hyperopt subclass.

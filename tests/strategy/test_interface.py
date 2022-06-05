@@ -16,6 +16,7 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.hyper import detect_parameters
 from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
                                            DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -614,6 +615,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag=None,
         ) == 1
 
     default_conf['strategy'] = CURRENT_TEST_STRATEGY
@@ -625,6 +627,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag='entry_tag_test',
         ) == 3
 
 
@@ -893,7 +896,7 @@ def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategy'})
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
-
+    strategy.ft_bot_start()
     with pytest.raises(OperationalException):
         next(strategy.enumerate_parameters('deadBeef'))
 
@@ -908,15 +911,18 @@ def test_auto_hyperopt_interface(default_conf):
     assert strategy.sell_minusdi.value == 0.5
     all_params = strategy.detect_all_parameters()
     assert isinstance(all_params, dict)
-    assert len(all_params['buy']) == 2
+    # Only one buy param at class level
+    assert len(all_params['buy']) == 1
+    # Running detect params at instance level reveals both parameters.
+    assert len(list(detect_parameters(strategy, 'buy'))) == 2
     assert len(all_params['sell']) == 2
     # Number of Hyperoptable parameters
-    assert all_params['count'] == 6
+    assert all_params['count'] == 5
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
-        [x for x in strategy.detect_parameters('sell')]
+        [x for x in detect_parameters(strategy, 'sell')]
 
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):

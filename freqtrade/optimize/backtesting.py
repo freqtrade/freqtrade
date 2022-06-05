@@ -188,9 +188,7 @@ class Backtesting:
         # since a "perfect" stoploss-exit is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
-        if self.dataprovider.runmode == RunMode.BACKTEST:
-            # in hyperopt mode - don't re-init params
-            self.strategy.ft_load_hyper_params(False)
+
         self.strategy.ft_bot_start()
 
     def _load_protections(self, strategy: IStrategy):
@@ -709,7 +707,7 @@ class Backtesting:
                 current_rate=row[OPEN_IDX],
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
-                side=direction,
+                side=direction, entry_tag=entry_tag,
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
@@ -900,26 +898,30 @@ class Backtesting:
             self.protections.stop_per_pair(pair, current_time, side)
             self.protections.global_stop(current_time, side)
 
-    def manage_open_orders(self, trade: LocalTrade, current_time, row: Tuple) -> bool:
+    def manage_open_orders(self, trade: LocalTrade, current_time: datetime, row: Tuple) -> bool:
         """
         Check if any open order needs to be cancelled or replaced.
         Returns True if the trade should be deleted.
         """
         for order in [o for o in trade.orders if o.ft_is_open]:
-            if self.check_order_cancel(trade, order, current_time):
+            oc = self.check_order_cancel(trade, order, current_time)
+            if oc:
                 # delete trade due to order timeout
                 return True
-            elif self.check_order_replace(trade, order, current_time, row):
+            elif oc is None and self.check_order_replace(trade, order, current_time, row):
                 # delete trade due to user request
                 self.canceled_trade_entries += 1
                 return True
         # default maintain trade
         return False
 
-    def check_order_cancel(self, trade: LocalTrade, order: Order, current_time) -> bool:
+    def check_order_cancel(
+            self, trade: LocalTrade, order: Order, current_time: datetime) -> Optional[bool]:
         """
         Check if current analyzed order has to be canceled.
-        Returns True if the trade should be Deleted (initial order was canceled).
+        Returns True if the trade should be Deleted (initial order was canceled),
+                False if it's Canceled
+                None if the order is still active.
         """
         timedout = self.strategy.ft_check_timed_out(
             trade,  # type: ignore[arg-type]
@@ -933,12 +935,15 @@ class Backtesting:
                 else:
                     # Close additional entry order
                     del trade.orders[trade.orders.index(order)]
+                    trade.open_order_id = None
+                    return False
             if order.side == trade.exit_side:
                 self.timedout_exit_orders += 1
                 # Close exit order and retry exiting on next signal.
                 del trade.orders[trade.orders.index(order)]
-
-        return False
+                trade.open_order_id = None
+                return False
+        return None
 
     def check_order_replace(self, trade: LocalTrade, order: Order, current_time,
                             row: Tuple) -> bool:
