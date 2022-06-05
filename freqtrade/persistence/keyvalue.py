@@ -38,8 +38,8 @@ class KeyValue(_DECL_BASE):
                        if self.created_at is not None else None)
         update_time = (self.updated_at.strftime(DATETIME_PRINT_FORMAT)
                        if self.updated_at is not None else None)
-        return (f'KeyValue(id={self.id}, key={self.kv_key}, type={self.kv_type}, ',
-                f'value={self.kv_value}, trade_id={self.ft_trade_id}, created={create_time}, ',
+        return (f'KeyValue(id={self.id}, key={self.kv_key}, type={self.kv_type}, ' +
+                f'value={self.kv_value}, trade_id={self.ft_trade_id}, created={create_time}, ' +
                 f'updated={update_time})')
 
     @staticmethod
