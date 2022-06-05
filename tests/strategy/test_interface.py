@@ -615,6 +615,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag=None,
         ) == 1
 
     default_conf['strategy'] = CURRENT_TEST_STRATEGY
@@ -626,6 +627,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag='entry_tag_test',
         ) == 3
 
 

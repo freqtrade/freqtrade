@@ -781,7 +781,7 @@ class FreqtradeBot(LoggingMixin):
                 current_rate=enter_limit_requested,
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
-                side=trade_side,
+                side=trade_side, entry_tag=entry_tag,
             ) if self.trading_mode != TradingMode.SPOT else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)

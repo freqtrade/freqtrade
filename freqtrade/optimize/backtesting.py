@@ -704,7 +704,7 @@ class Backtesting:
                 current_rate=row[OPEN_IDX],
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
-                side=direction,
+                side=direction, entry_tag=entry_tag,
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
