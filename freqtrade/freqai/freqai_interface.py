@@ -226,7 +226,7 @@ class IFreqaiModel(ABC):
         # if trainable, check if model needs training, if so compute new timerange,
         # then save model and metadata.
         # if not trainable, load existing data
-        if (trainable and not self.follow_mode) or coin_first:
+        if (trainable or coin_first) and not self.follow_mode:
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available
@@ -416,8 +416,8 @@ class IFreqaiModel(ABC):
                                                                           metadata)
             unfiltered_dataframe = dh.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
-        except Exception:
-            logger.warning('Mismatched sizes encountered in strategy')
+        except Exception as err:
+            logger.exception(err)
             # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False

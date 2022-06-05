@@ -638,8 +638,8 @@ class FreqaiDataKitchen:
         )
 
         logger.info(
-            "DI tossed %s predictions for being too far from training data",
-            len(do_predict) - do_predict.sum(),
+            f'DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for '
+            'being too far from training data'
         )
 
         self.do_predict += do_predict
@@ -743,7 +743,7 @@ class FreqaiDataKitchen:
                 logger.warning('FreqAI could not detect max timeframe and therefore may not '
                                'download the proper amount of data for training')
 
-        logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY} days')
+        logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
@@ -770,12 +770,13 @@ class FreqaiDataKitchen:
             data_load_timerange.stopts = int(time)
             retrain = True
 
-        logger.info(f'Total data download needed '
-                    f'{(data_load_timerange.stopts - data_load_timerange.startts)/SECONDS_IN_DAY} '
-                    ' days')
-        logger.info(f'Total training timerange '
-                    f'{(trained_timerange.stopts - trained_timerange.startts)/SECONDS_IN_DAY} '
-                    ' days')
+        # logger.info(
+        #     f'Total data download needed '
+        #     f'{(data_load_timerange.stopts - data_load_timerange.startts)/SECONDS_IN_DAY:.2f}'
+        #     ' days')
+        # logger.info(f'Total training timerange '
+        #             f'{(trained_timerange.stopts - trained_timerange.startts)/SECONDS_IN_DAY} '
+        #             ' days')
 
         # if retrain:
         #     coin, _ = metadata['pair'].split("/")
@@ -861,11 +862,10 @@ class FreqaiDataKitchen:
 
         for pair in self.all_pairs:
             for tf in self.freqai_config.get('timeframes'):
-                history_data[pair][tf] = pd.concat(
-                                            [history_data[pair][tf],
-                                             strategy.dp.get_pair_dataframe(pair, tf).iloc[-1]],
-                                            axis=0
-                                            )
+                lh = len(history_data[pair][tf].index)
+                history_data[pair][tf].loc[lh] = strategy.dp.get_pair_dataframe(pair, tf).iloc[-1]
+
+        logger.info(f'Length of history data {len(history_data[pair][tf])}')
 
     def set_all_pairs(self) -> None:
 
