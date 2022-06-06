@@ -266,7 +266,7 @@ class FreqaiDataDrawer:
     def update_follower_metadata(self):
         # follower needs to load from disk to get any changes made by leader to pair_dict
         self.load_drawer_from_disk()
-        if self.config.get('freqai', {})('purge_old_models', False):
+        if self.config.get('freqai', {}).get('purge_old_models', False):
             self.purge_old_models()
 
     # to be used if we want to send predictions directly to the follower instead of forcing
