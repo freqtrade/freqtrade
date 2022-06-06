@@ -28,7 +28,7 @@ class FreqaiExampleStrategy(IStrategy):
     canonical freqtrade configuration file under config['freqai'].
     """
 
-    minimal_roi = {"0": 0.01, "240": -1}
+    minimal_roi = {"0": 0.1, "240": -1}
 
     plot_config = {
         "main_plot": {},
@@ -43,7 +43,7 @@ class FreqaiExampleStrategy(IStrategy):
         },
     }
 
-    process_only_new_candles = False
+    process_only_new_candles = True
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
@@ -245,7 +245,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         entry_tag = trade.enter_tag
 
-        if 'prediction' + entry_tag not in pair_dict[pair]:
+        if 'prediction' + entry_tag not in pair_dict[pair] or pair_dict[pair]['prediction' + entry_tag] > 0::
             with self.model.bridge.lock:
                 pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
                 if not follow_mode:
@@ -253,15 +253,8 @@ class FreqaiExampleStrategy(IStrategy):
                 else:
                     self.model.bridge.data_drawer.save_follower_dict_to_disk()
         else:
-            if pair_dict[pair]['prediction' + entry_tag] > 0:
-                roi_price = abs(trade_candle['prediction'])
-            else:
-                with self.model.bridge.lock:
-                    pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
-                    if not follow_mode:
-                        self.model.bridge.data_drawer.save_drawer_to_disk()
-                    else:
-                        self.model.bridge.data_drawer.save_follower_dict_to_disk()
+            roi_price = abs(trade_candle['prediction'])
+
 
         roi_price = abs(trade_candle['prediction'])
         roi_time = self.max_roi_time_long.value
