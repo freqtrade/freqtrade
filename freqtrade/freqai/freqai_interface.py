@@ -405,8 +405,9 @@ class IFreqaiModel(ABC):
         # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
         # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
         #                                                           metadata)
-        corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
-                                                                           metadata)
+        with self.data_drawer.history_lock:
+            corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
+                                                                               metadata)
 
         # protecting from common benign errors associated with grabbing new data from exchange:
         try:

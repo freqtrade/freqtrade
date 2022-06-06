@@ -858,14 +858,16 @@ class FreqaiDataKitchen:
         dataframe: DataFrame = strategy provided dataframe
         """
 
-        history_data = self.data_drawer.historic_data
+        with self.data_drawer.history_lock:
+            history_data = self.data_drawer.historic_data
 
-        for pair in self.all_pairs:
-            for tf in self.freqai_config.get('timeframes'):
-                lh = len(history_data[pair][tf].index)
-                history_data[pair][tf].loc[lh] = strategy.dp.get_pair_dataframe(pair, tf).iloc[-1]
+            for pair in self.all_pairs:
+                for tf in self.freqai_config.get('timeframes'):
+                    lh = len(history_data[pair][tf].index)
+                    history_data[pair][tf].loc[lh] = strategy.dp.get_pair_dataframe(pair,
+                                                                                    tf).iloc[-1]
 
-        logger.info(f'Length of history data {len(history_data[pair][tf])}')
+            logger.info(f'Length of history data {len(history_data[pair][tf])}')
 
     def set_all_pairs(self) -> None:
 
