@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import shutil
+import threading
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -44,6 +45,7 @@ class FreqaiDataDrawer:
             self.create_follower_dict()
         self.load_drawer_from_disk()
         self.training_queue: Dict[str, int] = {}
+        self.history_lock = threading.Lock()
         # self.create_training_queue(pair_whitelist)
 
     def load_drawer_from_disk(self):
