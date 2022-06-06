@@ -137,35 +137,40 @@ class Order(_DECL_BASE):
             'info': {},
         }
 
-    def to_json(self, entry_side: str) -> Dict[str, Any]:
-        return {
-            'pair': self.ft_pair,
-            'order_id': self.order_id,
-            'status': self.status,
+    def to_json(self, entry_side: str, minified: bool = False) -> Dict[str, Any]:
+        resp = {
             'amount': self.amount,
-            'average': round(self.average, 8) if self.average else 0,
             'safe_price': self.safe_price,
-            'cost': self.cost if self.cost else 0,
-            'filled': self.filled,
             'ft_order_side': self.ft_order_side,
-            'is_open': self.ft_is_open,
-            'order_date': self.order_date.strftime(DATETIME_PRINT_FORMAT)
-            if self.order_date else None,
-            'order_timestamp': int(self.order_date.replace(
-                tzinfo=timezone.utc).timestamp() * 1000) if self.order_date else None,
-            'order_filled_date': self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
-            if self.order_filled_date else None,
             'order_filled_timestamp': int(self.order_filled_date.replace(
                 tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
-            'order_type': self.order_type,
-            'price': self.price,
             'ft_is_entry': self.ft_order_side == entry_side,
-            'remaining': self.remaining,
         }
+        if not minified:
+            resp.update({
+                'pair': self.ft_pair,
+                'order_id': self.order_id,
+                'status': self.status,
+                'average': round(self.average, 8) if self.average else 0,
+                'cost': self.cost if self.cost else 0,
+                'filled': self.filled,
+                'is_open': self.ft_is_open,
+                'order_date': self.order_date.strftime(DATETIME_PRINT_FORMAT)
+                if self.order_date else None,
+                'order_timestamp': int(self.order_date.replace(
+                    tzinfo=timezone.utc).timestamp() * 1000) if self.order_date else None,
+                'order_filled_date': self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
+                if self.order_filled_date else None,
+                'order_type': self.order_type,
+                'price': self.price,
+                'remaining': self.remaining,
+            })
+        return resp
 
     def close_bt_order(self, close_date: datetime, trade: 'LocalTrade'):
         self.order_filled_date = close_date
         self.filled = self.amount
+        self.remaining = 0
         self.status = 'closed'
         self.ft_is_open = False
         if (self.ft_order_side == trade.entry_side
@@ -393,9 +398,9 @@ class LocalTrade():
             f'open_rate={self.open_rate:.8f}, open_since={open_since})'
         )
 
-    def to_json(self) -> Dict[str, Any]:
-        filled_orders = self.select_filled_orders()
-        orders = [order.to_json(self.entry_side) for order in filled_orders]
+    def to_json(self, minified: bool = False) -> Dict[str, Any]:
+        filled_orders = self.select_filled_or_open_orders()
+        orders = [order.to_json(self.entry_side, minified) for order in filled_orders]
 
         return {
             'trade_id': self.id,
@@ -896,6 +901,21 @@ class LocalTrade():
                 and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
                 o.status in NON_OPEN_EXCHANGE_STATES]
+
+    def select_filled_or_open_orders(self) -> List['Order']:
+        """
+        Finds filled or open orders
+        :param order_side: Side of the order (either 'buy', 'sell', or None)
+        :return: array of Order objects
+        """
+        return [o for o in self.orders if
+                (
+                    o.ft_is_open is False
+                    and (o.filled or 0) > 0
+                    and o.status in NON_OPEN_EXCHANGE_STATES
+                    )
+                or (o.ft_is_open is True and o.status is not None)
+                ]
 
     @property
     def nr_of_successful_entries(self) -> int:

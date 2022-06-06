@@ -1094,6 +1094,7 @@ class Backtesting:
                     # 5. Process exit orders.
                     order = trade.select_order(trade.exit_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
+                        order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
                         trade.close_date = current_time
                         trade.close(order.price, show_msg=False)

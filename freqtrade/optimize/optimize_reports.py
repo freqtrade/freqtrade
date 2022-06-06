@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-from numpy import int64
 from pandas import DataFrame, to_datetime
 from tabulate import tabulate
 
@@ -417,9 +416,6 @@ def generate_strategy_stats(pairlist: List[str],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                      key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
-    if not results.empty:
-        results['open_timestamp'] = results['open_date'].view(int64) // 1e6
-        results['close_timestamp'] = results['close_date'].view(int64) // 1e6
 
     backtest_days = (max_date - min_date).days or 1
     strat_stats = {

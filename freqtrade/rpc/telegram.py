@@ -396,7 +396,7 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if not order['ft_is_entry']:
+            if not order['ft_is_entry'] or order['is_open'] is True:
                 continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
