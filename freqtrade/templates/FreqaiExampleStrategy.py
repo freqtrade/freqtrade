@@ -251,7 +251,7 @@ class FreqaiExampleStrategy(IStrategy):
                 if not follow_mode:
                     self.model.bridge.data_drawer.save_drawer_to_disk()
                 else:
-                    self.model.bridge.data_drawer.save_follower_dict_to_dist()
+                    self.model.bridge.data_drawer.save_follower_dict_to_disk()
         else:
             if pair_dict[pair]['prediction' + entry_tag] > 0:
                 roi_price = abs(trade_candle['prediction'])
@@ -261,7 +261,7 @@ class FreqaiExampleStrategy(IStrategy):
                     if not follow_mode:
                         self.model.bridge.data_drawer.save_drawer_to_disk()
                     else:
-                        self.model.bridge.data_drawer.save_follower_dict_to_dist()
+                        self.model.bridge.data_drawer.save_follower_dict_to_disk()
 
         roi_price = abs(trade_candle['prediction'])
         roi_time = self.max_roi_time_long.value
@@ -295,7 +295,7 @@ class FreqaiExampleStrategy(IStrategy):
             if not follow_mode:
                 self.model.bridge.data_drawer.save_drawer_to_disk()
             else:
-                self.model.bridge.data_drawer.save_follower_dict_to_dist()
+                self.model.bridge.data_drawer.save_follower_dict_to_disk()
 
         return True
 
