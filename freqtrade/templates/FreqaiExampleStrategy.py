@@ -252,11 +252,8 @@ class FreqaiExampleStrategy(IStrategy):
                     self.model.bridge.data_drawer.save_drawer_to_disk()
                 else:
                     self.model.bridge.data_drawer.save_follower_dict_to_disk()
-        else:
-            roi_price = abs(trade_candle['prediction'])
 
-
-        roi_price = abs(trade_candle['prediction'])
+        roi_price = pair_dict[pair]['prediction' + entry_tag]
         roi_time = self.max_roi_time_long.value
 
         roi_decay = roi_price * (1 - ((current_time - trade.open_date_utc).seconds) /
