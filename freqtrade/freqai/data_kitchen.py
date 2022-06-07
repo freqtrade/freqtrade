@@ -866,15 +866,22 @@ class FreqaiDataKitchen:
 
             for pair in self.all_pairs:
                 for tf in self.freqai_config.get('timeframes'):
+
                     # check if newest candle is already appended
+                    df_dp = strategy.dp.get_pair_dataframe(pair, tf)
                     if (
                          str(history_data[pair][tf].iloc[-1]['date']) ==
-                         str(strategy.dp.get_pair_dataframe(pair, tf).iloc[-1:]['date'].iloc[-1])
+                         str(df_dp.iloc[-1:]['date'].iloc[-1])
                          ):
                         continue
+
+                    index = df_dp.loc[
+                                df_dp['date'] ==
+                                history_data[pair][tf].iloc[-1]['date']
+                                ].index[0] + 1
                     history_data[pair][tf] = pd.concat(
                                             [history_data[pair][tf],
-                                             strategy.dp.get_pair_dataframe(pair, tf).iloc[-1:]],
+                                             strategy.dp.get_pair_dataframe(pair, tf).iloc[index:]],
                                             ignore_index=True, axis=0
                                                 )
 
