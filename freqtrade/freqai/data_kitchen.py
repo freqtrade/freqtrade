@@ -297,7 +297,7 @@ class FreqaiDataKitchen:
             )
             if (1 - len(filtered_dataframe) / len(unfiltered_dataframe)) > 0.1 and self.live:
                 logger.warning(
-                    f' {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100} percent'
+                    f' {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.2f} percent'
                     ' of training data dropped due to NaNs, model may perform inconsistent'
                     'with expectations'
                 )
@@ -538,9 +538,10 @@ class FreqaiDataKitchen:
         for prediction confidence in the Dissimilarity Index
         """
         logger.info("computing average mean distance for all training points")
-        pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=-1)
+        tc = self.freqai_config.get('model_training_parameters', {}).get('thread_count', -1)
+        pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=tc)
         avg_mean_dist = pairwise.mean(axis=1).mean()
-        logger.info("avg_mean_dist %s", avg_mean_dist)
+        logger.info(f'avg_mean_dist {avg_mean_dist:.2f}')
 
         return avg_mean_dist
 
@@ -668,7 +669,8 @@ class FreqaiDataKitchen:
 
         self.full_predictions = np.append(self.full_predictions, predictions)
         self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
+        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+            self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
         self.full_target_mean = np.append(self.full_target_mean, target_mean)
         self.full_target_std = np.append(self.full_target_std, target_std)
 
@@ -683,7 +685,8 @@ class FreqaiDataKitchen:
         filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
         self.full_predictions = np.append(filler, self.full_predictions)
         self.full_do_predict = np.append(filler, self.full_do_predict)
-        self.full_DI_values = np.append(filler, self.full_DI_values)
+        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+            self.full_DI_values = np.append(filler, self.full_DI_values)
         self.full_target_mean = np.append(filler, self.full_target_mean)
         self.full_target_std = np.append(filler, self.full_target_std)
 
@@ -728,7 +731,7 @@ class FreqaiDataKitchen:
         # find the max indicator length required
         max_timeframe_chars = self.freqai_config.get('timeframes')[-1]
         max_period = self.freqai_config.get('feature_parameters', {}).get(
-                                            'indicator_max_period', 20)
+                                            'indicator_max_period', 50)
         additional_seconds = 0
         if max_timeframe_chars[-1] == 'd':
             additional_seconds = max_period * SECONDS_IN_DAY * int(max_timeframe_chars[-2])
@@ -863,9 +866,17 @@ class FreqaiDataKitchen:
 
             for pair in self.all_pairs:
                 for tf in self.freqai_config.get('timeframes'):
-                    lh = len(history_data[pair][tf].index)
-                    history_data[pair][tf].loc[lh] = strategy.dp.get_pair_dataframe(pair,
-                                                                                    tf).iloc[-1]
+                    # check if newest candle is already appended
+                    if (
+                         str(history_data[pair][tf].iloc[-1]['date']) ==
+                         str(strategy.dp.get_pair_dataframe(pair, tf).iloc[-1:]['date'].iloc[-1])
+                         ):
+                        continue
+                    history_data[pair][tf] = pd.concat(
+                                            [history_data[pair][tf],
+                                             strategy.dp.get_pair_dataframe(pair, tf).iloc[-1:]],
+                                            ignore_index=True, axis=0
+                                                )
 
             logger.info(f'Length of history data {len(history_data[pair][tf])}')
 
@@ -908,23 +919,25 @@ class FreqaiDataKitchen:
         for training according to user defined train_period
         metadata: dict = strategy furnished pair metadata
         """
-        corr_dataframes: Dict[Any, Any] = {}
-        base_dataframes: Dict[Any, Any] = {}
-        historic_data = self.data_drawer.historic_data
-        pairs = self.freqai_config.get('corr_pairlist', [])
+        with self.data_drawer.history_lock:
+            corr_dataframes: Dict[Any, Any] = {}
+            base_dataframes: Dict[Any, Any] = {}
+            historic_data = self.data_drawer.historic_data
+            pairs = self.freqai_config.get('corr_pairlist', [])
 
-        for tf in self.freqai_config.get('timeframes'):
-            base_dataframes[tf] = self.slice_dataframe(
-                                                       timerange,
-                                                       historic_data[metadata['pair']][tf]
-                                                       )
-            if pairs:
-                for p in pairs:
-                    if metadata['pair'] in p:
-                        continue  # dont repeat anything from whitelist
-                    if p not in corr_dataframes:
-                        corr_dataframes[p] = {}
-                    corr_dataframes[p][tf] = self.slice_dataframe(timerange, historic_data[p][tf])
+            for tf in self.freqai_config.get('timeframes'):
+                base_dataframes[tf] = self.slice_dataframe(
+                                                        timerange,
+                                                        historic_data[metadata['pair']][tf]
+                                                        )
+                if pairs:
+                    for p in pairs:
+                        if metadata['pair'] in p:
+                            continue  # dont repeat anything from whitelist
+                        if p not in corr_dataframes:
+                            corr_dataframes[p] = {}
+                        corr_dataframes[p][tf] = self.slice_dataframe(timerange,
+                                                                      historic_data[p][tf])
 
         return corr_dataframes, base_dataframes
 

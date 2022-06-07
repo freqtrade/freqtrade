@@ -216,12 +216,9 @@ class IFreqaiModel(ABC):
 
         # append the historic data once per round
         if (self.data_drawer.historic_data and
-                self.update_historic_data >= len(self.config.get('exchange', '')
-                                                 .get('pair_whitelist'))):
+                self.config.get('exchange', '').get('pair_whitelist').index(metadata['pair']) == 1):
             dh.update_historic_data(strategy)
-            self.update_historic_data = 1
-        else:
-            self.update_historic_data += 1
+            logger.info(f'Updating historic data on pair {metadata["pair"]}')
 
         # if trainable, check if model needs training, if so compute new timerange,
         # then save model and metadata.
@@ -405,9 +402,9 @@ class IFreqaiModel(ABC):
         # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
         # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
         #                                                           metadata)
-        with self.data_drawer.history_lock:
-            corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
-                                                                               metadata)
+
+        corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
+                                                                           metadata)
 
         # protecting from common benign errors associated with grabbing new data from exchange:
         try:
@@ -419,7 +416,6 @@ class IFreqaiModel(ABC):
 
         except Exception as err:
             logger.exception(err)
-            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False
             return
@@ -428,7 +424,6 @@ class IFreqaiModel(ABC):
             model = self.train(unfiltered_dataframe, metadata, dh)
         except ValueError:
             logger.warning('Value error encountered during training')
-            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False
             return

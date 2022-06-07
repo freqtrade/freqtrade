@@ -59,7 +59,7 @@ class CatboostPredictionModel(IFreqaiModel):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        logger.info('--------------------Starting training'
+        logger.info('--------------------Starting training '
                     f'{metadata["pair"]} --------------------')
 
         # create the full feature list based on user config info
