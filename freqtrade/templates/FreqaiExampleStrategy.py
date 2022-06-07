@@ -47,7 +47,7 @@ class FreqaiExampleStrategy(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
-    can_short = False
+    can_short = True
 
     linear_roi_offset = DecimalParameter(0.00, 0.02, default=0.005, space='sell',
                                          optimize=False, load=True)
@@ -178,8 +178,8 @@ class FreqaiExampleStrategy(IStrategy):
         # each training period.
         dataframe = self.model.bridge.start(dataframe, metadata, self)
 
-        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"]
-        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]
+        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"] * 1.25
+        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"] * 1.25
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
@@ -245,7 +245,8 @@ class FreqaiExampleStrategy(IStrategy):
 
         entry_tag = trade.enter_tag
 
-        if 'prediction' + entry_tag not in pair_dict[pair] or pair_dict[pair]['prediction' + entry_tag] > 0::
+        if ('prediction' + entry_tag not in pair_dict[pair] or
+                pair_dict[pair]['prediction' + entry_tag] > 0):
             with self.model.bridge.lock:
                 pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
                 if not follow_mode:

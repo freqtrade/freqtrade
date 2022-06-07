@@ -66,8 +66,8 @@
             "1h"
         ],
         "train_period": 20,
-        "backtest_period": 2,
-        "identifier": "example2",
+        "backtest_period": 0.001,
+        "identifier": "constant_retrain_live",
         "live_trained_timestamp": 0,
         "corr_pairlist": [
             "BTC/USDT:USDT",
@@ -76,20 +76,20 @@
         "feature_parameters": {
             "period": 20,
             "shift": 2,
-            "DI_threshold": 0,
+            "DI_threshold": 0.9,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": true,
             "stratify": 0,
             "indicator_max_period": 20,
-            "indicator_periods": [10, 20, 30]
+            "indicator_periods": [10, 20]
         },
         "data_split_parameters": {
             "test_size": 0.33,
             "random_state": 1
         },
         "model_training_parameters": {
-            "n_estimators": 200,
+            "n_estimators": 1000,
             "task_type": "CPU"
         }
     },
