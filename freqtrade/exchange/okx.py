@@ -24,6 +24,8 @@ class Okx(Exchange):
         "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
+        "stoploss_order_types": {"limit": "limit"},
+        "stoploss_on_exchange": True,
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
@@ -157,3 +159,26 @@ class Okx(Exchange):
 
         pair_tiers = self._leverage_tiers[pair]
         return pair_tiers[-1]['maxNotional'] / leverage
+
+    def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
+
+        params = super()._get_stop_params(side, ordertype, stop_price)
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
+            params['tdMode'] = self.margin_mode.value
+            params['posSide'] = self._get_posSide(side, True)
+        return params
+
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        # TODO: This does not work until the algo-order is actually triggered!
+        return self.fetch_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )
+
+    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        return self.cancel_order(
+            order_id=order_id,
+            pair=pair,
+            params={'stop': True}
+        )

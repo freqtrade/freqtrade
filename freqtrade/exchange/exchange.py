@@ -1193,6 +1193,7 @@ class Exchange:
         try:
             params = self._get_stop_params(side=side, ordertype=ordertype,
                                            stop_price=stop_price_norm)
+            # TODO: reduceOnly is invalid for OKX stop orders
             if self.trading_mode == TradingMode.FUTURES:
                 params['reduceOnly'] = True
                 if 'stoploss_price_type' in order_types and 'stop_price_type_field' in self._ft_has:
