@@ -215,8 +215,7 @@ class IFreqaiModel(ABC):
             return dh
 
         # append the historic data once per round
-        if (self.data_drawer.historic_data and
-                self.config.get('exchange', '').get('pair_whitelist').index(metadata['pair']) == 1):
+        if self.data_drawer.historic_data:
             dh.update_historic_data(strategy)
             logger.info(f'Updating historic data on pair {metadata["pair"]}')
 
