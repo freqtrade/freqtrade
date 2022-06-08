@@ -37,7 +37,7 @@ COPY --chown=ftuser:ftuser requirements.txt requirements-hyperopt.txt /freqtrade
 USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
   && pip install --user --no-cache-dir -r requirements-hyperopt.txt \
-  && pip install --user --no-cache-dir pymysql
+  && pip install --user --no-cache-dir pymysql \
 
 # Copy dependencies to runtime-image
 FROM base as runtime-image
