@@ -618,10 +618,11 @@ class Telegram(RPCHandler):
         except (TypeError, ValueError, IndexError):
             timescale = 8
         try:
-            stats = self._rpc._rpc_weekly_profit(
+            stats = self._rpc._rpc_daily_profit(
                 timescale,
                 stake_cur,
-                fiat_disp_cur
+                fiat_disp_cur,
+                'weeks'
             )
             stats_tab = tabulate(
                 [[week['date'],

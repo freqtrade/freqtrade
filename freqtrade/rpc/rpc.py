@@ -285,23 +285,33 @@ class RPC:
 
     def _rpc_daily_profit(
             self, timescale: int,
-            stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        today = datetime.now(timezone.utc).date()
-        profit_days: Dict[date, Dict] = {}
+            stake_currency: str, fiat_display_currency: str,
+            timeunit: str = 'days') -> Dict[str, Any]:
+        """
+        :param timeunit: Valid entries are 'days', 'weeks', 'months'
+        """
+        start_date = datetime.now(timezone.utc).date()
+        if timeunit == 'weeks':
+            # weekly
+            start_date = start_date - timedelta(days=start_date.weekday())  # Monday
+        if timeunit == 'months':
+            start_date = start_date.replace(day=1)
+
+        profit_units: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
 
         for day in range(0, timescale):
-            profitday = today - timedelta(days=day)
+            profitday = start_date - timedelta(**{timeunit: day})
             trades = Trade.get_trades(trade_filter=[
                 Trade.is_open.is_(False),
                 Trade.close_date >= profitday,
-                Trade.close_date < (profitday + timedelta(days=1))
+                Trade.close_date < (profitday + timedelta(**{timeunit: 1}))
             ]).order_by(Trade.close_date).all()
             curdayprofit = sum(
                 trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
-            profit_days[profitday] = {
+            profit_units[profitday] = {
                 'amount': curdayprofit,
                 'trades': len(trades)
             }
@@ -317,50 +327,7 @@ class RPC:
                 ) if self._fiat_converter else 0,
                 'trade_count': value["trades"],
             }
-            for key, value in profit_days.items()
-        ]
-        return {
-            'stake_currency': stake_currency,
-            'fiat_display_currency': fiat_display_currency,
-            'data': data
-        }
-
-    def _rpc_weekly_profit(
-            self, timescale: int,
-            stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        today = datetime.now(timezone.utc).date()
-        first_iso_day_of_week = today - timedelta(days=today.weekday())  # Monday
-        profit_weeks: Dict[date, Dict] = {}
-
-        if not (isinstance(timescale, int) and timescale > 0):
-            raise RPCException('timescale must be an integer greater than 0')
-
-        for week in range(0, timescale):
-            profitweek = first_iso_day_of_week - timedelta(weeks=week)
-            trades = Trade.get_trades(trade_filter=[
-                Trade.is_open.is_(False),
-                Trade.close_date >= profitweek,
-                Trade.close_date < (profitweek + timedelta(weeks=1))
-            ]).order_by(Trade.close_date).all()
-            curweekprofit = sum(
-                trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
-            profit_weeks[profitweek] = {
-                'amount': curweekprofit,
-                'trades': len(trades)
-            }
-
-        data = [
-            {
-                'date': key,
-                'abs_profit': value["amount"],
-                'fiat_value': self._fiat_converter.convert_amount(
-                    value['amount'],
-                    stake_currency,
-                    fiat_display_currency
-                ) if self._fiat_converter else 0,
-                'trade_count': value["trades"],
-            }
-            for key, value in profit_weeks.items()
+            for key, value in profit_units.items()
         ]
         return {
             'stake_currency': stake_currency,
