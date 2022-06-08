@@ -966,6 +966,7 @@ class Backtesting:
                 return False
             else:
                 del trade.orders[trade.orders.index(order)]
+                trade.open_order_id = None
                 self.canceled_entry_orders += 1
 
             # place new order if result was not None
