@@ -579,10 +579,11 @@ class Telegram(RPCHandler):
         except (TypeError, ValueError, IndexError):
             timescale = 7
         try:
-            stats = self._rpc._rpc_daily_profit(
+            stats = self._rpc._rpc_timeunit_profit(
                 timescale,
                 stake_cur,
-                fiat_disp_cur
+                fiat_disp_cur,
+                'days'
             )
             stats_tab = tabulate(
                 [[day['date'],
@@ -618,7 +619,7 @@ class Telegram(RPCHandler):
         except (TypeError, ValueError, IndexError):
             timescale = 8
         try:
-            stats = self._rpc._rpc_daily_profit(
+            stats = self._rpc._rpc_timeunit_profit(
                 timescale,
                 stake_cur,
                 fiat_disp_cur,
@@ -659,10 +660,11 @@ class Telegram(RPCHandler):
         except (TypeError, ValueError, IndexError):
             timescale = 6
         try:
-            stats = self._rpc._rpc_monthly_profit(
+            stats = self._rpc._rpc_timeunit_profit(
                 timescale,
                 stake_cur,
-                fiat_disp_cur
+                fiat_disp_cur,
+                'months'
             )
             stats_tab = tabulate(
                 [[month['date'],
