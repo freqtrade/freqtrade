@@ -71,7 +71,7 @@ class FreqaiDataKitchen:
 
         self.data_drawer = data_drawer
 
-    def set_paths(self, metadata: dict, trained_timestamp: int = None,) -> None:
+    def set_paths(self, pair: str, trained_timestamp: int = None,) -> None:
         """
         Set the paths to the data for the present coin/botloop
         :params:
@@ -83,7 +83,7 @@ class FreqaiDataKitchen:
                               str(self.freqai_config.get('identifier')))
 
         self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                                                   metadata['pair'].split("/")[0] +
+                                                   pair.split("/")[0] +
                                                    str(trained_timestamp)))
 
         return
@@ -796,12 +796,12 @@ class FreqaiDataKitchen:
 
         return retrain, trained_timerange, data_load_timerange
 
-    def set_new_model_names(self, metadata: dict, trained_timerange: TimeRange):
+    def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
 
-        coin, _ = metadata['pair'].split("/")
+        coin, _ = pair.split("/")
         # set the new data_path
         self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                              metadata['pair'].split("/")[0] +
+                              pair.split("/")[0] +
                               str(int(trained_timerange.stopts))))
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
@@ -918,7 +918,7 @@ class FreqaiDataKitchen:
                                                             'trading_mode', 'spot'))
 
     def get_base_and_corr_dataframes(self, timerange: TimeRange,
-                                     metadata: dict) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
+                                     pair: str) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
@@ -927,6 +927,7 @@ class FreqaiDataKitchen:
         for training according to user defined train_period
         metadata: dict = strategy furnished pair metadata
         """
+
         with self.data_drawer.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
@@ -940,7 +941,7 @@ class FreqaiDataKitchen:
                                                         )
                 if pairs:
                     for p in pairs:
-                        if metadata['pair'] in p:
+                        if pair in p:
                             continue  # dont repeat anything from whitelist
                         if p not in corr_dataframes:
                             corr_dataframes[p] = {}
@@ -984,7 +985,7 @@ class FreqaiDataKitchen:
     def use_strategy_to_populate_indicators(self, strategy: IStrategy,
                                             corr_dataframes: dict,
                                             base_dataframes: dict,
-                                            metadata: dict) -> DataFrame:
+                                            pair: str) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during
         retrain
@@ -1003,19 +1004,19 @@ class FreqaiDataKitchen:
 
         for tf in self.freqai_config.get("timeframes"):
             dataframe = strategy.populate_any_indicators(
-                                                         metadata,
-                                                         metadata['pair'],
+                                                         pair,
+                                                         pair,
                                                          dataframe.copy(),
                                                          tf,
                                                          base_dataframes[tf],
-                                                         coin=metadata['pair'].split("/")[0] + "-"
+                                                         coin=pair.split("/")[0] + "-"
                                                          )
             if pairs:
                 for i in pairs:
-                    if metadata['pair'] in i:
+                    if pair in i:
                         continue  # dont repeat anything from whitelist
                     dataframe = strategy.populate_any_indicators(
-                                                                 metadata,
+                                                                 pair,
                                                                  i,
                                                                  dataframe.copy(),
                                                                  tf,
