@@ -657,6 +657,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         self._timeunit_stats(update, context, 'months')
+
     @authorized_only
     def _profit(self, update: Update, context: CallbackContext) -> None:
         """
