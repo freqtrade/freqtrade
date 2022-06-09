@@ -795,10 +795,27 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'is_open': [False, False],
          'enter_tag': [None, None],
          "is_short": [False, False],
+         'open_timestamp': [1517251200000, 1517283000000],
+         'close_timestamp': [1517265300000, 1517285400000],
+         'orders': [
+            [
+                {'amount': 0.00957442, 'safe_price': 0.104445, 'ft_order_side': 'buy',
+                 'order_filled_timestamp': 1517251200000, 'ft_is_entry': True},
+                {'amount': 0.00957442, 'safe_price': 0.10496853383458644, 'ft_order_side': 'sell',
+                 'order_filled_timestamp': 1517265300000, 'ft_is_entry': False}
+            ], [
+                {'amount': 0.0097064, 'safe_price': 0.10302485, 'ft_order_side': 'buy',
+                 'order_filled_timestamp': 1517283000000, 'ft_is_entry': True},
+                {'amount': 0.0097064, 'safe_price': 0.10354126528822055, 'ft_order_side': 'sell',
+                 'order_filled_timestamp': 1517285400000, 'ft_is_entry': False}
+            ]
+         ]
          })
     pd.testing.assert_frame_equal(results, expected)
+    assert 'orders' in results.columns
     data_pair = processed[pair]
     for _, t in results.iterrows():
+        assert len(t['orders']) == 2
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate
         assert ln is not None

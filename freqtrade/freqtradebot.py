@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
@@ -227,7 +227,7 @@ class FreqtradeBot(LoggingMixin):
         Notify the user when the bot is stopped (not reloaded)
         and there are still open trades active.
         """
-        open_trades = Trade.get_trades([Trade.is_open.is_(True)]).all()
+        open_trades = Trade.get_open_trades()
 
         if len(open_trades) != 0 and self.state != State.RELOAD_CONFIG:
             msg = {
@@ -301,6 +301,15 @@ class FreqtradeBot(LoggingMixin):
 
                 self.update_trade_state(order.trade, order.order_id, fo,
                                         stoploss_order=(order.ft_order_side == 'stoploss'))
+
+            except InvalidOrderException as e:
+                logger.warning(f"Error updating Order {order.order_id} due to {e}.")
+                if order.order_date_utc - timedelta(days=5) < datetime.now(timezone.utc):
+                    logger.warning(
+                        "Order is older than 5 days. Assuming order was fully cancelled.")
+                    fo = order.to_ccxt_object()
+                    fo['status'] = 'canceled'
+                    self.handle_timedout_order(fo, order.trade)
 
             except ExchangeError as e:
 
