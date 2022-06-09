@@ -100,6 +100,9 @@ DELETE FROM trades WHERE id = 31;
 !!! Warning
     This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.
 
+!!! Danger
+    Some systems (Ubuntu) disable foreign keys in their sqlite3 implementation. When using sqlite3 - please ensure that foreign keys are on by running `PRAGMA foreign_keys = ON` before the above query.
+
 ## Use a different database system
 
 !!! Warning
