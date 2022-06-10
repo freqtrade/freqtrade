@@ -86,8 +86,8 @@ def stats(rpc: RPC = Depends(get_rpc)):
 
 @router.get('/daily', response_model=Daily, tags=['info'])
 def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
-    return rpc._rpc_daily_profit(timescale, config['stake_currency'],
-                                 config.get('fiat_display_currency', ''))
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', ''))
 
 
 @router.get('/status', response_model=List[OpenTradeSchema], tags=['info'])

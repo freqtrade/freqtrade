@@ -284,8 +284,8 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test_rpc_daily_profit(default_conf, update, ticker, fee,
-                          limit_buy_order, limit_sell_order, markets, mocker) -> None:
+def test__rpc_timeunit_profit(default_conf, update, ticker, fee,
+                              limit_buy_order, limit_sell_order, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -316,7 +316,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
 
     # Try valid data
     update.message.text = '/daily 2'
-    days = rpc._rpc_daily_profit(7, stake_currency, fiat_display_currency)
+    days = rpc._rpc_timeunit_profit(7, stake_currency, fiat_display_currency)
     assert len(days['data']) == 7
     assert days['stake_currency'] == default_conf['stake_currency']
     assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
@@ -332,7 +332,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
-        rpc._rpc_daily_profit(0, stake_currency, fiat_display_currency)
+        rpc._rpc_timeunit_profit(0, stake_currency, fiat_display_currency)
 
 
 @pytest.mark.parametrize('is_short', [True, False])
