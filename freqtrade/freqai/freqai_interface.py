@@ -44,9 +44,9 @@ class IFreqaiModel(ABC):
         self.config = config
         self.assert_config(self.config)
         self.freqai_info = config["freqai"]
-        self.data_split_parameters = config["freqai"]["data_split_parameters"]
-        self.model_training_parameters = config["freqai"]["model_training_parameters"]
-        self.feature_parameters = config["freqai"]["feature_parameters"]
+        self.data_split_parameters = config.get('freqai', {}).get("data_split_parameters")
+        self.model_training_parameters = config.get("freqai", {}).get("model_training_parameters")
+        self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
         self.time_last_trained = None
         self.current_time = None
         self.model = None
@@ -54,6 +54,7 @@ class IFreqaiModel(ABC):
         self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
+        self.update_historic_data = 0
         self.set_full_path()
         self.follow_mode = self.freqai_info.get('follow_mode', False)
         self.data_drawer = FreqaiDataDrawer(Path(self.full_path),
@@ -95,15 +96,12 @@ class IFreqaiModel(ABC):
 
                 self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                             self.live, metadata["pair"])
-                dh = self.start_live(dataframe, metadata, strategy, self.dh)
+                dh = self.start_live(dataframe, metadata, strategy, self.dh, trainable=True)
             else:
                 # we will have at max 2 separate instances of the kitchen at once.
                 self.dh_fg = FreqaiDataKitchen(self.config, self.data_drawer,
                                                self.live, metadata["pair"])
-                dh = self.start_live(dataframe, metadata, strategy, self.dh_fg)
-
-            # return (dh.full_predictions, dh.full_do_predict,
-            #         dh.full_target_mean, dh.full_target_std)
+                dh = self.start_live(dataframe, metadata, strategy, self.dh_fg, trainable=False)
 
         # For backtesting, each pair enters and then gets trained for each window along the
         # sliding window defined by "train_period" (training window) and "backtest_period"
@@ -115,8 +113,9 @@ class IFreqaiModel(ABC):
             logger.info(f'Training {len(self.dh.training_timeranges)} timeranges')
             dh = self.start_backtesting(dataframe, metadata, self.dh)
 
-        return (dh.full_predictions, dh.full_do_predict,
-                dh.full_target_mean, dh.full_target_std)
+        return self.return_values(dataframe, dh)
+        # return (dh.full_predictions, dh.full_do_predict,
+        #         dh.full_target_mean, dh.full_target_std)
 
     def start_backtesting(self, dataframe: DataFrame, metadata: dict,
                           dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
@@ -185,7 +184,8 @@ class IFreqaiModel(ABC):
         return dh
 
     def start_live(self, dataframe: DataFrame, metadata: dict,
-                   strategy: IStrategy, dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
+                   strategy: IStrategy, dh: FreqaiDataKitchen,
+                   trainable: bool) -> FreqaiDataKitchen:
         """
         The main broad execution for dry/live. This function will check if a retraining should be
         performed, and if so, retrain and reset the model.
@@ -198,25 +198,31 @@ class IFreqaiModel(ABC):
         dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
+        # update follower
         if self.follow_mode:
-            # follower needs to load from disk to get any changes made by leader to pair_dict
-            self.data_drawer.load_drawer_from_disk()
-            if self.freqai_info.get('purge_old_models', False):
-                self.data_drawer.purge_old_models()
+            self.data_drawer.update_follower_metadata()
 
+        # get the model metadata associated with the current pair
         (model_filename,
          trained_timestamp,
          coin_first,
          return_null_array) = self.data_drawer.get_pair_dict_info(metadata)
 
-        # if the files do not yet exist, the follower returns null arrays to strategy
+        # if the metadata doesnt exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
             logger.info('Returning null array from follower to strategy')
             self.data_drawer.return_null_values_to_strategy(dataframe, dh)
             return dh
 
-        if (not self.training_on_separate_thread and not self.follow_mode
-                and self.data_drawer.pair_dict[metadata['pair']]['priority'] == 1) or coin_first:
+        # append the historic data once per round
+        if self.data_drawer.historic_data:
+            dh.update_historic_data(strategy)
+            logger.info(f'Updating historic data on pair {metadata["pair"]}')
+
+        # if trainable, check if model needs training, if so compute new timerange,
+        # then save model and metadata.
+        # if not trainable, load existing data
+        if (trainable or coin_first) and not self.follow_mode:
             file_exists = False
 
             if trained_timestamp != 0:  # historical model available
@@ -231,6 +237,15 @@ class IFreqaiModel(ABC):
              data_load_timerange) = dh.check_if_new_training_required(trained_timestamp)
             dh.set_paths(metadata, new_trained_timerange.stopts)
 
+            # download candle history if it is not already in memory
+            if not self.data_drawer.historic_data:
+                logger.info('Downloading all training data for all pairs in whitelist and '
+                            'corr_pairlist, this may take a while if you do not have the '
+                            'data saved')
+                dh.download_all_data_for_training(data_load_timerange)
+                dh.load_all_pair_histories(data_load_timerange)
+
+            # train the model on the trained timerange
             if self.retrain or not file_exists:
                 if coin_first:
                     self.train_model_in_series(new_trained_timerange, metadata,
@@ -241,17 +256,24 @@ class IFreqaiModel(ABC):
                                                           metadata, strategy,
                                                           dh, data_load_timerange)
 
-        elif self.training_on_separate_thread and not self.follow_mode:
-            logger.info("FreqAI training a new model on background thread.")
+        elif not trainable and not self.follow_mode:
+            logger.info(f'{metadata["pair"]} holds spot '
+                        f'{self.data_drawer.pair_dict[metadata["pair"]]["priority"]} '
+                        'in training queue')
         elif self.follow_mode:
             dh.set_paths(metadata, trained_timestamp)
             logger.info('FreqAI instance set to follow_mode, finding existing pair'
                         f'using { self.identifier }')
 
+        # load the model and associated data into the data kitchen
         self.model = dh.load_data(coin=metadata['pair'])
 
+        # ensure user is feeding the correct indicators to the model
         self.check_if_feature_list_matches_strategy(dataframe, dh)
 
+        # hold the historical predictions in memory so we are sending back
+        # correct array to strategy FIXME currently broken, but only affecting
+        # Frequi reporting. Signals remain unaffeted.
         if metadata['pair'] not in self.data_drawer.model_return_values:
             preds, do_preds = self.predict(dataframe, dh)
             dh.append_predictions(preds, do_preds, len(dataframe))
@@ -268,6 +290,13 @@ class IFreqaiModel(ABC):
 
     def check_if_feature_list_matches_strategy(self, dataframe: DataFrame,
                                                dh: FreqaiDataKitchen) -> None:
+        """
+        Ensure user is passing the proper feature set if they are reusing an `identifier` pointing
+        to a folder holding existing models.
+        :params:
+        dataframe: DataFrame = strategy provided dataframe
+        dh: FreqaiDataKitchen = non-persistent data container/analyzer for current coin/bot loop
+        """
         strategy_provided_features = dh.find_features(dataframe)
         if 'training_features_list_raw' in dh.data:
             feature_list = dh.data['training_features_list_raw']
@@ -356,11 +385,25 @@ class IFreqaiModel(ABC):
     def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, metadata: dict,
                                          strategy: IStrategy, dh: FreqaiDataKitchen,
                                          data_load_timerange: TimeRange):
+        """
+        Retreive data and train model on separate thread. Always called if the model folder already
+        contains a full set of trained models.
+        :params:
+        new_trained_timerange: TimeRange = the timerange to train the model on
+        metadata: dict = strategy provided metadata
+        strategy: IStrategy = user defined strategy object
+        dh: FreqaiDataKitchen = non-persistent data container for current coin/loop
+        data_load_timerange: TimeRange = the amount of data to be loaded for populate_any_indicators
+        (larger than new_trained_timerange so that new_trained_timerange does not contain any NaNs)
+        """
 
         # with nostdout():
-        dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
-        corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
-                                                                   metadata)
+        # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
+        # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
+        #                                                           metadata)
+
+        corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
+                                                                           metadata)
 
         # protecting from common benign errors associated with grabbing new data from exchange:
         try:
@@ -370,9 +413,8 @@ class IFreqaiModel(ABC):
                                                                           metadata)
             unfiltered_dataframe = dh.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
-        except Exception:
-            logger.warning('Mismatched sizes encountered in strategy')
-            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
+        except Exception as err:
+            logger.exception(err)
             self.training_on_separate_thread = False
             self.retrain = False
             return
@@ -381,7 +423,6 @@ class IFreqaiModel(ABC):
             model = self.train(unfiltered_dataframe, metadata, dh)
         except ValueError:
             logger.warning('Value error encountered during training')
-            # self.data_drawer.pair_to_end_of_training_queue(metadata['pair'])
             self.training_on_separate_thread = False
             self.retrain = False
             return
@@ -408,10 +449,22 @@ class IFreqaiModel(ABC):
     def train_model_in_series(self, new_trained_timerange: TimeRange, metadata: dict,
                               strategy: IStrategy, dh: FreqaiDataKitchen,
                               data_load_timerange: TimeRange):
-
-        dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
-        corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
-                                                                   metadata)
+        """
+        Retreive data and train model in single threaded mode (only used if model directory is empty
+        upon startup for dry/live )
+        :params:
+        new_trained_timerange: TimeRange = the timerange to train the model on
+        metadata: dict = strategy provided metadata
+        strategy: IStrategy = user defined strategy object
+        dh: FreqaiDataKitchen = non-persistent data container for current coin/loop
+        data_load_timerange: TimeRange = the amount of data to be loaded for populate_any_indicators
+        (larger than new_trained_timerange so that new_trained_timerange does not contain any NaNs)
+        """
+        # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
+        # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
+        #                                                          metadata)
+        corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
+                                                                           metadata)
 
         unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
                                                                       corr_dataframes,
@@ -478,6 +531,20 @@ class IFreqaiModel(ABC):
         :params:
         dataframe: DataFrame = the full dataframe for the present training period
         dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        """
+
+        return
+
+    @abstractmethod
+    def return_values(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
+        """
+        User defines the dataframe to be returned to strategy here.
+        :params:
+        dataframe: DataFrame = the full dataframe for the current prediction (live)
+        or --timerange (backtesting)
+        dh: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :returns:
+        dataframe: DataFrame = dataframe filled with user defined data
         """
 
         return

@@ -28,7 +28,7 @@ class FreqaiExampleStrategy(IStrategy):
     canonical freqtrade configuration file under config['freqai'].
     """
 
-    minimal_roi = {"0": 0.01, "240": -1}
+    minimal_roi = {"0": 0.1, "240": -1}
 
     plot_config = {
         "main_plot": {},
@@ -47,7 +47,7 @@ class FreqaiExampleStrategy(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
-    can_short = False
+    can_short = True
 
     linear_roi_offset = DecimalParameter(
         0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
@@ -191,15 +191,10 @@ class FreqaiExampleStrategy(IStrategy):
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.
-        (
-            dataframe["prediction"],
-            dataframe["do_predict"],
-            dataframe["target_mean"],
-            dataframe["target_std"],
-        ) = self.model.bridge.start(dataframe, metadata, self)
+        dataframe = self.model.bridge.start(dataframe, metadata, self)
 
-        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"]
-        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"]
+        dataframe["target_roi"] = dataframe["target_mean"] + dataframe["target_std"] * 1.25
+        dataframe["sell_roi"] = dataframe["target_mean"] - dataframe["target_std"] * 1.25
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
@@ -256,13 +251,13 @@ class FreqaiExampleStrategy(IStrategy):
         entry_tag = trade.enter_tag
 
         if ('prediction' + entry_tag not in pair_dict[pair] or
-                pair_dict[pair]['prediction' + entry_tag] == 0):
+                pair_dict[pair]['prediction' + entry_tag] > 0):
             with self.model.bridge.lock:
                 pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['prediction'])
                 if not follow_mode:
                     self.model.bridge.data_drawer.save_drawer_to_disk()
                 else:
-                    self.model.bridge.data_drawer.save_follower_dict_to_dist()
+                    self.model.bridge.data_drawer.save_follower_dict_to_disk()
 
         roi_price = pair_dict[pair]['prediction' + entry_tag]
         roi_time = self.max_roi_time_long.value
@@ -305,7 +300,7 @@ class FreqaiExampleStrategy(IStrategy):
             if not follow_mode:
                 self.model.bridge.data_drawer.save_drawer_to_disk()
             else:
-                self.model.bridge.data_drawer.save_follower_dict_to_dist()
+                self.model.bridge.data_drawer.save_follower_dict_to_disk()
 
         return True
 
