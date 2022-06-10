@@ -447,7 +447,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -459,7 +459,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -482,7 +482,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     context.args = ["1"]
     telegram._daily(update=update, context=context)
     assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
 
@@ -561,7 +561,7 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
     first_iso_day_of_current_week = today - timedelta(days=today.weekday())
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -574,7 +574,7 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
            in msg_mock.call_args_list[0][0][0]
     assert 'Weekly' in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -599,7 +599,7 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
     context.args = ["1"]
     telegram._weekly(update=update, context=context)
     assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
 
@@ -678,7 +678,7 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -692,7 +692,7 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
@@ -717,7 +717,7 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert msg_mock.call_count == 1
     assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
     # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"

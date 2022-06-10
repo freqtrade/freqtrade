@@ -607,7 +607,7 @@ class Telegram(RPCHandler):
             stats_tab = tabulate(
                 [[period['date'],
                   f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
-                  f"{period['fiat_value']:.3f} {stats['fiat_display_currency']}",
+                  f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
                   f"{period['trade_count']} trades"] for period in stats['data']],
                 headers=[
                     val.header,
