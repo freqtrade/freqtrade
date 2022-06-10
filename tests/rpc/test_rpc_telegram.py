@@ -27,8 +27,9 @@ from freqtrade.persistence.models import Order
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_patched_freqtradebot,
-                            log_has, log_has_re, patch_exchange, patch_get_signal, patch_whitelist)
+from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, create_mock_trades_usdt,
+                            get_patched_freqtradebot, log_has, log_has_re, patch_exchange,
+                            patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -404,12 +405,10 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert msg_mock.call_count == 1
 
 
-def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
-                      limit_sell_order, mocker) -> None:
-    default_conf['max_open_trades'] = 1
+def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
-        return_value=15000.0
+        return_value=1.1
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -417,25 +416,10 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
         get_fee=fee,
     )
 
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
-
-    patch_get_signal(freqtradebot)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
 
     # Create some test data
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    assert trade
-
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-
-    # Simulate fulfilled LIMIT_SELL order for trade
-    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobjs)
-
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
+    create_mock_trades_usdt(fee)
 
     # Try valid data
     # /daily 2
@@ -446,9 +430,9 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert "Daily Profit over the last 2 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
+    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
+    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
@@ -458,32 +442,23 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert msg_mock.call_count == 1
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
+    assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
+    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
+    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
     assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
-    freqtradebot.config['max_open_trades'] = 2
-    # Add two other trades
-    n = freqtradebot.enter_positions()
-    assert n == 2
-
-    trades = Trade.query.all()
-    for trade in trades:
-        trade.update_trade(oobj)
-        trade.update_trade(oobjs)
-        trade.close_date = datetime.utcnow()
-        trade.is_open = False
 
     # /daily 1
     context = MagicMock()
     context.args = ["1"]
     telegram._daily(update=update, context=context)
-    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
+    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
+    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
