@@ -94,55 +94,46 @@ class FreqaiExampleStrategy(IStrategy):
             for t in self.freqai_info["feature_parameters"]["indicator_periods"]:
 
                 t = int(t)
-                informative["%-" + coin + "rsi-period_" + str(t)] = ta.RSI(
-                    informative, timeperiod=t
-                )
-                informative["%-" + coin + "mfi-period_" + str(t)] = ta.MFI(
-                    informative, timeperiod=t
-                )
-                informative["%-" + coin + "adx-period_" + str(t)] = ta.ADX(informative, window=t)
-                informative[coin + "20sma-period_" + str(t)] = ta.SMA(informative, timeperiod=t)
-                informative[coin + "21ema-period_" + str(t)] = ta.EMA(informative, timeperiod=t)
-                informative["%-" + coin + "close_over_20sma-period_" + str(t)] = (
-                    informative["close"] / informative[coin + "20sma-period_" + str(t)]
+                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+                informative[f"{coin}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
+                informative[f"{coin}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
+                informative[f"%-{coin}close_over_20sma-period_{t}"] = (
+                    informative["close"] / informative[coin + "20sma-period_{t}"]
                 )
 
-                informative["%-" + coin + "mfi-period_" + str(t)] = ta.MFI(
-                    informative, timeperiod=t
-                )
-
-                informative[coin + "ema21-period_" + str(t)] = ta.EMA(informative, timeperiod=t)
-                informative[coin + "sma20-period_" + str(t)] = ta.SMA(informative, timeperiod=t)
+                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
 
                 bollinger = qtpylib.bollinger_bands(
                     qtpylib.typical_price(informative), window=t, stds=2.2
                 )
-                informative[coin + "bb_lowerband-period_" + str(t)] = bollinger["lower"]
-                informative[coin + "bb_middleband-period_" + str(t)] = bollinger["mid"]
-                informative[coin + "bb_upperband-period_" + str(t)] = bollinger["upper"]
-                informative["%-" + coin + "bb_width-period_" + str(t)] = (
-                    informative[coin + "bb_upperband-period_" + str(t)]
-                    - informative[coin + "bb_lowerband-period_" + str(t)]
-                ) / informative[coin + "bb_middleband-period_" + str(t)]
-                informative["%-" + coin + "close-bb_lower-period_" + str(t)] = (
-                    informative["close"] / informative[coin + "bb_lowerband-period_" + str(t)]
+                informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
+                informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
+                informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
+
+                informative[f"%-{coin}bb_width-period_{t}"] = (
+                    informative[f"{coin}bb_upperband-period_{t}"]
+                    - informative[f"{coin}bb_lowerband-period_{t}"]
+                ) / informative[f"{coin}bb_middleband-period_{t}"]
+
+                informative[f"%-{coin}close-bb_lower-period_{t}"] = (
+                    informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
                 )
 
-                informative["%-" + coin + "roc-period_" + str(t)] = ta.ROC(
+                informative[f"%-{coin}roc-period_{t}"] = ta.ROC(
                     informative, timeperiod=t
                 )
-                informative["%-" + coin + "adx-period_" + str(t)] = ta.ADX(informative, window=t)
-
                 macd = ta.MACD(informative, timeperiod=t)
-                informative["%-" + coin + "macd-period_" + str(t)] = macd["macd"]
+                informative[f"%-{coin}macd-period_{t}"] = macd["macd"]
 
-                informative["%-" + coin + "relative_volume-period_" + str(t)] = (
+                informative[f"%-{coin}relative_volume-period_{t}"] = (
                     informative["volume"] / informative["volume"].rolling(t).mean()
                 )
 
-            informative["%-" + coin + "pct-change"] = informative["close"].pct_change()
-            informative["%-" + coin + "raw_volume"] = informative["volume"]
-            informative["%-" + coin + "raw_price"] = informative["close"]
+            informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
+            informative[f"%-{coin}raw_volume"] = informative["volume"]
+            informative[f"%-{coin}raw_price"] = informative["close"]
 
             indicators = [col for col in informative if col.startswith("%")]
             # This loop duplicates and shifts all indicators to add a sense of recency to data
