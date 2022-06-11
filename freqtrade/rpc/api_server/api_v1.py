@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 # versions 2.xx -> futures/short branch
 # 2.14: Add entry/exit orders to trade response
 # 2.15: Add backtest history endpoints
-API_VERSION = 2.15
+# 2.16: Additional daily metrics
+API_VERSION = 2.16
 
 # Public API, requires no auth.
 router_public = APIRouter()
