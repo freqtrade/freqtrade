@@ -430,10 +430,11 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert "Daily Profit over the last 2 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
-    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
+    assert '13.83 USDT     15.21 USD     2 trades' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -443,11 +444,11 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
-    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
-    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  1 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -456,9 +457,9 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     context = MagicMock()
     context.args = ["1"]
     telegram._daily(update=update, context=context)
-    assert str('  13.83 USDT') in msg_mock.call_args_list[0][0][0]
-    assert str('  15.21 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  2 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
@@ -487,15 +488,14 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     context = MagicMock()
     context.args = ["today"]
     telegram._daily(update=update, context=context)
-    assert str('Daily Profit over the last 7 days</b>:') in msg_mock.call_args_list[0][0][0]
+    assert 'Daily Profit over the last 7 days</b>:' in msg_mock.call_args_list[0][0][0]
 
 
-def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
-                       limit_sell_order, mocker) -> None:
-    default_conf['max_open_trades'] = 1
+def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
+    default_conf_usdt['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
-        return_value=15000.0
+        return_value=1.1
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -503,25 +503,9 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
         get_fee=fee,
     )
 
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
 
-    patch_get_signal(freqtradebot)
-
-    # Create some test data
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    assert trade
-
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-
-    # Simulate fulfilled LIMIT_SELL order for trade
-    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobjs)
-
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
+    create_mock_trades_usdt(fee)
 
     # Try valid data
     # /weekly 2
@@ -535,10 +519,10 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
     today = datetime.utcnow().date()
     first_iso_day_of_current_week = today - timedelta(days=today.weekday())
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -548,44 +532,10 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert "Weekly Profit over the last 8 weeks (starting from Monday)</b>:" \
            in msg_mock.call_args_list[0][0][0]
     assert 'Weekly' in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
-
-    # Reset msg_mock
-    msg_mock.reset_mock()
-    freqtradebot.config['max_open_trades'] = 2
-    # Add two other trades
-    n = freqtradebot.enter_positions()
-    assert n == 2
-
-    trades = Trade.query.all()
-    for trade in trades:
-        trade.update_trade(oobj)
-        trade.update_trade(oobjs)
-        trade.close_date = datetime.utcnow()
-        trade.is_open = False
-
-    # /weekly 1
-    # By default, the 8 previous weeks are shown
-    # So the previous modified trade should be excluded from the stats
-    context = MagicMock()
-    context.args = ["1"]
-    telegram._weekly(update=update, context=context)
-    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
-
-
-def test_weekly_wrong_input(default_conf, update, ticker, mocker) -> None:
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker
-    )
-
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
-    patch_get_signal(freqtradebot)
+    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Try invalid data
     msg_mock.reset_mock()
@@ -604,16 +554,17 @@ def test_weekly_wrong_input(default_conf, update, ticker, mocker) -> None:
     context = MagicMock()
     context.args = ["this week"]
     telegram._weekly(update=update, context=context)
-    assert str('Weekly Profit over the last 8 weeks (starting from Monday)</b>:') \
+    assert (
+        'Weekly Profit over the last 8 weeks (starting from Monday)</b>:'
         in msg_mock.call_args_list[0][0][0]
+    )
 
 
-def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
-                        limit_sell_order, mocker) -> None:
-    default_conf['max_open_trades'] = 1
+def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
+    default_conf_usdt['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
-        return_value=15000.0
+        return_value=1.1
     )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -621,25 +572,9 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
         get_fee=fee,
     )
 
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
 
-    patch_get_signal(freqtradebot)
-
-    # Create some test data
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    assert trade
-
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-
-    # Simulate fulfilled LIMIT_SELL order for trade
-    oobjs = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobjs)
-
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
+    create_mock_trades_usdt(fee)
 
     # Try valid data
     # /monthly 2
@@ -652,10 +587,10 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     today = datetime.utcnow().date()
     current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -666,24 +601,13 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert 'Monthly Profit over the last 6 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.93 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
-    assert str('  0 trade') in msg_mock.call_args_list[0][0][0]
+    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
+    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
-    freqtradebot.config['max_open_trades'] = 2
-    # Add two other trades
-    n = freqtradebot.enter_positions()
-    assert n == 2
-
-    trades = Trade.query.all()
-    for trade in trades:
-        trade.update_trade(oobj)
-        trade.update_trade(oobjs)
-        trade.close_date = datetime.utcnow()
-        trade.is_open = False
 
     # /monthly 12
     context = MagicMock()
@@ -691,23 +615,13 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     telegram._monthly(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
-    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  2.80 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
+    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
 
     # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"
     # Since we loaded the last 12 months, any month should appear
     assert str('-09') in msg_mock.call_args_list[0][0][0]
-
-
-def test_monthly_wrong_input(default_conf, update, ticker, mocker) -> None:
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker
-    )
-
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
-    patch_get_signal(freqtradebot)
 
     # Try invalid data
     msg_mock.reset_mock()

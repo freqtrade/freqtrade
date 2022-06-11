@@ -284,7 +284,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf, update, ticker, fee,
+def test__rpc_timeunit_profit(default_conf, ticker, fee,
                               limit_buy_order, limit_sell_order, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -315,7 +315,6 @@ def test__rpc_timeunit_profit(default_conf, update, ticker, fee,
     trade.is_open = False
 
     # Try valid data
-    update.message.text = '/daily 2'
     days = rpc._rpc_timeunit_profit(7, stake_currency, fiat_display_currency)
     assert len(days['data']) == 7
     assert days['stake_currency'] == default_conf['stake_currency']
