@@ -432,9 +432,9 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
-    assert '13.83 USDT     15.21 USD     2 trades' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(2)' in msg_mock.call_args_list[0][0][0]
+    assert '(2)  13.83 USDT  15.21 USD  1.31%' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -446,9 +446,9 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
     assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  1 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(2)' in msg_mock.call_args_list[0][0][0]
+    assert '(1)' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -459,7 +459,7 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     telegram._daily(update=update, context=context)
     assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  2 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(2)' in msg_mock.call_args_list[0][0][0]
 
 
 def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
@@ -521,8 +521,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
     assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(3)' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -534,8 +534,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert 'Weekly' in msg_mock.call_args_list[0][0][0]
     assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(3)' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Try invalid data
     msg_mock.reset_mock()
@@ -589,8 +589,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(3)' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -603,8 +603,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
-    assert '  0 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(3)' in msg_mock.call_args_list[0][0][0]
+    assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
     msg_mock.reset_mock()
@@ -617,7 +617,7 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
     assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
-    assert '  3 trade' in msg_mock.call_args_list[0][0][0]
+    assert '(3)' in msg_mock.call_args_list[0][0][0]
 
     # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"
     # Since we loaded the last 12 months, any month should appear

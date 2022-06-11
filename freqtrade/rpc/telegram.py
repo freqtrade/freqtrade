@@ -611,9 +611,9 @@ class Telegram(RPCHandler):
                   f"{period['rel_profit']:.2%}",
                   ] for period in stats['data']],
                 headers=[
-                    f"{val.header} (trades)",
-                    f'Prof {stake_cur}',
-                    f'Prof {fiat_disp_cur}',
+                    f"{val.header} (count)",
+                    f'{stake_cur}',
+                    f'{fiat_disp_cur}',
                     'Profit %',
                     'Trades',
                 ],
