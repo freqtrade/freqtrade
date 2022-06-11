@@ -15,7 +15,8 @@ from freqtrade.persistence.models import Order
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_get_signal
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_patched_freqtradebot,
+                            patch_get_signal)
 
 
 # Functions for recurrent object patching
@@ -284,7 +285,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert isnan(fiat_profit_sum)
 
 
-def test__rpc_timeunit_profit(default_conf, ticker, fee,
+def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
                               limit_buy_order, limit_sell_order, markets, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
@@ -294,38 +295,27 @@ def test__rpc_timeunit_profit(default_conf, ticker, fee,
         markets=PropertyMock(return_value=markets)
     )
 
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot)
-    stake_currency = default_conf['stake_currency']
-    fiat_display_currency = default_conf['fiat_display_currency']
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    stake_currency = default_conf_usdt['stake_currency']
+    fiat_display_currency = default_conf_usdt['fiat_display_currency']
 
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
-    # Create some test data
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    assert trade
-
-    # Simulate buy & sell
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobj)
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
 
     # Try valid data
     days = rpc._rpc_timeunit_profit(7, stake_currency, fiat_display_currency)
     assert len(days['data']) == 7
-    assert days['stake_currency'] == default_conf['stake_currency']
-    assert days['fiat_display_currency'] == default_conf['fiat_display_currency']
+    assert days['stake_currency'] == default_conf_usdt['stake_currency']
+    assert days['fiat_display_currency'] == default_conf_usdt['fiat_display_currency']
     for day in days['data']:
-        # [datetime.date(2018, 1, 11), '0.00000000 BTC', '0.000 USD']
-        assert (day['abs_profit'] == 0.0 or
-                day['abs_profit'] == 0.00006217)
+        # {'date': datetime.date(2022, 6, 11), 'abs_profit': 13.8299999,
+        #  'fiat_value': 0.0, 'trade_count': 2}
+        assert day['abs_profit'] in (0.0, pytest.approx(13.8299999), pytest.approx(-4.0))
+        assert day['trade_count'] in (0, 1, 2)
 
-        assert (day['fiat_value'] == 0.0 or
-                day['fiat_value'] == 0.76748865)
+        assert day['fiat_value'] in (0.0, )
     # ensure first day is current date
     assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 
