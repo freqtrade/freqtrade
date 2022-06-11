@@ -120,6 +120,8 @@ class Stats(BaseModel):
 class DailyRecord(BaseModel):
     date: date
     abs_profit: float
+    rel_profit: float
+    starting_balance: float
     fiat_value: float
     trade_count: int
 

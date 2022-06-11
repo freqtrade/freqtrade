@@ -328,11 +328,11 @@ Per default `/daily` will return the 7 last days. The example below if for `/dai
 
 > **Daily Profit over the last 3 days:**
 ```
-Day         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01-03  0.00224175 BTC  29,142 USD
-2018-01-02  0.00033131 BTC   4,307 USD
-2018-01-01  0.00269130 BTC  34.986 USD
+Day (count)     USDT          USD         Profit %
+--------------  ------------  ----------  ----------
+2022-06-11 (1)  -0.746 USDT   -0.75 USD   -0.08%
+2022-06-10 (0)  0 USDT        0.00 USD    0.00%
+2022-06-09 (5)  20 USDT       20.10 USD   5.00%
 ```
 
 ### /weekly <n>
@@ -342,11 +342,11 @@ from Monday. The example below if for `/weekly 3`:
 
 > **Weekly Profit over the last 3 weeks (starting from Monday):**
 ```
-Monday         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01-03  0.00224175 BTC  29,142 USD
-2017-12-27  0.00033131 BTC   4,307 USD
-2017-12-20  0.00269130 BTC  34.986 USD
+Monday (count)  Profit BTC      Profit USD   Profit %
+-------------  --------------  ------------    ----------
+2018-01-03 (5)  0.00224175 BTC  29,142 USD   4.98%
+2017-12-27 (1)  0.00033131 BTC   4,307 USD   0.00%
+2017-12-20 (4)  0.00269130 BTC  34.986 USD   5.12%
 ```
 
 ### /monthly <n>
@@ -356,11 +356,11 @@ if for `/monthly 3`:
 
 > **Monthly Profit over the last 3 months:**
 ```
-Month         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01     0.00224175 BTC  29,142 USD
-2017-12     0.00033131 BTC   4,307 USD
-2017-11     0.00269130 BTC  34.986 USD
+Month (count)  Profit BTC      Profit USD    Profit %
+-------------  --------------  ------------    ----------
+2018-01 (20)    0.00224175 BTC  29,142 USD  4.98%
+2017-12 (5)    0.00033131 BTC   4,307 USD   0.00%
+2017-11 (10)    0.00269130 BTC  34.986 USD  5.10%
 ```
 
 ### /whitelist

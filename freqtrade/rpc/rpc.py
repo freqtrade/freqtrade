@@ -302,10 +302,11 @@ class RPC:
                 return relativedelta(months=step)
             return timedelta(**{timeunit: step})
 
-        profit_units: Dict[date, Dict] = {}
-
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
+
+        profit_units: Dict[date, Dict] = {}
+        daily_stake = self._freqtrade.wallets.get_total_stake_amount()
 
         for day in range(0, timescale):
             profitday = start_date - time_offset(day)
@@ -318,8 +319,12 @@ class RPC:
 
             curdayprofit = sum(
                 trade.close_profit_abs for trade in trades if trade.close_profit_abs is not None)
+            # Calculate this periods starting balance
+            daily_stake = daily_stake - curdayprofit
             profit_units[profitday] = {
                 'amount': curdayprofit,
+                'daily_stake': daily_stake,
+                'rel_profit': round(curdayprofit / daily_stake, 8) if daily_stake > 0 else 0,
                 'trades': len(trades),
             }
 
@@ -327,6 +332,8 @@ class RPC:
             {
                 'date': f"{key.year}-{key.month:02d}" if timeunit == 'months' else key,
                 'abs_profit': value["amount"],
+                'starting_balance': value["daily_stake"],
+                'rel_profit': value["rel_profit"],
                 'fiat_value': self._fiat_converter.convert_amount(
                     value['amount'],
                     stake_currency,

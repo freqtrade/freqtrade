@@ -311,10 +311,12 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
     assert days['fiat_display_currency'] == default_conf_usdt['fiat_display_currency']
     for day in days['data']:
         # {'date': datetime.date(2022, 6, 11), 'abs_profit': 13.8299999,
+        #  'starting_balance': 1055.37, 'rel_profit': 0.0131044,
         #  'fiat_value': 0.0, 'trade_count': 2}
         assert day['abs_profit'] in (0.0, pytest.approx(13.8299999), pytest.approx(-4.0))
+        assert day['rel_profit'] in (0.0, pytest.approx(0.01310441), pytest.approx(-0.00377583))
         assert day['trade_count'] in (0, 1, 2)
-
+        assert day['starting_balance'] in (pytest.approx(1059.37), pytest.approx(1055.37))
         assert day['fiat_value'] in (0.0, )
     # ensure first day is current date
     assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
