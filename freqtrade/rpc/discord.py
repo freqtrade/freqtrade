@@ -51,7 +51,8 @@ class Discord(Webhook):
             for f in fields:
                 for k, v in f.items():
                     v = v.format(**msg)
-                    embeds[0]['fields'].append({'name': k, 'value': v, 'inline': True})
+                    embeds[0]['fields'].append(  # type: ignore
+                        {'name': k, 'value': v, 'inline': True})
 
             # Send the message to discord channel
             payload = {'embeds': embeds}
