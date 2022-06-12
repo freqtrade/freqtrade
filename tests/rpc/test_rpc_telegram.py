@@ -643,16 +643,16 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     assert str('Monthly Profit over the last 6 months</b>:') in msg_mock.call_args_list[0][0][0]
 
 
-def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
-                       limit_buy_order, limit_sell_order, mocker) -> None:
-    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, fee,
+                       limit_sell_order_usdt, mocker) -> None:
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=1.1)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
+        fetch_ticker=ticker_usdt,
         get_fee=fee,
     )
 
-    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
     patch_get_signal(freqtradebot)
 
     telegram._profit(update=update, context=MagicMock())
@@ -664,10 +664,6 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     freqtradebot.enter_positions()
     trade = Trade.query.first()
 
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-
     context = MagicMock()
     # Test with invalid 2nd argument (should silently pass)
     context.args = ["aaa"]
@@ -675,15 +671,15 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert msg_mock.call_count == 1
     assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
-    mocker.patch('freqtrade.wallets.Wallets.get_starting_balance', return_value=0.01)
-    assert ('∙ `-0.000005 BTC (-0.50%) (-0.0 \N{GREEK CAPITAL LETTER SIGMA}%)`'
+    mocker.patch('freqtrade.wallets.Wallets.get_starting_balance', return_value=1000)
+    assert ('∙ `0.298 USDT (0.50%) (0.03 \N{GREEK CAPITAL LETTER SIGMA}%)`'
             in msg_mock.call_args_list[-1][0][0])
     msg_mock.reset_mock()
 
     # Update the ticker with a market going up
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
     # Simulate fulfilled LIMIT_SELL order for trade
-    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
+    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, limit_sell_order_usdt['symbol'], 'sell')
     trade.update_trade(oobj)
 
     trade.close_date = datetime.now(timezone.utc)
@@ -694,15 +690,15 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     telegram._profit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert '*ROI:* Closed trades' in msg_mock.call_args_list[-1][0][0]
-    assert ('∙ `0.00006217 BTC (6.20%) (0.62 \N{GREEK CAPITAL LETTER SIGMA}%)`'
+    assert ('∙ `5.685 USDT (9.45%) (0.57 \N{GREEK CAPITAL LETTER SIGMA}%)`'
             in msg_mock.call_args_list[-1][0][0])
-    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `6.253 USD`' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
-    assert ('∙ `0.00006217 BTC (6.20%) (0.62 \N{GREEK CAPITAL LETTER SIGMA}%)`'
+    assert ('∙ `5.685 USDT (9.45%) (0.57 \N{GREEK CAPITAL LETTER SIGMA}%)`'
             in msg_mock.call_args_list[-1][0][0])
-    assert '∙ `0.933 USD`' in msg_mock.call_args_list[-1][0][0]
+    assert '∙ `6.253 USD`' in msg_mock.call_args_list[-1][0][0]
 
-    assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*Best Performing:* `ETH/USDT: 9.45%`' in msg_mock.call_args_list[-1][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])
