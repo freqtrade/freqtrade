@@ -83,7 +83,7 @@ class CatboostPredictionModel(IFreqaiModel):
         self.data_cleaning_train(dh)
 
         logger.info(f'Training model on {len(dh.data_dictionary["train_features"].columns)}'
-                    'features')
+                    ' features')
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
