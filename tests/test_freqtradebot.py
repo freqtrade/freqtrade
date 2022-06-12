@@ -210,13 +210,14 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     #
     # mocking the ticker: price is falling ...
     enter_price = limit_order['buy']['price']
+    ticker_val = {
+            'bid': enter_price,
+            'ask': enter_price,
+            'last': enter_price,
+        }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=MagicMock(return_value={
-            'bid': enter_price * buy_price_mult,
-            'ask': enter_price * buy_price_mult,
-            'last': enter_price * buy_price_mult,
-        }),
+        fetch_ticker=MagicMock(return_value=ticker_val),
         get_fee=fee,
     )
     #############################################
@@ -229,9 +230,12 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     caplog.clear()
-    oobj = Order.parse_from_ccxt_object(limit_order['buy'], 'ADA/USDT', 'buy')
-    trade.update_trade(oobj)
     #############################################
+    ticker_val.update({
+            'bid': enter_price * buy_price_mult,
+            'ask': enter_price * buy_price_mult,
+            'last': enter_price * buy_price_mult,
+    })
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
