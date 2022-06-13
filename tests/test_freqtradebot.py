@@ -3775,6 +3775,7 @@ def test_exit_profit_only(
     trade = Trade.query.first()
     assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_order(limit_order[eside])
     trade.update_trade(oobj)
     freqtrade.wallets.update()
     if profit_only:
@@ -4063,6 +4064,7 @@ def test_trailing_stop_loss_positive(
     trade = Trade.query.first()
     assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_order(limit_order[eside])
     trade.update_trade(oobj)
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
