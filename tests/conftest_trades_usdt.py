@@ -20,36 +20,60 @@ def direc(is_short: bool):
 
 def mock_order_usdt_1(is_short: bool):
     return {
-        'id': f'1234_{direc(is_short)}',
-        'symbol': 'ADA/USDT',
+        'id': f'prod_entry_1_{direc(is_short)}',
+        'symbol': 'LTC/USDT',
         'status': 'closed',
         'side': entry_side(is_short),
         'type': 'limit',
-        'price': 2.0,
-        'amount': 10.0,
-        'filled': 10.0,
+        'price': 10.0,
+        'amount': 2.0,
+        'filled': 2.0,
+        'remaining': 0.0,
+    }
+
+
+def mock_order_usdt_1_exit(is_short: bool):
+    return {
+        'id': f'prod_exit_1_{direc(is_short)}',
+        'symbol': 'LTC/USDT',
+        'status': 'closed',
+        'side': exit_side(is_short),
+        'type': 'limit',
+        'price': 8.0,
+        'amount': 2.0,
+        'filled': 2.0,
         'remaining': 0.0,
     }
 
 
 def mock_trade_usdt_1(fee, is_short: bool):
+    """
+    Simulate prod entry with open sell order
+    """
     trade = Trade(
-        pair='ADA/USDT',
+        pair='LTC/USDT',
         stake_amount=20.0,
-        amount=10.0,
-        amount_requested=10.0,
+        amount=2.0,
+        amount_requested=2.0,
+        open_date=datetime.now(tz=timezone.utc) - timedelta(days=2, minutes=20),
+        close_date=datetime.now(tz=timezone.utc) - timedelta(days=2, minutes=5),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        is_open=True,
-        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=17),
-        open_rate=2.0,
+        is_open=False,
+        open_rate=10.0,
+        close_rate=8.0,
+        close_profit=-0.2,
+        close_profit_abs=-4.0,
         exchange='binance',
-        open_order_id=f'1234_{direc(is_short)}',
-        strategy='StrategyTestV2',
+        strategy='SampleStrategy',
+        open_order_id=f'prod_exit_1_{direc(is_short)}',
         timeframe=5,
         is_short=is_short,
     )
-    o = Order.parse_from_ccxt_object(mock_order_usdt_1(is_short), 'ADA/USDT', entry_side(is_short))
+    o = Order.parse_from_ccxt_object(mock_order_usdt_1(is_short), 'LTC/USDT', entry_side(is_short))
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object(mock_order_usdt_1_exit(is_short),
+                                     'LTC/USDT', exit_side(is_short))
     trade.orders.append(o)
     return trade
 
@@ -330,59 +354,35 @@ def mock_trade_usdt_6(fee, is_short: bool):
 
 def mock_order_usdt_7(is_short: bool):
     return {
-        'id': f'prod_entry_7_{direc(is_short)}',
-        'symbol': 'LTC/USDT',
+        'id': f'1234_{direc(is_short)}',
+        'symbol': 'ADA/USDT',
         'status': 'closed',
         'side': entry_side(is_short),
         'type': 'limit',
-        'price': 10.0,
-        'amount': 2.0,
-        'filled': 2.0,
-        'remaining': 0.0,
-    }
-
-
-def mock_order_usdt_7_exit(is_short: bool):
-    return {
-        'id': f'prod_exit_7_{direc(is_short)}',
-        'symbol': 'LTC/USDT',
-        'status': 'closed',
-        'side': exit_side(is_short),
-        'type': 'limit',
-        'price': 8.0,
-        'amount': 2.0,
-        'filled': 2.0,
+        'price': 2.0,
+        'amount': 10.0,
+        'filled': 10.0,
         'remaining': 0.0,
     }
 
 
 def mock_trade_usdt_7(fee, is_short: bool):
-    """
-    Simulate prod entry with open sell order
-    """
     trade = Trade(
-        pair='LTC/USDT',
+        pair='ADA/USDT',
         stake_amount=20.0,
-        amount=2.0,
-        amount_requested=2.0,
-        open_date=datetime.now(tz=timezone.utc) - timedelta(days=2, minutes=20),
-        close_date=datetime.now(tz=timezone.utc) - timedelta(days=2, minutes=5),
+        amount=10.0,
+        amount_requested=10.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        is_open=False,
-        open_rate=10.0,
-        close_rate=8.0,
-        close_profit=-0.2,
-        close_profit_abs=-4.0,
+        is_open=True,
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=17),
+        open_rate=2.0,
         exchange='binance',
-        strategy='SampleStrategy',
-        open_order_id=f'prod_exit_7_{direc(is_short)}',
+        open_order_id=f'1234_{direc(is_short)}',
+        strategy='StrategyTestV2',
         timeframe=5,
         is_short=is_short,
     )
-    o = Order.parse_from_ccxt_object(mock_order_usdt_7(is_short), 'LTC/USDT', entry_side(is_short))
-    trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_usdt_7_exit(is_short),
-                                     'LTC/USDT', exit_side(is_short))
+    o = Order.parse_from_ccxt_object(mock_order_usdt_7(is_short), 'ADA/USDT', entry_side(is_short))
     trade.orders.append(o)
     return trade

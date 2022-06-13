@@ -407,13 +407,9 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     assert stoploss_mock.call_count == 0
 
 
-def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
-                              limit_buy_order, limit_sell_order, mocker) -> None:
-    mocker.patch.multiple(
-        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
-        get_price=MagicMock(return_value={'bitcoin': {'usd': 15000.0}}),
-    )
-    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+def test_rpc_trade_statistics11(default_conf_usdt, ticker, fee,
+                                mocker) -> None:
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=1.1)
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -421,10 +417,9 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         get_fee=fee,
     )
 
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot)
-    stake_currency = default_conf['stake_currency']
-    fiat_display_currency = default_conf['fiat_display_currency']
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf_usdt)
+    stake_currency = default_conf_usdt['stake_currency']
+    fiat_display_currency = default_conf_usdt['fiat_display_currency']
 
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
@@ -437,62 +432,32 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert res['latest_trade_timestamp'] == 0
 
     # Create some test data
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'sell')
-    trade.update_trade(oobj)
-
-    # Update the ticker with a market going up
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_sell_up
-    )
-    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobj)
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
-
-    freqtradebot.enter_positions()
-    trade = Trade.query.first()
-    # Simulate fulfilled LIMIT_BUY order for trade
-    oobj = Order.parse_from_ccxt_object(limit_buy_order, limit_buy_order['symbol'], 'buy')
-    trade.update_trade(oobj)
-
-    # Update the ticker with a market going up
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_sell_up
-    )
-    oobj = Order.parse_from_ccxt_object(limit_sell_order, limit_sell_order['symbol'], 'sell')
-    trade.update_trade(oobj)
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
+    create_mock_trades_usdt(fee)
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
-    assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
-    assert prec_satoshi(stats['profit_closed_percent_mean'], 6.2)
-    assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
-    assert prec_satoshi(stats['profit_all_coin'], 5.802e-05)
-    assert prec_satoshi(stats['profit_all_percent_mean'], 2.89)
-    assert prec_satoshi(stats['profit_all_fiat'], 0.8703)
-    assert stats['trade_count'] == 2
-    assert stats['first_trade_date'] == 'just now'
-    assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] in ('0:00:00', '0:00:01', '0:00:02')
-    assert stats['best_pair'] == 'ETH/BTC'
-    assert prec_satoshi(stats['best_rate'], 6.2)
+    assert pytest.approx(stats['profit_closed_coin']) == 9.83
+    assert pytest.approx(stats['profit_closed_percent_mean']) == -1.67
+    assert pytest.approx(stats['profit_closed_fiat']) == 10.813
+    assert pytest.approx(stats['profit_all_coin']) == -77.45964918
+    assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
+    assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
+    assert stats['trade_count'] == 7
+    assert stats['first_trade_date'] == '2 days ago'
+    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['avg_duration'] in ('0:17:40')
+    assert stats['best_pair'] == 'XRP/USDT'
+    assert stats['best_rate'] == 10.0
 
     # Test non-available pair
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
-                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
+                 MagicMock(side_effect=ExchangeError("Pair 'XRP/USDT' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
-    assert stats['trade_count'] == 2
-    assert stats['first_trade_date'] == 'just now'
-    assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] in ('0:00:00', '0:00:01', '0:00:02')
-    assert stats['best_pair'] == 'ETH/BTC'
-    assert prec_satoshi(stats['best_rate'], 6.2)
+    assert stats['trade_count'] == 7
+    assert stats['first_trade_date'] == '2 days ago'
+    assert stats['latest_trade_date'] == '17 minutes ago'
+    assert stats['avg_duration'] in ('0:17:40')
+    assert stats['best_pair'] == 'XRP/USDT'
+    assert stats['best_rate'] == 10.0
     assert isnan(stats['profit_all_coin'])
 
 
