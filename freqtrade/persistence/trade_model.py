@@ -923,7 +923,7 @@ class LocalTrade():
     def set_kval(self, key: str, value: Any) -> None:
         KeyValues.set_kval(key=key, value=value, trade_id=self.id)
 
-    def get_kval(self, key: Optional[str]) -> List[KeyValue]:
+    def get_kvals(self, key: Optional[str]) -> List[KeyValue]:
         return KeyValues.get_kval(key=key, trade_id=self.id)
 
     @property
@@ -1127,11 +1127,12 @@ class Trade(_DECL_BASE, LocalTrade):
         for order in self.orders:
             Order.query.session.delete(order)
 
-        for kval in self.keyvalues:
-            KeyValue.query.session.delete(kval)
-
         Trade.query.session.delete(self)
         Trade.commit()
+
+        for kval in self.keyvalues:
+            KeyValue.query.session.delete(kval)
+        KeyValue.query.session.commit()
 
     @staticmethod
     def commit():
@@ -1409,5 +1410,5 @@ class Trade(_DECL_BASE, LocalTrade):
     def set_kval(self, key: str, value: Any) -> None:
         super().set_kval(key=key, value=value)
 
-    def get_kval(self, key: Optional[str]) -> List[KeyValue]:
-        return super().get_kval(key=key)
+    def get_kvals(self, key: Optional[str]) -> List[KeyValue]:
+        return super().get_kvals(key=key)
