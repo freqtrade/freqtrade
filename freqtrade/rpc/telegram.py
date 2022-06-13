@@ -182,6 +182,7 @@ class Telegram(RPCHandler):
             CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
+            CommandHandler('list_kvals', self._list_kvals),
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
@@ -1459,7 +1460,9 @@ class Telegram(RPCHandler):
             "*/stats:* `Shows Wins / losses by Sell reason as well as "
             "Avg. holding durationsfor buys and sells.`\n"
             "*/help:* `This help message`\n"
-            "*/version:* `Show version`"
+            "*/version:* `Show version`\n"
+            "*/list_kvals <trade_id> <key>:* `List key-value for Trade ID and Key combo.`\n"
+            "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`"
             )
 
         self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
@@ -1538,6 +1541,52 @@ class Telegram(RPCHandler):
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"
         )
+
+    @authorized_only
+    def _list_kvals(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /list_kvals <id> <key>.
+        List keyvalues for specified trade (and key if supplied).
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        try:
+            if not context.args or len(context.args) == 0:
+                raise RPCException("Trade-id not set.")
+            trade_id = int(context.args[0])
+            key = None if len(context.args) < 2 else str(context.args[1])
+
+            results = self._rpc._rpc_list_kvals(trade_id, key)
+            logger.warning(len(results))
+            logger.warning(results)
+            messages = []
+            if len(results) > 0:
+                messages = ['Found key-value pair' + 's:  \n' if key is None else ':  \n']
+                for result in results:
+                    lines = [
+                        f"*Key:* `{result['kv_key']}`",
+                        f"*ID:* `{result['id']}`",
+                        f"*Trade ID:* `{result['ft_trade_id']}`",
+                        f"*Type:* `{result['kv_type']}`",
+                        f"*Value:* `{result['kv_value']}`",
+                        f"*Create Date:* `{result['created_at']}`",
+                        f"*Update Date:* `{result['updated_at']}`"
+                    ]
+                    # Filter empty lines using list-comprehension
+                    messages.append("\n".join([line for line in lines if line]))
+                for msg in messages:
+                    logger.warning(msg)
+                    self._send_msg(msg)
+            else:
+                message = f"Didn't find any key-value pairs for Trade ID: `{trade_id}`"
+                logger.warning(message)
+                message += f" and Key: `{key}`." if key is not None else ""
+                logger.warning(message)
+                self._send_msg(message)
+
+        except RPCException as e:
+            self._send_msg(str(e))
 
     def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                     reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:

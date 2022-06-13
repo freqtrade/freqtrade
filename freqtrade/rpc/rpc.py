@@ -843,6 +843,26 @@ class RPC:
                 'cancel_order_count': c_count,
             }
 
+    def _rpc_list_kvals(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
+        # Query for trade
+        trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
+        if trade is None:
+            return []
+        # Query keyvals
+        keyvals = trade.get_kvals(key=key)
+        return [
+            {
+                'id': kval.id,
+                'ft_trade_id': kval.ft_trade_id,
+                'kv_key': kval.kv_key,
+                'kv_type': kval.kv_type,
+                'kv_value': kval.kv_value,
+                'created_at': kval.created_at,
+                'updated_at': kval.updated_at
+            }
+            for kval in keyvals
+        ]
+
     def _rpc_performance(self) -> List[Dict[str, Any]]:
         """
         Handler for performance.
