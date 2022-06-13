@@ -405,7 +405,7 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert msg_mock.call_count == 1
 
 
-def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
+def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machine) -> None:
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
         return_value=1.1
@@ -418,6 +418,8 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
 
+    # Move date to within day
+    time_machine.move_to('2022-06-11 08:00:00+00:00')
     # Create some test data
     create_mock_trades_usdt(fee)
 
@@ -491,7 +493,7 @@ def test_daily_wrong_input(default_conf, update, ticker, mocker) -> None:
     assert 'Daily Profit over the last 7 days</b>:' in msg_mock.call_args_list[0][0][0]
 
 
-def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
+def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, time_machine) -> None:
     default_conf_usdt['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
@@ -504,7 +506,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     )
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
-
+    # Move to saturday - so all trades are within that week
+    time_machine.move_to('2022-06-11')
     create_mock_trades_usdt(fee)
 
     # Try valid data
@@ -560,7 +563,7 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     )
 
 
-def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
+def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_machine) -> None:
     default_conf_usdt['max_open_trades'] = 1
     mocker.patch(
         'freqtrade.rpc.rpc.CryptoToFiatConverter._find_price',
@@ -573,7 +576,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker) -> None:
     )
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf_usdt)
-
+    # Move to day within the month so all mock trades fall into this week.
+    time_machine.move_to('2022-06-11')
     create_mock_trades_usdt(fee)
 
     # Try valid data
