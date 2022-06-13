@@ -429,7 +429,7 @@ class Hyperopt:
             return new_list
         i = 0
         asked_non_tried: List[List[Any]] = []
-        is_random: List[bool] = []
+        is_random_non_tried: List[bool] = []
         while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
@@ -438,9 +438,9 @@ class Hyperopt:
             else:
                 asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
                 is_random = [True for _ in range(len(asked))]
-            is_random += [rand for x, rand in zip(asked, is_random)
-                          if x not in self.opt.Xi
-                          and x not in asked_non_tried]
+            is_random_non_tried += [rand for x, rand in zip(asked, is_random)
+                                    if x not in self.opt.Xi
+                                    and x not in asked_non_tried]
             asked_non_tried += [x for x in asked
                                 if x not in self.opt.Xi
                                 and x not in asked_non_tried]
@@ -449,7 +449,7 @@ class Hyperopt:
         if asked_non_tried:
             return (
                 asked_non_tried[:min(len(asked_non_tried), n_points)],
-                is_random[:min(len(asked_non_tried), n_points)]
+                is_random_non_tried[:min(len(asked_non_tried), n_points)]
             )
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]

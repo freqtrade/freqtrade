@@ -550,7 +550,8 @@ class AwesomeStrategy(IStrategy):
         :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in target (base) currency that's going to be traded.
-        :param rate: Rate that's going to be used when using limit orders
+        :param rate: Rate that's going to be used when using limit orders 
+                     or current rate for market orders.
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
@@ -600,6 +601,7 @@ class AwesomeStrategy(IStrategy):
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in base currency.
         :param rate: Rate that's going to be used when using limit orders
+                     or current rate for market orders.
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
