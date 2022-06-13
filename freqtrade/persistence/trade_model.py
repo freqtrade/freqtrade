@@ -74,7 +74,7 @@ class Order(_DECL_BASE):
 
     @property
     def safe_filled(self) -> float:
-        return self.filled or self.amount or 0.0
+        return self.filled if self.filled is not None else self.amount or 0.0
 
     @property
     def safe_fee_base(self) -> float:
@@ -847,8 +847,6 @@ class LocalTrade():
 
             tmp_amount = o.safe_amount_after_fee
             tmp_price = o.average or o.price
-            if o.filled is not None:
-                tmp_amount = o.filled
             if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount
                 total_stake += tmp_price * tmp_amount
