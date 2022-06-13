@@ -49,9 +49,9 @@ class KeyValue(_DECL_BASE):
         return will be for generic values not tied to a trade
         :param trade_id: id of the Trade
         """
-        key = key if key is not None else "%"
-
-        filters = [KeyValue.ft_trade_id == trade_id if trade_id is not None else 0,
-                   KeyValue.kv_key.ilike(key)]
+        filters = []
+        filters.append(KeyValue.ft_trade_id == trade_id if trade_id is not None else 0)
+        if key is not None:
+            filters.append(KeyValue.kv_key.ilike(key))
 
         return KeyValue.query.filter(*filters)
