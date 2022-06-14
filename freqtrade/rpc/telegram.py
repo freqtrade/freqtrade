@@ -1555,7 +1555,6 @@ class Telegram(RPCHandler):
                     self._send_msg(msg)
             else:
                 message = f"Didn't find any key-value pairs for Trade ID: `{trade_id}`"
-                logger.warning(message)
                 message += f" and Key: `{key}`." if key is not None else ""
                 self._send_msg(message)
 
