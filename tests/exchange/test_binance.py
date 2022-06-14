@@ -154,6 +154,7 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     order = {
         'type': 'stop_loss_limit',
         'price': 1500,
+        'stopPrice': 1500,
         'info': {'stopPrice': 1500},
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)

@@ -239,3 +239,52 @@ Possible parameters are:
 The fields in `webhook.webhookstatus` are used for regular status messages (Started / Stopped / ...). Parameters are filled using string.format.
 
 The only possible value here is `{status}`.
+
+## Discord
+
+A special form of webhooks is available for discord.
+You can configure this as follows:
+
+```json
+"discord": {
+    "enabled": true,
+    "webhook_url": "https://discord.com/api/webhooks/<Your webhook URL ...>",
+    "exit_fill": [
+        {"Trade ID": "{trade_id}"},
+        {"Exchange": "{exchange}"},
+        {"Pair": "{pair}"},
+        {"Direction": "{direction}"},
+        {"Open rate": "{open_rate}"},
+        {"Close rate": "{close_rate}"},
+        {"Amount": "{amount}"},
+        {"Open date": "{open_date:%Y-%m-%d %H:%M:%S}"},
+        {"Close date": "{close_date:%Y-%m-%d %H:%M:%S}"},
+        {"Profit": "{profit_amount} {stake_currency}"},
+        {"Profitability": "{profit_ratio:.2%}"},
+        {"Enter tag": "{enter_tag}"},
+        {"Exit Reason": "{exit_reason}"},
+        {"Strategy": "{strategy}"},
+        {"Timeframe": "{timeframe}"},
+    ],
+    "entry_fill": [
+        {"Trade ID": "{trade_id}"},
+        {"Exchange": "{exchange}"},
+        {"Pair": "{pair}"},
+        {"Direction": "{direction}"},
+        {"Open rate": "{open_rate}"},
+        {"Amount": "{amount}"},
+        {"Open date": "{open_date:%Y-%m-%d %H:%M:%S}"},
+        {"Enter tag": "{enter_tag}"},
+        {"Strategy": "{strategy} {timeframe}"},
+    ]
+}
+```
+
+
+The above represents the default (`exit_fill` and `entry_fill` are optional and will default to the above configuration) - modifications are obviously possible.
+
+Available fields correspond to the fields for webhooks and are documented in the corresponding webhook sections.
+
+The notifications will look as follows by default.
+
+![discord-notification](assets/discord_notification.png)
