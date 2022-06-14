@@ -5782,12 +5782,11 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
             get_fee=fee,
         )
         pair = 'ETH/USDT'
-        # Initial buy
         closed_successful_order = {
             'pair': pair,
             'ft_pair': pair,
-            'ft_order_side': 'buy',
-            'side': 'buy',
+            'ft_order_side': order[0],
+            'side': order[0],
             'type': 'limit',
             'status': 'closed',
             'price': price,
