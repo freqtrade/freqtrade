@@ -1536,8 +1536,6 @@ class Telegram(RPCHandler):
             key = None if len(context.args) < 2 else str(context.args[1])
 
             results = self._rpc._rpc_list_kvals(trade_id, key)
-            logger.warning(len(results))
-            logger.warning(results)
             messages = []
             if len(results) > 0:
                 messages = ['Found key-value pair' + 's:  \n' if key is None else ':  \n']
@@ -1554,13 +1552,11 @@ class Telegram(RPCHandler):
                     # Filter empty lines using list-comprehension
                     messages.append("\n".join([line for line in lines if line]))
                 for msg in messages:
-                    logger.warning(msg)
                     self._send_msg(msg)
             else:
                 message = f"Didn't find any key-value pairs for Trade ID: `{trade_id}`"
                 logger.warning(message)
                 message += f" and Key: `{key}`." if key is not None else ""
-                logger.warning(message)
                 self._send_msg(message)
 
         except RPCException as e:
