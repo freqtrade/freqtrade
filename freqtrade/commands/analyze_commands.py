@@ -25,17 +25,23 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     if method in no_unlimited_runmodes.keys():
         from freqtrade.data.btanalysis import get_latest_backtest_filename
 
-        btfile = Path(get_latest_backtest_filename(config['user_data_dir'] / 'backtest_results'))
-        signals_file = f"{btfile.stem}_signals.pkl"
+        if 'exportfilename' in config:
+            if config['exportfilename'].is_dir():
+                btfile = Path(get_latest_backtest_filename(config['exportfilename']))
+                signals_file = f"{config['exportfilename']}/{btfile.stem}_signals.pkl"
+            else:
+                if config['exportfilename'].exists():
+                    btfile = Path(config['exportfilename'])
+                    signals_file = f"{btfile.parent}/{btfile.stem}_signals.pkl"
+                else:
+                    raise OperationalException(f"{config['exportfilename']} does not exist.")
+        else:
+            raise OperationalException('exportfilename not in config.')
 
-        if (not (config['user_data_dir'] / 'backtest_results' / signals_file).exists()):
+        if (not Path(signals_file).exists()):
             raise OperationalException(
-                "Cannot find latest backtest signals file. Run backtesting with --export signals."
-            )
-
-        if ('strategy' not in config):
-            raise OperationalException(
-                "No strategy defined. Use --strategy or supply in config."
+                (f"Cannot find latest backtest signals file: {signals_file}."
+                  "Run backtesting with `--export signals`.")
             )
 
     return config
@@ -54,7 +60,7 @@ def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
 
     logger.info('Starting freqtrade in analysis mode')
 
-    process_entry_exit_reasons(Path(config['user_data_dir'], 'backtest_results'),
+    process_entry_exit_reasons(config['exportfilename'],
                                config['exchange']['pair_whitelist'],
                                config['analysis_groups'],
                                config['enter_reason_list'],

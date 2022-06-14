@@ -20,7 +20,7 @@ def _load_signal_candles(backtest_dir: Path):
                     Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl"
                     )
     else:
-        scpf = Path(Path(get_latest_backtest_filename(backtest_dir)).stem + "_signals.pkl")
+        scpf = Path(backtest_dir.parent / f"{backtest_dir.stem}_signals.pkl")
 
     try:
         scp = open(scpf, "rb")
