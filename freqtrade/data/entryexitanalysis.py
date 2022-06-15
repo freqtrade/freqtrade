@@ -140,14 +140,16 @@ def _do_group_table_output(bigdf, glist):
             # 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
             if g == "4":
                 group_mask = ['pair', 'enter_reason', 'exit_reason']
+            if group_mask:
+                new = bigdf.groupby(group_mask).agg(agg_mask).reset_index()
+                new.columns = group_mask + agg_cols
+                new['median_profit_pct'] = new['median_profit_pct'] * 100
+                new['mean_profit_pct'] = new['mean_profit_pct'] * 100
+                new['total_profit_pct'] = new['total_profit_pct'] * 100
 
-            new = bigdf.groupby(group_mask).agg(agg_mask).reset_index()
-            new.columns = group_mask + agg_cols
-            new['median_profit_pct'] = new['median_profit_pct'] * 100
-            new['mean_profit_pct'] = new['mean_profit_pct'] * 100
-            new['total_profit_pct'] = new['total_profit_pct'] * 100
-
-            _print_table(new, sortcols)
+                _print_table(new, sortcols)
+            else:
+                logger.warning("Invalid group mask specified.")
 
 
 def _print_results(analysed_trades, stratname, analysis_groups,
