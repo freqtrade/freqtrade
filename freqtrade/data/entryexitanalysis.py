@@ -161,28 +161,24 @@ def _print_results(analysed_trades, stratname, analysis_groups,
         bigdf = pd.concat([bigdf, trades], ignore_index=True)
 
     if bigdf.shape[0] > 0 and ('enter_reason' in bigdf.columns):
-        if analysis_groups is not None:
-            glist = analysis_groups.split(",")
-            _do_group_table_output(bigdf, glist)
+        if analysis_groups:
+            _do_group_table_output(bigdf, analysis_groups)
 
-        if enter_reason_list is not None and not enter_reason_list == "all":
-            enter_reason_list = enter_reason_list.split(",")
+        if enter_reason_list and "all" not in enter_reason_list:
             bigdf = bigdf.loc[(bigdf['enter_reason'].isin(enter_reason_list))]
 
-        if exit_reason_list is not None and not exit_reason_list == "all":
-            exit_reason_list = exit_reason_list.split(",")
+        if exit_reason_list and "all" not in exit_reason_list:
             bigdf = bigdf.loc[(bigdf['exit_reason'].isin(exit_reason_list))]
 
-        if indicator_list is not None and indicator_list != "":
-            if indicator_list == "all":
-                print(bigdf)
-            else:
-                available_inds = []
-                for ind in indicator_list.split(","):
-                    if ind in bigdf:
-                        available_inds.append(ind)
-                ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
-                _print_table(bigdf[ilist], sortcols=['exit_reason'], show_index=False)
+        if "all" in indicator_list:
+            print(bigdf)
+        elif indicator_list is not None:
+            available_inds = []
+            for ind in indicator_list:
+                if ind in bigdf:
+                    available_inds.append(ind)
+            ilist = ["pair", "enter_reason", "exit_reason"] + available_inds
+            _print_table(bigdf[ilist], sortcols=['exit_reason'], show_index=False)
     else:
         print("\\_ No trades to show")
 
@@ -205,10 +201,10 @@ def _print_table(df, sortcols=None, show_index=False):
 
 def process_entry_exit_reasons(backtest_dir: Path,
                                pairlist: List[str],
-                               analysis_groups: Optional[str] = "0,1,2",
-                               enter_reason_list: Optional[str] = "all",
-                               exit_reason_list: Optional[str] = "all",
-                               indicator_list: Optional[str] = None):
+                               analysis_groups: Optional[List[str]] = ["0", "1", "2"],
+                               enter_reason_list: Optional[List[str]] = ["all"],
+                               exit_reason_list: Optional[List[str]] = ["all"],
+                               indicator_list: Optional[List[str]] = []):
     try:
         backtest_stats = load_backtest_stats(backtest_dir)
         for strategy_name, results in backtest_stats['strategy'].items():

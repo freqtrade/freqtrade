@@ -28,10 +28,11 @@ backtesting with the `--cache none` option to make sure no cached results are us
 If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` file in the
 `user_data/backtest_results` folder.
 
-To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command:
+To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command
+with `--analysis-groups` option provided with space-separated arguments (default `0 1 2`):
 
 ``` bash
-freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 1 2 3 4
 ```
 
 This command will read from the last backtesting results. The `--analysis-groups` option is
@@ -75,14 +76,14 @@ freqtrade backtesting-analysis -c <config.json> --export-filename=/tmp/mystrat_b
 To show only certain buy and sell tags in the displayed output, use the following two options:
 
 ```
---enter-reason-list : Comma separated list of enter signals to analyse. Default: "all"
---exit-reason-list : Comma separated list of exit signals to analyse. Default: "stop_loss,trailing_stop_loss"
+--enter-reason-list : Space-separated list of enter signals to analyse. Default: "all"
+--exit-reason-list : Space-separated list of exit signals to analyse. Default: "all"
 ```
 
 For example:
 
 ```bash
-freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4 --enter-reason-list "enter_tag_a,enter_tag_b" --exit-reason-list "roi,custom_exit_tag_a,stop_loss"
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss
 ```
 
 ### Outputting signal candle indicators
@@ -93,7 +94,7 @@ indicators. To print out a column for a given set of indicators, use the `--indi
 option:
 
 ```bash
-freqtrade backtesting-analysis -c <config.json> --analysis-groups 0,1,2,3,4 --enter-reason-list "enter_tag_a,enter_tag_b" --exit-reason-list "roi,custom_exit_tag_a,stop_loss" --indicator-list "rsi,rsi_1h,bb_lowerband,ema_9,macd,macdsignal"
+freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss --indicator-list rsi rsi_1h bb_lowerband ema_9 macd macdsignal
 ```
 
 The indicators have to be present in your strategy's main DataFrame (either for your main
