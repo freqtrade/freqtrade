@@ -93,7 +93,7 @@ class Exchange:
         :return: None
         """
         self._api: ccxt.Exchange
-        self._api_async: ccxt_async.Exchange
+        self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
         self._leverage_tiers: Dict[str, List[Dict]] = {}
