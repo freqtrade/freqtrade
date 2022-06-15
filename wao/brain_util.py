@@ -5,6 +5,7 @@ import os
 import time
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
+from wao.error_watcher import error_Watcher
 import pickle
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
@@ -57,10 +58,28 @@ def perform_create_429_watcher():
     observer.join()
 
 
-def setup_429():
+def perform_create_error_watcher():
+    print("perform_create_error_watcher: watching:- " + str(BrainConfig.FREQTRADE_LOGS_DIRECTORY))
+    event_handler = error_Watcher()
+    observer = watchdog.observers.Observer()
+    observer.schedule(event_handler, path=BrainConfig.FREQTRADE_LOGS_DIRECTORY, recursive=True)
+    # Start the observer
+    observer.start()
+    try:
+        while True:
+            # Set the thread sleep time
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+
+def setup():
     if Config.ENABLE_429_SOLUTION:
         __create_429_directory()
         __create_429_watcher()
+    if Config.IS_ERROR_WATCHER_ENABLED:
+        __create_error_watcher()
 
 
 def clear_cumulative_value():
@@ -74,6 +93,10 @@ def __create_429_directory():
     print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
     if not os.path.exists(BrainConfig._429_DIRECTORY):
         os.mkdir(BrainConfig._429_DIRECTORY)
+
+
+def __create_error_watcher():
+    threading.Thread(target=perform_create_error_watcher).start()
 
 
 def __create_429_watcher():

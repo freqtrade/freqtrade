@@ -1,7 +1,7 @@
 from wao.brain_util import perform_execute_buy, perform_execute_sell, write_to_backtest_table, clear_cumulative_value
 import threading
 from wao.brain_config import BrainConfig
-from wao.brain_util import setup_429
+from wao.brain_util import setup
 from wao.notifier import send_start_deliminator_message
 import sys
 import os
@@ -17,7 +17,7 @@ class WAOStrategyController:
         self.time_out_hours = time_out_hours
         self.dup = dup
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
-        setup_429()
+        setup()
         clear_cumulative_value()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(self.brain,
