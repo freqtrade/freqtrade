@@ -103,8 +103,8 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
 
     # test group 0 and indicator list
     args = get_args(base_args +
-                    ['--analysis-groups', '0',
-                     '--indicator-list', 'close,rsi,profit_abs']
+                    ['--analysis-groups', "0",
+                     '--indicator-list', "close", "rsi", "profit_abs"]
                     )
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
@@ -128,7 +128,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '47.0996' in captured.out
 
     # test group 1
-    args = get_args(base_args + ['--analysis-groups', '1'])
+    args = get_args(base_args + ['--analysis-groups', "1"])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'enter_tag_long_a' in captured.out
@@ -141,7 +141,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '0' in captured.out
 
     # test group 2
-    args = get_args(base_args + ['--analysis-groups', '2'])
+    args = get_args(base_args + ['--analysis-groups', "2"])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'enter_tag_long_a' in captured.out
@@ -156,7 +156,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '2.5' in captured.out
 
     # test group 3
-    args = get_args(base_args + ['--analysis-groups', '3'])
+    args = get_args(base_args + ['--analysis-groups', "3"])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'LTC/BTC' in captured.out
@@ -171,7 +171,7 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, tmp
     assert '2' in captured.out
 
     # test group 4
-    args = get_args(base_args + ['--analysis-groups', '4'])
+    args = get_args(base_args + ['--analysis-groups', "4"])
     start_analysis_entries_exits(args)
     captured = capsys.readouterr()
     assert 'LTC/BTC' in captured.out
