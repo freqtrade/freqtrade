@@ -660,26 +660,31 @@ More details in the [Backtesting analysis](advanced-backtesting.md#analyze-the-b
 ```
 usage: freqtrade backtesting-analysis [-h] [-v] [--logfile FILE] [-V]
                                       [-c PATH] [-d PATH] [--userdir PATH]
-                                      [--analysis-groups [ANALYSIS_GROUPS]]
-                                      [--enter-reason-list [ENTER_REASON_LIST]]
-                                      [--exit-reason-list [EXIT_REASON_LIST]]
-                                      [--indicator-list [INDICATOR_LIST]]
+                                      [--export-filename PATH]
+                                      [--analysis-groups {0,1,2,3,4} [{0,1,2,3,4} ...]]
+                                      [--enter-reason-list ENTER_REASON_LIST [ENTER_REASON_LIST ...]]
+                                      [--exit-reason-list EXIT_REASON_LIST [EXIT_REASON_LIST ...]]
+                                      [--indicator-list INDICATOR_LIST [INDICATOR_LIST ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --analysis-groups [ANALYSIS_GROUPS]
+  --export-filename PATH, --backtest-filename PATH
+                        Use this filename for backtest results.Requires
+                        `--export` to be set as well. Example: `--export-filen
+                        ame=user_data/backtest_results/backtest_today.json`
+  --analysis-groups {0,1,2,3,4} [{0,1,2,3,4} ...]
                         grouping output - 0: simple wins/losses by enter tag,
                         1: by enter_tag, 2: by enter_tag and exit_tag, 3: by
                         pair and enter_tag, 4: by pair, enter_ and exit_tag
                         (this can get quite large)
-  --enter-reason-list [ENTER_REASON_LIST]
+  --enter-reason-list ENTER_REASON_LIST [ENTER_REASON_LIST ...]
                         Comma separated list of entry signals to analyse.
                         Default: all. e.g. 'entry_tag_a,entry_tag_b'
-  --exit-reason-list [EXIT_REASON_LIST]
+  --exit-reason-list EXIT_REASON_LIST [EXIT_REASON_LIST ...]
                         Comma separated list of exit signals to analyse.
                         Default: all. e.g.
                         'exit_tag_a,roi,stop_loss,trailing_stop_loss'
-  --indicator-list [INDICATOR_LIST]
+  --indicator-list INDICATOR_LIST [INDICATOR_LIST ...]
                         Comma separated list of indicators to analyse. e.g.
                         'close,rsi,bb_lowerband,profit_abs'
 

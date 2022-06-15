@@ -51,7 +51,7 @@ More options are available by running with the `-h` option.
 Normally, `backtesting-analysis` uses the latest backtest results, but if you wanted to go
 back to a previous backtest output, you need to supply the `--export-filename` option.
 You can supply the same parameter to `backtest-analysis` with the name of the final backtest
-output file. This allows you to keep historical versions of backtest results and reanalyse
+output file. This allows you to keep historical versions of backtest results and re-analyse
 them at a later date:
 
 ``` bash
