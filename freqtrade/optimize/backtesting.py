@@ -1264,13 +1264,14 @@ class Backtesting:
                 self.results['strategy_comparison'].extend(results['strategy_comparison'])
             else:
                 self.results = results
-
+            dt_appendix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             if self.config.get('export', 'none') in ('trades', 'signals'):
-                store_backtest_stats(self.config['exportfilename'], self.results)
+                store_backtest_stats(self.config['exportfilename'], self.results, dt_appendix)
 
             if (self.config.get('export', 'none') == 'signals' and
                     self.dataprovider.runmode == RunMode.BACKTEST):
-                store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
+                store_backtest_signal_candles(
+                    self.config['exportfilename'], self.processed_dfs, dt_appendix)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
         if 'strategy_list' in self.config and len(self.results) > 0:

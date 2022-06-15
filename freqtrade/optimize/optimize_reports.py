@@ -17,21 +17,21 @@ from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 logger = logging.getLogger(__name__)
 
 
-def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
+def store_backtest_stats(
+        recordfilename: Path, stats: Dict[str, DataFrame], dtappendix: str) -> None:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
         while for directories, <directory>/backtest-result-<datetime>.json will be used as filename
     :param stats: Dataframe containing the backtesting statistics
+    :param dtappendix: Datetime to use for the filename
     """
     if recordfilename.is_dir():
-        filename = (recordfilename /
-                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
+        filename = (recordfilename / f'backtest-result-{dtappendix}.json')
     else:
         filename = Path.joinpath(
-            recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}'
         ).with_suffix(recordfilename.suffix)
 
     # Store metadata separately.
@@ -44,7 +44,8 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> Path:
+def store_backtest_signal_candles(
+        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
     """
     Stores backtest trade signal candles
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -52,14 +53,13 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
         while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
         as filename
     :param stats: Dict containing the backtesting signal candles
+    :param dtappendix: Datetime to use for the filename
     """
     if recordfilename.is_dir():
-        filename = (recordfilename /
-                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl')
+        filename = (recordfilename / f'backtest-result-{dtappendix}_signals.pkl')
     else:
         filename = Path.joinpath(
-            recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_signals.pkl'
         )
 
     file_dump_joblib(filename, candles)
