@@ -512,7 +512,7 @@ class RPC:
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
         """ Returns current account balance per crypto """
-        currencies = []
+        currencies: List[Dict] = []
         total = 0.0
         try:
             tickers = self._freqtrade.exchange.get_tickers(cached=True)
@@ -547,13 +547,12 @@ class RPC:
                 except (ExchangeError):
                     logger.warning(f" Could not get rate for pair {coin}.")
                     continue
-            total = total + (est_stake or 0)
+            total = total + est_stake
             currencies.append({
                 'currency': coin,
-                # TODO: The below can be simplified if we don't assign None to values.
-                'free': balance.free if balance.free is not None else 0,
-                'balance': balance.total if balance.total is not None else 0,
-                'used': balance.used if balance.used is not None else 0,
+                'free': balance.free,
+                'balance': balance.total,
+                'used': balance.used,
                 'est_stake': est_stake or 0,
                 'stake': stake_currency,
                 'side': 'long',
@@ -583,7 +582,6 @@ class RPC:
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
         trade_count = len(Trade.get_trades_proxy())
-        starting_capital_ratio = 0.0
         starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 
@@ -871,7 +869,7 @@ class RPC:
             else:
                 errors[pair] = {
                     'error_msg': f"Pair {pair} is not in the current blacklist."
-                    }
+                }
         resp = self._rpc_blacklist()
         resp['errors'] = errors
         return resp
