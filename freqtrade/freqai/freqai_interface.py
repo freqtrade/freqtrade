@@ -124,18 +124,19 @@ class IFreqaiModel(ABC):
 
                 file_exists = False
 
-                # dh.set_paths(pair, trained_timestamp)
+                dh.set_paths(pair, trained_timestamp)
                 file_exists = self.model_exists(pair,
                                                 dh,
                                                 trained_timestamp=trained_timestamp,
-                                                model_filename=model_filename)
+                                                model_filename=model_filename,
+                                                scanning=True)
 
-                (self.retrain,
+                (retrain,
                  new_trained_timerange,
                  data_load_timerange) = dh.check_if_new_training_required(trained_timestamp)
                 dh.set_paths(pair, new_trained_timerange.stopts)
 
-                if self.retrain or not file_exists:
+                if retrain or not file_exists:
                     self.train_model_in_series(new_trained_timerange, pair,
                                                strategy, dh, data_load_timerange)
 
@@ -226,7 +227,7 @@ class IFreqaiModel(ABC):
         # get the model metadata associated with the current pair
         (_,
          trained_timestamp,
-         coin_first,
+         _,
          return_null_array) = self.data_drawer.get_pair_dict_info(metadata['pair'])
 
         # if the metadata doesnt exist, the follower returns null arrays to strategy
@@ -264,13 +265,17 @@ class IFreqaiModel(ABC):
                 dh.download_all_data_for_training(data_load_timerange)
                 dh.load_all_pair_histories(data_load_timerange)
 
-            # train the model on the trained timerange
-            if coin_first and not self.scanning:
-                self.train_model_in_series(new_trained_timerange, metadata['pair'],
-                                           strategy, dh, data_load_timerange)
-            elif not coin_first and not self.scanning:
+            if not self.scanning:
                 self.scanning = True
                 self.start_scanning(strategy)
+
+            # train the model on the trained timerange
+            # if coin_first and not self.scanning:
+            #     self.train_model_in_series(new_trained_timerange, metadata['pair'],
+            #                                strategy, dh, data_load_timerange)
+            # elif not coin_first and not self.scanning:
+            #     self.scanning = True
+            #     self.start_scanning(strategy)
 
         # elif not trainable and not self.follow_mode:
         #     logger.info(f'{metadata["pair"]} holds spot '
@@ -283,6 +288,10 @@ class IFreqaiModel(ABC):
 
         # load the model and associated data into the data kitchen
         self.model = dh.load_data(coin=metadata['pair'])
+        if not self.model:
+            logger.warning('No model ready, returning null values to strategy.')
+            self.data_drawer.return_null_values_to_strategy(dataframe, dh)
+            return dh
 
         # ensure user is feeding the correct indicators to the model
         self.check_if_feature_list_matches_strategy(dataframe, dh)
@@ -373,7 +382,7 @@ class IFreqaiModel(ABC):
         #     dh.remove_outliers(predict=True)  # creates dropped index
 
     def model_exists(self, pair: str, dh: FreqaiDataKitchen, trained_timestamp: int = None,
-                     model_filename: str = '') -> bool:
+                     model_filename: str = '', scanning: bool = False) -> bool:
         """
         Given a pair and path, check if a model already exists
         :param pair: pair e.g. BTC/USD
@@ -386,9 +395,9 @@ class IFreqaiModel(ABC):
 
         path_to_modelfile = Path(dh.data_path / str(model_filename + "_model.joblib"))
         file_exists = path_to_modelfile.is_file()
-        if file_exists:
+        if file_exists and not scanning:
             logger.info("Found model at %s", dh.data_path / dh.model_filename)
-        else:
+        elif not scanning:
             logger.info("Could not find model at %s", dh.data_path / dh.model_filename)
         return file_exists
 
@@ -453,8 +462,8 @@ class IFreqaiModel(ABC):
             with self.lock:
                 self.data_drawer.pair_to_end_of_training_queue(pair)
         dh.save_data(model, coin=pair)
-        self.training_on_separate_thread = False
-        self.retrain = False
+        # self.training_on_separate_thread = False
+        # self.retrain = False
 
         # each time we finish a training, we check the directory to purge old models.
         if self.freqai_info.get('purge_old_models', False):
@@ -499,7 +508,7 @@ class IFreqaiModel(ABC):
             with self.lock:
                 self.data_drawer.pair_to_end_of_training_queue(pair)
         dh.save_data(model, coin=pair)
-        self.retrain = False
+        # self.retrain = False
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModlel.py for an example.

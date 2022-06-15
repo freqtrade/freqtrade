@@ -107,7 +107,7 @@ class FreqaiDataDrawer:
         if isinstance(object, np.generic):
             return object.item()
 
-    def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool, bool]:
+    def get_pair_dict_info(self, pair: str) -> Tuple[str, int, bool, bool]:
         """
         Locate and load existing model metadata from persistent storage. If not located,
         create a new one and append the current pair to it and prepare it for its first
@@ -120,22 +120,22 @@ class FreqaiDataDrawer:
         coin_first: bool = If the coin is fresh without metadata
         return_null_array: bool = Follower could not find pair metadata
         """
-        pair_in_dict = self.pair_dict.get(metadata['pair'])
-        data_path_set = self.pair_dict.get(metadata['pair'], {}).get('data_path', None)
+        pair_in_dict = self.pair_dict.get(pair)
+        data_path_set = self.pair_dict.get(pair, {}).get('data_path', None)
         return_null_array = False
 
         if pair_in_dict:
-            model_filename = self.pair_dict[metadata['pair']]['model_filename']
-            trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp']
-            coin_first = self.pair_dict[metadata['pair']]['first']
+            model_filename = self.pair_dict[pair]['model_filename']
+            trained_timestamp = self.pair_dict[pair]['trained_timestamp']
+            coin_first = self.pair_dict[pair]['first']
         elif not self.follow_mode:
-            self.pair_dict[metadata['pair']] = {}
-            model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
-            coin_first = self.pair_dict[metadata['pair']]['first'] = True
-            trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
+            self.pair_dict[pair] = {}
+            model_filename = self.pair_dict[pair]['model_filename'] = ''
+            coin_first = self.pair_dict[pair]['first'] = True
+            trained_timestamp = self.pair_dict[pair]['trained_timestamp'] = 0
 
         if not data_path_set and self.follow_mode:
-            logger.warning(f'Follower could not find current pair {metadata["pair"]} in '
+            logger.warning(f'Follower could not find current pair {pair} in '
                            f'pair_dictionary at path {self.full_path}, sending null values '
                            'back to strategy.')
             return_null_array = True

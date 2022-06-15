@@ -48,7 +48,7 @@ class CatboostPredictionModel(IFreqaiModel):
         return dataframe["s"]
 
     def train(self, unfiltered_dataframe: DataFrame,
-              metadata: dict, dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
+              pair: str, dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
         for storing, saving, loading, and analyzing the data.
@@ -60,7 +60,7 @@ class CatboostPredictionModel(IFreqaiModel):
         """
 
         logger.info('--------------------Starting training '
-                    f'{metadata["pair"]} --------------------')
+                    f'{pair} --------------------')
 
         # create the full feature list based on user config info
         dh.training_features_list = dh.find_features(unfiltered_dataframe)
@@ -88,7 +88,7 @@ class CatboostPredictionModel(IFreqaiModel):
 
         model = self.fit(data_dictionary)
 
-        logger.info(f'--------------------done training {metadata["pair"]}--------------------')
+        logger.info(f'--------------------done training {pair}--------------------')
 
         return model
 

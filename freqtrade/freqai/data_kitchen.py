@@ -151,6 +151,9 @@ class FreqaiDataKitchen:
         :model: User trained model which can be inferenced for new predictions
         """
 
+        if not self.data_drawer.pair_dict[coin]['model_filename']:
+            return None
+
         if self.live:
             self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
             self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
@@ -747,7 +750,7 @@ class FreqaiDataKitchen:
                 logger.warning('FreqAI could not detect max timeframe and therefore may not '
                                'download the proper amount of data for training')
 
-        logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
+        # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
@@ -937,7 +940,7 @@ class FreqaiDataKitchen:
             for tf in self.freqai_config.get('timeframes'):
                 base_dataframes[tf] = self.slice_dataframe(
                                                         timerange,
-                                                        historic_data[metadata['pair']][tf]
+                                                        historic_data[pair][tf]
                                                         )
                 if pairs:
                     for p in pairs:
