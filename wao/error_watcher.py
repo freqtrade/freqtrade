@@ -35,8 +35,10 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         print("error_Watcher:on_modified: file name = " + str(event.src_path))
         file = str(event.src_path)
-        error_check_command = "tail -n 20 " + file + " | grep -i error | grep -i exception"
-        result = subprocess.Popen([error_check_command],
+
+        error_check_command_1 = "tail -n 100 " + file + " | grep -i error "
+        error_check_command_2 = " tail -n 100 " + file + " | grep -i exception "
+        result = subprocess.Popen([error_check_command_1, error_check_command_2],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
