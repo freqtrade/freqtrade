@@ -2,7 +2,7 @@ import subprocess
 import watchdog.events
 import watchdog.observers
 
-from brain_config import BrainConfig
+from wao.brain_config import BrainConfig
 
 
 class error_Watcher(watchdog.events.PatternMatchingEventHandler):
