@@ -880,6 +880,8 @@ class LocalTrade():
         total_amount = 0.0
         total_stake = 0.0
         avg_price = None
+        close_profit = 0.0
+        close_profit_abs = 0.0
 
         for o in self.orders:
             if o.ft_is_open or not o.filled:
@@ -887,6 +889,7 @@ class LocalTrade():
 
             tmp_amount = o.safe_amount_after_fee
             tmp_price = o.safe_price
+
             is_exit = o.ft_order_side != self.enter_side
             side = -1 if is_exit else 1
             if tmp_amount > 0.0 and tmp_price is not None:
@@ -895,6 +898,25 @@ class LocalTrade():
                 total_stake += price * tmp_amount * side
                 if total_amount > 0:
                     avg_price = total_stake / total_amount
+
+            if is_exit:
+                # Process partial exits
+                exit_rate = o.safe_price
+                exit_amount = o.safe_amount_after_fee
+                exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
+                profit = self.calc_profit2(avg_price, exit_rate, exit_amount) * int(self.leverage)
+                if total_amount > 0:
+                    # Exclude final (closing) trade
+                    close_profit_abs += profit
+                    if self.is_short:
+                        close_profit += (exit_stake_amount - profit) / exit_stake_amount - 1
+                    else:
+                        close_profit += exit_stake_amount / (exit_stake_amount - profit) - 1
+
+        if close_profit:
+            self.close_profit = close_profit
+            self.realized_profit = close_profit_abs
+            self.close_profit_abs = profit
 
         if total_amount > 0:
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.

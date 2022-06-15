@@ -2696,23 +2696,31 @@ def test_order_to_ccxt(limit_buy_order_open):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('data', [
-    (
+    {
         # tuple 1 - side, amount, price
         # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit
-        (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
-        (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
-        (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625)),
-        (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875)),
-        (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, 336.625)),
-    ),
-    (
-        (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None)),
-        (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None)),
-        (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0)),
-        (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0)),
-        (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5)),
-        (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 3175.75)),
-    )
+        'orders': [
+            (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
+            (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, -377.1875)),
+        ],
+        'end_profit': 336.625,
+        'end_profit_ratio': -0.601995,
+    },
+    {
+        'orders': [
+            (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None)),
+            (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 1787.25)),
+        ],
+        'end_profit': 3175.75,
+        'end_profit_ratio': 1.08048,
+    }
 ])
 def test_recalc_trade_from_orders_dca(fee, data) -> None:
 
@@ -2721,8 +2729,8 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
         id=2,
         pair=pair,
         stake_amount=1000,
-        open_rate=data[0][0][2],
-        amount=data[0][0][1],
+        open_rate=data['orders'][0][0][2],
+        amount=data['orders'][0][0][1],
         is_open=True,
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
@@ -2734,7 +2742,7 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
     )
     Trade.query.session.add(trade)
 
-    for idx, (order, result) in enumerate(data):
+    for idx, (order, result) in enumerate(data['orders']):
         amount = order[1]
         price = order[2]
 
@@ -2756,8 +2764,6 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
             order_filled_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
         )
         trade.orders.append(order_obj)
-        if order[0] == 'sell' and idx != len(data) - 1:
-            trade.process_exit_sub_trade(order_obj, True)
         trade.recalc_trade_from_orders()
         Trade.commit()
 
@@ -2775,8 +2781,12 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
         assert trade.open_rate == result[1]
         assert trade.stake_amount == result[2]
         assert pytest.approx(trade.realized_profit) == result[3]
-        # assert pytest.approx(trade.close_profit_abs) == result[4]
+        assert pytest.approx(trade.close_profit_abs) == result[4]
 
+    trade.close(price)
+    assert pytest.approx(trade.close_profit_abs) == data['end_profit']
+    assert pytest.approx(trade.close_profit) == data['end_profit_ratio']
+    assert not trade.is_open
     trade = Trade.query.first()
     assert trade
     assert trade.open_order_id is None
