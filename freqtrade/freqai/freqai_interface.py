@@ -508,6 +508,9 @@ class IFreqaiModel(ABC):
             with self.lock:
                 self.data_drawer.pair_to_end_of_training_queue(pair)
         dh.save_data(model, coin=pair)
+
+        if self.freqai_info.get('purge_old_models', False):
+            self.data_drawer.purge_old_models()
         # self.retrain = False
 
     # Following methods which are overridden by user made prediction models.
