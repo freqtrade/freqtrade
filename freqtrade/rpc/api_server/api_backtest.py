@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
@@ -102,7 +103,10 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                     min_date=min_date, max_date=max_date)
 
             if btconfig.get('export', 'none') == 'trades':
-                store_backtest_stats(btconfig['exportfilename'], ApiServer._bt.results)
+                store_backtest_stats(
+                    btconfig['exportfilename'], ApiServer._bt.results,
+                    datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    )
 
             logger.info("Backtest finished.")
 

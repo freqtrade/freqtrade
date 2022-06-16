@@ -210,13 +210,14 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     #
     # mocking the ticker: price is falling ...
     enter_price = limit_order['buy']['price']
+    ticker_val = {
+            'bid': enter_price,
+            'ask': enter_price,
+            'last': enter_price,
+        }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=MagicMock(return_value={
-            'bid': enter_price * buy_price_mult,
-            'ask': enter_price * buy_price_mult,
-            'last': enter_price * buy_price_mult,
-        }),
+        fetch_ticker=MagicMock(return_value=ticker_val),
         get_fee=fee,
     )
     #############################################
@@ -229,9 +230,12 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     freqtrade.enter_positions()
     trade = Trade.query.first()
     caplog.clear()
-    oobj = Order.parse_from_ccxt_object(limit_order['buy'], 'ADA/USDT', 'buy')
-    trade.update_trade(oobj)
     #############################################
+    ticker_val.update({
+            'bid': enter_price * buy_price_mult,
+            'ask': enter_price * buy_price_mult,
+            'last': enter_price * buy_price_mult,
+    })
 
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
@@ -3771,6 +3775,7 @@ def test_exit_profit_only(
     trade = Trade.query.first()
     assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_order(limit_order[eside])
     trade.update_trade(oobj)
     freqtrade.wallets.update()
     if profit_only:
@@ -4059,6 +4064,7 @@ def test_trailing_stop_loss_positive(
     trade = Trade.query.first()
     assert trade.is_short == is_short
     oobj = Order.parse_from_ccxt_object(limit_order[eside], limit_order[eside]['symbol'], eside)
+    trade.update_order(limit_order[eside])
     trade.update_trade(oobj)
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
@@ -4802,9 +4808,18 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert len(Order.get_open_orders()) == 2
 
     caplog.clear()
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=ExchangeError)
     freqtrade.startup_update_open_orders()
     assert log_has_re(r"Error updating Order .*", caplog)
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', side_effect=InvalidOrderException)
+    hto_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_timedout_order')
+    # Orders which are no longer found after X days should be assumed as canceled.
+    freqtrade.startup_update_open_orders()
+    assert log_has_re(r"Order is older than \d days.*", caplog)
+    assert hto_mock.call_count == 2
+    assert hto_mock.call_args_list[0][0][0]['status'] == 'canceled'
+    assert hto_mock.call_args_list[1][0][0]['status'] == 'canceled'
 
 
 @pytest.mark.usefixtures("init_persistence")

@@ -95,6 +95,8 @@ class Configuration:
 
         self._process_data_options(config)
 
+        self._process_analyze_options(config)
+
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
@@ -432,6 +434,19 @@ class Configuration:
         config['trading_mode'] = TradingMode(config.get('trading_mode', 'spot') or 'spot')
         self._args_to_config(config, argname='candle_types',
                              logstring='Detected --candle-types: {}')
+
+    def _process_analyze_options(self, config: Dict[str, Any]) -> None:
+        self._args_to_config(config, argname='analysis_groups',
+                             logstring='Analysis reason groups: {}')
+
+        self._args_to_config(config, argname='enter_reason_list',
+                             logstring='Analysis enter tag list: {}')
+
+        self._args_to_config(config, argname='exit_reason_list',
+                             logstring='Analysis exit tag list: {}')
+
+        self._args_to_config(config, argname='indicator_list',
+                             logstring='Analysis indicator list: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
