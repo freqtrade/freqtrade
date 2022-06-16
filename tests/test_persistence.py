@@ -2782,6 +2782,7 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
         assert trade.stake_amount == result[2]
         assert pytest.approx(trade.realized_profit) == result[3]
         assert pytest.approx(trade.close_profit_abs) == result[4]
+        # assert pytest.approx(trade.close_profit) == result[...]
 
     trade.close(price)
     assert pytest.approx(trade.close_profit_abs) == data['end_profit']

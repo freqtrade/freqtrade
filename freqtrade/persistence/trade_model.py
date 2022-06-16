@@ -624,7 +624,7 @@ class LocalTrade():
                        self.amount, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)
             else:
-                self.process_exit_sub_trade(order)
+                self.recalc_trade_from_orders()
         elif order.ft_order_side == 'stoploss':
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -658,12 +658,6 @@ class LocalTrade():
             self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
 
         self.recalc_open_trade_value()
-
-    def calc_profit2(self, open_rate: float, close_rate: float,
-                     amount: float) -> float:
-        return float(Decimal(amount)
-                     * (Decimal(1 - self.fee_close) * Decimal(close_rate)
-                        - Decimal(1 + self.fee_open) * Decimal(open_rate)))
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
@@ -842,6 +836,14 @@ class LocalTrade():
         else:
             profit = close_trade_value - self.open_trade_value
         return float(f"{profit:.8f}")
+
+    def calc_profit2(self, open_rate: float, close_rate: float,
+                     amount: float) -> float:
+        # TODO: This is almost certainly wrong for margin/short scenarios.
+        # Needs investigation.
+        return float(Decimal(amount)
+                     * (Decimal(1 - self.fee_close) * Decimal(close_rate)
+                        - Decimal(1 + self.fee_open) * Decimal(open_rate)))
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
                           fee: Optional[float] = None,

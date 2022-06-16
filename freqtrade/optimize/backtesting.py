@@ -533,7 +533,6 @@ class Backtesting:
                 order = pos_trade.orders[-1]
                 if self._get_order_filled(order.price, row):
                     order.close_bt_order(current_date, trade)
-                    trade.process_exit_sub_trade(order)
                     trade.recalc_trade_from_orders()
                 self.wallets.update()
                 return pos_trade
@@ -1129,7 +1128,6 @@ class Backtesting:
                         sub_trade = order.safe_amount_after_fee != trade.amount
                         if sub_trade:
                             order.close_bt_order(current_time, trade)
-                            trade.process_exit_sub_trade(order)
                             trade.recalc_trade_from_orders()
                         else:
                             trade.close_date = current_time

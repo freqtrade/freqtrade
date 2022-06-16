@@ -1550,14 +1550,14 @@ class FreqtradeBot(LoggingMixin):
             profit_rate = order.safe_price
 
             if not fill:
-                # TODO: this call is wrong here.
-                trade.process_exit_sub_trade(order, is_closed=False)
-
-            profit_ratio = trade.close_profit
-            profit = trade.close_profit_abs
+                # TODO: Need to get "prediction" here (without persisting)
+                # trade.process_exit_sub_trade(order, is_closed=False)
+                pass
+            profit_ratio = trade.close_profit or 0.0
+            profit = trade.close_profit_abs or 0.0
         else:
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
-            profit = trade.calc_profit(rate=profit_rate)
+            profit = trade.calc_profit(rate=profit_rate) + trade.realized_profit
             profit_ratio = trade.calc_profit_ratio(profit_rate)
             amount = trade.amount
         gain = "profit" if profit_ratio > 0 else "loss"
@@ -1591,6 +1591,7 @@ class FreqtradeBot(LoggingMixin):
             'sub_trade': sub_trade,
         }
         if sub_trade:
+            # TODO: this should not be conditional.
             msg['cumulative_profit'] = trade.realized_profit
 
         # Send the message
