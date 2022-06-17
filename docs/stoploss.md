@@ -191,6 +191,19 @@ For example, simplified math:
 !!! Tip
     Make sure to have this value (`trailing_stop_positive_offset`) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.
 
+## Stoploss and Leverage
+
+Stoploss should be thought of as "risk on this trade" - so a stoploss of 10% on a 100$ trade means you are willing to lose 10$ (10%) on this trade - which would trigger if the price moves 10% to the downside.
+
+When using leverage, the same principle is applied - with stoploss defining the risk on the trade (the amount you are willing to lose).
+
+Therefore, a stoploss of 10% on a 10x trade would trigger on a 1% price move.
+If your stake amount (own capital) was 100$ - this trade would be 1000$ at 10x (after leverage).
+If price moves 1% - you've lost 10$ of your own capital - therfore stoploss will trigger in this case.
+
+Make sure to be aware of this, and avoid using too tight stoploss (at 10x leverage, 10% risk may be too little to allow the trade to "breath" a little).
+
+
 ## Changing stoploss on open trades
 
 A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the `/reload_config` command (alternatively, completely stopping and restarting the bot also works).

@@ -605,10 +605,10 @@ def test_calc_open_close_trade_price(
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(), open_value)
-    assert isclose(trade.calc_close_trade_value(), close_value)
-    assert isclose(trade.calc_profit(), round(profit, 8))
-    assert pytest.approx(trade.calc_profit_ratio()) == profit_ratio
+    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
+    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
+    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
+    assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -660,7 +660,7 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
-    assert trade.calc_close_trade_value() == 0.0
+    assert trade.calc_close_trade_value(trade.close_rate) == 0.0
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -763,7 +763,7 @@ def test_calc_open_trade_value(
     trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == result
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == result
 
 
 @pytest.mark.parametrize(
@@ -813,7 +813,7 @@ def test_calc_close_trade_price(
         funding_fees=funding_fees
     )
     trade.open_order_id = 'close_trade'
-    assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
+    assert round(trade.calc_close_trade_value(rate=close_rate), 8) == result
 
 
 @pytest.mark.parametrize(
@@ -884,6 +884,17 @@ def test_calc_close_trade_price(
         ('binance', False, 3, 2.2, 0.0025, 4.684999, 0.23366583, futures, -1),
         ('binance', True, 1, 2.2, 0.0025, -7.315, -0.12222222, futures, -1),
         ('binance', True, 3, 2.2, 0.0025, -7.315, -0.36666666, futures, -1),
+
+        # FUTURES, funding_fee=0
+        ('binance', False, 1, 2.1, 0.0025, 2.6925, 0.04476309, futures, 0),
+        ('binance', False, 3, 2.1, 0.0025, 2.6925, 0.13428928, futures, 0),
+        ('binance', True, 1, 2.1, 0.0025, -3.3074999, -0.05526316, futures, 0),
+        ('binance', True, 3, 2.1, 0.0025, -3.3074999, -0.16578947, futures, 0),
+
+        ('binance', False, 1, 1.9, 0.0025, -3.2925, -0.05473815, futures, 0),
+        ('binance', False, 3, 1.9, 0.0025, -3.2925, -0.16421446, futures, 0),
+        ('binance', True, 1, 1.9, 0.0025, 2.7075, 0.0452381, futures, 0),
+        ('binance', True, 3, 1.9, 0.0025, 2.7075, 0.13571429, futures, 0),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(
@@ -1128,6 +1139,11 @@ def test_calc_profit(
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
 
+    assert pytest.approx(trade.calc_profit(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit, 8)
+    assert pytest.approx(trade.calc_profit_ratio(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit_ratio, 8)
+
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
     """
@@ -1287,7 +1303,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
-    assert trade.open_trade_value == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value(trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
 
     orders = trade.orders
@@ -2299,7 +2315,7 @@ def test_recalc_trade_from_orders(fee):
     )
 
     assert fee.return_value == 0.0025
-    assert trade._calc_open_trade_value() == o1_trade_val
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == o1_trade_val
     assert trade.amount == o1_amount
     assert trade.stake_amount == o1_cost
     assert trade.open_rate == o1_rate
