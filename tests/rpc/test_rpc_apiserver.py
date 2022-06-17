@@ -852,8 +852,8 @@ def test_api_performance(botclient, fee):
         close_rate=0.265441,
 
     )
-    trade.close_profit = trade.calc_profit_ratio()
-    trade.close_profit_abs = trade.calc_profit()
+    trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
+    trade.close_profit_abs = trade.calc_profit(trade.close_rate)
     Trade.query.session.add(trade)
 
     trade = Trade(
@@ -868,8 +868,8 @@ def test_api_performance(botclient, fee):
         fee_open=fee.return_value,
         close_rate=0.391
     )
-    trade.close_profit = trade.calc_profit_ratio()
-    trade.close_profit_abs = trade.calc_profit()
+    trade.close_profit = trade.calc_profit_ratio(trade.close_rate)
+    trade.close_profit_abs = trade.calc_profit(trade.close_rate)
 
     Trade.query.session.add(trade)
     Trade.commit()

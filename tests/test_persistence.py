@@ -606,9 +606,9 @@ def test_calc_open_close_trade_price(
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
     assert isclose(trade._calc_open_trade_value(), open_value)
-    assert isclose(trade.calc_close_trade_value(), close_value)
-    assert isclose(trade.calc_profit(), round(profit, 8))
-    assert pytest.approx(trade.calc_profit_ratio()) == profit_ratio
+    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
+    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
+    assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -660,7 +660,7 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
-    assert trade.calc_close_trade_value() == 0.0
+    assert trade.calc_close_trade_value(trade.close_rate) == 0.0
 
 
 @pytest.mark.usefixtures("init_persistence")
