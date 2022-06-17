@@ -713,24 +713,20 @@ class LocalTrade():
 
         return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
 
-    def _calc_base_close(self, amount: Decimal, rate: float,
-                         fee: Optional[float] = None) -> Decimal:
+    def _calc_base_close(self, amount: Decimal, rate: float, fee: float) -> Decimal:
 
-        close_trade = Decimal(amount) * Decimal(rate)
-        fees = close_trade * Decimal(fee or self.fee_close)
+        close_trade = amount * Decimal(rate)
+        fees = close_trade * Decimal(fee)
 
         if self.is_short:
             return close_trade + fees
         else:
             return close_trade - fees
 
-    def calc_close_trade_value(self, rate: float,
-                               fee: Optional[float] = None) -> float:
+    def calc_close_trade_value(self, rate: float) -> float:
         """
         Calculate the Trade's close value including fees
         :param rate: rate to compare with.
-        :param fee: fee to use on the close rate (optional).
-            If rate is not set self.close_fee will be used
         :return: value in stake currency of the open trade
         """
         if rate is None and not self.close_rate:
@@ -740,7 +736,7 @@ class LocalTrade():
         trading_mode = self.trading_mode or TradingMode.SPOT
 
         if trading_mode == TradingMode.SPOT:
-            return float(self._calc_base_close(amount, rate, fee))
+            return float(self._calc_base_close(amount, rate, self.fee_close))
 
         elif (trading_mode == TradingMode.MARGIN):
 
@@ -748,19 +744,19 @@ class LocalTrade():
 
             if self.is_short:
                 amount = amount + total_interest
-                return float(self._calc_base_close(amount, rate, fee))
+                return float(self._calc_base_close(amount, rate, self.fee_close))
             else:
                 # Currency already owned for longs, no need to purchase
-                return float(self._calc_base_close(amount, rate, fee) - total_interest)
+                return float(self._calc_base_close(amount, rate, self.fee_close) - total_interest)
 
         elif (trading_mode == TradingMode.FUTURES):
             funding_fees = self.funding_fees or 0.0
             # Positive funding_fees -> Trade has gained from fees.
             # Negative funding_fees -> Trade had to pay the fees.
             if self.is_short:
-                return float(self._calc_base_close(amount, rate, fee)) - funding_fees
+                return float(self._calc_base_close(amount, rate, self.fee_close)) - funding_fees
             else:
-                return float(self._calc_base_close(amount, rate, fee)) + funding_fees
+                return float(self._calc_base_close(amount, rate, self.fee_close)) + funding_fees
         else:
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
@@ -771,10 +767,7 @@ class LocalTrade():
         :param rate: close rate to compare with.
         :return: profit in stake currency as float
         """
-        close_trade_value = self.calc_close_trade_value(
-            rate=rate,
-            fee=self.fee_close
-        )
+        close_trade_value = self.calc_close_trade_value(rate)
 
         if self.is_short:
             profit = self.open_trade_value - close_trade_value
@@ -788,10 +781,7 @@ class LocalTrade():
         :param rate: rate to compare with.
         :return: profit ratio as float
         """
-        close_trade_value = self.calc_close_trade_value(
-            rate=rate,
-            fee=self.fee_close
-        )
+        close_trade_value = self.calc_close_trade_value(rate)
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and self.open_trade_value == 0.0)
