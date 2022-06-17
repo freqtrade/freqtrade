@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
@@ -65,6 +66,7 @@ class IFreqaiModel(ABC):
         self.identifier = self.freqai_info.get('identifier', 'no_id_provided')
         self.scanning = False
         self.ready_to_scan = False
+        self.first = True
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -252,7 +254,7 @@ class IFreqaiModel(ABC):
             #     #                                 trained_timestamp=trained_timestamp,
             #     #                                 model_filename=model_filename)
 
-            (self.retrain,
+            (_,
              new_trained_timerange,
              data_load_timerange) = dh.check_if_new_training_required(trained_timestamp)
             dh.set_paths(metadata['pair'], new_trained_timerange.stopts)
@@ -288,6 +290,7 @@ class IFreqaiModel(ABC):
 
         # load the model and associated data into the data kitchen
         self.model = dh.load_data(coin=metadata['pair'])
+
         if not self.model:
             logger.warning('No model ready, returning null values to strategy.')
             self.data_drawer.return_null_values_to_strategy(dataframe, dh)
@@ -296,22 +299,38 @@ class IFreqaiModel(ABC):
         # ensure user is feeding the correct indicators to the model
         self.check_if_feature_list_matches_strategy(dataframe, dh)
 
+        self.build_strategy_return_arrays(dataframe, dh, metadata['pair'], trained_timestamp)
+
+        return dh
+
+    def build_strategy_return_arrays(self, dataframe: DataFrame,
+                                     dh: FreqaiDataKitchen, pair: str,
+                                     trained_timestamp: int) -> None:
+
         # hold the historical predictions in memory so we are sending back
         # correct array to strategy FIXME currently broken, but only affecting
         # Frequi reporting. Signals remain unaffeted.
-        if metadata['pair'] not in self.data_drawer.model_return_values:
+
+        if pair not in self.data_drawer.model_return_values:
             preds, do_preds = self.predict(dataframe, dh)
             dh.append_predictions(preds, do_preds, len(dataframe))
             dh.fill_predictions(len(dataframe))
-            self.data_drawer.set_initial_return_values(metadata['pair'], dh)
+            self.data_drawer.set_initial_return_values(pair, dh)
+            return
+        elif self.dh.check_if_model_expired(trained_timestamp):
+            preds, do_preds, dh.DI_values = np.zeros(2), np.ones(2) * 2, np.zeros(2)
+            logger.warning('Model expired, returning null values to strategy. Strategy '
+                           'construction should take care to consider this event with '
+                           'prediction == 0 and do_predict == 2')
         else:
             preds, do_preds = self.predict(dataframe.iloc[-2:], dh)
-            self.data_drawer.append_model_predictions(metadata['pair'], preds, do_preds,
-                                                      dh.data["target_mean"],
-                                                      dh.data["target_std"], dh,
-                                                      len(dataframe))
 
-        return dh
+        self.data_drawer.append_model_predictions(pair, preds, do_preds,
+                                                  dh.data["target_mean"],
+                                                  dh.data["target_std"],
+                                                  dh,
+                                                  len(dataframe))
+        return
 
     def check_if_feature_list_matches_strategy(self, dataframe: DataFrame,
                                                dh: FreqaiDataKitchen) -> None:

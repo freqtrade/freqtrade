@@ -673,7 +673,7 @@ class FreqaiDataKitchen:
 
         self.full_predictions = np.append(self.full_predictions, predictions)
         self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
             self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
         self.full_target_mean = np.append(self.full_target_mean, target_mean)
         self.full_target_std = np.append(self.full_target_std, target_std)
@@ -689,7 +689,7 @@ class FreqaiDataKitchen:
         filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
         self.full_predictions = np.append(filler, self.full_predictions)
         self.full_do_predict = np.append(filler, self.full_do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
             self.full_DI_values = np.append(filler, self.full_DI_values)
         self.full_target_mean = np.append(filler, self.full_target_mean)
         self.full_target_std = np.append(filler, self.full_target_std)
@@ -724,6 +724,12 @@ class FreqaiDataKitchen:
             )
 
         return full_timerange
+
+    def check_if_model_expired(self, trained_timestamp: int) -> bool:
+        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        elapsed_time = (time - trained_timestamp) / 3600  # hours
+        max_time = self.freqai_config.get('expiration_hours', 0)
+        return elapsed_time > max_time
 
     def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
                                                                               TimeRange, TimeRange]:
@@ -873,6 +879,8 @@ class FreqaiDataKitchen:
 
                     # check if newest candle is already appended
                     df_dp = strategy.dp.get_pair_dataframe(pair, tf)
+                    if len(df_dp.index) == 0:
+                        continue
                     if (
                          str(history_data[pair][tf].iloc[-1]['date']) ==
                          str(df_dp.iloc[-1:]['date'].iloc[-1])
