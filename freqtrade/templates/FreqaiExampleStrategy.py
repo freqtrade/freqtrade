@@ -116,7 +116,6 @@ class FreqaiExampleStrategy(IStrategy):
                     informative[f"{coin}bb_upperband-period_{t}"]
                     - informative[f"{coin}bb_lowerband-period_{t}"]
                 ) / informative[f"{coin}bb_middleband-period_{t}"]
-
                 informative[f"%-{coin}close-bb_lower-period_{t}"] = (
                     informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
                 )
@@ -153,7 +152,7 @@ class FreqaiExampleStrategy(IStrategy):
             # Add generalized indicators here (because in live, it will call this
             # function to populate indicators during training). Notice how we ensure not to
             # add them multiple times
-            if pair == metadata["pair"] and tf == self.timeframe:
+            if pair == self.freqai_info['corr_pairlist'][0] and tf == self.timeframe:
                 df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
                 df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 

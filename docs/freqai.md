@@ -452,6 +452,24 @@ config:
 
 which will automatically purge all models older than the two most recently trained ones.
 
+## Defining model expirations
+
+During dry/live, FreqAI trains each pair sequentially (on separate threads/GPU from the main
+Freqtrade bot). This means there is always an age discrepancy between models. If a user is training
+on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. 
+This may be undesirable if the characteristic time scale (read trade duration target) for a strategy 
+is much less than 4 hours. The user can decide to only make trade entries if the model is less than 
+a certain number of hours in age by setting the `expiration_hours` in the config file:
+
+```json
+    "freqai": {
+        "expiration_hours": 0.5,
+    }
+```
+
+In the present example, the user will only allow predictions on models that are less than 1/2 hours
+old. 
+
 <!-- ## Dynamic target expectation
 
 The labels used for model training have a unique statistical distribution for each separate model training. 

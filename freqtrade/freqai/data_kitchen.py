@@ -71,7 +71,7 @@ class FreqaiDataKitchen:
 
         self.data_drawer = data_drawer
 
-    def set_paths(self, metadata: dict, trained_timestamp: int = None,) -> None:
+    def set_paths(self, pair: str, trained_timestamp: int = None,) -> None:
         """
         Set the paths to the data for the present coin/botloop
         :params:
@@ -83,7 +83,7 @@ class FreqaiDataKitchen:
                               str(self.freqai_config.get('identifier')))
 
         self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                                                   metadata['pair'].split("/")[0] +
+                                                   pair.split("/")[0] +
                                                    str(trained_timestamp)))
 
         return
@@ -150,6 +150,9 @@ class FreqaiDataKitchen:
         :returns:
         :model: User trained model which can be inferenced for new predictions
         """
+
+        if not self.data_drawer.pair_dict[coin]['model_filename']:
+            return None
 
         if self.live:
             self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
@@ -670,7 +673,7 @@ class FreqaiDataKitchen:
 
         self.full_predictions = np.append(self.full_predictions, predictions)
         self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
             self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
         self.full_target_mean = np.append(self.full_target_mean, target_mean)
         self.full_target_std = np.append(self.full_target_std, target_std)
@@ -686,7 +689,7 @@ class FreqaiDataKitchen:
         filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
         self.full_predictions = np.append(filler, self.full_predictions)
         self.full_do_predict = np.append(filler, self.full_do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI-threshold', 0) > 0:
+        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
             self.full_DI_values = np.append(filler, self.full_DI_values)
         self.full_target_mean = np.append(filler, self.full_target_mean)
         self.full_target_std = np.append(filler, self.full_target_std)
@@ -722,6 +725,12 @@ class FreqaiDataKitchen:
 
         return full_timerange
 
+    def check_if_model_expired(self, trained_timestamp: int) -> bool:
+        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        elapsed_time = (time - trained_timestamp) / 3600  # hours
+        max_time = self.freqai_config.get('expiration_hours', 0)
+        return elapsed_time > max_time
+
     def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
                                                                               TimeRange, TimeRange]:
 
@@ -747,7 +756,7 @@ class FreqaiDataKitchen:
                 logger.warning('FreqAI could not detect max timeframe and therefore may not '
                                'download the proper amount of data for training')
 
-        logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
+        # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
@@ -796,12 +805,12 @@ class FreqaiDataKitchen:
 
         return retrain, trained_timerange, data_load_timerange
 
-    def set_new_model_names(self, metadata: dict, trained_timerange: TimeRange):
+    def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
 
-        coin, _ = metadata['pair'].split("/")
+        coin, _ = pair.split("/")
         # set the new data_path
         self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                              metadata['pair'].split("/")[0] +
+                              pair.split("/")[0] +
                               str(int(trained_timerange.stopts))))
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
@@ -870,6 +879,8 @@ class FreqaiDataKitchen:
 
                     # check if newest candle is already appended
                     df_dp = strategy.dp.get_pair_dataframe(pair, tf)
+                    if len(df_dp.index) == 0:
+                        continue
                     if (
                          str(history_data[pair][tf].iloc[-1]['date']) ==
                          str(df_dp.iloc[-1:]['date'].iloc[-1])
@@ -918,7 +929,7 @@ class FreqaiDataKitchen:
                                                             'trading_mode', 'spot'))
 
     def get_base_and_corr_dataframes(self, timerange: TimeRange,
-                                     metadata: dict) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
+                                     pair: str) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
@@ -927,6 +938,7 @@ class FreqaiDataKitchen:
         for training according to user defined train_period
         metadata: dict = strategy furnished pair metadata
         """
+
         with self.data_drawer.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
@@ -936,11 +948,11 @@ class FreqaiDataKitchen:
             for tf in self.freqai_config.get('timeframes'):
                 base_dataframes[tf] = self.slice_dataframe(
                                                         timerange,
-                                                        historic_data[metadata['pair']][tf]
+                                                        historic_data[pair][tf]
                                                         )
                 if pairs:
                     for p in pairs:
-                        if metadata['pair'] in p:
+                        if pair in p:
                             continue  # dont repeat anything from whitelist
                         if p not in corr_dataframes:
                             corr_dataframes[p] = {}
@@ -984,7 +996,7 @@ class FreqaiDataKitchen:
     def use_strategy_to_populate_indicators(self, strategy: IStrategy,
                                             corr_dataframes: dict,
                                             base_dataframes: dict,
-                                            metadata: dict) -> DataFrame:
+                                            pair: str) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during
         retrain
@@ -1003,19 +1015,19 @@ class FreqaiDataKitchen:
 
         for tf in self.freqai_config.get("timeframes"):
             dataframe = strategy.populate_any_indicators(
-                                                         metadata,
-                                                         metadata['pair'],
+                                                         pair,
+                                                         pair,
                                                          dataframe.copy(),
                                                          tf,
                                                          base_dataframes[tf],
-                                                         coin=metadata['pair'].split("/")[0] + "-"
+                                                         coin=pair.split("/")[0] + "-"
                                                          )
             if pairs:
                 for i in pairs:
-                    if metadata['pair'] in i:
+                    if pair in i:
                         continue  # dont repeat anything from whitelist
                     dataframe = strategy.populate_any_indicators(
-                                                                 metadata,
+                                                                 pair,
                                                                  i,
                                                                  dataframe.copy(),
                                                                  tf,

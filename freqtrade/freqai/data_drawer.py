@@ -30,6 +30,7 @@ class FreqaiDataDrawer:
     def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
 
         self.config = config
+        self.freqai_info = config.get('freqai', {})
         # dictionary holding all pair metadata necessary to load in from disk
         self.pair_dict: Dict[str, Any] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
@@ -107,7 +108,7 @@ class FreqaiDataDrawer:
         if isinstance(object, np.generic):
             return object.item()
 
-    def get_pair_dict_info(self, metadata: dict) -> Tuple[str, int, bool, bool]:
+    def get_pair_dict_info(self, pair: str) -> Tuple[str, int, bool, bool]:
         """
         Locate and load existing model metadata from persistent storage. If not located,
         create a new one and append the current pair to it and prepare it for its first
@@ -120,22 +121,22 @@ class FreqaiDataDrawer:
         coin_first: bool = If the coin is fresh without metadata
         return_null_array: bool = Follower could not find pair metadata
         """
-        pair_in_dict = self.pair_dict.get(metadata['pair'])
-        data_path_set = self.pair_dict.get(metadata['pair'], {}).get('data_path', None)
+        pair_in_dict = self.pair_dict.get(pair)
+        data_path_set = self.pair_dict.get(pair, {}).get('data_path', None)
         return_null_array = False
 
         if pair_in_dict:
-            model_filename = self.pair_dict[metadata['pair']]['model_filename']
-            trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp']
-            coin_first = self.pair_dict[metadata['pair']]['first']
+            model_filename = self.pair_dict[pair]['model_filename']
+            trained_timestamp = self.pair_dict[pair]['trained_timestamp']
+            coin_first = self.pair_dict[pair]['first']
         elif not self.follow_mode:
-            self.pair_dict[metadata['pair']] = {}
-            model_filename = self.pair_dict[metadata['pair']]['model_filename'] = ''
-            coin_first = self.pair_dict[metadata['pair']]['first'] = True
-            trained_timestamp = self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
+            self.pair_dict[pair] = {}
+            model_filename = self.pair_dict[pair]['model_filename'] = ''
+            coin_first = self.pair_dict[pair]['first'] = True
+            trained_timestamp = self.pair_dict[pair]['trained_timestamp'] = 0
 
         if not data_path_set and self.follow_mode:
-            logger.warning(f'Follower could not find current pair {metadata["pair"]} in '
+            logger.warning(f'Follower could not find current pair {pair} in '
                            f'pair_dictionary at path {self.full_path}, sending null values '
                            'back to strategy.')
             return_null_array = True
@@ -168,7 +169,8 @@ class FreqaiDataDrawer:
         self.model_return_values[pair]['do_preds'] = dh.full_do_predict
         self.model_return_values[pair]['target_mean'] = dh.full_target_mean
         self.model_return_values[pair]['target_std'] = dh.full_target_std
-        self.model_return_values[pair]['DI_values'] = dh.full_DI_values
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+            self.model_return_values[pair]['DI_values'] = dh.full_DI_values
 
         # if not self.follow_mode:
         #     self.save_model_return_values_to_disk()
@@ -189,8 +191,9 @@ class FreqaiDataDrawer:
 
         self.model_return_values[pair]['predictions'] = np.append(
             self.model_return_values[pair]['predictions'][i:], predictions[-1])
-        self.model_return_values[pair]['DI_values'] = np.append(
-            self.model_return_values[pair]['DI_values'][i:], dh.DI_values[-1])
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+            self.model_return_values[pair]['DI_values'] = np.append(
+                self.model_return_values[pair]['DI_values'][i:], dh.DI_values[-1])
         self.model_return_values[pair]['do_preds'] = np.append(
             self.model_return_values[pair]['do_preds'][i:], do_preds[-1])
         self.model_return_values[pair]['target_mean'] = np.append(
@@ -202,8 +205,9 @@ class FreqaiDataDrawer:
             prepend = np.zeros(abs(length_difference) - 1)
             self.model_return_values[pair]['predictions'] = np.insert(
                 self.model_return_values[pair]['predictions'], 0, prepend)
-            self.model_return_values[pair]['DI_values'] = np.insert(
-                self.model_return_values[pair]['DI_values'], 0, prepend)
+            if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+                self.model_return_values[pair]['DI_values'] = np.insert(
+                    self.model_return_values[pair]['DI_values'], 0, prepend)
             self.model_return_values[pair]['do_preds'] = np.insert(
                 self.model_return_values[pair]['do_preds'], 0, prepend)
             self.model_return_values[pair]['target_mean'] = np.insert(
@@ -215,7 +219,8 @@ class FreqaiDataDrawer:
         dh.full_do_predict = copy.deepcopy(self.model_return_values[pair]['do_preds'])
         dh.full_target_mean = copy.deepcopy(self.model_return_values[pair]['target_mean'])
         dh.full_target_std = copy.deepcopy(self.model_return_values[pair]['target_std'])
-        dh.full_DI_values = copy.deepcopy(self.model_return_values[pair]['DI_values'])
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+            dh.full_DI_values = copy.deepcopy(self.model_return_values[pair]['DI_values'])
 
         # if not self.follow_mode:
         #     self.save_model_return_values_to_disk()
@@ -227,7 +232,8 @@ class FreqaiDataDrawer:
         dh.full_do_predict = np.zeros(len_df)
         dh.full_target_mean = np.zeros(len_df)
         dh.full_target_std = np.zeros(len_df)
-        dh.full_DI_values = np.zeros(len_df)
+        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+            dh.full_DI_values = np.zeros(len_df)
 
     def purge_old_models(self) -> None:
 
