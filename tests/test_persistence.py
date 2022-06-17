@@ -813,7 +813,7 @@ def test_calc_close_trade_price(
         funding_fees=funding_fees
     )
     trade.open_order_id = 'close_trade'
-    assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
+    assert round(trade.calc_close_trade_value(rate=close_rate), 8) == result
 
 
 @pytest.mark.parametrize(

@@ -693,10 +693,9 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value()
 
-    def calculate_interest(self, interest_rate: Optional[float] = None) -> Decimal:
+    def calculate_interest(self) -> Decimal:
         """
-        :param interest_rate: interest_charge for borrowing this coin(optional).
-        If interest_rate is not set self.interest_rate will be used
+        Calculate interest for this trade. Only applicable for Margin trading.
         """
         zero = Decimal(0.0)
         # If nothing was borrowed
@@ -709,7 +708,7 @@ class LocalTrade():
         total_seconds = Decimal((now - open_date).total_seconds())
         hours = total_seconds / sec_per_hour or zero
 
-        rate = Decimal(interest_rate or self.interest_rate)
+        rate = Decimal(self.interest_rate)
         borrowed = Decimal(self.borrowed)
 
         return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
@@ -726,16 +725,13 @@ class LocalTrade():
             return close_trade - fees
 
     def calc_close_trade_value(self, rate: float,
-                               fee: Optional[float] = None,
-                               interest_rate: Optional[float] = None) -> float:
+                               fee: Optional[float] = None) -> float:
         """
-        Calculate the close_rate including fee
+        Calculate the Trade's close value including fees
         :param rate: rate to compare with.
         :param fee: fee to use on the close rate (optional).
-            If rate is not set self.fee will be used
-        :param interest_rate: interest_charge for borrowing this coin (optional).
-            If interest_rate is not set self.interest_rate will be used
-        :return: Price in BTC of the open trade
+            If rate is not set self.close_fee will be used
+        :return: value in stake currency of the open trade
         """
         if rate is None and not self.close_rate:
             return 0.0
@@ -748,7 +744,7 @@ class LocalTrade():
 
         elif (trading_mode == TradingMode.MARGIN):
 
-            total_interest = self.calculate_interest(interest_rate)
+            total_interest = self.calculate_interest()
 
             if self.is_short:
                 amount = amount + total_interest
@@ -769,22 +765,15 @@ class LocalTrade():
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
 
-    def calc_profit(self, rate: float,
-                    fee: Optional[float] = None,
-                    interest_rate: Optional[float] = None) -> float:
+    def calc_profit(self, rate: float) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param rate: close rate to compare with.
-        :param fee: fee to use on the close rate (optional).
-            If fee is not set self.fee will be used
-        :param interest_rate: interest_charge for borrowing this coin (optional).
-            If interest_rate is not set self.interest_rate will be used
-        :return:  profit in stake currency as float
+        :return: profit in stake currency as float
         """
         close_trade_value = self.calc_close_trade_value(
             rate=rate,
-            fee=(fee or self.fee_close),
-            interest_rate=(interest_rate or self.interest_rate)
+            fee=self.fee_close
         )
 
         if self.is_short:
@@ -793,21 +782,15 @@ class LocalTrade():
             profit = close_trade_value - self.open_trade_value
         return float(f"{profit:.8f}")
 
-    def calc_profit_ratio(self, rate: float,
-                          fee: Optional[float] = None,
-                          interest_rate: Optional[float] = None) -> float:
+    def calc_profit_ratio(self, rate: float) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with.
-        :param fee: fee to use on the close rate (optional).
-        :param interest_rate: interest_charge for borrowing this coin (optional).
-            If interest_rate is not set self.interest_rate will be used
         :return: profit ratio as float
         """
         close_trade_value = self.calc_close_trade_value(
             rate=rate,
-            fee=(fee or self.fee_close),
-            interest_rate=(interest_rate or self.interest_rate)
+            fee=self.fee_close
         )
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
