@@ -605,7 +605,7 @@ def test_calc_open_close_trade_price(
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(), open_value)
+    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
     assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
     assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
     assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
@@ -763,7 +763,7 @@ def test_calc_open_trade_value(
     trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == result
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == result
 
 
 @pytest.mark.parametrize(
@@ -1139,6 +1139,11 @@ def test_calc_profit(
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
 
+    assert pytest.approx(trade.calc_profit(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit, 8)
+    assert pytest.approx(trade.calc_profit_ratio(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit_ratio, 8)
+
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
     """
@@ -1298,7 +1303,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
-    assert trade.open_trade_value == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value(trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
 
     orders = trade.orders
@@ -2308,7 +2313,7 @@ def test_recalc_trade_from_orders(fee):
     )
 
     assert fee.return_value == 0.0025
-    assert trade._calc_open_trade_value() == o1_trade_val
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == o1_trade_val
     assert trade.amount == o1_amount
     assert trade.stake_amount == o1_cost
     assert trade.open_rate == o1_rate

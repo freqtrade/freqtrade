@@ -674,12 +674,12 @@ class LocalTrade():
         """
         return len([o for o in self.orders if o.ft_order_side == self.exit_side])
 
-    def _calc_open_trade_value(self) -> float:
+    def _calc_open_trade_value(self, amount: float, open_rate: float) -> float:
         """
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        open_trade = Decimal(self.amount) * Decimal(self.open_rate)
+        open_trade = Decimal(amount) * Decimal(open_rate)
         fees = open_trade * Decimal(self.fee_open)
         if self.is_short:
             return float(open_trade - fees)
@@ -691,7 +691,7 @@ class LocalTrade():
         Recalculate open_trade_value.
         Must be called whenever open_rate, fee_open is changed.
         """
-        self.open_trade_value = self._calc_open_trade_value()
+        self.open_trade_value = self._calc_open_trade_value(self.amount, self.open_rate)
 
     def calculate_interest(self) -> Decimal:
         """
@@ -723,7 +723,7 @@ class LocalTrade():
         else:
             return close_trade - fees
 
-    def calc_close_trade_value(self, rate: float) -> float:
+    def calc_close_trade_value(self, rate: float, amount: float = None) -> float:
         """
         Calculate the Trade's close value including fees
         :param rate: rate to compare with.
@@ -732,7 +732,7 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        amount = Decimal(self.amount)
+        amount = Decimal(amount or self.amount)
         trading_mode = self.trading_mode or TradingMode.SPOT
 
         if trading_mode == TradingMode.SPOT:
@@ -761,39 +761,53 @@ class LocalTrade():
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
 
-    def calc_profit(self, rate: float) -> float:
+    def calc_profit(self, rate: float, amount: float = None, open_rate: float = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param rate: close rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit in stake currency as float
         """
-        close_trade_value = self.calc_close_trade_value(rate)
+        close_trade_value = self.calc_close_trade_value(rate, amount)
+        if amount is None or open_rate is None:
+            open_trade_value = self.open_trade_value
+        else:
+            open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
         if self.is_short:
-            profit = self.open_trade_value - close_trade_value
+            profit = open_trade_value - close_trade_value
         else:
-            profit = close_trade_value - self.open_trade_value
+            profit = close_trade_value - open_trade_value
         return float(f"{profit:.8f}")
 
-    def calc_profit_ratio(self, rate: float) -> float:
+    def calc_profit_ratio(
+            self, rate: float, amount: float = None, open_rate: float = None) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with.
+        :param amount: Amount to use for the calculation. Falls back to trade.amount if not set.
+        :param open_rate: open_rate to use. Defaults to self.open_rate if not provided.
         :return: profit ratio as float
         """
-        close_trade_value = self.calc_close_trade_value(rate)
+        close_trade_value = self.calc_close_trade_value(rate, amount)
+
+        if amount is None or open_rate is None:
+            open_trade_value = self.open_trade_value
+        else:
+            open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
         short_close_zero = (self.is_short and close_trade_value == 0.0)
-        long_close_zero = (not self.is_short and self.open_trade_value == 0.0)
+        long_close_zero = (not self.is_short and open_trade_value == 0.0)
         leverage = self.leverage or 1.0
 
         if (short_close_zero or long_close_zero):
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = (1 - (close_trade_value / self.open_trade_value)) * leverage
+                profit_ratio = (1 - (close_trade_value / open_trade_value)) * leverage
             else:
-                profit_ratio = ((close_trade_value / self.open_trade_value) - 1) * leverage
+                profit_ratio = ((close_trade_value / open_trade_value) - 1) * leverage
 
         return float(f"{profit_ratio:.8f}")
 
