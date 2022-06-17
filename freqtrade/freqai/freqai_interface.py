@@ -113,6 +113,13 @@ class IFreqaiModel(ABC):
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
+        """
+        Function designed to constantly scan pairs for retraining on a separate thread (intracandle)
+        to improve model youth. This function is agnostic to data preparation/collection/storage,
+        it simply trains on what ever data is available in the self.data_drawer.
+        :params:
+        strategy: IStrategy = The user defined strategy class
+        """
         while 1:
             for pair in self.config.get('exchange', {}).get('pair_whitelist'):
                 if self.data_drawer.pair_dict[pair]['priority'] != 1:
@@ -247,12 +254,6 @@ class IFreqaiModel(ABC):
         # then save model and metadata.
         # if not trainable, load existing data
         if not self.follow_mode:
-            # if trained_timestamp != 0:  # historical model available
-            #     dh.set_paths(metadata['pair'], trained_timestamp)
-            #     # file_exists = self.model_exists(metadata['pair'],
-            #     #                                 dh,
-            #     #                                 trained_timestamp=trained_timestamp,
-            #     #                                 model_filename=model_filename)
 
             (_,
              new_trained_timerange,
@@ -271,18 +272,6 @@ class IFreqaiModel(ABC):
                 self.scanning = True
                 self.start_scanning(strategy)
 
-            # train the model on the trained timerange
-            # if coin_first and not self.scanning:
-            #     self.train_model_in_series(new_trained_timerange, metadata['pair'],
-            #                                strategy, dh, data_load_timerange)
-            # elif not coin_first and not self.scanning:
-            #     self.scanning = True
-            #     self.start_scanning(strategy)
-
-        # elif not trainable and not self.follow_mode:
-        #     logger.info(f'{metadata["pair"]} holds spot '
-        #                 f'{self.data_drawer.pair_dict[metadata["pair"]]["priority"]} '
-        #                 'in training queue')
         elif self.follow_mode:
             dh.set_paths(metadata, trained_timestamp)
             logger.info('FreqAI instance set to follow_mode, finding existing pair'

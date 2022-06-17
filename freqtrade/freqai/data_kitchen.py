@@ -726,6 +726,14 @@ class FreqaiDataKitchen:
         return full_timerange
 
     def check_if_model_expired(self, trained_timestamp: int) -> bool:
+        """
+        A model age checker to determine if the model is trustworthy based on user defined
+        `expiration_hours` in the configuration file.
+        :params:
+        trained_timestamp: int = The time of training for the most recent model.
+        :returns:
+        bool = If the model is expired or not.
+        """
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
         max_time = self.freqai_config.get('expiration_hours', 0)
