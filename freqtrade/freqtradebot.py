@@ -1553,8 +1553,8 @@ class FreqtradeBot(LoggingMixin):
                 # TODO: Need to get "prediction" here (without persisting)
                 # trade.process_exit_sub_trade(order, is_closed=False)
                 pass
-            profit_ratio = trade.close_profit or 0.0
-            profit = trade.close_profit_abs or 0.0
+            profit = trade.calc_profit(rate=profit_rate, amount=amount, open_rate=trade.open_rate)
+            profit_ratio = trade.calc_profit_ratio(profit_rate, amount, trade.open_rate)
         else:
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
             profit = trade.calc_profit(rate=profit_rate) + trade.realized_profit

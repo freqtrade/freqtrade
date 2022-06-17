@@ -636,29 +636,6 @@ class LocalTrade():
             raise ValueError(f'Unknown order type: {order.order_type}')
         Trade.commit()
 
-    def process_exit_sub_trade(self, order: Order, is_closed: bool = True) -> None:
-        """
-        Recalculate trade amount and realized profit after partial exit
-        """
-        exit_amount = order.safe_amount_after_fee
-        exit_rate = order.safe_price
-        exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
-        profit = self.calc_profit2(self.open_rate, exit_rate, exit_amount) * int(self.leverage)
-        if self.is_short:
-            profit *= -1
-        if is_closed:
-            self.amount -= exit_amount
-            self.stake_amount = self.open_rate * self.amount
-            self.realized_profit += profit
-            # logger.info(f"Processed exit sub trade for {self}")
-        self.close_profit_abs = profit
-        if self.is_short:
-            self.close_profit = (exit_stake_amount - profit) / exit_stake_amount - 1
-        else:
-            self.close_profit = exit_stake_amount / (exit_stake_amount - profit) - 1
-
-        self.recalc_open_trade_value()
-
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
@@ -774,31 +751,31 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        amount = Decimal(amount or self.amount)
+        amount1 = Decimal(amount or self.amount)
         trading_mode = self.trading_mode or TradingMode.SPOT
 
         if trading_mode == TradingMode.SPOT:
-            return float(self._calc_base_close(amount, rate, self.fee_close))
+            return float(self._calc_base_close(amount1, rate, self.fee_close))
 
         elif (trading_mode == TradingMode.MARGIN):
 
             total_interest = self.calculate_interest()
 
             if self.is_short:
-                amount = amount + total_interest
-                return float(self._calc_base_close(amount, rate, self.fee_close))
+                amount1 = amount1 + total_interest
+                return float(self._calc_base_close(amount1, rate, self.fee_close))
             else:
                 # Currency already owned for longs, no need to purchase
-                return float(self._calc_base_close(amount, rate, self.fee_close) - total_interest)
+                return float(self._calc_base_close(amount1, rate, self.fee_close) - total_interest)
 
         elif (trading_mode == TradingMode.FUTURES):
             funding_fees = self.funding_fees or 0.0
             # Positive funding_fees -> Trade has gained from fees.
             # Negative funding_fees -> Trade had to pay the fees.
             if self.is_short:
-                return float(self._calc_base_close(amount, rate, self.fee_close)) - funding_fees
+                return float(self._calc_base_close(amount1, rate, self.fee_close)) - funding_fees
             else:
-                return float(self._calc_base_close(amount, rate, self.fee_close)) + funding_fees
+                return float(self._calc_base_close(amount1, rate, self.fee_close)) + funding_fees
         else:
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
@@ -822,14 +799,6 @@ class LocalTrade():
         else:
             profit = close_trade_value - open_trade_value
         return float(f"{profit:.8f}")
-
-    def calc_profit2(self, open_rate: float, close_rate: float,
-                     amount: float) -> float:
-        # TODO: This is almost certainly wrong for margin/short scenarios.
-        # Needs investigation.
-        return float(Decimal(amount)
-                     * (Decimal(1 - self.fee_close) * Decimal(close_rate)
-                        - Decimal(1 + self.fee_open) * Decimal(open_rate)))
 
     def calc_profit_ratio(
             self, rate: float, amount: float = None, open_rate: float = None) -> float:
@@ -890,7 +859,7 @@ class LocalTrade():
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
                 exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
-                profit = self.calc_profit2(avg_price, exit_rate, exit_amount) * int(self.leverage)
+                profit = self.calc_profit(rate=exit_rate, amount=exit_amount, open_rate=avg_price)
                 if total_amount > 0:
                     # Exclude final (closing) trade
                     close_profit_abs += profit

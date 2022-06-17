@@ -853,7 +853,7 @@ def test_calc_close_trade_price(
         ('binance', False, 1, 1.9, 0.003, -3.3209999, -0.055211970, spot, 0),
         ('binance', False, 1, 2.2, 0.003, 5.6520000, 0.093965087, spot, 0),
 
-        # # FUTURES, funding_fee=1
+        # FUTURES, funding_fee=1
         ('binance', False, 1, 2.1, 0.0025, 3.6925, 0.06138819, futures, 1),
         ('binance', False, 3, 2.1, 0.0025, 3.6925, 0.18416458, futures, 1),
         ('binance', True, 1, 2.1, 0.0025, -2.3074999, -0.03855472, futures, 1),
