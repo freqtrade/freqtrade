@@ -497,8 +497,10 @@ def generate_strategy_stats(pairlist: List[str],
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance)
+        # max_relative_drawdown = Underwater
         (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance, relative=True)
+
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,

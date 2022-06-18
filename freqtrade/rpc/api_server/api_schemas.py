@@ -104,6 +104,9 @@ class Profit(BaseModel):
     best_pair_profit_ratio: float
     winning_trades: int
     losing_trades: int
+    profit_factor: float
+    max_drawdown: float
+    max_drawdown_abs: float
 
 
 class SellReason(BaseModel):

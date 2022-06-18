@@ -724,7 +724,9 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_fiat': -83.19455985, 'profit_closed_ratio_mean': -0.0075,
          'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
-         'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2}
+         'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2,
+         'profit_factor': 0.0,
+         }
     ),
     (
         False,
@@ -737,7 +739,9 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_fiat': 9.124559849999999, 'profit_closed_ratio_mean': 0.0075,
          'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
-         'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0}
+         'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0,
+         'profit_factor': None,
+         }
     ),
     (
         None,
@@ -750,7 +754,9 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_fiat': -67.02260985, 'profit_closed_ratio_mean': 0.0025,
          'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
          'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
-         'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1}
+         'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1,
+         'profit_factor': 0.02775724835771106,
+         }
     )
 ])
 def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected):
@@ -803,6 +809,9 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'closed_trade_count': 2,
         'winning_trades': expected['winning_trades'],
         'losing_trades': expected['losing_trades'],
+        'profit_factor': expected['profit_factor'],
+        'max_drawdown': ANY,
+        'max_drawdown_abs': ANY,
     }
 
 
