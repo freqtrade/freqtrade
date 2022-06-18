@@ -706,6 +706,7 @@ def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, f
     assert '*Best Performing:* `ETH/USDT: 9.45%`' in msg_mock.call_args_list[-1][0][0]
     assert '*Max Drawdown:*' in msg_mock.call_args_list[-1][0][0]
     assert '*Profit factor:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Trading volume:* `60 USDT`' in msg_mock.call_args_list[-1][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])

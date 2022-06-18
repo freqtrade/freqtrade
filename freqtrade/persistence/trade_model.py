@@ -1352,3 +1352,19 @@ class Trade(_DECL_BASE, LocalTrade):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
+
+    @staticmethod
+    def get_trading_volume(start_date: datetime = datetime.fromtimestamp(0)) -> float:
+        """
+        Get Trade volume based on Orders
+        NOTE: Not supported in Backtesting.
+        :returns: Tuple containing (pair, profit_sum)
+        """
+        trading_volume = Order.query.with_entities(
+            func.sum(Order.cost).label('volume')
+        ).filter(
+            (Order.order_filled_date >= start_date)
+            & (Order.status == 'closed')
+        ) \
+            .scalar()
+        return trading_volume

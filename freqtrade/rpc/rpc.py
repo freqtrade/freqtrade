@@ -452,6 +452,7 @@ class RPC:
             profit_all_ratio.append(profit_ratio)
 
         best_pair = Trade.get_best_pair(start_date)
+        trading_volume = Trade.get_trading_volume(start_date)
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
@@ -531,6 +532,7 @@ class RPC:
             'profit_factor': profit_factor,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': max_drawdown_abs,
+            'trading_volume': trading_volume,
         }
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:

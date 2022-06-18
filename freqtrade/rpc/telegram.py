@@ -737,6 +737,7 @@ class Telegram(RPCHandler):
                 markdown_msg += (
                     f"\n*Avg. Duration:* `{avg_duration}`\n"
                     f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`\n"
+                    f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
                     f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
                     f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
                     f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
