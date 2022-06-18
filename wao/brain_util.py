@@ -65,7 +65,11 @@ def setup_429():
 
 def clear_cumulative_value():
     # delete cumulative file
-    file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_FILE_PATH)
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_BINANCE_FILE_PATH)
+
+
+def _delete_file(file_name):
     if os.path.isfile(file_name):
         os.remove(file_name)
 
