@@ -235,6 +235,14 @@ class Telegram(RPCHandler):
         # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
+    def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
+        """
+        Extracts the exchange name from the given message.
+        :param msg: The message to extract the exchange name from.
+        :return: The exchange name.
+        """
+        return f"{msg['exchange']}{' (dry)' if self._config['dry_run'] else ''}"
+
     def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
         if self._rpc._fiat_converter:
             msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
@@ -247,7 +255,7 @@ class Telegram(RPCHandler):
         entry_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
                       else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
-            f"{emoji} *{msg['exchange']}:*"
+            f"{emoji} *{self._exchange_from_msg(msg)}:*"
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
@@ -296,7 +304,7 @@ class Telegram(RPCHandler):
             msg['profit_extra'] = ''
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         message = (
-            f"{msg['emoji']} *{msg['exchange']}:* "
+            f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
@@ -326,7 +334,7 @@ class Telegram(RPCHandler):
 
         elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
-            message = (f"\N{WARNING SIGN} *{msg['exchange']}:* "
+            message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
                        f"Cancelling {msg['message_side']} Order for {msg['pair']} "
                        f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
