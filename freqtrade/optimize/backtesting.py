@@ -1055,6 +1055,7 @@ class Backtesting:
                         # Close trade
                         open_trade_count -= 1
                         open_trades[pair].remove(t)
+                        LocalTrade.trades_open.remove(t)
                         self.wallets.update()
 
                 # 2. Process entries.
