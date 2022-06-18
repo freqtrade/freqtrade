@@ -171,8 +171,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
-| `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
-| `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `/fx` | alias for `/forceexit`
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
@@ -281,6 +281,7 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 
 !!! Tip
     You can get a list of all open trades by calling `/forceexit` without parameter, which will show a list of buttons to simply exit a trade.
+    This command has an alias in `/fx` - which has the same capabilities, but is faster to type in "emergency" situations.
 
 ### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
