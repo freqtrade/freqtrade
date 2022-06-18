@@ -326,33 +326,33 @@ class Telegram(RPCHandler):
 
         elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
-            message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling {message_side} Order for {pair} (#{trade_id}). "
-                       "Reason: {reason}.".format(**msg))
+            message = (f"\N{WARNING SIGN} *{msg['exchange']}:* "
+                       f"Cancelling {msg['message_side']} Order for {msg['pair']} "
+                       f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
             message = (
-                "*Protection* triggered due to {reason}. "
-                "`{pair}` will be locked until `{lock_end_time}`."
-            ).format(**msg)
+                f"*Protection* triggered due to {msg['reason']}. "
+                f"`{msg['pair']}` will be locked until `{msg['lock_end_time']}`."
+            )
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
             message = (
-                "*Protection* triggered due to {reason}. "
-                "*All pairs* will be locked until `{lock_end_time}`."
-            ).format(**msg)
+                f"*Protection* triggered due to {msg['reason']}. "
+                f"*All pairs* will be locked until `{msg['lock_end_time']}`."
+            )
 
         elif msg_type == RPCMessageType.STATUS:
-            message = '*Status:* `{status}`'.format(**msg)
+            message = f"*Status:* `{msg['status']}`"
 
         elif msg_type == RPCMessageType.WARNING:
-            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
+            message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
 
         elif msg_type == RPCMessageType.STARTUP:
-            message = '{status}'.format(**msg)
+            message = f"{msg['status']}"
 
         else:
-            raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+            raise NotImplementedError(f"Unknown message type: {msg_type}")
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
@@ -867,7 +867,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_start()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _stop(self, update: Update, context: CallbackContext) -> None:
@@ -879,7 +879,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stop()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _reload_config(self, update: Update, context: CallbackContext) -> None:
@@ -891,7 +891,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_reload_config()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _stopbuy(self, update: Update, context: CallbackContext) -> None:
@@ -903,7 +903,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stopbuy()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _force_exit(self, update: Update, context: CallbackContext) -> None:
@@ -1065,9 +1065,9 @@ class Telegram(RPCHandler):
             trade_id = int(context.args[0])
             msg = self._rpc._rpc_delete(trade_id)
             self._send_msg((
-                '`{result_msg}`\n'
+                f"`{msg['result_msg']}`\n"
                 'Please make sure to take care of this asset on the exchange manually.'
-            ).format(**msg))
+            ))
 
         except RPCException as e:
             self._send_msg(str(e))
