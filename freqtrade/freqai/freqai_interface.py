@@ -273,7 +273,7 @@ class IFreqaiModel(ABC):
                 self.start_scanning(strategy)
 
         elif self.follow_mode:
-            dh.set_paths(metadata, trained_timestamp)
+            dh.set_paths(metadata['pair'], trained_timestamp)
             logger.info('FreqAI instance set to follow_mode, finding existing pair'
                         f'using { self.identifier }')
 
