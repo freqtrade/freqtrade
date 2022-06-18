@@ -725,7 +725,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2,
-         'profit_factor': 0.0,
+         'profit_factor': 0.0, 'trading_volume': 91.074,
          }
     ),
     (
@@ -740,7 +740,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0,
-         'profit_factor': None,
+         'profit_factor': None, 'trading_volume': 91.074,
          }
     ),
     (
@@ -755,7 +755,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
          'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1,
-         'profit_factor': 0.02775724835771106,
+         'profit_factor': 0.02775724835771106, 'trading_volume': 91.074,
          }
     )
 ])
@@ -812,6 +812,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'profit_factor': expected['profit_factor'],
         'max_drawdown': ANY,
         'max_drawdown_abs': ANY,
+        'trading_volume': expected['trading_volume'],
     }
 
 

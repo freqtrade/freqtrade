@@ -1363,8 +1363,7 @@ class Trade(_DECL_BASE, LocalTrade):
         trading_volume = Order.query.with_entities(
             func.sum(Order.cost).label('volume')
         ).filter(
-            (Order.order_filled_date >= start_date)
-            & (Order.status == 'closed')
-        ) \
-            .scalar()
+            Order.order_filled_date >= start_date,
+            Order.status == 'closed'
+        ).scalar()
         return trading_volume
