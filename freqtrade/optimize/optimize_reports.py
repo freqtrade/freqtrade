@@ -416,6 +416,9 @@ def generate_strategy_stats(pairlist: List[str],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                      key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
+    winning_profit = results.loc[results['profit_abs'] > 0, 'profit_abs'].sum()
+    losing_profit = results.loc[results['profit_abs'] < 0, 'profit_abs'].sum()
+    profit_factor = winning_profit / abs(losing_profit) if losing_profit else 0.0
 
     backtest_days = (max_date - min_date).days or 1
     strat_stats = {
@@ -443,6 +446,7 @@ def generate_strategy_stats(pairlist: List[str],
         'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
         'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
+        'profit_factor': profit_factor,
         'backtest_start': min_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_start_ts': int(min_date.timestamp() * 1000),
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
@@ -779,6 +783,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
             ('CAGR %', f"{strat_results['cagr']:.2%}" if 'cagr' in strat_results else 'N/A'),
+            ('Profit factor', f'{strat_results["profit_factor"]:.2f}' if 'profit_factor'
+                              in strat_results else 'N/A'),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',
              f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),
