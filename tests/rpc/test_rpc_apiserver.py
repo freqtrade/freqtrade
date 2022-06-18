@@ -578,9 +578,10 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     )
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json()) == 3
+    assert len(rc.json()) == 4
     assert rc.json()['trades_count'] == 0
     assert rc.json()['total_trades'] == 0
+    assert rc.json()['offset'] == 0
 
     create_mock_trades(fee, is_short=is_short)
     Trade.query.session.flush()

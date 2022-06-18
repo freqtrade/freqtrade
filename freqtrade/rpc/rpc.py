@@ -365,6 +365,7 @@ class RPC:
         return {
             "trades": output,
             "trades_count": len(output),
+            "offset": offset,
             "total_trades": Trade.get_trades([Trade.is_open.is_(False)]).count(),
         }
 

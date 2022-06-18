@@ -283,6 +283,7 @@ class OpenTradeSchema(TradeSchema):
 class TradeResponse(BaseModel):
     trades: List[TradeSchema]
     trades_count: int
+    offset: int
     total_trades: int
 
 
