@@ -730,12 +730,18 @@ class Telegram(RPCHandler):
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
-                f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                f"*Latest Trade opened:* `{latest_trade_date}`\n"
                 f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
             )
             if stats['closed_trade_count'] > 0:
-                markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
-                                 f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`")
+                markdown_msg += (
+                    f"\n*Avg. Duration:* `{avg_duration}`\n"
+                    f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`\n"
+                    f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
+                    f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
+                    f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
+                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
+                )
         self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                        query=update.callback_query)
 

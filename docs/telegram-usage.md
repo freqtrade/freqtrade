@@ -270,10 +270,15 @@ Return a summary of your profit/loss and performance.
 > **Latest Trade opened:** `2 minutes ago`  
 > **Avg. Duration:** `2:33:45`  
 > **Best Performing:** `PAY/BTC: 50.23%`  
+> **Trading volume:** `0.5 BTC`  
+> **Profit factor:** `1.04`  
+> **Max Drawdown:** `9.23% (0.01255 BTC)`  
 
 The relative profit of `1.2%` is the average profit per trade.  
-The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.
-Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
+The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.  
+Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.  
+Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.  
+Max drawdown corresponds to the backtesting metric `Absolute Drawdown (Account)` - calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 
 ### /forceexit <trade_id>
 

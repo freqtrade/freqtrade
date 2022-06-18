@@ -18,6 +18,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
+from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
@@ -415,6 +416,8 @@ class RPC:
         durations = []
         winning_trades = 0
         losing_trades = 0
+        winning_profit = 0.0
+        losing_profit = 0.0
 
         for trade in trades:
             current_rate: float = 0.0
@@ -430,8 +433,10 @@ class RPC:
                 profit_closed_ratio.append(profit_ratio)
                 if trade.close_profit >= 0:
                     winning_trades += 1
+                    winning_profit += trade.close_profit_abs
                 else:
                     losing_trades += 1
+                    losing_profit += trade.close_profit_abs
             else:
                 # Get current rate
                 try:
@@ -447,6 +452,7 @@ class RPC:
             profit_all_ratio.append(profit_ratio)
 
         best_pair = Trade.get_best_pair(start_date)
+        trading_volume = Trade.get_trading_volume(start_date)
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
@@ -469,6 +475,21 @@ class RPC:
         if starting_balance:
             profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
             profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
+
+        profit_factor = winning_profit / abs(losing_profit) if losing_profit else float('inf')
+
+        trades_df = DataFrame([{'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
+                                'profit_abs': trade.close_profit_abs}
+                               for trade in trades if not trade.is_open])
+        max_drawdown_abs = 0.0
+        max_drawdown = 0.0
+        if len(trades_df) > 0:
+            try:
+                (max_drawdown_abs, _, _, _, _, max_drawdown) = calculate_max_drawdown(
+                    trades_df, value_col='profit_abs', starting_balance=starting_balance)
+            except ValueError:
+                # ValueError if no losing trade.
+                pass
 
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
@@ -508,6 +529,10 @@ class RPC:
             'best_pair_profit_ratio': best_pair[1] if best_pair else 0,
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
+            'profit_factor': profit_factor,
+            'max_drawdown': max_drawdown,
+            'max_drawdown_abs': max_drawdown_abs,
+            'trading_volume': trading_volume,
         }
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:

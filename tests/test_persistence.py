@@ -2269,6 +2269,7 @@ def test_Trade_object_idem():
         'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
+        'get_trading_volume',
 
     )
 

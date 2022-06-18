@@ -704,11 +704,13 @@ def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, f
     assert '∙ `6.253 USD`' in msg_mock.call_args_list[-1][0][0]
 
     assert '*Best Performing:* `ETH/USDT: 9.45%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*Max Drawdown:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Profit factor:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Trading volume:* `60 USDT`' in msg_mock.call_args_list[-1][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])
-def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
-                        limit_buy_order, limit_sell_order, mocker, is_short) -> None:
+def test_telegram_stats(default_conf, update, ticker, fee, mocker, is_short) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
