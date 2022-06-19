@@ -1568,6 +1568,10 @@ class Telegram(RPCHandler):
                     # Filter empty lines using list-comprehension
                     messages.append("\n".join([line for line in lines if line]))
                 for msg in messages:
+                    if len(msg) > MAX_TELEGRAM_MESSAGE_LENGTH:
+                        msg = "Message dropped because length exceeds "
+                        msg += f"maximum allowed characters: {MAX_TELEGRAM_MESSAGE_LENGTH}"
+                        logger.warning(msg)
                     self._send_msg(msg)
             else:
                 message = f"Didn't find any custom-data entries for Trade ID: `{trade_id}`"
