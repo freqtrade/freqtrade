@@ -1087,12 +1087,12 @@ class Trade(_DECL_BASE, LocalTrade):
         for order in self.orders:
             Order.query.session.delete(order)
 
-        Trade.query.session.delete(self)
-        Trade.commit()
-
         for entry in self.custom_data:
             CustomData.query.session.delete(entry)
+
         CustomData.query.session.commit()
+        Trade.query.session.delete(self)
+        Trade.commit()
 
     @staticmethod
     def commit():
