@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         UniqueConstraint, desc, func)
-from sqlalchemy.orm import Query, relationship
+from sqlalchemy.orm import Query, lazyload, relationship
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES, BuySell, LongShort
 from freqtrade.enums import ExitType, TradingMode
@@ -1115,7 +1115,7 @@ class Trade(_DECL_BASE, LocalTrade):
             )
 
     @staticmethod
-    def get_trades(trade_filter=None) -> Query:
+    def get_trades(trade_filter=None, include_orders: bool = True) -> Query:
         """
         Helper function to query Trades using filters.
         NOTE: Not supported in Backtesting.
@@ -1130,9 +1130,14 @@ class Trade(_DECL_BASE, LocalTrade):
         if trade_filter is not None:
             if not isinstance(trade_filter, list):
                 trade_filter = [trade_filter]
-            return Trade.query.filter(*trade_filter)
+            this_query = Trade.query.filter(*trade_filter)
         else:
-            return Trade.query
+            this_query = Trade.query
+        if not include_orders:
+            # Don't load order relations
+            # Consider using noload or raiseload instead of lazyload
+            this_query = this_query.options(lazyload(Trade.orders))
+        return this_query
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:

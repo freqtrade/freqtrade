@@ -380,7 +380,7 @@ class RPC:
                 return 'losses'
             else:
                 return 'draws'
-        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)])
+        trades: List[Trade] = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Sell reason
         exit_reasons = {}
         for trade in trades:
@@ -408,7 +408,8 @@ class RPC:
         """ Returns cumulative profit statistics """
         trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
                         Trade.is_open.is_(True))
-        trades: List[Trade] = Trade.get_trades(trade_filter).order_by(Trade.id).all()
+        trades: List[Trade] = Trade.get_trades(
+            trade_filter, include_orders=False).order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_ratio = []
