@@ -198,7 +198,7 @@ class IFreqaiModel(ABC):
                 self.model = self.train(dataframe_train, metadata['pair'], dh)
                 self.data_drawer.pair_dict[metadata['pair']][
                                         'trained_timestamp'] = trained_timestamp.stopts
-                dh.set_new_model_names(metadata, trained_timestamp)
+                dh.set_new_model_names(metadata['pair'], trained_timestamp)
                 dh.save_data(self.model, metadata['pair'])
             else:
                 self.model = dh.load_data(metadata['pair'])

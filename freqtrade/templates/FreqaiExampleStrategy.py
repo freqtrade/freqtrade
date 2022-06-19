@@ -100,7 +100,7 @@ class FreqaiExampleStrategy(IStrategy):
                 informative[f"{coin}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
                 informative[f"{coin}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
                 informative[f"%-{coin}close_over_20sma-period_{t}"] = (
-                    informative["close"] / informative[coin + "20sma-period_{t}"]
+                    informative["close"] / informative[f"{coin}20sma-period_{t}"]
                 )
 
                 informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
