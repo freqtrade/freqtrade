@@ -192,7 +192,7 @@ class Telegram(RPCHandler):
             CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
-            CommandHandler('list_kvals', self._list_kvals),
+            CommandHandler('list_custom_data', self._list_custom_data),
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
@@ -1453,7 +1453,7 @@ class Telegram(RPCHandler):
             "Avg. holding durationsfor buys and sells.`\n"
             "*/help:* `This help message`\n"
             "*/version:* `Show version`\n"
-            "*/list_kvals <trade_id> <key>:* `List key-value for Trade ID and Key combo.`\n"
+            "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
             "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`"
             )
 
@@ -1535,10 +1535,10 @@ class Telegram(RPCHandler):
         )
 
     @authorized_only
-    def _list_kvals(self, update: Update, context: CallbackContext) -> None:
+    def _list_custom_data(self, update: Update, context: CallbackContext) -> None:
         """
-        Handler for /list_kvals <id> <key>.
-        List keyvalues for specified trade (and key if supplied).
+        Handler for /list_custom_data <id> <key>.
+        List custom_data for specified trade (and key if supplied).
         :param bot: telegram bot
         :param update: message update
         :return: None
@@ -1549,17 +1549,17 @@ class Telegram(RPCHandler):
             trade_id = int(context.args[0])
             key = None if len(context.args) < 2 else str(context.args[1])
 
-            results = self._rpc._rpc_list_kvals(trade_id, key)
+            results = self._rpc._rpc_list_custom_data(trade_id, key)
             messages = []
             if len(results) > 0:
                 messages = ['Found key-value pair' + 's:  \n' if key is None else ':  \n']
                 for result in results:
                     lines = [
-                        f"*Key:* `{result['kv_key']}`",
+                        f"*Key:* `{result['cd_key']}`",
                         f"*ID:* `{result['id']}`",
                         f"*Trade ID:* `{result['ft_trade_id']}`",
-                        f"*Type:* `{result['kv_type']}`",
-                        f"*Value:* `{result['kv_value']}`",
+                        f"*Type:* `{result['cd_type']}`",
+                        f"*Value:* `{result['cd_value']}`",
                         f"*Create Date:* `{result['created_at']}`",
                         f"*Update Date:* `{result['updated_at']}`"
                     ]

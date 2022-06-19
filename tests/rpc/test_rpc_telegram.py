@@ -103,7 +103,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
                    "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
-                   "['logs'], ['edge'], ['health'], ['help'], ['version'], ['list_kvals']"
+                   "['logs'], ['edge'], ['health'], ['help'], ['version'], ['list_custom_data']"
                    "]")
 
     assert log_has(message_str, caplog)

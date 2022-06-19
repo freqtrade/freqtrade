@@ -15,8 +15,8 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
-from freqtrade.persistence.keyvalue import KeyValue
-from freqtrade.persistence.keyvalue_middleware import KeyValues
+from freqtrade.persistence.keyvalue import CustomData
+from freqtrade.persistence.keyvalue_middleware import CustomDataWrapper
 
 
 logger = logging.getLogger(__name__)
@@ -240,7 +240,7 @@ class LocalTrade():
     id: int = 0
 
     orders: List[Order] = []
-    keyvalues: List[KeyValue] = []
+    custom_data: List[CustomData] = []
 
     exchange: str = ''
     pair: str = ''
@@ -880,11 +880,11 @@ class LocalTrade():
                 or (o.ft_is_open is True and o.status is not None)
                 ]
 
-    def set_kval(self, key: str, value: Any) -> None:
-        KeyValues.set_kval(key=key, value=value, trade_id=self.id)
+    def set_custom_data(self, key: str, value: Any) -> None:
+        CustomDataWrapper.set_custom_data(key=key, value=value, trade_id=self.id)
 
-    def get_kvals(self, key: Optional[str]) -> List[KeyValue]:
-        return KeyValues.get_kval(key=key, trade_id=self.id)
+    def get_custom_data(self, key: Optional[str]) -> List[CustomData]:
+        return CustomDataWrapper.get_custom_data(key=key, trade_id=self.id)
 
     @property
     def nr_of_successful_entries(self) -> int:
@@ -1016,7 +1016,7 @@ class Trade(_DECL_BASE, LocalTrade):
     id = Column(Integer, primary_key=True)
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan", lazy="joined")
-    keyvalues = relationship("KeyValue", order_by="KeyValue.id", cascade="all, delete-orphan")
+    custom_data = relationship("CustomData", order_by="CustomData.id", cascade="all, delete-orphan")
 
     exchange = Column(String(25), nullable=False)
     pair = Column(String(25), nullable=False, index=True)
@@ -1090,9 +1090,9 @@ class Trade(_DECL_BASE, LocalTrade):
         Trade.query.session.delete(self)
         Trade.commit()
 
-        for kval in self.keyvalues:
-            KeyValue.query.session.delete(kval)
-        KeyValue.query.session.commit()
+        for entry in self.custom_data:
+            CustomData.query.session.delete(entry)
+        CustomData.query.session.commit()
 
     @staticmethod
     def commit():
@@ -1367,11 +1367,11 @@ class Trade(_DECL_BASE, LocalTrade):
             .order_by(desc('profit_sum')).first()
         return best_pair
 
-    def set_kval(self, key: str, value: Any) -> None:
-        super().set_kval(key=key, value=value)
+    def set_custom_data(self, key: str, value: Any) -> None:
+        super().set_custom_data(key=key, value=value)
 
-    def get_kvals(self, key: Optional[str]) -> List[KeyValue]:
-        return super().get_kvals(key=key)
+    def get_custom_data(self, key: Optional[str]) -> List[CustomData]:
+        return super().get_custom_data(key=key)
 
     @staticmethod
     def get_trading_volume(start_date: datetime = datetime.fromtimestamp(0)) -> float:

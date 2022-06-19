@@ -30,7 +30,7 @@ from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_signal_candles,
                                                  store_backtest_stats)
-from freqtrade.persistence import KeyValues, LocalTrade, Order, PairLocks, Trade
+from freqtrade.persistence import CustomDataWrapper, LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -151,7 +151,7 @@ class Backtesting:
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
-        KeyValues.use_db = True  # ???
+        CustomDataWrapper.use_db = True
 
     def init_backtest_detail(self):
         # Load detail timeframe if specified
@@ -300,8 +300,8 @@ class Backtesting:
         Trade.use_db = False
         PairLocks.reset_locks()
         Trade.reset_trades()
-        KeyValues.use_db = False
-        KeyValues.reset_keyvalues()
+        CustomDataWrapper.use_db = False
+        CustomDataWrapper.reset_custom_data()
         self.rejected_trades = 0
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0

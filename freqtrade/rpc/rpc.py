@@ -805,24 +805,24 @@ class RPC:
                 'cancel_order_count': c_count,
             }
 
-    def _rpc_list_kvals(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_list_custom_data(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
         # Query for trade
         trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
         if trade is None:
             return []
-        # Query keyvals
-        keyvals = trade.get_kvals(key=key)
+        # Query custom_data
+        custom_data = trade.get_custom_data(key=key)
         return [
             {
-                'id': kval.id,
-                'ft_trade_id': kval.ft_trade_id,
-                'kv_key': kval.kv_key,
-                'kv_type': kval.kv_type,
-                'kv_value': kval.kv_value,
-                'created_at': kval.created_at,
-                'updated_at': kval.updated_at
+                'id': data_entry.id,
+                'ft_trade_id': data_entry.ft_trade_id,
+                'cd_key': data_entry.cd_key,
+                'cd_type': data_entry.cd_type,
+                'cd_value': data_entry.cd_value,
+                'created_at': data_entry.created_at,
+                'updated_at': data_entry.updated_at
             }
-            for kval in keyvals
+            for data_entry in custom_data
         ]
 
     def _rpc_performance(self) -> List[Dict[str, Any]]:

@@ -43,7 +43,7 @@ class AwesomeStrategy(IStrategy):
 ## Storing information (Persistent)
 
 Storing information can also be performed in a persistent manner. Freqtrade allows storing/retrieving user custom information associated with a specific trade.
-Using a trade object handle information can be stored using `trade_obj.set_kval(key='my_key', value=my_value)` and retrieved using `trade_obj.get_kvals(key='my_key')`.
+Using a trade object handle information can be stored using `trade_obj.set_custom_data(key='my_key', value=my_value)` and retrieved using `trade_obj.get_custom_data(key='my_key')`.
 Each data entry is associated with a trade and a user supplied key (of type `string`). This means that this can only be used in callbacks that also provide a trade object handle.
 For the data to be able to be stored within the database it must be serialized. This is done by converting it to a JSON formatted string.
 
@@ -57,12 +57,12 @@ class AwesomeStrategy(IStrategy):
         for trade in Trade.get_open_order_trades():
             fills = trade.select_filled_orders(trade.entry_side)
             if trade.pair == 'ETH/USDT':
-                trade_entry_type = trade.get_kvals(key='entry_type').kv_value
+                trade_entry_type = trade.get_custom_data(key='entry_type').kv_value
                 if trade_entry_type is None:
                     trade_entry_type = 'breakout' if 'entry_1' in trade.enter_tag else 'dip'
                 elif fills > 1:
                     trade_entry_type = 'buy_up'
-                trade.set_kval(key='entry_type', value=trade_entry_type)
+                trade.set_custom_data(key='entry_type', value=trade_entry_type)
         return super().bot_loop_start(**kwargs)
 
     def adjust_entry_price(self, trade: Trade, order: Optional[Order], pair: str,
@@ -73,12 +73,12 @@ class AwesomeStrategy(IStrategy):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
             current_candle = dataframe.iloc[-1].squeeze()
             # store information about entry adjustment
-            existing_count = trade.get_kvals(key='num_entry_adjustments').kv_value
+            existing_count = trade.get_custom_data(key='num_entry_adjustments').kv_value
             if not existing_count:
                 existing_count = 1
             else:
                 existing_count += 1
-            trade.set_kval(key='num_entry_adjustments', value=existing_count)
+            trade.set_custom_data(key='num_entry_adjustments', value=existing_count)
 
             # adjust order price
             return current_candle['sma_200']
@@ -88,8 +88,8 @@ class AwesomeStrategy(IStrategy):
 
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):
 
-        entry_adjustment_count = trade.get_kvals(key='num_entry_adjustments').kv_value
-        trade_entry_type = trade.get_kvals(key='entry_type').kv_value
+        entry_adjustment_count = trade.get_custom_data(key='num_entry_adjustments').kv_value
+        trade_entry_type = trade.get_custom_data(key='entry_type').kv_value
         if entry_adjustment_count is None:
             if current_profit > 0.01 and (current_time - timedelta(minutes=100) > trade.open_date_utc):
                 return True, 'exit_1'
