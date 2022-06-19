@@ -1552,7 +1552,9 @@ class Telegram(RPCHandler):
             results = self._rpc._rpc_list_custom_data(trade_id, key)
             messages = []
             if len(results) > 0:
-                messages = ['Found key-value pair' + 's:  \n' if key is None else ':  \n']
+                messages.append(
+                    'Found custom-data entr' + ('ies: ' if len(results) > 1 else 'y: ')
+                )
                 for result in results:
                     lines = [
                         f"*Key:* `{result['cd_key']}`",
@@ -1568,7 +1570,7 @@ class Telegram(RPCHandler):
                 for msg in messages:
                     self._send_msg(msg)
             else:
-                message = f"Didn't find any key-value pairs for Trade ID: `{trade_id}`"
+                message = f"Didn't find any custom-data entries for Trade ID: `{trade_id}`"
                 message += f" and Key: `{key}`." if key is not None else ""
                 self._send_msg(message)
 
