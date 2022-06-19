@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
@@ -24,6 +25,8 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
+        "time_in_force_parameter": "timeInForce",
+        "order_time_in_force": ['gtc', 'ioc'],
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
     }
@@ -40,12 +43,32 @@ class Gateio(Exchange):
     ]
 
     def validate_ordertypes(self, order_types: Dict) -> None:
-        super().validate_ordertypes(order_types)
 
         if self.trading_mode != TradingMode.FUTURES:
             if any(v == 'market' for k, v in order_types.items()):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+
+    def _get_params(
+            self,
+            side: BuySell,
+            ordertype: str,
+            leverage: float,
+            reduceOnly: bool,
+            time_in_force: str = 'gtc',
+            ) -> Dict:
+        params = super()._get_params(
+            side=side,
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        if ordertype == 'market' and self.trading_mode == TradingMode.FUTURES:
+            params['type'] = 'market'
+            param = self._ft_has.get('time_in_force_parameter', '')
+            params.update({param: 'ioc'})
+        return params
 
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime,
                              params: Optional[Dict] = None) -> List:
@@ -61,7 +84,8 @@ class Gateio(Exchange):
             pair_fees = self._trading_fees.get(pair, {})
             if pair_fees:
                 for idx, trade in enumerate(trades):
-                    if trade.get('fee', {}).get('cost') is None:
+                    fee = trade.get('fee', {})
+                    if fee and fee.get('cost') is None:
                         takerOrMaker = trade.get('takerOrMaker', 'taker')
                         if pair_fees.get(takerOrMaker) is not None:
                             trades[idx]['fee'] = {

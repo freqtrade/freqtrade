@@ -64,7 +64,10 @@ You will also have to pick a "margin mode" (explanation below) - with freqtrade 
 
 ### Margin mode
 
-The possible values are: `isolated`, or `cross`(*currently unavailable*)
+On top of `trading_mode` - you will also have to configure your `margin_mode`.
+While freqtrade currently only supports one margin mode, this will change, and by configuring it now you're all set for future updates.
+
+The possible values are: `isolated`, or `cross`(*currently unavailable*).
 
 #### Isolated margin mode
 
@@ -81,6 +84,16 @@ One account is used to share collateral between markets (trading pairs). Margin 
 ``` json
 "margin_mode": "cross"
 ```
+
+## Set leverage to use
+
+Different strategies and risk profiles will require different levels of leverage.
+While you could configure one static leverage value - freqtrade offers you the flexibility to adjust this via [strategy leverage callback](strategy-callbacks.md#leverage-callback) - which allows you to use different leverages by pair, or based on some other factor benefitting your strategy result.
+
+If not implemented, leverage defaults to 1x (no leverage).
+
+!!! Warning
+    Higher leverage also equals higher risk - be sure you fully understand the implications of using leverage!
 
 ## Understand `liquidation_buffer`
 

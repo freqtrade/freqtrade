@@ -236,6 +236,14 @@ class Telegram(RPCHandler):
         # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
+    def _exchange_from_msg(self, msg: Dict[str, Any]) -> str:
+        """
+        Extracts the exchange name from the given message.
+        :param msg: The message to extract the exchange name from.
+        :return: The exchange name.
+        """
+        return f"{msg['exchange']}{' (dry)' if self._config['dry_run'] else ''}"
+
     def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
         if self._rpc._fiat_converter:
             msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
@@ -248,7 +256,7 @@ class Telegram(RPCHandler):
         entry_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['direction'] == 'Long'
                       else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
-            f"{emoji} *{msg['exchange']}:*"
+            f"{emoji} *{self._exchange_from_msg(msg)}:*"
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
@@ -297,7 +305,7 @@ class Telegram(RPCHandler):
             msg['profit_extra'] = ''
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
         message = (
-            f"{msg['emoji']} *{msg['exchange']}:* "
+            f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
@@ -327,33 +335,33 @@ class Telegram(RPCHandler):
 
         elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
-            message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling {message_side} Order for {pair} (#{trade_id}). "
-                       "Reason: {reason}.".format(**msg))
+            message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
+                       f"Cancelling {msg['message_side']} Order for {msg['pair']} "
+                       f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
             message = (
-                "*Protection* triggered due to {reason}. "
-                "`{pair}` will be locked until `{lock_end_time}`."
-            ).format(**msg)
+                f"*Protection* triggered due to {msg['reason']}. "
+                f"`{msg['pair']}` will be locked until `{msg['lock_end_time']}`."
+            )
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
             message = (
-                "*Protection* triggered due to {reason}. "
-                "*All pairs* will be locked until `{lock_end_time}`."
-            ).format(**msg)
+                f"*Protection* triggered due to {msg['reason']}. "
+                f"*All pairs* will be locked until `{msg['lock_end_time']}`."
+            )
 
         elif msg_type == RPCMessageType.STATUS:
-            message = '*Status:* `{status}`'.format(**msg)
+            message = f"*Status:* `{msg['status']}`"
 
         elif msg_type == RPCMessageType.WARNING:
-            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
+            message = f"\N{WARNING SIGN} *Warning:* `{msg['status']}`"
 
         elif msg_type == RPCMessageType.STARTUP:
-            message = '{status}'.format(**msg)
+            message = f"{msg['status']}"
 
         else:
-            raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+            raise NotImplementedError(f"Unknown message type: {msg_type}")
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
@@ -723,12 +731,18 @@ class Telegram(RPCHandler):
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
-                f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                f"*Latest Trade opened:* `{latest_trade_date}`\n"
                 f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
             )
             if stats['closed_trade_count'] > 0:
-                markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
-                                 f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`")
+                markdown_msg += (
+                    f"\n*Avg. Duration:* `{avg_duration}`\n"
+                    f"*Best Performing:* `{best_pair}: {best_pair_profit_ratio:.2%}`\n"
+                    f"*Trading volume:* `{round_coin_value(stats['trading_volume'], stake_cur)}`\n"
+                    f"*Profit factor:* `{stats['profit_factor']:.2f}`\n"
+                    f"*Max Drawdown:* `{stats['max_drawdown']:.2%} "
+                    f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
+                )
         self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                        query=update.callback_query)
 
@@ -868,7 +882,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_start()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _stop(self, update: Update, context: CallbackContext) -> None:
@@ -880,7 +894,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stop()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _reload_config(self, update: Update, context: CallbackContext) -> None:
@@ -892,7 +906,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_reload_config()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _stopbuy(self, update: Update, context: CallbackContext) -> None:
@@ -904,7 +918,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stopbuy()
-        self._send_msg('Status: `{status}`'.format(**msg))
+        self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
     def _force_exit(self, update: Update, context: CallbackContext) -> None:
@@ -1066,9 +1080,9 @@ class Telegram(RPCHandler):
             trade_id = int(context.args[0])
             msg = self._rpc._rpc_delete(trade_id)
             self._send_msg((
-                '`{result_msg}`\n'
+                f"`{msg['result_msg']}`\n"
                 'Please make sure to take care of this asset on the exchange manually.'
-            ).format(**msg))
+            ))
 
         except RPCException as e:
             self._send_msg(str(e))
@@ -1396,7 +1410,7 @@ class Telegram(RPCHandler):
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
-            "*/fe <trade_id>|all:* `Alias to /forceexit`\n"
+            "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
             "*/whitelist:* `Show current whitelist` \n"

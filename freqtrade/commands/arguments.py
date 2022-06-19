@@ -101,6 +101,9 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
                       "print_json", "hyperoptexportfilename", "hyperopt_show_no_header",
                       "disableparamexport", "backtest_breakdown"]
 
+ARGS_ANALYZE_ENTRIES_EXITS = ["exportfilename", "analysis_groups", "enter_reason_list",
+                              "exit_reason_list", "indicator_list"]
+
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
                     "hyperopt-list", "hyperopt-show", "backtest-filter",
@@ -182,8 +185,9 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtesting, start_backtesting_show,
-                                        start_convert_data, start_convert_db, start_convert_trades,
+        from freqtrade.commands import (start_analysis_entries_exits, start_backtesting,
+                                        start_backtesting_show, start_convert_data,
+                                        start_convert_db, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
                                         start_hyperopt, start_hyperopt_list, start_hyperopt_show,
                                         start_install_ui, start_list_data, start_list_exchanges,
@@ -282,6 +286,13 @@ class Arguments:
         )
         backtesting_show_cmd.set_defaults(func=start_backtesting_show)
         self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
+
+        # Add backtesting analysis subcommand
+        analysis_cmd = subparsers.add_parser('backtesting-analysis',
+                                             help='Backtest Analysis module.',
+                                             parents=[_common_parser])
+        analysis_cmd.set_defaults(func=start_analysis_entries_exits)
+        self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',

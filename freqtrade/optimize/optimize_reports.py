@@ -17,21 +17,21 @@ from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
 logger = logging.getLogger(__name__)
 
 
-def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
+def store_backtest_stats(
+        recordfilename: Path, stats: Dict[str, DataFrame], dtappendix: str) -> None:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
         while for directories, <directory>/backtest-result-<datetime>.json will be used as filename
     :param stats: Dataframe containing the backtesting statistics
+    :param dtappendix: Datetime to use for the filename
     """
     if recordfilename.is_dir():
-        filename = (recordfilename /
-                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
+        filename = (recordfilename / f'backtest-result-{dtappendix}.json')
     else:
         filename = Path.joinpath(
-            recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}'
         ).with_suffix(recordfilename.suffix)
 
     # Store metadata separately.
@@ -44,7 +44,8 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]) -> Path:
+def store_backtest_signal_candles(
+        recordfilename: Path, candles: Dict[str, Dict], dtappendix: str) -> Path:
     """
     Stores backtest trade signal candles
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -52,14 +53,13 @@ def store_backtest_signal_candles(recordfilename: Path, candles: Dict[str, Dict]
         while for directories, <directory>/backtest-result-<datetime>_signals.pkl will be used
         as filename
     :param stats: Dict containing the backtesting signal candles
+    :param dtappendix: Datetime to use for the filename
     """
     if recordfilename.is_dir():
-        filename = (recordfilename /
-                    f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl')
+        filename = (recordfilename / f'backtest-result-{dtappendix}_signals.pkl')
     else:
         filename = Path.joinpath(
-            recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_signals.pkl'
+            recordfilename.parent, f'{recordfilename.stem}-{dtappendix}_signals.pkl'
         )
 
     file_dump_joblib(filename, candles)
@@ -416,6 +416,9 @@ def generate_strategy_stats(pairlist: List[str],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                      key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
+    winning_profit = results.loc[results['profit_abs'] > 0, 'profit_abs'].sum()
+    losing_profit = results.loc[results['profit_abs'] < 0, 'profit_abs'].sum()
+    profit_factor = winning_profit / abs(losing_profit) if losing_profit else 0.0
 
     backtest_days = (max_date - min_date).days or 1
     strat_stats = {
@@ -443,6 +446,7 @@ def generate_strategy_stats(pairlist: List[str],
         'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
         'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'cagr': calculate_cagr(backtest_days, start_balance, content['final_balance']),
+        'profit_factor': profit_factor,
         'backtest_start': min_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_start_ts': int(min_date.timestamp() * 1000),
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
@@ -497,8 +501,10 @@ def generate_strategy_stats(pairlist: List[str],
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance)
+        # max_relative_drawdown = Underwater
         (_, _, _, _, _, max_relative_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=start_balance, relative=True)
+
         strat_stats.update({
             'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
@@ -777,6 +783,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
             ('CAGR %', f"{strat_results['cagr']:.2%}" if 'cagr' in strat_results else 'N/A'),
+            ('Profit factor', f'{strat_results["profit_factor"]:.2f}' if 'profit_factor'
+                              in strat_results else 'N/A'),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',
              f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),

@@ -73,8 +73,6 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
-        self.protections = ProtectionManager(self.config, self.strategy.protections)
-
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
         # so anything in the Freqtradebot instance should be ready (initialized), including
@@ -124,6 +122,8 @@ class FreqtradeBot(LoggingMixin):
         self.last_process = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
         self.strategy.ft_bot_start()
+        # Initialize protections AFTER bot start - otherwise parameters are not loaded.
+        self.protections = ProtectionManager(self.config, self.strategy.protections)
 
     def notify_status(self, msg: str) -> None:
         """

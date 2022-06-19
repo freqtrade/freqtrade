@@ -171,7 +171,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     _backup_file(filename_last, copy_file=True)
     assert not filename.is_file()
 
-    store_backtest_stats(filename, stats)
+    store_backtest_stats(filename, stats, '2022_01_01_15_05_13')
 
     # get real Filename (it's btresult-<date>.json)
     last_fn = get_latest_backtest_filename(filename_last.parent)
@@ -194,7 +194,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock = mocker.patch('freqtrade.optimize.optimize_reports.file_dump_json')
 
-    store_backtest_stats(testdatadir, {'metadata': {}})
+    store_backtest_stats(testdatadir, {'metadata': {}}, '2022_01_01_15_05_13')
 
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
@@ -202,7 +202,7 @@ def test_store_backtest_stats(testdatadir, mocker):
 
     dump_mock.reset_mock()
     filename = testdatadir / 'testresult.json'
-    store_backtest_stats(filename, {'metadata': {}})
+    store_backtest_stats(filename, {'metadata': {}}, '2022_01_01_15_05_13')
     assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>.json
@@ -216,7 +216,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # mock directory exporting
-    store_backtest_signal_candles(testdatadir, candle_dict)
+    store_backtest_signal_candles(testdatadir, candle_dict, '2022_01_01_15_05_13')
 
     assert dump_mock.call_count == 1
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
@@ -225,7 +225,7 @@ def test_store_backtest_candles(testdatadir, mocker):
     dump_mock.reset_mock()
     # mock file exporting
     filename = Path(testdatadir / 'testresult')
-    store_backtest_signal_candles(filename, candle_dict)
+    store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
     assert dump_mock.call_count == 1
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
@@ -238,7 +238,7 @@ def test_write_read_backtest_candles(tmpdir):
     candle_dict = {'DefStrat': {'UNITTEST/BTC': pd.DataFrame()}}
 
     # test directory exporting
-    stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict)
+    stored_file = store_backtest_signal_candles(Path(tmpdir), candle_dict, '2022_01_01_15_05_13')
     scp = open(stored_file, "rb")
     pickled_signal_candles = joblib.load(scp)
     scp.close()
@@ -252,7 +252,7 @@ def test_write_read_backtest_candles(tmpdir):
 
     # test file exporting
     filename = Path(tmpdir / 'testresult')
-    stored_file = store_backtest_signal_candles(filename, candle_dict)
+    stored_file = store_backtest_signal_candles(filename, candle_dict, '2022_01_01_15_05_13')
     scp = open(stored_file, "rb")
     pickled_signal_candles = joblib.load(scp)
     scp.close()

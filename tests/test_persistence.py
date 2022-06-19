@@ -606,9 +606,9 @@ def test_calc_open_close_trade_price(
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
     assert isclose(trade._calc_open_trade_value(), open_value)
-    assert isclose(trade.calc_close_trade_value(), close_value)
-    assert isclose(trade.calc_profit(), round(profit, 8))
-    assert pytest.approx(trade.calc_profit_ratio()) == profit_ratio
+    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
+    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
+    assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -660,7 +660,7 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.update_trade(oobj)
-    assert trade.calc_close_trade_value() == 0.0
+    assert trade.calc_close_trade_value(trade.close_rate) == 0.0
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -813,7 +813,7 @@ def test_calc_close_trade_price(
         funding_fees=funding_fees
     )
     trade.open_order_id = 'close_trade'
-    assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
+    assert round(trade.calc_close_trade_value(rate=close_rate), 8) == result
 
 
 @pytest.mark.parametrize(
@@ -884,6 +884,17 @@ def test_calc_close_trade_price(
         ('binance', False, 3, 2.2, 0.0025, 4.684999, 0.23366583, futures, -1),
         ('binance', True, 1, 2.2, 0.0025, -7.315, -0.12222222, futures, -1),
         ('binance', True, 3, 2.2, 0.0025, -7.315, -0.36666666, futures, -1),
+
+        # FUTURES, funding_fee=0
+        ('binance', False, 1, 2.1, 0.0025, 2.6925, 0.04476309, futures, 0),
+        ('binance', False, 3, 2.1, 0.0025, 2.6925, 0.13428928, futures, 0),
+        ('binance', True, 1, 2.1, 0.0025, -3.3074999, -0.05526316, futures, 0),
+        ('binance', True, 3, 2.1, 0.0025, -3.3074999, -0.16578947, futures, 0),
+
+        ('binance', False, 1, 1.9, 0.0025, -3.2925, -0.05473815, futures, 0),
+        ('binance', False, 3, 1.9, 0.0025, -3.2925, -0.16421446, futures, 0),
+        ('binance', True, 1, 1.9, 0.0025, 2.7075, 0.0452381, futures, 0),
+        ('binance', True, 3, 1.9, 0.0025, 2.7075, 0.13571429, futures, 0),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(
@@ -2258,6 +2269,7 @@ def test_Trade_object_idem():
         'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
+        'get_trading_volume',
 
     )
 
