@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any, List, Optional
 
-from freqtrade.persistence.keyvalue import CustomData
+from freqtrade.persistence.custom_data import CustomData
 
 
 logger = logging.getLogger(__name__)

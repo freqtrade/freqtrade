@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.base import _DECL_BASE
-from freqtrade.persistence.keyvalue import CustomData
+from freqtrade.persistence.custom_data import CustomData
 from freqtrade.persistence.migrations import check_migrate
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Order, Trade

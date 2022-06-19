@@ -15,8 +15,8 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
-from freqtrade.persistence.keyvalue import CustomData
-from freqtrade.persistence.keyvalue_middleware import CustomDataWrapper
+from freqtrade.persistence.custom_data import CustomData
+from freqtrade.persistence.custom_data_middleware import CustomDataWrapper
 
 
 logger = logging.getLogger(__name__)
