@@ -1,4 +1,4 @@
-from wao.brain_util import perform_execute_buy, perform_execute_sell, write_to_backtest_table, clear_cumulative_value
+from wao.brain_util import perform_execute_buy, perform_execute_sell, write_to_backtest_table, clear_cumulative_value, create_initial_account_balance_binance_file
 import threading
 from wao.brain_config import BrainConfig
 from wao.brain_util import setup_429
@@ -19,6 +19,7 @@ class WAOStrategyController:
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
         setup_429()
         clear_cumulative_value()
+        create_initial_account_balance_binance_file()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(self.brain,
                                            BrainConfig.BACKTEST_MONTH_LIST[

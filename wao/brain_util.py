@@ -67,11 +67,20 @@ def clear_cumulative_value():
     # delete cumulative file
     _delete_file(BrainConfig.CUMULATIVE_PROFIT_FILE_PATH)
     _delete_file(BrainConfig.CUMULATIVE_PROFIT_BINANCE_FILE_PATH)
+    _delete_file(BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH)
 
 
 def _delete_file(file_name):
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def create_initial_account_balance_binance_file():
+    file_path = BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH
+    if not os.path.exists(file_path):
+        with open(file_path, 'w+') as file:
+            file.write("")
+        file.close()
 
 
 def __create_429_directory():
