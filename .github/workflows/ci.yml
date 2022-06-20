@@ -71,7 +71,7 @@ jobs:
     - name: Tests incl. ccxt compatibility tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
-      if: matrix.python-version == '3.9'
+      if: matrix.python-version == '3.9' and matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.9')
