@@ -41,7 +41,7 @@ aiofiles==0.8.0
 psutil==5.9.1
 
 # Support for colorized terminal output
-colorama==0.4.4
+colorama==0.4.5
 # Building config files interactively
 questionary==1.10.0
 prompt-toolkit==3.0.29
