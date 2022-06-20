@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         UniqueConstraint, desc, func)
-from sqlalchemy.orm import Query, relationship
+from sqlalchemy.orm import Query, lazyload, relationship
 
 from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPEN_EXCHANGE_STATES,
                                  BuySell, LongShort)
@@ -1177,7 +1177,7 @@ class Trade(_DECL_BASE, LocalTrade):
             )
 
     @staticmethod
-    def get_trades(trade_filter=None) -> Query:
+    def get_trades(trade_filter=None, include_orders: bool = True) -> Query:
         """
         Helper function to query Trades using filters.
         NOTE: Not supported in Backtesting.
@@ -1192,9 +1192,14 @@ class Trade(_DECL_BASE, LocalTrade):
         if trade_filter is not None:
             if not isinstance(trade_filter, list):
                 trade_filter = [trade_filter]
-            return Trade.query.filter(*trade_filter)
+            this_query = Trade.query.filter(*trade_filter)
         else:
-            return Trade.query
+            this_query = Trade.query
+        if not include_orders:
+            # Don't load order relations
+            # Consider using noload or raiseload instead of lazyload
+            this_query = this_query.options(lazyload(Trade.orders))
+        return this_query
 
     @staticmethod
     def get_open_order_trades() -> List['Trade']:
@@ -1414,3 +1419,18 @@ class Trade(_DECL_BASE, LocalTrade):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
+
+    @staticmethod
+    def get_trading_volume(start_date: datetime = datetime.fromtimestamp(0)) -> float:
+        """
+        Get Trade volume based on Orders
+        NOTE: Not supported in Backtesting.
+        :returns: Tuple containing (pair, profit_sum)
+        """
+        trading_volume = Order.query.with_entities(
+            func.sum(Order.cost).label('volume')
+        ).filter(
+            Order.order_filled_date >= start_date,
+            Order.status == 'closed'
+        ).scalar()
+        return trading_volume

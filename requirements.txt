@@ -2,7 +2,7 @@ numpy==1.22.4
 pandas==1.4.2
 pandas-ta==0.3.14b
 
-ccxt==1.87.12
+ccxt==1.88.15
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==37.0.2
 aiohttp==3.8.1
@@ -41,7 +41,7 @@ aiofiles==0.8.0
 psutil==5.9.1
 
 # Support for colorized terminal output
-colorama==0.4.4
+colorama==0.4.5
 # Building config files interactively
 questionary==1.10.0
 prompt-toolkit==3.0.29

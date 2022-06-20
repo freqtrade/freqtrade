@@ -2082,6 +2082,24 @@ def test_get_trades_proxy(fee, use_db, is_short):
     Trade.use_db = True
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('is_short', [True, False])
+def test_get_trades__query(fee, is_short):
+    query = Trade.get_trades([])
+    # without orders there should be no join issued.
+    query1 = Trade.get_trades([], include_orders=False)
+
+    assert "JOIN orders" in str(query)
+    assert "JOIN orders" not in str(query1)
+
+    create_mock_trades(fee, is_short)
+    query = Trade.get_trades([])
+    query1 = Trade.get_trades([], include_orders=False)
+
+    assert "JOIN orders" in str(query)
+    assert "JOIN orders" not in str(query1)
+
+
 def test_get_trades_backtest():
     Trade.use_db = False
     with pytest.raises(NotImplementedError, match=r"`Trade.get_trades\(\)` not .*"):
@@ -2276,6 +2294,7 @@ def test_Trade_object_idem():
         'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
+        'get_trading_volume',
 
     )
 
