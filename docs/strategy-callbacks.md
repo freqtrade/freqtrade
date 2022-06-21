@@ -716,6 +716,10 @@ class DigDeeperStrategy(IStrategy):
                        Return None for no action.
         """
 
+        if current_profit > 0.05 and trade.nr_of_successful_exits == 0:
+            # Take half of the profit at +5%
+            return -(trade.amount / 2)
+
         if current_profit > -0.05:
             return None
 
