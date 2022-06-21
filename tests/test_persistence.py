@@ -2737,11 +2737,24 @@ def test_order_to_ccxt(limit_buy_order_open):
         'orders': [
             (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
             (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -25.0, -25.0)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 725.0, 750.0)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 725.0, -375.0)),
+        ],
+        'end_profit': 350.0,
+        'fee': 0.0,
+        'end_profit_ratio': -0.60,
+    },
+    {
+        'orders': [
+            (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
+            (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
             (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625)),
             (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875)),
             (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, -377.1875)),
         ],
         'end_profit': 336.625,
+        'fee': 0.0025,
         'end_profit_ratio': -0.601995,
     },
     {
@@ -2754,10 +2767,11 @@ def test_order_to_ccxt(limit_buy_order_open):
             (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 1787.25)),
         ],
         'end_profit': 3175.75,
+        'fee': 0.0025,
         'end_profit_ratio': 1.08048,
     }
 ])
-def test_recalc_trade_from_orders_dca(fee, data) -> None:
+def test_recalc_trade_from_orders_dca(data) -> None:
 
     pair = 'ETH/USDT'
     trade = Trade(
@@ -2768,8 +2782,8 @@ def test_recalc_trade_from_orders_dca(fee, data) -> None:
         amount=data['orders'][0][0][1],
         is_open=True,
         open_date=arrow.utcnow().datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
+        fee_open=data['fee'],
+        fee_close=data['fee'],
         exchange='binance',
         is_short=False,
         leverage=1.0,
