@@ -857,15 +857,12 @@ class LocalTrade():
                 # Process partial exits
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                exit_stake_amount = exit_rate * exit_amount * (1 - self.fee_close)
                 profit = self.calc_profit(rate=exit_rate, amount=exit_amount, open_rate=avg_price)
                 if total_amount > 0:
                     # Exclude final (closing) trade
                     close_profit_abs += profit
-                    if self.is_short:
-                        close_profit += (exit_stake_amount - profit) / exit_stake_amount - 1
-                    else:
-                        close_profit += exit_stake_amount / (exit_stake_amount - profit) - 1
+                    close_profit += self.calc_profit_ratio(exit_rate, amount=exit_amount,
+                                                           open_rate=avg_price)
 
         if close_profit:
             self.close_profit = close_profit
