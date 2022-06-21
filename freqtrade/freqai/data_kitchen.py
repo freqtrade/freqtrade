@@ -737,7 +737,10 @@ class FreqaiDataKitchen:
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
         max_time = self.freqai_config.get('expiration_hours', 0)
-        return elapsed_time > max_time
+        if max_time > 0:
+            return elapsed_time > max_time
+        else: 
+            return False
 
     def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
                                                                               TimeRange, TimeRange]:
