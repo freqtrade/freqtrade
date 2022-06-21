@@ -522,8 +522,8 @@ class Backtesting:
         if stake_amount is not None and stake_amount < 0.0:
             amount = abs(stake_amount) / current_rate
             if amount > trade.amount:
-                # selling more than available is not supported.
-                return trade
+                # This is currently ineffective as remaining would become < min tradable
+                amount = trade.amount
             remaining = (trade.amount - amount) * current_rate
             if remaining < min_stake:
                 # Remaining stake is too low to be sold.

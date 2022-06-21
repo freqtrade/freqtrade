@@ -539,7 +539,8 @@ class FreqtradeBot(LoggingMixin):
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            trade=trade, current_time=datetime.now(timezone.utc), current_rate=current_entry_rate,
+            trade=trade,
+            current_time=datetime.now(timezone.utc), current_rate=current_entry_rate,
             current_profit=current_entry_profit, min_stake=min_entry_stake,
             max_stake=min(max_entry_stake, stake_available),
             current_entry_rate=current_entry_rate, current_exit_rate=current_exit_rate,
