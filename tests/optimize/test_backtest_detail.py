@@ -7,6 +7,7 @@ import pytest
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.persistence.trade_model import LocalTrade
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)
@@ -964,5 +965,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data: BTContainer) 
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)
         assert res.is_short == trade.is_short
+    assert len(LocalTrade.trades) == len(data.trades)
+    assert len(LocalTrade.trades_open) == 0
     backtesting.cleanup()
     del backtesting

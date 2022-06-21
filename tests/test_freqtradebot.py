@@ -2151,7 +2151,7 @@ def test_handle_trade(
 
     assert trade.close_rate == 2.0 if is_short else 2.2
     assert trade.close_profit == close_profit
-    assert trade.calc_profit() == 5.685
+    assert trade.calc_profit(trade.close_rate) == 5.685
     assert trade.close_date is not None
     assert trade.exit_reason == 'sell_signal1'
 

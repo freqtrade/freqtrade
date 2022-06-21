@@ -823,3 +823,6 @@ class AwesomeStrategy(IStrategy):
         """
         return 1.0
 ```
+
+All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
+Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.

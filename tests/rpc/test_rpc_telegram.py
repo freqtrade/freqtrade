@@ -704,11 +704,13 @@ def test_profit_handle(default_conf_usdt, update, ticker_usdt, ticker_sell_up, f
     assert '∙ `6.253 USD`' in msg_mock.call_args_list[-1][0][0]
 
     assert '*Best Performing:* `ETH/USDT: 9.45%`' in msg_mock.call_args_list[-1][0][0]
+    assert '*Max Drawdown:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Profit factor:*' in msg_mock.call_args_list[-1][0][0]
+    assert '*Trading volume:* `60 USDT`' in msg_mock.call_args_list[-1][0][0]
 
 
 @pytest.mark.parametrize('is_short', [True, False])
-def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
-                        limit_buy_order, limit_sell_order, mocker, is_short) -> None:
+def test_telegram_stats(default_conf, update, ticker, fee, mocker, is_short) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1680,7 +1682,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
 
     assert msg_mock.call_args[0][0] == (
-        f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
+        f'\N{LARGE BLUE CIRCLE} *Binance (dry):* {enter} ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f'{leverage_text}'
@@ -1720,7 +1722,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type, en
         'pair': 'ETH/BTC',
         'reason': CANCEL_REASON['TIMEOUT']
     })
-    assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Binance:* '
+    assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Binance (dry):* '
             'Cancelling enter Order for ETH/BTC (#1). '
             'Reason: cancelled due to timeout.')
 
@@ -1782,7 +1784,7 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
     })
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        f'\N{CHECK MARK} *Binance:* {entered}ed ETH/BTC (#1)\n'
+        f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Amount:* `1333.33333333`\n'
         f"{leverage_text}"
@@ -1820,7 +1822,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
         '*Enter Tag:* `buy_signal1`\n'
         '*Exit Reason:* `stop_loss`\n'
@@ -1854,7 +1856,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41%`\n'
         '*Enter Tag:* `buy_signal1`\n'
         '*Exit Reason:* `stop_loss`\n'
@@ -1883,10 +1885,12 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance:* Cancelling exit Order for KEY/ETH (#1).'
+        '\N{WARNING SIGN} *Binance (dry):* Cancelling exit Order for KEY/ETH (#1).'
         ' Reason: Cancelled on exchange.')
 
     msg_mock.reset_mock()
+    # Test with live mode (no dry appendix)
+    telegram._config['dry_run'] = False
     telegram.send_msg({
         'type': RPCMessageType.EXIT_CANCEL,
         'trade_id': 1,
@@ -1935,7 +1939,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
 
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance:* Exited KEY/ETH (#1)\n'
+        '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
         '*Profit:* `-57.41%`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
@@ -1991,6 +1995,7 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
 def test_send_msg_buy_notification_no_fiat(
         default_conf, mocker, message_type, enter, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
+    default_conf['dry_run'] = False
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
@@ -2060,7 +2065,7 @@ def test_send_msg_sell_notification_no_fiat(
 
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
-        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41%`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'

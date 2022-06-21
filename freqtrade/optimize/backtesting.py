@@ -1055,6 +1055,7 @@ class Backtesting:
                         # Close trade
                         open_trade_count -= 1
                         open_trades[pair].remove(t)
+                        LocalTrade.trades_open.remove(t)
                         self.wallets.update()
 
                 # 2. Process entries.
@@ -1078,6 +1079,8 @@ class Backtesting:
                         open_trade_count += 1
                         # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
                         open_trades[pair].append(trade)
+                        LocalTrade.add_bt_trade(trade)
+                        self.wallets.update()
 
                 for trade in list(open_trades[pair]):
                     # 3. Process entry orders.
@@ -1085,7 +1088,6 @@ class Backtesting:
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
-                        LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
 
                     # 4. Create exit orders (if any)
