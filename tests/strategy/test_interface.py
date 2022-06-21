@@ -20,7 +20,8 @@ from freqtrade.strategy.hyper import detect_parameters
 from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
                                            DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
+from tests.conftest import (CURRENT_TEST_STRATEGY, TRADE_SIDES, create_mock_trades, log_has,
+                            log_has_re)
 
 from .strats.strategy_test_v3 import StrategyTestV3
 
@@ -615,6 +616,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag=None,
         ) == 1
 
     default_conf['strategy'] = CURRENT_TEST_STRATEGY
@@ -626,6 +628,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag='entry_tag_test',
         ) == 3
 
 
@@ -808,6 +811,28 @@ def test_strategy_safe_wrapper(value):
 
     assert isinstance(ret, type(value))
     assert ret == value
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_strategy_safe_wrapper_trade_copy(fee):
+    create_mock_trades(fee)
+
+    def working_method(trade):
+        assert len(trade.orders) > 0
+        assert trade.orders
+        trade.orders = []
+        assert len(trade.orders) == 0
+        return trade
+
+    trade = Trade.get_open_trades()[0]
+    # Don't assert anything before strategy_wrapper.
+    # This ensures that relationship loading works correctly.
+    ret = strategy_safe_wrapper(working_method, message='DeadBeef')(trade=trade)
+    assert isinstance(ret, Trade)
+    assert id(trade) != id(ret)
+    # Did not modify the original order
+    assert len(trade.orders) > 0
+    assert len(ret.orders) == 0
 
 
 def test_hyperopt_parameters():

@@ -6,6 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 import re
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import partial
 from html import escape
@@ -35,6 +36,15 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.telegram ...')
 
 MAX_TELEGRAM_MESSAGE_LENGTH = 4096
+
+
+@dataclass
+class TimeunitMappings:
+    header: str
+    message: str
+    message2: str
+    callback: str
+    default: int
 
 
 def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
@@ -404,7 +414,7 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if not order['ft_is_entry']:
+            if not order['ft_is_entry'] or order['is_open'] is True:
                 continue
             cur_entry_datetime = arrow.get(order["order_filled_date"])
             cur_entry_amount = order["amount"]
@@ -572,6 +582,60 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
+    def _timeunit_stats(self, update: Update, context: CallbackContext, unit: str) -> None:
+        """
+        Handler for /daily <n>
+        Returns a daily profit (in BTC) over the last n days.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+
+        vals = {
+            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7),
+            'weeks': TimeunitMappings('Monday', 'Weekly', 'weeks (starting from Monday)',
+                                      'update_weekly', 8),
+            'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6),
+        }
+        val = vals[unit]
+
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
+        try:
+            timescale = int(context.args[0]) if context.args else val.default
+        except (TypeError, ValueError, IndexError):
+            timescale = val.default
+        try:
+            stats = self._rpc._rpc_timeunit_profit(
+                timescale,
+                stake_cur,
+                fiat_disp_cur,
+                unit
+            )
+            stats_tab = tabulate(
+                [[f"{period['date']} ({period['trade_count']})",
+                  f"{round_coin_value(period['abs_profit'], stats['stake_currency'])}",
+                  f"{period['fiat_value']:.2f} {stats['fiat_display_currency']}",
+                  f"{period['rel_profit']:.2%}",
+                  ] for period in stats['data']],
+                headers=[
+                    f"{val.header} (count)",
+                    f'{stake_cur}',
+                    f'{fiat_disp_cur}',
+                    'Profit %',
+                    'Trades',
+                ],
+                tablefmt='simple')
+            message = (
+                f'<b>{val.message} Profit over the last {timescale} {val.message2}</b>:\n'
+                f'<pre>{stats_tab}</pre>'
+            )
+            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
+                           callback_path=val.callback, query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _daily(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /daily <n>
@@ -580,35 +644,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config.get('fiat_display_currency', '')
-        try:
-            timescale = int(context.args[0]) if context.args else 7
-        except (TypeError, ValueError, IndexError):
-            timescale = 7
-        try:
-            stats = self._rpc._rpc_daily_profit(
-                timescale,
-                stake_cur,
-                fiat_disp_cur
-            )
-            stats_tab = tabulate(
-                [[day['date'],
-                  f"{round_coin_value(day['abs_profit'], stats['stake_currency'])}",
-                  f"{day['fiat_value']:.3f} {stats['fiat_display_currency']}",
-                  f"{day['trade_count']} trades"] for day in stats['data']],
-                headers=[
-                    'Day',
-                    f'Profit {stake_cur}',
-                    f'Profit {fiat_disp_cur}',
-                    'Trades',
-                ],
-                tablefmt='simple')
-            message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
-            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
-                           callback_path="update_daily", query=update.callback_query)
-        except RPCException as e:
-            self._send_msg(str(e))
+        self._timeunit_stats(update, context, 'days')
 
     @authorized_only
     def _weekly(self, update: Update, context: CallbackContext) -> None:
@@ -619,36 +655,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config.get('fiat_display_currency', '')
-        try:
-            timescale = int(context.args[0]) if context.args else 8
-        except (TypeError, ValueError, IndexError):
-            timescale = 8
-        try:
-            stats = self._rpc._rpc_weekly_profit(
-                timescale,
-                stake_cur,
-                fiat_disp_cur
-            )
-            stats_tab = tabulate(
-                [[week['date'],
-                  f"{round_coin_value(week['abs_profit'], stats['stake_currency'])}",
-                  f"{week['fiat_value']:.3f} {stats['fiat_display_currency']}",
-                  f"{week['trade_count']} trades"] for week in stats['data']],
-                headers=[
-                    'Monday',
-                    f'Profit {stake_cur}',
-                    f'Profit {fiat_disp_cur}',
-                    'Trades',
-                ],
-                tablefmt='simple')
-            message = f'<b>Weekly Profit over the last {timescale} weeks ' \
-                      f'(starting from Monday)</b>:\n<pre>{stats_tab}</pre> '
-            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
-                           callback_path="update_weekly", query=update.callback_query)
-        except RPCException as e:
-            self._send_msg(str(e))
+        self._timeunit_stats(update, context, 'weeks')
 
     @authorized_only
     def _monthly(self, update: Update, context: CallbackContext) -> None:
@@ -659,36 +666,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        stake_cur = self._config['stake_currency']
-        fiat_disp_cur = self._config.get('fiat_display_currency', '')
-        try:
-            timescale = int(context.args[0]) if context.args else 6
-        except (TypeError, ValueError, IndexError):
-            timescale = 6
-        try:
-            stats = self._rpc._rpc_monthly_profit(
-                timescale,
-                stake_cur,
-                fiat_disp_cur
-            )
-            stats_tab = tabulate(
-                [[month['date'],
-                  f"{round_coin_value(month['abs_profit'], stats['stake_currency'])}",
-                  f"{month['fiat_value']:.3f} {stats['fiat_display_currency']}",
-                  f"{month['trade_count']} trades"] for month in stats['data']],
-                headers=[
-                    'Month',
-                    f'Profit {stake_cur}',
-                    f'Profit {fiat_disp_cur}',
-                    'Trades',
-                ],
-                tablefmt='simple')
-            message = f'<b>Monthly Profit over the last {timescale} months' \
-                      f'</b>:\n<pre>{stats_tab}</pre> '
-            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
-                           callback_path="update_monthly", query=update.callback_query)
-        except RPCException as e:
-            self._send_msg(str(e))
+        self._timeunit_stats(update, context, 'months')
 
     @authorized_only
     def _profit(self, update: Update, context: CallbackContext) -> None:

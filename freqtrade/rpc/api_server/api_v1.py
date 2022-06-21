@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 # versions 2.xx -> futures/short branch
 # 2.14: Add entry/exit orders to trade response
 # 2.15: Add backtest history endpoints
-API_VERSION = 2.15
+# 2.16: Additional daily metrics
+API_VERSION = 2.16
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -86,8 +87,8 @@ def stats(rpc: RPC = Depends(get_rpc)):
 
 @router.get('/daily', response_model=Daily, tags=['info'])
 def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
-    return rpc._rpc_daily_profit(timescale, config['stake_currency'],
-                                 config.get('fiat_display_currency', ''))
+    return rpc._rpc_timeunit_profit(timescale, config['stake_currency'],
+                                    config.get('fiat_display_currency', ''))
 
 
 @router.get('/status', response_model=List[OpenTradeSchema], tags=['info'])

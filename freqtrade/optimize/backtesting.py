@@ -704,7 +704,7 @@ class Backtesting:
                 current_rate=row[OPEN_IDX],
                 proposed_leverage=1.0,
                 max_leverage=max_leverage,
-                side=direction,
+                side=direction, entry_tag=entry_tag,
             ) if self._can_short else 1.0
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
@@ -966,6 +966,7 @@ class Backtesting:
                 return False
             else:
                 del trade.orders[trade.orders.index(order)]
+                trade.open_order_id = None
                 self.canceled_entry_orders += 1
 
             # place new order if result was not None
@@ -1094,6 +1095,7 @@ class Backtesting:
                     # 5. Process exit orders.
                     order = trade.select_order(trade.exit_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
+                        order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
                         trade.close_date = current_time
                         trade.close(order.price, show_msg=False)
@@ -1262,13 +1264,14 @@ class Backtesting:
                 self.results['strategy_comparison'].extend(results['strategy_comparison'])
             else:
                 self.results = results
-
+            dt_appendix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             if self.config.get('export', 'none') in ('trades', 'signals'):
-                store_backtest_stats(self.config['exportfilename'], self.results)
+                store_backtest_stats(self.config['exportfilename'], self.results, dt_appendix)
 
             if (self.config.get('export', 'none') == 'signals' and
                     self.dataprovider.runmode == RunMode.BACKTEST):
-                store_backtest_signal_candles(self.config['exportfilename'], self.processed_dfs)
+                store_backtest_signal_candles(
+                    self.config['exportfilename'], self.processed_dfs, dt_appendix)
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.
         if 'strategy_list' in self.config and len(self.results) > 0:

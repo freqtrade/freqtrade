@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103, protected-access
 
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -7,6 +8,7 @@ from requests import RequestException
 
 from freqtrade.enums import ExitType, RPCMessageType
 from freqtrade.rpc import RPC
+from freqtrade.rpc.discord import Discord
 from freqtrade.rpc.webhook import Webhook
 from tests.conftest import get_patched_freqtradebot, log_has
 
@@ -406,3 +408,42 @@ def test__send_msg_with_raw_format(default_conf, mocker, caplog):
     webhook._send_msg(msg)
 
     assert post.call_args[1] == {'data': msg['data'], 'headers': {'Content-Type': 'text/plain'}}
+
+
+def test_send_msg_discord(default_conf, mocker):
+
+    default_conf["discord"] = {
+        'enabled': True,
+        'webhook_url': "https://webhookurl..."
+    }
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    msg = {
+        'type': RPCMessageType.EXIT_FILL,
+        'trade_id': 1,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'direction': 'Long',
+        'gain': "profit",
+        'close_rate': 0.005,
+        'amount': 0.8,
+        'order_type': 'limit',
+        'open_date': datetime.now() - timedelta(days=1),
+        'close_date': datetime.now(),
+        'open_rate': 0.004,
+        'current_rate': 0.005,
+        'profit_amount': 0.001,
+        'profit_ratio': 0.20,
+        'stake_currency': 'BTC',
+        'enter_tag': 'enter_tagggg',
+        'exit_reason': ExitType.STOP_LOSS.value,
+    }
+    discord.send_msg(msg=msg)
+
+    assert msg_mock.call_count == 1
+    assert 'embeds' in msg_mock.call_args_list[0][0][0]
+    assert 'title' in msg_mock.call_args_list[0][0][0]['embeds'][0]
+    assert 'color' in msg_mock.call_args_list[0][0][0]['embeds'][0]
+    assert 'fields' in msg_mock.call_args_list[0][0][0]['embeds'][0]

@@ -89,11 +89,12 @@ WHERE id=31;
 
 If you'd still like to remove a trade from the database directly, you can use the below query.
 
-```sql
-DELETE FROM trades WHERE id = <tradeid>;
-```
+!!! Danger
+    Some systems (Ubuntu) disable foreign keys in their sqlite3 packaging. When using sqlite - please ensure that foreign keys are on by running `PRAGMA foreign_keys = ON` before the above query.
 
 ```sql
+DELETE FROM trades WHERE id = <tradeid>;
+
 DELETE FROM trades WHERE id = 31;
 ```
 
@@ -102,12 +103,19 @@ DELETE FROM trades WHERE id = 31;
 
 ## Use a different database system
 
+Freqtrade is using SQLAlchemy, which supports multiple different database systems. As such, a multitude of database systems should be supported.
+Freqtrade does not depend or install any additional database driver. Please refer to the [SQLAlchemy docs](https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls) on installation instructions for the respective database systems.
+
+The following systems have been tested and are known to work with freqtrade:
+
+* sqlite (default)
+* PostgreSQL)
+* MariaDB
+
 !!! Warning
-    By using one of the below database systems, you acknowledge that you know how to manage such a system. Freqtrade will not provide any support with setup or maintenance (or backups) of the below database systems.
+    By using one of the below database systems, you acknowledge that you know how to manage such a system. The freqtrade team will not provide any support with setup or maintenance (or backups) of the below database systems.
 
 ### PostgreSQL
-
-Freqtrade supports PostgreSQL by using SQLAlchemy, which supports multiple different database systems.
 
 Installation:
 `pip install psycopg2-binary`

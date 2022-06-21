@@ -87,6 +87,10 @@ function updateenv() {
         echo "Failed installing Freqtrade"
         exit 1
     fi
+
+    echo "Installing freqUI"
+    freqtrade install-ui
+
     echo "pip install completed"
     echo
     if [[ $dev =~ ^[Yy]$ ]]; then

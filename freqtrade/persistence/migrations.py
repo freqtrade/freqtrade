@@ -247,6 +247,35 @@ def set_sqlite_to_wal(engine):
             connection.execute(text("PRAGMA journal_mode=wal"))
 
 
+def fix_old_dry_orders(engine):
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                update orders
+                set ft_is_open = 0
+                where ft_is_open = 1 and (ft_trade_id, order_id) not in (
+                    select id, stoploss_order_id from trades where stoploss_order_id is not null
+                ) and ft_order_side = 'stoploss'
+                and order_id like 'dry_%'
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                update orders
+                set ft_is_open = 0
+                where ft_is_open = 1
+                and (ft_trade_id, order_id) not in (
+                    select id, open_order_id from trades where open_order_id is not null
+                ) and ft_order_side != 'stoploss'
+                and order_id like 'dry_%'
+                """
+            )
+        )
+
+
 def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -288,3 +317,4 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             "start with a fresh database.")
 
     set_sqlite_to_wal(engine)
+    fix_old_dry_orders(engine)

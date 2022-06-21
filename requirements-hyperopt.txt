@@ -5,5 +5,5 @@
 scipy==1.8.1
 scikit-learn==1.1.1
 scikit-optimize==0.9.0
-filelock==3.7.0
+filelock==3.7.1
 progressbar2==4.0.0
