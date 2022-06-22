@@ -52,10 +52,15 @@ class Binance(Exchange):
 
         ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
 
-        return order['type'] == ordertype and (
-            (side == "sell" and stop_loss > float(order['stopPrice'])) or
-            (side == "buy" and stop_loss < float(order['stopPrice']))
-        )
+        return (
+            order.get('stopPrice', None) is None
+            or (
+                order['type'] == ordertype
+                and (
+                    (side == "sell" and stop_loss > float(order['stopPrice'])) or
+                    (side == "buy" and stop_loss < float(order['stopPrice']))
+                )
+            ))
 
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
