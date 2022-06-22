@@ -201,16 +201,18 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
 
     ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
     average = get_column_def(cols_order, 'average', 'null')
+    stop_price = get_column_def(cols_order, 'stop_price', 'null')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, ft_fee_base)
+            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
-            cost, order_date, order_filled_date, order_update_date, {ft_fee_base} ft_fee_base
+            cost, {stop_price} stop_price, order_date, order_filled_date,
+            order_update_date, {ft_fee_base} ft_fee_base
             from {table_back_name}
             """))
 
@@ -294,9 +296,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    # if ('orders' not in previous_tables
-    # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols_trades, 'base_currency'):
+    if not has_column(cols_orders, 'stop_price'):
+        # if not has_column(cols_trades, 'base_currency'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(

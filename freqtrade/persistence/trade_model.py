@@ -57,6 +57,7 @@ class Order(_DECL_BASE):
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
     cost = Column(Float, nullable=True)
+    stop_price = Column(Float, nullable=True)
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
@@ -107,6 +108,7 @@ class Order(_DECL_BASE):
         self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
+        self.stop_price = order.get('stopPrice', self.stop_price)
 
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
@@ -130,6 +132,7 @@ class Order(_DECL_BASE):
             'side': self.ft_order_side,
             'filled': self.filled,
             'remaining': self.remaining,
+            'stopPrice': self.stop_price,
             'datetime': self.order_date_utc.strftime('%Y-%m-%dT%H:%M:%S.%f'),
             'timestamp': int(self.order_date_utc.timestamp() * 1000),
             'status': self.status,

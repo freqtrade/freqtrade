@@ -2717,5 +2717,7 @@ def test_order_to_ccxt(limit_buy_order_open):
     del raw_order['fee']
     del raw_order['datetime']
     del raw_order['info']
+    assert raw_order['stopPrice'] is None
+    del raw_order['stopPrice']
     del limit_buy_order_open['datetime']
     assert raw_order == limit_buy_order_open
