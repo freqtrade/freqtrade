@@ -366,7 +366,8 @@ class Telegram(RPCHandler):
         elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
             message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
-                       f"Cancelling {msg['message_side']} Order for {msg['pair']} "
+                       f"Cancelling {'partial ' if msg.get('sub_trade') else ''}"
+                       f"{msg['message_side']} Order for {msg['pair']} "
                        f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER:

@@ -1393,8 +1393,9 @@ class FreqtradeBot(LoggingMixin):
             # TODO: figure out how to handle partially complete sell orders
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
             cancelled = False
-
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+        # TODO: This should probably fetch the correct order from database
+        # instead of parsing it again
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side)
         sub_trade = order_obj.amount != trade.amount
         self._notify_exit_cancel(
             trade,
@@ -1547,13 +1548,9 @@ class FreqtradeBot(LoggingMixin):
 
         # second condition is for mypy only; order will always be passed during sub trade
         if sub_trade and order is not None:
-            amount = order.safe_filled
+            amount = order.safe_filled if fill else order.amount
             profit_rate = order.safe_price
 
-            if not fill:
-                # TODO: Need to get "prediction" here (without persisting)
-                # trade.process_exit_sub_trade(order, is_closed=False)
-                pass
             profit = trade.calc_profit(rate=profit_rate, amount=amount, open_rate=trade.open_rate)
             profit_ratio = trade.calc_profit_ratio(profit_rate, amount, trade.open_rate)
         else:
