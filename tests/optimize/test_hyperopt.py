@@ -17,7 +17,7 @@ from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
-from freqtrade.strategy.hyper import IntParameter
+from freqtrade.strategy import IntParameter
 from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -509,7 +509,6 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
     hyperopt.min_date = Arrow(2017, 12, 10)
     hyperopt.max_date = Arrow(2017, 12, 13)
     hyperopt.init_spaces()
-    hyperopt.dimensions = hyperopt.dimensions
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected
 

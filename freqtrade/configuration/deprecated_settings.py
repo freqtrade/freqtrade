@@ -113,7 +113,7 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
                             None, 'ignore_roi_if_entry_signal')
 
-    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'exit_sell_signal')
+    process_removed_setting(config, 'ask_strategy', 'use_sell_signal', None, 'use_exit_signal')
     process_removed_setting(config, 'ask_strategy', 'sell_profit_only', None, 'exit_profit_only')
     process_removed_setting(config, 'ask_strategy', 'sell_profit_offset',
                             None, 'exit_profit_offset')

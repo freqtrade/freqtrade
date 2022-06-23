@@ -27,8 +27,7 @@ from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
-from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
-from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
+from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
@@ -62,7 +61,6 @@ class Hyperopt:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
-    custom_hyperopt: IHyperOpt
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.buy_space: List[Dimension] = []
@@ -77,6 +75,7 @@ class Hyperopt:
 
         self.backtesting = Backtesting(self.config)
         self.pairlist = self.backtesting.pairlists.whitelist
+        self.custom_hyperopt: HyperOptAuto
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
@@ -88,7 +87,8 @@ class Hyperopt:
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
         self.custom_hyperopt.strategy = self.backtesting.strategy
 
-        self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
+        self.custom_hyperoptloss: IHyperOptLoss = HyperOptLossResolver.load_hyperoptloss(
+            self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
         time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         strategy = str(self.config['strategy'])
@@ -429,7 +429,7 @@ class Hyperopt:
             return new_list
         i = 0
         asked_non_tried: List[List[Any]] = []
-        is_random: List[bool] = []
+        is_random_non_tried: List[bool] = []
         while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
@@ -438,9 +438,9 @@ class Hyperopt:
             else:
                 asked = unique_list(self.opt.space.rvs(n_samples=n_points * 5))
                 is_random = [True for _ in range(len(asked))]
-            is_random += [rand for x, rand in zip(asked, is_random)
-                          if x not in self.opt.Xi
-                          and x not in asked_non_tried]
+            is_random_non_tried += [rand for x, rand in zip(asked, is_random)
+                                    if x not in self.opt.Xi
+                                    and x not in asked_non_tried]
             asked_non_tried += [x for x in asked
                                 if x not in self.opt.Xi
                                 and x not in asked_non_tried]
@@ -449,7 +449,7 @@ class Hyperopt:
         if asked_non_tried:
             return (
                 asked_non_tried[:min(len(asked_non_tried), n_points)],
-                is_random[:min(len(asked_non_tried), n_points)]
+                is_random_non_tried[:min(len(asked_non_tried), n_points)]
             )
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]

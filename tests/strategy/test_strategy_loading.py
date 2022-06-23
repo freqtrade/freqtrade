@@ -34,7 +34,7 @@ def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
-    assert len(strategies) == 5
+    assert len(strategies) == 6
     assert isinstance(strategies[0], dict)
 
 
@@ -42,10 +42,10 @@ def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
-    assert len(strategies) == 6
+    assert len(strategies) == 7
     # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
-    assert len([x for x in strategies if x['class'] is not None]) == 5
+    assert len([x for x in strategies if x['class'] is not None]) == 6
     assert len([x for x in strategies if x['class'] is None]) == 1
 
 
@@ -224,12 +224,12 @@ def test_strategy_override_process_only_new_candles(caplog, default_conf):
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'process_only_new_candles': True
+        'process_only_new_candles': False
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.process_only_new_candles
-    assert log_has("Override strategy 'process_only_new_candles' with value in config file: True.",
+    assert not strategy.process_only_new_candles
+    assert log_has("Override strategy 'process_only_new_candles' with value in config file: False.",
                    caplog)
 
 

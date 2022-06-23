@@ -27,7 +27,6 @@ class HyperoptableStrategy(StrategyTestV2):
         'sell_minusdi': 0.4
     }
 
-    buy_rsi = IntParameter([0, 50], default=30, space='buy')
     buy_plusdi = RealParameter(low=0, high=1, default=0.5, space='buy')
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
     sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
@@ -44,6 +43,12 @@ class HyperoptableStrategy(StrategyTestV2):
                 "stop_duration_candles": self.protection_cooldown_lookback.value
             })
         return prot
+
+    def bot_start(self, **kwargs) -> None:
+        """
+        Parameters can also be defined here ...
+        """
+        self.buy_rsi = IntParameter([0, 50], default=30, space='buy')
 
     def informative_pairs(self):
         """

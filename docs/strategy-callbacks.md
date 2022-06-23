@@ -46,6 +46,9 @@ class AwesomeStrategy(IStrategy):
             self.cust_remote_data = requests.get('https://some_remote_source.example.com')
 
 ```
+
+During hyperopt, this runs only once at startup.
+
 ## Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
@@ -546,10 +549,12 @@ class AwesomeStrategy(IStrategy):
 
         :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
-        :param amount: Amount in target (quote) currency that's going to be traded.
-        :param rate: Rate that's going to be used when using limit orders
+        :param amount: Amount in target (base) currency that's going to be traded.
+        :param rate: Rate that's going to be used when using limit orders 
+                     or current rate for market orders.
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
@@ -563,6 +568,14 @@ class AwesomeStrategy(IStrategy):
 
 `confirm_trade_exit()` can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
 
+`confirm_trade_exit()` may be called multiple times within one iteration for the same trade if different exit-reasons apply.
+The exit-reasons (if applicable) will be in the following sequence:
+
+* `exit_signal` / `custom_exit`
+* `stop_loss`
+* `roi`
+* `trailing_stop_loss`
+
 ``` python
 from freqtrade.persistence import Trade
 
@@ -575,7 +588,7 @@ class AwesomeStrategy(IStrategy):
                            rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a regular sell order.
+        Called right before placing a regular exit order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -583,17 +596,19 @@ class AwesomeStrategy(IStrategy):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be sold.
+        :param pair: Pair for trade that's about to be exited.
+        :param trade: trade object.
         :param order_type: Order type (as configured in order_types). usually limit or market.
-        :param amount: Amount in quote currency.
+        :param amount: Amount in base currency.
         :param rate: Rate that's going to be used when using limit orders
+                     or current rate for market orders.
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'exit_signal', 'force_exit', 'emergency_exit']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the exit-order is placed on the exchange.
+        :return bool: When True, then the exit-order is placed on the exchange.
             False aborts the process
         """
         if exit_reason == 'force_exit' and trade.calc_profit_ratio(rate) < 0:
@@ -604,6 +619,9 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
+
+!!! Warning
+    `confirm_trade_exit()` can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
 
 ## Adjust trade position
 
@@ -656,7 +674,7 @@ class DigDeeperStrategy(IStrategy):
 
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
 
         # We need to leave most of the funds for possible further DCA orders
@@ -664,7 +682,7 @@ class DigDeeperStrategy(IStrategy):
         return proposed_stake / self.max_dca_multiplier
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
+                              current_rate: float, current_profit: float, min_stake: Optional[float],
                               max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
@@ -788,19 +806,23 @@ For markets / exchanges that don't support leverage, this method is ignored.
 
 ``` python
 class AwesomeStrategy(IStrategy):
-    def leverage(self, pair: str, current_time: 'datetime', current_rate: float,
-                 proposed_leverage: float, max_leverage: float, side: str,
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
                  **kwargs) -> float:
         """
-        Customize leverage for each new trade.
+        Customize leverage for each new trade. This method is only called in futures mode.
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
         :param proposed_leverage: A leverage proposed by the bot.
         :param max_leverage: Max leverage allowed on this pair
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :return: A leverage amount, which is between 1.0 and max_leverage.
         """
         return 1.0
 ```
+
+All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
+Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.

@@ -300,6 +300,7 @@ A backtesting result will look like that:
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Profit factor               | 1.11                |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -399,6 +400,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Absolute profit             | 0.00762792 BTC      |
 | Total profit %              | 76.2%               |
 | CAGR %                      | 460.87%             |
+| Profit factor               | 1.11                |
 | Avg. stake amount           | 0.001      BTC      |
 | Total trade volume          | 0.429      BTC      |
 |                             |                     |
@@ -444,6 +446,8 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Final balance`: Final balance - starting balance + absolute profit.
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
+- `CAGR %`: Compound annual growth rate.
+- `Profit factor`: profit / loss.
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
@@ -530,8 +534,9 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Exit-reason does not explain if a trade was positive or negative, just what triggered the exit (this can look odd if negative ROI values are used)
 - Evaluation sequence (if multiple signals happen on the same candle)
   - Exit-signal
-  - ROI (if not stoploss)
   - Stoploss
+  - ROI
+  - Trailing stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.

@@ -13,6 +13,10 @@ on:
   schedule:
     - cron:  '0 5 * * 4'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_linux:
 
@@ -26,7 +30,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -62,12 +66,12 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-      if: matrix.python-version != '3.9'
+      if: matrix.python-version != '3.9' || matrix.os != 'ubuntu-22.04'
 
     - name: Tests incl. ccxt compatibility tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
-      if: matrix.python-version == '3.9'
+      if: matrix.python-version == '3.9' && matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.9')
@@ -78,11 +82,13 @@ jobs:
         # Allow failure for coveralls
         coveralls || true
 
-    - name: Backtesting
+    - name: Backtesting (multi)
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+        freqtrade new-strategy -s AwesomeStrategy
+        freqtrade new-strategy -s AwesomeStrategyMin --template minimal
+        freqtrade backtesting --datadir tests/testdata --strategy-list AwesomeStrategy AwesomeStrategyMin -i 5m
 
     - name: Hyperopt
       run: |
@@ -121,7 +127,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -164,7 +170,8 @@ jobs:
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+        freqtrade new-strategy -s AwesomeStrategyAdv --template advanced
+        freqtrade backtesting --datadir tests/testdata --strategy AwesomeStrategyAdv
 
     - name: Hyperopt
       run: |
@@ -204,7 +211,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -256,7 +263,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
@@ -275,7 +282,7 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
@@ -292,18 +299,6 @@ jobs:
           severity: error
           details: Freqtrade doc test failed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-
-  cleanup-prior-runs:
-    permissions:
-      actions: write  # for rokroskar/workflow-run-cleanup-action to obtain workflow name & cancel it
-      contents: read  # for rokroskar/workflow-run-cleanup-action to obtain branch
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Cleanup previous runs on this branch
-      uses: rokroskar/workflow-run-cleanup-action@v0.3.3
-      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
-      env:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
@@ -341,7 +336,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: "3.9"
 

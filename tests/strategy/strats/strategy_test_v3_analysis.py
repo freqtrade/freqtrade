@@ -1,18 +1,14 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
-from datetime import datetime
-from typing import Optional
-
 import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.persistence import Trade
 from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
                                 RealParameter)
 
 
-class StrategyTestV3(IStrategy):
+class StrategyTestV3Analysis(IStrategy):
     """
     Strategy used by tests freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
@@ -144,12 +140,13 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 65) &
                 (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
-            'enter_long'] = 1
+            ['enter_long', 'enter_tag']] = 1, 'enter_tag_long'
+
         dataframe.loc[
             (
                 qtpylib.crossed_below(dataframe['rsi'], self.sell_rsi.value)
             ),
-            'enter_short'] = 1
+            ['enter_short', 'enter_tag']] = 1, 'enter_tag_short'
 
         return dataframe
 
@@ -167,34 +164,12 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 70) &
                 (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
-            'exit_long'] = 1
+            ['exit_long', 'exit_tag']] = 1, 'exit_tag_long'
 
         dataframe.loc[
             (
                 qtpylib.crossed_above(dataframe['rsi'], self.buy_rsi.value)
             ),
-            'exit_short'] = 1
+            ['exit_long', 'exit_tag']] = 1, 'exit_tag_short'
 
         return dataframe
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str],
-                 side: str, **kwargs) -> float:
-        # Return 3.0 in all cases.
-        # Bot-logic must make sure it's an allowed leverage and eventually adjust accordingly.
-
-        return 3.0
-
-    def adjust_trade_position(self, trade: Trade, current_time: datetime, current_rate: float,
-                              current_profit: float,
-                              min_stake: Optional[float], max_stake: float, **kwargs):
-
-        if current_profit < -0.0075:
-            orders = trade.select_filled_orders(trade.entry_side)
-            return round(orders[0].cost, 0)
-
-        return None
-
-
-class StrategyTestV3Futures(StrategyTestV3):
-    can_short = True

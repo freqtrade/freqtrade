@@ -15,7 +15,7 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Pat
     folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:
         # set datadir
-        exchange_name = config.get('exchange', {}).get('name').lower()
+        exchange_name = config.get('exchange', {}).get('name', '').lower()
         folder = folder.joinpath(exchange_name)
 
     if not folder.is_dir():

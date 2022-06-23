@@ -92,7 +92,7 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
-        self._api: ccxt.Exchange = None
+        self._api: ccxt.Exchange
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
         self._trading_fees: Dict[str, Any] = {}
@@ -291,7 +291,7 @@ class Exchange:
         return self._markets
 
     @property
-    def precisionMode(self) -> str:
+    def precisionMode(self) -> int:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
 
@@ -322,7 +322,7 @@ class Exchange:
         return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
             timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
-    def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
+    def get_markets(self, base_currencies: List[str] = [], quote_currencies: List[str] = [],
                     spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
                     tradable_only: bool = True,
                     active_only: bool = False) -> Dict[str, Any]:
@@ -953,6 +953,12 @@ class Exchange:
             order = self.check_dry_limit_order_filled(order)
             return order
         except KeyError as e:
+            from freqtrade.persistence import Order
+            order = Order.order_by_id(order_id)
+            if order:
+                ccxt_order = order.to_ccxt_object()
+                self._dry_run_open_orders[order_id] = ccxt_order
+                return ccxt_order
             # Gracefully handle errors with dry-run orders.
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
@@ -1158,7 +1164,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str, params={}) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
@@ -1180,8 +1186,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
-    fetch_stoploss_order = fetch_order
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        return self.fetch_order(order_id, pair, params)
 
     def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
                                       stoploss_order: bool = False) -> Dict:
@@ -1206,7 +1212,7 @@ class Exchange:
                 and order.get('filled') == 0.0)
 
     @retrier
-    def cancel_order(self, order_id: str, pair: str, params={}) -> Dict:
+    def cancel_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self.fetch_dry_run_order(order_id)
@@ -1232,8 +1238,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
-    cancel_stoploss_order = cancel_order
+    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        return self.cancel_order(order_id, pair, params)
 
     def is_cancel_order_result_suitable(self, corder) -> bool:
         if not isinstance(corder, dict):
@@ -1345,7 +1351,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_bids_asks(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+    def fetch_bids_asks(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         """
         :param cached: Allow cached result
         :return: fetch_tickers result
@@ -1373,7 +1379,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         """
         :param cached: Allow cached result
         :return: fetch_tickers result
@@ -1712,7 +1718,7 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
-                                        until_ms: int = None
+                                        until_ms: Optional[int] = None
                                         ) -> Tuple[str, str, str, List]:
         """
         Download historic ohlcv
@@ -1773,7 +1779,7 @@ class Exchange:
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True,
-                             drop_incomplete: bool = None
+                             drop_incomplete: Optional[bool] = None
                              ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
@@ -2125,10 +2131,11 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def get_market_leverage_tiers(self, symbol) -> List[Dict]:
+    @retrier_async
+    async def get_market_leverage_tiers(self, symbol: str) -> Tuple[str, List[Dict]]:
         try:
-            return self._api.fetch_market_leverage_tiers(symbol)
+            tier = await self._api_async.fetch_market_leverage_tiers(symbol)
+            return symbol, tier
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2162,8 +2169,14 @@ class Exchange:
                     f"Initializing leverage_tiers for {len(symbols)} markets. "
                     "This will take about a minute.")
 
-                for symbol in sorted(symbols):
-                    tiers[symbol] = self.get_market_leverage_tiers(symbol)
+                coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
+
+                for input_coro in chunks(coros, 100):
+
+                    results = self.loop.run_until_complete(
+                        asyncio.gather(*input_coro, return_exceptions=True))
+                    for symbol, res in results:
+                        tiers[symbol] = res
 
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
@@ -2413,14 +2426,35 @@ class Exchange:
         )
 
     @staticmethod
-    def combine_funding_and_mark(funding_rates: DataFrame, mark_rates: DataFrame) -> DataFrame:
+    def combine_funding_and_mark(funding_rates: DataFrame, mark_rates: DataFrame,
+                                 futures_funding_rate: Optional[int] = None) -> DataFrame:
         """
         Combine funding-rates and mark-rates dataframes
         :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
         :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param futures_funding_rate: Fake funding rate to use if funding_rates are not available
         """
+        if futures_funding_rate is None:
+            return mark_rates.merge(
+                funding_rates, on='date', how="inner", suffixes=["_mark", "_fund"])
+        else:
+            if len(funding_rates) == 0:
+                # No funding rate candles - full fillup with fallback variable
+                mark_rates['open_fund'] = futures_funding_rate
+                return mark_rates.rename(
+                        columns={'open': 'open_mark',
+                                 'close': 'close_mark',
+                                 'high': 'high_mark',
+                                 'low': 'low_mark',
+                                 'volume': 'volume_mark'})
 
-        return funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+            else:
+                # Fill up missing funding_rate candles with fallback value
+                combined = mark_rates.merge(
+                    funding_rates, on='date', how="outer", suffixes=["_mark", "_fund"]
+                    )
+                combined['open_fund'] = combined['open_fund'].fillna(futures_funding_rate)
+                return combined
 
     def calculate_funding_fees(
         self,

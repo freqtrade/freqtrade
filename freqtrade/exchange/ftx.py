@@ -104,7 +104,7 @@ class Ftx(Exchange):
             raise OperationalException(e) from e
 
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
 
@@ -145,7 +145,7 @@ class Ftx(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def cancel_stoploss_order(self, order_id: str, pair: str) -> Dict:
+    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         if self._config['dry_run']:
             return {}
         try:

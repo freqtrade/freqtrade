@@ -52,12 +52,17 @@ class Binance(Exchange):
 
         ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
 
-        return order['type'] == ordertype and (
-            (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
-            (side == "buy" and stop_loss < float(order['info']['stopPrice']))
-        )
+        return (
+            order.get('stopPrice', None) is None
+            or (
+                order['type'] == ordertype
+                and (
+                    (side == "sell" and stop_loss > float(order['stopPrice'])) or
+                    (side == "buy" and stop_loss < float(order['stopPrice']))
+                )
+            ))
 
-    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
         if self.trading_mode == TradingMode.FUTURES:
             # Binance's future result has no bid/ask values.
@@ -95,7 +100,7 @@ class Binance(Exchange):
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, candle_type: CandleType,
                                         is_new_pair: bool = False, raise_: bool = False,
-                                        until_ms: int = None
+                                        until_ms: Optional[int] = None
                                         ) -> Tuple[str, str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
