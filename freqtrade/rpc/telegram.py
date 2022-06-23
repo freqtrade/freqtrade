@@ -309,6 +309,7 @@ class Telegram(RPCHandler):
         is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
         profit_prefix = ('Sub ' if is_sub_profit
                          else 'Cumulative ') if is_sub_trade else ''
+        cp_extra = ''
         if is_sub_profit and is_sub_trade:
             if self._rpc._fiat_converter:
                 cp_fiat = self._rpc._fiat_converter.convert_amount(
@@ -318,8 +319,6 @@ class Telegram(RPCHandler):
                 cp_extra = ''
             cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} " \
                        f"{msg['stake_currency']}{cp_extra}`)\n"
-        else:
-            cp_extra = ''
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
@@ -492,6 +491,7 @@ class Telegram(RPCHandler):
                 # f"({days}d {hours}h {minutes}m {seconds}s from previous {wording.lower()})")
         return lines
 
+    @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status.
@@ -507,7 +507,6 @@ class Telegram(RPCHandler):
         else:
             self._status_msg(update, context)
 
-    @authorized_only
     def _status_msg(self, update: Update, context: CallbackContext) -> None:
         """
         handler for `/status` and `/status <id>`.
@@ -587,6 +586,7 @@ class Telegram(RPCHandler):
         except RPCException as e:
             self._send_msg(str(e))
 
+    @authorized_only
     def _status_table(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status table.
