@@ -259,7 +259,7 @@ class Telegram(RPCHandler):
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
-        message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
+        message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
             message += f"*Leverage:* `{msg['leverage']}`\n"
@@ -272,7 +272,7 @@ class Telegram(RPCHandler):
 
         message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
-        if msg.get('fiat_currency', None):
+        if msg.get('fiat_currency'):
             message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
 
         message += ")`"
@@ -288,7 +288,7 @@ class Telegram(RPCHandler):
         msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
         msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
-                                if msg.get('leverage', None) and msg.get('leverage', 1.0) != 1.0
+                                if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0
                                 else "")
 
         # Check if all sell properties are available.
