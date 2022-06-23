@@ -77,7 +77,6 @@ def _delete_file(file_name):
 
 def create_initial_account_balance_binance_file():
     file_path = BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH
-    print("create_initial_account_balance_binance_file: file exists = " + str(os.path.exists(file_path)))
     if not os.path.exists(file_path):
         with open(file_path, 'w+') as file:
             file.write("")
