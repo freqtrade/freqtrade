@@ -855,7 +855,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency'),
+            'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
             'open_date': trade.open_date or datetime.utcnow(),
             'current_rate': current_rate,
@@ -884,7 +884,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency'),
+            'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': trade.amount,
             'open_date': trade.open_date,
             'current_rate': current_rate,
@@ -1590,7 +1590,7 @@ class FreqtradeBot(LoggingMixin):
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency'),
+            'fiat_currency': self.config.get('fiat_display_currency', None),
             'reason': reason,
         }
 

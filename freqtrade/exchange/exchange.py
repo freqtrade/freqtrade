@@ -383,8 +383,8 @@ class Exchange:
         Ensures that Configured mode aligns to
         """
         return (
-            market.get('quote') is not None
-            and market.get('base') is not None
+            market.get('quote', None) is not None
+            and market.get('base', None) is not None
             and (self.precisionMode != TICK_SIZE
                  # Too low precision will falsify calculations
                  or market.get('precision', {}).get('price') > 1e-11)
@@ -1599,7 +1599,7 @@ class Exchange:
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
-            if self._config['dry_run'] and self._config.get('fee') is not None:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
@@ -1660,7 +1660,7 @@ class Exchange:
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
             except ExchangeError:
-                fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate')
+                fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
             return round((self._contracts_to_amount(
