@@ -2771,7 +2771,21 @@ def test_order_to_ccxt(limit_buy_order_open):
         'end_profit': 3175.75,
         'fee': 0.0025,
         'end_profit_ratio': 1.08048,
-    }
+    },
+    {
+        # Test above without fees
+        'orders': [
+            (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
+            (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 600.0, 600.0, 1.2)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 600.0, 600.0, 1.2)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1400.0, 800.0, 1.92727272)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 1400.0, 1800.0, 1.92727272)),
+        ],
+        'end_profit': 3200.0,
+        'fee': 0.0,
+        'end_profit_ratio': 1.09090909,
+    },
 ])
 def test_recalc_trade_from_orders_dca(data) -> None:
 
