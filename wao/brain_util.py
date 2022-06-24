@@ -97,3 +97,12 @@ def delete_backtest_table_file():
     file_name = BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def is_romeo_alive(coin):
+    return BrainConfig.ROMEO_POOL.get(coin) is not None
+
+
+def remove_from_pool(coin):
+    if is_romeo_alive(coin):
+        del BrainConfig.ROMEO_POOL[coin]
