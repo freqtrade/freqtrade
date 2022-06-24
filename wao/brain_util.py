@@ -29,7 +29,7 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
-    Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
+    Config.ROMEO_D_UP_PERCENTAGE = dup
 
     romeo = Romeo.instance(is_test_mode, True)
     BrainConfig.ROMEO_POOL[coin] = romeo
