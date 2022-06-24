@@ -129,7 +129,7 @@ class Configuration:
                 # Default to in-memory db for dry_run if not specified
                 config['db_url'] = constants.DEFAULT_DB_DRYRUN_URL
         else:
-            if not config.get('db_url', None):
+            if not config.get('db_url'):
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
@@ -182,7 +182,7 @@ class Configuration:
         config['user_data_dir'] = create_userdata_dir(config['user_data_dir'], create_dir=False)
         logger.info('Using user-data directory: %s ...', config['user_data_dir'])
 
-        config.update({'datadir': create_datadir(config, self.args.get('datadir', None))})
+        config.update({'datadir': create_datadir(config, self.args.get('datadir'))})
         logger.info('Using data directory: %s ...', config.get('datadir'))
 
         if self.args.get('exportfilename'):
@@ -221,7 +221,7 @@ class Configuration:
         if config.get('max_open_trades') == -1:
             config['max_open_trades'] = float('inf')
 
-        if self.args.get('stake_amount', None):
+        if self.args.get('stake_amount'):
             # Convert explicitly to float to support CLI argument for both unlimited and value
             try:
                 self.args['stake_amount'] = float(self.args['stake_amount'])
@@ -474,7 +474,7 @@ class Configuration:
                         configuration instead of the content)
         """
         if (argname in self.args and self.args[argname] is not None
-           and self.args[argname] is not False):
+                and self.args[argname] is not False):
 
             config.update({argname: self.args[argname]})
             if logfun:

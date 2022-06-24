@@ -387,7 +387,7 @@ class Exchange:
             and market.get('base', None) is not None
             and (self.precisionMode != TICK_SIZE
                  # Too low precision will falsify calculations
-                 or market.get('precision', {}).get('price', None) > 1e-11)
+                 or market.get('precision', {}).get('price') > 1e-11)
             and ((self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
                  or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
                  or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market)))
@@ -537,7 +537,7 @@ class Exchange:
                 # The internal info array is different for each particular market,
                 # its contents depend on the exchange.
                 # It can also be a string or similar ... so we need to verify that first.
-            elif (isinstance(self.markets[pair].get('info', None), dict)
+            elif (isinstance(self.markets[pair].get('info'), dict)
                   and self.markets[pair].get('info', {}).get('prohibitedIn', False)):
                 # Warn users about restricted pairs in whitelist.
                 # We cannot determine reliably if Users are affected.

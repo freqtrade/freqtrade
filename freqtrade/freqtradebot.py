@@ -68,7 +68,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        init_db(self.config.get('db_url', None))
+        init_db(self.config['db_url'])
 
         self.wallets = Wallets(self.config, self.exchange)
 
@@ -1585,7 +1585,7 @@ class FreqtradeBot(LoggingMixin):
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'fiat_currency': self.config.get('fiat_display_currency'),
             'sub_trade': sub_trade,
         }
         if sub_trade:
@@ -1696,7 +1696,7 @@ class FreqtradeBot(LoggingMixin):
 
         if order.get('status') in constants.NON_OPEN_EXCHANGE_STATES:
             # If a entry order was closed, force update on stoploss on exchange
-            if order.get('side', None) == trade.entry_side:
+            if order.get('side') == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
