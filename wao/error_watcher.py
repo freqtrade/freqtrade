@@ -45,7 +45,7 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
         if out_put_string != "":
             is_test_mode = False if BrainConfig.MODE == "test" else True
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + " stop_bot.py " + str(
-                is_test_mode) + " " + out_put_string.split("\n")[0].replace(" ", "_").replace("(", "").replace(")", "")
+                is_test_mode) + " " + out_put_string.split("\n")[0].replace("_", "").replace(" ", "_").replace("(", "").replace(")", "")
             result_log = subprocess.Popen([stop_bot_command],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
