@@ -30,7 +30,7 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
-    Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
+    Config.ROMEO_D_UP_PERCENTAGE = dup
 
     romeo = Romeo.instance(is_test_mode, True)
     BrainConfig.ROMEO_POOL[coin] = romeo
@@ -84,9 +84,22 @@ def setup():
 
 def clear_cumulative_value():
     # delete cumulative file
-    file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_FILE_PATH)
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_BINANCE_FILE_PATH)
+    _delete_file(BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH)
+
+
+def _delete_file(file_name):
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def create_initial_account_balance_binance_file():
+    file_path = BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH
+    if not os.path.exists(file_path):
+        with open(file_path, 'w+') as file:
+            file.write("")
+        file.close()
 
 
 def __create_429_directory():
@@ -107,3 +120,12 @@ def delete_backtest_table_file():
     file_name = BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def is_romeo_alive(coin):
+    return BrainConfig.ROMEO_POOL.get(coin) is not None
+
+
+def remove_from_pool(coin):
+    if is_romeo_alive(coin):
+        del BrainConfig.ROMEO_POOL[coin]

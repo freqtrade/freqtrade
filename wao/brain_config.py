@@ -16,3 +16,5 @@ class BrainConfig:
     BACKTEST_THROTTLE_SECOND = 1
     MODE = "test"  # test or prod
     CUMULATIVE_PROFIT_FILE_PATH = EXECUTION_PATH + "/_cumulative_profit.txt"
+    CUMULATIVE_PROFIT_BINANCE_FILE_PATH = EXECUTION_PATH + "/_cumulative_profit_binance.txt"
+    INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH = EXECUTION_PATH + "/_initial_account_balance_binance.txt"

@@ -1,4 +1,4 @@
-from wao.brain_util import perform_execute_buy, perform_execute_sell, write_to_backtest_table, clear_cumulative_value
+from wao.brain_util import perform_execute_buy, perform_execute_sell, write_to_backtest_table, clear_cumulative_value, create_initial_account_balance_binance_file, is_romeo_alive, remove_from_pool
 import threading
 from wao.brain_config import BrainConfig
 from wao.brain_util import setup
@@ -19,6 +19,7 @@ class WAOStrategyController:
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
         setup()
         clear_cumulative_value()
+        create_initial_account_balance_binance_file()
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(self.brain,
                                            BrainConfig.BACKTEST_MONTH_LIST[
@@ -40,7 +41,7 @@ class WAOStrategyController:
             write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, self.dup, "sell")
         else:
             perform_execute_sell(coin)
-            self.__remove_from_pool(coin)
+            remove_from_pool(coin)
 
     def __buy_execute(self, coin):
         if Config.IS_PARALLEL_EXECUTION:
@@ -49,17 +50,9 @@ class WAOStrategyController:
         else:
             perform_execute_buy(coin, self.brain, self.time_out_hours, self.dup)
 
-    def __remove_from_pool(self, coin):
-        if self.is_romeo_alive(coin):
-            del BrainConfig.ROMEO_POOL[coin]
-
-    def is_romeo_alive(self, coin):
-        return
-
     @Config.bus.on(Config.EVENT_BUS_EXECUTION_SELF_COMPLETE)
     def on_execution_self_complete(coin):
         print("on_execution_self_complete: " + coin)
-        if BrainConfig.ROMEO_POOL.get(coin) is not None:
-            del BrainConfig.ROMEO_POOL[coin]
+        remove_from_pool(coin)
 
 
