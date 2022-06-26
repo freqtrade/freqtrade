@@ -1,17 +1,3 @@
-from setuptools import setup
-
-
-# Requirements used for submodules
-plot = ['plotly>=4.0']
-hyperopt = [
-    'scipy',
-    'scikit-learn',
-    'scikit-optimize>=0.7.0',
-    'filelock',
-    'joblib',
-    'progressbar2',
-    'psutil',
-    ]
 
 develop = [
     'coveralls',
