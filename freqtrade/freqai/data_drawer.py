@@ -134,6 +134,7 @@ class FreqaiDataDrawer:
             model_filename = self.pair_dict[pair]['model_filename'] = ''
             coin_first = self.pair_dict[pair]['first'] = True
             trained_timestamp = self.pair_dict[pair]['trained_timestamp'] = 0
+            self.pair_dict[pair]['priority'] = len(self.pair_dict)
 
         if not data_path_set and self.follow_mode:
             logger.warning(f'Follower could not find current pair {pair} in '

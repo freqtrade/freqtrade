@@ -317,11 +317,12 @@ class FreqaiDataKitchen:
             # that was based on a single NaN is ultimately protected from buys with do_predict
             drop_index = ~drop_index
             self.do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
-            logger.info(
-                "dropped %s of %s prediction data points due to NaNs.",
-                len(self.do_predict) - self.do_predict.sum(),
-                len(filtered_dataframe),
-            )
+            if (len(self.do_predict) - self.do_predict.sum()) > 0:
+                logger.info(
+                    "dropped %s of %s prediction data points due to NaNs.",
+                    len(self.do_predict) - self.do_predict.sum(),
+                    len(filtered_dataframe),
+                )
 
         return filtered_dataframe, labels
 
@@ -562,9 +563,10 @@ class FreqaiDataKitchen:
             y_pred = self.svm_model.predict(self.data_dictionary["prediction_features"])
             do_predict = np.where(y_pred == -1, 0, y_pred)
 
-            logger.info(
-                f'svm_remove_outliers() tossed {len(do_predict) - do_predict.sum()} predictions'
-            )
+            if (len(do_predict) - do_predict.sum()) > 0:
+                logger.info(
+                    f'svm_remove_outliers() tossed {len(do_predict) - do_predict.sum()} predictions'
+                )
             self.do_predict += do_predict
             self.do_predict -= 1
 
@@ -642,10 +644,11 @@ class FreqaiDataKitchen:
             0,
         )
 
-        logger.info(
-            f'DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for '
-            'being too far from training data'
-        )
+        if (len(do_predict) - do_predict.sum()) > 0:
+            logger.info(
+                f'DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for '
+                'being too far from training data'
+            )
 
         self.do_predict += do_predict
         self.do_predict -= 1
@@ -908,7 +911,7 @@ class FreqaiDataKitchen:
                                             ignore_index=True, axis=0
                                                 )
 
-            logger.info(f'Length of history data {len(history_data[pair][tf])}')
+            # logger.info(f'Length of history data {len(history_data[pair][tf])}')
 
     def set_all_pairs(self) -> None:
 
