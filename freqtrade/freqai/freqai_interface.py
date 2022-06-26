@@ -2,7 +2,7 @@
 import datetime
 import gc
 import logging
-# import sys
+import shutil
 import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -109,6 +109,7 @@ class IFreqaiModel(ABC):
             logger.info(f'Training {len(self.dh.training_timeranges)} timeranges')
             dh = self.start_backtesting(dataframe, metadata, self.dh)
 
+        dataframe = self.remove_features_from_df(dataframe)
         return self.return_values(dataframe, dh)
 
     @threaded
@@ -413,6 +414,18 @@ class IFreqaiModel(ABC):
         self.full_path = Path(self.config['user_data_dir'] /
                               "models" /
                               str(self.freqai_info.get('identifier')))
+        self.full_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy(self.config['config_files'][0], Path(self.full_path,
+                                                         self.config['config_files'][0]))
+
+    def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
+        """
+        Remove the features from the dataframe before returning it to strategy. This keeps it
+        compact for Frequi purposes.
+        """
+        to_keep = [col for col in dataframe.columns
+                   if not col.startswith('%') or col.startswith('%%')]
+        return dataframe[to_keep]
 
     @threaded
     def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, pair: str,
