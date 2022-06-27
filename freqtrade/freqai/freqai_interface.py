@@ -4,6 +4,7 @@ import gc
 import logging
 import shutil
 import threading
+import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -90,10 +91,6 @@ class IFreqaiModel(ABC):
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.data_drawer.set_pair_dict_info(metadata)
 
-        # For live, we may be training new models on a separate thread while other pairs still need
-        # to inference their historical models. Here we use a training queue system to handle this
-        # and we keep the flag self.training_on_separate_threaad in the current object to help
-        # determine what the current pair will do
         if self.live:
             self.dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                         self.live, metadata["pair"])
@@ -122,15 +119,17 @@ class IFreqaiModel(ABC):
         strategy: IStrategy = The user defined strategy class
         """
         while 1:
+            time.sleep(1)
             for pair in self.config.get('exchange', {}).get('pair_whitelist'):
-                if self.data_drawer.pair_dict[pair]['priority'] != 1:
-                    continue
-                dh = FreqaiDataKitchen(self.config, self.data_drawer,
-                                       self.live, pair)
 
                 (model_filename,
                  trained_timestamp,
                  _, _) = self.data_drawer.get_pair_dict_info(pair)
+
+                if self.data_drawer.pair_dict[pair]['priority'] != 1:
+                    continue
+                dh = FreqaiDataKitchen(self.config, self.data_drawer,
+                                       self.live, pair)
 
                 file_exists = False
 
@@ -416,7 +415,7 @@ class IFreqaiModel(ABC):
                               str(self.freqai_info.get('identifier')))
         self.full_path.mkdir(parents=True, exist_ok=True)
         shutil.copy(self.config['config_files'][0], Path(self.full_path,
-                                                         self.config['config_files'][0]))
+                                                         Path(self.config['config_files'][0]).name))
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
         """
