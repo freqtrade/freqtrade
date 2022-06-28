@@ -248,7 +248,7 @@ class IFreqaiModel(ABC):
         # append the historic data once per round
         if self.data_drawer.historic_data:
             dh.update_historic_data(strategy)
-            logger.info(f'Updating historic data on pair {metadata["pair"]}')
+            logger.debug(f'Updating historic data on pair {metadata["pair"]}')
 
         # if trainable, check if model needs training, if so compute new timerange,
         # then save model and metadata.

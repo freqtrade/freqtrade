@@ -572,7 +572,8 @@ class FreqaiDataKitchen:
 
         else:
             # use SGDOneClassSVM to increase speed?
-            self.svm_model = linear_model.SGDOneClassSVM(nu=0.1).fit(
+            nu = self.freqai_config.get('feature_parameters', {}).get('svm_nu', 0.2)
+            self.svm_model = linear_model.SGDOneClassSVM(nu=nu).fit(
                                                             self.data_dictionary["train_features"]
                                                             )
             y_pred = self.svm_model.predict(self.data_dictionary["train_features"])
@@ -742,7 +743,7 @@ class FreqaiDataKitchen:
         max_time = self.freqai_config.get('expiration_hours', 0)
         if max_time > 0:
             return elapsed_time > max_time
-        else: 
+        else:
             return False
 
     def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
