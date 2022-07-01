@@ -68,6 +68,8 @@ class IFreqaiModel(ABC):
         self.scanning = False
         self.ready_to_scan = False
         self.first = True
+        self.keras = self.freqai_info.get('keras', False)
+        self.CONV_WIDTH = self.freqai_info.get('conv_width', 2)
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -122,30 +124,28 @@ class IFreqaiModel(ABC):
             time.sleep(1)
             for pair in self.config.get('exchange', {}).get('pair_whitelist'):
 
-                (model_filename,
-                 trained_timestamp,
-                 _, _) = self.data_drawer.get_pair_dict_info(pair)
+                (_, trained_timestamp, _, _) = self.data_drawer.get_pair_dict_info(pair)
 
                 if self.data_drawer.pair_dict[pair]['priority'] != 1:
                     continue
                 dh = FreqaiDataKitchen(self.config, self.data_drawer,
                                        self.live, pair)
 
-                file_exists = False
+                # file_exists = False
 
                 dh.set_paths(pair, trained_timestamp)
-                file_exists = self.model_exists(pair,
-                                                dh,
-                                                trained_timestamp=trained_timestamp,
-                                                model_filename=model_filename,
-                                                scanning=True)
+                # file_exists = self.model_exists(pair,
+                #                                 dh,
+                #                                 trained_timestamp=trained_timestamp,
+                #                                 model_filename=model_filename,
+                #                                 scanning=True)
 
                 (retrain,
                  new_trained_timerange,
                  data_load_timerange) = dh.check_if_new_training_required(trained_timestamp)
                 dh.set_paths(pair, new_trained_timerange.stopts)
 
-                if retrain or not file_exists:
+                if retrain:  # or not file_exists:
                     self.train_model_in_series(new_trained_timerange, pair,
                                                strategy, dh, data_load_timerange)
 
@@ -199,9 +199,9 @@ class IFreqaiModel(ABC):
                 self.data_drawer.pair_dict[metadata['pair']][
                                         'trained_timestamp'] = trained_timestamp.stopts
                 dh.set_new_model_names(metadata['pair'], trained_timestamp)
-                dh.save_data(self.model, metadata['pair'])
+                dh.save_data(self.model, metadata['pair'], keras=self.keras)
             else:
-                self.model = dh.load_data(metadata['pair'])
+                self.model = dh.load_data(metadata['pair'], keras=self.keras)
 
             self.check_if_feature_list_matches_strategy(dataframe_train, dh)
 
@@ -278,7 +278,7 @@ class IFreqaiModel(ABC):
                         f'using { self.identifier }')
 
         # load the model and associated data into the data kitchen
-        self.model = dh.load_data(coin=metadata['pair'])
+        self.model = dh.load_data(coin=metadata['pair'], keras=self.keras)
 
         if not self.model:
             logger.warning('No model ready, returning null values to strategy.')
@@ -297,14 +297,16 @@ class IFreqaiModel(ABC):
                                      trained_timestamp: int) -> None:
 
         # hold the historical predictions in memory so we are sending back
-        # correct array to strategy FIXME currently broken, but only affecting
-        # Frequi reporting. Signals remain unaffeted.
+        # correct array to strategy
 
         if pair not in self.data_drawer.model_return_values:
             preds, do_preds = self.predict(dataframe, dh)
-            dh.append_predictions(preds, do_preds, len(dataframe))
-            dh.fill_predictions(len(dataframe))
-            self.data_drawer.set_initial_return_values(pair, dh)
+            # mypy doesnt like the typing in else statement, so we need to explicitly add to
+            # dataframe separately
+            dataframe['prediction'], dataframe['do_predict'] = preds, do_preds
+            # dh.append_predictions(preds, do_preds, len(dataframe))
+            # dh.fill_predictions(len(dataframe))
+            self.data_drawer.set_initial_return_values(pair, dh, dataframe)
             return
         elif self.dh.check_if_model_expired(trained_timestamp):
             preds, do_preds, dh.DI_values = np.zeros(2), np.ones(2) * 2, np.zeros(2)
@@ -312,7 +314,8 @@ class IFreqaiModel(ABC):
                            'construction should take care to consider this event with '
                            'prediction == 0 and do_predict == 2')
         else:
-            preds, do_preds = self.predict(dataframe.iloc[-2:], dh)
+            # Only feed in the most recent candle for prediction in live scenario
+            preds, do_preds = self.predict(dataframe.iloc[-self.CONV_WIDTH:], dh, first=False)
 
         self.data_drawer.append_model_predictions(pair, preds, do_preds,
                                                   dh.data["target_mean"],
@@ -426,71 +429,6 @@ class IFreqaiModel(ABC):
                    if not col.startswith('%') or col.startswith('%%')]
         return dataframe[to_keep]
 
-    @threaded
-    def retrain_model_on_separate_thread(self, new_trained_timerange: TimeRange, pair: str,
-                                         strategy: IStrategy, dh: FreqaiDataKitchen,
-                                         data_load_timerange: TimeRange):
-        """
-        Retreive data and train model on separate thread. Always called if the model folder already
-        contains a full set of trained models.
-        :params:
-        new_trained_timerange: TimeRange = the timerange to train the model on
-        metadata: dict = strategy provided metadata
-        strategy: IStrategy = user defined strategy object
-        dh: FreqaiDataKitchen = non-persistent data container for current coin/loop
-        data_load_timerange: TimeRange = the amount of data to be loaded for populate_any_indicators
-        (larger than new_trained_timerange so that new_trained_timerange does not contain any NaNs)
-        """
-
-        # with nostdout():
-        # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
-        # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
-        #                                                           metadata)
-
-        corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
-                                                                           pair)
-
-        # protecting from common benign errors associated with grabbing new data from exchange:
-        try:
-            unfiltered_dataframe = dh.use_strategy_to_populate_indicators(strategy,
-                                                                          corr_dataframes,
-                                                                          base_dataframes,
-                                                                          pair)
-            unfiltered_dataframe = dh.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
-
-        except Exception as err:
-            logger.exception(err)
-            self.training_on_separate_thread = False
-            self.retrain = False
-            return
-
-        try:
-            model = self.train(unfiltered_dataframe, pair, dh)
-        except ValueError:
-            logger.warning('Value error encountered during training')
-            self.training_on_separate_thread = False
-            self.retrain = False
-            return
-
-        self.data_drawer.pair_dict[pair][
-                                   'trained_timestamp'] = new_trained_timerange.stopts
-        dh.set_new_model_names(pair, new_trained_timerange)
-        # logger.info('Training queue'
-        #             f'{sorted(self.data_drawer.pair_dict.items(), key=lambda item: item[1])}')
-
-        if self.data_drawer.pair_dict[pair]['priority'] == 1:
-            with self.lock:
-                self.data_drawer.pair_to_end_of_training_queue(pair)
-        dh.save_data(model, coin=pair)
-        # self.training_on_separate_thread = False
-        # self.retrain = False
-
-        # each time we finish a training, we check the directory to purge old models.
-        if self.freqai_info.get('purge_old_models', False):
-            self.data_drawer.purge_old_models()
-
-        return
-
     def train_model_in_series(self, new_trained_timerange: TimeRange, pair: str,
                               strategy: IStrategy, dh: FreqaiDataKitchen,
                               data_load_timerange: TimeRange):
@@ -505,9 +443,7 @@ class IFreqaiModel(ABC):
         data_load_timerange: TimeRange = the amount of data to be loaded for populate_any_indicators
         (larger than new_trained_timerange so that new_trained_timerange does not contain any NaNs)
         """
-        # dh.download_new_data_for_retraining(data_load_timerange, metadata, strategy)
-        # corr_dataframes, base_dataframes = dh.load_pairs_histories(data_load_timerange,
-        #                                                          metadata)
+
         corr_dataframes, base_dataframes = dh.get_base_and_corr_dataframes(data_load_timerange,
                                                                            pair)
 
@@ -527,7 +463,7 @@ class IFreqaiModel(ABC):
         if self.data_drawer.pair_dict[pair]['priority'] == 1 and self.scanning:
             with self.lock:
                 self.data_drawer.pair_to_end_of_training_queue(pair)
-        dh.save_data(model, coin=pair)
+        dh.save_data(model, coin=pair, keras=self.keras)
 
         if self.freqai_info.get('purge_old_models', False):
             self.data_drawer.purge_old_models()
@@ -563,7 +499,7 @@ class IFreqaiModel(ABC):
 
     @abstractmethod
     def predict(self, dataframe: DataFrame,
-                dh: FreqaiDataKitchen) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+                dh: FreqaiDataKitchen, first: bool = True) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
         :param:

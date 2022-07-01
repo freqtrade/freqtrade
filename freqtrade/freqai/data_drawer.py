@@ -1,6 +1,5 @@
 
 import collections
-import copy
 import json
 import logging
 import re
@@ -11,6 +10,7 @@ from typing import Any, Dict, Tuple
 
 # import pickle as pk
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 
@@ -163,18 +163,13 @@ class FreqaiDataDrawer:
         # send pair to end of queue
         self.pair_dict[pair]['priority'] = len(self.pair_dict)
 
-    def set_initial_return_values(self, pair: str, dh):
+    def set_initial_return_values(self, pair: str, dh, dataframe: DataFrame) -> None:
 
-        self.model_return_values[pair] = {}
-        self.model_return_values[pair]['predictions'] = dh.full_predictions
-        self.model_return_values[pair]['do_preds'] = dh.full_do_predict
-        self.model_return_values[pair]['target_mean'] = dh.full_target_mean
-        self.model_return_values[pair]['target_std'] = dh.full_target_std
+        self.model_return_values[pair] = dataframe
+        self.model_return_values[pair]['target_mean'] = dh.data['target_mean']
+        self.model_return_values[pair]['target_std'] = dh.data['target_std']
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            self.model_return_values[pair]['DI_values'] = dh.full_DI_values
-
-        # if not self.follow_mode:
-        #     self.save_model_return_values_to_disk()
+            self.model_return_values[pair]['DI_values'] = dh.DI_values
 
     def append_model_predictions(self, pair: str, predictions, do_preds,
                                  target_mean, target_std, dh, len_df) -> None:
@@ -182,7 +177,7 @@ class FreqaiDataDrawer:
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
         # and adapt our stored/returned info accordingly.
-        length_difference = len(self.model_return_values[pair]['predictions']) - len_df
+        length_difference = len(self.model_return_values[pair]['prediction']) - len_df
         i = 0
 
         if length_difference == 0:
@@ -190,51 +185,29 @@ class FreqaiDataDrawer:
         elif length_difference > 0:
             i = length_difference + 1
 
-        self.model_return_values[pair]['predictions'] = np.append(
-            self.model_return_values[pair]['predictions'][i:], predictions[-1])
+        df = self.model_return_values[pair].shift(-i)
+
+        df['prediction'].iloc[-1] = predictions[-1]
+        df['do_predict'].iloc[-1] = do_preds[-1]
+        df['target_mean'].iloc[-1] = target_mean
+        df['target_std'].iloc[-1] = target_std
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            self.model_return_values[pair]['DI_values'] = np.append(
-                self.model_return_values[pair]['DI_values'][i:], dh.DI_values[-1])
-        self.model_return_values[pair]['do_preds'] = np.append(
-            self.model_return_values[pair]['do_preds'][i:], do_preds[-1])
-        self.model_return_values[pair]['target_mean'] = np.append(
-            self.model_return_values[pair]['target_mean'][i:], target_mean)
-        self.model_return_values[pair]['target_std'] = np.append(
-            self.model_return_values[pair]['target_std'][i:], target_std)
+            df['DI_values'].iloc[-1] = dh.DI_values[-1]
 
         if length_difference < 0:
-            prepend = np.zeros(abs(length_difference) - 1)
-            self.model_return_values[pair]['predictions'] = np.insert(
-                self.model_return_values[pair]['predictions'], 0, prepend)
-            if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-                self.model_return_values[pair]['DI_values'] = np.insert(
-                    self.model_return_values[pair]['DI_values'], 0, prepend)
-            self.model_return_values[pair]['do_preds'] = np.insert(
-                self.model_return_values[pair]['do_preds'], 0, prepend)
-            self.model_return_values[pair]['target_mean'] = np.insert(
-                self.model_return_values[pair]['target_mean'], 0, prepend)
-            self.model_return_values[pair]['target_std'] = np.insert(
-                self.model_return_values[pair]['target_std'], 0, prepend)
-
-        dh.full_predictions = copy.deepcopy(self.model_return_values[pair]['predictions'])
-        dh.full_do_predict = copy.deepcopy(self.model_return_values[pair]['do_preds'])
-        dh.full_target_mean = copy.deepcopy(self.model_return_values[pair]['target_mean'])
-        dh.full_target_std = copy.deepcopy(self.model_return_values[pair]['target_std'])
-        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            dh.full_DI_values = copy.deepcopy(self.model_return_values[pair]['DI_values'])
-
-        # if not self.follow_mode:
-        #     self.save_model_return_values_to_disk()
+            prepend_df = pd.DataFrame(np.zeros((abs(length_difference) - 1, len(df.columns))),
+                                      columns=df.columns)
+            df = pd.concat([prepend_df, df], axis=0)
 
     def return_null_values_to_strategy(self, dataframe: DataFrame, dh) -> None:
 
-        len_df = len(dataframe)
-        dh.full_predictions = np.zeros(len_df)
-        dh.full_do_predict = np.zeros(len_df)
-        dh.full_target_mean = np.zeros(len_df)
-        dh.full_target_std = np.zeros(len_df)
+        dataframe['prediction'] = 0
+        dataframe['do_predict'] = 0
+        dataframe['target_mean'] = 0
+        dataframe['target_std'] = 0
+
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            dh.full_DI_values = np.zeros(len_df)
+            dataframe['DI_value'] = 0
 
     def purge_old_models(self) -> None:
 
