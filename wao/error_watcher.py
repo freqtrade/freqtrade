@@ -24,7 +24,7 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
         if out_put_string != "":
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "").replace(": ", ":").replace(" ",
-                                                                                                                "_").replace(
+                                                                                                                "#").replace(
                 "(",
                 "").replace(
                 ")", "")
@@ -48,8 +48,9 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
         if out_put_string != "":
-            stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + " stop_bot.py " + str(
-                BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace(" ", "_").replace("(", "").replace(")", "")
+            stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
+                BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "").\
+                replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
             result_log = subprocess.Popen([stop_bot_command],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
