@@ -59,10 +59,10 @@ def perform_create_429_watcher():
 
 
 def perform_create_error_watcher():
-    print("perform_create_error_watcher: watching:- " + str(BrainConfig.FREQTRADE_LOGS_DIRECTORY))
+    print("perform_create_error_watcher: watching:- " + str(BrainConfig._FREQTRADE_LOGS_DIRECTORY))
     event_handler = error_Watcher()
     observer = watchdog.observers.Observer()
-    observer.schedule(event_handler, path=BrainConfig.FREQTRADE_LOGS_DIRECTORY, recursive=True)
+    observer.schedule(event_handler, path=BrainConfig._FREQTRADE_LOGS_DIRECTORY, recursive=True)
     # Start the observer
     observer.start()
     try:
