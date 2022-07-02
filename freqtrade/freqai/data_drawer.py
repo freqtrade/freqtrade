@@ -163,21 +163,30 @@ class FreqaiDataDrawer:
         # send pair to end of queue
         self.pair_dict[pair]['priority'] = len(self.pair_dict)
 
-    def set_initial_return_values(self, pair: str, dh, dataframe: DataFrame) -> None:
+    def set_initial_return_values(self, pair: str, dk, pred_df, do_preds) -> None:
+        """
+        Set the initial return values to a persistent dataframe. This avoids needing to repredict on
+        historical candles, and also stores historical predictions despite retrainings (so stored
+        predictions are true predictions, not just inferencing on trained data)
+        """
+        self.model_return_values[pair] = pd.DataFrame()
+        for label in dk.label_list:
+            self.model_return_values[pair][label] = pred_df[label]
+            self.model_return_values[pair][f'{label}_mean'] = dk.data['labels_mean'][label]
+            self.model_return_values[pair][f'{label}_std'] = dk.data['labels_std'][label]
 
-        self.model_return_values[pair] = dataframe
-        self.model_return_values[pair]['target_mean'] = dh.data['target_mean']
-        self.model_return_values[pair]['target_std'] = dh.data['target_std']
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            self.model_return_values[pair]['DI_values'] = dh.DI_values
+            self.model_return_values[pair]['DI_values'] = dk.DI_values
+
+        self.model_return_values[pair]['do_predict'] = do_preds
 
     def append_model_predictions(self, pair: str, predictions, do_preds,
-                                 target_mean, target_std, dh, len_df) -> None:
+                                 dk, len_df) -> None:
 
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
         # and adapt our stored/returned info accordingly.
-        length_difference = len(self.model_return_values[pair]['prediction']) - len_df
+        length_difference = len(self.model_return_values[pair]) - len_df
         i = 0
 
         if length_difference == 0:
@@ -185,29 +194,55 @@ class FreqaiDataDrawer:
         elif length_difference > 0:
             i = length_difference + 1
 
-        df = self.model_return_values[pair].shift(-i)
+        df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
 
-        df['prediction'].iloc[-1] = predictions[-1]
+        for label in dk.label_list:
+            df[label].iloc[-1] = predictions[label].iloc[-1]
+            df[f"{label}_mean"].iloc[-1] = dk.data['labels_mean'][label]
+            df[f"{label}_std"].iloc[-1] = dk.data['labels_std'][label]
+        # df['prediction'].iloc[-1] = predictions[-1]
         df['do_predict'].iloc[-1] = do_preds[-1]
-        df['target_mean'].iloc[-1] = target_mean
-        df['target_std'].iloc[-1] = target_std
+
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            df['DI_values'].iloc[-1] = dh.DI_values[-1]
+            df['DI_values'].iloc[-1] = dk.DI_values[-1]
 
         if length_difference < 0:
             prepend_df = pd.DataFrame(np.zeros((abs(length_difference) - 1, len(df.columns))),
                                       columns=df.columns)
             df = pd.concat([prepend_df, df], axis=0)
 
-    def return_null_values_to_strategy(self, dataframe: DataFrame, dh) -> None:
+    def attach_return_values_to_return_dataframe(self, pair: str, dataframe) -> DataFrame:
+        """
+        Attach the return values to the strat dataframe
+        :params:
+        dataframe: DataFrame = strat dataframe
+        :returns:
+        dataframe: DataFrame = strat dataframe with return values attached
+        """
+        df = self.model_return_values[pair]
+        to_keep = [col for col in dataframe.columns if not col.startswith('&')]
+        dataframe = pd.concat([dataframe[to_keep], df], axis=1)
+        return dataframe
 
-        dataframe['prediction'] = 0
+    def return_null_values_to_strategy(self, dataframe: DataFrame, dk) -> None:
+        """
+        Build 0 filled dataframe to return to strategy
+        """
+
+        dk.find_features(dataframe)
+
+        for label in dk.label_list:
+            dataframe[label] = 0
+            dataframe[f"{label}_mean"] = 0
+            dataframe[f"{label}_std"] = 0
+
+        # dataframe['prediction'] = 0
         dataframe['do_predict'] = 0
-        dataframe['target_mean'] = 0
-        dataframe['target_std'] = 0
 
         if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
             dataframe['DI_value'] = 0
+
+        dk.return_dataframe = dataframe
 
     def purge_old_models(self) -> None:
 
@@ -257,7 +292,7 @@ class FreqaiDataDrawer:
     #     with open(self.full_path / str('model_return_values.json'), "w") as fp:
     #         json.dump(self.model_return_values, fp, default=self.np_encoder)
 
-    # def load_model_return_values_from_disk(self, dh: FreqaiDataKitchen) -> FreqaiDataKitchen:
+    # def load_model_return_values_from_disk(self, dk: FreqaiDataKitchen) -> FreqaiDataKitchen:
     #     exists = Path(self.full_path / str('model_return_values.json')).resolve().exists()
     #     if exists:
     #         with open(self.full_path / str('model_return_values.json'), "r") as fp:
@@ -268,4 +303,4 @@ class FreqaiDataDrawer:
     #         logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
     #                        'sending null values back to strategy')
 
-    #     return exists, dh
+    #     return exists, dk

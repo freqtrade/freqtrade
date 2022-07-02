@@ -18,18 +18,16 @@ class CatboostPredictionModel(IFreqaiModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def return_values(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
-
-        dataframe["prediction"] = dh.full_predictions
-        dataframe["do_predict"] = dh.full_do_predict
-        dataframe["target_mean"] = dh.full_target_mean
-        dataframe["target_std"] = dh.full_target_std
-        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            dataframe["DI"] = dh.full_DI_values
+    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+        """
+        User uses this function to add any additional return values to the dataframe.
+        e.g.
+        dataframe['volatility'] = dk.volatility_values
+        """
 
         return dataframe
 
-    def make_labels(self, dataframe: DataFrame, dh: FreqaiDataKitchen) -> DataFrame:
+    def make_labels(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
         """
         User defines the labels here (target values).
         :params:
@@ -48,7 +46,7 @@ class CatboostPredictionModel(IFreqaiModel):
         return dataframe["s"]
 
     def train(self, unfiltered_dataframe: DataFrame,
-              pair: str, dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
+              pair: str, dk: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
         for storing, saving, loading, and analyzing the data.
@@ -62,27 +60,25 @@ class CatboostPredictionModel(IFreqaiModel):
         logger.info('--------------------Starting training '
                     f'{pair} --------------------')
 
-        # create the full feature list based on user config info
-        dh.training_features_list = dh.find_features(unfiltered_dataframe)
-        unfiltered_labels = self.make_labels(unfiltered_dataframe, dh)
+        # unfiltered_labels = self.make_labels(unfiltered_dataframe, dk)
         # filter the features requested by user in the configuration file and elegantly handle NaNs
-        features_filtered, labels_filtered = dh.filter_features(
+        features_filtered, labels_filtered = dk.filter_features(
             unfiltered_dataframe,
-            dh.training_features_list,
-            unfiltered_labels,
+            dk.training_features_list,
+            dk.label_list,
             training_filter=True,
         )
 
         # split data into train/test data.
-        data_dictionary = dh.make_train_test_datasets(features_filtered, labels_filtered)
-        dh.fit_labels()  # fit labels to a cauchy distribution so we know what to expect in strategy
+        data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        dk.fit_labels()  # fit labels to a cauchy distribution so we know what to expect in strategy
         # normalize all data based on train_dataset only
-        data_dictionary = dh.normalize_data(data_dictionary)
+        data_dictionary = dk.normalize_data(data_dictionary)
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_train(dh)
+        self.data_cleaning_train(dk)
 
-        logger.info(f'Training model on {len(dh.data_dictionary["train_features"].columns)}'
+        logger.info(f'Training model on {len(dk.data_dictionary["train_features"].columns)}'
                     ' features')
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
@@ -121,34 +117,32 @@ class CatboostPredictionModel(IFreqaiModel):
         return model
 
     def predict(self, unfiltered_dataframe: DataFrame,
-                dh: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
+                dk: FreqaiDataKitchen, first: bool = False) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
         :return:
-        :predictions: np.array of predictions
+        :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
-        # logger.info("--------------------Starting prediction--------------------")
-
-        original_feature_list = dh.find_features(unfiltered_dataframe)
-        filtered_dataframe, _ = dh.filter_features(
-            unfiltered_dataframe, original_feature_list, training_filter=False
+        dk.find_features(unfiltered_dataframe)
+        filtered_dataframe, _ = dk.filter_features(
+            unfiltered_dataframe, dk.training_features_list, training_filter=False
         )
-        filtered_dataframe = dh.normalize_data_from_metadata(filtered_dataframe)
-        dh.data_dictionary["prediction_features"] = filtered_dataframe
+        filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
+        dk.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dh, filtered_dataframe)
+        self.data_cleaning_predict(dk, filtered_dataframe)
 
-        predictions = self.model.predict(dh.data_dictionary["prediction_features"])
+        predictions = self.model.predict(dk.data_dictionary["prediction_features"])
+        pred_df = DataFrame(predictions, columns=dk.label_list)
 
-        # compute the non-normalized predictions
-        dh.predictions = (predictions + 1) * (dh.data["labels_max"] -
-                                              dh.data["labels_min"]) / 2 + dh.data["labels_min"]
+        for label in dk.label_list:
+            pred_df[label] = ((pred_df[label] + 1) *
+                              (dk.data["labels_max"][label] -
+                               dk.data["labels_min"][label]) / 2) + dk.data["labels_min"][label]
 
-        # logger.info("--------------------Finished prediction--------------------")
-
-        return (dh.predictions, dh.do_predict)
+        return (pred_df, dk.do_predict)

@@ -53,6 +53,7 @@ class FreqaiDataKitchen:
         self.full_target_mean: npt.ArrayLike = np.array([])
         self.full_target_std: npt.ArrayLike = np.array([])
         self.data_path = Path()
+        self.label_list: List = []
         self.model_filename: str = ""
         self.live = live
         self.pair = pair
@@ -68,8 +69,8 @@ class FreqaiDataKitchen:
                 config["freqai"]["train_period"],
                 config["freqai"]["backtest_period"],
             )
-
-        self.data_drawer = data_drawer
+        # self.strat_dataframe: DataFrame = strat_dataframe
+        self.dd = data_drawer
 
     def set_paths(self, pair: str, trained_timestamp: int = None,) -> None:
         """
@@ -88,7 +89,7 @@ class FreqaiDataKitchen:
 
         return
 
-    def save_data(self, model: Any, coin: str = '', keras_model=False) -> None:
+    def save_data(self, model: Any, coin: str = '', keras_model=False, label=None) -> None:
         """
         Saves all data associated with a model for a single sub-train time range
         :params:
@@ -103,9 +104,9 @@ class FreqaiDataKitchen:
 
         # Save the trained model
         if not keras_model:
-            dump(model, save_path / str(self.model_filename + "_model.joblib"))
+            dump(model, save_path / f"{self.model_filename}_model.joblib")
         else:
-            model.save(save_path / str(self.model_filename + "_model.h5"))
+            model.save(save_path / f"{self.model_filename}_model.h5")
 
         if self.svm_model is not None:
             dump(self.svm_model, save_path / str(self.model_filename + "_svm_model.joblib"))
@@ -113,6 +114,7 @@ class FreqaiDataKitchen:
         self.data["data_path"] = str(self.data_path)
         self.data["model_filename"] = str(self.model_filename)
         self.data["training_features_list"] = list(self.data_dictionary["train_features"].columns)
+        self.data['label_list'] = self.label_list
         # store the metadata
         with open(save_path / str(self.model_filename + "_metadata.json"), "w") as fp:
             json.dump(self.data, fp, default=self.np_encoder)
@@ -127,10 +129,10 @@ class FreqaiDataKitchen:
                     str(self.model_filename + "_pca_object.pkl"), "wb"))
 
         # if self.live:
-        self.data_drawer.model_dictionary[self.model_filename] = model
-        self.data_drawer.pair_dict[coin]['model_filename'] = self.model_filename
-        self.data_drawer.pair_dict[coin]['data_path'] = str(self.data_path)
-        self.data_drawer.save_drawer_to_disk()
+        self.dd.model_dictionary[self.model_filename] = model
+        self.dd.pair_dict[coin]['model_filename'] = self.model_filename
+        self.dd.pair_dict[coin]['data_path'] = str(self.data_path)
+        self.dd.save_drawer_to_disk()
 
         # TODO add a helper function to let user save/load any data they are custom adding. We
         # do not want them having to edit the default save/load methods here. Below is an example
@@ -154,12 +156,12 @@ class FreqaiDataKitchen:
         :model: User trained model which can be inferenced for new predictions
         """
 
-        if not self.data_drawer.pair_dict[coin]['model_filename']:
+        if not self.dd.pair_dict[coin]['model_filename']:
             return None
 
         if self.live:
-            self.model_filename = self.data_drawer.pair_dict[coin]['model_filename']
-            self.data_path = Path(self.data_drawer.pair_dict[coin]['data_path'])
+            self.model_filename = self.dd.pair_dict[coin]['model_filename']
+            self.data_path = Path(self.dd.pair_dict[coin]['data_path'])
             if self.freqai_config.get('follow_mode', False):
                 # follower can be on a different system which is rsynced to the leader:
                 self.data_path = Path(self.config["user_data_dir"] /
@@ -169,6 +171,7 @@ class FreqaiDataKitchen:
         with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
             self.training_features_list = self.data["training_features_list"]
+            self.label_list = self.data['label_list']
 
         self.data_dictionary["train_features"] = pd.read_pickle(
             self.data_path / str(self.model_filename + "_trained_df.pkl")
@@ -191,8 +194,8 @@ class FreqaiDataKitchen:
         # self.model_filename = self.data["model_filename"]
 
         # try to access model in memory instead of loading object from disk to save time
-        if self.live and self.model_filename in self.data_drawer.model_dictionary:
-            model = self.data_drawer.model_dictionary[self.model_filename]
+        if self.live and self.model_filename in self.dd.model_dictionary:
+            model = self.dd.model_dictionary[self.model_filename]
         elif not keras_model:
             model = load(self.data_path / str(self.model_filename + "_model.joblib"))
         else:
@@ -265,11 +268,12 @@ class FreqaiDataKitchen:
         self,
         unfiltered_dataframe: DataFrame,
         training_feature_list: List,
-        labels: DataFrame = pd.DataFrame(),
+        label_list: List = list(),
+        # labels: DataFrame = pd.DataFrame(),
         training_filter: bool = True,
     ) -> Tuple[DataFrame, DataFrame]:
         """
-        Filter the unfiltered dataframe to extract the user requested features and properly
+        Filter the unfiltered dataframe to extract the user requested features/labels and properly
         remove all NaNs. Any row with a NaN is removed from training dataset or replaced with
         0s in the prediction dataset. However, prediction dataset do_predict will reflect any
         row that had a NaN and will shield user from that prediction.
@@ -287,6 +291,7 @@ class FreqaiDataKitchen:
         """
         filtered_dataframe = unfiltered_dataframe.filter(training_feature_list, axis=1)
         filtered_dataframe = filtered_dataframe.replace([np.inf, -np.inf], np.nan)
+
         drop_index = pd.isnull(filtered_dataframe).any(1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (
@@ -294,10 +299,8 @@ class FreqaiDataKitchen:
         ):  # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple models), we detect here
-            if labels.shape[1] == 1:
-                drop_index_labels = pd.isnull(labels)
-            else:
-                drop_index_labels = pd.isnull(labels).any(1)
+            labels = unfiltered_dataframe.filter(label_list, axis=1)
+            drop_index_labels = pd.isnull(labels).any(1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
             filtered_dataframe = filtered_dataframe[
                 (drop_index == 0) & (drop_index_labels == 0)
@@ -333,6 +336,7 @@ class FreqaiDataKitchen:
                     len(self.do_predict) - self.do_predict.sum(),
                     len(filtered_dataframe),
                 )
+            labels = []
 
         return filtered_dataframe, labels
 
@@ -388,8 +392,8 @@ class FreqaiDataKitchen:
             self.data[item + "_max"] = train_max[item]
             self.data[item + "_min"] = train_min[item]
 
-        self.data["labels_max"] = train_labels_max
-        self.data["labels_min"] = train_labels_min
+        self.data["labels_max"] = train_labels_max.to_dict()
+        self.data["labels_min"] = train_labels_min.to_dict()
 
         return data_dictionary
 
@@ -618,7 +622,7 @@ class FreqaiDataKitchen:
 
         return
 
-    def find_features(self, dataframe: DataFrame) -> list:
+    def find_features(self, dataframe: DataFrame) -> None:
         """
         Find features in the strategy provided dataframe
         :params:
@@ -628,9 +632,13 @@ class FreqaiDataKitchen:
         """
         column_names = dataframe.columns
         features = [c for c in column_names if '%' in c]
+        labels = [c for c in column_names if '&' in c]
         if not features:
             raise OperationalException("Could not find any features!")
-        return features
+
+        self.training_features_list = features
+        self.label_list = labels
+        # return features, labels
 
     def check_if_pred_in_training_spaces(self) -> None:
         """
@@ -808,26 +816,6 @@ class FreqaiDataKitchen:
             data_load_timerange.stopts = int(time)
             retrain = True
 
-        # logger.info(
-        #     f'Total data download needed '
-        #     f'{(data_load_timerange.stopts - data_load_timerange.startts)/SECONDS_IN_DAY:.2f}'
-        #     ' days')
-        # logger.info(f'Total training timerange '
-        #             f'{(trained_timerange.stopts - trained_timerange.startts)/SECONDS_IN_DAY} '
-        #             ' days')
-
-        # if retrain:
-        #     coin, _ = metadata['pair'].split("/")
-        #     # set the new data_path
-        #     self.data_path = Path(self.full_path / str("sub-train" + "-" +
-        #                            str(int(trained_timerange.stopts))))
-
-        #     self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
-        #     # this is not persistent at the moment TODO
-        #     self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
-        #     # enables persistence, but not fully implemented into save/load data yer
-        #     self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
-
         return retrain, trained_timerange, data_load_timerange
 
     def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
@@ -896,8 +884,8 @@ class FreqaiDataKitchen:
         dataframe: DataFrame = strategy provided dataframe
         """
 
-        with self.data_drawer.history_lock:
-            history_data = self.data_drawer.historic_data
+        with self.dd.history_lock:
+            history_data = self.dd.historic_data
 
             for pair in self.all_pairs:
                 for tf in self.freqai_config.get('timeframes'):
@@ -939,7 +927,7 @@ class FreqaiDataKitchen:
         timerange: TimeRange = full timerange required to populate all indicators
         for training according to user defined train_period
         """
-        history_data = self.data_drawer.historic_data
+        history_data = self.dd.historic_data
 
         for pair in self.all_pairs:
             if pair not in history_data:
@@ -964,10 +952,10 @@ class FreqaiDataKitchen:
         metadata: dict = strategy furnished pair metadata
         """
 
-        with self.data_drawer.history_lock:
+        with self.dd.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
-            historic_data = self.data_drawer.historic_data
+            historic_data = self.dd.historic_data
             pairs = self.freqai_config.get('corr_pairlist', [])
 
             for tf in self.freqai_config.get('timeframes'):
@@ -1068,18 +1056,18 @@ class FreqaiDataKitchen:
         """
         import scipy as spy
 
-        f = spy.stats.norm.fit(self.data_dictionary["train_labels"])
+        self.data['labels_mean'], self.data['labels_std'] = {}, {}
+        for label in self.label_list:
+            f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
+            self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
         # KEEPME incase we want to let user start to grab quantiles.
         # upper_q = spy.stats.norm.ppf(self.freqai_config['feature_parameters'][
         #                                                   'target_quantile'], *f)
         # lower_q = spy.stats.norm.ppf(1 - self.freqai_config['feature_parameters'][
         #                                                       'target_quantile'], *f)
-
-        self.data["target_mean"], self.data["target_std"] = f[0], f[1]
         # self.data["upper_quantile"] = upper_q
         # self.data["lower_quantile"] = lower_q
-
         return
 
     def np_encoder(self, object):
