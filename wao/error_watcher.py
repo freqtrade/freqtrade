@@ -35,7 +35,7 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
             out, err = result_log.communicate()
             out_put = out.decode('latin-1')
-            print("result= " + str(file) + " " + str(out_put))
+            print(out_put)
 
     def on_modified(self, event):
         print("error_Watcher:on_modified: file name = " + str(event.src_path))
@@ -57,4 +57,4 @@ class error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
             out, err = result_log.communicate()
             out_put = out.decode('latin-1')
-            print("result= " + str(file) + " " + str(out_put))
+            print(out_put)
