@@ -5,7 +5,7 @@ import os
 import time
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
-from wao.error_watcher import error_Watcher
+from wao._error_watcher import _Error_Watcher
 import pickle
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
@@ -60,7 +60,7 @@ def perform_create_429_watcher():
 
 def perform_create_error_watcher():
     print("perform_create_error_watcher: watching:- " + str(BrainConfig._FREQTRADE_LOGS_DIRECTORY))
-    event_handler = error_Watcher()
+    event_handler = _Error_Watcher()
     observer = watchdog.observers.Observer()
     observer.schedule(event_handler, path=BrainConfig._FREQTRADE_LOGS_DIRECTORY, recursive=True)
     # Start the observer
