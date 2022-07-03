@@ -40,3 +40,14 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
     return result
+
+
+def dynamic_expand_pairlist(config: dict, markets: list) -> List[str]:
+    if config.get('freqai', {}):
+        full_pairs = config['pairs'] + [pair for pair in config['freqai']['corr_pairlist']
+                                        if pair not in config['pairs']]
+        expanded_pairs = expand_pairlist(full_pairs, markets)
+    else:
+        expanded_pairs = expand_pairlist(config['pairs'], markets)
+
+    return expanded_pairs

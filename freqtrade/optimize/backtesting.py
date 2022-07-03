@@ -206,6 +206,11 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
+        if self.config.get('freqai') is not None:
+            self.required_startup += int(self.config.get('freqai', {}).get('startup_candles', 1000))
+            logger.info(f'Increasing startup_candle_count for freqai to {self.required_startup}')
+            self.config['startup_candle_count'] = self.required_startup
+
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,

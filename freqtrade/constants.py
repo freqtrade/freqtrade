@@ -55,6 +55,7 @@ FTHYPT_FILEVERSION = 'fthypt_fileversion'
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
+USERPATH_FREQAIMODELS = 'freqaimodels'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
@@ -472,7 +473,44 @@ CONF_SCHEMA = {
                 'remove_pumps': {'type': 'boolean'}
             },
             'required': ['process_throttle_secs', 'allowed_risk']
-        }
+        },
+        "freqai": {
+            "type": "object",
+            "properties": {
+                "timeframes": {"type": "list"},
+                "train_period": {"type": "integer", "default": 0},
+                "backtest_period": {"type": "float", "default": 7},
+                "identifier": {"type": "str", "default": "example"},
+                "corr_pairlist": {"type": "list"},
+                "feature_parameters": {
+                    "type": "object",
+                    "properties": {
+                        "period": {"type": "integer"},
+                        "shift": {"type": "integer", "default": 0},
+                        "DI_threshold": {"type": "float", "default": 0},
+                        "weight_factor": {"type": "number", "default": 0},
+                        "principal_component_analysis": {"type": "boolean", "default": False},
+                        "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
+                    },
+                },
+                "data_split_parameters": {
+                    "type": "object",
+                    "properties": {
+                        "test_size": {"type": "number"},
+                        "random_state": {"type": "integer"},
+                    },
+                },
+                "model_training_parameters": {
+                    "type": "object",
+                    "properties": {
+                        "n_estimators": {"type": "integer", "default": 2000},
+                        "random_state": {"type": "integer", "default": 1},
+                        "learning_rate": {"type": "number", "default": 0.02},
+                        "task_type": {"type": "string", "default": "CPU"},
+                    },
+                },
+            },
+        },
     },
 }
 
@@ -514,6 +552,17 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dry_run',
     'dataformat_ohlcv',
     'dataformat_trades',
+]
+
+SCHEMA_FREQAI_REQUIRED = [
+    'timeframes',
+    'train_period',
+    'backtest_period',
+    'identifier',
+    'corr_pairlist',
+    'feature_parameters',
+    'data_split_parameters',
+    'model_training_parameters'
 ]
 
 CANCEL_REASON = {

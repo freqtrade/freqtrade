@@ -1,0 +1,17 @@
+ARG sourceimage=freqtradeorg/freqtrade
+ARG sourcetag=develop
+FROM ${sourceimage}:${sourcetag}
+
+USER root
+
+RUN apt-get install -y libgomp1
+
+USER ftuser
+
+# Install dependencies
+COPY requirements-freqai.txt /freqtrade/
+
+RUN pip install -r requirements-freqai.txt --user --no-cache-dir
+# Temporary step - as the source image will contain the wrong (non-freqai) sourcecode
+COPY --chown=ftuser:ftuser . /freqtrade/
+

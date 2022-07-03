@@ -35,6 +35,7 @@ nav:
         - Edge Positioning: edge.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
+        - Freqai: freqai.md
         - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md

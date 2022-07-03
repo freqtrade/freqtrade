@@ -1,0 +1,102 @@
+{
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "max_open_trades": 5,
+    "stake_currency": "USDT",
+    "stake_amount": 200,
+    "tradable_balance_ratio": 1,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "timeframe": "3m",
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": true,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 30
+    },
+    "exchange": {
+        "name": "okx",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "rateLimit": 200
+        },
+        "pair_whitelist": [
+            "AGLD/USDT:USDT",
+            "1INCH/USDT:USDT",
+            "AAVE/USDT:USDT",
+            "ALGO/USDT:USDT",
+            "ALPHA/USDT:USDT",
+            "API3/USDT:USDT",
+            "AVAX/USDT:USDT",
+            "AXS/USDT:USDT",
+            "BCH/USDT:USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "freqai": {
+        "startup_candles": 10000,
+        "timeframes": [
+            "3m",
+            "15m",
+            "1h"
+        ],
+        "train_period": 20,
+        "backtest_period": 0.001,
+        "identifier": "constant_retrain_live",
+        "live_trained_timestamp": 0,
+        "corr_pairlist": [
+            "BTC/USDT:USDT",
+            "ETH/USDT:USDT"
+        ],
+        "feature_parameters": {
+            "period": 20,
+            "shift": 2,
+            "DI_threshold": 0.9,
+            "weight_factor": 0.9,
+            "principal_component_analysis": false,
+            "use_SVM_to_remove_outliers": true,
+            "stratify": 0,
+            "indicator_max_period": 20,
+            "indicator_periods": [10, 20]
+        },
+        "data_split_parameters": {
+            "test_size": 0.33,
+            "random_state": 1
+        },
+        "model_training_parameters": {
+            "n_estimators": 1000,
+            "task_type": "CPU"
+        }
+    },
+    "bot_name": "",
+    "force_entry_enable": true,
+    "initial_state": "running",
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}
