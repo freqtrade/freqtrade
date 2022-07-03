@@ -127,14 +127,14 @@ class HyperoptTools():
             'only_profitable': config.get('hyperopt_list_profitable', False),
             'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
             'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
-            'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
-            'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
-            'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
-            'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
-            'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
-            'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
-            'filter_min_objective': config.get('hyperopt_list_min_objective', None),
-            'filter_max_objective': config.get('hyperopt_list_max_objective', None),
+            'filter_min_avg_time': config.get('hyperopt_list_min_avg_time'),
+            'filter_max_avg_time': config.get('hyperopt_list_max_avg_time'),
+            'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit'),
+            'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit'),
+            'filter_min_total_profit': config.get('hyperopt_list_min_total_profit'),
+            'filter_max_total_profit': config.get('hyperopt_list_max_total_profit'),
+            'filter_min_objective': config.get('hyperopt_list_min_objective'),
+            'filter_max_objective': config.get('hyperopt_list_max_objective'),
         }
         if not HyperoptTools._test_hyperopt_results_exist(results_file):
             # No file found.

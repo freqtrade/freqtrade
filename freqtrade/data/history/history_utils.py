@@ -221,7 +221,7 @@ def _download_pair_history(pair: str, *,
             prepend=prepend)
 
         logger.info(f'({process}) - Download history data for "{pair}", {timeframe}, '
-                    f'{candle_type} and store in {datadir}.'
+                    f'{candle_type} and store in {datadir}. '
                     f'From {format_ms_time(since_ms) if since_ms else "start"} to '
                     f'{format_ms_time(until_ms) if until_ms else "now"}'
                     )

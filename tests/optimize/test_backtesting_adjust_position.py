@@ -70,9 +70,14 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
          'is_open': [False, False],
          'enter_tag': [None, None],
          'is_short': [False, False],
+         'open_timestamp': [1517251200000, 1517283000000],
+         'close_timestamp': [1517265300000, 1517285400000],
          })
-    pd.testing.assert_frame_equal(results, expected)
+    pd.testing.assert_frame_equal(results.drop(columns=['orders']), expected)
     data_pair = processed[pair]
+    assert len(results.iloc[0]['orders']) == 6
+    assert len(results.iloc[1]['orders']) == 2
+
     for _, t in results.iterrows():
         ln = data_pair.loc[data_pair["date"] == t["open_date"]]
         # Check open trade rate alignes to open rate

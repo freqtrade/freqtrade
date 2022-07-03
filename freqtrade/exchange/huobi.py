@@ -27,7 +27,13 @@ class Huobi(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return order['type'] == 'stop' and stop_loss > float(order['stopPrice'])
+        return (
+            order.get('stopPrice', None) is None
+            or (
+                order['type'] == 'stop'
+                and stop_loss > float(order['stopPrice'])
+            )
+        )
 
     def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
 

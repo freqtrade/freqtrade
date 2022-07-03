@@ -85,7 +85,7 @@ def test_load_backtest_data_new_format(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
+    assert set(bt_data.columns) == set(BT_DATA_COLUMNS)
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -110,7 +110,7 @@ def test_load_backtest_data_multi(testdatadir):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
         assert set(bt_data.columns) == set(
-            BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
+            BT_DATA_COLUMNS)
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
