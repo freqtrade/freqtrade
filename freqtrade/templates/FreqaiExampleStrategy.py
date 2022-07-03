@@ -120,9 +120,7 @@ class FreqaiExampleStrategy(IStrategy):
                     informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
                 )
 
-                informative[f"%-{coin}roc-period_{t}"] = ta.ROC(
-                    informative, timeperiod=t
-                )
+                informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
                 macd = ta.MACD(informative, timeperiod=t)
                 informative[f"%-{coin}macd-period_{t}"] = macd["macd"]
 
@@ -152,17 +150,17 @@ class FreqaiExampleStrategy(IStrategy):
             # Add generalized indicators here (because in live, it will call this
             # function to populate indicators during training). Notice how we ensure not to
             # add them multiple times
-            if pair == self.freqai_info['corr_pairlist'][0] and tf == self.timeframe:
+            if pair == self.freqai_info["corr_pairlist"][0] and tf == self.timeframe:
                 df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
                 df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 
                 # user adds targets here by prepending them with &- (see convention below)
                 # If user wishes to use multiple targets, a multioutput prediction model
                 # needs to be used such as templates/CatboostPredictionMultiModel.py
-                df['&-s_close'] = (
+                df["&-s_close"] = (
                     df["close"]
-                    .shift(-self.freqai_info['feature_parameters']["period"])
-                    .rolling(self.freqai_info['feature_parameters']["period"])
+                    .shift(-self.freqai_info["feature_parameters"]["period"])
+                    .rolling(self.freqai_info["feature_parameters"]["period"])
                     .mean()
                     / df["close"]
                     - 1
@@ -231,19 +229,20 @@ class FreqaiExampleStrategy(IStrategy):
     def get_ticker_indicator(self):
         return int(self.config["timeframe"][:-1])
 
-    def custom_exit(self, pair: str, trade: Trade, current_time, current_rate,
-                    current_profit, **kwargs):
+    def custom_exit(
+        self, pair: str, trade: Trade, current_time, current_rate, current_profit, **kwargs
+    ):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
 
-        trade_date = timeframe_to_prev_date(self.config['timeframe'], trade.open_date_utc)
-        trade_candle = dataframe.loc[(dataframe['date'] == trade_date)]
+        trade_date = timeframe_to_prev_date(self.config["timeframe"], trade.open_date_utc)
+        trade_candle = dataframe.loc[(dataframe["date"] == trade_date)]
 
         if trade_candle.empty:
             return None
         trade_candle = trade_candle.squeeze()
 
-        follow_mode = self.config.get('freqai', {}).get('follow_mode', False)
+        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
 
         if not follow_mode:
             pair_dict = self.model.bridge.data_drawer.pair_dict
@@ -252,30 +251,33 @@ class FreqaiExampleStrategy(IStrategy):
 
         entry_tag = trade.enter_tag
 
-        if ('prediction' + entry_tag not in pair_dict[pair] or
-                pair_dict[pair]['prediction' + entry_tag] > 0):
+        if (
+            "prediction" + entry_tag not in pair_dict[pair]
+            or pair_dict[pair]["prediction" + entry_tag] > 0
+        ):
             with self.model.bridge.lock:
-                pair_dict[pair]['prediction' + entry_tag] = abs(trade_candle['&-s_close'])
+                pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
                 if not follow_mode:
                     self.model.bridge.data_drawer.save_drawer_to_disk()
                 else:
                     self.model.bridge.data_drawer.save_follower_dict_to_disk()
 
-        roi_price = pair_dict[pair]['prediction' + entry_tag]
+        roi_price = pair_dict[pair]["prediction" + entry_tag]
         roi_time = self.max_roi_time_long.value
 
-        roi_decay = roi_price * (1 - ((current_time - trade.open_date_utc).seconds) /
-                                 (roi_time * 60))
+        roi_decay = roi_price * (
+            1 - ((current_time - trade.open_date_utc).seconds) / (roi_time * 60)
+        )
         if roi_decay < 0:
             roi_decay = self.linear_roi_offset.value
         else:
             roi_decay += self.linear_roi_offset.value
 
         if current_profit > roi_decay:
-            return 'roi_custom_win'
+            return "roi_custom_win"
 
         if current_profit < -roi_decay:
-            return 'roi_custom_loss'
+            return "roi_custom_loss"
 
     def confirm_trade_exit(
         self,
@@ -287,7 +289,7 @@ class FreqaiExampleStrategy(IStrategy):
         time_in_force: str,
         exit_reason: str,
         current_time,
-        **kwargs
+        **kwargs,
     ) -> bool:
 
         entry_tag = trade.enter_tag
@@ -316,7 +318,7 @@ class FreqaiExampleStrategy(IStrategy):
         current_time,
         entry_tag,
         side: str,
-        **kwargs
+        **kwargs,
     ) -> bool:
 
         df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)

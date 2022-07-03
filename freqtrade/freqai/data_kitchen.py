@@ -37,8 +37,13 @@ class FreqaiDataKitchen:
     author: Robert Caulk, rob.caulk@gmail.com
     """
 
-    def __init__(self, config: Dict[str, Any], data_drawer: FreqaiDataDrawer, live: bool = False,
-                 pair: str = ''):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        data_drawer: FreqaiDataDrawer,
+        live: bool = False,
+        pair: str = "",
+    ):
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
@@ -60,9 +65,9 @@ class FreqaiDataKitchen:
         self.svm_model: linear_model.SGDOneClassSVM = None
         self.set_all_pairs()
         if not self.live:
-            self.full_timerange = self.create_fulltimerange(self.config["timerange"],
-                                                            self.freqai_config.get("train_period")
-                                                            )
+            self.full_timerange = self.create_fulltimerange(
+                self.config["timerange"], self.freqai_config.get("train_period")
+            )
 
             (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
                 self.full_timerange,
@@ -72,24 +77,28 @@ class FreqaiDataKitchen:
         # self.strat_dataframe: DataFrame = strat_dataframe
         self.dd = data_drawer
 
-    def set_paths(self, pair: str, trained_timestamp: int = None,) -> None:
+    def set_paths(
+        self,
+        pair: str,
+        trained_timestamp: int = None,
+    ) -> None:
         """
         Set the paths to the data for the present coin/botloop
         :params:
         metadata: dict = strategy furnished pair metadata
         trained_timestamp: int = timestamp of most recent training
         """
-        self.full_path = Path(self.config['user_data_dir'] /
-                              "models" /
-                              str(self.freqai_config.get('identifier')))
+        self.full_path = Path(
+            self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
+        )
 
-        self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                                                   pair.split("/")[0] +
-                                                   str(trained_timestamp)))
+        self.data_path = Path(
+            self.full_path / str("sub-train" + "-" + pair.split("/")[0] + str(trained_timestamp))
+        )
 
         return
 
-    def save_data(self, model: Any, coin: str = '', keras_model=False, label=None) -> None:
+    def save_data(self, model: Any, coin: str = "", keras_model=False, label=None) -> None:
         """
         Saves all data associated with a model for a single sub-train time range
         :params:
@@ -114,7 +123,7 @@ class FreqaiDataKitchen:
         self.data["data_path"] = str(self.data_path)
         self.data["model_filename"] = str(self.model_filename)
         self.data["training_features_list"] = list(self.data_dictionary["train_features"].columns)
-        self.data['label_list'] = self.label_list
+        self.data["label_list"] = self.label_list
         # store the metadata
         with open(save_path / str(self.model_filename + "_metadata.json"), "w") as fp:
             json.dump(self.data, fp, default=self.np_encoder)
@@ -124,14 +133,15 @@ class FreqaiDataKitchen:
             save_path / str(self.model_filename + "_trained_df.pkl")
         )
 
-        if self.freqai_config.get('feature_parameters', {}).get('principal_component_analysis'):
-            pk.dump(self.pca, open(self.data_path /
-                    str(self.model_filename + "_pca_object.pkl"), "wb"))
+        if self.freqai_config.get("feature_parameters", {}).get("principal_component_analysis"):
+            pk.dump(
+                self.pca, open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "wb")
+            )
 
         # if self.live:
         self.dd.model_dictionary[self.model_filename] = model
-        self.dd.pair_dict[coin]['model_filename'] = self.model_filename
-        self.dd.pair_dict[coin]['data_path'] = str(self.data_path)
+        self.dd.pair_dict[coin]["model_filename"] = self.model_filename
+        self.dd.pair_dict[coin]["data_path"] = str(self.data_path)
         self.dd.save_drawer_to_disk()
 
         # TODO add a helper function to let user save/load any data they are custom adding. We
@@ -149,29 +159,32 @@ class FreqaiDataKitchen:
 
         return
 
-    def load_data(self, coin: str = '', keras_model=False) -> Any:
+    def load_data(self, coin: str = "", keras_model=False) -> Any:
         """
         loads all data required to make a prediction on a sub-train time range
         :returns:
         :model: User trained model which can be inferenced for new predictions
         """
 
-        if not self.dd.pair_dict[coin]['model_filename']:
+        if not self.dd.pair_dict[coin]["model_filename"]:
             return None
 
         if self.live:
-            self.model_filename = self.dd.pair_dict[coin]['model_filename']
-            self.data_path = Path(self.dd.pair_dict[coin]['data_path'])
-            if self.freqai_config.get('follow_mode', False):
+            self.model_filename = self.dd.pair_dict[coin]["model_filename"]
+            self.data_path = Path(self.dd.pair_dict[coin]["data_path"])
+            if self.freqai_config.get("follow_mode", False):
                 # follower can be on a different system which is rsynced to the leader:
-                self.data_path = Path(self.config["user_data_dir"] /
-                                      "models" / self.data_path.parts[-2] /
-                                      self.data_path.parts[-1])
+                self.data_path = Path(
+                    self.config["user_data_dir"]
+                    / "models"
+                    / self.data_path.parts[-2]
+                    / self.data_path.parts[-1]
+                )
 
         with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
             self.data = json.load(fp)
             self.training_features_list = self.data["training_features_list"]
-            self.label_list = self.data['label_list']
+            self.label_list = self.data["label_list"]
 
         self.data_dictionary["train_features"] = pd.read_pickle(
             self.data_path / str(self.model_filename + "_trained_df.pkl")
@@ -200,17 +213,16 @@ class FreqaiDataKitchen:
             model = load(self.data_path / str(self.model_filename + "_model.joblib"))
         else:
             from tensorflow import keras
+
             model = keras.models.load_model(self.data_path / str(self.model_filename + "_model.h5"))
 
-        if Path(self.data_path / str(self.model_filename +
-                "_svm_model.joblib")).resolve().exists():
+        if Path(self.data_path / str(self.model_filename + "_svm_model.joblib")).resolve().exists():
             self.svm_model = load(self.data_path / str(self.model_filename + "_svm_model.joblib"))
 
         if not model:
             raise OperationalException(
-                       f"Unable to load model, ensure model exists at "
-                       f"{self.data_path} "
-                      )
+                f"Unable to load model, ensure model exists at " f"{self.data_path} "
+            )
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             self.pca = pk.load(
@@ -257,7 +269,7 @@ class FreqaiDataKitchen:
             weights,
             stratify=stratification,
             # shuffle=False,
-            **self.config["freqai"]["data_split_parameters"]
+            **self.config["freqai"]["data_split_parameters"],
         )
 
         return self.build_data_dictionary(
@@ -309,14 +321,14 @@ class FreqaiDataKitchen:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
             logger.info(
-                f'dropped {len(unfiltered_dataframe) - len(filtered_dataframe)} training points'
-                f' due to NaNs in populated dataset {len(unfiltered_dataframe)}.'
+                f"dropped {len(unfiltered_dataframe) - len(filtered_dataframe)} training points"
+                f" due to NaNs in populated dataset {len(unfiltered_dataframe)}."
             )
             if (1 - len(filtered_dataframe) / len(unfiltered_dataframe)) > 0.1 and self.live:
                 logger.warning(
-                    f' {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.2f} percent'
-                    ' of training data dropped due to NaNs, model may perform inconsistent'
-                    'with expectations'
+                    f" {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.2f} percent"
+                    " of training data dropped due to NaNs, model may perform inconsistent"
+                    "with expectations"
                 )
             self.data["filter_drop_index_training"] = drop_index
 
@@ -372,21 +384,27 @@ class FreqaiDataKitchen:
         # standardize the data by training stats
         train_max = data_dictionary["train_features"].max()
         train_min = data_dictionary["train_features"].min()
-        data_dictionary["train_features"] = 2 * (
-            data_dictionary["train_features"] - train_min
-        ) / (train_max - train_min) - 1
-        data_dictionary["test_features"] = 2 * (
-            data_dictionary["test_features"] - train_min
-        ) / (train_max - train_min) - 1
+        data_dictionary["train_features"] = (
+            2 * (data_dictionary["train_features"] - train_min) / (train_max - train_min) - 1
+        )
+        data_dictionary["test_features"] = (
+            2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
+        )
 
         train_labels_max = data_dictionary["train_labels"].max()
         train_labels_min = data_dictionary["train_labels"].min()
-        data_dictionary["train_labels"] = 2 * (
-            data_dictionary["train_labels"] - train_labels_min
-        ) / (train_labels_max - train_labels_min) - 1
-        data_dictionary["test_labels"] = 2 * (
-            data_dictionary["test_labels"] - train_labels_min
-        ) / (train_labels_max - train_labels_min) - 1
+        data_dictionary["train_labels"] = (
+            2
+            * (data_dictionary["train_labels"] - train_labels_min)
+            / (train_labels_max - train_labels_min)
+            - 1
+        )
+        data_dictionary["test_labels"] = (
+            2
+            * (data_dictionary["test_labels"] - train_labels_min)
+            / (train_labels_max - train_labels_min)
+            - 1
+        )
 
         for item in train_max.keys():
             self.data[item + "_max"] = train_max[item]
@@ -406,8 +424,12 @@ class FreqaiDataKitchen:
         """
 
         for item in df.keys():
-            df[item] = 2 * (df[item] - self.data[item + "_min"]) / (self.data[item + "_max"] -
-                                                                    self.data[item + '_min']) - 1
+            df[item] = (
+                2
+                * (df[item] - self.data[item + "_min"])
+                / (self.data[item + "_max"] - self.data[item + "_min"])
+                - 1
+            )
 
         return df
 
@@ -429,8 +451,9 @@ class FreqaiDataKitchen:
         full_timerange = TimeRange.parse_timerange(tr)
         config_timerange = TimeRange.parse_timerange(self.config["timerange"])
         if config_timerange.stopts == 0:
-            config_timerange.stopts = int(datetime.datetime.now(
-                                            tz=datetime.timezone.utc).timestamp())
+            config_timerange.stopts = int(
+                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+            )
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
 
@@ -518,7 +541,7 @@ class FreqaiDataKitchen:
 
         # keeping a copy of the non-transformed features so we can check for errors during
         # model load from disk
-        self.data['training_features_list_raw'] = copy.deepcopy(self.training_features_list)
+        self.data["training_features_list_raw"] = copy.deepcopy(self.training_features_list)
         self.training_features_list = self.data_dictionary["train_features"].columns
 
         self.data_dictionary["test_features"] = pd.DataFrame(
@@ -530,7 +553,7 @@ class FreqaiDataKitchen:
         self.data["n_kept_components"] = n_keep_components
         self.pca = pca2
 
-        logger.info(f'PCA reduced total features from  {n_components} to {n_keep_components}')
+        logger.info(f"PCA reduced total features from  {n_components} to {n_keep_components}")
 
         if not self.data_path.is_dir():
             self.data_path.mkdir(parents=True, exist_ok=True)
@@ -557,10 +580,10 @@ class FreqaiDataKitchen:
         for prediction confidence in the Dissimilarity Index
         """
         logger.info("computing average mean distance for all training points")
-        tc = self.freqai_config.get('model_training_parameters', {}).get('thread_count', -1)
+        tc = self.freqai_config.get("model_training_parameters", {}).get("thread_count", -1)
         pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=tc)
         avg_mean_dist = pairwise.mean(axis=1).mean()
-        logger.info(f'avg_mean_dist {avg_mean_dist:.2f}')
+        logger.info(f"avg_mean_dist {avg_mean_dist:.2f}")
 
         return avg_mean_dist
 
@@ -579,45 +602,49 @@ class FreqaiDataKitchen:
 
             if (len(do_predict) - do_predict.sum()) > 0:
                 logger.info(
-                    f'svm_remove_outliers() tossed {len(do_predict) - do_predict.sum()} predictions'
+                    f"svm_remove_outliers() tossed {len(do_predict) - do_predict.sum()} predictions"
                 )
             self.do_predict += do_predict
             self.do_predict -= 1
 
         else:
             # use SGDOneClassSVM to increase speed?
-            nu = self.freqai_config.get('feature_parameters', {}).get('svm_nu', 0.2)
+            nu = self.freqai_config.get("feature_parameters", {}).get("svm_nu", 0.2)
             self.svm_model = linear_model.SGDOneClassSVM(nu=nu).fit(
-                                                            self.data_dictionary["train_features"]
-                                                            )
+                self.data_dictionary["train_features"]
+            )
             y_pred = self.svm_model.predict(self.data_dictionary["train_features"])
             dropped_points = np.where(y_pred == -1, 0, y_pred)
             # keep_index = np.where(y_pred == 1)
-            self.data_dictionary["train_features"] = self.data_dictionary[
-                                                                "train_features"][(y_pred == 1)]
-            self.data_dictionary["train_labels"] = self.data_dictionary[
-                                                                "train_labels"][(y_pred == 1)]
-            self.data_dictionary["train_weights"] = self.data_dictionary[
-                                                                "train_weights"][(y_pred == 1)]
+            self.data_dictionary["train_features"] = self.data_dictionary["train_features"][
+                (y_pred == 1)
+            ]
+            self.data_dictionary["train_labels"] = self.data_dictionary["train_labels"][
+                (y_pred == 1)
+            ]
+            self.data_dictionary["train_weights"] = self.data_dictionary["train_weights"][
+                (y_pred == 1)
+            ]
 
             logger.info(
-                f'svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}'
-                f' train points from {len(y_pred)}'
+                f"svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}"
+                f" train points from {len(y_pred)}"
             )
 
             # same for test data
             y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
             dropped_points = np.where(y_pred == -1, 0, y_pred)
-            self.data_dictionary["test_features"] = self.data_dictionary[
-                                                                "test_features"][(y_pred == 1)]
-            self.data_dictionary["test_labels"] = self.data_dictionary[
-                                                                "test_labels"][(y_pred == 1)]
-            self.data_dictionary["test_weights"] = self.data_dictionary[
-                                                                "test_weights"][(y_pred == 1)]
+            self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
+                (y_pred == 1)
+            ]
+            self.data_dictionary["test_labels"] = self.data_dictionary["test_labels"][(y_pred == 1)]
+            self.data_dictionary["test_weights"] = self.data_dictionary["test_weights"][
+                (y_pred == 1)
+            ]
 
             logger.info(
-                f'svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}'
-                f' test points from {len(y_pred)}'
+                f"svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}"
+                f" test points from {len(y_pred)}"
             )
 
         return
@@ -631,8 +658,8 @@ class FreqaiDataKitchen:
         features: list = the features to be used for training/prediction
         """
         column_names = dataframe.columns
-        features = [c for c in column_names if '%' in c]
-        labels = [c for c in column_names if '&' in c]
+        features = [c for c in column_names if "%" in c]
+        labels = [c for c in column_names if "&" in c]
         if not features:
             raise OperationalException("Could not find any features!")
 
@@ -657,16 +684,15 @@ class FreqaiDataKitchen:
         self.DI_values = distance.min(axis=0) / self.data["avg_mean_dist"]
 
         do_predict = np.where(
-            self.DI_values
-            < self.freqai_config.get("feature_parameters", {}).get("DI_threshold"),
+            self.DI_values < self.freqai_config.get("feature_parameters", {}).get("DI_threshold"),
             1,
             0,
         )
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f'DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for '
-                'being too far from training data'
+                f"DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for "
+                "being too far from training data"
             )
 
         self.do_predict += do_predict
@@ -695,7 +721,7 @@ class FreqaiDataKitchen:
 
         self.full_predictions = np.append(self.full_predictions, predictions)
         self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+        if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
             self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
         self.full_target_mean = np.append(self.full_target_mean, target_mean)
         self.full_target_std = np.append(self.full_target_std, target_std)
@@ -711,7 +737,7 @@ class FreqaiDataKitchen:
         filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
         self.full_predictions = np.append(filler, self.full_predictions)
         self.full_do_predict = np.append(filler, self.full_do_predict)
-        if self.freqai_config.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
+        if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
             self.full_DI_values = np.append(filler, self.full_DI_values)
         self.full_target_mean = np.append(filler, self.full_target_mean)
         self.full_target_std = np.append(filler, self.full_target_std)
@@ -722,8 +748,9 @@ class FreqaiDataKitchen:
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
 
         if backtest_timerange.stopts == 0:
-            backtest_timerange.stopts = int(datetime.datetime.now(
-                                            tz=datetime.timezone.utc).timestamp())
+            backtest_timerange.stopts = int(
+                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+            )
 
         backtest_timerange.startts = backtest_timerange.startts - backtest_period * SECONDS_IN_DAY
         start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
@@ -731,9 +758,7 @@ class FreqaiDataKitchen:
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         self.full_path = Path(
-            self.config["user_data_dir"]
-            / "models"
-            / str(self.freqai_config.get("identifier"))
+            self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
         )
 
         config_path = Path(self.config["config_files"][0])
@@ -758,61 +783,71 @@ class FreqaiDataKitchen:
         """
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
-        max_time = self.freqai_config.get('expiration_hours', 0)
+        max_time = self.freqai_config.get("expiration_hours", 0)
         if max_time > 0:
             return elapsed_time > max_time
         else:
             return False
 
-    def check_if_new_training_required(self, trained_timestamp: int) -> Tuple[bool,
-                                                                              TimeRange, TimeRange]:
+    def check_if_new_training_required(
+        self, trained_timestamp: int
+    ) -> Tuple[bool, TimeRange, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         trained_timerange = TimeRange()
         data_load_timerange = TimeRange()
 
         # find the max indicator length required
-        max_timeframe_chars = self.freqai_config.get('timeframes')[-1]
-        max_period = self.freqai_config.get('feature_parameters', {}).get(
-                                            'indicator_max_period', 50)
+        max_timeframe_chars = self.freqai_config.get("timeframes")[-1]
+        max_period = self.freqai_config.get("feature_parameters", {}).get(
+            "indicator_max_period", 50
+        )
         additional_seconds = 0
-        if max_timeframe_chars[-1] == 'd':
+        if max_timeframe_chars[-1] == "d":
             additional_seconds = max_period * SECONDS_IN_DAY * int(max_timeframe_chars[-2])
-        elif max_timeframe_chars[-1] == 'h':
+        elif max_timeframe_chars[-1] == "h":
             additional_seconds = max_period * 3600 * int(max_timeframe_chars[-2])
-        elif max_timeframe_chars[-1] == 'm':
+        elif max_timeframe_chars[-1] == "m":
             if len(max_timeframe_chars) == 2:
                 additional_seconds = max_period * 60 * int(max_timeframe_chars[-2])
             elif len(max_timeframe_chars) == 3:
                 additional_seconds = max_period * 60 * int(float(max_timeframe_chars[0:2]))
             else:
-                logger.warning('FreqAI could not detect max timeframe and therefore may not '
-                               'download the proper amount of data for training')
+                logger.warning(
+                    "FreqAI could not detect max timeframe and therefore may not "
+                    "download the proper amount of data for training"
+                )
 
         # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
-            retrain = elapsed_time > self.freqai_config.get('backtest_period')
+            retrain = elapsed_time > self.freqai_config.get("backtest_period")
             if retrain:
-                trained_timerange.startts = int(time - self.freqai_config.get(
-                                             'train_period', 0) * SECONDS_IN_DAY)
+                trained_timerange.startts = int(
+                    time - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                )
                 trained_timerange.stopts = int(time)
                 # we want to load/populate indicators on more data than we plan to train on so
                 # because most of the indicators have a rolling timeperiod, and are thus NaNs
                 # unless they have data further back in time before the start of the train period
-                data_load_timerange.startts = int(time - self.freqai_config.get(
-                                             'train_period', 0) * SECONDS_IN_DAY
-                                             - additional_seconds)
+                data_load_timerange.startts = int(
+                    time
+                    - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                    - additional_seconds
+                )
                 data_load_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
-            trained_timerange.startts = int(time - self.freqai_config.get('train_period') *
-                                            SECONDS_IN_DAY)
+            trained_timerange.startts = int(
+                time - self.freqai_config.get("train_period") * SECONDS_IN_DAY
+            )
             trained_timerange.stopts = int(time)
 
-            data_load_timerange.startts = int(time - self.freqai_config.get(
-                                            'train_period', 0) * SECONDS_IN_DAY
-                                            - additional_seconds)
+            data_load_timerange.startts = int(
+                time
+                - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                - additional_seconds
+            )
             data_load_timerange.stopts = int(time)
             retrain = True
 
@@ -822,9 +857,10 @@ class FreqaiDataKitchen:
 
         coin, _ = pair.split("/")
         # set the new data_path
-        self.data_path = Path(self.full_path / str("sub-train" + "-" +
-                              pair.split("/")[0] +
-                              str(int(trained_timerange.stopts))))
+        self.data_path = Path(
+            self.full_path
+            / str("sub-train" + "-" + pair.split("/")[0] + str(int(trained_timerange.stopts)))
+        )
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
 
@@ -860,20 +896,24 @@ class FreqaiDataKitchen:
         timerange: TimeRange = The full data timerange for populating the indicators
         and training the model.
         """
-        exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
-                                                  self.config, validate=False, freqai=True)
+        exchange = ExchangeResolver.load_exchange(
+            self.config["exchange"]["name"], self.config, validate=False, freqai=True
+        )
 
         new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
 
         refresh_backtest_ohlcv_data(
-                        exchange, pairs=self.all_pairs,
-                        timeframes=self.freqai_config.get('timeframes'),
-                        datadir=self.config['datadir'], timerange=timerange,
-                        new_pairs_days=new_pairs_days,
-                        erase=False, data_format=self.config.get('dataformat_ohlcv', 'json'),
-                        trading_mode=self.config.get('trading_mode', 'spot'),
-                        prepend=self.config.get('prepend_data', False)
-                    )
+            exchange,
+            pairs=self.all_pairs,
+            timeframes=self.freqai_config.get("timeframes"),
+            datadir=self.config["datadir"],
+            timerange=timerange,
+            new_pairs_days=new_pairs_days,
+            erase=False,
+            data_format=self.config.get("dataformat_ohlcv", "json"),
+            trading_mode=self.config.get("trading_mode", "spot"),
+            prepend=self.config.get("prepend_data", False),
+        )
 
     def update_historic_data(self, strategy: IStrategy) -> None:
         """
@@ -888,34 +928,36 @@ class FreqaiDataKitchen:
             history_data = self.dd.historic_data
 
             for pair in self.all_pairs:
-                for tf in self.freqai_config.get('timeframes'):
+                for tf in self.freqai_config.get("timeframes"):
 
                     # check if newest candle is already appended
                     df_dp = strategy.dp.get_pair_dataframe(pair, tf)
                     if len(df_dp.index) == 0:
                         continue
-                    if (
-                         str(history_data[pair][tf].iloc[-1]['date']) ==
-                         str(df_dp.iloc[-1:]['date'].iloc[-1])
-                         ):
+                    if str(history_data[pair][tf].iloc[-1]["date"]) == str(
+                        df_dp.iloc[-1:]["date"].iloc[-1]
+                    ):
                         continue
 
-                    index = df_dp.loc[
-                                df_dp['date'] ==
-                                history_data[pair][tf].iloc[-1]['date']
-                                ].index[0] + 1
+                    index = (
+                        df_dp.loc[df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]].index[0]
+                        + 1
+                    )
                     history_data[pair][tf] = pd.concat(
-                                            [history_data[pair][tf],
-                                             strategy.dp.get_pair_dataframe(pair, tf).iloc[index:]],
-                                            ignore_index=True, axis=0
-                                                )
+                        [
+                            history_data[pair][tf],
+                            strategy.dp.get_pair_dataframe(pair, tf).iloc[index:],
+                        ],
+                        ignore_index=True,
+                        axis=0,
+                    )
 
             # logger.info(f'Length of history data {len(history_data[pair][tf])}')
 
     def set_all_pairs(self) -> None:
 
-        self.all_pairs = copy.deepcopy(self.freqai_config.get('corr_pairlist', []))
-        for pair in self.config.get('exchange', '').get('pair_whitelist'):
+        self.all_pairs = copy.deepcopy(self.freqai_config.get("corr_pairlist", []))
+        for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
 
@@ -932,17 +974,19 @@ class FreqaiDataKitchen:
         for pair in self.all_pairs:
             if pair not in history_data:
                 history_data[pair] = {}
-            for tf in self.freqai_config.get('timeframes'):
-                history_data[pair][tf] = load_pair_history(datadir=self.config['datadir'],
-                                                           timeframe=tf,
-                                                           pair=pair, timerange=timerange,
-                                                           data_format=self.config.get(
-                                                            'dataformat_ohlcv', 'json'),
-                                                           candle_type=self.config.get(
-                                                            'trading_mode', 'spot'))
+            for tf in self.freqai_config.get("timeframes"):
+                history_data[pair][tf] = load_pair_history(
+                    datadir=self.config["datadir"],
+                    timeframe=tf,
+                    pair=pair,
+                    timerange=timerange,
+                    data_format=self.config.get("dataformat_ohlcv", "json"),
+                    candle_type=self.config.get("trading_mode", "spot"),
+                )
 
-    def get_base_and_corr_dataframes(self, timerange: TimeRange,
-                                     pair: str) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
+    def get_base_and_corr_dataframes(
+        self, timerange: TimeRange, pair: str
+    ) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
@@ -956,21 +1000,19 @@ class FreqaiDataKitchen:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
             historic_data = self.dd.historic_data
-            pairs = self.freqai_config.get('corr_pairlist', [])
+            pairs = self.freqai_config.get("corr_pairlist", [])
 
-            for tf in self.freqai_config.get('timeframes'):
-                base_dataframes[tf] = self.slice_dataframe(
-                                                        timerange,
-                                                        historic_data[pair][tf]
-                                                        )
+            for tf in self.freqai_config.get("timeframes"):
+                base_dataframes[tf] = self.slice_dataframe(timerange, historic_data[pair][tf])
                 if pairs:
                     for p in pairs:
                         if pair in p:
                             continue  # dont repeat anything from whitelist
                         if p not in corr_dataframes:
                             corr_dataframes[p] = {}
-                        corr_dataframes[p][tf] = self.slice_dataframe(timerange,
-                                                                      historic_data[p][tf])
+                        corr_dataframes[p][tf] = self.slice_dataframe(
+                            timerange, historic_data[p][tf]
+                        )
 
         return corr_dataframes, base_dataframes
 
@@ -1006,10 +1048,9 @@ class FreqaiDataKitchen:
 
     #     return corr_dataframes, base_dataframes
 
-    def use_strategy_to_populate_indicators(self, strategy: IStrategy,
-                                            corr_dataframes: dict,
-                                            base_dataframes: dict,
-                                            pair: str) -> DataFrame:
+    def use_strategy_to_populate_indicators(
+        self, strategy: IStrategy, corr_dataframes: dict, base_dataframes: dict, pair: str
+    ) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during
         retrain
@@ -1023,30 +1064,25 @@ class FreqaiDataKitchen:
         :returns:
         dataframe: DataFrame = dataframe containing populated indicators
         """
-        dataframe = base_dataframes[self.config['timeframe']].copy()
+        dataframe = base_dataframes[self.config["timeframe"]].copy()
         pairs = self.freqai_config.get("corr_pairlist", [])
 
         for tf in self.freqai_config.get("timeframes"):
             dataframe = strategy.populate_any_indicators(
-                                                         pair,
-                                                         pair,
-                                                         dataframe.copy(),
-                                                         tf,
-                                                         base_dataframes[tf],
-                                                         coin=pair.split("/")[0] + "-"
-                                                         )
+                pair, pair, dataframe.copy(), tf, base_dataframes[tf], coin=pair.split("/")[0] + "-"
+            )
             if pairs:
                 for i in pairs:
                     if pair in i:
                         continue  # dont repeat anything from whitelist
                     dataframe = strategy.populate_any_indicators(
-                                                                 pair,
-                                                                 i,
-                                                                 dataframe.copy(),
-                                                                 tf,
-                                                                 corr_dataframes[i][tf],
-                                                                 coin=i.split("/")[0] + "-"
-                                                                 )
+                        pair,
+                        i,
+                        dataframe.copy(),
+                        tf,
+                        corr_dataframes[i][tf],
+                        coin=i.split("/")[0] + "-",
+                    )
 
         return dataframe
 
@@ -1056,7 +1092,7 @@ class FreqaiDataKitchen:
         """
         import scipy as spy
 
-        self.data['labels_mean'], self.data['labels_std'] = {}, {}
+        self.data["labels_mean"], self.data["labels_std"] = {}, {}
         for label in self.label_list:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
