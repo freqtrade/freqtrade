@@ -533,7 +533,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         return None
 
     def populate_any_indicators(self, basepair: str, pair: str, df: DataFrame, tf: str,
-                                informative: DataFrame = None, coin: str = "") -> DataFrame:
+                                informative: DataFrame = None, coin: str = "",
+                                set_generalized_indicators: bool = False) -> DataFrame:
         """
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add

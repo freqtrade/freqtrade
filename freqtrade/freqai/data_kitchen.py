@@ -1066,11 +1066,18 @@ class FreqaiDataKitchen:
         """
         dataframe = base_dataframes[self.config["timeframe"]].copy()
         pairs = self.freqai_config.get("corr_pairlist", [])
-
+        sgi = True
         for tf in self.freqai_config.get("timeframes"):
             dataframe = strategy.populate_any_indicators(
-                pair, pair, dataframe.copy(), tf, base_dataframes[tf], coin=pair.split("/")[0] + "-"
+                pair,
+                pair,
+                dataframe.copy(),
+                tf,
+                base_dataframes[tf],
+                coin=pair.split("/")[0] + "-",
+                set_generalized_indicators=sgi,
             )
+            sgi = False
             if pairs:
                 for i in pairs:
                     if pair in i:

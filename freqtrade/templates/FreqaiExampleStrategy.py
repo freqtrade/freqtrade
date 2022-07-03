@@ -70,7 +70,9 @@ class FreqaiExampleStrategy(IStrategy):
     def bot_start(self):
         self.model = CustomModel(self.config)
 
-    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
+    def populate_any_indicators(
+        self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
+    ):
         """
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User controls the indicators
@@ -150,7 +152,7 @@ class FreqaiExampleStrategy(IStrategy):
             # Add generalized indicators here (because in live, it will call this
             # function to populate indicators during training). Notice how we ensure not to
             # add them multiple times
-            if pair == self.freqai_info["corr_pairlist"][0] and tf == self.timeframe:
+            if set_generalized_indicators:
                 df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
                 df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 
@@ -172,15 +174,21 @@ class FreqaiExampleStrategy(IStrategy):
 
         self.freqai_info = self.config["freqai"]
         self.pair = metadata["pair"]
-
+        sgi = True
         # the following loops are necessary for building the features
         # indicated by the user in the configuration file.
         # All indicators must be populated by populate_any_indicators() for live functionality
         # to work correctly.
         for tf in self.freqai_info["timeframes"]:
             dataframe = self.populate_any_indicators(
-                metadata, self.pair, dataframe.copy(), tf, coin=self.pair.split("/")[0] + "-"
+                metadata,
+                self.pair,
+                dataframe.copy(),
+                tf,
+                coin=self.pair.split("/")[0] + "-",
+                set_generalized_indicators=sgi,
             )
+            sgi = False
             for pair in self.freqai_info["corr_pairlist"]:
                 if metadata["pair"] in pair:
                     continue  # do not include whitelisted pair twice if it is in corr_pairlist
@@ -245,9 +253,9 @@ class FreqaiExampleStrategy(IStrategy):
         follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
 
         if not follow_mode:
-            pair_dict = self.model.bridge.data_drawer.pair_dict
+            pair_dict = self.model.bridge.dd.pair_dict
         else:
-            pair_dict = self.model.bridge.data_drawer.follower_dict
+            pair_dict = self.model.bridge.dd.follower_dict
 
         entry_tag = trade.enter_tag
 
@@ -258,9 +266,9 @@ class FreqaiExampleStrategy(IStrategy):
             with self.model.bridge.lock:
                 pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
                 if not follow_mode:
-                    self.model.bridge.data_drawer.save_drawer_to_disk()
+                    self.model.bridge.dd.save_drawer_to_disk()
                 else:
-                    self.model.bridge.data_drawer.save_follower_dict_to_disk()
+                    self.model.bridge.dd.save_follower_dict_to_disk()
 
         roi_price = pair_dict[pair]["prediction" + entry_tag]
         roi_time = self.max_roi_time_long.value
@@ -295,16 +303,16 @@ class FreqaiExampleStrategy(IStrategy):
         entry_tag = trade.enter_tag
         follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
         if not follow_mode:
-            pair_dict = self.model.bridge.data_drawer.pair_dict
+            pair_dict = self.model.bridge.dd.pair_dict
         else:
-            pair_dict = self.model.bridge.data_drawer.follower_dict
+            pair_dict = self.model.bridge.dd.follower_dict
 
         with self.model.bridge.lock:
             pair_dict[pair]["prediction" + entry_tag] = 0
             if not follow_mode:
-                self.model.bridge.data_drawer.save_drawer_to_disk()
+                self.model.bridge.dd.save_drawer_to_disk()
             else:
-                self.model.bridge.data_drawer.save_follower_dict_to_disk()
+                self.model.bridge.dd.save_follower_dict_to_disk()
 
         return True
 
