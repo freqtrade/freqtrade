@@ -207,8 +207,8 @@ and adding this to the `train_period`. The units need to be in the base candle t
 
 `startup_candles` = ( 4 hours * 25 max period * 60 minutes/hour + 30 day train_period * 1440 minutes per day ) / 5 min (base time frame) = 1488.
 
-!!! Note: in dry/live, this is all precomputed and handled automatically. Thus, `startup_candle` has no 
-influence on dry/live.
+!!! Note
+    In dry/live, this is all precomputed and handled automatically. Thus, `startup_candle` has no influence on dry/live.
 
 ## Running Freqai
 
