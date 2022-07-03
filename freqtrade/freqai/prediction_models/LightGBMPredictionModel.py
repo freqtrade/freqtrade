@@ -85,7 +85,7 @@ class LightGBMPredictionModel(IFreqaiModel):
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
 
-        model = LGBMRegressor(seed=42, n_estimators=2000, verbosity=1, force_col_wise=True)
+        model = LGBMRegressor(**self.model_training_parameters)
         model.fit(X=X, y=y, eval_set=eval_set)
 
         return model
