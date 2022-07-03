@@ -959,6 +959,29 @@ class FreqtradeBot(LoggingMixin):
         logger.debug(f'Found no {exit_signal_type} signal for %s.', trade)
         return False
 
+    def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
+                                enter: bool, exit_: bool, exit_tag: Optional[str]) -> bool:
+        """
+        Check and execute trade exit
+        """
+        exits: List[ExitCheckTuple] = self.strategy.should_exit(
+            trade,
+            exit_rate,
+            datetime.now(timezone.utc),
+            enter=enter,
+            exit_=exit_,
+            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
+        )
+        for should_exit in exits:
+            if should_exit.exit_flag:
+                exit_tag1 = exit_tag if should_exit.exit_type == ExitType.EXIT_SIGNAL else None
+                logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
+                            f'{f" Tag: {exit_tag1}" if exit_tag1 is not None else ""}')
+                exited = self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag1)
+                if exited:
+                    return True
+        return False
+
     def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
         """
         Abstracts creating stoploss orders from the logic.
@@ -1109,29 +1132,6 @@ class FreqtradeBot(LoggingMixin):
                 if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
-
-    def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                enter: bool, exit_: bool, exit_tag: Optional[str]) -> bool:
-        """
-        Check and execute trade exit
-        """
-        exits: List[ExitCheckTuple] = self.strategy.should_exit(
-            trade,
-            exit_rate,
-            datetime.now(timezone.utc),
-            enter=enter,
-            exit_=exit_,
-            force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
-        )
-        for should_exit in exits:
-            if should_exit.exit_flag:
-                exit_tag1 = exit_tag if should_exit.exit_type == ExitType.EXIT_SIGNAL else None
-                logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
-                            f'{f" Tag: {exit_tag1}" if exit_tag1 is not None else ""}')
-                exited = self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag1)
-                if exited:
-                    return True
-        return False
 
     def manage_open_orders(self) -> None:
         """
