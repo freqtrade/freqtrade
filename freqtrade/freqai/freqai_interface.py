@@ -201,6 +201,7 @@ class IFreqaiModel(ABC):
             if not self.model_exists(
                 metadata["pair"], dk, trained_timestamp=trained_timestamp.stopts
             ):
+                dk.find_features(dataframe_train)
                 self.model = self.train(dataframe_train, metadata["pair"], dk)
                 self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = trained_timestamp.stopts
                 dk.set_new_model_names(metadata["pair"], trained_timestamp)
@@ -210,12 +211,12 @@ class IFreqaiModel(ABC):
 
             self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
-            preds, do_preds = self.predict(dataframe_backtest, dk)
+            pred_df, do_preds = self.predict(dataframe_backtest, dk)
 
-            dk.append_predictions(preds, do_preds, len(dataframe_backtest))
-            print("predictions", len(dk.full_predictions), "do_predict", len(dk.full_do_predict))
+            dk.append_predictions(pred_df, do_preds, len(dataframe_backtest))
+            # print("predictions", len(dk.full_predictions), "do_predict", len(dk.full_do_predict))
 
-        dk.fill_predictions(len(dataframe))
+        dk.fill_predictions(dataframe)
 
         return dk
 

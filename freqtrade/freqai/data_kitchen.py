@@ -48,15 +48,17 @@ class FreqaiDataKitchen:
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
         self.freqai_config = config["freqai"]
-        self.predictions: npt.ArrayLike = np.array([])
-        self.do_predict: npt.ArrayLike = np.array([])
-        self.target_mean: npt.ArrayLike = np.array([])
-        self.target_std: npt.ArrayLike = np.array([])
-        self.full_predictions: npt.ArrayLike = np.array([])
-        self.full_do_predict: npt.ArrayLike = np.array([])
-        self.full_DI_values: npt.ArrayLike = np.array([])
-        self.full_target_mean: npt.ArrayLike = np.array([])
-        self.full_target_std: npt.ArrayLike = np.array([])
+        # self.predictions: npt.ArrayLike = np.array([])
+        # self.do_predict: npt.ArrayLike = np.array([])
+        # self.target_mean: npt.ArrayLike = np.array([])
+        # self.target_std: npt.ArrayLike = np.array([])
+        # self.full_predictions: npt.ArrayLike = np.array([])
+        # self.full_do_predict: npt.ArrayLike = np.array([])
+        # self.full_DI_values: npt.ArrayLike = np.array([])
+        # self.full_target_mean: npt.ArrayLike = np.array([])
+        # self.full_target_std: npt.ArrayLike = np.array([])
+        self.full_df: DataFrame = DataFrame()
+        self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
         self.label_list: List = []
         self.model_filename: str = ""
@@ -716,31 +718,56 @@ class FreqaiDataKitchen:
         Append backtest prediction from current backtest period to all previous periods
         """
 
-        ones = np.ones(len(predictions))
-        target_mean, target_std = ones * self.data["target_mean"], ones * self.data["target_std"]
+        # ones = np.ones(len(predictions))
+        # target_mean, target_std = ones * self.data["target_mean"], ones * self.data["target_std"]
+        self.append_df = DataFrame()
+        for label in self.label_list:
+            self.append_df[label] = predictions[label]
+            self.append_df[f"{label}_mean"] = self.data["labels_mean"][label]
+            self.append_df[f"{label}_std"] = self.data["labels_std"][label]
 
-        self.full_predictions = np.append(self.full_predictions, predictions)
-        self.full_do_predict = np.append(self.full_do_predict, do_predict)
+        self.append_df["do_predict"] = do_predict
         if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
-            self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
-        self.full_target_mean = np.append(self.full_target_mean, target_mean)
-        self.full_target_std = np.append(self.full_target_std, target_std)
+            self.append_df["DI_values"] = self.DI_values
+
+        if self.full_df.empty:
+            self.full_df = self.append_df
+        else:
+            self.full_df = pd.concat([self.full_df, self.append_df], axis=0)
+
+        # self.full_predictions = np.append(self.full_predictions, predictions)
+        # self.full_do_predict = np.append(self.full_do_predict, do_predict)
+        # if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        #     self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
+        # self.full_target_mean = np.append(self.full_target_mean, target_mean)
+        # self.full_target_std = np.append(self.full_target_std, target_std)
 
         return
 
-    def fill_predictions(self, len_dataframe):
+    def fill_predictions(self, dataframe):
         """
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
 
-        filler = np.zeros(len_dataframe - len(self.full_predictions))  # startup_candle_count
-        self.full_predictions = np.append(filler, self.full_predictions)
-        self.full_do_predict = np.append(filler, self.full_do_predict)
-        if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
-            self.full_DI_values = np.append(filler, self.full_DI_values)
-        self.full_target_mean = np.append(filler, self.full_target_mean)
-        self.full_target_std = np.append(filler, self.full_target_std)
+        len_filler = len(dataframe) - len(self.full_df.index)  # startup_candle_count
+        filler_df = pd.DataFrame(
+            np.zeros((len_filler, len(self.full_df.columns))), columns=self.full_df.columns
+        )
+
+        self.full_df = pd.concat([filler_df, self.full_df], axis=0, ignore_index=True)
+
+        to_keep = [col for col in dataframe.columns if not col.startswith("&")]
+        self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
+
+        self.append_df = DataFrame()
+        self.full_df = DataFrame()
+        # self.full_predictions = np.append(filler, self.full_predictions)
+        # self.full_do_predict = np.append(filler, self.full_do_predict)
+        # if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        #     self.full_DI_values = np.append(filler, self.full_DI_values)
+        # self.full_target_mean = np.append(filler, self.full_target_mean)
+        # self.full_target_std = np.append(filler, self.full_target_std)
 
         return
 
