@@ -1,5 +1,4 @@
 # pragma pylint: disable=too-few-public-methods
-# flake8: noqa: E501
 
 """
 bot constants
@@ -35,7 +34,8 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
-AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard', 'TradingTime']
+AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard',
+                         'TradingTime']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
 BACKTEST_CACHE_AGE = ['none', 'day', 'week', 'month']
