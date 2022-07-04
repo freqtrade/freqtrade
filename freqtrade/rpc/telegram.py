@@ -389,7 +389,9 @@ class Telegram(RPCHandler):
 
         message = self.compose_message(msg, msg_type)
 
-        self._send_msg(message, disable_notification=(noti == 'silent'))
+        _repost_to_channel = msg_type in [RPCMessageType.ENTRY_FILL, RPCMessageType.EXIT_FILL]
+        self._send_msg(message, disable_notification=(noti == 'silent'),
+                       repost_to_channel=_repost_to_channel)
 
     def _get_sell_emoji(self, msg):
         """
@@ -592,7 +594,7 @@ class Telegram(RPCHandler):
         """
 
         vals = {
-            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 7),
+            'days': TimeunitMappings('Day', 'Daily', 'days', 'update_daily', 21),
             'weeks': TimeunitMappings('Monday', 'Weekly', 'weeks (starting from Monday)',
                                       'update_weekly', 8),
             'months': TimeunitMappings('Month', 'Monthly', 'months', 'update_monthly', 6),
@@ -631,7 +633,8 @@ class Telegram(RPCHandler):
                 f'<pre>{stats_tab}</pre>'
             )
             self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
-                           callback_path=val.callback, query=update.callback_query)
+                           callback_path=val.callback, query=update.callback_query,
+                           repost_to_channel=True)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -743,7 +746,7 @@ class Telegram(RPCHandler):
                     f"({round_coin_value(stats['max_drawdown_abs'], stake_cur)})`"
                 )
         self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
-                       query=update.callback_query)
+                       query=update.callback_query, repost_to_channel=True)
 
     @authorized_only
     def _stats(self, update: Update, context: CallbackContext) -> None:
@@ -1566,7 +1569,8 @@ class Telegram(RPCHandler):
                   keyboard: List[List[InlineKeyboardButton]] = None,
                   callback_path: str = "",
                   reload_able: bool = False,
-                  query: Optional[CallbackQuery] = None) -> None:
+                  query: Optional[CallbackQuery] = None,
+                  repost_to_channel: bool = False) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -1596,6 +1600,15 @@ class Telegram(RPCHandler):
                     reply_markup=reply_markup,
                     disable_notification=disable_notification,
                 )
+                if self._config['telegram']['use_channel_notification'] and repost_to_channel:
+                    self._updater.bot.send_message(
+                        self._config['telegram']['channel_notification_chat_id'],
+                        text=msg,
+                        parse_mode=parse_mode,
+                        reply_markup=None,
+                        disable_notification=disable_notification,
+                    )
+
             except NetworkError as network_err:
                 # Sometimes the telegram server resets the current connection,
                 # if this is the case we send the message again.
