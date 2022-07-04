@@ -861,6 +861,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     hyperopt.backtesting.exchange.get_max_leverage = MagicMock(return_value=1.0)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
+    assert hyperopt.backtesting.strategy.bot_loop_started is True
 
     assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
