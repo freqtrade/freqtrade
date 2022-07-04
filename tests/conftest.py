@@ -78,9 +78,21 @@ def get_args(args):
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
-def get_mock_coro(return_value):
+# TODO: This should be replaced with AsyncMock once support for python 3.7 is dropped.
+def get_mock_coro(return_value=None, side_effect=None):
     async def mock_coro(*args, **kwargs):
-        return return_value
+        if side_effect:
+            if isinstance(side_effect, list):
+                effect = side_effect.pop(0)
+            else:
+                effect = side_effect
+            if isinstance(effect, Exception):
+                raise effect
+            if callable(effect):
+                return effect(*args, **kwargs)
+            return effect
+        else:
+            return return_value
 
     return Mock(wraps=mock_coro)
 
@@ -325,7 +337,7 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
         Trade.query.session.flush()
 
 
-def create_mock_trades_usdt(fee, use_db: bool = True):
+def create_mock_trades_usdt(fee, is_short: Optional[bool] = False, use_db: bool = True):
     """
     Create some fake trades ...
     """
@@ -335,26 +347,29 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
         else:
             LocalTrade.add_bt_trade(trade)
 
+    is_short1 = is_short if is_short is not None else True
+    is_short2 = is_short if is_short is not None else False
+
     # Simulate dry_run entries
-    trade = mock_trade_usdt_1(fee)
+    trade = mock_trade_usdt_1(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_usdt_2(fee)
+    trade = mock_trade_usdt_2(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_usdt_3(fee)
+    trade = mock_trade_usdt_3(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_usdt_4(fee)
+    trade = mock_trade_usdt_4(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_usdt_5(fee)
+    trade = mock_trade_usdt_5(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_usdt_6(fee)
+    trade = mock_trade_usdt_6(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_usdt_7(fee)
+    trade = mock_trade_usdt_7(fee, is_short1)
     add_trade(trade)
     if use_db:
         Trade.commit()
@@ -384,7 +399,7 @@ def patch_coingekko(mocker) -> None:
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
-    init_db(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'])
 
 
 @pytest.fixture(scope="function")
@@ -1616,6 +1631,7 @@ def limit_buy_order_open():
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
         'amount': 90.99181073,
+        'average': None,
         'filled': 0.0,
         'cost': 0.0009999,
         'remaining': 90.99181073,

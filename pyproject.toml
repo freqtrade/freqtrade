@@ -28,6 +28,28 @@ skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
+[tool.mypy]
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = [
+    '^build_helpers\.py$'
+]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.pyright]
+include = ["freqtrade"]
+exclude = [
+  "**/__pycache__",
+  "build_helpers/*.py",
+]
+ignore = ["freqtrade/vendor/**"]
+
+# Align pyright to mypy config
+strictParameterNoneValue = false

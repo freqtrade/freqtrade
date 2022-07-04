@@ -1,13 +1,15 @@
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import ccxt
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange import date_minus_candles
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +22,7 @@ class Okx(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 100,
+        "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }
@@ -36,6 +38,27 @@ class Okx(Exchange):
     ]
 
     net_only = True
+
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+        """
+        Exchange ohlcv candle limit
+        OKX has the following behaviour:
+        * 300 candles for uptodate data
+        * 100 candles for historic data
+        * 100 candles for additional candles (not futures or spot).
+        :param timeframe: Timeframe to check
+        :param candle_type: Candle-type
+        :param since_ms: Starting timestamp
+        :return: Candle limit as integer
+        """
+        if (
+            candle_type in (CandleType.FUTURES, CandleType.SPOT) and
+            (not since_ms or since_ms > (date_minus_candles(timeframe, 300).timestamp() * 1000))
+        ):
+            return 300
+
+        return super().ohlcv_candle_limit(timeframe, candle_type, since_ms)
 
     @retrier
     def additional_exchange_init(self) -> None:

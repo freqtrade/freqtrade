@@ -33,7 +33,14 @@ def test_validate_order_types_gateio(default_conf, mocker):
                        match=r'Exchange .* does not support market orders.'):
         ExchangeResolver.load_exchange('gateio', default_conf, True)
 
+    # market-orders supported on futures markets.
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    ex = ExchangeResolver.load_exchange('gateio', default_conf, True)
+    assert ex
 
+
+@pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_gateio(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='gateio')
 

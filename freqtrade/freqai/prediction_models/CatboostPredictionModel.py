@@ -45,8 +45,9 @@ class CatboostPredictionModel(IFreqaiModel):
 
         return dataframe["s"]
 
-    def train(self, unfiltered_dataframe: DataFrame,
-              pair: str, dk: FreqaiDataKitchen) -> Tuple[DataFrame, DataFrame]:
+    def train(
+        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
+    ) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
         for storing, saving, loading, and analyzing the data.
@@ -57,8 +58,7 @@ class CatboostPredictionModel(IFreqaiModel):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        logger.info('--------------------Starting training '
-                    f'{pair} --------------------')
+        logger.info("--------------------Starting training " f"{pair} --------------------")
 
         # unfiltered_labels = self.make_labels(unfiltered_dataframe, dk)
         # filter the features requested by user in the configuration file and elegantly handle NaNs
@@ -78,13 +78,14 @@ class CatboostPredictionModel(IFreqaiModel):
         # optional additional data cleaning/analysis
         self.data_cleaning_train(dk)
 
-        logger.info(f'Training model on {len(dk.data_dictionary["train_features"].columns)}'
-                    ' features')
+        logger.info(
+            f'Training model on {len(dk.data_dictionary["train_features"].columns)}' " features"
+        )
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
 
-        logger.info(f'--------------------done training {pair}--------------------')
+        logger.info(f"--------------------done training {pair}--------------------")
 
         return model
 
@@ -110,14 +111,17 @@ class CatboostPredictionModel(IFreqaiModel):
 
         model = CatBoostRegressor(
             allow_writing_files=False,
-            verbose=100, early_stopping_rounds=400, **self.model_training_parameters
+            verbose=100,
+            early_stopping_rounds=400,
+            **self.model_training_parameters,
         )
         model.fit(X=train_data, eval_set=test_data)
 
         return model
 
-    def predict(self, unfiltered_dataframe: DataFrame,
-                dk: FreqaiDataKitchen, first: bool = False) -> Tuple[DataFrame, DataFrame]:
+    def predict(
+        self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
+    ) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
@@ -141,8 +145,10 @@ class CatboostPredictionModel(IFreqaiModel):
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
         for label in dk.label_list:
-            pred_df[label] = ((pred_df[label] + 1) *
-                              (dk.data["labels_max"][label] -
-                               dk.data["labels_min"][label]) / 2) + dk.data["labels_min"][label]
+            pred_df[label] = (
+                (pred_df[label] + 1)
+                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
+                / 2
+            ) + dk.data["labels_min"][label]
 
         return (pred_df, dk.do_predict)

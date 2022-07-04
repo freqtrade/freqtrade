@@ -41,7 +41,7 @@ class JsonDataHandler(IDataHandler):
         return [
             (
                 cls.rebuild_pair_from_filename(match[1]),
-                match[2],
+                cls.rebuild_timeframe_from_filename(match[2]),
                 CandleType.from_string(match[3])
             ) for match in _tmp if match and len(match.groups()) > 1]
 
@@ -103,9 +103,14 @@ class JsonDataHandler(IDataHandler):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
+        filename = self._pair_data_filename(
+            self._datadir, pair, timeframe, candle_type=candle_type)
         if not filename.exists():
-            return DataFrame(columns=self._columns)
+            # Fallback mode for 1M files
+            filename = self._pair_data_filename(
+                self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True)
+            if not filename.exists():
+                return DataFrame(columns=self._columns)
         try:
             pairdata = read_json(filename, orient='values')
             pairdata.columns = self._columns

@@ -1,4 +1,3 @@
-
 import collections
 import json
 import logging
@@ -27,10 +26,11 @@ class FreqaiDataDrawer:
     This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
     reinstantiated for each coin.
     """
+
     def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
 
         self.config = config
-        self.freqai_info = config.get('freqai', {})
+        self.freqai_info = config.get("freqai", {})
         # dictionary holding all pair metadata necessary to load in from disk
         self.pair_dict: Dict[str, Any] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
@@ -38,7 +38,6 @@ class FreqaiDataDrawer:
         self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
         self.historic_data: Dict[str, Any] = {}
-        # self.populated_historic_data: Dict[str, Any] = {} ?
         self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.follow_mode = follow_mode
@@ -47,7 +46,6 @@ class FreqaiDataDrawer:
         self.load_drawer_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
-        # self.create_training_queue(pair_whitelist)
 
     def load_drawer_from_disk(self):
         """
@@ -56,15 +54,17 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = Path(self.full_path / str('pair_dictionary.json')).resolve().exists()
+        exists = Path(self.full_path / str("pair_dictionary.json")).resolve().exists()
         if exists:
-            with open(self.full_path / str('pair_dictionary.json'), "r") as fp:
+            with open(self.full_path / str("pair_dictionary.json"), "r") as fp:
                 self.pair_dict = json.load(fp)
         elif not self.follow_mode:
             logger.info("Could not find existing datadrawer, starting from scratch")
         else:
-            logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
-                           'sending null values back to strategy')
+            logger.warning(
+                f"Follower could not find pair_dictionary at {self.full_path} "
+                "sending null values back to strategy"
+            )
 
         return exists
 
@@ -72,36 +72,41 @@ class FreqaiDataDrawer:
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.full_path / str('pair_dictionary.json'), "w") as fp:
+        with open(self.full_path / str("pair_dictionary.json"), "w") as fp:
             json.dump(self.pair_dict, fp, default=self.np_encoder)
 
     def save_follower_dict_to_disk(self):
         """
         Save follower dictionary to disk (used by strategy for persistent prediction targets)
         """
-        follower_name = self.config.get('bot_name', 'follower1')
-        with open(self.full_path / str('follower_dictionary-' +
-                                       follower_name + '.json'), "w") as fp:
+        follower_name = self.config.get("bot_name", "follower1")
+        with open(
+            self.full_path / str("follower_dictionary-" + follower_name + ".json"), "w"
+        ) as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def create_follower_dict(self):
         """
         Create or dictionary for each follower to maintain unique persistent prediction targets
         """
-        follower_name = self.config.get('bot_name', 'follower1')
-        whitelist_pairs = self.config.get('exchange', {}).get('pair_whitelist')
+        follower_name = self.config.get("bot_name", "follower1")
+        whitelist_pairs = self.config.get("exchange", {}).get("pair_whitelist")
 
-        exists = Path(self.full_path / str('follower_dictionary-' +
-                                           follower_name + '.json')).resolve().exists()
+        exists = (
+            Path(self.full_path / str("follower_dictionary-" + follower_name + ".json"))
+            .resolve()
+            .exists()
+        )
 
         if exists:
-            logger.info('Found an existing follower dictionary')
+            logger.info("Found an existing follower dictionary")
 
         for pair in whitelist_pairs:
             self.follower_dict[pair] = {}
 
-        with open(self.full_path / str('follower_dictionary-' +
-                                       follower_name + '.json'), "w") as fp:
+        with open(
+            self.full_path / str("follower_dictionary-" + follower_name + ".json"), "w"
+        ) as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def np_encoder(self, object):
@@ -122,46 +127,48 @@ class FreqaiDataDrawer:
         return_null_array: bool = Follower could not find pair metadata
         """
         pair_in_dict = self.pair_dict.get(pair)
-        data_path_set = self.pair_dict.get(pair, {}).get('data_path', None)
+        data_path_set = self.pair_dict.get(pair, {}).get("data_path", None)
         return_null_array = False
 
         if pair_in_dict:
-            model_filename = self.pair_dict[pair]['model_filename']
-            trained_timestamp = self.pair_dict[pair]['trained_timestamp']
-            coin_first = self.pair_dict[pair]['first']
+            model_filename = self.pair_dict[pair]["model_filename"]
+            trained_timestamp = self.pair_dict[pair]["trained_timestamp"]
+            coin_first = self.pair_dict[pair]["first"]
         elif not self.follow_mode:
             self.pair_dict[pair] = {}
-            model_filename = self.pair_dict[pair]['model_filename'] = ''
-            coin_first = self.pair_dict[pair]['first'] = True
-            trained_timestamp = self.pair_dict[pair]['trained_timestamp'] = 0
-            self.pair_dict[pair]['priority'] = len(self.pair_dict)
+            model_filename = self.pair_dict[pair]["model_filename"] = ""
+            coin_first = self.pair_dict[pair]["first"] = True
+            trained_timestamp = self.pair_dict[pair]["trained_timestamp"] = 0
+            self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
         if not data_path_set and self.follow_mode:
-            logger.warning(f'Follower could not find current pair {pair} in '
-                           f'pair_dictionary at path {self.full_path}, sending null values '
-                           'back to strategy.')
+            logger.warning(
+                f"Follower could not find current pair {pair} in "
+                f"pair_dictionary at path {self.full_path}, sending null values "
+                "back to strategy."
+            )
             return_null_array = True
 
         return model_filename, trained_timestamp, coin_first, return_null_array
 
     def set_pair_dict_info(self, metadata: dict) -> None:
-        pair_in_dict = self.pair_dict.get(metadata['pair'])
+        pair_in_dict = self.pair_dict.get(metadata["pair"])
         if pair_in_dict:
             return
         else:
-            self.pair_dict[metadata['pair']] = {}
-            self.pair_dict[metadata['pair']]['model_filename'] = ''
-            self.pair_dict[metadata['pair']]['first'] = True
-            self.pair_dict[metadata['pair']]['trained_timestamp'] = 0
-            self.pair_dict[metadata['pair']]['priority'] = len(self.pair_dict)
+            self.pair_dict[metadata["pair"]] = {}
+            self.pair_dict[metadata["pair"]]["model_filename"] = ""
+            self.pair_dict[metadata["pair"]]["first"] = True
+            self.pair_dict[metadata["pair"]]["trained_timestamp"] = 0
+            self.pair_dict[metadata["pair"]]["priority"] = len(self.pair_dict)
             return
 
     def pair_to_end_of_training_queue(self, pair: str) -> None:
         # march all pairs up in the queue
         for p in self.pair_dict:
-            self.pair_dict[p]['priority'] -= 1
+            self.pair_dict[p]["priority"] -= 1
         # send pair to end of queue
-        self.pair_dict[pair]['priority'] = len(self.pair_dict)
+        self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
     def set_initial_return_values(self, pair: str, dk, pred_df, do_preds) -> None:
         """
@@ -172,16 +179,15 @@ class FreqaiDataDrawer:
         self.model_return_values[pair] = pd.DataFrame()
         for label in dk.label_list:
             self.model_return_values[pair][label] = pred_df[label]
-            self.model_return_values[pair][f'{label}_mean'] = dk.data['labels_mean'][label]
-            self.model_return_values[pair][f'{label}_std'] = dk.data['labels_std'][label]
+            self.model_return_values[pair][f"{label}_mean"] = dk.data["labels_mean"][label]
+            self.model_return_values[pair][f"{label}_std"] = dk.data["labels_std"][label]
 
-        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            self.model_return_values[pair]['DI_values'] = dk.DI_values
+        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+            self.model_return_values[pair]["DI_values"] = dk.DI_values
 
-        self.model_return_values[pair]['do_predict'] = do_preds
+        self.model_return_values[pair]["do_predict"] = do_preds
 
-    def append_model_predictions(self, pair: str, predictions, do_preds,
-                                 dk, len_df) -> None:
+    def append_model_predictions(self, pair: str, predictions, do_preds, dk, len_df) -> None:
 
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
@@ -198,17 +204,18 @@ class FreqaiDataDrawer:
 
         for label in dk.label_list:
             df[label].iloc[-1] = predictions[label].iloc[-1]
-            df[f"{label}_mean"].iloc[-1] = dk.data['labels_mean'][label]
-            df[f"{label}_std"].iloc[-1] = dk.data['labels_std'][label]
+            df[f"{label}_mean"].iloc[-1] = dk.data["labels_mean"][label]
+            df[f"{label}_std"].iloc[-1] = dk.data["labels_std"][label]
         # df['prediction'].iloc[-1] = predictions[-1]
-        df['do_predict'].iloc[-1] = do_preds[-1]
+        df["do_predict"].iloc[-1] = do_preds[-1]
 
-        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            df['DI_values'].iloc[-1] = dk.DI_values[-1]
+        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+            df["DI_values"].iloc[-1] = dk.DI_values[-1]
 
         if length_difference < 0:
-            prepend_df = pd.DataFrame(np.zeros((abs(length_difference) - 1, len(df.columns))),
-                                      columns=df.columns)
+            prepend_df = pd.DataFrame(
+                np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
+            )
             df = pd.concat([prepend_df, df], axis=0)
 
     def attach_return_values_to_return_dataframe(self, pair: str, dataframe) -> DataFrame:
@@ -220,7 +227,7 @@ class FreqaiDataDrawer:
         dataframe: DataFrame = strat dataframe with return values attached
         """
         df = self.model_return_values[pair]
-        to_keep = [col for col in dataframe.columns if not col.startswith('&')]
+        to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         dataframe = pd.concat([dataframe[to_keep], df], axis=1)
         return dataframe
 
@@ -237,10 +244,10 @@ class FreqaiDataDrawer:
             dataframe[f"{label}_std"] = 0
 
         # dataframe['prediction'] = 0
-        dataframe['do_predict'] = 0
+        dataframe["do_predict"] = 0
 
-        if self.freqai_info.get('feature_parameters', {}).get('DI_threshold', 0) > 0:
-            dataframe['DI_value'] = 0
+        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+            dataframe["DI_value"] = 0
 
         dk.return_dataframe = dataframe
 
@@ -261,29 +268,30 @@ class FreqaiDataDrawer:
 
             if coin not in delete_dict:
                 delete_dict[coin] = {}
-                delete_dict[coin]['num_folders'] = 1
-                delete_dict[coin]['timestamps'] = {int(timestamp): dir}
+                delete_dict[coin]["num_folders"] = 1
+                delete_dict[coin]["timestamps"] = {int(timestamp): dir}
             else:
-                delete_dict[coin]['num_folders'] += 1
-                delete_dict[coin]['timestamps'][int(timestamp)] = dir
+                delete_dict[coin]["num_folders"] += 1
+                delete_dict[coin]["timestamps"][int(timestamp)] = dir
 
         for coin in delete_dict:
-            if delete_dict[coin]['num_folders'] > 2:
+            if delete_dict[coin]["num_folders"] > 2:
                 sorted_dict = collections.OrderedDict(
-                    sorted(delete_dict[coin]['timestamps'].items()))
+                    sorted(delete_dict[coin]["timestamps"].items())
+                )
                 num_delete = len(sorted_dict) - 2
                 deleted = 0
                 for k, v in sorted_dict.items():
                     if deleted >= num_delete:
                         break
-                    logger.info(f'Freqai purging old model file {v}')
+                    logger.info(f"Freqai purging old model file {v}")
                     shutil.rmtree(v)
                     deleted += 1
 
     def update_follower_metadata(self):
         # follower needs to load from disk to get any changes made by leader to pair_dict
         self.load_drawer_from_disk()
-        if self.config.get('freqai', {}).get('purge_old_models', False):
+        if self.config.get("freqai", {}).get("purge_old_models", False):
             self.purge_old_models()
 
     # to be used if we want to send predictions directly to the follower instead of forcing

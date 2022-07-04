@@ -16,10 +16,12 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
-                                      DecimalParameter, IntParameter, RealParameter)
+from freqtrade.strategy.hyper import detect_parameters
+from freqtrade.strategy.parameters import (BaseParameter, BooleanParameter, CategoricalParameter,
+                                           DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
+from tests.conftest import (CURRENT_TEST_STRATEGY, TRADE_SIDES, create_mock_trades, log_has,
+                            log_has_re)
 
 from .strats.strategy_test_v3 import StrategyTestV3
 
@@ -495,35 +497,111 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.exit_flag is False
-    assert res.exit_type == ExitType.NONE
+    assert res == []
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_flag is True
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_reason == 'custom_exit'
+    assert res[0].exit_flag is True
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_reason == 'custom_exit'
 
     strategy.custom_exit = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'hello world'
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_exit = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.exit_flag is True
-    assert res.exit_reason == 'h' * 64
+    assert res[0].exit_type == ExitType.CUSTOM_EXIT
+    assert res[0].exit_flag is True
+    assert res[0].exit_reason == 'h' * 64
     assert log_has_re('Custom exit reason returned from custom_exit is too long.*', caplog)
+
+
+def test_should_sell(default_conf, fee) -> None:
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+    now = arrow.utcnow().datetime
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+
+    assert res == []
+    strategy.min_roi_reached = MagicMock(return_value=True)
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 1
+    assert res == [ExitCheckTuple(exit_type=ExitType.ROI)]
+
+    strategy.min_roi_reached = MagicMock(return_value=True)
+    strategy.stop_loss_reached = MagicMock(
+        return_value=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
+
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ]
+
+    strategy.custom_exit = MagicMock(return_value='hello world')
+    # custom-exit and exit-signal is first
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=False,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.CUSTOM_EXIT, exit_reason='hello world'),
+        ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ]
+
+    strategy.stop_loss_reached = MagicMock(
+            return_value=ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS))
+    # Regular exit signal
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 3
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.ROI),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
+        ]
+
+    # Regular exit signal, no ROI
+    strategy.min_roi_reached = MagicMock(return_value=False)
+    res = strategy.should_exit(trade, 1, now,
+                               enter=False, exit_=True,
+                               low=None, high=None)
+    assert len(res) == 2
+    assert res == [
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.TRAILING_STOP_LOSS),
+        ]
 
 
 @pytest.mark.parametrize('side', TRADE_SIDES)
@@ -538,6 +616,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag=None,
         ) == 1
 
     default_conf['strategy'] = CURRENT_TEST_STRATEGY
@@ -549,6 +628,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
+        entry_tag='entry_tag_test',
         ) == 3
 
 
@@ -733,6 +813,28 @@ def test_strategy_safe_wrapper(value):
     assert ret == value
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_strategy_safe_wrapper_trade_copy(fee):
+    create_mock_trades(fee)
+
+    def working_method(trade):
+        assert len(trade.orders) > 0
+        assert trade.orders
+        trade.orders = []
+        assert len(trade.orders) == 0
+        return trade
+
+    trade = Trade.get_open_trades()[0]
+    # Don't assert anything before strategy_wrapper.
+    # This ensures that relationship loading works correctly.
+    ret = strategy_safe_wrapper(working_method, message='DeadBeef')(trade=trade)
+    assert isinstance(ret, Trade)
+    assert id(trade) != id(ret)
+    # Did not modify the original order
+    assert len(trade.orders) > 0
+    assert len(ret.orders) == 0
+
+
 def test_hyperopt_parameters():
     from skopt.space import Categorical, Integer, Real
     with pytest.raises(OperationalException, match=r"Name is determined.*"):
@@ -817,7 +919,7 @@ def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategy'})
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
-
+    strategy.ft_bot_start()
     with pytest.raises(OperationalException):
         next(strategy.enumerate_parameters('deadBeef'))
 
@@ -832,15 +934,18 @@ def test_auto_hyperopt_interface(default_conf):
     assert strategy.sell_minusdi.value == 0.5
     all_params = strategy.detect_all_parameters()
     assert isinstance(all_params, dict)
-    assert len(all_params['buy']) == 2
+    # Only one buy param at class level
+    assert len(all_params['buy']) == 1
+    # Running detect params at instance level reveals both parameters.
+    assert len(list(detect_parameters(strategy, 'buy'))) == 2
     assert len(all_params['sell']) == 2
     # Number of Hyperoptable parameters
-    assert all_params['count'] == 6
+    assert all_params['count'] == 5
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
-        [x for x in strategy.detect_parameters('sell')]
+        [x for x in detect_parameters(strategy, 'sell')]
 
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):

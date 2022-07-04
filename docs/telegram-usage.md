@@ -171,8 +171,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
-| `/forceexit <trade_id>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
-| `/forceexit all` | Instantly exits all open trades (Ignoring `minimum_roi`).
+| `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
+| `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `/fx` | alias for `/forceexit`
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
@@ -270,10 +270,15 @@ Return a summary of your profit/loss and performance.
 > **Latest Trade opened:** `2 minutes ago`  
 > **Avg. Duration:** `2:33:45`  
 > **Best Performing:** `PAY/BTC: 50.23%`  
+> **Trading volume:** `0.5 BTC`  
+> **Profit factor:** `1.04`  
+> **Max Drawdown:** `9.23% (0.01255 BTC)`  
 
 The relative profit of `1.2%` is the average profit per trade.  
-The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.
-Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
+The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.  
+Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.  
+Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.  
+Max drawdown corresponds to the backtesting metric `Absolute Drawdown (Account)` - calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 
 ### /forceexit <trade_id>
 
@@ -281,6 +286,7 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 
 !!! Tip
     You can get a list of all open trades by calling `/forceexit` without parameter, which will show a list of buttons to simply exit a trade.
+    This command has an alias in `/fx` - which has the same capabilities, but is faster to type in "emergency" situations.
 
 ### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
@@ -328,11 +334,11 @@ Per default `/daily` will return the 7 last days. The example below if for `/dai
 
 > **Daily Profit over the last 3 days:**
 ```
-Day         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01-03  0.00224175 BTC  29,142 USD
-2018-01-02  0.00033131 BTC   4,307 USD
-2018-01-01  0.00269130 BTC  34.986 USD
+Day (count)     USDT          USD         Profit %
+--------------  ------------  ----------  ----------
+2022-06-11 (1)  -0.746 USDT   -0.75 USD   -0.08%
+2022-06-10 (0)  0 USDT        0.00 USD    0.00%
+2022-06-09 (5)  20 USDT       20.10 USD   5.00%
 ```
 
 ### /weekly <n>
@@ -342,11 +348,11 @@ from Monday. The example below if for `/weekly 3`:
 
 > **Weekly Profit over the last 3 weeks (starting from Monday):**
 ```
-Monday         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01-03  0.00224175 BTC  29,142 USD
-2017-12-27  0.00033131 BTC   4,307 USD
-2017-12-20  0.00269130 BTC  34.986 USD
+Monday (count)  Profit BTC      Profit USD   Profit %
+-------------  --------------  ------------    ----------
+2018-01-03 (5)  0.00224175 BTC  29,142 USD   4.98%
+2017-12-27 (1)  0.00033131 BTC   4,307 USD   0.00%
+2017-12-20 (4)  0.00269130 BTC  34.986 USD   5.12%
 ```
 
 ### /monthly <n>
@@ -356,11 +362,11 @@ if for `/monthly 3`:
 
 > **Monthly Profit over the last 3 months:**
 ```
-Month         Profit BTC      Profit USD
-----------  --------------  ------------
-2018-01     0.00224175 BTC  29,142 USD
-2017-12     0.00033131 BTC   4,307 USD
-2017-11     0.00269130 BTC  34.986 USD
+Month (count)  Profit BTC      Profit USD    Profit %
+-------------  --------------  ------------    ----------
+2018-01 (20)    0.00224175 BTC  29,142 USD  4.98%
+2017-12 (5)    0.00033131 BTC   4,307 USD   0.00%
+2017-11 (10)    0.00269130 BTC  34.986 USD  5.10%
 ```
 
 ### /whitelist

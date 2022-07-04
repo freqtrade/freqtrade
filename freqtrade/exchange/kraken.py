@@ -23,6 +23,7 @@ class Kraken(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 720,
+        "ohlcv_has_history": False,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
         "mark_ohlcv_timeframe": "4h",
@@ -44,7 +45,7 @@ class Kraken(Exchange):
         return (parent_check and
                 market.get('darkpool', False) is False)
 
-    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
         # Only fetch tickers for current stake currency
         # Otherwise the request for kraken becomes too large.
         symbols = list(self.get_markets(quote_currencies=[self._config['stake_currency']]))

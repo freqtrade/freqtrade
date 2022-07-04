@@ -212,7 +212,7 @@ def start_show_trades(args: Dict[str, Any]) -> None:
         raise OperationalException("--db-url is required for this command.")
 
     logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
-    init_db(config['db_url'], clean_open_orders=False)
+    init_db(config['db_url'])
     tfilter = []
 
     if config.get('trade_ids'):
