@@ -20,11 +20,11 @@ class TradingTime(IProtection):
         super().__init__(config, protection_config)
         self._start_time = datetime.strptime(protection_config.get('start_time', '00:00'), "%H:%M")
         self._end_time = datetime.strptime(protection_config.get('end_time', '23:59'), "%H:%M")
-
-        self._update_trading_period()
-
-    def _update_trading_period(self) -> None:
         now = datetime.now()
+
+        self._update_trading_period(now)
+
+    def _update_trading_period(self, now: datetime) -> None:
         self.trade_start, self.trade_end = (
                 now.replace(hour=self._start_time.hour, minute=self._start_time.minute, second=0),
                 now.replace(hour=self._end_time.hour, minute=self._end_time.minute, second=0)
@@ -49,8 +49,8 @@ class TradingTime(IProtection):
         """
         Evaluate recent trades for drawdown ...
         """
-        self._update_trading_period()
-        now = datetime.now()
+        now = date_now
+        self._update_trading_period(now)
 
         if not (self.trade_start < now < self.trade_end):
             return ProtectionReturn(
