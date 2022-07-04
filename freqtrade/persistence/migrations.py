@@ -255,8 +255,8 @@ def fix_old_dry_orders(engine):
             text(
                 """
                 update orders
-                set ft_is_open = 0
-                where ft_is_open = 1 and (ft_trade_id, order_id) not in (
+                set ft_is_open = false
+                where ft_is_open = true and (ft_trade_id, order_id) not in (
                     select id, stoploss_order_id from trades where stoploss_order_id is not null
                 ) and ft_order_side = 'stoploss'
                 and order_id like 'dry_%'
@@ -267,8 +267,8 @@ def fix_old_dry_orders(engine):
             text(
                 """
                 update orders
-                set ft_is_open = 0
-                where ft_is_open = 1
+                set ft_is_open = false
+                where ft_is_open = true
                 and (ft_trade_id, order_id) not in (
                     select id, open_order_id from trades where open_order_id is not null
                 ) and ft_order_side != 'stoploss'
