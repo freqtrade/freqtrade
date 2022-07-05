@@ -634,7 +634,7 @@ class FreqtradeBot(LoggingMixin):
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
                 entry_tag=enter_tag, side=trade_side):
-            logger.info(f"User requested abortion of buying {pair}")
+            logger.info(f"User denied entry for {pair}.")
             return False
         order = self.exchange.create_order(
             pair=pair,
@@ -1465,7 +1465,7 @@ class FreqtradeBot(LoggingMixin):
                 time_in_force=time_in_force, exit_reason=exit_reason,
                 sell_reason=exit_reason,  # sellreason -> compatibility
                 current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of {trade.pair} exit.")
+            logger.info(f"User denied exit for {trade.pair}.")
             return False
 
         try:
