@@ -327,10 +327,11 @@ class FreqaiDataKitchen:
                 f" due to NaNs in populated dataset {len(unfiltered_dataframe)}."
             )
             if (1 - len(filtered_dataframe) / len(unfiltered_dataframe)) > 0.1 and self.live:
+                worst_indicator = str(unfiltered_dataframe.count().idxmin())
                 logger.warning(
-                    f" {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.2f} percent"
-                    " of training data dropped due to NaNs, model may perform inconsistent"
-                    "with expectations"
+                    f" {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.0f} percent "
+                    " of training data dropped due to NaNs, model may perform inconsistent "
+                    f"with expectations. Verify {worst_indicator}"
                 )
             self.data["filter_drop_index_training"] = drop_index
 
@@ -878,12 +879,18 @@ class FreqaiDataKitchen:
             data_load_timerange.stopts = int(time)
             retrain = True
 
+        # logger.info(
+        #     f"downloading data for "
+        #     f"{(data_load_timerange.stopts-data_load_timerange.startts)/SECONDS_IN_DAY:.2f} "
+        #     " days. "
+        #     f"Extension of {additional_seconds/SECONDS_IN_DAY:.2f} days"
+        # )
+
         return retrain, trained_timerange, data_load_timerange
 
     def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
 
         coin, _ = pair.split("/")
-        # set the new data_path
         self.data_path = Path(
             self.full_path
             / str("sub-train" + "-" + pair.split("/")[0] + str(int(trained_timerange.stopts)))
@@ -966,10 +973,21 @@ class FreqaiDataKitchen:
                     ):
                         continue
 
-                    index = (
-                        df_dp.loc[df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]].index[0]
-                        + 1
-                    )
+                    try:
+                        index = (
+                            df_dp.loc[
+                                df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]
+                            ].index[0]
+                            + 1
+                        )
+                    except IndexError:
+                        logger.warning(
+                            f"Unable to update pair history for {pair}. "
+                            "If this does not resolve itself after 1 additional candle, "
+                            "please report the error to #freqai discord channel"
+                        )
+                        return
+
                     history_data[pair][tf] = pd.concat(
                         [
                             history_data[pair][tf],
