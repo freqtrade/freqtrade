@@ -315,7 +315,7 @@ class IFreqaiModel(ABC):
             pred_df = DataFrame(np.zeros((2, len(dk.label_list))), columns=dk.label_list)
             do_preds, dk.DI_values = np.ones(2) * 2, np.zeros(2)
             logger.warning(
-                "Model expired, returning null values to strategy. Strategy "
+                f"Model expired for {pair}, returning null values to strategy. Strategy "
                 "construction should take care to consider this event with "
                 "prediction == 0 and do_predict == 2"
             )
