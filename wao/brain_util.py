@@ -78,7 +78,7 @@ def setup():
     if Config.ENABLE_429_SOLUTION:
         __create_429_directory()
         __create_429_watcher()
-    if Config.IS_ERROR_WATCHER_ENABLED:
+    if BrainConfig.IS_ERROR_WATCHER_ENABLED:
         __create_error_watcher()
 
 

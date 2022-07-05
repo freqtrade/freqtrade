@@ -4,6 +4,7 @@ class BrainConfig:
     BACKTEST_DATA_CLEANER_YEAR = 2021
     BACKTEST_DATA_CLEANER_MONTH_INDEX = 4
     IS_BACKTEST = False
+    IS_ERROR_WATCHER_ENABLED = False
     ROMEO_POOL = {}  # romeo_pool: key=coin, value=romeo_instance
     WORKSPACE = "/workspace2" if IS_BACKTEST else "/workspace"
     ROOT = "/root"
