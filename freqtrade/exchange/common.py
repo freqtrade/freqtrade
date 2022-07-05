@@ -46,6 +46,7 @@ MAP_EXCHANGE_CHILDCLASS = {
     'binanceje': 'binance',
     'binanceusdm': 'binance',
     'okex': 'okx',
+    'gate': 'gateio',
 }
 
 SUPPORTED_EXCHANGES = [
