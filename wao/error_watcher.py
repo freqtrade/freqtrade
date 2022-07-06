@@ -5,14 +5,14 @@ import watchdog.observers
 from wao.brain_config import BrainConfig
 
 
-class _Error_Watcher(watchdog.events.PatternMatchingEventHandler):
+class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def __init__(self):
         watchdog.events.PatternMatchingEventHandler.__init__(self,
                                                              ignore_directories=False, case_sensitive=False)
 
     def on_created(self, event):
-        print("_Error_Watcher:on_created: file name = " + str(event.src_path))
+        print("Error_Watcher:on_created: file name = " + str(event.src_path))
         file = str(event.src_path)
 
         error_check_command = "grep -i error " + file + " | grep -i exception " + file
@@ -35,7 +35,7 @@ class _Error_Watcher(watchdog.events.PatternMatchingEventHandler):
             print(out_put)
 
     def on_modified(self, event):
-        print("_Error_Watcher:on_modified: file name = " + str(event.src_path))
+        print("Error_Watcher:on_modified: file name = " + str(event.src_path))
         file = str(event.src_path)
 
         error_check_command = "grep -i error " + file + " | grep -i exception " + file
