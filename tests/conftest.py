@@ -1694,6 +1694,7 @@ def limit_buy_order_old_partial():
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 23.0,
+        'cost': 90.99181073 * 23.0,
         'remaining': 67.99181073,
         'status': 'open'
     }
