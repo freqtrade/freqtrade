@@ -125,16 +125,7 @@ class IFreqaiModel(ABC):
                 if self.dd.pair_dict[pair]["priority"] != 1:
                     continue
                 dk = FreqaiDataKitchen(self.config, self.dd, self.live, pair)
-
-                # file_exists = False
-
                 dk.set_paths(pair, trained_timestamp)
-                # file_exists = self.model_exists(pair,
-                #                                 dk,
-                #                                 trained_timestamp=trained_timestamp,
-                #                                 model_filename=model_filename,
-                #                                 scanning=True)
-
                 (
                     retrain,
                     new_trained_timerange,
@@ -142,7 +133,7 @@ class IFreqaiModel(ABC):
                 ) = dk.check_if_new_training_required(trained_timestamp)
                 dk.set_paths(pair, new_trained_timerange.stopts)
 
-                if retrain:  # or not file_exists:
+                if retrain:
                     self.train_model_in_series(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
@@ -214,7 +205,6 @@ class IFreqaiModel(ABC):
             pred_df, do_preds = self.predict(dataframe_backtest, dk)
 
             dk.append_predictions(pred_df, do_preds, len(dataframe_backtest))
-            # print("predictions", len(dk.full_predictions), "do_predict", len(dk.full_do_predict))
 
         dk.fill_predictions(dataframe)
 
@@ -288,7 +278,9 @@ class IFreqaiModel(ABC):
         self.model = dk.load_data(coin=metadata["pair"], keras_model=self.keras)
 
         if not self.model:
-            logger.warning("No model ready, returning null values to strategy.")
+            logger.warning(
+                f"No model ready for {metadata['pair']}, returning null values to strategy."
+            )
             self.dd.return_null_values_to_strategy(dataframe, dk)
             return dk
 
