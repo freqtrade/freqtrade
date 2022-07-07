@@ -1777,12 +1777,19 @@ class FreqtradeBot(LoggingMixin):
         fee_abs = 0.0
         fee_cost = 0.0
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
+
         fee_rate_array: List[float] = []
         for exectrade in trades:
             amount += exectrade['amount']
             if self.exchange.order_has_fee(exectrade):
+                # Prefer singular fee
+                fees = [exectrade['fee']]
+            else:
+                fees = exectrade.get('fees', [])
+            for fee in fees:
+
                 fee_cost_, fee_currency, fee_rate_ = self.exchange.extract_cost_curr_rate(
-                    exectrade['fee'], exectrade['symbol'], exectrade['cost'], exectrade['amount']
+                    fee, exectrade['symbol'], exectrade['cost'], exectrade['amount']
                 )
                 fee_cost += fee_cost_
                 if fee_rate_ is not None:

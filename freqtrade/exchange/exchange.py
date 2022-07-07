@@ -1644,11 +1644,7 @@ class Exchange:
             return fee.get('rate')
         fee_curr = fee.get('currency')
         if fee_curr is None:
-            # Auto-currency only in futures mode
-            if self.trading_mode == TradingMode.FUTURES:
-                fee_curr = self.get_pair_quote_currency(symbol)
-            else:
-                return None
+            return None
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
