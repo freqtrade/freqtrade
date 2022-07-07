@@ -1615,8 +1615,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @staticmethod
-    def order_has_fee(order: Dict) -> bool:
+    def order_has_fee(self, order: Dict) -> bool:
         """
         Verifies if the passed in order dict has the needed keys to extract fees,
         and that these keys (currency, cost) are not empty.
@@ -1627,7 +1626,8 @@ class Exchange:
             return False
         return ('fee' in order and order['fee'] is not None
                 and (order['fee'].keys() >= {'currency', 'cost'})
-                and order['fee']['currency'] is not None
+                and (order['fee']['currency'] is not None
+                     or self.trading_mode == TradingMode.FUTURES)
                 and order['fee']['cost'] is not None
                 )
 
@@ -1642,16 +1642,20 @@ class Exchange:
         """
         if fee.get('rate') is not None:
             return fee.get('rate')
-        fee_curr = fee['currency']
+        fee_curr = fee.get('currency')
+        if fee_curr is None:
+            # Auto-currency only in futures mode
+            if self.trading_mode == TradingMode.FUTURES:
+                fee_curr = self.get_pair_quote_currency(symbol)
+            else:
+                return None
         # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(symbol):
+        if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
             return round(fee['cost'] / amount, 8)
-        elif fee_curr in self.get_pair_quote_currency(symbol):
+        elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
-            return round(self._contracts_to_amount(
-                symbol, fee['cost']) / cost,
-                8) if cost else None
+            return round(self._contracts_to_amount(symbol, fee['cost']) / cost, 8) if cost else None
         else:
             # If Fee currency is a different currency
             if not cost:

@@ -3529,8 +3529,10 @@ def test_market_is_active(market, expected_result) -> None:
     ({'fee': {'currency': 'ETH/BTC', 'cost': None}}, False),
     ({'fee': {'currency': 'ETH/BTC', 'cost': 0.01}}, True),
 ])
-def test_order_has_fee(order, expected) -> None:
-    assert Exchange.order_has_fee(order) == expected
+def test_order_has_fee(mocker, default_conf, order, expected) -> None:
+    ex = get_patched_exchange(mocker, default_conf)
+
+    assert ex.order_has_fee(order) == expected
 
 
 @pytest.mark.parametrize("order,expected", [
