@@ -68,7 +68,6 @@ EXCHANGE_HAS_REQUIRED = [
     'fetchBalance',
 
     # Public endpoints
-    'loadMarkets',
     'fetchOHLCV',
 ]
 
