@@ -30,7 +30,11 @@ class TradingTime(IProtection):
                 now.replace(hour=self._end_time.hour, minute=self._end_time.minute, second=0)
             )
 
-        self.next_trading_day = self.trade_start + timedelta(days=1)
+        if now < self.trade_start:
+            self.next_trading_day = self.trade_start
+        else:
+            self.next_trading_day = self.trade_start + timedelta(days=1)
+
 
     def short_desc(self) -> str:
         """
