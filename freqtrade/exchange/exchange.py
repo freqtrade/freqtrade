@@ -1616,7 +1616,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def order_has_fee(self, order: Dict) -> bool:
+    @staticmethod
+    def order_has_fee(order: Dict) -> bool:
         """
         Verifies if the passed in order dict has the needed keys to extract fees,
         and that these keys (currency, cost) are not empty.
@@ -1627,8 +1628,7 @@ class Exchange:
             return False
         return ('fee' in order and order['fee'] is not None
                 and (order['fee'].keys() >= {'currency', 'cost'})
-                and (order['fee']['currency'] is not None
-                     or self.trading_mode == TradingMode.FUTURES)
+                and order['fee']['currency'] is not None
                 and order['fee']['cost'] is not None
                 )
 
