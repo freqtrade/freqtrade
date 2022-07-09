@@ -1777,7 +1777,6 @@ class FreqtradeBot(LoggingMixin):
         fee_abs = 0.0
         fee_cost = 0.0
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
-
         fee_rate_array: List[float] = []
         for exectrade in trades:
             amount += exectrade['amount']

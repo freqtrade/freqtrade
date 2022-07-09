@@ -77,6 +77,7 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
     }
     _ft_has: Dict = {}
@@ -1645,13 +1646,18 @@ class Exchange:
         fee_curr = fee.get('currency')
         if fee_curr is None:
             return None
+        fee_cost = fee['cost']
+        if self._ft_has['fee_cost_in_contracts']:
+            # Convert cost via "contracts" conversion
+            fee_cost = self._contracts_to_amount(symbol, fee['cost'])
+
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
             return round(fee['cost'] / amount, 8)
         elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
-            return round(self._contracts_to_amount(symbol, fee['cost']) / cost, 8) if cost else None
+            return round(fee_cost / cost, 8) if cost else None
         else:
             # If Fee currency is a different currency
             if not cost:
@@ -1666,8 +1672,7 @@ class Exchange:
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
-            return round((self._contracts_to_amount(
-                symbol, fee['cost']) * fee_to_quote_rate) / cost, 8)
+            return round((fee_cost * fee_to_quote_rate) / cost, 8)
 
     def extract_cost_curr_rate(self, fee: Dict, symbol: str, cost: float,
                                amount: float) -> Tuple[float, str, Optional[float]]:
