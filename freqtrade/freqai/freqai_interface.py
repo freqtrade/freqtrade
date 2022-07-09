@@ -123,7 +123,7 @@ class IFreqaiModel(ABC):
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         del dk
-        return self.return_values(dataframe)
+        return dataframe
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
@@ -608,17 +608,6 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
-
-    @abstractmethod
-    def return_values(self, dataframe: DataFrame) -> DataFrame:
-        """
-        User defines the dataframe to be returned to strategy here.
-        :param dataframe: DataFrame = the full dataframe for the current prediction (live)
-                                      or --timerange (backtesting)
-        :return: dataframe: DataFrame = dataframe filled with user defined data
-        """
-
-        return
 
     def analyze_trade_database(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """

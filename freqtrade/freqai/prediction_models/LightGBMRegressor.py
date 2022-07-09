@@ -9,7 +9,7 @@ from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressio
 logger = logging.getLogger(__name__)
 
 
-class LightGBMPredictionModel(BaseRegressionModel):
+class LightGBMRegressor(BaseRegressionModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which

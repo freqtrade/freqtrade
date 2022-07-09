@@ -21,7 +21,7 @@ def freqai_conf(default_conf, tmpdir):
             "strategy": "freqai_test_strat",
             "user_data_dir": Path(tmpdir),
             "strategy-path": "freqtrade/tests/strategy/strats",
-            "freqaimodel": "LightGBMPredictionModel",
+            "freqaimodel": "LightGBMRegressor",
             "freqaimodel_path": "freqai/prediction_models",
             "timerange": "20180110-20180115",
             "freqai": {

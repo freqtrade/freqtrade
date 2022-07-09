@@ -43,7 +43,7 @@ def test_train_model_in_series_LightGBM(mocker, freqai_conf):
 def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
-    freqai_conf.update({"freqaimodel": "LightGBMPredictionMultiModel"})
+    freqai_conf.update({"freqaimodel": "LightGBMRegressorMultiTarget"})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -73,8 +73,9 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
 @pytest.mark.skipif("arm" in platform.uname()[-1], reason="no ARM for Catboost ...")
 def test_train_model_in_series_Catboost(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"freqaimodel": "CatboostPredictionModel"})
-    del freqai_conf['freqai']['model_training_parameters']['verbosity']
+    freqai_conf.update({"freqaimodel": "CatboostRegressor"})
+    freqai_conf.get('freqai', {}).update(
+        {'model_training_parameters': {"n_estimators": 100, "verbose": 0}})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)

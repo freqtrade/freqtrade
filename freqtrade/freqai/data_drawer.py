@@ -226,6 +226,7 @@ class FreqaiDataDrawer:
         historical candles, and also stores historical predictions despite retrainings (so stored
         predictions are true predictions, not just inferencing on trained data)
         """
+
         # dynamic df returned to strategy and plotted in frequi
         mrv_df = self.model_return_values[pair] = pd.DataFrame()
 
@@ -246,6 +247,8 @@ class FreqaiDataDrawer:
         else:
             for label in dk.label_list:
                 mrv_df[label] = pred_df[label]
+                if mrv_df[label].dtype == object:
+                    continue
                 mrv_df[f"{label}_mean"] = dk.data["labels_mean"][label]
                 mrv_df[f"{label}_std"] = dk.data["labels_std"][label]
 
@@ -295,6 +298,8 @@ class FreqaiDataDrawer:
 
         for label in dk.label_list:
             df[label].iloc[-1] = predictions[label].iloc[-1]
+            if df[label].dtype == object:
+                continue
             df[f"{label}_mean"].iloc[-1] = dk.data["labels_mean"][label]
             df[f"{label}_std"].iloc[-1] = dk.data["labels_std"][label]
 

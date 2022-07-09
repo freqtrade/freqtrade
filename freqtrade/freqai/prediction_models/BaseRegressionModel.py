@@ -19,15 +19,6 @@ class BaseRegressionModel(IFreqaiModel):
     such as prediction_models/CatboostPredictionModel.py for guidance.
     """
 
-    def return_values(self, dataframe: DataFrame) -> DataFrame:
-        """
-        User uses this function to add any additional return values to the dataframe.
-        e.g.
-        dataframe['volatility'] = dk.volatility_values
-        """
-
-        return dataframe
-
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
     ) -> Any:

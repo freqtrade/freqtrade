@@ -294,7 +294,7 @@ class FreqaiDataKitchen:
             self.data[item + "_min"] = train_min[item]
 
         for item in data_dictionary["train_labels"].keys():
-            if data_dictionary["train_labels"][item].dtype == str:
+            if data_dictionary["train_labels"][item].dtype == object:
                 continue
             train_labels_max = data_dictionary["train_labels"][item].max()
             train_labels_min = data_dictionary["train_labels"][item].min()
@@ -1010,6 +1010,8 @@ class FreqaiDataKitchen:
 
         self.data["labels_mean"], self.data["labels_std"] = {}, {}
         for label in self.label_list:
+            if self.data_dictionary["train_labels"][label].dtype == object:
+                continue
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
