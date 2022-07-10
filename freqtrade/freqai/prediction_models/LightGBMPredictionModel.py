@@ -104,9 +104,9 @@ class LightGBMPredictionModel(IFreqaiModel):
 
         # logger.info("--------------------Starting prediction--------------------")
 
-        original_feature_list = dk.find_features(unfiltered_dataframe)
+        dk.find_features(unfiltered_dataframe)
         filtered_dataframe, _ = dk.filter_features(
-            unfiltered_dataframe, original_feature_list, training_filter=False
+            unfiltered_dataframe, dk.training_features_list, training_filter=False
         )
         filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
         dk.data_dictionary["prediction_features"] = filtered_dataframe

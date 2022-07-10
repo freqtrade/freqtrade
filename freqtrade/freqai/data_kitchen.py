@@ -48,15 +48,6 @@ class FreqaiDataKitchen:
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
         self.freqai_config = config["freqai"]
-        # self.predictions: npt.ArrayLike = np.array([])
-        # self.do_predict: npt.ArrayLike = np.array([])
-        # self.target_mean: npt.ArrayLike = np.array([])
-        # self.target_std: npt.ArrayLike = np.array([])
-        # self.full_predictions: npt.ArrayLike = np.array([])
-        # self.full_do_predict: npt.ArrayLike = np.array([])
-        # self.full_DI_values: npt.ArrayLike = np.array([])
-        # self.full_target_mean: npt.ArrayLike = np.array([])
-        # self.full_target_std: npt.ArrayLike = np.array([])
         self.full_df: DataFrame = DataFrame()
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
