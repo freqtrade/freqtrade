@@ -77,6 +77,7 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
     }
     _ft_has: Dict = {}
@@ -1631,27 +1632,35 @@ class Exchange:
                 and order['fee']['cost'] is not None
                 )
 
-    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+    def calculate_fee_rate(
+            self, fee: Dict, symbol: str, cost: float, amount: float) -> Optional[float]:
         """
         Calculate fee rate if it's not given by the exchange.
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         """
-        if order['fee'].get('rate') is not None:
-            return order['fee'].get('rate')
-        fee_curr = order['fee']['currency']
+        if fee.get('rate') is not None:
+            return fee.get('rate')
+        fee_curr = fee.get('currency')
+        if fee_curr is None:
+            return None
+        fee_cost = fee['cost']
+        if self._ft_has['fee_cost_in_contracts']:
+            # Convert cost via "contracts" conversion
+            fee_cost = self._contracts_to_amount(symbol, fee['cost'])
+
         # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(order['symbol']):
+        if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(
-                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
-        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            return round(fee['cost'] / amount, 8)
+        elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
-            return round(self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) / order['cost'],
-                8) if order['cost'] else None
+            return round(fee_cost / cost, 8) if cost else None
         else:
             # If Fee currency is a different currency
-            if not order['cost']:
+            if not cost:
                 # If cost is None or 0.0 -> falsy, return None
                 return None
             try:
@@ -1663,19 +1672,28 @@ class Exchange:
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
-            return round((self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) * fee_to_quote_rate) / order['cost'], 8)
+            return round((fee_cost * fee_to_quote_rate) / cost, 8)
 
-    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+    def extract_cost_curr_rate(self, fee: Dict, symbol: str, cost: float,
+                               amount: float) -> Tuple[float, str, Optional[float]]:
         """
         Extract tuple of cost, currency, rate.
         Requires order_has_fee to run first!
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (order['fee']['cost'],
-                order['fee']['currency'],
-                self.calculate_fee_rate(order))
+        return (fee['cost'],
+                fee['currency'],
+                self.calculate_fee_rate(
+                    fee,
+                    symbol,
+                    cost,
+                    amount
+                    )
+                )
 
     # Historic data
 
