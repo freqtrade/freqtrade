@@ -91,7 +91,7 @@ class LightGBMPredictionModel(IFreqaiModel):
         return model
 
     def predict(
-        self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen
+        self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
     ) -> Tuple[DataFrame, DataFrame]:
         """
         Filter the prediction features data and predict with it.
