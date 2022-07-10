@@ -97,12 +97,10 @@ class LightGBMPredictionModel(IFreqaiModel):
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
         :return:
-        :predictions: np.array of predictions
+        :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
-
-        # logger.info("--------------------Starting prediction--------------------")
 
         dk.find_features(unfiltered_dataframe)
         filtered_dataframe, _ = dk.filter_features(
