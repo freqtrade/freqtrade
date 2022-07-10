@@ -95,7 +95,7 @@ class IFreqaiModel(ABC):
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
 
         # For backtesting, each pair enters and then gets trained for each window along the
-        # sliding window defined by "train_period" (training window) and "backtest_period"
+        # sliding window defined by "train_period_days" (training window) and "live_retrain_hours"
         # (backtest window, i.e. window immediately following the training window).
         # FreqAI slides the window and sequentially builds the backtesting results before returning
         # the concatenated results for the full backtesting period back to the strategy.
@@ -143,11 +143,11 @@ class IFreqaiModel(ABC):
     ) -> FreqaiDataKitchen:
         """
         The main broad execution for backtesting. For backtesting, each pair enters and then gets
-        trained for each window along the sliding window defined by "train_period" (training window)
-        and "backtest_period" (backtest window, i.e. window immediately following the
-        training window). FreqAI slides the window and sequentially builds the backtesting results
-        before returning the concatenated results for the full backtesting period back to the
-        strategy.
+        trained for each window along the sliding window defined by "train_period_days"
+        (training window) and "backtest_period_days" (backtest window, i.e. window immediately
+        following the training window). FreqAI slides the window and sequentially builds
+        the backtesting results before returning the concatenated results for the full
+        backtesting period back to the strategy.
         :params:
         dataframe: DataFrame = strategy passed dataframe
         metadata: Dict = pair metadata

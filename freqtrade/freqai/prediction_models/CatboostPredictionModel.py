@@ -27,29 +27,11 @@ class CatboostPredictionModel(IFreqaiModel):
 
         return dataframe
 
-    def make_labels(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
-        """
-        User defines the labels here (target values).
-        :params:
-        :dataframe: the full dataframe for the present training period
-        """
-
-        dataframe["s"] = (
-            dataframe["close"]
-            .shift(-self.feature_parameters["period"])
-            .rolling(self.feature_parameters["period"])
-            .mean()
-            / dataframe["close"]
-            - 1
-        )
-
-        return dataframe["s"]
-
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
     ) -> Tuple[DataFrame, DataFrame]:
         """
-        Filter the training data and train a model to it. Train makes heavy use of the datahkitchen
+        Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
         :params:
         :unfiltered_dataframe: Full dataframe for the current training period
@@ -60,7 +42,6 @@ class CatboostPredictionModel(IFreqaiModel):
 
         logger.info("--------------------Starting training " f"{pair} --------------------")
 
-        # unfiltered_labels = self.make_labels(unfiltered_dataframe, dk)
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
             unfiltered_dataframe,

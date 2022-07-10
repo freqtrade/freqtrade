@@ -477,16 +477,16 @@ CONF_SCHEMA = {
         "freqai": {
             "type": "object",
             "properties": {
-                "timeframes": {"type": "list"},
-                "train_period": {"type": "integer", "default": 0},
-                "backtest_period": {"type": "float", "default": 7},
+                "train_period_days": {"type": "integer", "default": 0},
+                "backtest_period_days": {"type": "float", "default": 7},
                 "identifier": {"type": "str", "default": "example"},
-                "corr_pairlist": {"type": "list"},
                 "feature_parameters": {
                     "type": "object",
                     "properties": {
-                        "period": {"type": "integer"},
-                        "shift": {"type": "integer", "default": 0},
+                        "include_corr_pairlist": {"type": "list"},
+                        "include_timeframes": {"type": "list"},
+                        "label_period_candles": {"type": "integer"},
+                        "include_shifted_candles": {"type": "integer", "default": 0},
                         "DI_threshold": {"type": "float", "default": 0},
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
@@ -555,11 +555,11 @@ SCHEMA_MINIMAL_REQUIRED = [
 ]
 
 SCHEMA_FREQAI_REQUIRED = [
-    'timeframes',
-    'train_period',
-    'backtest_period',
+    'include_timeframes',
+    'train_period_days',
+    'backtest_period_days',
     'identifier',
-    'corr_pairlist',
+    'include_corr_pairlist',
     'feature_parameters',
     'data_split_parameters',
     'model_training_parameters'

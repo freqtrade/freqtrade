@@ -77,19 +77,22 @@ config setup includes:
 ```json
     "freqai": {
                 "startup_candles": 10000,
-                "timeframes" : ["5m","15m","4h"],
-                "train_period" : 30,
-                "backtest_period" : 7,
+                "purge_old_models": true,
+                "train_period_days" : 30,
+                "backtest_period_days" : 7,
                 "identifier" :  "unique-id",
-                "corr_pairlist": [
-                        "ETH/USD",
-                        "LINK/USD",
-                        "BNB/USD"
-                ],
                 "feature_parameters" : {
-                        "period": 24,
-                        "shift": 2,
-                        "weight_factor":  0,
+                    "include_timeframes" : ["5m","15m","4h"],
+                    "include_corr_pairlist": [
+                            "ETH/USD",
+                            "LINK/USD",
+                            "BNB/USD"
+                    ],
+                    "label_period_candles": 24,
+                    "include_shifted_candles": 2,
+                    "weight_factor":  0,
+                    "indicator_max_period_candles": 20,
+                    "indicator_periods_candles": [10, 20]
                 },
                 "data_split_parameters" : {
                     "test_size": 0.25,
@@ -106,40 +109,99 @@ config setup includes:
 
 ### Building the feature set
 
-!! slightly out of date, please refer to templates/FreqaiExampleStrategy.py for updated method !!
 Features are added by the user inside the `populate_any_indicators()` method of the strategy 
-by prepending indicators with `%`:
+by prepending indicators with `%` and labels are added by prependng `&`. There are some important
+components/structures that the user *must* include when building their feature set. As shown below,
+`with self.model.bridge.lock:` must be used to ensure thread safety - especially when using third 
+party libraries for indicator construction such as TA-lib. Another structure to consider is the 
+location of the labels at the bottom of the example function (below `if set_generalized_indicators:`).
+This is where the user will add single features labels to their feature set to avoid duplication from 
+various configuration paramters which multiply the feature set such as `include_timeframes`.
 
 ```python
-    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
-        informative['%-' + coin + "rsi"] = ta.RSI(informative, timeperiod=14)
-        informative['%-' + coin + "mfi"] = ta.MFI(informative, timeperiod=25)
-        informative['%-' + coin + "adx"] = ta.ADX(informative, window=20)
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative), window=14, stds=2.2)
-        informative[coin + "bb_lowerband"] = bollinger["lower"]
-        informative[coin + "bb_middleband"] = bollinger["mid"]
-        informative[coin + "bb_upperband"] = bollinger["upper"]
-        informative['%-' + coin + "bb_width"] = (
-            informative[coin + "bb_upperband"] - informative[coin + "bb_lowerband"]
-        ) / informative[coin + "bb_middleband"]
+    def populate_any_indicators(
+        self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
+    ):
+        """
+        Function designed to automatically generate, name and merge features
+        from user indicated timeframes in the configuration file. User controls the indicators
+        passed to the training/prediction by prepending indicators with `'%-' + coin `
+        (see convention below). I.e. user should not prepend any supporting metrics
+        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
+        model.
+        :params:
+        :pair: pair to be used as informative
+        :df: strategy dataframe which will receive merges from informatives
+        :tf: timeframe of the dataframe which will modify the feature names
+        :informative: the dataframe associated with the informative pair
+        :coin: the name of the coin which will modify the feature names.
+        """
 
+        with self.model.bridge.lock:
+            if informative is None:
+                informative = self.dp.get_pair_dataframe(pair, tf)
 
-        
-        # The following code automatically adds features according to the `shift` parameter passed
-        # in the config. Do not remove
-        indicators = [col for col in informative if col.startswith('%')]
-        for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
-            if n == 0:
-                continue
-            informative_shift = informative[indicators].shift(n)
-            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-            informative = pd.concat((informative, informative_shift), axis=1)
+            # first loop is automatically duplicating indicators for time periods
+            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+                t = int(t)
+                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-        # The following code safely merges into the base timeframe.
-        # Do not remove.
-        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-        skip_columns = [(s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]]
-        df = df.drop(columns=skip_columns)
+                bollinger = qtpylib.bollinger_bands(
+                    qtpylib.typical_price(informative), window=t, stds=2.2
+                )
+                informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
+                informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
+                informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
+
+                informative[f"%-{coin}bb_width-period_{t}"] = (
+                    informative[f"{coin}bb_upperband-period_{t}"]
+                    - informative[f"{coin}bb_lowerband-period_{t}"]
+                ) / informative[f"{coin}bb_middleband-period_{t}"]
+                informative[f"%-{coin}close-bb_lower-period_{t}"] = (
+                    informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
+                )
+
+                informative[f"%-{coin}relative_volume-period_{t}"] = (
+                    informative["volume"] / informative["volume"].rolling(t).mean()
+                )
+
+            indicators = [col for col in informative if col.startswith("%")]
+            # This loop duplicates and shifts all indicators to add a sense of recency to data
+            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+                if n == 0:
+                    continue
+                informative_shift = informative[indicators].shift(n)
+                informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+                informative = pd.concat((informative, informative_shift), axis=1)
+
+            df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+            skip_columns = [
+                (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+            ]
+            df = df.drop(columns=skip_columns)
+
+            # Add generalized indicators here (because in live, it will call this
+            # function to populate indicators during training). Notice how we ensure not to
+            # add them multiple times
+            if set_generalized_indicators:
+                df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
+                df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+
+                # user adds targets here by prepending them with &- (see convention below)
+                # If user wishes to use multiple targets, a multioutput prediction model
+                # needs to be used such as templates/CatboostPredictionMultiModel.py
+                df["&-s_close"] = (
+                    df["close"]
+                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                    .mean()
+                    / df["close"]
+                    - 1
+                )
+
+        return df
 ```
 The user of the present example does not want to pass the `bb_lowerband` as a feature to the model, 
 and has therefore not prepended it with `%`. The user does, however, wish to pass `bb_width` to the
@@ -153,6 +215,7 @@ a specific pair or timeframe, they should use the following structure inside `po
 ```python
     def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
 
+        ...
 
         # Add generalized indicators here (because in live, it will call only this function to populate 
         # indicators for retraining). Notice how we ensure not to add them multiple times by associating
@@ -160,35 +223,47 @@ a specific pair or timeframe, they should use the following structure inside `po
         if pair == metadata['pair'] and tf == self.timeframe:
             df['%-day_of_week'] = (df["date"].dt.dayofweek + 1) / 7
             df['%-hour_of_day'] = (df['date'].dt.hour + 1) / 25
+
+            # user adds targets here by prepending them with &- (see convention below)
+            # If user wishes to use multiple targets, a multioutput prediction model
+            # needs to be used such as templates/CatboostPredictionMultiModel.py
+            df["&-s_close"] = (
+                df["close"]
+                .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                .mean()
+                / df["close"]
+                - 1
+                )
 ```
 
 (Please see the example script located in `freqtrade/templates/FreqaiExampleStrategy.py` for a full example of `populate_any_indicators()`)
 
-The `timeframes` from the example config above are the timeframes of each `populate_any_indicator()`
+The `include_timeframes` from the example config above are the timeframes of each `populate_any_indicator()`
  included metric for inclusion in the feature set. In the present case, the user is asking for the
 `5m`, `15m`, and `4h` timeframes of the `rsi`, `mfi`, `roc`, and `bb_width` to be included
 in the feature set.
 
 In addition, the user can ask for each of these features to be included from
-informative pairs using the `corr_pairlist`. This means that the present feature
-set will include all the `base_features` on all the `timeframes` for each of
+informative pairs using the `include_corr_pairlist`. This means that the present feature
+set will include all the features from `populate_any_indicators` on all the `include_timeframes` for each of
 `ETH/USD`, `LINK/USD`, and `BNB/USD`.
 
-`shift` is another user controlled parameter which indicates the number of previous
-candles to include in the present feature set. In other words, `shift: 2`, tells
+`include_shifted_candles` is another user controlled parameter which indicates the number of previous
+candles to include in the present feature set. In other words, `innclude_shifted_candles: 2`, tells
 Freqai to include the the past 2 candles for each of the features included
 in the dataset.
 
 In total, the number of features the present user has created is:_
 
-no. `timeframes` * no. `base_features` * no. `corr_pairlist` * no. `shift`_
-3 * 3 * 3 * 2 = 54._
+legnth of `include_timeframes` * no. features in `populate_any_indicators()` * legnth of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`_
+3 * 3 * 3 * 2 * 2 = 108._
 
 ### Deciding the sliding training window and backtesting duration
 
 Users define the backtesting timerange with the typical `--timerange` parameter in the user
-configuration file. `train_period` is the duration of the sliding training window, while
-`backtest_period` is the sliding backtesting window, both in number of days (backtest_period can be
+configuration file. `train_period_days` is the duration of the sliding training window, while
+`backtest_period_days` is the sliding backtesting window, both in number of days (backtest_period_days can be
 a float to indicate sub daily retraining in live/dry mode). In the present example,
 the user is asking Freqai to use a training period of 30 days and backtest the subsequent 7 days.
 This means that if the user sets `--timerange 20210501-20210701`, 
@@ -203,9 +278,9 @@ the user must manually enter the required number of `startup_candles` in the con
 is used to increase the available data to FreqAI and should be sufficient to enable all indicators 
 to be NaN free at the beginning of the first training timerange. This boils down to identifying the 
 highest timeframe (`4h` in present example)  and the longest indicator period (25 in present example)
-and adding this to the `train_period`. The units need to be in the base candle time frame:_
+and adding this to the `train_period_days`. The units need to be in the base candle time frame:_
 
-`startup_candles` = ( 4 hours * 25 max period * 60 minutes/hour + 30 day train_period * 1440 minutes per day ) / 5 min (base time frame) = 1488.
+`startup_candles` = ( 4 hours * 25 max period * 60 minutes/hour + 30 day train_period_days * 1440 minutes per day ) / 5 min (base time frame) = 1488.
 
 !!! Note
     In dry/live, this is all precomputed and handled automatically. Thus, `startup_candle` has no influence on dry/live.
@@ -242,9 +317,9 @@ The Freqai strategy requires the user to include the following lines of code in 
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["corr_pairlist"]
+        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
         informative_pairs = []
-        for tf in self.config["freqai"]["timeframes"]:
+        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
             for pair in whitelist_pairs:
                 informative_pairs.append((pair, tf))
             for pair in corr_pairs:
@@ -257,21 +332,37 @@ The Freqai strategy requires the user to include the following lines of code in 
         self.model = CustomModel(self.config)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            self.freqai_info = self.config['freqai']
 
-            # the following loops are necessary for building the features 
-            # indicated by the user in the configuration file.
-            for tf in self.freqai_info['timeframes']:
-                    for i in self.freqai_info['corr_pairlist']:
-                    dataframe = self.populate_any_indicators(i,
-                                    dataframe.copy(), tf, coin=i.split("/")[0]+'-')
+        self.freqai_info = self.config["freqai"]
+        self.pair = metadata["pair"]
+        sgi = True
+        # the following loops are necessary for building the features
+        # indicated by the user in the configuration file.
+        # All indicators must be populated by populate_any_indicators() for live functionality
+        # to work correctly.
+        for tf in self.freqai_info["feature_parameters"]["include_timeframes"]:
+            dataframe = self.populate_any_indicators(
+                metadata,
+                self.pair,
+                dataframe.copy(),
+                tf,
+                coin=self.pair.split("/")[0] + "-",
+                set_generalized_indicators=sgi,
+            )
+            sgi = False
+            for pair in self.freqai_info["feature_parameters"]["include_corr_pairlist"]:
+                if metadata["pair"] in pair:
+                    continue  # do not include whitelisted pair twice if it is in corr_pairlist
+                dataframe = self.populate_any_indicators(
+                    metadata, pair, dataframe.copy(), tf, coin=pair.split("/")[0] + "-"
+                )
 
-            # the model will return 4 values, its prediction, an indication of whether or not the prediction 
-            # should be accepted, the target mean/std values from the labels used during each training period.
-            (dataframe['prediction'], dataframe['do_predict'], 
-                    dataframe['target_mean'], dataframe['target_std']) = self.model.bridge.start(dataframe, metadata)
+        # the model will return 4 values, its prediction, an indication of whether or not the
+        # prediction should be accepted, the target mean/std values from the labels used during
+        # each training period.
+        dataframe = self.model.bridge.start(dataframe, metadata, self)
 
-            return dataframe
+        return dataframe
 ```
 
 The user should also include `populate_any_indicators()` from `templates/FreqaiExampleStrategy.py` which builds 
@@ -280,8 +371,7 @@ the feature set with a proper naming convention for the IFreqaiModel to use late
 ### Building an IFreqaiModel
 
 Freqai has an example prediction model based on the popular `Catboost` regression (`freqai/prediction_models/CatboostPredictionModel.py`). However, users can customize and create
-their own prediction models using the `IFreqaiModel` class. Users are encouraged to inherit `train()`, `predict()`, 
-and `make_labels()` to let them customize various aspects of their training procedures.
+their own prediction models using the `IFreqaiModel` class. Users are encouraged to inherit `train()` and `predict()` to let them customize various aspects of their training procedures.
 
 ### Running the model live
 
@@ -293,10 +383,10 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 
 By default, Freqai will not find find any existing models and will start by training a new one 
 given the user configuration settings. Following training, it will use that model to predict for the
-duration of `backtest_period`. After a full `backtest_period` has elapsed, Freqai will auto retrain 
+duration of `backtest_period_days`. After a full `backtest_period_days` has elapsed, Freqai will auto retrain 
 a new model, and begin making predictions with the updated model. FreqAI backtesting and live both
-permit the user to use fractional days (i.e. 0.1) in the `backtest_period`, which enables more frequent 
-retraining. But the user should be careful that using a fractional `backtest_period` with a large
+permit the user to use fractional days (i.e. 0.1) in the `backtest_period_days`, which enables more frequent 
+retraining. But the user should be careful that using a fractional `backtest_period_days` with a large
 `--timerange` in backtesting will result in a huge amount of required trainings/models.
 
 If the user wishes to start dry/live from a backtested saved model, the user only needs to reuse
@@ -305,12 +395,14 @@ the same `identifier` parameter
 ```json
     "freqai": {
         "identifier": "example",
+        "live_retrain_hours": 1
     }
 ```
 
 In this case, although Freqai will initiate with a 
 pre-trained model, it will still check to see how much time has elapsed since the model was trained,
-and if a full `backtest_period` has elapsed since the end of the loaded model, FreqAI will self retrain.
+and if a full `live_retrain_hours` has elapsed since the end of the loaded model, FreqAI will self retrain. 
+It is common to want constant retraining, in whichcase, user should set `live_retrain_hours` to 0.
 
 ## Data anylsis techniques
 
@@ -412,7 +504,7 @@ The user can stratify the training/testing data using:
 ```json
     "freqai": {
         "feature_parameters" : {
-            "stratify": 3
+            "stratify_training_data": 3
         }
     }
 ```

@@ -26,6 +26,7 @@ from freqtrade.strategy.interface import IStrategy
 
 
 SECONDS_IN_DAY = 86400
+SECONDS_IN_HOUR = 3600
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +60,13 @@ class FreqaiDataKitchen:
         self.set_all_pairs()
         if not self.live:
             self.full_timerange = self.create_fulltimerange(
-                self.config["timerange"], self.freqai_config.get("train_period")
+                self.config["timerange"], self.freqai_config.get("train_period_days")
             )
 
             (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
                 self.full_timerange,
-                config["freqai"]["train_period"],
-                config["freqai"]["backtest_period"],
+                config["freqai"]["train_period_days"],
+                config["freqai"]["backtest_period_days"],
             )
         # self.strat_dataframe: DataFrame = strat_dataframe
         self.dd = data_drawer
@@ -234,17 +235,18 @@ class FreqaiDataKitchen:
         :filtered_dataframe: cleaned dataframe ready to be split.
         :labels: cleaned labels ready to be split.
         """
+        feat_dict = self.freqai_config.get("feature_parameters", {})
 
         weights: npt.ArrayLike
-        if self.freqai_config["feature_parameters"].get("weight_factor", 0) > 0:
+        if feat_dict.get("weight_factor", 0) > 0:
             weights = self.set_weights_higher_recent(len(filtered_dataframe))
         else:
             weights = np.ones(len(filtered_dataframe))
 
-        if self.freqai_config["feature_parameters"].get("stratify", 0) > 0:
+        if feat_dict.get("stratify_training_data", 0) > 0:
             stratification = np.zeros(len(filtered_dataframe))
             for i in range(1, len(stratification)):
-                if i % self.freqai_config.get("feature_parameters", {}).get("stratify", 0) == 0:
+                if i % feat_dict.get("stratify_training_data", 0) == 0:
                     stratification[i] = 1
         else:
             stratification = None
@@ -439,7 +441,7 @@ class FreqaiDataKitchen:
         bt_split: the backtesting length (dats). Specified in user configuration file
         """
 
-        train_period = train_split * SECONDS_IN_DAY
+        train_period_days = train_split * SECONDS_IN_DAY
         bt_period = bt_split * SECONDS_IN_DAY
 
         full_timerange = TimeRange.parse_timerange(tr)
@@ -460,7 +462,7 @@ class FreqaiDataKitchen:
         while True:
             if not first:
                 timerange_train.startts = timerange_train.startts + bt_period
-            timerange_train.stopts = timerange_train.startts + train_period
+            timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
             start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
@@ -763,7 +765,7 @@ class FreqaiDataKitchen:
 
         return
 
-    def create_fulltimerange(self, backtest_tr: str, backtest_period: int) -> str:
+    def create_fulltimerange(self, backtest_tr: str, backtest_period_days: int) -> str:
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
 
         if backtest_timerange.stopts == 0:
@@ -771,7 +773,8 @@ class FreqaiDataKitchen:
                 datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
             )
 
-        backtest_timerange.startts = backtest_timerange.startts - backtest_period * SECONDS_IN_DAY
+        backtest_timerange.startts = (backtest_timerange.startts
+                                      - backtest_period_days * SECONDS_IN_DAY)
         start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
         stop = datetime.datetime.utcfromtimestamp(backtest_timerange.stopts)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
@@ -817,7 +820,8 @@ class FreqaiDataKitchen:
         data_load_timerange = TimeRange()
 
         # find the max indicator length required
-        max_timeframe_chars = self.freqai_config.get("timeframes")[-1]
+        max_timeframe_chars = self.freqai_config.get(
+            "feature_parameters", {}).get("include_timeframes")[-1]
         max_period = self.freqai_config.get("feature_parameters", {}).get(
             "indicator_max_period", 50
         )
@@ -840,11 +844,11 @@ class FreqaiDataKitchen:
         # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
 
         if trained_timestamp != 0:
-            elapsed_time = (time - trained_timestamp) / SECONDS_IN_DAY
-            retrain = elapsed_time > self.freqai_config.get("backtest_period")
+            elapsed_time = (time - trained_timestamp) / SECONDS_IN_HOUR
+            retrain = elapsed_time > self.freqai_config.get("live_retrain_hours", 0)
             if retrain:
                 trained_timerange.startts = int(
-                    time - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                    time - self.freqai_config.get("train_period_days", 0) * SECONDS_IN_DAY
                 )
                 trained_timerange.stopts = int(time)
                 # we want to load/populate indicators on more data than we plan to train on so
@@ -852,19 +856,19 @@ class FreqaiDataKitchen:
                 # unless they have data further back in time before the start of the train period
                 data_load_timerange.startts = int(
                     time
-                    - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                    - self.freqai_config.get("train_period_days", 0) * SECONDS_IN_DAY
                     - additional_seconds
                 )
                 data_load_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
             trained_timerange.startts = int(
-                time - self.freqai_config.get("train_period") * SECONDS_IN_DAY
+                time - self.freqai_config.get("train_period_days") * SECONDS_IN_DAY
             )
             trained_timerange.stopts = int(time)
 
             data_load_timerange.startts = int(
                 time
-                - self.freqai_config.get("train_period", 0) * SECONDS_IN_DAY
+                - self.freqai_config.get("train_period_days", 0) * SECONDS_IN_DAY
                 - additional_seconds
             )
             data_load_timerange.stopts = int(time)
@@ -930,7 +934,7 @@ class FreqaiDataKitchen:
         refresh_backtest_ohlcv_data(
             exchange,
             pairs=self.all_pairs,
-            timeframes=self.freqai_config.get("timeframes"),
+            timeframes=self.freqai_config.get("feature_parameters", {}).get("include_timeframes"),
             datadir=self.config["datadir"],
             timerange=timerange,
             new_pairs_days=new_pairs_days,
@@ -948,12 +952,12 @@ class FreqaiDataKitchen:
         :params:
         dataframe: DataFrame = strategy provided dataframe
         """
-
+        feat_params = self.freqai_config.get("feature_parameters", {})
         with self.dd.history_lock:
             history_data = self.dd.historic_data
 
             for pair in self.all_pairs:
-                for tf in self.freqai_config.get("timeframes"):
+                for tf in feat_params.get("include_timeframes"):
 
                     # check if newest candle is already appended
                     df_dp = strategy.dp.get_pair_dataframe(pair, tf)
@@ -992,7 +996,8 @@ class FreqaiDataKitchen:
 
     def set_all_pairs(self) -> None:
 
-        self.all_pairs = copy.deepcopy(self.freqai_config.get("corr_pairlist", []))
+        self.all_pairs = copy.deepcopy(self.freqai_config.get(
+            'feature_parameters', {}).get('include_corr_pairlist', []))
         for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
@@ -1003,14 +1008,14 @@ class FreqaiDataKitchen:
         Only called once upon startup of bot.
         :params:
         timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period
+        for training according to user defined train_period_days
         """
         history_data = self.dd.historic_data
 
         for pair in self.all_pairs:
             if pair not in history_data:
                 history_data[pair] = {}
-            for tf in self.freqai_config.get("timeframes"):
+            for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
                 history_data[pair][tf] = load_pair_history(
                     datadir=self.config["datadir"],
                     timeframe=tf,
@@ -1028,7 +1033,7 @@ class FreqaiDataKitchen:
         to the present pair.
         :params:
         timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period
+        for training according to user defined train_period_days
         metadata: dict = strategy furnished pair metadata
         """
 
@@ -1036,9 +1041,10 @@ class FreqaiDataKitchen:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
             historic_data = self.dd.historic_data
-            pairs = self.freqai_config.get("corr_pairlist", [])
+            pairs = self.freqai_config.get('feature_parameters', {}).get(
+                'include_corr_pairlist', [])
 
-            for tf in self.freqai_config.get("timeframes"):
+            for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
                 base_dataframes[tf] = self.slice_dataframe(timerange, historic_data[pair][tf])
                 if pairs:
                     for p in pairs:
@@ -1057,7 +1063,7 @@ class FreqaiDataKitchen:
     #                                                                               DataFrame]:
     #     corr_dataframes: Dict[Any, Any] = {}
     #     base_dataframes: Dict[Any, Any] = {}
-    #     pairs = self.freqai_config.get('corr_pairlist', [])  # + [metadata['pair']]
+    #     pairs = self.freqai_config.get('include_corr_pairlist', [])  # + [metadata['pair']]
     #     # timerange = TimeRange.parse_timerange(new_timerange)
 
     #     for tf in self.freqai_config.get('timeframes'):
@@ -1101,9 +1107,9 @@ class FreqaiDataKitchen:
         dataframe: DataFrame = dataframe containing populated indicators
         """
         dataframe = base_dataframes[self.config["timeframe"]].copy()
-        pairs = self.freqai_config.get("corr_pairlist", [])
+        pairs = self.freqai_config.get('feature_parameters', {}).get('include_corr_pairlist', [])
         sgi = True
-        for tf in self.freqai_config.get("timeframes"):
+        for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
             dataframe = strategy.populate_any_indicators(
                 pair,
                 pair,

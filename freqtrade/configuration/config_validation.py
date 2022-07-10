@@ -174,9 +174,10 @@ def _validate_freqai(conf: Dict[str, Any]) -> None:
 
     for param in constants.SCHEMA_FREQAI_REQUIRED:
         if param not in conf.get('freqai', {}):
-            raise OperationalException(
-                f'{param} not found in Freqai config'
-            )
+            if param not in conf.get('freqai', {}).get('feature_parameters', {}):
+                raise OperationalException(
+                    f'{param} not found in Freqai config'
+                )
 
 
 def _validate_whitelist(conf: Dict[str, Any]) -> None:

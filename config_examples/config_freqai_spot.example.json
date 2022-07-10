@@ -52,32 +52,31 @@
     ],
     "freqai": {
         "startup_candles": 10000,
-        "timeframes": [
-            "5m",
-            "15m",
-            "4h"
-        ],
-        "train_period": 30,
-        "backtest_period": 7,
+
+        "train_period_days": 30,
+        "backtest_period_days": 7,
+        "live_retrain_hours": 1,
         "identifier": "example",
         "live_trained_timestamp": 0,
-        "corr_pairlist": [
-            "BTC/USDT",
-            "ETH/USDT",
-            "DOT/USDT",
-            "MATIC/USDT",
-            "SOL/USDT"
-        ],
         "feature_parameters": {
-            "period": 500,
-            "shift": 1,
+            "include_timeframes": [
+                "5m",
+                "15m",
+                "4h"
+            ],
+            "include_corr_pairlist": [
+                "BTC/USDT",
+                "ETH/USDT"
+            ],
+            "label_period_candles": 500,
+            "include_shifted_candles": 1,
             "DI_threshold": 0,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": false,
-            "stratify": 0,
-            "indicator_max_period": 50,
-            "indicator_periods": [10, 20]
+            "stratify_training_data": 0,
+            "indicator_max_period_candles": 50,
+            "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters": {
             "test_size": 0.33,

@@ -56,9 +56,9 @@ class FreqaiExampleStrategy(IStrategy):
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["corr_pairlist"]
+        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
         informative_pairs = []
-        for tf in self.config["freqai"]["timeframes"]:
+        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
             for pair in whitelist_pairs:
                 informative_pairs.append((pair, tf))
             for pair in corr_pairs:
@@ -93,7 +93,7 @@ class FreqaiExampleStrategy(IStrategy):
                 informative = self.dp.get_pair_dataframe(pair, tf)
 
             # first loop is automatically duplicating indicators for time periods
-            for t in self.freqai_info["feature_parameters"]["indicator_periods"]:
+            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
                 t = int(t)
                 informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
@@ -123,8 +123,6 @@ class FreqaiExampleStrategy(IStrategy):
                 )
 
                 informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
-                macd = ta.MACD(informative, timeperiod=t)
-                informative[f"%-{coin}macd-period_{t}"] = macd["macd"]
 
                 informative[f"%-{coin}relative_volume-period_{t}"] = (
                     informative["volume"] / informative["volume"].rolling(t).mean()
@@ -136,7 +134,7 @@ class FreqaiExampleStrategy(IStrategy):
 
             indicators = [col for col in informative if col.startswith("%")]
             # This loop duplicates and shifts all indicators to add a sense of recency to data
-            for n in range(self.freqai_info["feature_parameters"]["shift"] + 1):
+            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
                 if n == 0:
                     continue
                 informative_shift = informative[indicators].shift(n)
@@ -161,8 +159,8 @@ class FreqaiExampleStrategy(IStrategy):
                 # needs to be used such as templates/CatboostPredictionMultiModel.py
                 df["&-s_close"] = (
                     df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["period"])
-                    .rolling(self.freqai_info["feature_parameters"]["period"])
+                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
                     .mean()
                     / df["close"]
                     - 1
@@ -179,7 +177,7 @@ class FreqaiExampleStrategy(IStrategy):
         # indicated by the user in the configuration file.
         # All indicators must be populated by populate_any_indicators() for live functionality
         # to work correctly.
-        for tf in self.freqai_info["timeframes"]:
+        for tf in self.freqai_info["feature_parameters"]["include_timeframes"]:
             dataframe = self.populate_any_indicators(
                 metadata,
                 self.pair,
@@ -189,7 +187,7 @@ class FreqaiExampleStrategy(IStrategy):
                 set_generalized_indicators=sgi,
             )
             sgi = False
-            for pair in self.freqai_info["corr_pairlist"]:
+            for pair in self.freqai_info["feature_parameters"]["include_corr_pairlist"]:
                 if metadata["pair"] in pair:
                     continue  # do not include whitelisted pair twice if it is in corr_pairlist
                 dataframe = self.populate_any_indicators(

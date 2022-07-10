@@ -44,7 +44,8 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
 
 def dynamic_expand_pairlist(config: dict, markets: list) -> List[str]:
     if config.get('freqai', {}):
-        full_pairs = config['pairs'] + [pair for pair in config['freqai']['corr_pairlist']
+        corr_pairlist = config['freqai']['feature_parameters']['include_corr_pairlist']
+        full_pairs = config['pairs'] + [pair for pair in corr_pairlist
                                         if pair not in config['pairs']]
         expanded_pairs = expand_pairlist(full_pairs, markets)
     else:
