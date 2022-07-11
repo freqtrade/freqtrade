@@ -586,10 +586,13 @@ class Exchange:
         """
         Checks if order-types configured in strategy/config are supported
         """
-        if any(v == 'market' for k, v in order_types.items()):
-            if not self.exchange_has('createMarketOrder'):
-                raise OperationalException(
-                    f'Exchange {self.name} does not support market orders.')
+        # TODO: Reenable once ccxt fixes createMarketOrder assignment - as well as
+        # Revert the change in test_validate_ordertypes.
+
+        # if any(v == 'market' for k, v in order_types.items()):
+        #     if not self.exchange_has('createMarketOrder'):
+        #         raise OperationalException(
+        #             f'Exchange {self.name} does not support market orders.')
 
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
