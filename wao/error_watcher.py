@@ -12,7 +12,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                                              ignore_directories=False, case_sensitive=False)
 
     def on_created(self, event):
-        print("Error_Watcher:on_created: file name = " + str(event.src_path))
+        # print("Error_Watcher:on_created: file name = " + str(event.src_path))
         file = str(event.src_path)
 
         error_check_command = "grep -i error " + file + " | grep -i exception " + file
