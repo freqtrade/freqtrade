@@ -38,12 +38,14 @@ class FreqaiDataDrawer:
         self.model_return_values: Dict[str, Any] = {}
         self.pair_data_dict: Dict[str, Any] = {}
         self.historic_data: Dict[str, Any] = {}
+        self.historic_predictions: Dict[str, Any] = {}
         self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
         self.follow_mode = follow_mode
         if follow_mode:
             self.create_follower_dict()
         self.load_drawer_from_disk()
+        self.load_historic_predictions_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
 
@@ -68,12 +70,42 @@ class FreqaiDataDrawer:
 
         return exists
 
+    def load_historic_predictions_from_disk(self):
+        """
+        Locate and load a previously saved historic predictions.
+        :returns:
+        exists: bool = whether or not the drawer was located
+        """
+        exists = Path(self.full_path / str("historic_predictions.json")).resolve().exists()
+        if exists:
+            with open(self.full_path / str("historic_predictions.json"), "r") as fp:
+                self.pair_dict = json.load(fp)
+            logger.info(f"Found existing historic predictions at {self.full_path}, but beware of "
+                        "that statistics may be inaccurate if the bot has been offline for "
+                        "an extended period of time.")
+        elif not self.follow_mode:
+            logger.info("Could not find existing historic_predictions, starting from scratch")
+        else:
+            logger.warning(
+                f"Follower could not find historic predictions at {self.full_path} "
+                "sending null values back to strategy"
+            )
+
+        return exists
+
     def save_drawer_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
         with open(self.full_path / str("pair_dictionary.json"), "w") as fp:
             json.dump(self.pair_dict, fp, default=self.np_encoder)
+
+    def save_historic_predictions_to_disk(self):
+        """
+        Save data drawer full of all pair model metadata in present model folder.
+        """
+        with open(self.full_path / str("historic_predictions.json"), "w") as fp:
+            json.dump(self.historic_predictions, fp, default=self.np_encoder)
 
     def save_follower_dict_to_disk(self):
         """
@@ -176,16 +208,18 @@ class FreqaiDataDrawer:
         historical candles, and also stores historical predictions despite retrainings (so stored
         predictions are true predictions, not just inferencing on trained data)
         """
-        self.model_return_values[pair] = pd.DataFrame()
+        # dynamic df returned to strategy and plotted in frequi
+        mrv_df = self.model_return_values[pair] = pd.DataFrame()
+
         for label in dk.label_list:
-            self.model_return_values[pair][label] = pred_df[label]
-            self.model_return_values[pair][f"{label}_mean"] = dk.data["labels_mean"][label]
-            self.model_return_values[pair][f"{label}_std"] = dk.data["labels_std"][label]
+            mrv_df[label] = pred_df[label]
+            mrv_df[f"{label}_mean"] = dk.data["labels_mean"][label]
+            mrv_df[f"{label}_std"] = dk.data["labels_std"][label]
 
         if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
-            self.model_return_values[pair]["DI_values"] = dk.DI_values
+            mrv_df["DI_values"] = dk.DI_values
 
-        self.model_return_values[pair]["do_predict"] = do_preds
+        mrv_df["do_predict"] = do_preds
 
     def append_model_predictions(self, pair: str, predictions, do_preds, dk, len_df) -> None:
 
@@ -201,6 +235,13 @@ class FreqaiDataDrawer:
             i = length_difference + 1
 
         df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
+        hp_df = self.historic_predictions[pair]
+
+        # here are some pandas hula hoops to accommodate the possibility of a series
+        # or dataframe depending number of labels requested by user
+        nan_df = pd.DataFrame(np.nan, index=hp_df.index[-2:] + 2, columns=hp_df.columns)
+        hp_df = pd.concat([hp_df, nan_df], ignore_index=True, axis=0)
+        hp_df = pd.concat([hp_df, nan_df[-2:-1]], axis=0)
 
         for label in dk.label_list:
             df[label].iloc[-1] = predictions[label].iloc[-1]
@@ -211,6 +252,9 @@ class FreqaiDataDrawer:
 
         if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
             df["DI_values"].iloc[-1] = dk.DI_values[-1]
+
+        # append the new predictions to persistent storage
+        hp_df.iloc[-1] = df[label].iloc[-1]
 
         if length_difference < 0:
             prepend_df = pd.DataFrame(

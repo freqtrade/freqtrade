@@ -1,4 +1,5 @@
 # import contextlib
+import copy
 import datetime
 import gc
 import logging
@@ -95,7 +96,7 @@ class IFreqaiModel(ABC):
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
 
         # For backtesting, each pair enters and then gets trained for each window along the
-        # sliding window defined by "train_period" (training window) and "backtest_period"
+        # sliding window defined by "train_period_days" (training window) and "live_retrain_hours"
         # (backtest window, i.e. window immediately following the training window).
         # FreqAI slides the window and sequentially builds the backtesting results before returning
         # the concatenated results for the full backtesting period back to the strategy.
@@ -143,11 +144,11 @@ class IFreqaiModel(ABC):
     ) -> FreqaiDataKitchen:
         """
         The main broad execution for backtesting. For backtesting, each pair enters and then gets
-        trained for each window along the sliding window defined by "train_period" (training window)
-        and "backtest_period" (backtest window, i.e. window immediately following the
-        training window). FreqAI slides the window and sequentially builds the backtesting results
-        before returning the concatenated results for the full backtesting period back to the
-        strategy.
+        trained for each window along the sliding window defined by "train_period_days"
+        (training window) and "backtest_period_days" (backtest window, i.e. window immediately
+        following the training window). FreqAI slides the window and sequentially builds
+        the backtesting results before returning the concatenated results for the full
+        backtesting period back to the strategy.
         :params:
         dataframe: DataFrame = strategy passed dataframe
         metadata: Dict = pair metadata
@@ -483,6 +484,20 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
         # self.retrain = False
+
+    def set_initial_historic_predictions(self, df: DataFrame, model: Any,
+                                         dk: FreqaiDataKitchen, pair: str) -> None:
+        trained_predictions = model.predict(df)
+        pred_df = DataFrame(trained_predictions, columns=dk.label_list)
+        for label in dk.label_list:
+            pred_df[label] = (
+                (pred_df[label] + 1)
+                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
+                / 2
+            ) + dk.data["labels_min"][label]
+
+        self.dd.historic_predictions[pair] = pd.DataFrame()
+        self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModlel.py for an example.

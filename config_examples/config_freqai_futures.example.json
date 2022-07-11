@@ -15,7 +15,7 @@
         "exit": 30
     },
     "exchange": {
-        "name": "okx",
+        "name": "binance",
         "key": "",
         "secret": "",
         "ccxt_config": {
@@ -26,15 +26,8 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "AGLD/USDT:USDT",
-            "1INCH/USDT:USDT",
-            "AAVE/USDT:USDT",
-            "ALGO/USDT:USDT",
-            "ALPHA/USDT:USDT",
-            "API3/USDT:USDT",
-            "AVAX/USDT:USDT",
-            "AXS/USDT:USDT",
-            "BCH/USDT:USDT"
+            "1INCH/USDT",
+            "ALGO/USDT"
         ],
         "pair_blacklist": []
     },
@@ -60,29 +53,31 @@
     ],
     "freqai": {
         "startup_candles": 10000,
-        "timeframes": [
-            "3m",
-            "15m",
-            "1h"
-        ],
-        "train_period": 20,
-        "backtest_period": 0.001,
-        "identifier": "constant_retrain_live",
+        "purge_old_models": true,
+        "train_period_days": 15,
+        "backtest_period_days": 7,
+        "live_retrain_hours": 0,
+        "identifier": "uniqe-id6",
         "live_trained_timestamp": 0,
-        "corr_pairlist": [
-            "BTC/USDT:USDT",
-            "ETH/USDT:USDT"
-        ],
         "feature_parameters": {
-            "period": 20,
-            "shift": 2,
+            "include_timeframes": [
+                "3m",
+                "15m",
+                "1h"
+            ],
+            "include_corr_pairlist": [
+                "BTC/USDT",
+                "ETH/USDT"
+            ],
+            "label_period_candles": 20,
+            "include_shifted_candles": 2,
             "DI_threshold": 0.9,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": true,
-            "stratify": 0,
-            "indicator_max_period": 20,
-            "indicator_periods": [10, 20]
+            "stratify_training_data": 0,
+            "indicator_max_period_candles": 20,
+            "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters": {
             "test_size": 0.33,
