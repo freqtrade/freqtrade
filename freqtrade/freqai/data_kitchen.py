@@ -138,19 +138,6 @@ class FreqaiDataKitchen:
         self.dd.pair_dict[coin]["data_path"] = str(self.data_path)
         self.dd.save_drawer_to_disk()
 
-        # TODO add a helper function to let user save/load any data they are custom adding. We
-        # do not want them having to edit the default save/load methods here. Below is an example
-        # of what we do NOT want.
-
-        # if self.freqai_config.get('feature_parameters','determine_statistical_distributions'):
-        #     self.data_dictionary["upper_quantiles"].to_pickle(
-        #         save_path / str(self.model_filename + "_upper_quantiles.pkl")
-        #     )
-
-        #     self.data_dictionary["lower_quantiles"].to_pickle(
-        #         save_path / str(self.model_filename + "_lower_quantiles.pkl")
-        #     )
-
         return
 
     def load_data(self, coin: str = "", keras_model=False) -> Any:
@@ -184,22 +171,6 @@ class FreqaiDataKitchen:
             self.data_path / str(self.model_filename + "_trained_df.pkl")
         )
 
-        # TODO add a helper function to let user save/load any data they are custom adding. We
-        # do not want them having to edit the default save/load methods here. Below is an example
-        # of what we do NOT want.
-
-        # if self.freqai_config.get('feature_parameters','determine_statistical_distributions'):
-        #     self.data_dictionary["upper_quantiles"] = pd.read_pickle(
-        #         self.data_path / str(self.model_filename + "_upper_quantiles.pkl")
-        #     )
-
-        #     self.data_dictionary["lower_quantiles"] = pd.read_pickle(
-        #         self.data_path / str(self.model_filename + "_lower_quantiles.pkl")
-        #     )
-
-        # self.data_path = Path(self.data["data_path"])
-        # self.model_filename = self.data["model_filename"]
-
         # try to access model in memory instead of loading object from disk to save time
         if self.live and self.model_filename in self.dd.model_dictionary:
             model = self.dd.model_dictionary[self.model_filename]
@@ -207,7 +178,6 @@ class FreqaiDataKitchen:
             model = load(self.data_path / str(self.model_filename + "_model.joblib"))
         else:
             from tensorflow import keras
-
             model = keras.models.load_model(self.data_path / str(self.model_filename + "_model.h5"))
 
         if Path(self.data_path / str(self.model_filename + "_svm_model.joblib")).resolve().exists():
@@ -263,7 +233,6 @@ class FreqaiDataKitchen:
             labels,
             weights,
             stratify=stratification,
-            # shuffle=False,
             **self.config["freqai"]["data_split_parameters"],
         )
 
@@ -276,7 +245,6 @@ class FreqaiDataKitchen:
         unfiltered_dataframe: DataFrame,
         training_feature_list: List,
         label_list: List = list(),
-        # labels: DataFrame = pd.DataFrame(),
         training_filter: bool = True,
     ) -> Tuple[DataFrame, DataFrame]:
         """
@@ -1134,6 +1102,19 @@ class FreqaiDataKitchen:
                     )
 
         return dataframe
+
+    def fit_live_predictions(self) -> None:
+        """
+        Fit the labels with a gaussian distribution
+        """
+        import scipy as spy
+        num_candles = self.freqai_config.get('fit_live_predictions_candles', 100)
+        self.data["labels_mean"], self.data["labels_std"] = {}, {}
+        for label in self.label_list:
+            f = spy.stats.norm.fit(self.dd.historic_predictions[self.pair][label].tail(num_candles))
+            self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
+
+        return
 
     def fit_labels(self) -> None:
         """

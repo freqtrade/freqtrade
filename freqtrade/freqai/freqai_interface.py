@@ -1,4 +1,5 @@
 # import contextlib
+import copy
 import datetime
 import gc
 import logging
@@ -483,6 +484,20 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
         # self.retrain = False
+
+    def set_initial_historic_predictions(self, df: DataFrame, model: Any,
+                                         dk: FreqaiDataKitchen, pair: str) -> None:
+        trained_predictions = model.predict(df)
+        pred_df = DataFrame(trained_predictions, columns=dk.label_list)
+        for label in dk.label_list:
+            pred_df[label] = (
+                (pred_df[label] + 1)
+                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
+                / 2
+            ) + dk.data["labels_min"][label]
+
+        self.dd.historic_predictions[pair] = pd.DataFrame()
+        self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModlel.py for an example.

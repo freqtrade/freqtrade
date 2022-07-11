@@ -562,6 +562,28 @@ a certain number of hours in age by setting the `expiration_hours` in the config
 In the present example, the user will only allow predictions on models that are less than 1/2 hours
 old. 
 
+## Choosing the calculation of the `target_roi`
+
+As shown in `templates/FreqaiExampleStrategy.py`, the `target_roi` is based on two metrics computed
+by FreqAI: `label_mean` and `label_std`. These are the statistics associated with the labels used 
+*during the most recent training*. This allows the model to know what magnitude of a target to be 
+expecting since it is directly stemming from the training data. By default, FreqAI computes this based 
+on trainig data and it assumes the labels are Gaussian distributed. These are big assumptions 
+that the user should consider when creating their labels. If the user wants to consider the population
+of *historical predictions* for creating the dynamic target instead of the trained labels, the user 
+can do so by setting `fit_live_prediction_candles` to the number of historical prediction candles
+the user wishes to use to generate target statistics. 
+
+```json
+    "freqai": {
+        "fit_live_prediction_candles": 300,
+    }
+```
+
+If the user sets this value, FreqAI will initially use the predictions from the training data set
+and then subsequently begin introducing real prediction data as it is generated. FreqAI will save 
+this historical data to be reloaded if the user stops and restarts with the same `identifier`.
+
 <!-- ## Dynamic target expectation
 
 The labels used for model training have a unique statistical distribution for each separate model training. 

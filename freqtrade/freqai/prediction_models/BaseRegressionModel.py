@@ -51,7 +51,8 @@ class BaseRegressionModel(IFreqaiModel):
 
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        dk.fit_labels()  # fit labels to a cauchy distribution so we know what to expect in strategy
+        if not self.freqai_info.get('fit_live_predictions', 0):
+            dk.fit_labels()
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
 
@@ -64,6 +65,13 @@ class BaseRegressionModel(IFreqaiModel):
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
+
+        if pair not in self.dd.historic_predictions:
+            self.set_initial_historic_predictions(
+                data_dictionary['train_features'], model, dk, pair)
+        elif self.freqai_info.get('fit_live_predictions_candles', 0):
+            dk.fit_live_predictions()
+            self.dd.save_historic_predictions_to_disk()
 
         logger.info(f"--------------------done training {pair}--------------------")
 
