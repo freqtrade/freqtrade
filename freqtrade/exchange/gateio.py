@@ -32,7 +32,8 @@ class Gateio(Exchange):
     }
 
     _ft_has_futures: Dict = {
-        "needs_trading_fees": True
+        "needs_trading_fees": True,
+        "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

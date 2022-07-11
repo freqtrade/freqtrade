@@ -130,7 +130,7 @@ In summary: The stoploss will be adjusted to be always be -10% of the highest ob
 
 ### Trailing stop loss, custom positive loss
 
-It is also possible to have a default stop loss, when you are in the red with your buy (buy - fee), but once you hit positive result the system will utilize a new stop loss, which can have a different value.
+You could also have a default stop loss when you are in the red with your buy (buy - fee), but once you hit a positive result (or an offset you define) the system will utilize a new stop loss, which can have a different value.
 For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.
 
 !!! Note
@@ -142,6 +142,8 @@ Both values require `trailing_stop` to be set to true and `trailing_stop_positiv
     stoploss = -0.10
     trailing_stop = True
     trailing_stop_positive = 0.02
+    trailing_stop_positive_offset = 0.0
+    trailing_only_offset_is_reached = False  # Default - not necessary for this example
 ```
 
 For example, simplified math:
@@ -156,11 +158,31 @@ For example, simplified math:
 The 0.02 would translate to a -2% stop loss.
 Before this, `stoploss` is used for the trailing stoploss.
 
+!!! Tip "Use an offset to change your stoploss"
+    Use `trailing_stop_positive_offset` to ensure that your new trailing stoploss will be in profit by setting `trailing_stop_positive_offset` higher than `trailing_stop_positive`. Your first new stoploss value will then already have locked in profits.
+
+    Example with simplified math:
+
+    ``` python
+        stoploss = -0.10
+        trailing_stop = True
+        trailing_stop_positive = 0.02
+        trailing_stop_positive_offset = 0.03
+    ```
+
+    * the bot buys an asset at a price of 100$
+    * the stop loss is defined at -10%, so the stop loss would get triggered once the asset drops below 90$
+    * assuming the asset now increases to 102$
+    * the stoploss will now be at 91.8$ - 10% below the highest observed rate
+    * assuming the asset now increases to 103.5$ (above the offset configured)
+    * the stop loss will now be -2% of 103$ = 101.42$
+    * now the asset drops in value to 102\$, the stop loss will still be 101.42$ and would trigger once price breaks below 101.42$
+
 ### Trailing stop loss only once the trade has reached a certain offset
 
-It is also possible to use a static stoploss until the offset is reached, and then trail the trade to take profits once the market turns.
+You can also keep a static stoploss until the offset is reached, and then trail the trade to take profits once the market turns.
 
-If `"trailing_only_offset_is_reached": true` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
+If `trailing_only_offset_is_reached = True` then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured `stoploss`.
 This option can be used with or without `trailing_stop_positive`, but uses `trailing_stop_positive_offset` as offset.
 
 ``` python
@@ -202,7 +224,6 @@ If your stake amount (own capital) was 100$ - this trade would be 1000$ at 10x (
 If price moves 1% - you've lost 10$ of your own capital - therfore stoploss will trigger in this case.
 
 Make sure to be aware of this, and avoid using too tight stoploss (at 10x leverage, 10% risk may be too little to allow the trade to "breath" a little).
-
 
 ## Changing stoploss on open trades
 

@@ -1200,7 +1200,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                           0.00258580, {stake}, {amount},
                           '2019-11-28 12:44:24.000000',
                           0.0, 0.0, 0.0, '5m',
-                          'buy_order', 'stop_order_id222')
+                          'buy_order', 'dry_stop_order_id222')
                           """.format(fee=fee.return_value,
                                      stake=default_conf.get("stake_amount"),
                                      amount=amount
@@ -1226,7 +1226,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
             'buy',
             'ETC/BTC',
             0,
-            'buy_order',
+            'dry_buy_order',
             'closed',
             'ETC/BTC',
             'limit',
@@ -1239,11 +1239,43 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
         ),
         (
             1,
+            'buy',
+            'ETC/BTC',
+            1,
+            'dry_buy_order22',
+            'canceled',
+            'ETC/BTC',
+            'limit',
+            'buy',
+            0.00258580,
+            {amount},
+            {amount},
+            0,
+            {amount * 0.00258580}
+        ),
+         (
+            1,
             'stoploss',
             'ETC/BTC',
+            1,
+            'dry_stop_order_id11X',
+            'canceled',
+            'ETC/BTC',
+            'limit',
+            'sell',
+            0.00258580,
+            {amount},
+            {amount},
             0,
-            'stop_order_id222',
-            'closed',
+            {amount * 0.00258580}
+        ),
+        (
+            1,
+            'stoploss',
+            'ETC/BTC',
+            1,
+            'dry_stop_order_id222',
+            'open',
             'ETC/BTC',
             'limit',
             'sell',
@@ -1292,7 +1324,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
-    assert trade.stoploss_order_id == 'stop_order_id222'
+    assert trade.stoploss_order_id == 'dry_stop_order_id222'
     assert trade.stoploss_last_update is None
     assert log_has("trying trades_bak1", caplog)
     assert log_has("trying trades_bak2", caplog)
@@ -1302,12 +1334,21 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.close_profit_abs is None
 
     orders = trade.orders
-    assert len(orders) == 2
-    assert orders[0].order_id == 'buy_order'
+    assert len(orders) == 4
+    assert orders[0].order_id == 'dry_buy_order'
     assert orders[0].ft_order_side == 'buy'
 
-    assert orders[1].order_id == 'stop_order_id222'
-    assert orders[1].ft_order_side == 'stoploss'
+    assert orders[-1].order_id == 'dry_stop_order_id222'
+    assert orders[-1].ft_order_side == 'stoploss'
+    assert orders[-1].ft_is_open is True
+
+    assert orders[1].order_id == 'dry_buy_order22'
+    assert orders[1].ft_order_side == 'buy'
+    assert orders[1].ft_is_open is False
+
+    assert orders[2].order_id == 'dry_stop_order_id11X'
+    assert orders[2].ft_order_side == 'stoploss'
+    assert orders[2].ft_is_open is False
 
 
 def test_migrate_too_old(mocker, default_conf, fee, caplog):

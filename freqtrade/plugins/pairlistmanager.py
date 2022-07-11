@@ -28,7 +28,7 @@ class PairListManager(LoggingMixin):
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
         self._pairlist_handlers: List[IPairList] = []
         self._tickers_needed = False
-        for pairlist_handler_config in self._config.get('pairlists', None):
+        for pairlist_handler_config in self._config.get('pairlists', []):
             pairlist_handler = PairListResolver.load_pairlist(
                 pairlist_handler_config['method'],
                 exchange=exchange,
