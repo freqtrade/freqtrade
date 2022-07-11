@@ -35,7 +35,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
             print(out_put)
 
     def on_modified(self, event):
-        print("Error_Watcher:on_modified: file name = " + str(event.src_path))
+        # print("Error_Watcher:on_modified: file name = " + str(event.src_path))
         file = str(event.src_path)
 
         error_check_command = "grep -i error " + file + " | grep -i exception " + file
