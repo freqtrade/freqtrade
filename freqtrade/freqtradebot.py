@@ -861,22 +861,8 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
         }
 
-        self._analyzed_candle_to_msg(trade.pair, msg)
-
         # Send the message
         self.rpc.send_msg(msg)
-
-    def _analyzed_candle_to_msg(self, pair: str, msg: Dict):
-        """Msg dict will be enhanced with analyzed_candle if possible."""
-        # display the candle analyzed in telegram
-        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair,
-                                                                  self.strategy.timeframe)
-        analyzed_candle = analyzed_df.iloc[-1] if len(analyzed_df) > 0 else None
-        if analyzed_candle is not None:
-            candle_columns = analyzed_candle[['date', 'open', 'high', 'low', 'close']]
-            msg.update({
-                'analyzed_candle': candle_columns.to_dict()
-            })
 
     def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
@@ -1563,8 +1549,6 @@ class FreqtradeBot(LoggingMixin):
             msg.update({
                 'fiat_currency': self.config['fiat_display_currency'],
             })
-
-        self._analyzed_candle_to_msg(trade.pair, msg)
 
         # Send the message
         self.rpc.send_msg(msg)

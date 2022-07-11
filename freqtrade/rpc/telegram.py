@@ -243,16 +243,19 @@ class Telegram(RPCHandler):
         """
         return f"{msg['exchange']}{' (dry)' if self._config['dry_run'] else ''}"
 
-    def _add_analyzed_candle(self, msg) -> str:
+    def _add_analyzed_candle(self, pair: str) -> str:
         candle_val = self._config['telegram'].get(
             'notification_settings', {}).get('show_candle', 'off')
-        if candle_val != 'off' and msg.get('analyzed_candle'):
+        if candle_val != 'off':
             if candle_val == 'ohlc':
-                candle_json = msg['analyzed_candle']
-                return (
-                    f"*Candle OHLC*: `{candle_json['open']}, {candle_json['high']}, "
-                    f"{candle_json['low']}, {candle_json['close']}`\n"
-                )
+                analyzed_df, _ = self._rpc._freqtrade.dataprovider.get_analyzed_dataframe(
+                    pair, self._config['timeframe'])
+                candle = analyzed_df.iloc[-1].squeeze() if len(analyzed_df) > 0 else None
+                if candle is not None:
+                    return (
+                        f"*Candle OHLC*: `{candle['open']}, {candle['high']}, "
+                        f"{candle['low']}, {candle['close']}`\n"
+                    )
 
         return ''
 
@@ -272,7 +275,7 @@ class Telegram(RPCHandler):
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
-        message += self._add_analyzed_candle(msg)
+        message += self._add_analyzed_candle(msg['pair'])
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
@@ -320,7 +323,7 @@ class Telegram(RPCHandler):
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
-            f"{self._add_analyzed_candle(msg)}"
+            f"{self._add_analyzed_candle(msg['pair'])}"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"
