@@ -408,6 +408,11 @@ It is common to want constant retraining, in whichcase, user should set `live_re
 
 ### Controlling the model learning process
 
+Depending on what AI model to be used, these parameter names could be different. For example, the accepted parameters for the `Catboost`
+models are `data_split_parameters`, `n_estimators` and etc. For the model like SVM regression model, the accepted parameters are different.
+
+Here we explan the parameters of `model_training_parameters` for `Catboost`:
+
 The user can define model settings for the data split `data_split_parameters` and learning parameters
 `model_training_parameters`. Users are encouraged to visit the Catboost documentation
 for more information on how to select these values. `n_estimators` increases the
@@ -424,6 +429,8 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points._
 
 Finally, `period` defines the offset used for the `labels`. In the present example,
 the user is asking for `labels` that are 24 candles in the future.
+
+Note: since we work time series data and want to train a AI model to predict the future, the validation/test data should be the "future" by a given training data. Thus, we strongly recommend to disable `shuffle` parameter during the cross-validation steps. For more detailed explaination, visit [here](https://medium.com/@soumyachess1496/cross-validation-in-time-series-566ae4981ce4).
 
 ### Removing outliers with the Dissimilarity Index
 
