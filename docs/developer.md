@@ -334,7 +334,7 @@ lev_tiers = exchange.fetch_leverage_tiers()
 
 # Assumes this is running in the root of the repository.
 file = Path('freqtrade/exchange/binance_leverage_tiers.json')
-json.dump(lev_tiers, file.open('w'), indent=2)
+json.dump(dict(sorted(lev_tiers.items())), file.open('w'), indent=2)
 
 ```
 

@@ -44,6 +44,11 @@ class HyperoptableStrategy(StrategyTestV2):
             })
         return prot
 
+    bot_loop_started = False
+
+    def bot_loop_start(self):
+        self.bot_loop_started = True
+
     def bot_start(self, **kwargs) -> None:
         """
         Parameters can also be defined here ...

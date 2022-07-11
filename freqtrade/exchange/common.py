@@ -46,6 +46,7 @@ MAP_EXCHANGE_CHILDCLASS = {
     'binanceje': 'binance',
     'binanceusdm': 'binance',
     'okex': 'okx',
+    'gate': 'gateio',
 }
 
 SUPPORTED_EXCHANGES = [
@@ -63,17 +64,16 @@ EXCHANGE_HAS_REQUIRED = [
     'fetchOrder',
     'cancelOrder',
     'createOrder',
-    # 'createLimitOrder', 'createMarketOrder',
     'fetchBalance',
 
     # Public endpoints
-    'loadMarkets',
     'fetchOHLCV',
 ]
 
 EXCHANGE_HAS_OPTIONAL = [
     # Private
     'fetchMyTrades',  # Trades for order - fee detection
+    # 'createLimitOrder', 'createMarketOrder', # Either OR for orders
     # 'setLeverage',  # Margin/Futures trading
     # 'setMarginMode',  # Margin/Futures trading
     # 'fetchFundingHistory', # Futures trading

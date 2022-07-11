@@ -271,7 +271,8 @@ The last one we call `trigger` and use it to decide which buy trigger we want to
 
 !!! Note "Parameter space assignment"
     Parameters must either be assigned to a variable named `buy_*` or `sell_*` - or contain `space='buy'` | `space='sell'` to be assigned to a space correctly.
-    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.
+    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.  
+    Parameters with unclear space (e.g. `adx_period = IntParameter(4, 24, default=14)` - no explicit nor implicit space) will not be detected and will therefore be ignored.
 
 So let's write the buy strategy using these values:
 

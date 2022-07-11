@@ -28,6 +28,7 @@ class Okx(Exchange):
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
+        "fee_cost_in_contracts": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

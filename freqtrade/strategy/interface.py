@@ -442,7 +442,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
-                            entry_tag: Optional[str], side: str, **kwargs) -> float:
+                            leverage: float, entry_tag: Optional[str], side: str,
+                            **kwargs) -> float:
         """
         Customize stake size for each new trade.
 
@@ -452,6 +453,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param proposed_stake: A stake amount proposed by the bot.
         :param min_stake: Minimal stake size allowed by exchange.
         :param max_stake: Balance available for trading.
+        :param leverage: Leverage selected for this trade.
         :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :return: A stake size, which is between min_stake and max_stake.
