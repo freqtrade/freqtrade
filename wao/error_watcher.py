@@ -12,10 +12,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                                              ignore_directories=False, case_sensitive=False)
 
     def on_created(self, event):
-        # print("Error_Watcher:on_created: file name = " + str(event.src_path))
-        file = str(event.src_path)
+        file_name = str(event.src_path)
 
-        error_check_command = "grep -i error " + file + " | grep -i exception " + file
+        error_check_command = "grep -i error " + file_name + " | grep -i exception " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
@@ -35,10 +34,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
             print(out_put)
 
     def on_modified(self, event):
-        # print("Error_Watcher:on_modified: file name = " + str(event.src_path))
-        file = str(event.src_path)
+        file_name = str(event.src_path)
 
-        error_check_command = "grep -i error " + file + " | grep -i exception " + file
+        error_check_command = "grep -i error " + file_name + " | grep -i exception " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
