@@ -105,8 +105,3 @@ target/
 !config_examples/config_ftx.example.json
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
-doc/doc-filelist.js
-.gitignore
-.gitignore
-doc/doc-style.css
-doc/doc-script.js

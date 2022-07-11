@@ -178,10 +178,29 @@ class SampleStrategy(IStrategy):
         # RSI
         dataframe['rsi'] = ta.RSI(dataframe)
 
-        # Stochastic RSI
-        stoch_rsi = ta.STOCHRSI(dataframe)
-        dataframe['fastd_rsi'] = stoch_rsi['fastd']
-        dataframe['fastk_rsi'] = stoch_rsi['fastk']
+        # # Inverse Fisher transform on RSI: values [-1.0, 1.0] (https://goo.gl/2JGGoy)
+        # rsi = 0.1 * (dataframe['rsi'] - 50)
+        # dataframe['fisher_rsi'] = (np.exp(2 * rsi) - 1) / (np.exp(2 * rsi) + 1)
+
+        # # Inverse Fisher transform on RSI normalized: values [0.0, 100.0] (https://goo.gl/2JGGoy)
+        # dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
+
+        # # Stochastic Slow
+        # stoch = ta.STOCH(dataframe)
+        # dataframe['slowd'] = stoch['slowd']
+        # dataframe['slowk'] = stoch['slowk']
+
+        # Stochastic Fast
+        stoch_fast = ta.STOCHF(dataframe)
+        dataframe['fastd'] = stoch_fast['fastd']
+        dataframe['fastk'] = stoch_fast['fastk']
+
+        # # Stochastic RSI
+        # Please read https://github.com/freqtrade/freqtrade/issues/2961 before using this.
+        # STOCHRSI is NOT aligned with tradingview, which may result in non-expected results.
+        # stoch_rsi = ta.STOCHRSI(dataframe)
+        # dataframe['fastd_rsi'] = stoch_rsi['fastd']
+        # dataframe['fastk_rsi'] = stoch_rsi['fastk']
 
         # MACD
         macd = ta.MACD(dataframe)
