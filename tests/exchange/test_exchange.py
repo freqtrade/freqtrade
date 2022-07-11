@@ -1027,6 +1027,7 @@ def test_validate_ordertypes(default_conf, mocker):
         'stoploss': 'market',
         'stoploss_on_exchange': False
     }
+    # TODO: Revert once createMarketOrder is available again.
     # with pytest.raises(OperationalException,
     #                    match=r'Exchange .* does not support market orders.'):
     #     Exchange(default_conf)
