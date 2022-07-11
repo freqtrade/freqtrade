@@ -868,7 +868,7 @@ class FreqtradeBot(LoggingMixin):
         if analyzed_candle is not None:
             candle_columns = analyzed_candle[['date', 'open', 'high', 'low', 'close']]
             msg.update({
-                'analyzed_candle': candle_columns.to_json(date_unit='s', date_format='iso')
+                'analyzed_candle': candle_columns.to_dict()
             })
 
         # Send the message
@@ -1567,7 +1567,7 @@ class FreqtradeBot(LoggingMixin):
         if analyzed_candle is not None:
             candle_columns = analyzed_candle[['date', 'open', 'high', 'low', 'close']]
             msg.update({
-                'analyzed_candle': candle_columns.to_json(date_unit='s', date_format='iso')
+                'analyzed_candle': candle_columns.to_dict()
             })
 
         # Send the message

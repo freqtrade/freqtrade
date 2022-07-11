@@ -243,6 +243,19 @@ class Telegram(RPCHandler):
         """
         return f"{msg['exchange']}{' (dry)' if self._config['dry_run'] else ''}"
 
+    def _add_analyzed_candle(self, msg) -> str:
+        candle_val = self._config['telegram'].get(
+            'notification_settings', {}).get('show_candle', 'off')
+        if candle_val != 'off' and msg.get('analyzed_candle'):
+            if candle_val == 'ohlc':
+                candle_json = msg['analyzed_candle']
+                return (
+                    f"*Candle OHLC*: `{candle_json['open']}, {candle_json['high']}, "
+                    f"{candle_json['low']}, {candle_json['close']}`\n"
+                )
+
+        return ''
+
     def _format_entry_msg(self, msg: Dict[str, Any]) -> str:
         if self._rpc._fiat_converter:
             msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
@@ -259,8 +272,7 @@ class Telegram(RPCHandler):
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
-        if msg.get('analyzed_candle'):
-            message += f"*Analyzed Candle:* `{msg['analyzed_candle']}`\n"
+        message += self._add_analyzed_candle(msg)
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
         if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
@@ -308,12 +320,7 @@ class Telegram(RPCHandler):
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
-        )
-        if not is_fill and msg.get('analyzed_candle'):
-            message += (
-                f"*Analyzed Candle:* `{msg['analyzed_candle']}`\n"
-            )
-        message += (
+            f"{self._add_analyzed_candle(msg)}"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"

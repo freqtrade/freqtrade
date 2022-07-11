@@ -313,6 +313,10 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                         },
+                        'show_candle': {
+                            'type': 'string',
+                            'enum': ['off', 'ohlc'],
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},
