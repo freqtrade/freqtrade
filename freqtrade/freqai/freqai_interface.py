@@ -69,6 +69,9 @@ class IFreqaiModel(ABC):
         self.ready_to_scan = False
         self.first = True
         self.keras = self.freqai_info.get("keras", False)
+        if self.keras and self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
+            self.freqai_info["feature_parameters"]["DI_threshold"] = 0
+            logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
 
     def assert_config(self, config: Dict[str, Any]) -> None:
@@ -197,9 +200,9 @@ class IFreqaiModel(ABC):
                 self.model = self.train(dataframe_train, metadata["pair"], dk)
                 self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = trained_timestamp.stopts
                 dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                dk.save_data(self.model, metadata["pair"], keras_model=self.keras)
+                dk.save_data(self.model, metadata["pair"])
             else:
-                self.model = dk.load_data(metadata["pair"], keras_model=self.keras)
+                self.model = dk.load_data(metadata["pair"])
 
             self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
@@ -276,7 +279,7 @@ class IFreqaiModel(ABC):
             )
 
         # load the model and associated data into the data kitchen
-        self.model = dk.load_data(coin=metadata["pair"], keras_model=self.keras)
+        self.model = dk.load_data(coin=metadata["pair"])
 
         if not self.model:
             logger.warning(
@@ -353,13 +356,15 @@ class IFreqaiModel(ABC):
         of how outlier data points are dropped from the dataframe used for training.
         """
 
-        if self.freqai_info.get("feature_parameters", {}).get("principal_component_analysis"):
+        if self.freqai_info.get("feature_parameters", {}).get(
+            "principal_component_analysis", False
+        ):
             dk.principal_component_analysis()
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers"):
+        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold"):
+        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
         # if self.feature_parameters["determine_statistical_distributions"]:
@@ -378,13 +383,15 @@ class IFreqaiModel(ABC):
         of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
         for buy signals.
         """
-        if self.freqai_info.get("feature_parameters", {}).get("principal_component_analysis"):
+        if self.freqai_info.get("feature_parameters", {}).get(
+            "principal_component_analysis", False
+        ):
             dk.pca_transform(dataframe)
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers"):
+        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold"):
+        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
         # if self.feature_parameters["determine_statistical_distributions"]:
@@ -479,14 +486,15 @@ class IFreqaiModel(ABC):
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
             with self.lock:
                 self.dd.pair_to_end_of_training_queue(pair)
-        dk.save_data(model, coin=pair, keras_model=self.keras)
+        dk.save_data(model, coin=pair)
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
         # self.retrain = False
 
-    def set_initial_historic_predictions(self, df: DataFrame, model: Any,
-                                         dk: FreqaiDataKitchen, pair: str) -> None:
+    def set_initial_historic_predictions(
+        self, df: DataFrame, model: Any, dk: FreqaiDataKitchen, pair: str
+    ) -> None:
         trained_predictions = model.predict(df)
         pred_df = DataFrame(trained_predictions, columns=dk.label_list)
         for label in dk.label_list:
