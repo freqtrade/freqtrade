@@ -71,7 +71,8 @@ class BaseRegressionModel(IFreqaiModel):
                 data_dictionary['train_features'], model, dk, pair)
         elif self.freqai_info.get('fit_live_predictions_candles', 0):
             dk.fit_live_predictions()
-            self.dd.save_historic_predictions_to_disk()
+
+        self.dd.save_historic_predictions_to_disk()
 
         logger.info(f"--------------------done training {pair}--------------------")
 
