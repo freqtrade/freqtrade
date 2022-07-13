@@ -430,7 +430,7 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points._
 Finally, `period` defines the offset used for the `labels`. In the present example,
 the user is asking for `labels` that are 24 candles in the future.
 
-Note: since we work time series data and want to train a AI model to predict the future, the validation/test data should be the "future" by a given training data. Thus, we strongly recommend to disable `shuffle` parameter during the cross-validation steps. For more detailed explaination, visit [here](https://medium.com/@soumyachess1496/cross-validation-in-time-series-566ae4981ce4).
+Note: typically in time-series forecasting, the validation/test data should be the "future" by a given training data. Thus, it is nicely to disable `shuffle` and `data_split_parameters` parameters during the cross-validation or validation steps. For more detailed explaination, visit [here](https://medium.com/@soumyachess1496/cross-validation-in-time-series-566ae4981ce4).
 
 ### Removing outliers with the Dissimilarity Index
 
