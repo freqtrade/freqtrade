@@ -10,11 +10,10 @@ from freqtrade.freqai.freqai_interface import IFreqaiModel
 logger = logging.getLogger(__name__)
 
 
-class BaseRegressionModel(IFreqaiModel):
+class BaseTensorFlowModel(IFreqaiModel):
     """
-    Base class for regression type models (e.g. Catboost, LightGBM, XGboost etc.).
-    User *must* inherit from this class and set fit() and predict(). See example scripts
-    such as prediction_models/CatboostPredictionModel.py for guidance.
+    Base class for TensorFlow type models.
+    User *must* inherit from this class and set fit() and predict().
     """
 
     def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
@@ -77,37 +76,3 @@ class BaseRegressionModel(IFreqaiModel):
         logger.info(f"--------------------done training {pair}--------------------")
 
         return model
-
-    def predict(
-        self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
-    ) -> Tuple[DataFrame, DataFrame]:
-        """
-        Filter the prediction features data and predict with it.
-        :param: unfiltered_dataframe: Full dataframe for the current backtest period.
-        :return:
-        :pred_df: dataframe containing the predictions
-        :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
-        data (NaNs) or felt uncertain about data (PCA and DI index)
-        """
-
-        dk.find_features(unfiltered_dataframe)
-        filtered_dataframe, _ = dk.filter_features(
-            unfiltered_dataframe, dk.training_features_list, training_filter=False
-        )
-        filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
-        dk.data_dictionary["prediction_features"] = filtered_dataframe
-
-        # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk, filtered_dataframe)
-
-        predictions = self.model.predict(dk.data_dictionary["prediction_features"])
-        pred_df = DataFrame(predictions, columns=dk.label_list)
-
-        for label in dk.label_list:
-            pred_df[label] = (
-                (pred_df[label] + 1)
-                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
-                / 2
-            ) + dk.data["labels_min"][label]
-
-        return (pred_df, dk.do_predict)

@@ -1,13 +1,13 @@
 import collections
 import json
 import logging
+import pickle
 import re
 import shutil
 import threading
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
-# import pickle as pk
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
@@ -78,8 +78,8 @@ class FreqaiDataDrawer:
         """
         exists = Path(self.full_path / str("historic_predictions.json")).resolve().exists()
         if exists:
-            with open(self.full_path / str("historic_predictions.json"), "r") as fp:
-                self.pair_dict = json.load(fp)
+            with open(self.full_path / str("historic_predictions.pkl"), "rb") as fp:
+                self.historic_predictions = pickle.load(fp)
             logger.info(f"Found existing historic predictions at {self.full_path}, but beware of "
                         "that statistics may be inaccurate if the bot has been offline for "
                         "an extended period of time.")
@@ -97,15 +97,15 @@ class FreqaiDataDrawer:
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.full_path / str("pair_dictionary.json"), "w") as fp:
-            json.dump(self.pair_dict, fp, default=self.np_encoder)
+        with open(self.full_path / str("historic_predictions.pkl"), "wb") as fp:
+            pickle.dump(self.historic_predictions, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
     def save_historic_predictions_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.full_path / str("historic_predictions.json"), "w") as fp:
-            json.dump(self.historic_predictions, fp, default=self.np_encoder)
+        with open(self.full_path / str("pair_dictionary.json"), "w") as fp:
+            json.dump(self.pair_dict, fp, default=self.np_encoder)
 
     def save_follower_dict_to_disk(self):
         """
