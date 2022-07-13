@@ -409,7 +409,7 @@ It is common to want constant retraining, in whichcase, user should set `live_re
 ### Controlling the model learning process
 
 Depending on what AI model to be used, these parameter names could be different. For example, the accepted parameters for the `Catboost`
-models are `data_split_parameters`, `n_estimators` and etc. For the model like SVM regression model, the accepted parameters are different.
+models are `n_estimators`, `task_type` and others. For the model like SVM regression model, the accepted parameters are different.
 
 Here we explan the parameters of `model_training_parameters` for `Catboost`:
 
