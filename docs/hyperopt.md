@@ -335,6 +335,7 @@ There are four parameter types each suited for different purposes.
 ## Optimizing an indicator parameter
 
 Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
+By default, we assume a stoploss of 5% - and a take-profit (`minimal_roi`) of 10% - which means freqtrade will sell the trade once 10% profit has been reached.
 
 ``` python
 from pandas import DataFrame
@@ -349,6 +350,9 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 class MyAwesomeStrategy(IStrategy):
     stoploss = -0.05
     timeframe = '15m'
+    minimal_roi = {
+        "0":  0.10
+    },
     # Define the parameter spaces
     buy_ema_short = IntParameter(3, 50, default=5)
     buy_ema_long = IntParameter(15, 200, default=50)
@@ -383,7 +387,7 @@ class MyAwesomeStrategy(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        conditions = []
+          conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_long_{self.buy_ema_long.value}'], dataframe[f'ema_short_{self.buy_ema_short.value}']
             ))
@@ -404,7 +408,7 @@ Using `self.buy_ema_short.range` will return a range object containing all entri
 In this case (`IntParameter(3, 50, default=5)`), the loop would run for all numbers between 3 and 50 (`[3, 4, 5, ... 49, 50]`).
 By using this in a loop, hyperopt will generate 48 new columns (`['buy_ema_3', 'buy_ema_4', ... , 'buy_ema_50']`).
 
-Hyperopt itself will then use the selected value to create the buy and sell signals
+Hyperopt itself will then use the selected value to create the buy and sell signals.
 
 While this strategy is most likely too simple to provide consistent profit, it should serve as an example how optimize indicator parameters.
 
@@ -867,6 +871,22 @@ To combat these, you have multiple options:
 * reduce the timerange used (`--timerange <timerange>`)
 * reduce the number of parallel processes (`-j <n>`)
 * Increase the memory of your machine
+
+## The objective has been evaluated at this point before.
+
+If you see `The objective has been evaluated at this point before.` - then this is a sign that your space has been exhausted, or is close to that.
+Basically all points in your space have been hit (or a local minima has been hit) - and hyperopt does no longer find points in the multi-dimensional space it did not try yet.
+Freqtrade tries to counter the "local minima" problem by using new, randomized points in this case.
+
+Example:
+
+``` python
+buy_ema_short = IntParameter(5, 20, default=10, space="buy", optimize=True)
+# This is the only parameter in the buy space
+```
+
+The `buy_ema_short` space has 15 possible values (`5, 6, ... 19, 20`). If you now run hyperopt for the buy space, hyperopt will only have 15 values to try before running out of options.
+Your epochs should therefore be aligned to the possible values - or you should be ready to interrupt a run if you norice a lot of `The objective has been evaluated at this point before.` warnings.
 
 ## Show details of Hyperopt results
 

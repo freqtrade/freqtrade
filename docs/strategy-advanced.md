@@ -224,3 +224,5 @@ for val in self.buy_ema_short.range:
 # Append columns to existing dataframe
 merged_frame = pd.concat(frames, axis=1)
 ```
+
+Freqtrade does however also counter this by running `dataframe.copy()` on the dataframe right after the `populate_indicators()` method - so performance implications of this should be low to non-existant.
