@@ -20,7 +20,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
-        if not ("freqtrade" in out_put_string and "WARNING" in out_put_string):
+        if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                     BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
                                        .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
@@ -40,7 +40,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
-        if not ("freqtrade" in out_put_string and "WARNING" in out_put_string):
+        if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
                                    .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
@@ -50,3 +50,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
             out, err = result_log.communicate()
             out_put = out.decode('latin-1')
+
+    def __freqtrade_error_case(self, out_put_string):
+        lower_string = out_put_string.lower()
+        return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
