@@ -76,7 +76,7 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = Path(self.full_path / str("historic_predictions.json")).resolve().exists()
+        exists = Path(self.full_path / str("historic_predictions.pkl")).resolve().exists()
         if exists:
             with open(self.full_path / str("historic_predictions.pkl"), "rb") as fp:
                 self.historic_predictions = pickle.load(fp)
