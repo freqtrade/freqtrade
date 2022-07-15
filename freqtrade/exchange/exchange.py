@@ -1646,7 +1646,7 @@ class Exchange:
         fee_curr = fee.get('currency')
         if fee_curr is None:
             return None
-        fee_cost = fee['cost']
+        fee_cost = float(fee['cost'])
         if self._ft_has['fee_cost_in_contracts']:
             # Convert cost via "contracts" conversion
             fee_cost = self._contracts_to_amount(symbol, fee['cost'])
@@ -1654,7 +1654,7 @@ class Exchange:
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(fee['cost'] / amount, 8)
+            return round(fee_cost / amount, 8)
         elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
             return round(fee_cost / cost, 8) if cost else None
@@ -1685,7 +1685,7 @@ class Exchange:
         :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (fee['cost'],
+        return (float(fee['cost']),
                 fee['currency'],
                 self.calculate_fee_rate(
                     fee,
