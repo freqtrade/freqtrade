@@ -1160,23 +1160,33 @@ def test_create_dry_run_order_fees(
     price_side,
     fee,
 ):
-    default_conf[f"{order_reason}_pricing"]["price_side"] = "same"
-    default_conf["order_types"][order_reason] = order_type
     mocker.patch(
         'freqtrade.exchange.Exchange.get_fee',
-        lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
+        side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
     )
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side == 'other')
     exchange = get_patched_exchange(mocker, default_conf)
 
     order = exchange.create_dry_run_order(
-        pair='ADA/USDT',
+        pair='LTC/USDT',
         ordertype=order_type,
         side=side,
         amount=10,
         rate=2.0,
+        leverage=1.0
     )
+    if price_side == 'other' or order_type == 'market':
+        assert order['fee']['rate'] == fee
+        return
+    else:
+        assert order['fee'] is None
 
-    assert order['ft_fee_base'] == fee
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side != 'other')
+
+    order1 = exchange.fetch_dry_run_order(order['id'])
+    assert order1['fee']['rate'] == fee
 
 
 @pytest.mark.parametrize("side,startprice,endprice", [
@@ -5101,26 +5111,3 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     assert order['cost'] == 100
     assert order['filled'] == 100
     assert order['remaining'] == 100
-
-
-@pytest.mark.parametrize('order_reason,price_side,order_type,taker_or_maker', [
-    ("entry", "same", "limit", "maker"),
-    ("exit", "same", "limit", "maker"),
-    ("entry", "other", "limit", "taker"),
-    ("exit", "other", "limit", "taker"),
-    ("stoploss", "same", "limit", "taker"),
-    ("stoploss", "other", "limit", "taker"),
-    ("entry", "same", "market", "taker"),
-    ("exit", "same", "market", "taker"),
-    ("entry", "other", "market", "taker"),
-    ("exit", "other", "market", "taker"),
-    ("stoploss", "same", "market", "taker"),
-    ("stoploss", "other", "market", "taker"),
-])
-def test_taker_or_maker(mocker, default_conf, order_reason, price_side, order_type, taker_or_maker):
-    if order_reason != 'stoploss':
-        default_conf[f"{order_reason}_pricing"]["price_side"] = price_side
-    default_conf["order_types"] = {}
-    default_conf["order_types"][order_reason] = order_type
-    exchange = get_patched_exchange(mocker, default_conf)
-    assert exchange.taker_or_maker(order_reason) == taker_or_maker

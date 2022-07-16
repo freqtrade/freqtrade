@@ -811,26 +811,6 @@ class Exchange:
 
     # Dry-run methods
 
-    def taker_or_maker(
-        self,
-        order_reason: Literal['entry', 'exit', 'stoploss'],  # TODO: stoploss
-    ):
-        order_type = self._config['order_types'][order_reason]
-        if order_type == 'market' or order_reason == 'stoploss':
-            return 'taker'
-        else:
-            return (
-                'maker' if (
-                    (
-                        order_reason == 'entry' and
-                        self._config['entry_pricing']['price_side'] == 'same'
-                    ) or (
-                        order_reason == 'exit' and
-                        self._config['exit_pricing']['price_side'] == 'same'
-                    )
-                ) else 'taker'
-            )
-
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {},
                              stop_loss: bool = False) -> Dict[str, Any]:
@@ -873,7 +853,7 @@ class Exchange:
             # market orders will always incurr taker fees
             dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
-        dry_order = self.check_dry_limit_order_filled(dry_order)
+        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True)
 
         self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
@@ -955,7 +935,8 @@ class Exchange:
             pass
         return False
 
-    def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    def check_dry_limit_order_filled(
+            self, order: Dict[str, Any], immediate: bool = False) -> Dict[str, Any]:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
@@ -969,15 +950,11 @@ class Exchange:
                     'filled': order['amount'],
                     'remaining': 0,
                 })
-                enter_long = not order['is_short'] and order['side'] == 'buy'
-                enter_short = order['is_short'] and order['side'] == 'sell'
-                entry_or_exit: EntryExit = (
-                    'entry' if (enter_short or enter_long) else 'exit'
-                )
+
                 self.add_dry_order_fee(
                     pair,
                     order,
-                    self.taker_or_maker(entry_or_exit)
+                    'taker' if immediate else 'maker',
                 )
 
         return order
