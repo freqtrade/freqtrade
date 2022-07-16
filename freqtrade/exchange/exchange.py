@@ -822,7 +822,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate / leverage,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'filled': 0,
