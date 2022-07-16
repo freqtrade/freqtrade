@@ -1135,7 +1135,7 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name, leverag
     assert order["symbol"] == "ETH/BTC"
     assert order["amount"] == 1
     assert order["leverage"] == leverage
-    assert order["cost"] == 1 * 200 / leverage
+    assert order["cost"] == 1 * 200
 
 
 @pytest.mark.parametrize("side,startprice,endprice", [
@@ -3544,7 +3544,7 @@ def test_order_has_fee(order, expected) -> None:
 def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
     mocker.patch('freqtrade.exchange.Exchange.calculate_fee_rate', MagicMock(return_value=0.01))
     ex = get_patched_exchange(mocker, default_conf)
-    assert ex.extract_cost_curr_rate(order) == expected
+    assert ex.extract_cost_curr_rate(order['fee'], order['symbol'], cost=20, amount=1) == expected
 
 
 @pytest.mark.parametrize("order,unknown_fee_rate,expected", [
@@ -3582,6 +3582,9 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
       'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 1, 4.0),
     ({'symbol': 'POINT/BTC', 'amount': 0.04, 'cost': 0.5,
       'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 2, 8.0),
+    # Missing currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': None, 'cost': 0.005}}, None, None),
 ])
 def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_rate) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
@@ -3590,7 +3593,8 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_r
 
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert ex.calculate_fee_rate(order) == expected
+    assert ex.calculate_fee_rate(order['fee'], order['symbol'],
+                                 cost=order['cost'], amount=order['amount']) == expected
 
 
 @pytest.mark.parametrize('retrycount,max_retries,expected', [

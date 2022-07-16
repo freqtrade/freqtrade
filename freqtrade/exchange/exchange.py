@@ -77,7 +77,9 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -174,23 +176,11 @@ class Exchange:
         logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
-            # Check if timeframe is available
-            self.validate_timeframes(config.get('timeframe'))
-
             # Initial markets load
             self._load_markets()
-
-            # Check if all pairs are available
-            self.validate_stakecurrency(config['stake_currency'])
-            if not exchange_config.get('skip_pair_validation'):
-                self.validate_pairs(config['exchange']['pair_whitelist'])
-            self.validate_ordertypes(config.get('order_types', {}))
-            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_config(config)
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
-            self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['exit_pricing'])
-            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -212,6 +202,20 @@ class Exchange:
                 and self._api_async.session):
             logger.info("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
+
+    def validate_config(self, config):
+        # Check if timeframe is available
+        self.validate_timeframes(config.get('timeframe'))
+
+        # Check if all pairs are available
+        self.validate_stakecurrency(config['stake_currency'])
+        if not config['exchange'].get('skip_pair_validation'):
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+        self.validate_ordertypes(config.get('order_types', {}))
+        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+        self.validate_pricing(config['exit_pricing'])
+        self.validate_pricing(config['entry_pricing'])
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
@@ -422,7 +426,7 @@ class Exchange:
         if 'symbol' in order and order['symbol'] is not None:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
-                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
                         order[prop] = order[prop] * contract_size
         return order
@@ -820,7 +824,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate / leverage,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'filled': 0,
@@ -1631,27 +1635,35 @@ class Exchange:
                 and order['fee']['cost'] is not None
                 )
 
-    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+    def calculate_fee_rate(
+            self, fee: Dict, symbol: str, cost: float, amount: float) -> Optional[float]:
         """
         Calculate fee rate if it's not given by the exchange.
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         """
-        if order['fee'].get('rate') is not None:
-            return order['fee'].get('rate')
-        fee_curr = order['fee']['currency']
+        if fee.get('rate') is not None:
+            return fee.get('rate')
+        fee_curr = fee.get('currency')
+        if fee_curr is None:
+            return None
+        fee_cost = float(fee['cost'])
+        if self._ft_has['fee_cost_in_contracts']:
+            # Convert cost via "contracts" conversion
+            fee_cost = self._contracts_to_amount(symbol, fee['cost'])
+
         # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(order['symbol']):
+        if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(
-                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
-        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            return round(fee_cost / amount, 8)
+        elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
-            return round(self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) / order['cost'],
-                8) if order['cost'] else None
+            return round(fee_cost / cost, 8) if cost else None
         else:
             # If Fee currency is a different currency
-            if not order['cost']:
+            if not cost:
                 # If cost is None or 0.0 -> falsy, return None
                 return None
             try:
@@ -1663,19 +1675,28 @@ class Exchange:
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
-            return round((self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) * fee_to_quote_rate) / order['cost'], 8)
+            return round((fee_cost * fee_to_quote_rate) / cost, 8)
 
-    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+    def extract_cost_curr_rate(self, fee: Dict, symbol: str, cost: float,
+                               amount: float) -> Tuple[float, str, Optional[float]]:
         """
         Extract tuple of cost, currency, rate.
         Requires order_has_fee to run first!
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (order['fee']['cost'],
-                order['fee']['currency'],
-                self.calculate_fee_rate(order))
+        return (float(fee['cost']),
+                fee['currency'],
+                self.calculate_fee_rate(
+                    fee,
+                    symbol,
+                    cost,
+                    amount
+                    )
+                )
 
     # Historic data
 
