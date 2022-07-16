@@ -175,23 +175,11 @@ class Exchange:
         logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
-            # Check if timeframe is available
-            self.validate_timeframes(config.get('timeframe'))
-
             # Initial markets load
             self._load_markets()
-
-            # Check if all pairs are available
-            self.validate_stakecurrency(config['stake_currency'])
-            if not exchange_config.get('skip_pair_validation'):
-                self.validate_pairs(config['exchange']['pair_whitelist'])
-            self.validate_ordertypes(config.get('order_types', {}))
-            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_config(config)
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
-            self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['exit_pricing'])
-            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -213,6 +201,20 @@ class Exchange:
                 and self._api_async.session):
             logger.info("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
+
+    def validate_config(self, config):
+        # Check if timeframe is available
+        self.validate_timeframes(config.get('timeframe'))
+
+        # Check if all pairs are available
+        self.validate_stakecurrency(config['stake_currency'])
+        if not config['exchange'].get('skip_pair_validation'):
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+        self.validate_ordertypes(config.get('order_types', {}))
+        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+        self.validate_pricing(config['exit_pricing'])
+        self.validate_pricing(config['entry_pricing'])
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
