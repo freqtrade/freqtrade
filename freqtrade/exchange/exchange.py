@@ -20,7 +20,7 @@ from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, PairWithTimeframe)
+                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -850,20 +850,27 @@ class Exchange:
                 'filled': _amount,
                 'cost': (dry_order['amount'] * average) / leverage
             })
-            dry_order = self.add_dry_order_fee(pair, dry_order)
+            # market orders will always incurr taker fees
+            dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
-        dry_order = self.check_dry_limit_order_filled(dry_order)
+        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True)
 
         self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def add_dry_order_fee(self, pair: str, dry_order: Dict[str, Any]) -> Dict[str, Any]:
+    def add_dry_order_fee(
+        self,
+        pair: str,
+        dry_order: Dict[str, Any],
+        taker_or_maker: MakerTaker,
+    ) -> Dict[str, Any]:
+        fee = self.get_fee(pair, taker_or_maker=taker_or_maker)
         dry_order.update({
             'fee': {
                 'currency': self.get_pair_quote_currency(pair),
-                'cost': dry_order['cost'] * self.get_fee(pair),
-                'rate': self.get_fee(pair)
+                'cost': dry_order['cost'] * fee,
+                'rate': fee
             }
         })
         return dry_order
@@ -929,7 +936,8 @@ class Exchange:
             pass
         return False
 
-    def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    def check_dry_limit_order_filled(
+            self, order: Dict[str, Any], immediate: bool = False) -> Dict[str, Any]:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
@@ -943,7 +951,12 @@ class Exchange:
                     'filled': order['amount'],
                     'remaining': 0,
                 })
-                self.add_dry_order_fee(pair, order)
+
+                self.add_dry_order_fee(
+                    pair,
+                    order,
+                    'taker' if immediate else 'maker',
+                )
 
         return order
 
@@ -1601,7 +1614,7 @@ class Exchange:
 
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
+                price: float = 1, taker_or_maker: MakerTaker = 'maker') -> float:
         try:
             if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']
