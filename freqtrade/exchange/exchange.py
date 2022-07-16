@@ -20,7 +20,7 @@ from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, PairWithTimeframe)
+                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -870,7 +870,8 @@ class Exchange:
                 'filled': _amount,
                 'cost': (dry_order['amount'] * average) / leverage
             })
-            dry_order = self.add_dry_order_fee(pair, dry_order, self.taker_or_maker('entry'))
+            # market orders will always incurr taker fees
+            dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
         dry_order = self.check_dry_limit_order_filled(dry_order)
 
@@ -882,7 +883,7 @@ class Exchange:
         self,
         pair: str,
         dry_order: Dict[str, Any],
-        taker_or_maker: Literal['taker', 'maker'],
+        taker_or_maker: MakerTaker,
     ) -> Dict[str, Any]:
         dry_order.update({
             'fee': {
@@ -970,7 +971,7 @@ class Exchange:
                 })
                 enter_long = not order['is_short'] and order['side'] == 'buy'
                 enter_short = order['is_short'] and order['side'] == 'sell'
-                entry_or_exit: Literal['entry', 'exit'] = (
+                entry_or_exit: EntryExit = (
                     'entry' if (enter_short or enter_long) else 'exit'
                 )
                 self.add_dry_order_fee(
@@ -1635,7 +1636,7 @@ class Exchange:
 
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
+                price: float = 1, taker_or_maker: MakerTaker = 'maker') -> float:
         try:
             if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']
