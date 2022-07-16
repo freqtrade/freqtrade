@@ -1,12 +1,13 @@
 """ Gate.io exchange subclass """
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,11 @@ class Gateio(Exchange):
                                 'rate': pair_fees[takerOrMaker],
                             }
         return trades
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if self.trading_mode == TradingMode.FUTURES:
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
+        return order['id']
 
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         order = self.fetch_order(
