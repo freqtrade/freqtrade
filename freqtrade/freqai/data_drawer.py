@@ -93,14 +93,14 @@ class FreqaiDataDrawer:
 
         return exists
 
-    def save_drawer_to_disk(self):
+    def save_historic_predictions_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
         with open(self.full_path / str("historic_predictions.pkl"), "wb") as fp:
             pickle.dump(self.historic_predictions, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def save_historic_predictions_to_disk(self):
+    def save_drawer_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
