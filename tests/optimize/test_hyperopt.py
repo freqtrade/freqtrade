@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pandas as pd
 import pytest
@@ -18,8 +18,8 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IntParameter
-from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
-                            patched_configuration_load_config_file)
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, get_markets, log_has, log_has_re,
+                            patch_exchange, patched_configuration_load_config_file)
 
 
 def generate_result_metrics():
@@ -884,9 +884,11 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
 
 
 def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, fee) -> None:
-    # patch_exchange(mocker)
-    # TODO: This reaches out to the exchange!
+    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch('freqtrade.exchange.Exchange._load_markets')
+    mocker.patch('freqtrade.exchange.Exchange.markets',
+                 PropertyMock(return_value=get_markets()))
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     hyperopt_conf.update({
@@ -901,6 +903,9 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, 
     })
     hyperopt = Hyperopt(hyperopt_conf)
     hyperopt.backtesting.exchange.get_max_leverage = lambda *x, **xx: 1.0
+    hyperopt.backtesting.exchange.get_min_pair_stake_amount = lambda *x, **xx: 1.0
+    hyperopt.backtesting.exchange.get_max_pair_stake_amount = lambda *x, **xx: 100.0
+
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
     assert hyperopt.backtesting.strategy.bot_loop_started is True
