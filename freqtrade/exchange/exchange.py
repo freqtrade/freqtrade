@@ -865,11 +865,12 @@ class Exchange:
         dry_order: Dict[str, Any],
         taker_or_maker: MakerTaker,
     ) -> Dict[str, Any]:
+        fee = self.get_fee(pair, taker_or_maker=taker_or_maker)
         dry_order.update({
             'fee': {
                 'currency': self.get_pair_quote_currency(pair),
-                'cost': dry_order['cost'] * self.get_fee(pair, taker_or_maker=taker_or_maker),
-                'rate': self.get_fee(pair, taker_or_maker=taker_or_maker)
+                'cost': dry_order['cost'] * fee,
+                'rate': fee
             }
         })
         return dry_order
