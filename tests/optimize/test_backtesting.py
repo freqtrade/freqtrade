@@ -90,28 +90,6 @@ def load_data_test(what, testdatadir):
                                                   fill_missing=True)}
 
 
-def simple_backtest(config, contour, mocker, testdatadir) -> None:
-    patch_exchange(mocker)
-    config['timeframe'] = '1m'
-    backtesting = Backtesting(config)
-    backtesting._set_strategy(backtesting.strategylist[0])
-
-    data = load_data_test(contour, testdatadir)
-    processed = backtesting.strategy.advise_all_indicators(data)
-    min_date, max_date = get_timerange(processed)
-    assert isinstance(processed, dict)
-    results = backtesting.backtest(
-        processed=processed,
-        start_date=min_date,
-        end_date=max_date,
-        max_open_trades=1,
-        position_stacking=False,
-        enable_protections=config.get('enable_protections', False),
-    )
-    # results :: <class 'pandas.core.frame.DataFrame'>
-    return results
-
-
 # FIX: fixturize this?
 def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     data = history.load_data(datadir=datadir, timeframe='1m', pairs=[pair])
@@ -942,6 +920,7 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
 def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
     # While this test IS a copy of test_backtest_pricecontours, it's needed to ensure
     # results do not carry-over to the next run, which is not given by using parametrize.
+    patch_exchange(mocker)
     default_conf['protections'] = [
         {
             "method": "CooldownPeriod",
@@ -949,6 +928,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
         }]
 
     default_conf['enable_protections'] = True
+    default_conf['timeframe'] = '1m'
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
@@ -959,12 +939,27 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
         ['sine', 9],
         ['raise', 10],
     ]
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+
     # While entry-signals are unrealistic, running backtesting
     # over and over again should not cause different results
     for [contour, numres] in tests:
         # Debug output for random test failure
         print(f"{contour}, {numres}")
-        assert len(simple_backtest(default_conf, contour, mocker, testdatadir)['results']) == numres
+        data = load_data_test(contour, testdatadir)
+        processed = backtesting.strategy.advise_all_indicators(data)
+        min_date, max_date = get_timerange(processed)
+        assert isinstance(processed, dict)
+        results = backtesting.backtest(
+            processed=processed,
+            start_date=min_date,
+            end_date=max_date,
+            max_open_trades=1,
+            position_stacking=False,
+            enable_protections=default_conf.get('enable_protections', False),
+        )
+        assert len(results['results']) == numres
 
 
 @pytest.mark.parametrize('protections,contour,expected', [
@@ -990,7 +985,25 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     # While entry-signals are unrealistic, running backtesting
     # over and over again should not cause different results
-    assert len(simple_backtest(default_conf, contour, mocker, testdatadir)['results']) == expected
+
+    patch_exchange(mocker)
+    default_conf['timeframe'] = '1m'
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+
+    data = load_data_test(contour, testdatadir)
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+    assert isinstance(processed, dict)
+    results = backtesting.backtest(
+        processed=processed,
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=1,
+        position_stacking=False,
+        enable_protections=default_conf.get('enable_protections', False),
+    )
+    assert len(results['results']) == expected
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
