@@ -1,9 +1,10 @@
 import logging
 from typing import List
 
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text, tuple_, update
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence.trade_model import Order, Trade
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def get_last_sequence_ids(engine, trade_back_name, order_back_name):
     return order_id, trade_id
 
 
-def set_sequence_ids(engine, order_id, trade_id):
+def set_sequence_ids(engine, order_id, trade_id, pairlock_id=None):
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:
@@ -54,6 +55,9 @@ def set_sequence_ids(engine, order_id, trade_id):
                 connection.execute(text(f"ALTER SEQUENCE orders_id_seq RESTART WITH {order_id}"))
             if trade_id:
                 connection.execute(text(f"ALTER SEQUENCE trades_id_seq RESTART WITH {trade_id}"))
+            if pairlock_id:
+                connection.execute(
+                    text(f"ALTER SEQUENCE pairlocks_id_seq RESTART WITH {pairlock_id}"))
 
 
 def drop_index_on_table(engine, inspector, table_bak_name):
@@ -99,7 +103,10 @@ def migrate_trades_and_orders_table(
     liquidation_price = get_column_def(cols, 'liquidation_price',
                                        get_column_def(cols, 'isolated_liq', 'null'))
     # sqlite does not support literals for booleans
-    is_short = get_column_def(cols, 'is_short', '0')
+    if engine.name == 'postgresql':
+        is_short = get_column_def(cols, 'is_short', 'false')
+    else:
+        is_short = get_column_def(cols, 'is_short', '0')
 
     # Margin Properties
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
@@ -195,16 +202,18 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
 
     ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
     average = get_column_def(cols_order, 'average', 'null')
+    stop_price = get_column_def(cols_order, 'stop_price', 'null')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, ft_fee_base)
+            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
-            cost, order_date, order_filled_date, order_update_date, {ft_fee_base} ft_fee_base
+            cost, {stop_price} stop_price, order_date, order_filled_date,
+            order_update_date, {ft_fee_base} ft_fee_base
             from {table_back_name}
             """))
 
@@ -241,6 +250,35 @@ def set_sqlite_to_wal(engine):
             connection.execute(text("PRAGMA journal_mode=wal"))
 
 
+def fix_old_dry_orders(engine):
+    with engine.begin() as connection:
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.stoploss_order_id
+                ).where(Trade.stoploss_order_id.is_not(None))
+                  ),
+            Order.ft_order_side == 'stoploss',
+            Order.order_id.like('dry%'),
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
+
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.open_order_id
+                ).where(Trade.open_order_id.is_not(None))
+                  ),
+            Order.ft_order_side != 'stoploss',
+            Order.order_id.like('dry%')
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
+
+
 def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -259,9 +297,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    # if ('orders' not in previous_tables
-    # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols_trades, 'base_currency'):
+    if not has_column(cols_orders, 'stop_price'):
+        # if not has_column(cols_trades, 'base_currency'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
@@ -282,3 +319,4 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             "start with a fresh database.")
 
     set_sqlite_to_wal(engine)
+    fix_old_dry_orders(engine)

@@ -21,6 +21,7 @@ class LowProfitPairs(IProtection):
 
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._required_profit = protection_config.get('required_profit', 0.0)
+        self._only_per_side = protection_config.get('only_per_side', False)
 
     def short_desc(self) -> str:
         """
@@ -36,7 +37,8 @@ class LowProfitPairs(IProtection):
         return (f'{profit} < {self._required_profit} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
-    def _low_profit(self, date_now: datetime, pair: str) -> Optional[ProtectionReturn]:
+    def _low_profit(
+            self, date_now: datetime, pair: str, side: LongShort) -> Optional[ProtectionReturn]:
         """
         Evaluate recent trades for pair
         """
@@ -54,7 +56,10 @@ class LowProfitPairs(IProtection):
             # Not enough trades in the relevant period
             return None
 
-        profit = sum(trade.close_profit for trade in trades if trade.close_profit)
+        profit = sum(
+            trade.close_profit for trade in trades if trade.close_profit
+            and (not self._only_per_side or trade.trade_direction == side)
+            )
         if profit < self._required_profit:
             self.log_once(
                 f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
@@ -65,6 +70,7 @@ class LowProfitPairs(IProtection):
                 lock=True,
                 until=until,
                 reason=self._reason(profit),
+                lock_side=(side if self._only_per_side else '*')
             )
 
         return None
@@ -86,4 +92,4 @@ class LowProfitPairs(IProtection):
         :return: Tuple of [bool, until, reason].
             If true, this pair will be locked with <reason> until <until>
         """
-        return self._low_profit(date_now, pair=pair)
+        return self._low_profit(date_now, pair=pair, side=side)

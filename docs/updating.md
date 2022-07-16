@@ -32,4 +32,8 @@ Please ensure that you're also updating dependencies - otherwise things might br
 ``` bash
 git pull
 pip install -U -r requirements.txt
+pip install -e .
+
+# Ensure freqUI is at the latest version
+freqtrade install-ui 
 ```

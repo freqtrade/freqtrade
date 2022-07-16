@@ -1,11 +1,13 @@
 """ Gate.io exchange subclass """
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -24,12 +26,16 @@ class Gateio(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_volume_currency": "quote",
+        "time_in_force_parameter": "timeInForce",
+        "order_time_in_force": ['gtc', 'ioc'],
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
     }
 
     _ft_has_futures: Dict = {
-        "needs_trading_fees": True
+        "needs_trading_fees": True,
+        "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
+        "order_props_in_contracts": ['amount', 'filled', 'remaining'],
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -40,12 +46,32 @@ class Gateio(Exchange):
     ]
 
     def validate_ordertypes(self, order_types: Dict) -> None:
-        super().validate_ordertypes(order_types)
 
         if self.trading_mode != TradingMode.FUTURES:
             if any(v == 'market' for k, v in order_types.items()):
                 raise OperationalException(
                     f'Exchange {self.name} does not support market orders.')
+
+    def _get_params(
+            self,
+            side: BuySell,
+            ordertype: str,
+            leverage: float,
+            reduceOnly: bool,
+            time_in_force: str = 'gtc',
+            ) -> Dict:
+        params = super()._get_params(
+            side=side,
+            ordertype=ordertype,
+            leverage=leverage,
+            reduceOnly=reduceOnly,
+            time_in_force=time_in_force,
+        )
+        if ordertype == 'market' and self.trading_mode == TradingMode.FUTURES:
+            params['type'] = 'market'
+            param = self._ft_has.get('time_in_force_parameter', '')
+            params.update({param: 'ioc'})
+        return params
 
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime,
                              params: Optional[Dict] = None) -> List:
@@ -61,7 +87,8 @@ class Gateio(Exchange):
             pair_fees = self._trading_fees.get(pair, {})
             if pair_fees:
                 for idx, trade in enumerate(trades):
-                    if trade.get('fee', {}).get('cost') is None:
+                    fee = trade.get('fee', {})
+                    if fee and fee.get('cost') is None:
                         takerOrMaker = trade.get('takerOrMaker', 'taker')
                         if pair_fees.get(takerOrMaker) is not None:
                             trades[idx]['fee'] = {
@@ -71,14 +98,31 @@ class Gateio(Exchange):
                             }
         return trades
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
-        return self.fetch_order(
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if self.trading_mode == TradingMode.FUTURES:
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
+        return order['id']
+
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
+        order = self.fetch_order(
             order_id=order_id,
             pair=pair,
             params={'stop': True}
         )
+        if self.trading_mode == TradingMode.FUTURES:
+            if order['status'] == 'closed':
+                # Places a real order - which we need to fetch explicitly.
+                new_orderid = order.get('info', {}).get('trade_id')
+                if new_orderid:
+                    order1 = self.fetch_order(order_id=new_orderid, pair=pair, params=params)
+                    order1['id_stop'] = order1['id']
+                    order1['id'] = order_id
+                    order1['stopPrice'] = order.get('stopPrice')
 
-    def cancel_stoploss_order(self, order_id: str, pair: str, params={}) -> Dict:
+                    return order1
+        return order
+
+    def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         return self.cancel_order(
             order_id=order_id,
             pair=pair,
@@ -90,5 +134,7 @@ class Gateio(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return ((side == "sell" and stop_loss > float(order['stopPrice'])) or
-                (side == "buy" and stop_loss < float(order['stopPrice'])))
+        return (order.get('stopPrice', None) is None or (
+            side == "sell" and stop_loss > float(order['stopPrice'])) or
+            (side == "buy" and stop_loss < float(order['stopPrice']))
+            )

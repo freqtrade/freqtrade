@@ -158,21 +158,22 @@ def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
-@pytest.mark.parametrize("pair,expected_result,candle_type", [
-    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m.json', ""),
-    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-5m.json', ""),
-    ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json', ""),
-    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json', ""),
-    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json', ""),
-    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json', ""),
-    ("ETH/BTC", 'freqtrade/hello/world/futures/ETH_BTC-5m-mark.json', "mark"),
-    ("ACC_OLD/BTC", 'freqtrade/hello/world/futures/ACC_OLD_BTC-5m-index.json', "index"),
+@pytest.mark.parametrize("pair,timeframe,expected_result,candle_type", [
+    ("ETH/BTC", "5m", "freqtrade/hello/world/ETH_BTC-5m.json", ""),
+    ("ETH/USDT", "1M", "freqtrade/hello/world/ETH_USDT-1Mo.json", ""),
+    ("Fabric Token/ETH", "5m", "freqtrade/hello/world/Fabric_Token_ETH-5m.json", ""),
+    ("ETHH20", "5m", "freqtrade/hello/world/ETHH20-5m.json", ""),
+    (".XBTBON2H", "5m", "freqtrade/hello/world/_XBTBON2H-5m.json", ""),
+    ("ETHUSD.d", "5m", "freqtrade/hello/world/ETHUSD_d-5m.json", ""),
+    ("ACC_OLD/BTC", "5m", "freqtrade/hello/world/ACC_OLD_BTC-5m.json", ""),
+    ("ETH/BTC", "5m", "freqtrade/hello/world/futures/ETH_BTC-5m-mark.json", "mark"),
+    ("ACC_OLD/BTC", "5m", "freqtrade/hello/world/futures/ACC_OLD_BTC-5m-index.json", "index"),
 ])
-def test_json_pair_data_filename(pair, expected_result, candle_type):
+def test_json_pair_data_filename(pair, timeframe, expected_result, candle_type):
     fn = JsonDataHandler._pair_data_filename(
         Path('freqtrade/hello/world'),
         pair,
-        '5m',
+        timeframe,
         CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)
@@ -180,7 +181,7 @@ def test_json_pair_data_filename(pair, expected_result, candle_type):
     fn = JsonGzDataHandler._pair_data_filename(
         Path('freqtrade/hello/world'),
         pair,
-        '5m',
+        timeframe,
         candle_type=CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)

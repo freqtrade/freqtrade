@@ -1,5 +1,7 @@
 import logging
 from copy import deepcopy
+from functools import wraps
+from typing import Any, Callable, TypeVar, cast
 
 from freqtrade.exceptions import StrategyError
 
@@ -7,12 +9,16 @@ from freqtrade.exceptions import StrategyError
 logger = logging.getLogger(__name__)
 
 
-def strategy_safe_wrapper(f, message: str = "", default_retval=None, supress_error=False):
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_error=False) -> F:
     """
     Wrapper around user-provided methods and functions.
     Caches all exceptions and returns either the default_retval (if it's not None) or raises
     a StrategyError exception, which then needs to be handled by the calling method.
     """
+    @wraps(f)
     def wrapper(*args, **kwargs):
         try:
             if 'trade' in kwargs:
@@ -37,4 +43,4 @@ def strategy_safe_wrapper(f, message: str = "", default_retval=None, supress_err
                 raise StrategyError(str(error)) from error
             return default_retval
 
-    return wrapper
+    return cast(F, wrapper)

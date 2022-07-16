@@ -250,14 +250,16 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
 
+@pytest.mark.parametrize('only_per_side', [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_LowProfitPairs(mocker, default_conf, fee, caplog):
+def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
     default_conf['protections'] = [{
         "method": "LowProfitPairs",
         "lookback_period": 400,
         "stop_duration": 60,
         "trade_limit": 2,
         "required_profit": 0.0,
+        "only_per_side": only_per_side,
     }]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     message = r"Trading stopped due to .*"
@@ -292,10 +294,11 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     # Add positive trade
     Trade.query.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.ROI.value,
-        min_ago_open=20, min_ago_close=10, profit_rate=1.15,
+        min_ago_open=20, min_ago_close=10, profit_rate=1.15, is_short=True
     ))
-    assert not freqtrade.protections.stop_per_pair('XRP/BTC')
-    assert not PairLocks.is_pair_locked('XRP/BTC')
+    assert freqtrade.protections.stop_per_pair('XRP/BTC') != only_per_side
+    assert not PairLocks.is_pair_locked('XRP/BTC', side='*')
+    assert PairLocks.is_pair_locked('XRP/BTC', side='long') == only_per_side
 
     Trade.query.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
@@ -303,9 +306,10 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog):
     ))
 
     # Locks due to 2nd trade
-    assert not freqtrade.protections.global_stop()
-    assert freqtrade.protections.stop_per_pair('XRP/BTC')
-    assert PairLocks.is_pair_locked('XRP/BTC')
+    assert freqtrade.protections.global_stop() != only_per_side
+    assert freqtrade.protections.stop_per_pair('XRP/BTC') != only_per_side
+    assert PairLocks.is_pair_locked('XRP/BTC', side='long')
+    assert PairLocks.is_pair_locked('XRP/BTC', side='*') != only_per_side
     assert not PairLocks.is_global_lock()
 
 

@@ -140,7 +140,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
 | `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
-| `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
+| `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.*  <br> **Datatype:** Boolean
 | `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to exit a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `stoploss` |  **Required.** Value as ratio of the stoploss used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
 | `trailing_stop` | Enables trailing stoploss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md#trailing-stop-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Boolean
@@ -230,6 +230,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 | `max_entry_position_adjustment` | Maximum additional order(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
+| `futures_funding_rate` | User-specified funding rate to be used when historical funding rates are not available from the exchange. This does not overwrite real historical rates. It is recommended that this be set to 0 unless you are testing a specific coin and you understand how the funding rate will affect freqtrade's profit calculations. [More information here](leverage.md#unavailable-funding-rates) <br>*Defaults to None.*<br> **Datatype:** Float
 
 ### Parameters in the strategy
 
@@ -583,7 +584,7 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 * Market orders fill based on orderbook volume the moment the order is placed.
 * Limit orders fill once the price reaches the defined level - or time out based on `unfilledtimeout` settings.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
-* Open orders (not trades, which are stored in the database) are reset on bot restart.
+* Open orders (not trades, which are stored in the database) are kept open after bot restarts, with the assumption that they were not filled while being offline.
 
 ## Switch to production mode
 

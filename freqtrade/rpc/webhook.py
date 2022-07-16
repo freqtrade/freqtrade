@@ -45,21 +45,21 @@ class Webhook(RPCHandler):
         try:
             whconfig = self._config['webhook']
             if msg['type'] in [RPCMessageType.ENTRY]:
-                valuedict = whconfig.get('webhookentry', None)
+                valuedict = whconfig.get('webhookentry')
             elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
-                valuedict = whconfig.get('webhookentrycancel', None)
+                valuedict = whconfig.get('webhookentrycancel')
             elif msg['type'] in [RPCMessageType.ENTRY_FILL]:
-                valuedict = whconfig.get('webhookentryfill', None)
+                valuedict = whconfig.get('webhookentryfill')
             elif msg['type'] == RPCMessageType.EXIT:
-                valuedict = whconfig.get('webhookexit', None)
+                valuedict = whconfig.get('webhookexit')
             elif msg['type'] == RPCMessageType.EXIT_FILL:
-                valuedict = whconfig.get('webhookexitfill', None)
+                valuedict = whconfig.get('webhookexitfill')
             elif msg['type'] == RPCMessageType.EXIT_CANCEL:
-                valuedict = whconfig.get('webhookexitcancel', None)
+                valuedict = whconfig.get('webhookexitcancel')
             elif msg['type'] in (RPCMessageType.STATUS,
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):
-                valuedict = whconfig.get('webhookstatus', None)
+                valuedict = whconfig.get('webhookstatus')
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:

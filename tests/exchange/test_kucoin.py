@@ -123,5 +123,5 @@ def test_stoploss_adjust_kucoin(mocker, default_conf):
     assert exchange.stoploss_adjust(1501, order, 'sell')
     assert not exchange.stoploss_adjust(1499, order, 'sell')
     # Test with invalid order case
-    order['info']['stop'] = None
-    assert not exchange.stoploss_adjust(1501, order, 'sell')
+    order['stopPrice'] = None
+    assert exchange.stoploss_adjust(1501, order, 'sell')

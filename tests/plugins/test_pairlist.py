@@ -470,12 +470,16 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "BTC", ['ETH/BTC', 'TKN/BTC']),
     # VolumePairList with no offset = unchanged pairlist
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
-      {"method": "OffsetFilter", "offset": 0}],
+      {"method": "OffsetFilter", "offset": 0, "number_assets": 0}],
      "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
     # VolumePairList with offset = 2
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "OffsetFilter", "offset": 2}],
      "USDT", ['ADAHALF/USDT', 'ADADOUBLE/USDT']),
+    # VolumePairList with offset and limit
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "OffsetFilter", "offset": 1, "number_assets": 2}],
+     "USDT", ['NANO/USDT', 'ADAHALF/USDT']),
     # VolumePairList with higher offset, than total pairlist
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "OffsetFilter", "offset": 100}],
@@ -758,8 +762,8 @@ def test_PerformanceFilter_keep_mid_order(mocker, default_conf_usdt, fee, caplog
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/USDT', 'ETC/USDT', 'ETH/USDT',
-                                'NEO/USDT', 'TKN/USDT', 'ADA/USDT', 'LTC/USDT']
+        assert pm.whitelist == ['XRP/USDT', 'ETC/USDT', 'ETH/USDT', 'LTC/USDT',
+                                'NEO/USDT', 'TKN/USDT', 'ADA/USDT', ]
         # assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
@@ -1151,6 +1155,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
      "0.01 and above 0.99 over the last days.'}]",
         None
+     ),
+    ({"method": "OffsetFilter", "offset": 5, "number_assets": 10},
+     "[{'OffsetFilter': 'OffsetFilter - Taking 10 Pairs, starting from 5.'}]",
+     None
      ),
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,

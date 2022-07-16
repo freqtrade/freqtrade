@@ -7,4 +7,5 @@ FROM freqtradeorg/freqtrade:develop
 # The below dependency - pyti - serves as an example. Please use whatever you need!
 RUN pip install --user pyti
 
+# Switch back to user (only if you required root above)
 # USER ftuser

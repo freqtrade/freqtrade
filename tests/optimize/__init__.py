@@ -40,6 +40,8 @@ class BTContainer(NamedTuple):
     custom_entry_price: Optional[float] = None
     custom_exit_price: Optional[float] = None
     leverage: float = 1.0
+    timeout: Optional[int] = None
+    adjust_entry_price: Optional[float] = None
 
 
 def _get_frame_time_from_offset(offset):

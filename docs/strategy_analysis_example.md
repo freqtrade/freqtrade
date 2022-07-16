@@ -31,11 +31,13 @@ pair = "BTC/USDT"
 ```python
 # Load data using values set above
 from freqtrade.data.history import load_pair_history
+from freqtrade.enums import CandleType
 
 candles = load_pair_history(datadir=data_location,
                             timeframe=config["timeframe"],
                             pair=pair,
                             data_format = "hdf5",
+                            candle_type=CandleType.SPOT,
                             )
 
 # Confirm success
@@ -93,7 +95,7 @@ from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
 
 # if backtest_dir points to a directory, it'll automatically load the last backtest file.
 backtest_dir = config["user_data_dir"] / "backtest_results"
-# backtest_dir can also point to a specific file
+# backtest_dir can also point to a specific file 
 # backtest_dir = config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"
 ```
 

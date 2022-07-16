@@ -1,12 +1,15 @@
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import ccxt
 
+from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange import date_minus_candles
 
 
 logger = logging.getLogger(__name__)
@@ -19,12 +22,13 @@ class Okx(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 300,
+        "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
     }
     _ft_has_futures: Dict = {
         "tickers_have_quoteVolume": False,
+        "fee_cost_in_contracts": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -34,14 +38,69 @@ class Okx(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED),
     ]
 
+    net_only = True
+
+    def ohlcv_candle_limit(
+            self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
+        """
+        Exchange ohlcv candle limit
+        OKX has the following behaviour:
+        * 300 candles for uptodate data
+        * 100 candles for historic data
+        * 100 candles for additional candles (not futures or spot).
+        :param timeframe: Timeframe to check
+        :param candle_type: Candle-type
+        :param since_ms: Starting timestamp
+        :return: Candle limit as integer
+        """
+        if (
+            candle_type in (CandleType.FUTURES, CandleType.SPOT) and
+            (not since_ms or since_ms > (date_minus_candles(timeframe, 300).timestamp() * 1000))
+        ):
+            return 300
+
+        return super().ohlcv_candle_limit(timeframe, candle_type, since_ms)
+
+    @retrier
+    def additional_exchange_init(self) -> None:
+        """
+        Additional exchange initialization logic.
+        .api will be available at this point.
+        Must be overridden in child methods if required.
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
+                accounts = self._api.fetch_accounts()
+                if len(accounts) > 0:
+                    self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def _get_posSide(self, side: BuySell, reduceOnly: bool):
+        if self.net_only:
+            return 'net'
+        if not reduceOnly:
+            # Enter
+            return 'long' if side == 'buy' else 'short'
+        else:
+            # Exit
+            return 'long' if side == 'sell' else 'short'
+
     def _get_params(
         self,
+        side: BuySell,
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = 'gtc',
     ) -> Dict:
         params = super()._get_params(
+            side=side,
             ordertype=ordertype,
             leverage=leverage,
             reduceOnly=reduceOnly,
@@ -49,10 +108,11 @@ class Okx(Exchange):
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params['tdMode'] = self.margin_mode.value
+            params['posSide'] = self._get_posSide(side, reduceOnly)
         return params
 
     @retrier
-    def _lev_prep(self, pair: str, leverage: float, side: str):
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell):
         if self.trading_mode != TradingMode.SPOT and self.margin_mode is not None:
             try:
                 # TODO-lev: Test me properly (check mgnMode passed)
@@ -61,7 +121,7 @@ class Okx(Exchange):
                     symbol=pair,
                     params={
                         "mgnMode": self.margin_mode.value,
-                        # "posSide": "net"",
+                        "posSide": self._get_posSide(side, False),
                     })
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e

@@ -1,13 +1,13 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
 from pandas import DataFrame
-from strategy_test_v2 import StrategyTestV2
+from strategy_test_v3 import StrategyTestV3
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy import BooleanParameter, DecimalParameter, IntParameter, RealParameter
 
 
-class HyperoptableStrategy(StrategyTestV2):
+class HyperoptableStrategy(StrategyTestV3):
     """
     Default Strategy provided by freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
@@ -27,7 +27,6 @@ class HyperoptableStrategy(StrategyTestV2):
         'sell_minusdi': 0.4
     }
 
-    buy_rsi = IntParameter([0, 50], default=30, space='buy')
     buy_plusdi = RealParameter(low=0, high=1, default=0.5, space='buy')
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
     sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
@@ -44,6 +43,17 @@ class HyperoptableStrategy(StrategyTestV2):
                 "stop_duration_candles": self.protection_cooldown_lookback.value
             })
         return prot
+
+    bot_loop_started = False
+
+    def bot_loop_start(self):
+        self.bot_loop_started = True
+
+    def bot_start(self, **kwargs) -> None:
+        """
+        Parameters can also be defined here ...
+        """
+        self.buy_rsi = IntParameter([0, 50], default=30, space='buy')
 
     def informative_pairs(self):
         """
