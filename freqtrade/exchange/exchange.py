@@ -79,6 +79,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
         "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -423,7 +424,7 @@ class Exchange:
         if 'symbol' in order and order['symbol'] is not None:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
-                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
                         order[prop] = order[prop] * contract_size
         return order
