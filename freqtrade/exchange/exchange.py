@@ -79,6 +79,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
         "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -425,7 +426,7 @@ class Exchange:
         if 'symbol' in order and order['symbol'] is not None:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
-                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
                         order[prop] = order[prop] * contract_size
         return order
@@ -823,7 +824,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate / leverage,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'filled': 0,
@@ -1648,7 +1649,7 @@ class Exchange:
         fee_curr = fee.get('currency')
         if fee_curr is None:
             return None
-        fee_cost = fee['cost']
+        fee_cost = float(fee['cost'])
         if self._ft_has['fee_cost_in_contracts']:
             # Convert cost via "contracts" conversion
             fee_cost = self._contracts_to_amount(symbol, fee['cost'])
@@ -1656,7 +1657,7 @@ class Exchange:
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(fee['cost'] / amount, 8)
+            return round(fee_cost / amount, 8)
         elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
             return round(fee_cost / cost, 8) if cost else None
@@ -1687,7 +1688,7 @@ class Exchange:
         :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (fee['cost'],
+        return (float(fee['cost']),
                 fee['currency'],
                 self.calculate_fee_rate(
                     fee,

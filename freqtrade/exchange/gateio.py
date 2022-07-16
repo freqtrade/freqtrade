@@ -1,12 +1,13 @@
 """ Gate.io exchange subclass """
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class Gateio(Exchange):
     _ft_has_futures: Dict = {
         "needs_trading_fees": True,
         "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
+        "order_props_in_contracts": ['amount', 'filled', 'remaining'],
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -96,12 +98,29 @@ class Gateio(Exchange):
                             }
         return trades
 
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if self.trading_mode == TradingMode.FUTURES:
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
+        return order['id']
+
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
-        return self.fetch_order(
+        order = self.fetch_order(
             order_id=order_id,
             pair=pair,
             params={'stop': True}
         )
+        if self.trading_mode == TradingMode.FUTURES:
+            if order['status'] == 'closed':
+                # Places a real order - which we need to fetch explicitly.
+                new_orderid = order.get('info', {}).get('trade_id')
+                if new_orderid:
+                    order1 = self.fetch_order(order_id=new_orderid, pair=pair, params=params)
+                    order1['id_stop'] = order1['id']
+                    order1['id'] = order_id
+                    order1['stopPrice'] = order.get('stopPrice')
+
+                    return order1
+        return order
 
     def cancel_stoploss_order(self, order_id: str, pair: str, params: Dict = {}) -> Dict:
         return self.cancel_order(
