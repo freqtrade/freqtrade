@@ -78,9 +78,9 @@ class FreqaiDataDrawer:
         """
         exists = Path(self.full_path / str("historic_predictions.pkl")).resolve().exists()
         if exists:
-            with open(self.full_path / str("historic_predictions.pkl"), "rb") as fp:
+            with open(self.full_path / str("historic_predictions.pkl"), "wb") as fp:
                 self.historic_predictions = pickle.load(fp)
-            logger.info(f"Found existing historic predictions at {self.full_path}, but beware of "
+            logger.info(f"Found existing historic predictions at {self.full_path}, but beware "
                         "that statistics may be inaccurate if the bot has been offline for "
                         "an extended period of time.")
         elif not self.follow_mode:
