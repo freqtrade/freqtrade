@@ -80,7 +80,7 @@ class FreqaiDataDrawer:
         if exists:
             with open(self.full_path / str("historic_predictions.pkl"), "rb") as fp:
                 self.historic_predictions = pickle.load(fp)
-            logger.info(f"Found existing historic predictions at {self.full_path}, but beware of "
+            logger.info(f"Found existing historic predictions at {self.full_path}, but beware "
                         "that statistics may be inaccurate if the bot has been offline for "
                         "an extended period of time.")
         elif not self.follow_mode:
@@ -93,14 +93,14 @@ class FreqaiDataDrawer:
 
         return exists
 
-    def save_drawer_to_disk(self):
+    def save_historic_predictions_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
         with open(self.full_path / str("historic_predictions.pkl"), "wb") as fp:
             pickle.dump(self.historic_predictions, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def save_historic_predictions_to_disk(self):
+    def save_drawer_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
@@ -235,13 +235,14 @@ class FreqaiDataDrawer:
             i = length_difference + 1
 
         df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
-        hp_df = self.historic_predictions[pair]
 
-        # here are some pandas hula hoops to accommodate the possibility of a series
-        # or dataframe depending number of labels requested by user
-        nan_df = pd.DataFrame(np.nan, index=hp_df.index[-2:] + 2, columns=hp_df.columns)
-        hp_df = pd.concat([hp_df, nan_df], ignore_index=True, axis=0)
-        hp_df = pd.concat([hp_df, nan_df[-2:-1]], axis=0)
+        if pair in self.historic_predictions:
+            hp_df = self.historic_predictions[pair]
+            # here are some pandas hula hoops to accommodate the possibility of a series
+            # or dataframe depending number of labels requested by user
+            nan_df = pd.DataFrame(np.nan, index=hp_df.index[-2:] + 2, columns=hp_df.columns)
+            hp_df = pd.concat([hp_df, nan_df], ignore_index=True, axis=0)
+            self.historic_predictions[pair] = hp_df[:-1]
 
         for label in dk.label_list:
             df[label].iloc[-1] = predictions[label].iloc[-1]
@@ -254,7 +255,8 @@ class FreqaiDataDrawer:
             df["DI_values"].iloc[-1] = dk.DI_values[-1]
 
         # append the new predictions to persistent storage
-        hp_df.iloc[-1] = df[label].iloc[-1]
+        if pair in self.historic_predictions:
+            self.historic_predictions[pair].iloc[-1] = df[label].iloc[-1]
 
         if length_difference < 0:
             prepend_df = pd.DataFrame(
