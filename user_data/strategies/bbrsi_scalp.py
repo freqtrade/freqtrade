@@ -17,20 +17,24 @@ class bbrsi_scalp(WAOStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "0": 0.07
+        "0": 0.216,
+        "35": 0.056,
+        "94": 0.012,
+        "209": 0
     }
 
     # Optimal stoploss designed for the strategy
     # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.035
+    stoploss = -0.283
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # trailing stoploss
-    trailing_stop = False
-    trailing_stop_positive = 0.01
-    trailing_stop_positive_offset = 0.02
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.186
+    trailing_stop_positive_offset = 0.228
+    trailing_only_offset_is_reached = False
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
