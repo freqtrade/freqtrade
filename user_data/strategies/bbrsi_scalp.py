@@ -30,7 +30,7 @@ class bbrsi_scalp(WAOStrategy):
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # Trailing stop:
+    # trailing stoploss
     trailing_stop = True
     trailing_stop_positive = 0.186
     trailing_stop_positive_offset = 0.228
