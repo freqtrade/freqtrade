@@ -799,7 +799,7 @@ class FreqaiDataKitchen:
         max_timeframe_chars = self.freqai_config.get(
             "feature_parameters", {}).get("include_timeframes")[-1]
         max_period = self.freqai_config.get("feature_parameters", {}).get(
-            "indicator_max_period", 50
+            "indicator_max_period_candles", 50
         )
         additional_seconds = 0
         if max_timeframe_chars[-1] == "d":

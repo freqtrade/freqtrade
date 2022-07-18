@@ -408,12 +408,9 @@ It is common to want constant retraining, in whichcase, user should set `live_re
 
 ### Controlling the model learning process
 
-The user can define model settings for the data split `data_split_parameters` and learning parameters
-`model_training_parameters`. Users are encouraged to visit the Catboost documentation
-for more information on how to select these values. `n_estimators` increases the
-computational effort and the fit to the training data. If a user has a GPU
-installed in their system, they may benefit from changing `task_type` to `GPU`.
-The `weight_factor` allows the user to weight more recent data more strongly
+Model training parameters are unqiue to the library employed by the user. FreqAI allows users to set any parameter for any library using the `model_training_parameters` dictionary in the user configuration file. The example configuration files show some of the example parameters associated with `Catboost` and `LightGBM`, but users can add any parameters available in those libraries. 
+
+Data split parameters are defined in `data_split_parameters` which can be any parameters associated with `Sklearn`'s `train_test_split()` function. Meanwhile, FreqAI includes some additional parameters such `weight_factor` which allows the user to weight more recent data more strongly
 than past data via an exponential function:
 
 $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
@@ -422,7 +419,9 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points._
 
 ![weight-factor](assets/weights_factor.png)
 
-Finally, `period` defines the offset used for the `labels`. In the present example,
+`train_test_split()` has a parameters called `shuffle`, which users also have access to in FreqAI, that allows them to keep the data unshuffled. This is particularly useful to avoid biasing training with temporally autocorrelated data.
+ 
+Finally, `label_period_candles` defines the offset used for the `labels`. In the present example,
 the user is asking for `labels` that are 24 candles in the future.
 
 ### Removing outliers with the Dissimilarity Index
