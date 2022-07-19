@@ -676,9 +676,8 @@ class FreqaiDataKitchen:
         training than older data.
         """
         wfactor = self.config["freqai"]["feature_parameters"]["weight_factor"]
-        weights = np.zeros(num_weights)
-        weights[1:] = np.exp(
-            - np.arange(1, len(weights)) / (wfactor * num_weights))[::-1]
+        weights = np.exp(
+            - np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
     def append_predictions(self, predictions, do_predict, len_dataframe):
