@@ -39,11 +39,7 @@ class BaseRegressionModel(IFreqaiModel):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        start_date = unfiltered_dataframe["date"].iloc[0]
-        end_date = unfiltered_dataframe["date"].iloc[-1]
         logger.info("-------------------- Starting training " f"{pair} --------------------")
-        logger.info("-------------------- Using data "
-                    f"from {start_date} to {end_date}--------------------")
 
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
@@ -53,6 +49,10 @@ class BaseRegressionModel(IFreqaiModel):
             training_filter=True,
         )
 
+        start_date = unfiltered_dataframe["date"].iloc[0].strftime("%Y-%m-%d")
+        end_date = unfiltered_dataframe["date"].iloc[-1].strftime("%Y-%m-%d")
+        logger.info(f"-------------------- Training on data from {start_date} to "
+                    f"{end_date}--------------------")
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
         if not self.freqai_info.get('fit_live_predictions', 0):
