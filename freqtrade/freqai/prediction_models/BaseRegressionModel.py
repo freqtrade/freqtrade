@@ -42,7 +42,8 @@ class BaseRegressionModel(IFreqaiModel):
         start_date = unfiltered_dataframe["date"].iloc[0]
         end_date = unfiltered_dataframe["date"].iloc[-1]
         logger.info("-------------------- Starting training " f"{pair} --------------------")
-        logger.info("-------------------- Using data " f"from {start_date} to {end_date}--------------------")
+        logger.info("-------------------- Using data "
+                    f"from {start_date} to {end_date}--------------------")
 
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
