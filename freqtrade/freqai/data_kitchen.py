@@ -680,12 +680,9 @@ class FreqaiDataKitchen:
         Set weights so that recent data is more heavily weighted during
         training than older data.
         """
-
-        weights = np.zeros(num_weights)
-        for i in range(1, len(weights)):
-            weights[len(weights) - i] = np.exp(
-                -i / (self.config["freqai"]["feature_parameters"]["weight_factor"] * num_weights)
-            )
+        wfactor = self.config["freqai"]["feature_parameters"]["weight_factor"]
+        weights = np.exp(
+            - np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
     def append_predictions(self, predictions, do_predict, len_dataframe):
