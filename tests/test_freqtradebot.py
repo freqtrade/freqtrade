@@ -5564,6 +5564,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
 
 def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     """
+    TODO: Should be adjusted to test both long and short
     buy 100 @ 11
     sell 50 @ 8
     sell 50 @ 16
@@ -5637,7 +5638,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.open_order_id is None
     assert trade.open_rate == bid
     assert trade.stake_amount == bid * amount
-    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated(trade.entry_side)
 
     freqtrade.manage_open_orders()
 
@@ -5647,7 +5648,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.open_order_id is None
     assert trade.open_rate == bid
     assert trade.stake_amount == bid * amount
-    assert not trade.fee_updated('buy')
+    assert not trade.fee_updated(trade.entry_side)
 
     amount = 50
     ask = 8
@@ -5729,7 +5730,8 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert trade.amount == 50
     assert trade.open_rate == 11
     assert trade.stake_amount == 550
-    assert pytest.approx(trade.realized_profit) == -152.375
+    # Trade fully realized
+    assert pytest.approx(trade.realized_profit) == 94.25
     assert pytest.approx(trade.close_profit_abs) == 94.25
     orders = Order.query.all()
     assert orders
