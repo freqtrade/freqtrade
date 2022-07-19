@@ -20,7 +20,7 @@ from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, PairWithTimeframe)
+                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -79,6 +79,7 @@ class Exchange:
         "ccxt_futures_name": "swap",
         "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -175,23 +176,11 @@ class Exchange:
         logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
-            # Check if timeframe is available
-            self.validate_timeframes(config.get('timeframe'))
-
             # Initial markets load
             self._load_markets()
-
-            # Check if all pairs are available
-            self.validate_stakecurrency(config['stake_currency'])
-            if not exchange_config.get('skip_pair_validation'):
-                self.validate_pairs(config['exchange']['pair_whitelist'])
-            self.validate_ordertypes(config.get('order_types', {}))
-            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_config(config)
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
-            self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['exit_pricing'])
-            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -213,6 +202,20 @@ class Exchange:
                 and self._api_async.session):
             logger.info("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
+
+    def validate_config(self, config):
+        # Check if timeframe is available
+        self.validate_timeframes(config.get('timeframe'))
+
+        # Check if all pairs are available
+        self.validate_stakecurrency(config['stake_currency'])
+        if not config['exchange'].get('skip_pair_validation'):
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+        self.validate_ordertypes(config.get('order_types', {}))
+        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+        self.validate_pricing(config['exit_pricing'])
+        self.validate_pricing(config['entry_pricing'])
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
@@ -423,7 +426,7 @@ class Exchange:
         if 'symbol' in order and order['symbol'] is not None:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
-                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
                         order[prop] = order[prop] * contract_size
         return order
@@ -586,13 +589,10 @@ class Exchange:
         """
         Checks if order-types configured in strategy/config are supported
         """
-        # TODO: Reenable once ccxt fixes createMarketOrder assignment - as well as
-        # Revert the change in test_validate_ordertypes.
-
-        # if any(v == 'market' for k, v in order_types.items()):
-        #     if not self.exchange_has('createMarketOrder'):
-        #         raise OperationalException(
-        #             f'Exchange {self.name} does not support market orders.')
+        if any(v == 'market' for k, v in order_types.items()):
+            if not self.exchange_has('createMarketOrder'):
+                raise OperationalException(
+                    f'Exchange {self.name} does not support market orders.')
 
         if (order_types.get("stoploss_on_exchange")
                 and not self._ft_has.get("stoploss_on_exchange", False)):
@@ -824,7 +824,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate / leverage,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'filled': 0,
@@ -850,20 +850,27 @@ class Exchange:
                 'filled': _amount,
                 'cost': (dry_order['amount'] * average) / leverage
             })
-            dry_order = self.add_dry_order_fee(pair, dry_order)
+            # market orders will always incurr taker fees
+            dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
-        dry_order = self.check_dry_limit_order_filled(dry_order)
+        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True)
 
         self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def add_dry_order_fee(self, pair: str, dry_order: Dict[str, Any]) -> Dict[str, Any]:
+    def add_dry_order_fee(
+        self,
+        pair: str,
+        dry_order: Dict[str, Any],
+        taker_or_maker: MakerTaker,
+    ) -> Dict[str, Any]:
+        fee = self.get_fee(pair, taker_or_maker=taker_or_maker)
         dry_order.update({
             'fee': {
                 'currency': self.get_pair_quote_currency(pair),
-                'cost': dry_order['cost'] * self.get_fee(pair),
-                'rate': self.get_fee(pair)
+                'cost': dry_order['cost'] * fee,
+                'rate': fee
             }
         })
         return dry_order
@@ -929,7 +936,8 @@ class Exchange:
             pass
         return False
 
-    def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    def check_dry_limit_order_filled(
+            self, order: Dict[str, Any], immediate: bool = False) -> Dict[str, Any]:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
@@ -943,7 +951,12 @@ class Exchange:
                     'filled': order['amount'],
                     'remaining': 0,
                 })
-                self.add_dry_order_fee(pair, order)
+
+                self.add_dry_order_fee(
+                    pair,
+                    order,
+                    'taker' if immediate else 'maker',
+                )
 
         return order
 
@@ -1631,7 +1644,7 @@ class Exchange:
 
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
+                price: float = 1, taker_or_maker: MakerTaker = 'maker') -> float:
         try:
             if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']
@@ -1679,7 +1692,7 @@ class Exchange:
         fee_curr = fee.get('currency')
         if fee_curr is None:
             return None
-        fee_cost = fee['cost']
+        fee_cost = float(fee['cost'])
         if self._ft_has['fee_cost_in_contracts']:
             # Convert cost via "contracts" conversion
             fee_cost = self._contracts_to_amount(symbol, fee['cost'])
@@ -1687,7 +1700,7 @@ class Exchange:
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(fee['cost'] / amount, 8)
+            return round(fee_cost / amount, 8)
         elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
             return round(fee_cost / cost, 8) if cost else None
@@ -1718,7 +1731,7 @@ class Exchange:
         :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (fee['cost'],
+        return (float(fee['cost']),
                 fee['currency'],
                 self.calculate_fee_rate(
                     fee,

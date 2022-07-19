@@ -97,7 +97,8 @@ Example configuration showing the different settings:
         "entry_fill": "off",
         "exit_fill": "off",
         "protection_trigger": "off",
-        "protection_trigger_global": "on"
+        "protection_trigger_global": "on",
+        "show_candle": "off"
     },
     "reload": true,
     "balance_dust_level": 0.01
@@ -108,7 +109,7 @@ Example configuration showing the different settings:
 `exit` notifications are sent when the order is placed, while `exit_fill` notifications are sent when the order is filled on the exchange.
 `*_fill` notifications are off by default and must be explicitly enabled.
 `protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.
-
+`show_candle` - show candle values as part of entry/exit messages. Only possible value is "ohlc".
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 `reload` allows you to disable reload-buttons on selected messages.

@@ -153,6 +153,25 @@ class TestCCXTExchange():
         assert isinstance(markets[pair], dict)
         assert exchange.market_is_spot(markets[pair])
 
+    def test_has_validations(self, exchange):
+
+        exchange, exchangename = exchange
+
+        exchange.validate_ordertypes({
+            'entry': 'limit',
+            'exit': 'limit',
+            'stoploss': 'limit',
+            })
+
+        if exchangename == 'gateio':
+            # gateio doesn't have market orders on spot
+            return
+        exchange.validate_ordertypes({
+            'entry': 'market',
+            'exit': 'market',
+            'stoploss': 'market',
+            })
+
     def test_load_markets_futures(self, exchange_futures):
         exchange, exchangename = exchange_futures
         if not exchange:
