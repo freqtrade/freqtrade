@@ -410,6 +410,11 @@ class FreqaiDataKitchen:
         bt_split: the backtesting length (dats). Specified in user configuration file
         """
 
+        if not isinstance(train_split, int) or train_split < 1:
+            raise OperationalException(
+                "train_period_days must be an integer greater than 0. "
+                f"Got {train_split}."
+            )
         train_period_days = train_split * SECONDS_IN_DAY
         bt_period = bt_split * SECONDS_IN_DAY
 
@@ -742,6 +747,13 @@ class FreqaiDataKitchen:
         return
 
     def create_fulltimerange(self, backtest_tr: str, backtest_period_days: int) -> str:
+
+        if not isinstance(backtest_period_days, int):
+            raise OperationalException('backtest_period_days must be an integer')
+
+        if backtest_period_days < 0:
+            raise OperationalException('backtest_period_days must be positive')
+
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
 
         if backtest_timerange.stopts == 0:
@@ -868,30 +880,6 @@ class FreqaiDataKitchen:
         )
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
-
-        # self.freqai_config['live_trained_timerange'] = str(int(trained_timerange.stopts))
-        # enables persistence, but not fully implemented into save/load data yer
-        # self.data['live_trained_timerange'] = str(int(trained_timerange.stopts))
-
-    # SUPERCEDED
-    # def download_new_data_for_retraining(self, timerange: TimeRange, metadata: dict,
-    #                                      strategy: IStrategy) -> None:
-
-    #     exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'],
-    #                                               self.config, validate=False, freqai=True)
-    #     # exchange = strategy.dp._exchange # closes ccxt session
-    #     pairs = copy.deepcopy(self.freqai_config.get('corr_pairlist', []))
-    #     if str(metadata['pair']) not in pairs:
-    #         pairs.append(str(metadata['pair']))
-
-    #     refresh_backtest_ohlcv_data(
-    #                     exchange, pairs=pairs, timeframes=self.freqai_config.get('timeframes'),
-    #                     datadir=self.config['datadir'], timerange=timerange,
-    #                     new_pairs_days=self.config['new_pairs_days'],
-    #                     erase=False, data_format=self.config.get('dataformat_ohlcv', 'json'),
-    #                     trading_mode=self.config.get('trading_mode', 'spot'),
-    #                     prepend=self.config.get('prepend_data', False)
-    #                 )
 
     def download_all_data_for_training(self, timerange: TimeRange) -> None:
         """
