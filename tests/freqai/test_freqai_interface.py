@@ -9,11 +9,8 @@ from unittest.mock import MagicMock
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from tests.conftest import get_patched_exchange, log_has
+from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import freqai_conf, get_patched_freqai_strategy
-
-
-# import pytest
 
 
 def test_train_model_in_series_LightGBM(mocker, default_conf):
@@ -175,8 +172,9 @@ def test_start_backtesting_from_existing_folder(mocker, default_conf, caplog):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
     freqai.start_backtesting(df, metadata, freqai.dk)
-    assert log_has(
-        "Found model at user_data/models/uniqe-id100/sub-train-ADA1517097600/cb_ada_1517097600",
+
+    assert log_has_re(
+        "Found model at ",
         caplog,
     )
 
