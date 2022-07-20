@@ -170,11 +170,10 @@ class IFreqaiModel(ABC):
             gc.collect()
             dk.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
-            # self.training_timerange_timerange = tr_train
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
-            trained_timestamp = tr_train  # TimeRange.parse_timerange(tr_train)
+            trained_timestamp = tr_train
             tr_train_startts_str = datetime.datetime.utcfromtimestamp(tr_train.startts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )

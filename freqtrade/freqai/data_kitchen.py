@@ -690,8 +690,6 @@ class FreqaiDataKitchen:
         Append backtest prediction from current backtest period to all previous periods
         """
 
-        # ones = np.ones(len(predictions))
-        # target_mean, target_std = ones * self.data["target_mean"], ones * self.data["target_std"]
         self.append_df = DataFrame()
         for label in self.label_list:
             self.append_df[label] = predictions[label]
@@ -706,13 +704,6 @@ class FreqaiDataKitchen:
             self.full_df = self.append_df
         else:
             self.full_df = pd.concat([self.full_df, self.append_df], axis=0)
-
-        # self.full_predictions = np.append(self.full_predictions, predictions)
-        # self.full_do_predict = np.append(self.full_do_predict, do_predict)
-        # if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
-        #     self.full_DI_values = np.append(self.full_DI_values, self.DI_values)
-        # self.full_target_mean = np.append(self.full_target_mean, target_mean)
-        # self.full_target_std = np.append(self.full_target_std, target_std)
 
         return
 
@@ -734,12 +725,6 @@ class FreqaiDataKitchen:
 
         self.append_df = DataFrame()
         self.full_df = DataFrame()
-        # self.full_predictions = np.append(filler, self.full_predictions)
-        # self.full_do_predict = np.append(filler, self.full_do_predict)
-        # if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
-        #     self.full_DI_values = np.append(filler, self.full_DI_values)
-        # self.full_target_mean = np.append(filler, self.full_target_mean)
-        # self.full_target_std = np.append(filler, self.full_target_std)
 
         return
 
