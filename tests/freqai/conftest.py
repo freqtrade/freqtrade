@@ -16,8 +16,8 @@ def freqai_conf(default_conf):
     freqaiconf.update(
         {
             "datadir": Path(default_conf["datadir"]),
-            "strategy": "FreqaiExampleStrategy",
-            "strategy-path": "freqtrade/templates",
+            "strategy": "freqai_test_strat",
+            "strategy-path": "freqtrade/tests/strategy/strats",
             "freqaimodel": "LightGBMPredictionModel",
             "freqaimodel_path": "freqai/prediction_models",
             "timerange": "20180110-20180115",
