@@ -191,6 +191,7 @@ def detect_parameters(
                         and attr.category is not None and attr.category != category):
                     raise OperationalException(
                         f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
+
                 if (category == attr.category or
                         (attr_name.startswith(category + '_') and attr.category is None)):
                     yield attr_name, attr

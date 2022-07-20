@@ -722,7 +722,7 @@ class Backtesting:
                 pair=pair, current_time=current_time, current_rate=propose_rate,
                 proposed_stake=stake_amount, min_stake=min_stake_amount,
                 max_stake=min(stake_available, max_stake_amount),
-                entry_tag=entry_tag, side=direction)
+                leverage=leverage, entry_tag=entry_tag, side=direction)
 
         stake_amount_val = self.wallets.validate_stake_amount(
             pair=pair,

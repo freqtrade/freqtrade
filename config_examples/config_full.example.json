@@ -155,7 +155,8 @@
             "entry_cancel": "on",
             "exit_cancel": "on",
             "protection_trigger": "off",
-            "protection_trigger_global": "on"
+            "protection_trigger_global": "on",
+            "show_candle": "off"
         },
         "reload": true,
         "balance_dust_level": 0.01
