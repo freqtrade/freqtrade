@@ -180,8 +180,8 @@ class IFreqaiModel(ABC):
             tr_train_stopts_str = datetime.datetime.utcfromtimestamp(tr_train.stopts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
-            logger.info("Training %s", metadata["pair"])
-            logger.info(f"Training {tr_train_startts_str} to {tr_train_stopts_str}")
+            logger.info(f"Training {metadata['pair']}")
+            logger.info(f" from {tr_train_startts_str} to {tr_train_stopts_str}")
 
             dk.data_path = Path(
                 dk.full_path

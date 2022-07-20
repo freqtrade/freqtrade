@@ -60,7 +60,7 @@ jobs:
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
-        pip install -r requirements-dev.txt
+        pip install -r requirements-dev.txt -r requirements-freqai.txt
         pip install -e .
 
     - name: Tests
@@ -159,7 +159,7 @@ jobs:
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
-        pip install -r requirements-dev.txt
+        pip install -r requirements-dev.txt -r requirements-freqai.txt
         pip install -e .
 
     - name: Tests
