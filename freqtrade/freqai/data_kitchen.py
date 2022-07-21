@@ -1010,38 +1010,6 @@ class FreqaiDataKitchen:
 
         return corr_dataframes, base_dataframes
 
-    # SUPERCEDED
-    # def load_pairs_histories(self, timerange: TimeRange, metadata: dict) -> Tuple[Dict[Any, Any],
-    #                                                                               DataFrame]:
-    #     corr_dataframes: Dict[Any, Any] = {}
-    #     base_dataframes: Dict[Any, Any] = {}
-    #     pairs = self.freqai_config.get('include_corr_pairlist', [])  # + [metadata['pair']]
-    #     # timerange = TimeRange.parse_timerange(new_timerange)
-
-    #     for tf in self.freqai_config.get('timeframes'):
-    #         base_dataframes[tf] = load_pair_history(datadir=self.config['datadir'],
-    #                                                 timeframe=tf,
-    #                                                 pair=metadata['pair'], timerange=timerange,
-    #                                                 data_format=self.config.get(
-    #                                                 'dataformat_ohlcv', 'json'),
-    #                                                 candle_type=self.config.get(
-    #                                                 'trading_mode', 'spot'))
-    #         if pairs:
-    #             for p in pairs:
-    #                 if metadata['pair'] in p:
-    #                     continue  # dont repeat anything from whitelist
-    #                 if p not in corr_dataframes:
-    #                     corr_dataframes[p] = {}
-    #                 corr_dataframes[p][tf] = load_pair_history(datadir=self.config['datadir'],
-    #                                                            timeframe=tf,
-    #                                                            pair=p, timerange=timerange,
-    #                                                            data_format=self.config.get(
-    #                                                            'dataformat_ohlcv', 'json'),
-    #                                                            candle_type=self.config.get(
-    #                                                            'trading_mode', 'spot'))
-
-    #     return corr_dataframes, base_dataframes
-
     def use_strategy_to_populate_indicators(
         self,
         strategy: IStrategy,
