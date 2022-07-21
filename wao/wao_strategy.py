@@ -16,6 +16,7 @@ class WAOStrategy(IStrategy):
     }
 
     def __init__(self, config: dict, brain, time_out_hours, dup):
+        print("found_it" + str(config.get("pair_whitelist")))
         super().__init__(config)
         print("found_it" + str(config.get("pair_whitelist")))
         self.controller = WAOStrategyController(brain, time_out_hours, dup)
