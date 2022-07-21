@@ -88,7 +88,8 @@ class FreqaiDataKitchen:
         )
 
         self.data_path = Path(
-            self.full_path / str("sub-train" + "-" + pair.split("/")[0] + str(trained_timestamp))
+            self.full_path
+            / str("sub-train" + "-" + pair.split("/")[0] + "_" + str(trained_timestamp))
         )
 
         return
@@ -179,6 +180,7 @@ class FreqaiDataKitchen:
             model = load(self.data_path / str(self.model_filename + "_model.joblib"))
         else:
             from tensorflow import keras
+
             model = keras.models.load_model(self.data_path / str(self.model_filename + "_model.h5"))
 
         if Path(self.data_path / str(self.model_filename + "_svm_model.joblib")).resolve().exists():
@@ -412,8 +414,7 @@ class FreqaiDataKitchen:
 
         if not isinstance(train_split, int) or train_split < 1:
             raise OperationalException(
-                "train_period_days must be an integer greater than 0. "
-                f"Got {train_split}."
+                "train_period_days must be an integer greater than 0. " f"Got {train_split}."
             )
         train_period_days = train_split * SECONDS_IN_DAY
         bt_period = bt_split * SECONDS_IN_DAY
@@ -566,8 +567,10 @@ class FreqaiDataKitchen:
         """
 
         if self.keras:
-            logger.warning("SVM outlier removal not currently supported for Keras based models. "
-                           "Skipping user requested function.")
+            logger.warning(
+                "SVM outlier removal not currently supported for Keras based models. "
+                "Skipping user requested function."
+            )
             if predict:
                 self.do_predict = np.ones(len(self.data_dictionary["prediction_features"]))
             return
@@ -681,8 +684,7 @@ class FreqaiDataKitchen:
         training than older data.
         """
         wfactor = self.config["freqai"]["feature_parameters"]["weight_factor"]
-        weights = np.exp(
-            - np.arange(num_weights) / (wfactor * num_weights))[::-1]
+        weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
     def append_predictions(self, predictions, do_predict, len_dataframe):
@@ -731,10 +733,10 @@ class FreqaiDataKitchen:
     def create_fulltimerange(self, backtest_tr: str, backtest_period_days: int) -> str:
 
         if not isinstance(backtest_period_days, int):
-            raise OperationalException('backtest_period_days must be an integer')
+            raise OperationalException("backtest_period_days must be an integer")
 
         if backtest_period_days < 0:
-            raise OperationalException('backtest_period_days must be positive')
+            raise OperationalException("backtest_period_days must be positive")
 
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
 
@@ -743,8 +745,9 @@ class FreqaiDataKitchen:
                 datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
             )
 
-        backtest_timerange.startts = (backtest_timerange.startts
-                                      - backtest_period_days * SECONDS_IN_DAY)
+        backtest_timerange.startts = (
+            backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
+        )
         start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
         stop = datetime.datetime.utcfromtimestamp(backtest_timerange.stopts)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
@@ -790,8 +793,9 @@ class FreqaiDataKitchen:
         data_load_timerange = TimeRange()
 
         # find the max indicator length required
-        max_timeframe_chars = self.freqai_config.get(
-            "feature_parameters", {}).get("include_timeframes")[-1]
+        max_timeframe_chars = self.freqai_config.get("feature_parameters", {}).get(
+            "include_timeframes"
+        )[-1]
         max_period = self.freqai_config.get("feature_parameters", {}).get(
             "indicator_max_period_candles", 50
         )
@@ -858,7 +862,7 @@ class FreqaiDataKitchen:
         coin, _ = pair.split("/")
         self.data_path = Path(
             self.full_path
-            / str("sub-train" + "-" + pair.split("/")[0] + str(int(trained_timerange.stopts)))
+            / str("sub-train" + "-" + pair.split("/")[0] + "_" + str(int(trained_timerange.stopts)))
         )
 
         self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
@@ -942,8 +946,9 @@ class FreqaiDataKitchen:
 
     def set_all_pairs(self) -> None:
 
-        self.all_pairs = copy.deepcopy(self.freqai_config.get(
-            'feature_parameters', {}).get('include_corr_pairlist', []))
+        self.all_pairs = copy.deepcopy(
+            self.freqai_config.get("feature_parameters", {}).get("include_corr_pairlist", [])
+        )
         for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
@@ -987,8 +992,9 @@ class FreqaiDataKitchen:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
             historic_data = self.dd.historic_data
-            pairs = self.freqai_config.get('feature_parameters', {}).get(
-                'include_corr_pairlist', [])
+            pairs = self.freqai_config.get("feature_parameters", {}).get(
+                "include_corr_pairlist", []
+            )
 
             for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
                 base_dataframes[tf] = self.slice_dataframe(timerange, historic_data[pair][tf])
@@ -1053,7 +1059,7 @@ class FreqaiDataKitchen:
         dataframe: DataFrame = dataframe containing populated indicators
         """
         dataframe = base_dataframes[self.config["timeframe"]].copy()
-        pairs = self.freqai_config.get('feature_parameters', {}).get('include_corr_pairlist', [])
+        pairs = self.freqai_config.get("feature_parameters", {}).get("include_corr_pairlist", [])
         sgi = True
         for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
             dataframe = strategy.populate_any_indicators(
@@ -1086,7 +1092,8 @@ class FreqaiDataKitchen:
         Fit the labels with a gaussian distribution
         """
         import scipy as spy
-        num_candles = self.freqai_config.get('fit_live_predictions_candles', 100)
+
+        num_candles = self.freqai_config.get("fit_live_predictions_candles", 100)
         self.data["labels_mean"], self.data["labels_std"] = {}, {}
         for label in self.label_list:
             f = spy.stats.norm.fit(self.dd.historic_predictions[self.pair][label].tail(num_candles))

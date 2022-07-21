@@ -189,6 +189,7 @@ class IFreqaiModel(ABC):
                     "sub-train"
                     + "-"
                     + metadata["pair"].split("/")[0]
+                    + "_"
                     + str(int(trained_timestamp.stopts))
                 )
             )
