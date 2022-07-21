@@ -889,7 +889,7 @@ class LocalTrade():
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
         elif is_closing and total_stake > 0:
             # Close profit abs / maximum owned
-            # TODO: Simplified - missing fees!
+            # Fees are considered as they are part of close_profit_abs
             self.close_profit = (close_profit_abs / total_stake) * self.leverage
 
     def select_order_by_order_id(self, order_id: str) -> Optional[Order]:

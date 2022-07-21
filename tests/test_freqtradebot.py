@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=protected-access, too-many-lines, invalid-name, too-many-arguments
+
 import logging
 import time
 from copy import deepcopy
@@ -5746,20 +5747,20 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
 @pytest.mark.parametrize('data', [
     (
         # tuple 1 - side amount, price
-        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit
-        (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None)),
-        (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None)),
-        (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625)),
-        (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875)),
-        (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, 336.625)),
+        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
+        (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
+        (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
+        (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625, -0.044788)),
+        (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875, 0.59201995)),
+        (('sell', 50, 5), (50.0, 12.5, 625.0, 336.625, 336.625, 0.13465)),  # final profit (sum)
     ),
     (
-        (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None)),
-        (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None)),
-        (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0)),
-        (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0)),
-        (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5)),
-        (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 3175.75)),
+        (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
+        (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
+        (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0, 1.189027)),
+        (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0, 1.189027)),
+        (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5, 0.7186579)),
+        (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 3175.75, 0.977153)),  # final profit (sum)
     )
 ])
 def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
@@ -5833,6 +5834,7 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
         assert trade.stake_amount == result[2]
         assert pytest.approx(trade.realized_profit) == result[3]
         assert pytest.approx(trade.close_profit_abs) == result[4]
+        assert pytest.approx(trade.close_profit) == result[5]
 
         order_obj = trade.select_order(order[0], False)
         assert order_obj.order_id == f'60{idx}'
