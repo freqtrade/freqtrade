@@ -5760,7 +5760,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
         (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0, 1.189027)),
         (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0, 1.189027)),
         (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5, 0.7186579)),
-        (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 3175.75, 0.977153)),  # final profit (sum)
+        (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 3175.75, 0.977153)),  # final profit
     )
 ])
 def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:

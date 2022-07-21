@@ -178,10 +178,9 @@ class Order(_DECL_BASE):
         self.remaining = 0
         self.status = 'closed'
         self.ft_is_open = False
-        if (self.ft_order_side == trade.entry_side
-                and len(trade.select_filled_orders(trade.entry_side)) == 1):
+        if (self.ft_order_side == trade.entry_side):
             trade.open_rate = self.price
-            trade.recalc_open_trade_value()
+            trade.recalc_trade_from_orders()
             trade.adjust_stop_loss(trade.open_rate, trade.stop_loss_pct, refresh=True)
 
     @staticmethod
