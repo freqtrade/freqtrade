@@ -106,6 +106,10 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.dd, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
+
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = self.remove_features_from_df(dk.return_dataframe)
