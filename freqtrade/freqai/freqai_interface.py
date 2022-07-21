@@ -73,6 +73,8 @@ class IFreqaiModel(ABC):
             self.freqai_info["feature_parameters"]["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
+        self.pair_it = 0
+        self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -164,6 +166,8 @@ class IFreqaiModel(ABC):
         dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
+        self.pair_it += 1
+        train_it = 0
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
@@ -171,6 +175,8 @@ class IFreqaiModel(ABC):
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
             (_, _, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
+            train_it += 1
+            total_trains = len(dk.backtesting_timeranges)
             gc.collect()
             dk.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
@@ -184,8 +190,11 @@ class IFreqaiModel(ABC):
             tr_train_stopts_str = datetime.datetime.utcfromtimestamp(tr_train.stopts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
-            logger.info(f"Training {metadata['pair']}")
-            logger.info(f" from {tr_train_startts_str} to {tr_train_stopts_str}")
+            logger.info(
+                f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
+                f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                "trains"
+            )
 
             dk.data_path = Path(
                 dk.full_path
