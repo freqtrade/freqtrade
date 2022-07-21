@@ -16,9 +16,9 @@ class WAOStrategy(IStrategy):
     }
 
     def __init__(self, config: dict, brain, time_out_hours, dup):
-        print("found_it" + str(config))
+        print("found_it" + str(config.get('pairs')))
         super().__init__(config)
-        print("found_it" + str(config))
+        print("found_it" + str(config.get('pairs')))
         self.controller = WAOStrategyController(brain, time_out_hours, dup)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,

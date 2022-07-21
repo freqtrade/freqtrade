@@ -13,7 +13,7 @@ class bbrsi_scalp(WAOStrategy):
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
-        print("found_it" + str(config))
+        print("found_it" + str(config.get('pairs')))
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
