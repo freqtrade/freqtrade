@@ -1,3 +1,5 @@
+![freqai-logo](assets/freqai_logo_no_md.svg)
+
 # FreqAI
 
 FreqAI is a module designed to automate a variety of tasks associated with
@@ -516,7 +518,7 @@ The user can tell Freqai to remove outlier data points from the training/test da
 ```json
     "freqai": {
         "feature_parameters" : {
-            "use_SVM_to_remove_outliers: true
+            "use_SVM_to_remove_outliers": true
         }
     }
 ```
