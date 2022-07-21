@@ -140,29 +140,9 @@ class freqai_test_strat(IStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         self.freqai_info = self.config["freqai"]
-        self.pair = metadata["pair"]
-        sgi = True
-        # the following loops are necessary for building the features
-        # indicated by the user in the configuration file.
+
         # All indicators must be populated by populate_any_indicators() for live functionality
         # to work correctly.
-        for tf in self.freqai_info["feature_parameters"]["include_timeframes"]:
-            dataframe = self.populate_any_indicators(
-                metadata,
-                self.pair,
-                dataframe.copy(),
-                tf,
-                coin=self.pair.split("/")[0] + "-",
-                set_generalized_indicators=sgi,
-            )
-            sgi = False
-            for pair in self.freqai_info["feature_parameters"]["include_corr_pairlist"]:
-                if metadata["pair"] in pair:
-                    continue  # do not include whitelisted pair twice if it is in corr_pairlist
-                dataframe = self.populate_any_indicators(
-                    metadata, pair, dataframe.copy(), tf, coin=pair.split("/")[0] + "-"
-                )
-
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.

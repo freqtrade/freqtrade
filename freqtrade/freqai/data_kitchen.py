@@ -1043,7 +1043,12 @@ class FreqaiDataKitchen:
     #     return corr_dataframes, base_dataframes
 
     def use_strategy_to_populate_indicators(
-        self, strategy: IStrategy, corr_dataframes: dict, base_dataframes: dict, pair: str
+        self,
+        strategy: IStrategy,
+        corr_dataframes: dict = {},
+        base_dataframes: dict = {},
+        pair: str = "",
+        prediction_dataframe: DataFrame = pd.DataFrame(),
     ) -> DataFrame:
         """
         Use the user defined strategy for populating indicators during
@@ -1058,16 +1063,31 @@ class FreqaiDataKitchen:
         :returns:
         dataframe: DataFrame = dataframe containing populated indicators
         """
-        dataframe = base_dataframes[self.config["timeframe"]].copy()
+
+        # for prediction dataframe creation, we let dataprovider handle everything in the strategy
+        # so we create empty dictionaries, which allows us to pass None to
+        # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
+        tfs = self.freqai_config.get("feature_parameters", {}).get("include_timeframes")
         pairs = self.freqai_config.get("feature_parameters", {}).get("include_corr_pairlist", [])
+        if not prediction_dataframe.empty:
+            dataframe = prediction_dataframe.copy()
+            for tf in tfs:
+                base_dataframes[tf] = None
+                for p in pairs:
+                    if p not in corr_dataframes:
+                        corr_dataframes[p] = {}
+                    corr_dataframes[p][tf] = None
+        else:
+            dataframe = base_dataframes[self.config["timeframe"]].copy()
+
         sgi = True
-        for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
+        for tf in tfs:
             dataframe = strategy.populate_any_indicators(
                 pair,
                 pair,
                 dataframe.copy(),
                 tf,
-                base_dataframes[tf],
+                informative=base_dataframes[tf],
                 coin=pair.split("/")[0] + "-",
                 set_generalized_indicators=sgi,
             )
@@ -1081,7 +1101,7 @@ class FreqaiDataKitchen:
                         i,
                         dataframe.copy(),
                         tf,
-                        corr_dataframes[i][tf],
+                        informative=corr_dataframes[i][tf],
                         coin=i.split("/")[0] + "-",
                     )
 

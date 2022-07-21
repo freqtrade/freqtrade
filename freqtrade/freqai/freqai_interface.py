@@ -281,6 +281,10 @@ class IFreqaiModel(ABC):
         # load the model and associated data into the data kitchen
         self.model = dk.load_data(coin=metadata["pair"])
 
+        dataframe = self.dk.use_strategy_to_populate_indicators(
+            strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+        )
+
         if not self.model:
             logger.warning(
                 f"No model ready for {metadata['pair']}, returning null values to strategy."
