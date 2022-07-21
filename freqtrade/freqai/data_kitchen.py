@@ -741,9 +741,16 @@ class FreqaiDataKitchen:
         backtest_timerange = TimeRange.parse_timerange(backtest_tr)
 
         if backtest_timerange.stopts == 0:
-            backtest_timerange.stopts = int(
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-            )
+            # typically open ended time ranges do work, however, there are some edge cases where
+            # it does not. accomodating these kinds of edge cases just to allow open-ended
+            # timerange is not high enough priority to warrant the effort. It is safer for now
+            # to simply ask user to add their end date
+            raise OperationalException("FreqAI backtesting does not allow open ended timeranges. "
+                                       "Please indicate the end date of your desired backtesting. "
+                                       "timerange.")
+            # backtest_timerange.stopts = int(
+            #     datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+            # )
 
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
