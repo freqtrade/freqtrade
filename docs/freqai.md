@@ -1,30 +1,26 @@
-# Freqai
+# FreqAI
 
-!!! Note
-        Freqai is still experimental, and should be used at the user's own discretion.
-
-Freqai is a module designed to automate a variety of tasks associated with
+FreqAI is a module designed to automate a variety of tasks associated with
 training a predictive model to provide signals based on input features.
 
 Among the the features included:
 
-* Easy large feature set construction based on simple user input
-* Sweep model training and backtesting to simulate consistent model retraining through time
-* Smart outlier removal of data points from prediction sets using a Dissimilarity Index.
-* Data dimensionality reduction with Principal Component Analysis
-* Automatic file management for storage of models to be reused during live
-* Smart and safe data standardization
-* Cleaning of NaNs from the data set before training and prediction.
-* Automated live retraining (still VERY experimental. Proceed with caution.)
+* Create large rich feature sets (10k+ features) based on simple user created strategies.
+* Sweep model training and backtesting to simulate consistent model retraining through time.
+* Remove outliers automatically from training and prediction sets using a Dissimilarity Index and Support Vector Machines.
+* Reduce the dimensionality of the data with Principal Component Analysis.
+* Store models to disk to make reloading from a crash fast and easy (and purge obsolete files automatically for sustained dry/live runs.)
+* Normalize the data automatically in a smart and statistically safe way.
+* Automated data download and data handling.
+* Clean the incoming data and of NaNs in a safe way and before training and prediction.
+* Retrain live automatically so that the model self-adapts to the market in an unsupervised manner.
 
 ## General approach
 
 The user provides FreqAI with a set of custom indicators (created inside the strategy the same way
-a typical Freqtrade strategy is created) as well as a target value (typically some price change into
-the future). FreqAI trains a model to predict the target value based on the input of custom indicators. 
+a typical Freqtrade strategy is created) as well as a target value (typically some price change into the future). FreqAI trains a model to predict the target value based on the input of custom indicators.
 FreqAI will train and save a new model for each pair in the config whitelist. 
-Users employ FreqAI to backtest a strategy (emulate reality with retraining a model as new data is 
-introduced) and run the model live to generate buy and sell signals. 
+Users employ FreqAI to backtest a strategy (emulate reality with retraining a model as new data is introduced) and run the model live to generate buy and sell signals. In dry/live, FreqAI works in a background thread to keep all models as updated as possible with consistent retraining.
 
 ## Background and vocabulary
 
@@ -58,16 +54,54 @@ Use `pip` to install the prerequisites with:
 ## Running from the example files
 
 An example strategy, an example prediction model, and example config can all be found in 
-`freqtrade/templates/ExampleFreqaiStrategy.py`, 
-`freqtrade/freqai/prediction_models/CatboostPredictionModel.py`, 
-`config_examples/config_freqai.example.json`, respectively. Assuming the user has downloaded
+`freqtrade/templates/FreqaiExampleStrategy.py`, 
+`freqtrade/freqai/prediction_models/LightGBMPredictionModel.py`, 
+`config_examples/config_freqai_futures.example.json`, respectively. Assuming the user has downloaded
 the necessary data, Freqai can be executed from these templates with:
 
 ```bash
-freqtrade backtesting --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel CatboostPredictionModel --strategy-path freqtrade/templates --timerange 20220101-20220201
+freqtrade backtesting --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMPredictionModel --strategy-path freqtrade/templates --timerange 20220101-20220201
 ```
 
 ## Configuring the bot
+
+The table below will list all configuration parameters available for `FreqAI`.
+
+Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
+
+|  Parameter | Description |
+|------------|-------------|
+| `freqai` | **Required.** The dictionary containing all the parameters for controlling FreqAI. <br> **Datatype:** dictionary.
+| `identifier` | **Required.** A unique name for the current model. This can be reused to reload pretrained models/data. <br> **Datatype:** string.
+| `train_period_days` | **Required.** Number of days to use for the training data (width of the sliding window). <br> **Datatype:** positive integer.
+| `backtest_period_days` | **Required.** Number of days to inference into the trained model before sliding the window and retraining. This can be fractional days, but beware that the user provided `timerange` will be divided by this number to yield the number of trainings necessary to complete the backtest. <br> **Datatype:** Float.
+| `live_retrain_hours` | Frequency of retraining during dry/live runs. Default set to 0, which means it will retrain as often as possible. **Datatype:** Float > 0.
+| `follow_mode` | If true, this instance of FreqAI will look for models associated with `identifier` and load those for inferencing. A `follower` will **not** train new models. False by default. <br> **Datatype:** boolean.
+| `live_trained_timestamp` | Useful if user wants to start from models trained during a *backtest*. The timestamp can be located in the `user_data/models` backtesting folder. This is not a commonly used parameter, leave undefined for most applications. <br> **Datatype:** positive integer.
+| `fit_live_predictions_candles` | Computes target (label) statistics from prediction data, instead of from the training data set. Number of candles is the number of historical candles it uses to generate the statistics. <br> **Datatype:** positive integer.
+|  |  **Feature Parameters**
+| `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples shown [here](#building-the-feature-set) <br> **Datatype:** dictionary.
+| `include_corr_pairlist` | A list of correlated coins that FreqAI will add as additional features to all `pair_whitelist` coins. All indicators set in `populate_any_indicators` will be created for each coin in this list, and that set of features is added to the base asset feature set. <br> **Datatype:** list of assets (strings).
+| `include_timeframes` | A list of timeframes that all indicators in `populate_any_indicators` will be created for and added as features to the base asset feature set. <br> **Datatype:** list of timeframes (strings).
+| `label_period_candles` | Number of candles into the future that the labels are created for. This is used in `populate_any_indicators`, refer to `templates/FreqaiExampleStrategy.py` for detailed usage. The user can create custom labels, making use of this parameter not. <br> **Datatype:** positive integer.
+| `include_shifted_candles` | Parameter used to add a sense of temporal recency to flattened regression type input data. `include_shifted_candles` takes all features, duplicates and shifts them by the number indicated by user. <br> **Datatype:** positive integer.
+| `DI_threshold` | Activates the Dissimilarity Index for outlier detection when above 0, explained more [here](#removing-outliers-with-the-dissimilarity-index). <br> **Datatype:** positive float (typically below 1).
+| `weight_factor` | Used to set weights for training data points according to their recency, see details and a figure of how it works [here](##controlling-the-model-learning-process). <br> **Datatype:** positive float (typically below 1).
+| `principal_component_analysis` | Ask FreqAI to automatically reduce the dimensionality of the data set using PCA. <br> **Datatype:** boolean.
+| `use_SVM_to_remove_outliers` | Ask FreqAI to train a support vector machine to detect and remove outliers from the training data set as well as from incoming data points. <br> **Datatype:** boolean.
+| `svm_nu` | The `nu` parameter for the support vector machine. *Very* broadly, this is the percentage of data points that should be considered outliers. <br> **Datatype:** float between 0 and 1.
+| `stratify_training_data` | This value is used to indicate the stratification of the data. e.g. 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. <br> **Datatype:** positive integer.
+| `indicator_max_period_candles` | The maximum *period* used in `populate_any_indicators()` for indicator creation. FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
+| `indicator_periods_candles` | A list of integers used to duplicate all indicators according to a set of periods and add them to the feature set. <br> **Datatype:** list of positive integers.
+|  |  **Data split parameters** 
+| `data_split_parameters` | include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) <br> **Datatype:** dictionary.
+| `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** positive float below 1.
+| `shuffle` | Shuffle the training data points during training. Typically for time-series forecasting, this is set to False. **Datatype:** boolean.
+|  |  **Model training parameters** 
+| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected library. For example, if the user uses `LightGBMPredictionModel`, then this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html). If the user selects a different model, then this dictionary can contain any parameter from that different model.  <br> **Datatype:** dictionary.
+| `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
+| `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
+| `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
 
 ### Example config file
 
@@ -115,7 +149,7 @@ components/structures that the user *must* include when building their feature s
 `with self.model.bridge.lock:` must be used to ensure thread safety - especially when using third 
 party libraries for indicator construction such as TA-lib. Another structure to consider is the 
 location of the labels at the bottom of the example function (below `if set_generalized_indicators:`).
-This is where the user will add single features labels to their feature set to avoid duplication from 
+This is where the user will add single features and labels to their feature set to avoid duplication from 
 various configuration paramters which multiply the feature set such as `include_timeframes`.
 
 ```python
@@ -213,14 +247,14 @@ a specific pair or timeframe, they should use the following structure inside `po
 (as exemplified in `freqtrade/templates/FreqaiExampleStrategy.py`:
 
 ```python
-    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin=""):
+    def populate_any_indicators(self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False):
 
         ...
 
         # Add generalized indicators here (because in live, it will call only this function to populate 
         # indicators for retraining). Notice how we ensure not to add them multiple times by associating
         # these generalized indicators to the basepair/timeframe
-        if pair == metadata['pair'] and tf == self.timeframe:
+        if set_generalized_indicators:
             df['%-day_of_week'] = (df["date"].dt.dayofweek + 1) / 7
             df['%-hour_of_day'] = (df['date'].dt.hour + 1) / 25
 
@@ -292,7 +326,7 @@ and adding this to the `train_period_days`. The units need to be in the base can
 The freqai training/backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel CatboostPredictionModel --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai_futures.example.json --freqaimodel LightGBMPredictionModel --timerange 20210501-20210701
 ```
 
 If this command has never been executed with the existing config file, then it will train a new model 
@@ -370,7 +404,7 @@ the feature set with a proper naming convention for the IFreqaiModel to use late
 
 ### Building an IFreqaiModel
 
-Freqai has an example prediction model based on the popular `Catboost` regression (`freqai/prediction_models/CatboostPredictionModel.py`). However, users can customize and create
+FreqAI has multiple example prediction model based libraries such as `Catboost` regression (`freqai/prediction_models/CatboostPredictionModel.py`) and `LightGBM` regression. However, users can customize and create
 their own prediction models using the `IFreqaiModel` class. Users are encouraged to inherit `train()` and `predict()` to let them customize various aspects of their training procedures.
 
 ### Running the model live
@@ -443,7 +477,7 @@ $\overline{d}$ quantifies the spread of the training data, which is compared to
 the distance between the new prediction feature vectors, $X_k$ and all the training
 data:
 
-$$ d_k = \argmin_i d_{k,i} $$
+$$ d_k = \arg \min d_{k,i} $$
 
 which enables the estimation of a Dissimilarity Index:
 
@@ -634,6 +668,14 @@ below this value. An example usage in the strategy may look something like:
 
 
 ## Additional information
+
+### Common pitfalls
+
+FreqAI cannot be combined with `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
+This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively, 
+it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
+new candles automatically for future retrains. But this means that if new pairs arrive later in the dry run due 
+to a volume pairlist, it will not have the data ready. FreqAI does work, however, with the `ShufflePairlist`.
 
 ### Feature normalization
 
