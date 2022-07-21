@@ -79,6 +79,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `follow_mode` | If true, this instance of FreqAI will look for models associated with `identifier` and load those for inferencing. A `follower` will **not** train new models. False by default. <br> **Datatype:** boolean.
 | `live_trained_timestamp` | Useful if user wants to start from models trained during a *backtest*. The timestamp can be located in the `user_data/models` backtesting folder. This is not a commonly used parameter, leave undefined for most applications. <br> **Datatype:** positive integer.
 | `fit_live_predictions_candles` | Computes target (label) statistics from prediction data, instead of from the training data set. Number of candles is the number of historical candles it uses to generate the statistics. <br> **Datatype:** positive integer.
+| `purge_old_models` | Tell FreqAI to delete obsolete models. Otherwise, all historic models will remain on disk. Defaults to False. <br> **Datatype:** boolean.
+|  |  **Feature Parameters**
+| `expiration_hours` | Ask FreqAI to avoid making predictions if a model is more than `expiration_hours` old. Defaults to 0 which means models never expire. <br> **Datatype:** positive integer.
 |  |  **Feature Parameters**
 | `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples shown [here](#building-the-feature-set) <br> **Datatype:** dictionary.
 | `include_corr_pairlist` | A list of correlated coins that FreqAI will add as additional features to all `pair_whitelist` coins. All indicators set in `populate_any_indicators` will be created for each coin in this list, and that set of features is added to the base asset feature set. <br> **Datatype:** list of assets (strings).
@@ -102,6 +105,15 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
+
+Here are the values you can expect to receive inside the dataframe returned by FreqAI:
+
+|  Parameter | Description |
+|------------|-------------|
+| `&-s*` | user defined labels in the user made strategy. Anything prepended with `&` is treated as a training target inside FreqAI. These same dataframe columns names are fed back to the user as the predictions. For example, the user wishes to predict the price change in the next 40 candles (similar to `templates/FreqaiExampleStrategy.py`) by setting `&-s_close`. FreqAI makes the predictions and gives them back to the user under the same key (`&-s_close`) to be used in `populate_entry/exit_trend()`. <br> **Datatype:** depends on the output of the model.
+| `&-s*_std/mean` | The standard deviation and mean values of the user defined labels during training (or live tracking with `fit_live_predictions_candles`). Commonly used to understand rarity of prediction (use the z-score as shown in `templates/FreqaiExampleStrategy.py` to evaluate how often a particular prediction was observed during training (or historically with `fit_live_predictions_candles`)<br> **Datatype:** floats.
+| `do_predict` | An indication of an outlier, this return value is integer between -1 and 2 which lets the user understand if the prediction is trustworthy or not. `do_predict==1` means the prediction is trustworthy. If the [Dissimilartiy Index](#removing-outliers-with-the-dissimilarity-index) is above the user defined treshold, it will subtract 1 from `do_predict`. If `use_SVM_to_remove_outliers()` is active, then the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract one from `do_predict`.  A particular case is when `do_predict == 2`, it means that the model has expired due to `expired_hours`. <br> **Datatype:** integer between -1 and 2.
+| `DI_values` | The raw Dissimilarity Index values to give the user a sense of confidence in the prediction. Lower DI means the data point is closer to the trained parameter space. <br> **Datatype:** float.
 
 ### Example config file
 
@@ -376,7 +388,7 @@ The Freqai strategy requires the user to include the following lines of code in 
         # (& appended targets), an indication of whether or not the prediction should be accepted, 
         # the target mean/std values for each of the labels created by user in 
         # `populate_any_indicators()` for each training period.
-        
+
         dataframe = self.model.bridge.start(dataframe, metadata, self)
 
         return dataframe

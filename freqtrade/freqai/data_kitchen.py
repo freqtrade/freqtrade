@@ -69,7 +69,7 @@ class FreqaiDataKitchen:
                 config["freqai"]["train_period_days"],
                 config["freqai"]["backtest_period_days"],
             )
-        # self.strat_dataframe: DataFrame = strat_dataframe
+
         self.dd = data_drawer
 
     def set_paths(
