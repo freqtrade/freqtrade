@@ -1116,6 +1116,16 @@ class FreqaiDataKitchen:
         # self.data["lower_quantile"] = lower_q
         return
 
+    def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
+        """
+        Remove the features from the dataframe before returning it to strategy. This keeps it
+        compact for Frequi purposes.
+        """
+        to_keep = [
+            col for col in dataframe.columns if not col.startswith("%") or col.startswith("%%")
+        ]
+        return dataframe[to_keep]
+
     def np_encoder(self, object):
         if isinstance(object, np.generic):
             return object.item()
