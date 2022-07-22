@@ -553,7 +553,10 @@ class FreqaiDataKitchen:
         logger.info("computing average mean distance for all training points")
         tc = self.freqai_config.get("model_training_parameters", {}).get("thread_count", -1)
         pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=tc)
-        avg_mean_dist = pairwise.mean(axis=1).mean()
+        # remove the diagonal distances which are itself distances ~0
+        np.fill_diagonal(pairwise, np.NaN)
+        pairwise = pairwise.reshape(-1, 1)
+        avg_mean_dist = pairwise[~np.isnan(pairwise)].mean()
         logger.info(f"avg_mean_dist {avg_mean_dist:.2f}")
 
         return avg_mean_dist
