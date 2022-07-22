@@ -127,7 +127,7 @@ class bbrsi_scalp_futures(WAOStrategy_futures):
             ),
             'enter_long'] = 1
 
-        return dataframe
+        return self.populate_buy_trend(dataframe, metadata)
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -141,4 +141,4 @@ class bbrsi_scalp_futures(WAOStrategy_futures):
                     (dataframe['rsi'] > 60)
             ),
             'exit_long'] = 1
-        return dataframe
+        return self.populate_sell_trend(dataframe, metadata)
