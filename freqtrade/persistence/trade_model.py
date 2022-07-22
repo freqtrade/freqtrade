@@ -837,7 +837,7 @@ class LocalTrade():
         current_amount = 0.0
         current_stake = 0.0
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
-        avg_price = None
+        avg_price = 0.0
         close_profit = 0.0
         close_profit_abs = 0.0
 
@@ -855,8 +855,6 @@ class LocalTrade():
                 price = avg_price if is_exit else tmp_price
                 current_stake += price * tmp_amount * side
 
-                total_stake = total_stake + (price * tmp_amount) if not is_exit else total_stake
-
                 if current_amount > 0:
                     avg_price = current_stake / current_amount
 
@@ -870,6 +868,8 @@ class LocalTrade():
                     exit_rate, amount=exit_amount, open_rate=avg_price)
                 if current_amount <= 0:
                     profit = close_profit_abs
+            else:
+                total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
 
         if close_profit:
             self.close_profit = close_profit

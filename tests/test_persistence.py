@@ -2797,7 +2797,7 @@ def test_order_to_ccxt(limit_buy_order_open):
             (('sell', 50, 5), (50.0, 12.5, 625.0, 713.8125, -377.1875, -0.60199501)),
         ],
         'end_profit': 336.625,
-        'end_profit_ratio': 0.13465,
+        'end_profit_ratio': 0.1343142,
         'fee': 0.0025,
     },
     {
@@ -2810,7 +2810,7 @@ def test_order_to_ccxt(limit_buy_order_open):
             (('sell', 150, 23), (150.0, 11.0, 1650.0, 1388.5, 1787.25, 1.08048062)),
         ],
         'end_profit': 3175.75,
-        'end_profit_ratio': 0.977153,
+        'end_profit_ratio': 0.9747170,
         'fee': 0.0025,
     },
     {
