@@ -67,6 +67,7 @@ freqtrade backtesting --config config_examples/config_freqai.example.json --stra
 
 ## Configuring the bot
 
+### Parameter table
 The table below will list all configuration parameters available for `FreqAI`.
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
@@ -82,7 +83,6 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `live_trained_timestamp` | Useful if user wants to start from models trained during a *backtest*. The timestamp can be located in the `user_data/models` backtesting folder. This is not a commonly used parameter, leave undefined for most applications. <br> **Datatype:** positive integer.
 | `fit_live_predictions_candles` | Computes target (label) statistics from prediction data, instead of from the training data set. Number of candles is the number of historical candles it uses to generate the statistics. <br> **Datatype:** positive integer.
 | `purge_old_models` | Tell FreqAI to delete obsolete models. Otherwise, all historic models will remain on disk. Defaults to False. <br> **Datatype:** boolean.
-|  |  **Feature Parameters**
 | `expiration_hours` | Ask FreqAI to avoid making predictions if a model is more than `expiration_hours` old. Defaults to 0 which means models never expire. <br> **Datatype:** positive integer.
 |  |  **Feature Parameters**
 | `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples shown [here](#building-the-feature-set) <br> **Datatype:** dictionary.
@@ -108,6 +108,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
 
+### Return values for use in strategy
 Here are the values you can expect to receive inside the dataframe returned by FreqAI:
 
 |  Parameter | Description |
