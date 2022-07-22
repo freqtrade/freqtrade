@@ -11,6 +11,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.enums import CandleType
 
 
 logger = logging.getLogger(__name__)
@@ -261,13 +262,20 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
             src.trades_purge(pair=pair)
 
 
-def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
+def convert_ohlcv_format(
+    config: Dict[str, Any],
+    convert_from: str,
+    convert_to: str,
+    erase: bool,
+    candle_type: CandleType
+):
     """
     Convert OHLCV from one format to another
     :param config: Config dictionary
     :param convert_from: Source format
     :param convert_to: Target format
     :param erase: Erase source data (does not apply if source and target format are identical)
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     """
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
@@ -279,8 +287,11 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         config['pairs'] = []
         # Check timeframes or fall back to timeframe.
         for timeframe in timeframes:
-            config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
-                                                       timeframe))
+            config['pairs'].extend(src.ohlcv_get_pairs(
+                config['datadir'],
+                timeframe,
+                candle_type=candle_type
+            ))
     logger.info(f"Converting candle (OHLCV) data for {config['pairs']}")
 
     for timeframe in timeframes:
@@ -289,10 +300,16 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
                                   timerange=None,
                                   fill_missing=False,
                                   drop_incomplete=False,
-                                  startup_candles=0)
-            logger.info(f"Converting {len(data)} candles for {pair}")
+                                  startup_candles=0,
+                                  candle_type=candle_type)
+            logger.info(f"Converting {len(data)} {candle_type} candles for {pair}")
             if len(data) > 0:
-                trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
+                trg.ohlcv_store(
+                    pair=pair,
+                    timeframe=timeframe,
+                    data=data,
+                    candle_type=candle_type
+                )
                 if erase and convert_from != convert_to:
                     logger.info(f"Deleting source data for {pair} / {timeframe}")
-                    src.ohlcv_purge(pair=pair, timeframe=timeframe)
+                    src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)

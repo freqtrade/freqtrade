@@ -6,13 +6,15 @@ Freqtrade supports spot trading only.
 
 ### Can I open short positions?
 
-No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+Freqtrade can open short positions in futures markets.
+This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
+Please make sure to read the [relevant documentation page](leverage.md) first.
 
-In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 
 ### Can I trade options or futures?
 
-No, options and futures trading are not supported.
+Futures trading is supported for selected exchanges.
 
 ## Beginner Tips & Tricks
 
@@ -77,7 +79,7 @@ You can use "current" market data by using the [dataprovider](strategy-customiza
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forcesell all` (sell all open trades).
+You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 
@@ -117,10 +119,10 @@ As the message says, your exchange does not support market orders and you have o
 
 To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
-```
+``` python
     order_types = {
         ...
-        'stoploss': 'limit',
+        "stoploss": "limit",
         ...
     }
 ```

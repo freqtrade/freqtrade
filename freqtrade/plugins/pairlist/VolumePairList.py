@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 import arrow
 from cachetools import TTLCache
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import format_ms_time
@@ -42,6 +43,7 @@ class VolumePairList(IPairList):
         self._lookback_days = self._pairlistconfig.get('lookback_days', 0)
         self._lookback_timeframe = self._pairlistconfig.get('lookback_timeframe', '1d')
         self._lookback_period = self._pairlistconfig.get('lookback_period', 0)
+        self._def_candletype = self._config['candle_type_def']
 
         if (self._lookback_days > 0) & (self._lookback_period > 0):
             raise OperationalException(
@@ -69,22 +71,26 @@ class VolumePairList(IPairList):
                 f'to at least {self._tf_in_sec} and restart the bot.'
             )
 
-        if not self._exchange.exchange_has('fetchTickers'):
+        if (not self._use_range and not (
+                self._exchange.exchange_has('fetchTickers')
+                and self._exchange._ft_has["tickers_have_quoteVolume"])):
             raise OperationalException(
-                'Exchange does not support dynamic whitelist. '
-                'Please edit your config and restart the bot.'
+                "Exchange does not support dynamic whitelist in this configuration. "
+                "Please edit your config and either remove Volumepairlist, "
+                "or switch to using candles. and restart the bot."
             )
 
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
 
+        candle_limit = exchange.ohlcv_candle_limit(
+            self._lookback_timeframe, self._config['candle_type_def'])
         if self._lookback_period < 0:
             raise OperationalException("VolumeFilter requires lookback_period to be >= 0")
-        if self._lookback_period > exchange.ohlcv_candle_limit(self._lookback_timeframe):
+        if self._lookback_period > candle_limit:
             raise OperationalException("VolumeFilter requires lookback_period to not "
-                                       "exceed exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit(self._lookback_timeframe)})")
+                                       f"exceed exchange max request size ({candle_limit})")
 
     @property
     def needstickers(self) -> bool:
@@ -93,7 +99,7 @@ class VolumePairList(IPairList):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
-        return True
+        return not self._use_range
 
     def _validate_keys(self, key):
         return key in SORT_VALUES
@@ -121,16 +127,18 @@ class VolumePairList(IPairList):
             # Check if pair quote currency equals to the stake currency.
             _pairlist = [k for k in self._exchange.get_markets(
                 quote_currencies=[self._stake_currency],
-                pairs_only=True, active_only=True).keys()]
+                tradable_only=True, active_only=True).keys()]
             # No point in testing for blacklisted pairs...
             _pairlist = self.verify_blacklist(_pairlist, logger.info)
-
-            filtered_tickers = [
-                v for k, v in tickers.items()
-                if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                    and (self._use_range or v[self._sort_key] is not None)
-                    and v['symbol'] in _pairlist)]
-            pairlist = [s['symbol'] for s in filtered_tickers]
+            if not self._use_range:
+                filtered_tickers = [
+                    v for k, v in tickers.items()
+                    if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+                        and (self._use_range or v[self._sort_key] is not None)
+                        and v['symbol'] in _pairlist)]
+                pairlist = [s['symbol'] for s in filtered_tickers]
+            else:
+                pairlist = _pairlist
 
             pairlist = self.filter_pairlist(pairlist, tickers)
             self._pair_cache['pairlist'] = pairlist.copy()
@@ -145,11 +153,11 @@ class VolumePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Use the incoming pairlist.
-        filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
-
-        # get lookback period in ms, for exchange ohlcv fetch
         if self._use_range:
+            # Create bare minimum from tickers structure.
+            filtered_tickers: List[Dict[str, Any]] = [{'symbol': k} for k in pairlist]
+
+            # get lookback period in ms, for exchange ohlcv fetch
             since_ms = int(arrow.utcnow()
                            .floor('minute')
                            .shift(minutes=-(self._lookback_period * self._tf_in_min)
@@ -165,11 +173,10 @@ class VolumePairList(IPairList):
             self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: "
                           f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
                           f"till {format_ms_time(to_ms)}", logger.info)
-            needed_pairs = [
-                (p, self._lookback_timeframe) for p in
-                [
-                    s['symbol'] for s in filtered_tickers
-                ] if p not in self._pair_cache
+            needed_pairs: ListPairsWithTimeframes = [
+                (p, self._lookback_timeframe, self._def_candletype) for p in
+                [s['symbol'] for s in filtered_tickers]
+                if p not in self._pair_cache
             ]
 
             # Get all candles
@@ -180,8 +187,10 @@ class VolumePairList(IPairList):
                 )
             for i, p in enumerate(filtered_tickers):
                 pair_candles = candles[
-                    (p['symbol'], self._lookback_timeframe)
-                ] if (p['symbol'], self._lookback_timeframe) in candles else None
+                    (p['symbol'], self._lookback_timeframe, self._def_candletype)
+                ] if (
+                    p['symbol'], self._lookback_timeframe, self._def_candletype
+                    ) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if pair_candles is not None and not pair_candles.empty:
                     if self._exchange._ft_has["ohlcv_volume_currency"] == "base":
@@ -205,6 +214,9 @@ class VolumePairList(IPairList):
                     filtered_tickers[i]['quoteVolume'] = quoteVolume
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
+        else:
+            # Tickers mode - filter based on incomming pairlist.
+            filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
 
         if self._min_value > 0:
             filtered_tickers = [

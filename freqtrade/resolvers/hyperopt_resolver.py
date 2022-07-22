@@ -23,7 +23,7 @@ class HyperOptLossResolver(IResolver):
     object_type = IHyperOptLoss
     object_type_str = "HyperoptLoss"
     user_subdir = USERPATH_HYPEROPTS
-    initial_search_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
+    initial_search_path = Path(__file__).parent.parent.joinpath('optimize/hyperopt_loss').resolve()
 
     @staticmethod
     def load_hyperoptloss(config: Dict) -> IHyperOptLoss:

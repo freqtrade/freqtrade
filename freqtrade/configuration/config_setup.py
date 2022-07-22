@@ -22,6 +22,6 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
 
     # Ensure these modes are using Dry-run
     config['dry_run'] = True
-    validate_config_consistency(config)
+    validate_config_consistency(config, preliminary=True)
 
     return config

@@ -12,6 +12,7 @@ from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time
@@ -29,6 +30,7 @@ def load_pair_history(pair: str,
                       startup_candles: int = 0,
                       data_format: str = None,
                       data_handler: IDataHandler = None,
+                      candle_type: CandleType = CandleType.SPOT
                       ) -> DataFrame:
     """
     Load cached ohlcv history for the given pair.
@@ -43,6 +45,7 @@ def load_pair_history(pair: str,
     :param startup_candles: Additional candles to load at the start of the period
     :param data_handler: Initialized data-handler to use.
                          Will be initialized from data_format if not set
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
     data_handler = get_datahandler(datadir, data_format, data_handler)
@@ -53,6 +56,7 @@ def load_pair_history(pair: str,
                                    fill_missing=fill_up_missing,
                                    drop_incomplete=drop_incomplete,
                                    startup_candles=startup_candles,
+                                   candle_type=candle_type
                                    )
 
 
@@ -64,6 +68,8 @@ def load_data(datadir: Path,
               startup_candles: int = 0,
               fail_without_data: bool = False,
               data_format: str = 'json',
+              candle_type: CandleType = CandleType.SPOT,
+              user_futures_funding_rate: int = None,
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -76,6 +82,7 @@ def load_data(datadir: Path,
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
     :param data_format: Data format which should be used. Defaults to json
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: dict(<pair>:<Dataframe>)
     """
     result: Dict[str, DataFrame] = {}
@@ -89,22 +96,28 @@ def load_data(datadir: Path,
                                  datadir=datadir, timerange=timerange,
                                  fill_up_missing=fill_up_missing,
                                  startup_candles=startup_candles,
-                                 data_handler=data_handler
+                                 data_handler=data_handler,
+                                 candle_type=candle_type
                                  )
         if not hist.empty:
             result[pair] = hist
+        else:
+            if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
+                logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
+                result[pair] = DataFrame(columns=["open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
     return result
 
 
-def refresh_data(datadir: Path,
+def refresh_data(*, datadir: Path,
                  timeframe: str,
                  pairs: List[str],
                  exchange: Exchange,
                  data_format: str = None,
                  timerange: Optional[TimeRange] = None,
+                 candle_type: CandleType,
                  ) -> None:
     """
     Refresh ohlcv history data for a list of pairs.
@@ -115,17 +128,25 @@ def refresh_data(datadir: Path,
     :param exchange: Exchange object
     :param data_format: dataformat to use
     :param timerange: Limit data to be loaded to this timerange
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     """
     data_handler = get_datahandler(datadir, data_format)
     for idx, pair in enumerate(pairs):
         process = f'{idx}/{len(pairs)}'
         _download_pair_history(pair=pair, process=process,
                                timeframe=timeframe, datadir=datadir,
-                               timerange=timerange, exchange=exchange, data_handler=data_handler)
+                               timerange=timerange, exchange=exchange, data_handler=data_handler,
+                               candle_type=candle_type)
 
 
-def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
-                                   data_handler: IDataHandler) -> Tuple[DataFrame, Optional[int]]:
+def _load_cached_data_for_updating(
+    pair: str,
+    timeframe: str,
+    timerange: Optional[TimeRange],
+    data_handler: IDataHandler,
+    candle_type: CandleType,
+    prepend: bool = False,
+) -> Tuple[DataFrame, Optional[int], Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
@@ -135,23 +156,30 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     Note: Only used by download_pair_history().
     """
     start = None
+    end = None
     if timerange:
         if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        if timerange.stoptype == 'date':
+            end = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
 
     # Intentionally don't pass timerange in - since we need to load the full dataset.
     data = data_handler.ohlcv_load(pair, timeframe=timeframe,
                                    timerange=None, fill_missing=False,
-                                   drop_incomplete=True, warn_no_data=False)
+                                   drop_incomplete=True, warn_no_data=False,
+                                   candle_type=candle_type)
     if not data.empty:
-        if start and start < data.iloc[0]['date']:
+        if not prepend and start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
             data = DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
         else:
-            start = data.iloc[-1]['date']
-
+            if prepend:
+                end = data.iloc[0]['date']
+            else:
+                start = data.iloc[-1]['date']
     start_ms = int(start.timestamp() * 1000) if start else None
-    return data, start_ms
+    end_ms = int(end.timestamp() * 1000) if end else None
+    return data, start_ms, end_ms
 
 
 def _download_pair_history(pair: str, *,
@@ -161,31 +189,42 @@ def _download_pair_history(pair: str, *,
                            process: str = '',
                            new_pairs_days: int = 30,
                            data_handler: IDataHandler = None,
-                           timerange: Optional[TimeRange] = None) -> bool:
+                           timerange: Optional[TimeRange] = None,
+                           candle_type: CandleType,
+                           erase: bool = False,
+                           prepend: bool = False,
+                           ) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
     exists in a cache. If timerange starts earlier than the data in the cache,
     the full data will be redownloaded
 
-    Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-
     :param pair: pair to download
     :param timeframe: Timeframe (e.g "5m")
     :param timerange: range of time to download
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param erase: Erase existing data
     :return: bool with success state
     """
     data_handler = get_datahandler(datadir, data_handler=data_handler)
 
     try:
-        logger.info(
-            f'Download history data for pair: "{pair}" ({process}), timeframe: {timeframe} '
-            f'and store in {datadir}.'
-        )
+        if erase:
+            if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+                logger.info(f'Deleting existing data for pair {pair}, {timeframe}, {candle_type}.')
 
-        # data, since_ms = _load_cached_data_for_updating_old(datadir, pair, timeframe, timerange)
-        data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
-                                                        data_handler=data_handler)
+        data, since_ms, until_ms = _load_cached_data_for_updating(
+            pair, timeframe, timerange,
+            data_handler=data_handler,
+            candle_type=candle_type,
+            prepend=prepend)
+
+        logger.info(f'({process}) - Download history data for "{pair}", {timeframe}, '
+                    f'{candle_type} and store in {datadir}. '
+                    f'From {format_ms_time(since_ms) if since_ms else "start"} to '
+                    f'{format_ms_time(until_ms) if until_ms else "now"}'
+                    )
 
         logger.debug("Current Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
@@ -198,7 +237,9 @@ def _download_pair_history(pair: str, *,
                                                since_ms=since_ms if since_ms else
                                                arrow.utcnow().shift(
                                                    days=-new_pairs_days).int_timestamp * 1000,
-                                               is_new_pair=data.empty
+                                               is_new_pair=data.empty,
+                                               candle_type=candle_type,
+                                               until_ms=until_ms if until_ms else None
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
@@ -216,7 +257,7 @@ def _download_pair_history(pair: str, *,
         logger.debug("New End: %s",
                      f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
 
-        data_handler.ohlcv_store(pair, timeframe, data=data)
+        data_handler.ohlcv_store(pair, timeframe, data=data, candle_type=candle_type)
         return True
 
     except Exception:
@@ -227,9 +268,12 @@ def _download_pair_history(pair: str, *,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                datadir: Path, timerange: Optional[TimeRange] = None,
+                                datadir: Path, trading_mode: str,
+                                timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
-                                data_format: str = None) -> List[str]:
+                                data_format: str = None,
+                                prepend: bool = False,
+                                ) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -237,6 +281,8 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     """
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
+    candle_type = CandleType.get_default(trading_mode)
+    process = ''
     for idx, pair in enumerate(pairs, start=1):
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
@@ -244,17 +290,29 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             continue
         for timeframe in timeframes:
 
-            if erase:
-                if data_handler.ohlcv_purge(pair, timeframe):
-                    logger.info(
-                        f'Deleting existing data for pair {pair}, interval {timeframe}.')
-
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
                                    timerange=timerange, data_handler=data_handler,
-                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days)
+                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days,
+                                   candle_type=candle_type,
+                                   erase=erase, prepend=prepend)
+        if trading_mode == 'futures':
+            # Predefined candletype (and timeframe) depending on exchange
+            # Downloads what is necessary to backtest based on futures data.
+            tf_mark = exchange._ft_has['mark_ohlcv_timeframe']
+            fr_candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
+            # All exchanges need FundingRate for futures trading.
+            # The timeframe is aligned to the mark-price timeframe.
+            for funding_candle_type in (CandleType.FUNDING_RATE, fr_candle_type):
+                _download_pair_history(pair=pair, process=process,
+                                       datadir=datadir, exchange=exchange,
+                                       timerange=timerange, data_handler=data_handler,
+                                       timeframe=str(tf_mark), new_pairs_days=new_pairs_days,
+                                       candle_type=funding_candle_type,
+                                       erase=erase, prepend=prepend)
+
     return pairs_not_available
 
 
@@ -271,8 +329,9 @@ def _download_trades_history(exchange: Exchange,
     try:
 
         until = None
-        if (timerange and timerange.starttype == 'date'):
-            since = timerange.startts * 1000
+        if timerange:
+            if timerange.starttype == 'date':
+                since = timerange.startts * 1000
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
         else:
@@ -353,10 +412,16 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
     return pairs_not_available
 
 
-def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
-                            datadir: Path, timerange: TimeRange, erase: bool = False,
-                            data_format_ohlcv: str = 'json',
-                            data_format_trades: str = 'jsongz') -> None:
+def convert_trades_to_ohlcv(
+    pairs: List[str],
+    timeframes: List[str],
+    datadir: Path,
+    timerange: TimeRange,
+    erase: bool = False,
+    data_format_ohlcv: str = 'json',
+    data_format_trades: str = 'jsongz',
+    candle_type: CandleType = CandleType.SPOT
+) -> None:
     """
     Convert stored trades data to ohlcv data
     """
@@ -367,12 +432,12 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
         trades = data_handler_trades.trades_load(pair)
         for timeframe in timeframes:
             if erase:
-                if data_handler_ohlcv.ohlcv_purge(pair, timeframe):
+                if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
                     logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
             try:
                 ohlcv = trades_to_ohlcv(trades, timeframe)
                 # Store ohlcv
-                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
+                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv, candle_type=candle_type)
             except ValueError:
                 logger.exception(f'Could not convert {pair} to OHLCV.')
 

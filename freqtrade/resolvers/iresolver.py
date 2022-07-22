@@ -44,7 +44,7 @@ class IResolver:
 
     @classmethod
     def build_search_paths(cls, config: Dict[str, Any], user_subdir: Optional[str] = None,
-                           extra_dir: Optional[str] = None) -> List[Path]:
+                           extra_dirs: List[str] = []) -> List[Path]:
 
         abs_paths: List[Path] = []
         if cls.initial_search_path:
@@ -53,9 +53,9 @@ class IResolver:
         if user_subdir:
             abs_paths.insert(0, config['user_data_dir'].joinpath(user_subdir))
 
-        if extra_dir:
-            # Add extra directory to the top of the search paths
-            abs_paths.insert(0, Path(extra_dir).resolve())
+        # Add extra directory to the top of the search paths
+        for dir in extra_dirs:
+            abs_paths.insert(0, Path(dir).resolve())
 
         return abs_paths
 
@@ -164,9 +164,13 @@ class IResolver:
         :return: Object instance or None
         """
 
+        extra_dirs: List[str] = []
+        if extra_dir:
+            extra_dirs.append(extra_dir)
+
         abs_paths = cls.build_search_paths(config,
                                            user_subdir=cls.user_subdir,
-                                           extra_dir=extra_dir)
+                                           extra_dirs=extra_dirs)
 
         found_object = cls._load_object(paths=abs_paths, object_name=object_name,
                                         kwargs=kwargs)
@@ -178,18 +182,25 @@ class IResolver:
         )
 
     @classmethod
-    def search_all_objects(cls, directory: Path,
-                           enum_failed: bool) -> List[Dict[str, Any]]:
+    def search_all_objects(cls, directory: Path, enum_failed: bool,
+                           recursive: bool = False) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
+        :param recursive: Recursively walk directory tree searching for strategies
         :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
         objects = []
         for entry in directory.iterdir():
+            if (
+                recursive and entry.is_dir()
+                and not entry.name.startswith('__')
+                and not entry.name.startswith('.')
+            ):
+                objects.extend(cls.search_all_objects(entry, enum_failed, recursive=recursive))
             # Only consider python files
             if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)

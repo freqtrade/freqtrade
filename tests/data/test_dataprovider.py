@@ -5,40 +5,49 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import RunMode
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange
 
 
-def test_ohlcv(mocker, default_conf, ohlcv_history):
+@pytest.mark.parametrize('candle_type', [
+    'mark',
+    '',
+])
+def test_dp_ohlcv(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", timeframe)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", timeframe)] = ohlcv_history
+    candletype = CandleType.from_string(candle_type)
+    exchange._klines[("XRP/BTC", timeframe, candletype)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = ohlcv_history
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ohlcv_history.equals(dp.ohlcv("UNITTEST/BTC", timeframe))
-    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe), DataFrame)
-    assert dp.ohlcv("UNITTEST/BTC", timeframe) is not ohlcv_history
-    assert dp.ohlcv("UNITTEST/BTC", timeframe, copy=False) is ohlcv_history
-    assert not dp.ohlcv("UNITTEST/BTC", timeframe).empty
-    assert dp.ohlcv("NONESENSE/AAA", timeframe).empty
+    assert ohlcv_history.equals(dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype))
+    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype), DataFrame)
+    assert dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype) is not ohlcv_history
+    assert dp.ohlcv("UNITTEST/BTC", timeframe, copy=False, candle_type=candletype) is ohlcv_history
+    assert not dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype).empty
+    assert dp.ohlcv("NONESENSE/AAA", timeframe, candle_type=candletype).empty
 
     # Test with and without parameter
-    assert dp.ohlcv("UNITTEST/BTC", timeframe).equals(dp.ohlcv("UNITTEST/BTC"))
+    assert dp.ohlcv(
+        "UNITTEST/BTC",
+        timeframe,
+        candle_type=candletype
+    ).equals(dp.ohlcv("UNITTEST/BTC", candle_type=candle_type))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.LIVE
-    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe), DataFrame)
+    assert isinstance(dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
 
     default_conf["runmode"] = RunMode.BACKTEST
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.BACKTEST
-    assert dp.ohlcv("UNITTEST/BTC", timeframe).empty
+    assert dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candle_type).empty
 
 
 def test_historic_ohlcv(mocker, default_conf, ohlcv_history):
@@ -77,37 +86,50 @@ def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     jsonloadmock.assert_not_called()
 
 
-def test_get_pair_dataframe(mocker, default_conf, ohlcv_history):
+@pytest.mark.parametrize('candle_type', [
+    'mark',
+    'futures',
+    '',
+])
+def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", timeframe)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", timeframe)] = ohlcv_history
+    candletype = CandleType.from_string(candle_type)
+    exchange._klines[("XRP/BTC", timeframe, candletype)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = ohlcv_history
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ohlcv_history.equals(dp.get_pair_dataframe("UNITTEST/BTC", timeframe))
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
-    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe) is not ohlcv_history
-    assert not dp.get_pair_dataframe("UNITTEST/BTC", timeframe).empty
-    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
+    assert ohlcv_history.equals(dp.get_pair_dataframe(
+        "UNITTEST/BTC", timeframe, candle_type=candle_type))
+    assert ohlcv_history.equals(dp.get_pair_dataframe(
+        "UNITTEST/BTC", timeframe, candle_type=candletype))
+    assert isinstance(dp.get_pair_dataframe(
+        "UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
+    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe,
+                                 candle_type=candle_type) is not ohlcv_history
+    assert not dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type).empty
+    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe, candle_type=candle_type).empty
 
     # Test with and without parameter
-    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe)\
-        .equals(dp.get_pair_dataframe("UNITTEST/BTC"))
+    assert dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)\
+        .equals(dp.get_pair_dataframe("UNITTEST/BTC", candle_type=candle_type))
 
     default_conf["runmode"] = RunMode.LIVE
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.LIVE
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
-    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
+    assert isinstance(dp.get_pair_dataframe(
+        "UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
+    assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe, candle_type=candle_type).empty
 
     historymock = MagicMock(return_value=ohlcv_history)
     mocker.patch("freqtrade.data.dataprovider.load_pair_history", historymock)
     default_conf["runmode"] = RunMode.BACKTEST
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.BACKTEST
-    assert isinstance(dp.get_pair_dataframe("UNITTEST/BTC", timeframe), DataFrame)
+    assert isinstance(dp.get_pair_dataframe(
+        "UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame)
     # assert dp.get_pair_dataframe("NONESENSE/AAA", timeframe).empty
 
 
@@ -230,8 +252,8 @@ def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
     exchange = get_patched_exchange(mocker, default_conf)
 
     dp = DataProvider(default_conf, exchange)
-    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
-    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history)
+    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history, CandleType.SPOT)
+    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history, CandleType.SPOT)
 
     assert dp.runmode == RunMode.DRY_RUN
     dataframe, time = dp.get_analyzed_dataframe("UNITTEST/BTC", timeframe)
@@ -276,7 +298,7 @@ def test_no_exchange_mode(default_conf):
         dp.refresh([()])
 
     with pytest.raises(OperationalException, match=message):
-        dp.ohlcv('XRP/USDT', '5m')
+        dp.ohlcv('XRP/USDT', '5m', '')
 
     with pytest.raises(OperationalException, match=message):
         dp.market('XRP/USDT')
