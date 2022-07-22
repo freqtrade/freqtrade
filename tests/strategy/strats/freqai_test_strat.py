@@ -4,11 +4,8 @@ from functools import reduce
 import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
-from technical import qtpylib
 
-from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.freqai.strategy_bridge import CustomModel
-from freqtrade.persistence import Trade
 from freqtrade.strategy import DecimalParameter, IntParameter, merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -16,7 +13,7 @@ from freqtrade.strategy.interface import IStrategy
 logger = logging.getLogger(__name__)
 
 
-class FreqaiExampleStrategy(IStrategy):
+class freqai_test_strat(IStrategy):
     """
     Example strategy showing how the user connects their own
     IFreqaiModel to the strategy. Namely, the user uses:
@@ -99,34 +96,6 @@ class FreqaiExampleStrategy(IStrategy):
                 informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
                 informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
                 informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
-                informative[f"{coin}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
-                informative[f"{coin}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-                informative[f"%-{coin}close_over_20sma-period_{t}"] = (
-                    informative["close"] / informative[f"{coin}20sma-period_{t}"]
-                )
-
-                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-
-                bollinger = qtpylib.bollinger_bands(
-                    qtpylib.typical_price(informative), window=t, stds=2.2
-                )
-                informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
-                informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
-                informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
-
-                informative[f"%-{coin}bb_width-period_{t}"] = (
-                    informative[f"{coin}bb_upperband-period_{t}"]
-                    - informative[f"{coin}bb_lowerband-period_{t}"]
-                ) / informative[f"{coin}bb_middleband-period_{t}"]
-                informative[f"%-{coin}close-bb_lower-period_{t}"] = (
-                    informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
-                )
-
-                informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
-
-                informative[f"%-{coin}relative_volume-period_{t}"] = (
-                    informative["volume"] / informative["volume"].rolling(t).mean()
-                )
 
             informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
             informative[f"%-{coin}raw_volume"] = informative["volume"]
@@ -174,12 +143,9 @@ class FreqaiExampleStrategy(IStrategy):
 
         # All indicators must be populated by populate_any_indicators() for live functionality
         # to work correctly.
-
-        # the model will return all labels created by user in `populate_any_indicators`
-        # (& appended targets), an indication of whether or not the prediction should be accepted,
-        # the target mean/std values for each of the labels created by user in
-        # `populate_any_indicators()` for each training period.
-
+        # the model will return 4 values, its prediction, an indication of whether or not the
+        # prediction should be accepted, the target mean/std values from the labels used during
+        # each training period.
         dataframe = self.model.bridge.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
@@ -214,110 +180,3 @@ class FreqaiExampleStrategy(IStrategy):
             df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
         return df
-
-    def get_ticker_indicator(self):
-        return int(self.config["timeframe"][:-1])
-
-    def custom_exit(
-        self, pair: str, trade: Trade, current_time, current_rate, current_profit, **kwargs
-    ):
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-
-        trade_date = timeframe_to_prev_date(self.config["timeframe"], trade.open_date_utc)
-        trade_candle = dataframe.loc[(dataframe["date"] == trade_date)]
-
-        if trade_candle.empty:
-            return None
-        trade_candle = trade_candle.squeeze()
-
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
-
-        if not follow_mode:
-            pair_dict = self.model.bridge.dd.pair_dict
-        else:
-            pair_dict = self.model.bridge.dd.follower_dict
-
-        entry_tag = trade.enter_tag
-
-        if (
-            "prediction" + entry_tag not in pair_dict[pair]
-            or pair_dict[pair]["prediction" + entry_tag] > 0
-        ):
-            with self.model.bridge.lock:
-                pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
-                if not follow_mode:
-                    self.model.bridge.dd.save_drawer_to_disk()
-                else:
-                    self.model.bridge.dd.save_follower_dict_to_disk()
-
-        roi_price = pair_dict[pair]["prediction" + entry_tag]
-        roi_time = self.max_roi_time_long.value
-
-        roi_decay = roi_price * (
-            1 - ((current_time - trade.open_date_utc).seconds) / (roi_time * 60)
-        )
-        if roi_decay < 0:
-            roi_decay = self.linear_roi_offset.value
-        else:
-            roi_decay += self.linear_roi_offset.value
-
-        if current_profit > roi_decay:
-            return "roi_custom_win"
-
-        if current_profit < -roi_decay:
-            return "roi_custom_loss"
-
-    def confirm_trade_exit(
-        self,
-        pair: str,
-        trade: Trade,
-        order_type: str,
-        amount: float,
-        rate: float,
-        time_in_force: str,
-        exit_reason: str,
-        current_time,
-        **kwargs,
-    ) -> bool:
-
-        entry_tag = trade.enter_tag
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
-        if not follow_mode:
-            pair_dict = self.model.bridge.dd.pair_dict
-        else:
-            pair_dict = self.model.bridge.dd.follower_dict
-
-        with self.model.bridge.lock:
-            pair_dict[pair]["prediction" + entry_tag] = 0
-            if not follow_mode:
-                self.model.bridge.dd.save_drawer_to_disk()
-            else:
-                self.model.bridge.dd.save_follower_dict_to_disk()
-
-        return True
-
-    def confirm_trade_entry(
-        self,
-        pair: str,
-        order_type: str,
-        amount: float,
-        rate: float,
-        time_in_force: str,
-        current_time,
-        entry_tag,
-        side: str,
-        **kwargs,
-    ) -> bool:
-
-        df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        last_candle = df.iloc[-1].squeeze()
-
-        if side == "long":
-            if rate > (last_candle["close"] * (1 + 0.0025)):
-                return False
-        else:
-            if rate < (last_candle["close"] * (1 - 0.0025)):
-                return False
-
-        return True

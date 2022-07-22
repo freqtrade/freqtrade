@@ -73,6 +73,8 @@ class IFreqaiModel(ABC):
             self.freqai_info["feature_parameters"]["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
+        self.pair_it = 0
+        self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -106,6 +108,10 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.dd, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
+
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = self.remove_features_from_df(dk.return_dataframe)
@@ -160,6 +166,8 @@ class IFreqaiModel(ABC):
         dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
         """
 
+        self.pair_it += 1
+        train_it = 0
         # Loop enforcing the sliding window training/backtesting paradigm
         # tr_train is the training time range e.g. 1 historical month
         # tr_backtest is the backtesting time range e.g. the week directly
@@ -167,22 +175,26 @@ class IFreqaiModel(ABC):
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
             (_, _, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
+            train_it += 1
+            total_trains = len(dk.backtesting_timeranges)
             gc.collect()
             dk.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
-            # self.training_timerange_timerange = tr_train
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
-            trained_timestamp = tr_train  # TimeRange.parse_timerange(tr_train)
+            trained_timestamp = tr_train
             tr_train_startts_str = datetime.datetime.utcfromtimestamp(tr_train.startts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             tr_train_stopts_str = datetime.datetime.utcfromtimestamp(tr_train.stopts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
-            logger.info("Training %s", metadata["pair"])
-            logger.info(f"Training {tr_train_startts_str} to {tr_train_stopts_str}")
+            logger.info(
+                f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
+                f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                "trains"
+            )
 
             dk.data_path = Path(
                 dk.full_path
@@ -190,6 +202,7 @@ class IFreqaiModel(ABC):
                     "sub-train"
                     + "-"
                     + metadata["pair"].split("/")[0]
+                    + "_"
                     + str(int(trained_timestamp.stopts))
                 )
             )
@@ -280,6 +293,10 @@ class IFreqaiModel(ABC):
 
         # load the model and associated data into the data kitchen
         self.model = dk.load_data(coin=metadata["pair"])
+
+        dataframe = self.dk.use_strategy_to_populate_indicators(
+            strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+        )
 
         if not self.model:
             logger.warning(

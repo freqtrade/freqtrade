@@ -77,7 +77,15 @@ function updateenv() {
         fi
     fi
 
-    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT}
+    REQUIREMENTS_FREQAI=""
+    read -p "Do you want to install dependencies for freqai [y/N]? "
+    dev=$REPLY
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        REQUIREMENTS_FREQAI="-r requirements-freqai.txt"
+    fi
+
+    ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT} ${REQUIREMENTS_FREQAI}
     if [ $? -ne 0 ]; then
         echo "Failed installing dependencies"
         exit 1

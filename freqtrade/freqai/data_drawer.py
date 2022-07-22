@@ -301,7 +301,7 @@ class FreqaiDataDrawer:
 
         model_folders = [x for x in self.full_path.iterdir() if x.is_dir()]
 
-        pattern = re.compile(r"sub-train-(\w+)(\d{10})")
+        pattern = re.compile(r"sub-train-(\w+)_(\d{10})")
 
         delete_dict: Dict[str, Any] = {}
 
