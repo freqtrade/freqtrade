@@ -37,9 +37,7 @@ def threaded(fn):
 class IFreqaiModel(ABC):
     """
     Class containing all tools for training and prediction in the strategy.
-    User models should inherit from this class as shown in
-    templates/ExamplePredictionModel.py where the user overrides
-    train(), predict(), fit(), and make_labels().
+    Base*PredictionModels inherit from this class.
     Author: Robert Caulk, rob.caulk@gmail.com
     """
 
@@ -51,23 +49,15 @@ class IFreqaiModel(ABC):
         self.data_split_parameters = config.get("freqai", {}).get("data_split_parameters")
         self.model_training_parameters = config.get("freqai", {}).get("model_training_parameters")
         self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
-        self.time_last_trained = None
-        self.current_time = None
         self.model = None
-        self.predictions = None
-        self.training_on_separate_thread = False
         self.retrain = False
         self.first = True
-        self.update_historic_data = 0
         self.set_full_path()
         self.follow_mode = self.freqai_info.get("follow_mode", False)
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.lock = threading.Lock()
-        self.follow_mode = self.freqai_info.get("follow_mode", False)
         self.identifier = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
-        self.ready_to_scan = False
-        self.first = True
         self.keras = self.freqai_info.get("keras", False)
         if self.keras and self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             self.freqai_info["feature_parameters"]["DI_threshold"] = 0
@@ -114,7 +104,7 @@ class IFreqaiModel(ABC):
             )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
-        dataframe = self.remove_features_from_df(dk.return_dataframe)
+        dataframe = dk.remove_features_from_df(dk.return_dataframe)
         return self.return_values(dataframe, dk)
 
     @threaded
@@ -260,9 +250,6 @@ class IFreqaiModel(ABC):
             dk.update_historic_data(strategy)
             logger.debug(f'Updating historic data on pair {metadata["pair"]}')
 
-        # if trainable, check if model needs training, if so compute new timerange,
-        # then save model and metadata.
-        # if not trainable, load existing data
         if not self.follow_mode:
 
             (_, new_trained_timerange, data_load_timerange) = dk.check_if_new_training_required(
@@ -320,6 +307,8 @@ class IFreqaiModel(ABC):
         # correct array to strategy
 
         if pair not in self.dd.model_return_values:
+            # first predictions are made on entire historical candle set coming from strategy. This
+            # allows FreqUI to show full return values.
             pred_df, do_preds = self.predict(dataframe, dk)
             self.dd.set_initial_return_values(pair, dk, pred_df, do_preds)
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
@@ -333,7 +322,8 @@ class IFreqaiModel(ABC):
                 "prediction == 0 and do_predict == 2"
             )
         else:
-            # Only feed in the most recent candle for prediction in live scenario
+            # remaining predictions are made only on the most recent candles for performance and
+            # historical accuracy reasons.
             pred_df, do_preds = self.predict(dataframe.iloc[-self.CONV_WIDTH:], dk, first=False)
 
         self.dd.append_model_predictions(pair, pred_df, do_preds, dk, len(dataframe))
@@ -384,11 +374,6 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
-        # if self.feature_parameters["determine_statistical_distributions"]:
-        #     dk.determine_statistical_distributions()
-        # if self.feature_parameters["remove_outliers"]:
-        #     dk.remove_outliers(predict=False)
-
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
@@ -411,11 +396,6 @@ class IFreqaiModel(ABC):
         if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
-        # if self.feature_parameters["determine_statistical_distributions"]:
-        #     dk.determine_statistical_distributions()
-        # if self.feature_parameters["remove_outliers"]:
-        #     dk.remove_outliers(predict=True)  # creates dropped index
-
     def model_exists(
         self,
         pair: str,
@@ -428,6 +408,8 @@ class IFreqaiModel(ABC):
         Given a pair and path, check if a model already exists
         :param pair: pair e.g. BTC/USD
         :param path: path to model
+        :return:
+        :boolean: whether the model file exists or not.
         """
         coin, _ = pair.split("/")
 
@@ -451,16 +433,6 @@ class IFreqaiModel(ABC):
             self.config["config_files"][0],
             Path(self.full_path, Path(self.config["config_files"][0]).name),
         )
-
-    def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
-        """
-        Remove the features from the dataframe before returning it to strategy. This keeps it
-        compact for Frequi purposes.
-        """
-        to_keep = [
-            col for col in dataframe.columns if not col.startswith("%") or col.startswith("%%")
-        ]
-        return dataframe[to_keep]
 
     def train_model_in_series(
         self,
@@ -507,7 +479,6 @@ class IFreqaiModel(ABC):
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
-        # self.retrain = False
 
     def set_initial_historic_predictions(
         self, df: DataFrame, model: Any, dk: FreqaiDataKitchen, pair: str
@@ -566,16 +537,6 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
-
-    def make_labels(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
-        """
-        User defines the labels here (target values).
-        :params:
-        dataframe: DataFrame = the full dataframe for the present training period
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
-        """
-
-        return
 
     @abstractmethod
     def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
