@@ -16,30 +16,25 @@ class bbrsi_scalp_futures(WAOStrategy_futures):
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
-        coin = str(config.get('pairs')[0]).split('/')[0]
-        print("bbrsi_scalp: coin=" + coin)
-
-    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
-    minimal_roi = {
-        "0": 0.216,
-        "35": 0.056,
-        "94": 0.012,
-        "209": 0
-    }
-
-    # Optimal stoploss designed for the strategy
-    # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.283
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # trailing stoploss
+    minimal_roi = {
+        "0": 0.249,
+        "30": 0.075,
+        "90": 0.022,
+        "209": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.292
+
+    # Trailing stop:
     trailing_stop = True
-    trailing_stop_positive = 0.186
-    trailing_stop_positive_offset = 0.228
-    trailing_only_offset_is_reached = False
+    trailing_stop_positive = 0.341
+    trailing_stop_positive_offset = 0.362
+    trailing_only_offset_is_reached = True
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False

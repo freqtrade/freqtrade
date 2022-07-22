@@ -13,30 +13,119 @@ class bbrsi_scalp(WAOStrategy):
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
-        coin = str(config.get('pairs')[0]).split('/')[0]
-        print("bbrsi_scalp: coin=" + coin)
-
-    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
-    minimal_roi = {
-        "0": 0.216,
-        "35": 0.056,
-        "94": 0.012,
-        "209": 0
-    }
-
-    # Optimal stoploss designed for the strategy
-    # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.283
+        self.coin = str(config.get('pairs')[0]).split('/')[0]
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # trailing stoploss
-    trailing_stop = True
-    trailing_stop_positive = 0.186
-    trailing_stop_positive_offset = 0.228
-    trailing_only_offset_is_reached = False
+    # Minimal ROI designed for the strategy.
+    # This attribute will be overridden if the config file contains "minimal_roi"
+    if self.coin == "BTC":
+        # ROI table:
+        minimal_roi = {
+            "0": 0.266,
+            "40": 0.081,
+            "96": 0.033,
+            "191": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.309
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.322
+        trailing_stop_positive_offset = 0.345
+        trailing_only_offset_is_reached = True
+
+    if self.coin == "XMR":
+        # ROI table:
+        minimal_roi = {
+            "0": 0.249,
+            "39": 0.062,
+            "95": 0.013,
+            "197": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.303
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.089
+        trailing_stop_positive_offset = 0.11
+        trailing_only_offset_is_reached = False
+
+    if self.coin == "XLM":
+        # ROI table:
+        minimal_roi = {
+            "0": 0.22,
+            "40": 0.101,
+            "85": 0.032,
+            "205": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.325
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.328
+        trailing_stop_positive_offset = 0.385
+        trailing_only_offset_is_reached = True
+
+    if self.coin == "LTC":
+        # ROI table:
+        minimal_roi = {
+            "0": 0.249,
+            "30": 0.075,
+            "90": 0.022,
+            "209": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.292
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.341
+        trailing_stop_positive_offset = 0.362
+        trailing_only_offset_is_reached = True
+
+    if self.coin == "XRP":
+        # ROI table:
+        minimal_roi = {
+            "0": 0.169,
+            "40": 0.056,
+            "88": 0.038,
+            "204": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.347
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.158
+        trailing_stop_positive_offset = 0.255
+        trailing_only_offset_is_reached = False
+
+    if self.coin == "ADA":
+        minimal_roi = {
+            "0": 0.226,
+            "40": 0.054,
+            "94": 0.028,
+            "213": 0
+        }
+
+        # Stoploss:
+        stoploss = -0.347
+
+        # Trailing stop:
+        trailing_stop = True
+        trailing_stop_positive = 0.35
+        trailing_stop_positive_offset = 0.422
+        trailing_only_offset_is_reached = False
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
@@ -45,7 +134,6 @@ class bbrsi_scalp(WAOStrategy):
     use_sell_signal = True
     sell_profit_only = True
     ignore_roi_if_buy_signal = False
-
 
     def informative_pairs(self):
         """
