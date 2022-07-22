@@ -555,7 +555,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add
         additional features here, but must follow the naming convention.
-        Defined in IStrategy because Freqai needs to know it exists.
+        This method is *only* used in FreqaiDataKitchen class and therefore
+        it is only called if FreqAI is active.
         :params:
         :pair: pair to be used as informative
         :df: strategy dataframe which will receive merges from informatives

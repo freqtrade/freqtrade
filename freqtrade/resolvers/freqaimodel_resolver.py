@@ -44,7 +44,7 @@ class FreqaiModelResolver(IResolver):
             )
         if freqaimodel_name in disallowed_models:
             raise OperationalException(
-                f"{freqaimodel_name} is a baseclass and cannot be used directly. User must choose "
+                f"{freqaimodel_name} is a baseclass and cannot be used directly. Please choose "
                 "an existing child class or inherit from this baseclass.\n"
             )
         freqaimodel = FreqaiModelResolver.load_object(
