@@ -84,7 +84,8 @@ class Backtesting:
         self.processed_dfs: Dict[str, Dict] = {}
 
         self._exchange_name = self.config['exchange']['name']
-        self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
+        self.exchange = ExchangeResolver.load_exchange(
+            self._exchange_name, self.config, load_leverage_tiers=True)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         if self.config.get('strategy_list'):
