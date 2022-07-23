@@ -38,7 +38,23 @@ class IFreqaiModel(ABC):
     """
     Class containing all tools for training and prediction in the strategy.
     Base*PredictionModels inherit from this class.
-    Author: Robert Caulk, rob.caulk@gmail.com
+
+    Record of contribution:
+    FreqAI was developed by a group of individuals who all contributed specific skillsets to the
+    project.
+
+    Conception and software development:
+    Robert Caulk @robcaulk
+
+    Theoretical brainstorming:
+    Elin Törnquist @thorntwig
+
+    Code review, software architecture brainstorming:
+    @xmatthias
+
+    Beta testing and bug reporting:
+    @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:

@@ -13,9 +13,6 @@ from joblib.externals import cloudpickle
 from pandas import DataFrame
 
 
-# from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -25,6 +22,23 @@ class FreqaiDataDrawer:
     /loading to/from disk.
     This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
     reinstantiated for each coin.
+
+    Record of contribution:
+    FreqAI was developed by a group of individuals who all contributed specific skillsets to the
+    project.
+
+    Conception and software development:
+    Robert Caulk @robcaulk
+
+    Theoretical brainstorming:
+    Elin Törnquist @thorntwig
+
+    Code review, software architecture brainstorming:
+    @xmatthias
+
+    Beta testing and bug reporting:
+    @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta
     """
 
     def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):

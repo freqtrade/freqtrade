@@ -685,3 +685,20 @@ This includes all test data and unseen prediction data (dry/live/backtest).
 `user_data_dir/models/` contains all the data associated with the trainings and backtests.
 This file structure is heavily controlled and read by the `FreqaiDataKitchen()`
 and should therefore not be modified.
+
+## Credits
+FreqAI was developed by a group of individuals who all contributed specific skillsets to the 
+project.
+
+Conception and software development:
+Robert Caulk @robcaulk
+
+Theoretical brainstorming:
+Elin Törnquist @thorntwig
+
+Code review, software architecture brainstorming:
+@xmatthias
+
+Beta testing and bug reporting:
+@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+Juha Nykänen @suikula, Wagner Costa @wagnercosta
