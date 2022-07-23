@@ -111,16 +111,17 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
 
-### Return values for use in strategy
 
-Here are the values you can expect to receive inside the dataframe returned by FreqAI:
+### Important FreqAI dataframe key patterns
+Here are the values the user can expect to include/use inside the typical strategy dataframe (`df[]`):
 
-|  Parameter | Description |
+|  DataFrame Key | Description |
 |------------|-------------|
-| `&-s*` | user defined labels in the user made strategy. Anything prepended with `&` is treated as a training target inside FreqAI. These same dataframe columns names are fed back to the user as the predictions. For example, the user wishes to predict the price change in the next 40 candles (similar to `templates/FreqaiExampleStrategy.py`) by setting `&-s_close`. FreqAI makes the predictions and gives them back to the user under the same key (`&-s_close`) to be used in `populate_entry/exit_trend()`. <br> **Datatype:** depends on the output of the model.
-| `&-s*_std/mean` | The standard deviation and mean values of the user defined labels during training (or live tracking with `fit_live_predictions_candles`). Commonly used to understand rarity of prediction (use the z-score as shown in `templates/FreqaiExampleStrategy.py` to evaluate how often a particular prediction was observed during training (or historically with `fit_live_predictions_candles`)<br> **Datatype:** float.
-| `do_predict` | An indication of an outlier, this return value is integer between -1 and 2 which lets the user understand if the prediction is trustworthy or not. `do_predict==1` means the prediction is trustworthy. If the [Dissimilarity Index](#removing-outliers-with-the-dissimilarity-index) is above the user defined threshold, it will subtract 1 from `do_predict`. If `use_SVM_to_remove_outliers()` is active, then the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract one from `do_predict`.  A particular case is when `do_predict == 2`, it means that the model has expired due to `expired_hours`. <br> **Datatype:** integer between -1 and 2.
-| `DI_values` | The raw Dissimilarity Index values to give the user a sense of confidence in the prediction. Lower DI means the data point is closer to the trained parameter space. <br> **Datatype:** float.
+| `df['&*']` | Any dataframe column prepended with `&` in `populate_any_indicators()` is treated as a training target inside FreqAI (typically following the naming convention `&-s*`). These same dataframe columns names are fed back to the user as the predictions. For example, the user wishes to predict the price change in the next 40 candles (similar to `templates/FreqaiExampleStrategy.py`) by setting `df['&-s_close']`. FreqAI makes the predictions and gives them back to the user under the same key (`df['&-s_close']`) to be used in `populate_entry/exit_trend()`. <br> **Datatype:** depends on the output of the model.
+| `df['&*_std/mean']` | The standard deviation and mean values of the user defined labels during training (or live tracking with `fit_live_predictions_candles`). Commonly used to understand rarity of prediction (use the z-score as shown in `templates/FreqaiExampleStrategy.py` to evaluate how often a particular prediction was observed during training (or historically with `fit_live_predictions_candles`)<br> **Datatype:** float.
+| `df['do_predict']` | An indication of an outlier, this return value is integer between -1 and 2 which lets the user understand if the prediction is trustworthy or not. `do_predict==1` means the prediction is trustworthy. If the [Dissimilarity Index](#removing-outliers-with-the-dissimilarity-index) is above the user defined threshold, it will subtract 1 from `do_predict`. If `use_SVM_to_remove_outliers()` is active, then the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract one from `do_predict`.  A particular case is when `do_predict == 2`, it means that the model has expired due to `expired_hours`. <br> **Datatype:** integer between -1 and 2.
+| `df['DI_values']` | The raw Dissimilarity Index values to give the user a sense of confidence in the prediction. Lower DI means the data point is closer to the trained parameter space. <br> **Datatype:** float.
+| `df['%*']` | Any dataframe column prepended with `%` in `populate_any_indicators()` is treated as a training feature inside FreqAI. For example, the user can include the rsi in the training feature set (similar to `templates/FreqaiExampleStrategy.py`) by setting `df['%-rsi']`. See more details on how this is done [here](#building-the-feature-set). Note: since the number of features prepended with `%` can multiply very quickly (10s of thousands of features is easily engineered using the multiplictative functionality described in the `feature_parameters` table.) these features are removed from the dataframe upon return from FreqAI. If the user wishes to keep a particular type of feature for plotting purposes, you can prepend it with `%%`. <br> **Datatype:** depends on the output of the model.
 
 ### Example config file
 
@@ -338,6 +339,9 @@ and adding this to the `train_period_days`. The units need to be in the base can
 !!! Note
     In dry/live, this is all precomputed and handled automatically. Thus, `startup_candle` has no influence on dry/live.
 
+!!! Note
+    Although fractional `backtest_period_days` is allowed, the user should be ware that the `--timerange` is divided by this value to determine the number of models that FreqAI will need to train in order to backtest the full range. For example, if the user wants to set a `--timerange` of 10 days, and asks for a `backtest_period_days` of 0.1, FreqAI will need to train 100 models per pair to complete the full backtest. This is why it is physically impossible to truly backtest FreqAI adaptive training. The best way to fully test a model is to run it dry and let it constantly train. In this case, backtesting would take the exact same amount of time as a dry run.
+
 ## Running Freqai
 
 ### Training and backtesting
@@ -419,12 +423,7 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 ```
 
 By default, Freqai will not find find any existing models and will start by training a new one 
-given the user configuration settings. Following training, it will use that model to predict for the
-duration of `backtest_period_days`. After a full `backtest_period_days` has elapsed, Freqai will auto retrain 
-a new model, and begin making predictions with the updated model. FreqAI backtesting and live both
-permit the user to use fractional days (i.e. 0.1) in the `backtest_period_days`, which enables more frequent 
-retraining. But the user should be careful that using a fractional `backtest_period_days` with a large
-`--timerange` in backtesting will result in a huge amount of required trainings/models.
+given the user configuration settings. Following training, it will use that model to make predictions on incoming candles until a new model is available. New models are typically generated as often as possible, with FreqAI managing an internal queue of the pairs to try and keep all models equally "young." FreqAI will always use the newest trained model to make predictions on incoming live data. If users do not want FreqAI to retrain new models as often as possible, they can set `live_retrain_hours` to tell FreqAI to wait at least that number of hours before retraining a new model. Additionally, users can set `expired_hours` to tell FreqAI to avoid making predictions on models aged over this number of hours. 
 
 If the user wishes to start dry/live from a backtested saved model, the user only needs to reuse
 the same `identifier` parameter
@@ -439,7 +438,6 @@ the same `identifier` parameter
 In this case, although Freqai will initiate with a
 pre-trained model, it will still check to see how much time has elapsed since the model was trained,
 and if a full `live_retrain_hours` has elapsed since the end of the loaded model, FreqAI will self retrain. 
-It is common to want constant retraining, in which case, the user should set `live_retrain_hours` to 0.
 
 ## Data analysis techniques
 
