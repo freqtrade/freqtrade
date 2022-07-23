@@ -356,7 +356,7 @@ class FreqaiDataKitchen:
 
         return self.data_dictionary
 
-    def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
+    def normalize_data(self, data_dictionary: Dict, do_labels: bool = True) -> Dict[Any, Any]:
         """
         Normalize all data in the data_dictionary according to the training dataset
         :params:
@@ -374,27 +374,28 @@ class FreqaiDataKitchen:
             2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
         )
 
-        train_labels_max = data_dictionary["train_labels"].max()
-        train_labels_min = data_dictionary["train_labels"].min()
-        data_dictionary["train_labels"] = (
-            2
-            * (data_dictionary["train_labels"] - train_labels_min)
-            / (train_labels_max - train_labels_min)
-            - 1
-        )
-        data_dictionary["test_labels"] = (
-            2
-            * (data_dictionary["test_labels"] - train_labels_min)
-            / (train_labels_max - train_labels_min)
-            - 1
-        )
-
         for item in train_max.keys():
             self.data[item + "_max"] = train_max[item]
             self.data[item + "_min"] = train_min[item]
 
-        self.data["labels_max"] = train_labels_max.to_dict()
-        self.data["labels_min"] = train_labels_min.to_dict()
+        if do_labels:
+            train_labels_max = data_dictionary["train_labels"].max()
+            train_labels_min = data_dictionary["train_labels"].min()
+            data_dictionary["train_labels"] = (
+                2
+                * (data_dictionary["train_labels"] - train_labels_min)
+                / (train_labels_max - train_labels_min)
+                - 1
+            )
+            data_dictionary["test_labels"] = (
+                2
+                * (data_dictionary["test_labels"] - train_labels_min)
+                / (train_labels_max - train_labels_min)
+                - 1
+            )
+
+            self.data["labels_max"] = train_labels_max.to_dict()
+            self.data["labels_min"] = train_labels_min.to_dict()
 
         return data_dictionary
 
