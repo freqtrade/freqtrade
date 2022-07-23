@@ -6,6 +6,7 @@ import pytest
 from freqtrade import constants
 from freqtrade.enums import ExitType
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.trade_model import Order
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
@@ -30,7 +31,37 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         amount=0.01 / open_rate,
         exchange='binance',
         is_short=is_short,
+        leverage=1,
     )
+
+    trade.orders.append(Order(
+        ft_order_side=trade.entry_side,
+        order_id=f'{pair}-{trade.entry_side}-{trade.open_date}',
+        ft_pair=pair,
+        amount=trade.amount,
+        filled=trade.amount,
+        remaining=0,
+        price=open_rate,
+        average=open_rate,
+        status="closed",
+        order_type="market",
+        side=trade.entry_side,
+    ))
+    if not is_open:
+        trade.orders.append(Order(
+            ft_order_side=trade.exit_side,
+            order_id=f'{pair}-{trade.exit_side}-{trade.close_date}',
+            ft_pair=pair,
+            amount=trade.amount,
+            filled=trade.amount,
+            remaining=0,
+            price=open_rate * (2 - profit_rate if is_short else profit_rate),
+            average=open_rate * (2 - profit_rate if is_short else profit_rate),
+            status="closed",
+            order_type="market",
+            side=trade.exit_side,
+            ))
+
     trade.recalc_open_trade_value()
     if not is_open:
         trade.close(open_rate * (2 - profit_rate if is_short else profit_rate))
