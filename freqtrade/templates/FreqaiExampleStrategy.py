@@ -8,8 +8,7 @@ from technical import qtpylib
 
 from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.persistence import Trade
-from freqtrade.strategy import DecimalParameter, IntParameter, merge_informative_pair
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_informative_pair
 
 
 logger = logging.getLogger(__name__)
