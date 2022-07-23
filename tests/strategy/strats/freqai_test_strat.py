@@ -16,7 +16,6 @@ class freqai_test_strat(IStrategy):
     """
     Example strategy showing how the user connects their own
     IFreqaiModel to the strategy. Namely, the user uses:
-    self.model = CustomModel(self.config)
     self.freqai.start(dataframe, metadata)
 
     to make predictions on their data. populate_any_indicators() automatically

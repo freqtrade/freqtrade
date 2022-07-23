@@ -166,7 +166,7 @@ config setup includes:
 Features are added by the user inside the `populate_any_indicators()` method of the strategy 
 by prepending indicators with `%` and labels are added by prepending `&`.  
 There are some important components/structures that the user *must* include when building their feature set.
-As shown below, `with self.model.bridge.lock:` must be used to ensure thread safety - especially when using third
+As shown below, `with self.freqai.lock:` must be used to ensure thread safety - especially when using third
 party libraries for indicator construction such as TA-lib.  
 Another structure to consider is the  location of the labels at the bottom of the example function (below `if set_generalized_indicators:`).
 This is where the user will add single features and labels to their feature set to avoid duplication from 
@@ -191,7 +191,7 @@ various configuration parameters which multiply the feature set such as `include
         :coin: the name of the coin which will modify the feature names.
         """
 
-        with self.model.bridge.lock:
+        with self.freqai.lock:
             if informative is None:
                 informative = self.dp.get_pair_dataframe(pair, tf)
 
@@ -370,7 +370,6 @@ for each pair, for each backtesting window within the bigger `--timerange`.
 The Freqai strategy requires the user to include the following lines of code in the strategy:
 
 ```python
-    from freqtrade.freqai.strategy_bridge import CustomModel
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
@@ -385,9 +384,6 @@ The Freqai strategy requires the user to include the following lines of code in 
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
-    def bot_start(self):
-        self.model = CustomModel(self.config)
-
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         self.freqai_info = self.config["freqai"]
@@ -400,7 +396,7 @@ The Freqai strategy requires the user to include the following lines of code in 
         # the target mean/std values for each of the labels created by user in 
         # `populate_any_indicators()` for each training period.
 
-        dataframe = self.model.bridge.start(dataframe, metadata, self)
+        dataframe = self.freqai.start(dataframe, metadata, self)
 
         return dataframe
 ```
@@ -648,7 +644,7 @@ below this value. An example usage in the strategy may look something like:
             dataframe["do_predict"],
             dataframe["target_upper_quantile"],
             dataframe["target_lower_quantile"],
-        ) = self.model.bridge.start(dataframe, metadata, self)
+        ) = self.freqai.start(dataframe, metadata, self)
 
         return dataframe
 

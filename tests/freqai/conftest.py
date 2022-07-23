@@ -76,7 +76,7 @@ def get_freqai_live_analyzed_dataframe(mocker, freqaiconf):
     strategy = get_patched_freqai_strategy(mocker, freqaiconf)
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -91,7 +91,7 @@ def get_freqai_analyzed_dataframe(mocker, freqaiconf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -107,7 +107,7 @@ def get_ready_to_train(mocker, freqaiconf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
