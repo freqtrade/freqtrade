@@ -2060,8 +2060,9 @@ def test_update_trade_state_orderexception(mocker, default_conf_usdt, caplog) ->
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_update_trade_state_sell(
-    default_conf_usdt, trades_for_order, limit_order_open, limit_order, is_short, mocker,
+    default_conf_usdt, trades_for_order, limit_order_open, limit_order, is_short, mocker
 ):
+    buy_order = limit_order[entry_side(is_short)]
     open_order = limit_order_open[exit_side(is_short)]
     l_order = limit_order[exit_side(is_short)]
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
@@ -2088,6 +2089,9 @@ def test_update_trade_state_sell(
         leverage=1,
         is_short=is_short,
     )
+    order = Order.parse_from_ccxt_object(buy_order, 'LTC/ETH', entry_side(is_short))
+    trade.orders.append(order)
+
     order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', exit_side(is_short))
     trade.orders.append(order)
     assert order.status == 'open'
@@ -2135,8 +2139,6 @@ def test_handle_trade(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], entry_side(is_short))
-    trade.update_trade(oobj)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
@@ -2146,11 +2148,15 @@ def test_handle_trade(
     assert trade.open_order_id == exit_order['id']
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], exit_side(is_short))
-    trade.update_trade(oobj)
+    trade.orders[-1].ft_is_open = False
+    trade.orders[-1].status = 'closed'
+    trade.orders[-1].filled = trade.orders[-1].remaining
+    trade.orders[-1].remaining = 0.0
 
-    assert trade.close_rate == 2.0 if is_short else 2.2
-    assert trade.close_profit == close_profit
+    trade.update_trade(trade.orders[-1])
+
+    assert trade.close_rate == (2.0 if is_short else 2.2)
+    assert pytest.approx(trade.close_profit) == close_profit
     assert trade.calc_profit(trade.close_rate) == 5.685
     assert trade.close_date is not None
     assert trade.exit_reason == 'sell_signal1'
@@ -2787,6 +2793,7 @@ def test_manage_open_orders_partial(
     rpc_mock = patch_RPCManager(mocker)
     open_trade.is_short = is_short
     open_trade.leverage = leverage
+    open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
     limit_buy_order_old_partial['side'] = 'sell' if is_short else 'buy'
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
@@ -2872,6 +2879,7 @@ def test_manage_open_orders_partial_except(
     limit_buy_order_old_partial_canceled, mocker
 ) -> None:
     open_trade.is_short = is_short
+    open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_order_old_partial_canceled['id'] = open_trade.open_order_id
     limit_buy_order_old_partial['id'] = open_trade.open_order_id
@@ -3626,7 +3634,7 @@ def test_execute_trade_exit_market_order(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -3642,7 +3650,8 @@ def test_execute_trade_exit_market_order(
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_usdt_sell_up
+        fetch_ticker=ticker_usdt_sell_up,
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     freqtrade.config['order_types']['exit'] = 'market'
 
@@ -3655,7 +3664,7 @@ def test_execute_trade_exit_market_order(
     assert not trade.is_open
     assert trade.close_profit == profit_ratio
 
-    assert rpc_mock.call_count == 3
+    assert rpc_mock.call_count == 4
     last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.EXIT,

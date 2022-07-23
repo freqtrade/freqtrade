@@ -481,6 +481,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
 
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', entry_side)
+    trade.orders.append(oobj)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == open_rate
@@ -496,11 +497,12 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     trade.open_order_id = 'something'
     time_machine.move_to("2022-03-31 21:45:05 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
+    trade.orders.append(oobj)
     trade.update_trade(oobj)
 
     assert trade.open_order_id is None
     assert trade.close_rate == close_rate
-    assert trade.close_profit == profit
+    assert pytest.approx(trade.close_profit) == profit
     assert trade.close_date is not None
     assert log_has_re(f"LIMIT_{exit_side.upper()} has been fulfilled for "
                       r"Trade\(id=2, pair=ADA/USDT, amount=30.00000000, "
@@ -529,6 +531,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
+    trade.orders.append(oobj)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.open_rate == 2.0
@@ -543,10 +546,11 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     trade.is_open = True
     trade.open_order_id = 'something'
     oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.orders.append(oobj)
     trade.update_trade(oobj)
     assert trade.open_order_id is None
     assert trade.close_rate == 2.2
-    assert trade.close_profit == round(0.0945137157107232, 8)
+    assert pytest.approx(trade.close_profit) == 0.094513715710723
     assert trade.close_date is not None
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
                       r"pair=ADA/USDT, amount=30.00000000, is_short=False, leverage=1.0, "
@@ -624,14 +628,41 @@ def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
         exchange='binance',
-        trading_mode=margin
+        trading_mode=margin,
+        leverage=1.0,
     )
+    trade.orders.append(Order(
+        ft_order_side=trade.entry_side,
+        order_id=f'{trade.pair}-{trade.entry_side}-{trade.open_date}',
+        ft_pair=trade.pair,
+        amount=trade.amount,
+        filled=trade.amount,
+        remaining=0,
+        price=trade.open_rate,
+        average=trade.open_rate,
+        status="closed",
+        order_type="limit",
+        side=trade.entry_side,
+    ))
+    trade.orders.append(Order(
+        ft_order_side=trade.exit_side,
+        order_id=f'{trade.pair}-{trade.exit_side}-{trade.open_date}',
+        ft_pair=trade.pair,
+        amount=trade.amount,
+        filled=trade.amount,
+        remaining=0,
+        price=2.2,
+        average=2.2,
+        status="closed",
+        order_type="limit",
+        side=trade.exit_side,
+         ))
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.is_open is True
     trade.close(2.2)
     assert trade.is_open is False
-    assert trade.close_profit == round(0.0945137157107232, 8)
+    assert pytest.approx(trade.close_profit) == 0.094513715
     assert trade.close_date is not None
 
     new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
