@@ -2139,8 +2139,6 @@ def test_handle_trade(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], entry_side(is_short))
-    trade.update_trade(oobj)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
@@ -2150,11 +2148,15 @@ def test_handle_trade(
     assert trade.open_order_id == exit_order['id']
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], exit_side(is_short))
-    trade.update_trade(oobj)
+    trade.orders[-1].ft_is_open = False
+    trade.orders[-1].status = 'closed'
+    trade.orders[-1].filled = trade.orders[-1].remaining
+    trade.orders[-1].remaining = 0.0
 
-    assert trade.close_rate == 2.0 if is_short else 2.2
-    assert trade.close_profit == close_profit
+    trade.update_trade(trade.orders[-1])
+
+    assert trade.close_rate == (2.0 if is_short else 2.2)
+    assert pytest.approx(trade.close_profit) == close_profit
     assert trade.calc_profit(trade.close_rate) == 5.685
     assert trade.close_date is not None
     assert trade.exit_reason == 'sell_signal1'
