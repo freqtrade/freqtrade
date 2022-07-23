@@ -76,7 +76,7 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = self.pair_dictionary_path.is_file()  # resolve().exists()
+        exists = self.pair_dictionary_path.is_file()
         if exists:
             with open(self.pair_dictionary_path, "r") as fp:
                 self.pair_dict = json.load(fp)
@@ -96,7 +96,7 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = self.historic_predictions_path.is_file()  # resolve().exists()
+        exists = self.historic_predictions_path.is_file()
         if exists:
             with open(self.historic_predictions_path, "rb") as fp:
                 self.historic_predictions = cloudpickle.load(fp)
@@ -143,11 +143,7 @@ class FreqaiDataDrawer:
 
         whitelist_pairs = self.config.get("exchange", {}).get("pair_whitelist")
 
-        exists = (
-            self.follower_dict_path.is_file()
-            # .resolve()
-            # .exists()
-        )
+        exists = self.follower_dict_path.is_file()
 
         if exists:
             logger.info("Found an existing follower dictionary")
