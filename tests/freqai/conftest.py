@@ -2,6 +2,8 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -10,13 +12,14 @@ from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
 
 
-# @pytest.fixture(scope="function")
-def freqai_conf(default_conf):
+@pytest.fixture(scope="function")
+def freqai_conf(default_conf, tmpdir):
     freqaiconf = deepcopy(default_conf)
     freqaiconf.update(
         {
             "datadir": Path(default_conf["datadir"]),
             "strategy": "freqai_test_strat",
+            "user_data_dir": Path(tmpdir),
             "strategy-path": "freqtrade/tests/strategy/strats",
             "freqaimodel": "LightGBMPredictionModel",
             "freqaimodel_path": "freqai/prediction_models",
