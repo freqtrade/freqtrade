@@ -145,11 +145,20 @@ class IStrategy(ABC, HyperStrategyMixin):
                     informative_data.candle_type = config['candle_type_def']
                 self._ft_informative.append((informative_data, cls_method))
 
+    def load_freqAI_model(self) -> None:
+        if self.config.get('freqai', None):
+            # Import here to avoid importing this if freqAI is disabled
+            from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+
+            self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
+
     def ft_bot_start(self, **kwargs) -> None:
         """
         Strategy init - runs after dataprovider has been added.
         Must call bot_start()
         """
+        self.load_freqAI_model()
+
         strategy_safe_wrapper(self.bot_start)()
 
         self.ft_load_hyper_params(self.config.get('runmode') == RunMode.HYPEROPT)

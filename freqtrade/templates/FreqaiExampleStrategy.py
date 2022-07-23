@@ -7,7 +7,6 @@ from pandas import DataFrame
 from technical import qtpylib
 
 from freqtrade.exchange import timeframe_to_prev_date
-from freqtrade.freqai.strategy_bridge import CustomModel
 from freqtrade.persistence import Trade
 from freqtrade.strategy import DecimalParameter, IntParameter, merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
@@ -21,7 +20,7 @@ class FreqaiExampleStrategy(IStrategy):
     Example strategy showing how the user connects their own
     IFreqaiModel to the strategy. Namely, the user uses:
     self.model = CustomModel(self.config)
-    self.model.bridge.start(dataframe, metadata)
+    self.freqai.start(dataframe, metadata)
 
     to make predictions on their data. populate_any_indicators() automatically
     generates the variety of features indicated by the user in the
@@ -67,9 +66,6 @@ class FreqaiExampleStrategy(IStrategy):
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
-    def bot_start(self):
-        self.model = CustomModel(self.config)
-
     def populate_any_indicators(
         self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
     ):
@@ -88,7 +84,7 @@ class FreqaiExampleStrategy(IStrategy):
         :coin: the name of the coin which will modify the feature names.
         """
 
-        with self.model.bridge.lock:
+        with self.freqai.lock:
             if informative is None:
                 informative = self.dp.get_pair_dataframe(pair, tf)
 
@@ -180,7 +176,7 @@ class FreqaiExampleStrategy(IStrategy):
         # the target mean/std values for each of the labels created by user in
         # `populate_any_indicators()` for each training period.
 
-        dataframe = self.model.bridge.start(dataframe, metadata, self)
+        dataframe = self.freqai.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
         dataframe["sell_roi"] = dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * 1.25
@@ -234,9 +230,9 @@ class FreqaiExampleStrategy(IStrategy):
         follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
 
         if not follow_mode:
-            pair_dict = self.model.bridge.dd.pair_dict
+            pair_dict = self.freqai.dd.pair_dict
         else:
-            pair_dict = self.model.bridge.dd.follower_dict
+            pair_dict = self.freqai.dd.follower_dict
 
         entry_tag = trade.enter_tag
 
@@ -244,12 +240,12 @@ class FreqaiExampleStrategy(IStrategy):
             "prediction" + entry_tag not in pair_dict[pair]
             or pair_dict[pair]["prediction" + entry_tag] > 0
         ):
-            with self.model.bridge.lock:
+            with self.freqai.lock:
                 pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
                 if not follow_mode:
-                    self.model.bridge.dd.save_drawer_to_disk()
+                    self.freqai.dd.save_drawer_to_disk()
                 else:
-                    self.model.bridge.dd.save_follower_dict_to_disk()
+                    self.freqai.dd.save_follower_dict_to_disk()
 
         roi_price = pair_dict[pair]["prediction" + entry_tag]
         roi_time = self.max_roi_time_long.value
@@ -284,16 +280,16 @@ class FreqaiExampleStrategy(IStrategy):
         entry_tag = trade.enter_tag
         follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
         if not follow_mode:
-            pair_dict = self.model.bridge.dd.pair_dict
+            pair_dict = self.freqai.dd.pair_dict
         else:
-            pair_dict = self.model.bridge.dd.follower_dict
+            pair_dict = self.freqai.dd.follower_dict
 
-        with self.model.bridge.lock:
+        with self.freqai.lock:
             pair_dict[pair]["prediction" + entry_tag] = 0
             if not follow_mode:
-                self.model.bridge.dd.save_drawer_to_disk()
+                self.freqai.dd.save_drawer_to_disk()
             else:
-                self.model.bridge.dd.save_follower_dict_to_disk()
+                self.freqai.dd.save_follower_dict_to_disk()
 
         return True
 

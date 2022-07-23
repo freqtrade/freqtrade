@@ -5,7 +5,6 @@ import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.freqai.strategy_bridge import CustomModel
 from freqtrade.strategy import DecimalParameter, IntParameter, merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -18,7 +17,7 @@ class freqai_test_strat(IStrategy):
     Example strategy showing how the user connects their own
     IFreqaiModel to the strategy. Namely, the user uses:
     self.model = CustomModel(self.config)
-    self.model.bridge.start(dataframe, metadata)
+    self.freqai.start(dataframe, metadata)
 
     to make predictions on their data. populate_any_indicators() automatically
     generates the variety of features indicated by the user in the
@@ -64,9 +63,6 @@ class freqai_test_strat(IStrategy):
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
-    def bot_start(self):
-        self.model = CustomModel(self.config)
-
     def populate_any_indicators(
         self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
     ):
@@ -85,7 +81,7 @@ class freqai_test_strat(IStrategy):
         :coin: the name of the coin which will modify the feature names.
         """
 
-        with self.model.bridge.lock:
+        with self.freqai.lock:
             if informative is None:
                 informative = self.dp.get_pair_dataframe(pair, tf)
 
@@ -146,7 +142,7 @@ class freqai_test_strat(IStrategy):
         # the model will return 4 values, its prediction, an indication of whether or not the
         # prediction should be accepted, the target mean/std values from the labels used during
         # each training period.
-        dataframe = self.model.bridge.start(dataframe, metadata, self)
+        dataframe = self.freqai.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
         dataframe["sell_roi"] = dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * 1.25
