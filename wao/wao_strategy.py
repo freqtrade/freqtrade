@@ -6,7 +6,6 @@ from wao.wao_strategy_controller import WAOStrategyController
 
 
 class WAOStrategy(IStrategy):
-    coin = None
     # Optional order type mapping
     order_types = {
         'buy': 'market',
@@ -42,7 +41,7 @@ class WAOStrategy(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        self.coin = pair.split("/")[0]
+        coin = pair.split("/")[0]
 
         # is_same_coin_trade_open = self.controller.is_romeo_alive(coin)
         # print("WAOStrategy: confirm_trade_entry: is_same_coin_trade_open="+str(is_same_coin_trade_open))
@@ -52,7 +51,7 @@ class WAOStrategy(IStrategy):
         # else:
         #     self.controller.on_buy_signal(current_time, coin)
         #     return True
-        self.controller.on_buy_signal(current_time, self.coin)
+        self.controller.on_buy_signal(current_time, coin)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -81,7 +80,7 @@ class WAOStrategy(IStrategy):
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
         """
-        self.coin = pair.split("/")[0]
+        coin = pair.split("/")[0]
 
-        self.controller.on_sell_signal(sell_reason, current_time, self.coin)
+        self.controller.on_sell_signal(sell_reason, current_time, coin)
         return True
