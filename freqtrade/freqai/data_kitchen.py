@@ -356,7 +356,7 @@ class FreqaiDataKitchen:
 
         return self.data_dictionary
 
-    def normalize_data(self, data_dictionary: Dict, do_labels: bool = True) -> Dict[Any, Any]:
+    def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
         """
         Normalize all data in the data_dictionary according to the training dataset
         :params:
@@ -378,24 +378,26 @@ class FreqaiDataKitchen:
             self.data[item + "_max"] = train_max[item]
             self.data[item + "_min"] = train_min[item]
 
-        if do_labels:
-            train_labels_max = data_dictionary["train_labels"].max()
-            train_labels_min = data_dictionary["train_labels"].min()
+        for item in data_dictionary["train_labels"].keys():
+            if data_dictionary["train_labels"][item].dtype == str:
+                continue
+            train_labels_max = data_dictionary["train_labels"][item].max()
+            train_labels_min = data_dictionary["train_labels"][item].min()
             data_dictionary["train_labels"] = (
                 2
-                * (data_dictionary["train_labels"] - train_labels_min)
+                * (data_dictionary["train_labels"][item] - train_labels_min)
                 / (train_labels_max - train_labels_min)
                 - 1
             )
-            data_dictionary["test_labels"] = (
+            data_dictionary["test_labels"][item] = (
                 2
                 * (data_dictionary["test_labels"] - train_labels_min)
                 / (train_labels_max - train_labels_min)
                 - 1
             )
 
-            self.data["labels_max"] = train_labels_max.to_dict()
-            self.data["labels_min"] = train_labels_min.to_dict()
+            self.data[f"{item}_max"] = train_labels_max  # .to_dict()
+            self.data[f"{item}_min"] = train_labels_min  # .to_dict()
 
         return data_dictionary
 
@@ -414,6 +416,25 @@ class FreqaiDataKitchen:
                 / (self.data[item + "_max"] - self.data[item + "_min"])
                 - 1
             )
+
+        return df
+
+    def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
+        """
+        Normalize a set of data using the mean and standard deviation from
+        the associated training data.
+        :params:
+        :df: Dataframe of predictions to be denormalized
+        """
+
+        for label in self.label_list:
+            if df[label].dtype == str:
+                continue
+            df[label] = (
+                (df[label] + 1)
+                * (self.data[f"{label}_max"] - self.data[f"{label}_min"])
+                / 2
+            ) + self.data[f"{label}_min"]
 
         return df
 

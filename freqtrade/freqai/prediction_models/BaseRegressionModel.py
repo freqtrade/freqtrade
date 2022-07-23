@@ -107,11 +107,6 @@ class BaseRegressionModel(IFreqaiModel):
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
         pred_df = DataFrame(predictions, columns=dk.label_list)
 
-        for label in dk.label_list:
-            pred_df[label] = (
-                (pred_df[label] + 1)
-                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
-                / 2
-            ) + dk.data["labels_min"][label]
+        pred_df = dk.denormalize_labels_from_metadata(pred_df)
 
         return (pred_df, dk.do_predict)
