@@ -21,7 +21,7 @@ def test_train_model_in_series_LightGBM(mocker, default_conf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -113,7 +113,7 @@ def test_start_backtesting(mocker, default_conf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -139,7 +139,7 @@ def test_start_backtesting_from_existing_folder(mocker, default_conf, caplog):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180130")
@@ -162,7 +162,7 @@ def test_start_backtesting_from_existing_folder(mocker, default_conf, caplog):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = False
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180130")

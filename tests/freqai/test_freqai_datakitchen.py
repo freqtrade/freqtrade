@@ -69,7 +69,7 @@ def test_update_historic_data(mocker, default_conf):
     strategy = get_patched_freqai_strategy(mocker, freqaiconf)
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -105,7 +105,7 @@ def test_load_all_pairs_histories(mocker, default_conf):
     strategy = get_patched_freqai_strategy(mocker, freqaiconf)
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -125,7 +125,7 @@ def test_get_base_and_corr_dataframes(mocker, default_conf):
     strategy = get_patched_freqai_strategy(mocker, freqaiconf)
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -153,7 +153,7 @@ def test_use_strategy_to_populate_indicators(mocker, default_conf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")

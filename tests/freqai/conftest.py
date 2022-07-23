@@ -61,7 +61,7 @@ def get_patched_data_kitchen(mocker, freqaiconf):
 
 def get_patched_freqai_strategy(mocker, freqaiconf):
     strategy = StrategyResolver.load_strategy(freqaiconf)
-    strategy.bot_start()
+    strategy.ft_bot_start()
 
     return strategy
 
