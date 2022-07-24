@@ -1,6 +1,3 @@
-# from unittest.mock import MagicMock
-# from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
-import copy
 import datetime
 import shutil
 from pathlib import Path
@@ -13,7 +10,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from tests.conftest import get_patched_exchange
-from tests.freqai.conftest import freqai_conf, get_patched_data_kitchen, get_patched_freqai_strategy
+from tests.freqai.conftest import get_patched_data_kitchen, get_patched_freqai_strategy
 
 
 @pytest.mark.parametrize(
@@ -24,15 +21,15 @@ from tests.freqai.conftest import freqai_conf, get_patched_data_kitchen, get_pat
     ],
 )
 def test_create_fulltimerange(
-    timerange, train_period_days, expected_result, default_conf, mocker, caplog
+    timerange, train_period_days, expected_result, freqai_conf, mocker, caplog
 ):
-    dk = get_patched_data_kitchen(mocker, freqai_conf(copy.deepcopy(default_conf)))
+    dk = get_patched_data_kitchen(mocker, freqai_conf)
     assert dk.create_fulltimerange(timerange, train_period_days) == expected_result
     shutil.rmtree(Path(dk.full_path))
 
 
-def test_create_fulltimerange_incorrect_backtest_period(mocker, default_conf):
-    dk = get_patched_data_kitchen(mocker, freqai_conf(copy.deepcopy(default_conf)))
+def test_create_fulltimerange_incorrect_backtest_period(mocker, freqai_conf):
+    dk = get_patched_data_kitchen(mocker, freqai_conf)
     with pytest.raises(OperationalException, match=r"backtest_period_days must be an integer"):
         dk.create_fulltimerange("20220101-20220201", 0.5)
     with pytest.raises(OperationalException, match=r"backtest_period_days must be positive"):
@@ -49,11 +46,10 @@ def test_create_fulltimerange_incorrect_backtest_period(mocker, default_conf):
     ],
 )
 def test_split_timerange(
-    mocker, default_conf, timerange, train_period_days, backtest_period_days, expected_result
+    mocker, freqai_conf, timerange, train_period_days, backtest_period_days, expected_result
 ):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    freqaiconf.update({"timerange": "20220101-20220401"})
-    dk = get_patched_data_kitchen(mocker, freqaiconf)
+    freqai_conf.update({"timerange": "20220101-20220401"})
+    dk = get_patched_data_kitchen(mocker, freqai_conf)
     tr_list, bt_list = dk.split_timerange(timerange, train_period_days, backtest_period_days)
     assert len(tr_list) == len(bt_list) == expected_result
 
@@ -64,14 +60,13 @@ def test_split_timerange(
     shutil.rmtree(Path(dk.full_path))
 
 
-def test_update_historic_data(mocker, default_conf):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    strategy = get_patched_freqai_strategy(mocker, freqaiconf)
-    exchange = get_patched_exchange(mocker, freqaiconf)
-    strategy.dp = DataProvider(freqaiconf, exchange)
+def test_update_historic_data(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
     freqai = strategy.freqai
     freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
 
     freqai.dk.load_all_pair_histories(timerange)
@@ -93,69 +88,65 @@ def test_update_historic_data(mocker, default_conf):
         (datetime.datetime.now(tz=datetime.timezone.utc).timestamp(), False),
     ],
 )
-def test_check_if_model_expired(mocker, default_conf, timestamp, expected):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    dk = get_patched_data_kitchen(mocker, freqaiconf)
+def test_check_if_model_expired(mocker, freqai_conf, timestamp, expected):
+    dk = get_patched_data_kitchen(mocker, freqai_conf)
     assert dk.check_if_model_expired(timestamp) == expected
     shutil.rmtree(Path(dk.full_path))
 
 
-def test_load_all_pairs_histories(mocker, default_conf):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    strategy = get_patched_freqai_strategy(mocker, freqaiconf)
-    exchange = get_patched_exchange(mocker, freqaiconf)
-    strategy.dp = DataProvider(freqaiconf, exchange)
+def test_load_all_pairs_histories(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
     freqai = strategy.freqai
     freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dk.load_all_pair_histories(timerange)
 
     assert len(freqai.dd.historic_data.keys()) == len(
-        freqaiconf.get("exchange", {}).get("pair_whitelist")
+        freqai_conf.get("exchange", {}).get("pair_whitelist")
     )
     assert len(freqai.dd.historic_data["ADA/BTC"]) == len(
-        freqaiconf.get("freqai", {}).get("feature_parameters", {}).get("include_timeframes")
+        freqai_conf.get("freqai", {}).get("feature_parameters", {}).get("include_timeframes")
     )
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_get_base_and_corr_dataframes(mocker, default_conf):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    strategy = get_patched_freqai_strategy(mocker, freqaiconf)
-    exchange = get_patched_exchange(mocker, freqaiconf)
-    strategy.dp = DataProvider(freqaiconf, exchange)
+def test_get_base_and_corr_dataframes(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
     freqai = strategy.freqai
     freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dk.load_all_pair_histories(timerange)
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
     corr_df, base_df = freqai.dk.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC")
 
     num_tfs = len(
-        freqaiconf.get("freqai", {}).get("feature_parameters", {}).get("include_timeframes")
+        freqai_conf.get("freqai", {}).get("feature_parameters", {}).get("include_timeframes")
     )
 
     assert len(base_df.keys()) == num_tfs
 
     assert len(corr_df.keys()) == len(
-        freqaiconf.get("freqai", {}).get("feature_parameters", {}).get("include_corr_pairlist")
+        freqai_conf.get("freqai", {}).get("feature_parameters", {}).get("include_corr_pairlist")
     )
 
     assert len(corr_df["ADA/BTC"].keys()) == num_tfs
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_use_strategy_to_populate_indicators(mocker, default_conf):
-    freqaiconf = freqai_conf(copy.deepcopy(default_conf))
-    strategy = get_patched_freqai_strategy(mocker, freqaiconf)
-    exchange = get_patched_exchange(mocker, freqaiconf)
-    strategy.dp = DataProvider(freqaiconf, exchange)
-    strategy.freqai_info = freqaiconf.get("freqai", {})
+def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
     freqai = strategy.freqai
     freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
     freqai.dk.load_all_pair_histories(timerange)
     sub_timerange = TimeRange.parse_timerange("20180111-20180114")
