@@ -383,7 +383,7 @@ class FreqaiDataKitchen:
                 continue
             train_labels_max = data_dictionary["train_labels"][item].max()
             train_labels_min = data_dictionary["train_labels"][item].min()
-            data_dictionary["train_labels"] = (
+            data_dictionary["train_labels"][item] = (
                 2
                 * (data_dictionary["train_labels"][item] - train_labels_min)
                 / (train_labels_max - train_labels_min)
@@ -391,14 +391,13 @@ class FreqaiDataKitchen:
             )
             data_dictionary["test_labels"][item] = (
                 2
-                * (data_dictionary["test_labels"] - train_labels_min)
+                * (data_dictionary["test_labels"][item] - train_labels_min)
                 / (train_labels_max - train_labels_min)
                 - 1
             )
 
             self.data[f"{item}_max"] = train_labels_max  # .to_dict()
             self.data[f"{item}_min"] = train_labels_min  # .to_dict()
-
         return data_dictionary
 
     def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
@@ -412,8 +411,8 @@ class FreqaiDataKitchen:
         for item in df.keys():
             df[item] = (
                 2
-                * (df[item] - self.data[item + "_min"])
-                / (self.data[item + "_max"] - self.data[item + "_min"])
+                * (df[item] - self.data[f"{item}_min"])
+                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
                 - 1
             )
 
