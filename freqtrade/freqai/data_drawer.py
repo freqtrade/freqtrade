@@ -151,7 +151,7 @@ class FreqaiDataDrawer:
         for pair in whitelist_pairs:
             self.follower_dict[pair] = {}
 
-        with open(self.follow_path, "w") as fp:
+        with open(self.follow_path_dict, "w") as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def np_encoder(self, object):
