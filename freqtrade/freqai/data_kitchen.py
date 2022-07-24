@@ -76,6 +76,9 @@ class FreqaiDataKitchen:
         self.keras = self.freqai_config.get("keras", False)
         self.set_all_pairs()
         if not self.live:
+            if not self.config["timerange"]:
+                raise OperationalException(
+                    'Please pass --timerange if you intend to use FreqAI for backtesting.')
             self.full_timerange = self.create_fulltimerange(
                 self.config["timerange"], self.freqai_config.get("train_period_days")
             )

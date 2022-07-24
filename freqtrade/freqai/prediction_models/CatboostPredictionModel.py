@@ -38,8 +38,6 @@ class CatboostPredictionModel(BaseRegressionModel):
 
         model = CatBoostRegressor(
             allow_writing_files=False,
-            verbose=100,
-            early_stopping_rounds=400,
             **self.model_training_parameters,
         )
         model.fit(X=train_data, eval_set=test_data)
