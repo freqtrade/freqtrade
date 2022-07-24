@@ -19,9 +19,8 @@ class CatboostPredictionModel(BaseRegressionModel):
     def fit(self, data_dictionary: Dict) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
         """
 
         train_data = Pool(

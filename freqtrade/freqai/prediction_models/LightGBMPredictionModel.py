@@ -21,9 +21,8 @@ class LightGBMPredictionModel(BaseRegressionModel):
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
         management will be properly handled by Freqai.
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
         """
 
         eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])

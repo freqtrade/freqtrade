@@ -31,9 +31,8 @@ class BaseTensorFlowModel(IFreqaiModel):
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
-        :params:
-        :unfiltered_dataframe: Full dataframe for the current training period
-        :metadata: pair metadata from strategy.
+        :param unfiltered_dataframe: Full dataframe for the current training period
+        :param metadata: pair metadata from strategy.
         :returns:
         :model: Trained model which can be used to inference (self.predict)
         """

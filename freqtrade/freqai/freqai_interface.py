@@ -92,11 +92,11 @@ class IFreqaiModel(ABC):
         Entry point to the FreqaiModel from a specific pair, it will train a new model if
         necessary before making the prediction.
 
-        :params:
-        :dataframe: Full dataframe coming from strategy - it contains entire
-        backtesting timerange + additional historical data necessary to train
+        :param dataframe: Full dataframe coming from strategy - it contains entire
+                           backtesting timerange + additional historical data necessary to train
         the model.
-        :metadata: pair metadata coming from strategy.
+        :param metadata: pair metadata coming from strategy.
+        :param strategy: Strategy to train on
         """
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
