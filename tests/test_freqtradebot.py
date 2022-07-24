@@ -2763,6 +2763,8 @@ def test_check_handle_cancelled_exit(
     cancel_order_mock = MagicMock()
     limit_sell_order_old.update({"status": "canceled", 'filled': 0.0})
     limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
+    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3102,6 +3104,25 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         close_date=arrow.utcnow().datetime,
         exit_reason="sell_reason_whatever",
     )
+    trade.orders = [
+         Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id='123456',
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+             ),
+    ]
     order = {'id': "123456",
              'remaining': 1,
              'amount': 1,

@@ -88,7 +88,8 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
+    def __init__(self, config: Dict[str, Any], validate: bool = True,
+                 load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -186,7 +187,7 @@ class Exchange:
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
 
-        if self.trading_mode != TradingMode.SPOT:
+        if self.trading_mode != TradingMode.SPOT and load_leverage_tiers:
             self.fill_leverage_tiers()
         self.additional_exchange_init()
 
