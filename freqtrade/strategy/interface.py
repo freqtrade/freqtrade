@@ -566,12 +566,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         additional features here, but must follow the naming convention.
         This method is *only* used in FreqaiDataKitchen class and therefore
         it is only called if FreqAI is active.
-        :params:
-        :pair: pair to be used as informative
-        :df: strategy dataframe which will receive merges from informatives
-        :tf: timeframe of the dataframe which will modify the feature names
-        :informative: the dataframe associated with the informative pair
-        :coin: the name of the coin which will modify the feature names.
+        :param pair: pair to be used as informative
+        :param df: strategy dataframe which will receive merges from informatives
+        :param tf: timeframe of the dataframe which will modify the feature names
+        :param informative: the dataframe associated with the informative pair
+        :param coin: the name of the coin which will modify the feature names.
         """
         return df
 

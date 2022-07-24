@@ -183,12 +183,11 @@ various configuration parameters which multiply the feature set such as `include
         (see convention below). I.e. user should not prepend any supporting metrics
         (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
         model.
-        :params:
-        :pair: pair to be used as informative
-        :df: strategy dataframe which will receive merges from informatives
-        :tf: timeframe of the dataframe which will modify the feature names
-        :informative: the dataframe associated with the informative pair
-        :coin: the name of the coin which will modify the feature names.
+        :param pair: pair to be used as informative
+        :param df: strategy dataframe which will receive merges from informatives
+        :param tf: timeframe of the dataframe which will modify the feature names
+        :param informative: the dataframe associated with the informative pair
+        :param coin: the name of the coin which will modify the feature names.
         """
 
         with self.freqai.lock:

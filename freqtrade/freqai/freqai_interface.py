@@ -129,8 +129,7 @@ class IFreqaiModel(ABC):
         Function designed to constantly scan pairs for retraining on a separate thread (intracandle)
         to improve model youth. This function is agnostic to data preparation/collection/storage,
         it simply trains on what ever data is available in the self.dd.
-        :params:
-        strategy: IStrategy = The user defined strategy class
+        :param strategy: IStrategy = The user defined strategy class
         """
         while 1:
             time.sleep(1)
@@ -164,12 +163,11 @@ class IFreqaiModel(ABC):
         following the training window). FreqAI slides the window and sequentially builds
         the backtesting results before returning the concatenated results for the full
         backtesting period back to the strategy.
-        :params:
-        dataframe: DataFrame = strategy passed dataframe
-        metadata: Dict = pair metadata
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
-        :returns:
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :param dataframe: DataFrame = strategy passed dataframe
+        :param metadata: Dict = pair metadata
+        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :return:
+            FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
 
         self.pair_it += 1
@@ -239,13 +237,12 @@ class IFreqaiModel(ABC):
         """
         The main broad execution for dry/live. This function will check if a retraining should be
         performed, and if so, retrain and reset the model.
-        :params:
-        dataframe: DataFrame = strategy passed dataframe
-        metadata: Dict = pair metadata
-        strategy: IStrategy = currently employed strategy
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :param dataframe: DataFrame = strategy passed dataframe
+        :param metadata: Dict = pair metadata
+        :param strategy: IStrategy = currently employed strategy
+        dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         :returns:
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         """
 
         # update follower
@@ -353,9 +350,9 @@ class IFreqaiModel(ABC):
         """
         Ensure user is passing the proper feature set if they are reusing an `identifier` pointing
         to a folder holding existing models.
-        :params:
-        dataframe: DataFrame = strategy provided dataframe
-        dk: FreqaiDataKitchen = non-persistent data container/analyzer for current coin/bot loop
+        :param dataframe: DataFrame = strategy provided dataframe
+        :param dk: FreqaiDataKitchen = non-persistent data container/analyzer for
+                   current coin/bot loop
         """
         dk.find_features(dataframe)
         if "training_features_list_raw" in dk.data:
@@ -461,13 +458,14 @@ class IFreqaiModel(ABC):
         """
         Retreive data and train model in single threaded mode (only used if model directory is empty
         upon startup for dry/live )
-        :params:
-        new_trained_timerange: TimeRange = the timerange to train the model on
-        metadata: dict = strategy provided metadata
-        strategy: IStrategy = user defined strategy object
-        dk: FreqaiDataKitchen = non-persistent data container for current coin/loop
-        data_load_timerange: TimeRange = the amount of data to be loaded for populate_any_indicators
-        (larger than new_trained_timerange so that new_trained_timerange does not contain any NaNs)
+        :param new_trained_timerange: TimeRange = the timerange to train the model on
+        :param metadata: dict = strategy provided metadata
+        :param strategy: IStrategy = user defined strategy object
+        :param dk: FreqaiDataKitchen = non-persistent data container for current coin/loop
+        :param data_load_timerange: TimeRange = the amount of data to be loaded
+                                    for populate_any_indicators
+                                    (larger than new_trained_timerange so that
+                                    new_trained_timerange does not contain any NaNs)
         """
 
         corr_dataframes, base_dataframes = dk.get_base_and_corr_dataframes(
@@ -515,11 +513,9 @@ class IFreqaiModel(ABC):
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahandler
         for storing, saving, loading, and analyzing the data.
-        :params:
-        :unfiltered_dataframe: Full dataframe for the current training period
-        :metadata: pair metadata from strategy.
-        :returns:
-        :model: Trained model which can be used to inference (self.predict)
+        :param unfiltered_dataframe: Full dataframe for the current training period
+        :param metadata: pair metadata from strategy.
+        :return: Trained model which can be used to inference (self.predict)
         """
 
     @abstractmethod
@@ -528,9 +524,8 @@ class IFreqaiModel(ABC):
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
         management will be properly handled by Freqai.
-        :params:
-        data_dictionary: Dict = the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: Dict = the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
         """
 
         return
@@ -541,9 +536,9 @@ class IFreqaiModel(ABC):
     ) -> Tuple[DataFrame, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
-        :param:
-        unfiltered_dataframe: Full dataframe for the current backtest period.
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
+        :param unfiltered_dataframe: Full dataframe for the current backtest period.
+        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :param first: boolean = whether this is the first prediction or not.
         :return:
         :predictions: np.array of predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
@@ -554,12 +549,10 @@ class IFreqaiModel(ABC):
     def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
         """
         User defines the dataframe to be returned to strategy here.
-        :params:
-        dataframe: DataFrame = the full dataframe for the current prediction (live)
-        or --timerange (backtesting)
-        dk: FreqaiDataKitchen = Data management/analysis tool assoicated to present pair only
-        :returns:
-        dataframe: DataFrame = dataframe filled with user defined data
+        :param dataframe: DataFrame = the full dataframe for the current prediction (live)
+                                      or --timerange (backtesting)
+        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
+        :return: dataframe: DataFrame = dataframe filled with user defined data
         """
 
         return

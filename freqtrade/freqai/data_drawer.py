@@ -163,13 +163,12 @@ class FreqaiDataDrawer:
         Locate and load existing model metadata from persistent storage. If not located,
         create a new one and append the current pair to it and prepare it for its first
         training
-        :params:
-        metadata: dict = strategy furnished pair metadata
-        :returns:
-        model_filename: str = unique filename used for loading persistent objects from disk
-        trained_timestamp: int = the last time the coin was trained
-        coin_first: bool = If the coin is fresh without metadata
-        return_null_array: bool = Follower could not find pair metadata
+        :param pair: str: pair to lookup
+        :return:
+            model_filename: str = unique filename used for loading persistent objects from disk
+            trained_timestamp: int = the last time the coin was trained
+            coin_first: bool = If the coin is fresh without metadata
+            return_null_array: bool = Follower could not find pair metadata
         """
         pair_in_dict = self.pair_dict.get(pair)
         data_path_set = self.pair_dict.get(pair, {}).get("data_path", None)
@@ -277,13 +276,12 @@ class FreqaiDataDrawer:
             )
             df = pd.concat([prepend_df, df], axis=0)
 
-    def attach_return_values_to_return_dataframe(self, pair: str, dataframe) -> DataFrame:
+    def attach_return_values_to_return_dataframe(
+            self, pair: str, dataframe: DataFrame) -> DataFrame:
         """
         Attach the return values to the strat dataframe
-        :params:
-        dataframe: DataFrame = strat dataframe
-        :returns:
-        dataframe: DataFrame = strat dataframe with return values attached
+        :param dataframe: DataFrame = strategy dataframe
+        :return: DataFrame = strat dataframe with return values attached
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
