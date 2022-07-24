@@ -38,7 +38,23 @@ class IFreqaiModel(ABC):
     """
     Class containing all tools for training and prediction in the strategy.
     Base*PredictionModels inherit from this class.
-    Author: Robert Caulk, rob.caulk@gmail.com
+
+    Record of contribution:
+    FreqAI was developed by a group of individuals who all contributed specific skillsets to the
+    project.
+
+    Conception and software development:
+    Robert Caulk @robcaulk
+
+    Theoretical brainstorming:
+    Elin Törnquist @thorntwig
+
+    Code review, software architecture brainstorming:
+    @xmatthias
+
+    Beta testing and bug reporting:
+    @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
@@ -485,12 +501,8 @@ class IFreqaiModel(ABC):
     ) -> None:
         trained_predictions = model.predict(df)
         pred_df = DataFrame(trained_predictions, columns=dk.label_list)
-        for label in dk.label_list:
-            pred_df[label] = (
-                (pred_df[label] + 1)
-                * (dk.data["labels_max"][label] - dk.data["labels_min"][label])
-                / 2
-            ) + dk.data["labels_min"][label]
+
+        pred_df = dk.denormalize_labels_from_metadata(pred_df)
 
         self.dd.historic_predictions[pair] = pd.DataFrame()
         self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
@@ -511,7 +523,7 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def fit(self) -> Any:
+    def fit(self, data_dictionary: Dict[str, Any]) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data

@@ -145,11 +145,20 @@ class IStrategy(ABC, HyperStrategyMixin):
                     informative_data.candle_type = config['candle_type_def']
                 self._ft_informative.append((informative_data, cls_method))
 
+    def load_freqAI_model(self) -> None:
+        if self.config.get('freqai', None):
+            # Import here to avoid importing this if freqAI is disabled
+            from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+
+            self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
+
     def ft_bot_start(self, **kwargs) -> None:
         """
         Strategy init - runs after dataprovider has been added.
         Must call bot_start()
         """
+        self.load_freqAI_model()
+
         strategy_safe_wrapper(self.bot_start)()
 
         self.ft_load_hyper_params(self.config.get('runmode') == RunMode.HYPEROPT)
@@ -555,7 +564,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Function designed to automatically generate, name and merge features
         from user indicated timeframes in the configuration file. User can add
         additional features here, but must follow the naming convention.
-        Defined in IStrategy because Freqai needs to know it exists.
+        This method is *only* used in FreqaiDataKitchen class and therefore
+        it is only called if FreqAI is active.
         :params:
         :pair: pair to be used as informative
         :df: strategy dataframe which will receive merges from informatives

@@ -2,6 +2,8 @@ from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -10,13 +12,14 @@ from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
 
 
-# @pytest.fixture(scope="function")
-def freqai_conf(default_conf):
+@pytest.fixture(scope="function")
+def freqai_conf(default_conf, tmpdir):
     freqaiconf = deepcopy(default_conf)
     freqaiconf.update(
         {
             "datadir": Path(default_conf["datadir"]),
             "strategy": "freqai_test_strat",
+            "user_data_dir": Path(tmpdir),
             "strategy-path": "freqtrade/tests/strategy/strats",
             "freqaimodel": "LightGBMPredictionModel",
             "freqaimodel_path": "freqai/prediction_models",
@@ -61,7 +64,7 @@ def get_patched_data_kitchen(mocker, freqaiconf):
 
 def get_patched_freqai_strategy(mocker, freqaiconf):
     strategy = StrategyResolver.load_strategy(freqaiconf)
-    strategy.bot_start()
+    strategy.ft_bot_start()
 
     return strategy
 
@@ -76,7 +79,7 @@ def get_freqai_live_analyzed_dataframe(mocker, freqaiconf):
     strategy = get_patched_freqai_strategy(mocker, freqaiconf)
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -91,7 +94,7 @@ def get_freqai_analyzed_dataframe(mocker, freqaiconf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")
@@ -107,7 +110,7 @@ def get_ready_to_train(mocker, freqaiconf):
     exchange = get_patched_exchange(mocker, freqaiconf)
     strategy.dp = DataProvider(freqaiconf, exchange)
     strategy.freqai_info = freqaiconf.get("freqai", {})
-    freqai = strategy.model.bridge
+    freqai = strategy.freqai
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqaiconf, freqai.dd)
     timerange = TimeRange.parse_timerange("20180110-20180114")

@@ -1,7 +1,6 @@
 import collections
 import json
 import logging
-import pickle
 import re
 import shutil
 import threading
@@ -10,10 +9,8 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
+from joblib.externals import cloudpickle
 from pandas import DataFrame
-
-
-# from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +22,23 @@ class FreqaiDataDrawer:
     /loading to/from disk.
     This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
     reinstantiated for each coin.
+
+    Record of contribution:
+    FreqAI was developed by a group of individuals who all contributed specific skillsets to the
+    project.
+
+    Conception and software development:
+    Robert Caulk @robcaulk
+
+    Theoretical brainstorming:
+    Elin Törnquist @thorntwig
+
+    Code review, software architecture brainstorming:
+    @xmatthias
+
+    Beta testing and bug reporting:
+    @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta
     """
 
     def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
@@ -41,6 +55,12 @@ class FreqaiDataDrawer:
         self.historic_predictions: Dict[str, Any] = {}
         self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
+        self.follower_name = self.config.get("bot_name", "follower1")
+        self.follower_dict_path = Path(
+            self.full_path / f"follower_dictionary-{self.follower_name}.json"
+        )
+        self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
+        self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
         self.follow_mode = follow_mode
         if follow_mode:
             self.create_follower_dict()
@@ -56,9 +76,9 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = Path(self.full_path / str("pair_dictionary.json")).resolve().exists()
+        exists = self.pair_dictionary_path.is_file()
         if exists:
-            with open(self.full_path / str("pair_dictionary.json"), "r") as fp:
+            with open(self.pair_dictionary_path, "r") as fp:
                 self.pair_dict = json.load(fp)
         elif not self.follow_mode:
             logger.info("Could not find existing datadrawer, starting from scratch")
@@ -76,13 +96,15 @@ class FreqaiDataDrawer:
         :returns:
         exists: bool = whether or not the drawer was located
         """
-        exists = Path(self.full_path / str("historic_predictions.pkl")).resolve().exists()
+        exists = self.historic_predictions_path.is_file()
         if exists:
-            with open(self.full_path / str("historic_predictions.pkl"), "rb") as fp:
-                self.historic_predictions = pickle.load(fp)
-            logger.info(f"Found existing historic predictions at {self.full_path}, but beware "
-                        "that statistics may be inaccurate if the bot has been offline for "
-                        "an extended period of time.")
+            with open(self.historic_predictions_path, "rb") as fp:
+                self.historic_predictions = cloudpickle.load(fp)
+            logger.info(
+                f"Found existing historic predictions at {self.full_path}, but beware "
+                "that statistics may be inaccurate if the bot has been offline for "
+                "an extended period of time."
+            )
         elif not self.follow_mode:
             logger.info("Could not find existing historic_predictions, starting from scratch")
         else:
@@ -97,38 +119,31 @@ class FreqaiDataDrawer:
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.full_path / str("historic_predictions.pkl"), "wb") as fp:
-            pickle.dump(self.historic_predictions, fp, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(self.historic_predictions_path, "wb") as fp:
+            cloudpickle.dump(self.historic_predictions, fp, protocol=cloudpickle.DEFAULT_PROTOCOL)
 
     def save_drawer_to_disk(self):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.full_path / str("pair_dictionary.json"), "w") as fp:
+        with open(self.pair_dictionary_path, "w") as fp:
             json.dump(self.pair_dict, fp, default=self.np_encoder)
 
     def save_follower_dict_to_disk(self):
         """
         Save follower dictionary to disk (used by strategy for persistent prediction targets)
         """
-        follower_name = self.config.get("bot_name", "follower1")
-        with open(
-            self.full_path / str("follower_dictionary-" + follower_name + ".json"), "w"
-        ) as fp:
+        with open(self.follower_dict_path, "w") as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def create_follower_dict(self):
         """
         Create or dictionary for each follower to maintain unique persistent prediction targets
         """
-        follower_name = self.config.get("bot_name", "follower1")
+
         whitelist_pairs = self.config.get("exchange", {}).get("pair_whitelist")
 
-        exists = (
-            Path(self.full_path / str("follower_dictionary-" + follower_name + ".json"))
-            .resolve()
-            .exists()
-        )
+        exists = self.follower_dict_path.is_file()
 
         if exists:
             logger.info("Found an existing follower dictionary")
@@ -136,9 +151,7 @@ class FreqaiDataDrawer:
         for pair in whitelist_pairs:
             self.follower_dict[pair] = {}
 
-        with open(
-            self.full_path / str("follower_dictionary-" + follower_name + ".json"), "w"
-        ) as fp:
+        with open(self.follow_path, "w") as fp:
             json.dump(self.follower_dict, fp, default=self.np_encoder)
 
     def np_encoder(self, object):

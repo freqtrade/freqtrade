@@ -2,7 +2,6 @@ import copy
 import datetime
 import json
 import logging
-import pickle as pk
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -11,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from joblib import dump, load  # , Parallel, delayed # used for auto distribution assignment
+from joblib.externals import cloudpickle
 from pandas import DataFrame
 from sklearn import linear_model
 from sklearn.metrics.pairwise import pairwise_distances
@@ -35,7 +35,23 @@ class FreqaiDataKitchen:
     """
     Class designed to analyze data for a single pair. Employed by the IFreqaiModel class.
     Functionalities include holding, saving, loading, and analyzing the data.
-    author: Robert Caulk, rob.caulk@gmail.com
+
+    Record of contribution:
+    FreqAI was developed by a group of individuals who all contributed specific skillsets to the
+    project.
+
+    Conception and software development:
+    Robert Caulk @robcaulk
+
+    Theoretical brainstorming:
+    Elin Törnquist @thorntwig
+
+    Code review, software architecture brainstorming:
+    @xmatthias
+
+    Beta testing and bug reporting:
+    @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta
     """
 
     def __init__(
@@ -60,6 +76,9 @@ class FreqaiDataKitchen:
         self.keras = self.freqai_config.get("keras", False)
         self.set_all_pairs()
         if not self.live:
+            if not self.config["timerange"]:
+                raise OperationalException(
+                    'Please pass --timerange if you intend to use FreqAI for backtesting.')
             self.full_timerange = self.create_fulltimerange(
                 self.config["timerange"], self.freqai_config.get("train_period_days")
             )
@@ -130,7 +149,7 @@ class FreqaiDataKitchen:
         )
 
         if self.freqai_config.get("feature_parameters", {}).get("principal_component_analysis"):
-            pk.dump(
+            cloudpickle.dump(
                 self.pca, open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "wb")
             )
 
@@ -192,7 +211,7 @@ class FreqaiDataKitchen:
             )
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
-            self.pca = pk.load(
+            self.pca = cloudpickle.load(
                 open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "rb")
             )
 
@@ -358,28 +377,30 @@ class FreqaiDataKitchen:
             2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
         )
 
-        train_labels_max = data_dictionary["train_labels"].max()
-        train_labels_min = data_dictionary["train_labels"].min()
-        data_dictionary["train_labels"] = (
-            2
-            * (data_dictionary["train_labels"] - train_labels_min)
-            / (train_labels_max - train_labels_min)
-            - 1
-        )
-        data_dictionary["test_labels"] = (
-            2
-            * (data_dictionary["test_labels"] - train_labels_min)
-            / (train_labels_max - train_labels_min)
-            - 1
-        )
-
         for item in train_max.keys():
             self.data[item + "_max"] = train_max[item]
             self.data[item + "_min"] = train_min[item]
 
-        self.data["labels_max"] = train_labels_max.to_dict()
-        self.data["labels_min"] = train_labels_min.to_dict()
+        for item in data_dictionary["train_labels"].keys():
+            if data_dictionary["train_labels"][item].dtype == str:
+                continue
+            train_labels_max = data_dictionary["train_labels"][item].max()
+            train_labels_min = data_dictionary["train_labels"][item].min()
+            data_dictionary["train_labels"][item] = (
+                2
+                * (data_dictionary["train_labels"][item] - train_labels_min)
+                / (train_labels_max - train_labels_min)
+                - 1
+            )
+            data_dictionary["test_labels"][item] = (
+                2
+                * (data_dictionary["test_labels"][item] - train_labels_min)
+                / (train_labels_max - train_labels_min)
+                - 1
+            )
 
+            self.data[f"{item}_max"] = train_labels_max  # .to_dict()
+            self.data[f"{item}_min"] = train_labels_min  # .to_dict()
         return data_dictionary
 
     def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
@@ -393,10 +414,29 @@ class FreqaiDataKitchen:
         for item in df.keys():
             df[item] = (
                 2
-                * (df[item] - self.data[item + "_min"])
-                / (self.data[item + "_max"] - self.data[item + "_min"])
+                * (df[item] - self.data[f"{item}_min"])
+                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
                 - 1
             )
+
+        return df
+
+    def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
+        """
+        Normalize a set of data using the mean and standard deviation from
+        the associated training data.
+        :params:
+        :df: Dataframe of predictions to be denormalized
+        """
+
+        for label in self.label_list:
+            if df[label].dtype == str:
+                continue
+            df[label] = (
+                (df[label] + 1)
+                * (self.data[f"{label}_max"] - self.data[f"{label}_min"])
+                / 2
+            ) + self.data[f"{label}_min"]
 
         return df
 
@@ -433,7 +473,7 @@ class FreqaiDataKitchen:
         tr_training_list_timerange = []
         tr_backtesting_list_timerange = []
         first = True
-        # within_config_timerange = True
+
         while True:
             if not first:
                 timerange_train.startts = timerange_train.startts + bt_period
@@ -475,7 +515,7 @@ class FreqaiDataKitchen:
         :df: Dataframe containing all candles to run the entire backtest. Here
         it is sliced down to just the present training period.
         """
-        # timerange = TimeRange.parse_timerange(tr)
+
         start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
         stop = datetime.datetime.fromtimestamp(timerange.stopts, tz=datetime.timezone.utc)
         df = df.loc[df["date"] >= start, :]
@@ -1131,32 +1171,6 @@ class FreqaiDataKitchen:
             return object.item()
 
     # Functions containing useful data manpulation examples. but not actively in use.
-
-    # def build_feature_list(self, config: dict, metadata: dict) -> list:
-    #     """
-    #     SUPERCEDED BY self.find_features()
-    #     Build the list of features that will be used to filter
-    #     the full dataframe. Feature list is construced from the
-    #     user configuration file.
-    #     :params:
-    #     :config: Canonical freqtrade config file containing all
-    #     user defined input in config['freqai] dictionary.
-    #     """
-    #     features = []
-    #     for tf in config["freqai"]["timeframes"]:
-    #         for ft in config["freqai"]["base_features"]:
-    #             for n in range(config["freqai"]["feature_parameters"]["shift"] + 1):
-    #                 shift = ""
-    #                 if n > 0:
-    #                     shift = "_shift-" + str(n)
-    #                 features.append(metadata['pair'].split("/")[0] + "-" + ft + shift + "_" + tf)
-    #                 for p in config["freqai"]["corr_pairlist"]:
-    #                     if metadata['pair'] in p:
-    #                         continue  # avoid duplicate features
-    #                     features.append(p.split("/")[0] + "-" + ft + shift + "_" + tf)
-
-    #     # logger.info("number of features %s", len(features))
-    #     return features
 
     # Possibly phasing these outlier removal methods below out in favor of
     # use_SVM_to_remove_outliers (computationally more efficient and apparently higher performance).
