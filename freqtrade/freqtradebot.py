@@ -1397,9 +1397,8 @@ class FreqtradeBot(LoggingMixin):
             # TODO: figure out how to handle partially complete sell orders
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
             cancelled = False
-        # TODO: This should probably fetch the correct order from database
-        # instead of parsing it again
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side)
+
+        order_obj = trade.select_order_by_order_id(order['id'])
         sub_trade = order_obj.amount != trade.amount
         self._notify_exit_cancel(
             trade,
