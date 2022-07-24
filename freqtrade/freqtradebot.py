@@ -65,7 +65,8 @@ class FreqtradeBot(LoggingMixin):
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
 
-        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+        self.exchange = ExchangeResolver.load_exchange(
+            self.config['exchange']['name'], self.config, load_leverage_tiers=True)
 
         init_db(self.config['db_url'])
 

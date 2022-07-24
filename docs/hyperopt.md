@@ -40,13 +40,15 @@ pip install -r requirements-hyperopt.txt
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--recursive-strategy-search] [-i TIMEFRAME]
+                          [--timerange TIMERANGE]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [-p PAIRS [PAIRS ...]] [--hyperopt-path PATH]
                           [--eps] [--dmmp] [--enable-protections]
-                          [--dry-run-wallet DRY_RUN_WALLET] [-e INT]
+                          [--dry-run-wallet DRY_RUN_WALLET]
+                          [--timeframe-detail TIMEFRAME_DETAIL] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
@@ -89,6 +91,9 @@ optional arguments:
   --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
+  --timeframe-detail TIMEFRAME_DETAIL
+                        Specify detail timeframe for backtesting (`1m`, `5m`,
+                        `30m`, `1h`, `1d`).
   -e INT, --epochs INT  Specify number of epochs (default: 100).
   --spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]
                         Specify which parameters to hyperopt. Space-separated
@@ -146,7 +151,9 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-
+  --recursive-strategy-search
+                        Recursively search for a strategy in the strategies
+                        folder.
 ```
 
 ### Hyperopt checklist
@@ -867,10 +874,12 @@ You can also enable position stacking in the configuration file by explicitly se
 As hyperopt consumes a lot of memory (the complete data needs to be in memory once per parallel backtesting process), it's likely that you run into "out of memory" errors.
 To combat these, you have multiple options:
 
-* reduce the amount of pairs
-* reduce the timerange used (`--timerange <timerange>`)
-* reduce the number of parallel processes (`-j <n>`)
-* Increase the memory of your machine
+* Reduce the amount of pairs.
+* Reduce the timerange used (`--timerange <timerange>`).
+* Avoid using `--timeframe-detail` (this loads a lot of additional data into memory).
+* Reduce the number of parallel processes (`-j <n>`).
+* Increase the memory of your machine.
+
 
 ## The objective has been evaluated at this point before.
 

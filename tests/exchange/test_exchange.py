@@ -1138,6 +1138,57 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name, leverag
     assert order["cost"] == 1 * 200
 
 
+@pytest.mark.parametrize('side,is_short,order_reason', [
+    ("buy", False, "entry"),
+    ("sell", False, "exit"),
+    ("buy", True, "exit"),
+    ("sell", True, "entry"),
+])
+@pytest.mark.parametrize("order_type,price_side,fee", [
+    ("limit", "same", 1.0),
+    ("limit", "other", 2.0),
+    ("market", "same", 2.0),
+    ("market", "other", 2.0),
+])
+def test_create_dry_run_order_fees(
+    default_conf,
+    mocker,
+    side,
+    order_type,
+    is_short,
+    order_reason,
+    price_side,
+    fee,
+):
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_fee',
+        side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
+    )
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side == 'other')
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    order = exchange.create_dry_run_order(
+        pair='LTC/USDT',
+        ordertype=order_type,
+        side=side,
+        amount=10,
+        rate=2.0,
+        leverage=1.0
+    )
+    if price_side == 'other' or order_type == 'market':
+        assert order['fee']['rate'] == fee
+        return
+    else:
+        assert order['fee'] is None
+
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side != 'other')
+
+    order1 = exchange.fetch_dry_run_order(order['id'])
+    assert order1['fee']['rate'] == fee
+
+
 @pytest.mark.parametrize("side,startprice,endprice", [
     ("buy", 25.563, 25.566),
     ("sell", 25.566, 25.563)

@@ -923,7 +923,7 @@ class FreqaiDataKitchen:
         and training the model.
         """
         exchange = ExchangeResolver.load_exchange(
-            self.config["exchange"]["name"], self.config, validate=False, freqai=True
+            self.config["exchange"]["name"], self.config, validate=False, load_leverage_tiers=False
         )
 
         new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)

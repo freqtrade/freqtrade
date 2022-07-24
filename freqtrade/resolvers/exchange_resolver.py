@@ -19,7 +19,7 @@ class ExchangeResolver(IResolver):
 
     @staticmethod
     def load_exchange(exchange_name: str, config: dict, validate: bool = True,
-                      freqai: bool = False) -> Exchange:
+                      load_leverage_tiers: bool = False) -> Exchange:
         """
         Load the custom class from config parameter
         :param exchange_name: name of the Exchange to load
@@ -30,10 +30,13 @@ class ExchangeResolver(IResolver):
         exchange_name = exchange_name.title()
         exchange = None
         try:
-            exchange = ExchangeResolver._load_exchange(exchange_name,
-                                                       kwargs={'config': config,
-                                                               'validate': validate,
-                                                               'freqai': freqai})
+            exchange = ExchangeResolver._load_exchange(
+                exchange_name,
+                kwargs={
+                    'config': config,
+                    'validate': validate,
+                    'load_leverage_tiers': load_leverage_tiers}
+            )
         except ImportError:
             logger.info(
                 f"No {exchange_name} specific subclass found. Using the generic class instead.")
