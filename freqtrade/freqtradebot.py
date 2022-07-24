@@ -1399,6 +1399,10 @@ class FreqtradeBot(LoggingMixin):
             cancelled = False
 
         order_obj = trade.select_order_by_order_id(order['id'])
+        if not order_obj:
+            raise DependencyException(
+                f"Order_obj not found for {order['id']}. This should not have happened.")
+
         sub_trade = order_obj.amount != trade.amount
         self._notify_exit_cancel(
             trade,
@@ -1590,10 +1594,8 @@ class FreqtradeBot(LoggingMixin):
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency'),
             'sub_trade': sub_trade,
+            'cumulative_profit': trade.realized_profit,
         }
-        if sub_trade:
-            # TODO: this should not be conditional.
-            msg['cumulative_profit'] = trade.realized_profit
 
         # Send the message
         self.rpc.send_msg(msg)

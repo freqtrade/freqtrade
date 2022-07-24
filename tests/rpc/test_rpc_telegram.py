@@ -961,6 +961,7 @@ def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
         'close_rate': ANY,
         'stake_amount': 0.0009999999999054,
         'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == last_msg
 
 
@@ -1031,7 +1032,8 @@ def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
         'close_date': ANY,
         'close_rate': ANY,
         'stake_amount': 0.0009999999999054,
-        'sub_trade': False
+        'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == last_msg
 
 
@@ -1092,7 +1094,8 @@ def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'close_date': ANY,
         'close_rate': ANY,
         'stake_amount': 0.0009999999999054,
-        'sub_trade': False
+        'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == msg
 
 
