@@ -65,7 +65,6 @@ class IFreqaiModel(ABC):
         self.data_split_parameters = config.get("freqai", {}).get("data_split_parameters")
         self.model_training_parameters = config.get("freqai", {}).get("model_training_parameters")
         self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
-        self.model = None
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -372,8 +371,8 @@ class IFreqaiModel(ABC):
         """
         Base data cleaning method for train
         Any function inside this method should drop training data points from the filtered_dataframe
-        based on user decided logic. See FreqaiDataKitchen::remove_outliers() for an example
-        of how outlier data points are dropped from the dataframe used for training.
+        based on user decided logic. See FreqaiDataKitchen::use_SVM_to_remove_outliers() for an
+        example of how outlier data points are dropped from the dataframe used for training.
         """
 
         if self.freqai_info.get("feature_parameters", {}).get(

@@ -1,6 +1,7 @@
 import logging
-from typing import Tuple
+from typing import Any, Tuple
 
+import numpy.typing as npt
 from pandas import DataFrame
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -28,7 +29,7 @@ class BaseRegressionModel(IFreqaiModel):
 
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
-    ) -> Tuple[DataFrame, DataFrame]:
+    ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
@@ -83,7 +84,7 @@ class BaseRegressionModel(IFreqaiModel):
 
     def predict(
         self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
-    ) -> Tuple[DataFrame, DataFrame]:
+    ) -> Tuple[DataFrame, npt.ArrayLike]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.
