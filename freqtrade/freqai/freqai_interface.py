@@ -287,7 +287,7 @@ class IFreqaiModel(ABC):
         elif self.follow_mode:
             dk.set_paths(metadata["pair"], trained_timestamp)
             logger.info(
-                "FreqAI instance set to follow_mode, finding existing pair"
+                "FreqAI instance set to follow_mode, finding existing pair "
                 f"using { self.identifier }"
             )
 
