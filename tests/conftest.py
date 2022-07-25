@@ -148,7 +148,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='binance',
     patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
     config['exchange']['name'] = id
     try:
-        exchange = ExchangeResolver.load_exchange(id, config)
+        exchange = ExchangeResolver.load_exchange(id, config, load_leverage_tiers=True)
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -2609,7 +2609,7 @@ def open_trade_usdt():
         pair='ADA/USDT',
         open_rate=2.0,
         exchange='binance',
-        open_order_id='123456789',
+        open_order_id='123456789_exit',
         amount=30.0,
         fee_open=0.0,
         fee_close=0.0,
@@ -2627,6 +2627,23 @@ def open_trade_usdt():
             symbol=trade.pair,
             order_type="market",
             side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        ),
+        Order(
+            ft_order_side='exit',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id='123456789_exit',
+            status="open",
+            symbol=trade.pair,
+            order_type="limit",
+            side="sell",
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,
