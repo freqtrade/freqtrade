@@ -34,26 +34,10 @@ def test_train_model_in_series_LightGBM(mocker, freqai_conf):
 
     freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
-    assert (
-        Path(freqai.dk.data_path / str(freqai.dk.model_filename + "_model.joblib"))
-        .resolve()
-        .exists()
-    )
-    assert (
-        Path(freqai.dk.data_path / str(freqai.dk.model_filename + "_metadata.json"))
-        .resolve()
-        .exists()
-    )
-    assert (
-        Path(freqai.dk.data_path / str(freqai.dk.model_filename + "_trained_df.pkl"))
-        .resolve()
-        .exists()
-    )
-    assert (
-        Path(freqai.dk.data_path / str(freqai.dk.model_filename + "_svm_model.joblib"))
-        .resolve()
-        .exists()
-    )
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -159,5 +143,54 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
         "Found model at ",
         caplog,
     )
+
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_follow_mode(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180110-20180130"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dk.load_all_pair_histories(timerange)
+
+    metadata = {"pair": "ADA/BTC"}
+    freqai.dd.set_pair_dict_info(metadata)
+    # freqai.dd.pair_dict = MagicMock()
+
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
+
+    # start the follower and ask it to predict on existing files
+
+    freqai_conf.get("freqai", {}).update({"follow_mode": "true"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd, freqai.live)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dk.load_all_pair_histories(timerange)
+
+    df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
+    freqai.start_live(df, metadata, strategy, freqai.dk)
+
+    assert len(freqai.dk.return_dataframe.index) == 5702
 
     shutil.rmtree(Path(freqai.dk.full_path))
