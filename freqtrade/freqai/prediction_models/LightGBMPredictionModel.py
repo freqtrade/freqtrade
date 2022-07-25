@@ -25,11 +25,15 @@ class LightGBMPredictionModel(BaseRegressionModel):
                                 all the training and test data/labels.
         """
 
-        eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+            eval_set = None
+        else:
+            eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
 
         model = LGBMRegressor(**self.model_training_parameters)
+
         model.fit(X=X, y=y, eval_set=eval_set)
 
         return model

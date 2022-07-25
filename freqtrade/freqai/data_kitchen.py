@@ -243,20 +243,28 @@ class FreqaiDataKitchen:
         else:
             stratification = None
 
-        (
-            train_features,
-            test_features,
-            train_labels,
-            test_labels,
-            train_weights,
-            test_weights,
-        ) = train_test_split(
-            filtered_dataframe[: filtered_dataframe.shape[0]],
-            labels,
-            weights,
-            stratify=stratification,
-            **self.config["freqai"]["data_split_parameters"],
-        )
+        if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            (
+                train_features,
+                test_features,
+                train_labels,
+                test_labels,
+                train_weights,
+                test_weights,
+            ) = train_test_split(
+                filtered_dataframe[: filtered_dataframe.shape[0]],
+                labels,
+                weights,
+                stratify=stratification,
+                **self.config["freqai"]["data_split_parameters"],
+            )
+        else:
+            test_labels = np.zeros(2)
+            test_features = pd.DataFrame()
+            test_weights = np.zeros(2)
+            train_features = filtered_dataframe
+            train_labels = labels
+            train_weights = weights
 
         return self.build_data_dictionary(
             train_features, test_features, train_labels, test_labels, train_weights, test_weights
@@ -392,12 +400,13 @@ class FreqaiDataKitchen:
                 / (train_labels_max - train_labels_min)
                 - 1
             )
-            data_dictionary["test_labels"][item] = (
-                2
-                * (data_dictionary["test_labels"][item] - train_labels_min)
-                / (train_labels_max - train_labels_min)
-                - 1
-            )
+            if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+                data_dictionary["test_labels"][item] = (
+                    2
+                    * (data_dictionary["test_labels"][item] - train_labels_min)
+                    / (train_labels_max - train_labels_min)
+                    - 1
+                )
 
             self.data[f"{item}_max"] = train_labels_max  # .to_dict()
             self.data[f"{item}_min"] = train_labels_min  # .to_dict()
@@ -555,11 +564,12 @@ class FreqaiDataKitchen:
         self.data["training_features_list_raw"] = copy.deepcopy(self.training_features_list)
         self.training_features_list = self.data_dictionary["train_features"].columns
 
-        self.data_dictionary["test_features"] = pd.DataFrame(
-            data=test_components,
-            columns=["PC" + str(i) for i in range(0, n_keep_components)],
-            index=self.data_dictionary["test_features"].index,
-        )
+        if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            self.data_dictionary["test_features"] = pd.DataFrame(
+                data=test_components,
+                columns=["PC" + str(i) for i in range(0, n_keep_components)],
+                index=self.data_dictionary["test_features"].index,
+            )
 
         self.data["n_kept_components"] = n_keep_components
         self.pca = pca2
@@ -652,15 +662,17 @@ class FreqaiDataKitchen:
             )
 
             # same for test data
-            y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
-            dropped_points = np.where(y_pred == -1, 0, y_pred)
-            self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
-                (y_pred == 1)
-            ]
-            self.data_dictionary["test_labels"] = self.data_dictionary["test_labels"][(y_pred == 1)]
-            self.data_dictionary["test_weights"] = self.data_dictionary["test_weights"][
-                (y_pred == 1)
-            ]
+            if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+                y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
+                dropped_points = np.where(y_pred == -1, 0, y_pred)
+                self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
+                    (y_pred == 1)
+                ]
+                self.data_dictionary["test_labels"] = self.data_dictionary["test_labels"][(
+                    y_pred == 1)]
+                self.data_dictionary["test_weights"] = self.data_dictionary["test_weights"][
+                    (y_pred == 1)
+                ]
 
             logger.info(
                 f"svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}"

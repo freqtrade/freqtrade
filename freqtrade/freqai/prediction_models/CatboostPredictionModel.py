@@ -28,17 +28,22 @@ class CatboostPredictionModel(BaseRegressionModel):
             label=data_dictionary["train_labels"],
             weight=data_dictionary["train_weights"],
         )
-
-        test_data = Pool(
-            data=data_dictionary["test_features"],
-            label=data_dictionary["test_labels"],
-            weight=data_dictionary["test_weights"],
-        )
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+            test_data = None
+        else:
+            test_data = Pool(
+                data=data_dictionary["test_features"],
+                label=data_dictionary["test_labels"],
+                weight=data_dictionary["test_weights"],
+            )
 
         model = CatBoostRegressor(
             allow_writing_files=False,
             **self.model_training_parameters,
         )
+
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+            test_data = None
         model.fit(X=train_data, eval_set=test_data)
 
         return model
