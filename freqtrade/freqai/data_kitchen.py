@@ -909,10 +909,10 @@ class FreqaiDataKitchen:
         coin, _ = pair.split("/")
         self.data_path = Path(
             self.full_path
-            / str("sub-train" + "-" + pair.split("/")[0] + "_" + str(int(trained_timerange.stopts)))
+            / f"sub-train-{pair.split('/')[0]}_{int(trained_timerange.stopts)}"
         )
 
-        self.model_filename = "cb_" + coin.lower() + "_" + str(int(trained_timerange.stopts))
+        self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
 
     def download_all_data_for_training(self, timerange: TimeRange) -> None:
         """

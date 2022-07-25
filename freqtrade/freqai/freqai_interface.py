@@ -210,11 +210,12 @@ class IFreqaiModel(ABC):
                 )
             )
             if not self.model_exists(
-                metadata["pair"], dk, trained_timestamp=trained_timestamp.stopts
+                metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
             ):
                 dk.find_features(dataframe_train)
                 self.model = self.train(dataframe_train, metadata["pair"], dk)
-                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = trained_timestamp.stopts
+                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
+                    trained_timestamp.stopts)
                 dk.set_new_model_names(metadata["pair"], trained_timestamp)
                 dk.save_data(self.model, metadata["pair"])
             else:

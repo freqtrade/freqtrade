@@ -90,11 +90,37 @@ def test_start_backtesting(mocker, freqai_conf):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
 
-    metadata = {"pair": "ADA/BTC"}
+    metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == 5
+
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180120-20180124"})
+    freqai_conf.get("freqai", {}).update({"backtest_period_days": 0.5})
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf, freqai.dd)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dk.load_all_pair_histories(timerange)
+    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
+    corr_df, base_df = freqai.dk.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC")
+
+    df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+
+    metadata = {"pair": "LTC/BTC"}
+    freqai.start_backtesting(df, metadata, freqai.dk)
+    model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
+    pytest.set_trace()
+    assert len(model_folders) == 8
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
