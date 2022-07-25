@@ -1264,7 +1264,7 @@ class Exchange:
             return False
 
         required = ('fee', 'status', 'amount')
-        return all(k in corder for k in required)
+        return all(corder.get(k, None) is not None for k in required)
 
     def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
         """
