@@ -2139,8 +2139,6 @@ def test_handle_trade(
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    oobj = Order.parse_from_ccxt_object(enter_order, enter_order['symbol'], entry_side(is_short))
-    trade.update_trade(oobj)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
@@ -2150,11 +2148,15 @@ def test_handle_trade(
     assert trade.open_order_id == exit_order['id']
 
     # Simulate fulfilled LIMIT_SELL order for trade
-    oobj = Order.parse_from_ccxt_object(exit_order, exit_order['symbol'], exit_side(is_short))
-    trade.update_trade(oobj)
+    trade.orders[-1].ft_is_open = False
+    trade.orders[-1].status = 'closed'
+    trade.orders[-1].filled = trade.orders[-1].remaining
+    trade.orders[-1].remaining = 0.0
 
-    assert trade.close_rate == 2.0 if is_short else 2.2
-    assert trade.close_profit == close_profit
+    trade.update_trade(trade.orders[-1])
+
+    assert trade.close_rate == (2.0 if is_short else 2.2)
+    assert pytest.approx(trade.close_profit) == close_profit
     assert trade.calc_profit(trade.close_rate) == 5.685
     assert trade.close_date is not None
     assert trade.exit_reason == 'sell_signal1'
@@ -2757,6 +2759,8 @@ def test_check_handle_cancelled_exit(
     cancel_order_mock = MagicMock()
     limit_sell_order_old.update({"status": "canceled", 'filled': 0.0})
     limit_sell_order_old['side'] = 'buy' if is_short else 'sell'
+    limit_sell_order_old['id'] = open_trade_usdt.open_order_id
+
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3096,7 +3100,27 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         close_date=arrow.utcnow().datetime,
         exit_reason="sell_reason_whatever",
     )
-    order = {'remaining': 1,
+    trade.orders = [
+         Order(
+            ft_order_side='buy',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id='123456',
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+             ),
+    ]
+    order = {'id': "123456",
+             'remaining': 1,
              'amount': 1,
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
