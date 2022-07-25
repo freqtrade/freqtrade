@@ -2033,6 +2033,7 @@ def test_update_trade_state_exception(mocker, default_conf_usdt, is_short, limit
 
     trade = MagicMock()
     trade.open_order_id = '123'
+    trade.amount = 123
 
     # Test raise of OperationalException exception
     mocker.patch(

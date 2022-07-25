@@ -1703,6 +1703,12 @@ class FreqtradeBot(LoggingMixin):
             # If a entry order was closed, force update on stoploss on exchange
             if order.get('side') == trade.entry_side:
                 trade = self.cancel_stoploss_on_exchange(trade)
+                if not self.edge:
+                    # TODO: should shorting/leverage be supported by Edge,
+                    # then this will need to be fixed.
+                    trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
+            if order.get('side') == trade.entry_side or trade.amount > 0:
+                # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
                 trade.set_isolated_liq(self.exchange.get_liquidation_price(
@@ -1712,10 +1718,6 @@ class FreqtradeBot(LoggingMixin):
                     open_rate=trade.open_rate,
                     is_short=trade.is_short
                 ))
-                if not self.edge:
-                    # TODO: should shorting/leverage be supported by Edge,
-                    # then this will need to be fixed.
-                    trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
             # Updating wallets when order is closed
             self.wallets.update()
