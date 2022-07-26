@@ -7,17 +7,19 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
-import numpy.typing as npt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
+from joblib import dump, load
 from joblib.externals import cloudpickle
 from pandas import DataFrame
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from joblib import dump, load
-from freqtrade.strategy.interface import IStrategy
-from freqtrade.exceptions import OperationalException
-from freqtrade.data.history import load_pair_history
+
 from freqtrade.configuration import TimeRange
+from freqtrade.data.history import load_pair_history
+from freqtrade.exceptions import OperationalException
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.strategy.interface import IStrategy
+
 
 logger = logging.getLogger(__name__)
 

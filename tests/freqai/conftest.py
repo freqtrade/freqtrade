@@ -5,8 +5,8 @@ import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
