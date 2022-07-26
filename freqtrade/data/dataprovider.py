@@ -36,8 +36,9 @@ class DataProvider:
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
         self._msg_queue: deque = deque()
+
         self.__msg_cache = PeriodicCache(
-            maxsize=1000, ttl=timeframe_to_seconds(self._config['timeframe']))
+            maxsize=1000, ttl=timeframe_to_seconds(self._config.get('timeframe', '1h')))
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -271,9 +272,10 @@ class DataProvider:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return self._exchange.fetch_l2_order_book(pair, maximum)
 
-    def send_msg(self, message: str, always_send: bool = False) -> None:
+    def send_msg(self, message: str, *, always_send: bool = False) -> None:
         """
-        TODO: Document me
+        Send custom RPC Notifications from your bot.
+        Will not send any bot in modes other than Dry-run or Live.
         :param message: Message to be sent. Must be below 4096.
         :param always_send: If False, will send the message only once per candle, and surpress
                             identical messages.

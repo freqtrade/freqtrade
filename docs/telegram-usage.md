@@ -98,6 +98,7 @@ Example configuration showing the different settings:
         "exit_fill": "off",
         "protection_trigger": "off",
         "protection_trigger_global": "on",
+        "strategy_msg": "off",
         "show_candle": "off"
     },
     "reload": true,
@@ -109,7 +110,8 @@ Example configuration showing the different settings:
 `exit` notifications are sent when the order is placed, while `exit_fill` notifications are sent when the order is filled on the exchange.
 `*_fill` notifications are off by default and must be explicitly enabled.
 `protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.
-`show_candle` - show candle values as part of entry/exit messages. Only possible value is "ohlc".
+`strategy_msg` - Receive notifications from the strategy, sent via `self.dp.send_msg()` from the strategy [more details](strategy-customization.md#send-notification).
+`show_candle` - show candle values as part of entry/exit messages. Only possible values are `"ohlc"` or `"off"`.
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 `reload` allows you to disable reload-buttons on selected messages.
