@@ -120,7 +120,8 @@ class IFreqaiModel(ABC):
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
-        return self.return_values(dataframe, dk)
+        del dk
+        return self.return_values(dataframe)
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
@@ -560,12 +561,11 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+    def return_values(self, dataframe: DataFrame) -> DataFrame:
         """
         User defines the dataframe to be returned to strategy here.
         :param dataframe: DataFrame = the full dataframe for the current prediction (live)
                                       or --timerange (backtesting)
-        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         :return: dataframe: DataFrame = dataframe filled with user defined data
         """
 

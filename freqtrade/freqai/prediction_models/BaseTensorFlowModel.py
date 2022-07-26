@@ -16,7 +16,7 @@ class BaseTensorFlowModel(IFreqaiModel):
     User *must* inherit from this class and set fit() and predict().
     """
 
-    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+    def return_values(self, dataframe: DataFrame) -> DataFrame:
         """
         User uses this function to add any additional return values to the dataframe.
         e.g.

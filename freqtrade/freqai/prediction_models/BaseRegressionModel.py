@@ -18,7 +18,7 @@ class BaseRegressionModel(IFreqaiModel):
     such as prediction_models/CatboostPredictionModel.py for guidance.
     """
 
-    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+    def return_values(self, dataframe: DataFrame) -> DataFrame:
         """
         User uses this function to add any additional return values to the dataframe.
         e.g.
