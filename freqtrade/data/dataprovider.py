@@ -5,12 +5,14 @@ including ticker and orderbook data, live and historical candle (OHLCV) data
 Common Interface for bot and strategy to access data.
 """
 import logging
+from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.configuration.PeriodicCache import PeriodicCache
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RunMode
@@ -33,6 +35,9 @@ class DataProvider:
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
+        self._msg_queue: deque = deque()
+        self.__msg_cache = PeriodicCache(
+            maxsize=1000, ttl=timeframe_to_seconds(self._config['timeframe']))
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -265,3 +270,19 @@ class DataProvider:
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return self._exchange.fetch_l2_order_book(pair, maximum)
+
+    def send_msg(self, message: str, always_send: bool = False) -> None:
+        """
+        TODO: Document me
+        :param message: Message to be sent. Must be below 4096.
+        :param always_send: If False, will send the message only once per candle, and surpress
+                            identical messages.
+                            Careful as this can end up spaming your chat.
+                            Defaults to False
+        """
+        if self.runmode not in (RunMode.DRY_RUN, RunMode.LIVE):
+            return
+
+        if always_send or message not in self.__msg_cache:
+            self._msg_queue.append(message)
+        self.__msg_cache[message] = True

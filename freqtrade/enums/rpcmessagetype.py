@@ -17,6 +17,8 @@ class RPCMessageType(Enum):
     PROTECTION_TRIGGER = 'protection_trigger'
     PROTECTION_TRIGGER_GLOBAL = 'protection_trigger_global'
 
+    STRATEGY_MSG = 'strategy_msg'
+
     def __repr__(self):
         return self.value
 
