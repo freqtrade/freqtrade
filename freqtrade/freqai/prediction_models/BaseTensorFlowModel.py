@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Any
 
 from pandas import DataFrame
 
@@ -16,7 +16,7 @@ class BaseTensorFlowModel(IFreqaiModel):
     User *must* inherit from this class and set fit() and predict().
     """
 
-    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+    def return_values(self, dataframe: DataFrame) -> DataFrame:
         """
         User uses this function to add any additional return values to the dataframe.
         e.g.
@@ -27,7 +27,7 @@ class BaseTensorFlowModel(IFreqaiModel):
 
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
-    ) -> Tuple[DataFrame, DataFrame]:
+    ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
@@ -49,8 +49,7 @@ class BaseTensorFlowModel(IFreqaiModel):
 
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        if not self.freqai_info.get('fit_live_predictions', 0):
-            dk.fit_labels()
+
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
 
@@ -67,8 +66,11 @@ class BaseTensorFlowModel(IFreqaiModel):
         if pair not in self.dd.historic_predictions:
             self.set_initial_historic_predictions(
                 data_dictionary['train_features'], model, dk, pair)
-        elif self.freqai_info.get('fit_live_predictions_candles', 0):
-            dk.fit_live_predictions()
+
+        if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
+            self.fit_live_predictions(dk)
+        else:
+            dk.fit_labels()
 
         self.dd.save_historic_predictions_to_disk()
 

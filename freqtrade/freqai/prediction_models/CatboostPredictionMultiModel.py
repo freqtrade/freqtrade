@@ -36,7 +36,9 @@ class CatboostPredictionMultiModel(BaseRegressionModel):
 
         model = MultiOutputRegressor(estimator=cbr)
         model.fit(X=X, y=y, sample_weight=sample_weight)  # , eval_set=eval_set)
-        train_score = model.score(X, y)
-        test_score = model.score(*eval_set)
-        logger.info(f"Train score {train_score}, Test score {test_score}")
+
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            train_score = model.score(X, y)
+            test_score = model.score(*eval_set)
+            logger.info(f"Train score {train_score}, Test score {test_score}")
         return model

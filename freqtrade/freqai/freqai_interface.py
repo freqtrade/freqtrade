@@ -102,7 +102,7 @@ class IFreqaiModel(ABC):
         self.dd.set_pair_dict_info(metadata)
 
         if self.live:
-            self.dk = FreqaiDataKitchen(self.config, self.dd, self.live, metadata["pair"])
+            self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
 
         # For backtesting, each pair enters and then gets trained for each window along the
@@ -111,7 +111,7 @@ class IFreqaiModel(ABC):
         # FreqAI slides the window and sequentially builds the backtesting results before returning
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
-            self.dk = FreqaiDataKitchen(self.config, self.dd, self.live, metadata["pair"])
+            self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
 
             dataframe = self.dk.use_strategy_to_populate_indicators(
@@ -120,7 +120,8 @@ class IFreqaiModel(ABC):
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
-        return self.return_values(dataframe, dk)
+        del dk
+        return self.return_values(dataframe)
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
@@ -134,11 +135,11 @@ class IFreqaiModel(ABC):
             time.sleep(1)
             for pair in self.config.get("exchange", {}).get("pair_whitelist"):
 
-                (_, trained_timestamp, _, _) = self.dd.get_pair_dict_info(pair)
+                (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
                 if self.dd.pair_dict[pair]["priority"] != 1:
                     continue
-                dk = FreqaiDataKitchen(self.config, self.dd, self.live, pair)
+                dk = FreqaiDataKitchen(self.config, self.live, pair)
                 dk.set_paths(pair, trained_timestamp)
                 (
                     retrain,
@@ -177,7 +178,7 @@ class IFreqaiModel(ABC):
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            (_, _, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
+            (_, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             gc.collect()
@@ -210,15 +211,16 @@ class IFreqaiModel(ABC):
                 )
             )
             if not self.model_exists(
-                metadata["pair"], dk, trained_timestamp=trained_timestamp.stopts
+                metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
             ):
                 dk.find_features(dataframe_train)
                 self.model = self.train(dataframe_train, metadata["pair"], dk)
-                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = trained_timestamp.stopts
+                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
+                    trained_timestamp.stopts)
                 dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                dk.save_data(self.model, metadata["pair"])
+                self.dd.save_data(self.model, metadata["pair"], dk)
             else:
-                self.model = dk.load_data(metadata["pair"])
+                self.model = self.dd.load_data(metadata["pair"], dk)
 
             self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
@@ -249,7 +251,7 @@ class IFreqaiModel(ABC):
             self.dd.update_follower_metadata()
 
         # get the model metadata associated with the current pair
-        (_, trained_timestamp, _, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
+        (_, trained_timestamp, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
 
         # if the metadata doesnt exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
@@ -259,7 +261,7 @@ class IFreqaiModel(ABC):
 
         # append the historic data once per round
         if self.dd.historic_data:
-            dk.update_historic_data(strategy)
+            self.dd.update_historic_data(strategy, dk)
             logger.debug(f'Updating historic data on pair {metadata["pair"]}')
 
         if not self.follow_mode:
@@ -277,7 +279,7 @@ class IFreqaiModel(ABC):
                     "data saved"
                 )
                 dk.download_all_data_for_training(data_load_timerange)
-                dk.load_all_pair_histories(data_load_timerange)
+                self.dd.load_all_pair_histories(data_load_timerange, dk)
 
             if not self.scanning:
                 self.scanning = True
@@ -291,7 +293,7 @@ class IFreqaiModel(ABC):
             )
 
         # load the model and associated data into the data kitchen
-        self.model = dk.load_data(coin=metadata["pair"])
+        self.model = self.dd.load_data(metadata["pair"], dk)
 
         dataframe = self.dk.use_strategy_to_populate_indicators(
             strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
@@ -467,8 +469,8 @@ class IFreqaiModel(ABC):
                                     new_trained_timerange does not contain any NaNs)
         """
 
-        corr_dataframes, base_dataframes = dk.get_base_and_corr_dataframes(
-            data_load_timerange, pair
+        corr_dataframes, base_dataframes = self.dd.get_base_and_corr_dataframes(
+            data_load_timerange, pair, dk
         )
 
         unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
@@ -488,7 +490,7 @@ class IFreqaiModel(ABC):
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
             with self.lock:
                 self.dd.pair_to_end_of_training_queue(pair)
-        dk.save_data(model, coin=pair)
+        self.dd.save_data(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
@@ -503,6 +505,20 @@ class IFreqaiModel(ABC):
 
         self.dd.historic_predictions[pair] = pd.DataFrame()
         self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
+
+    def fit_live_predictions(self, dk: FreqaiDataKitchen) -> None:
+        """
+        Fit the labels with a gaussian distribution
+        """
+        import scipy as spy
+
+        num_candles = self.freqai_info.get("fit_live_predictions_candles", 100)
+        dk.data["labels_mean"], dk.data["labels_std"] = {}, {}
+        for label in dk.label_list:
+            f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
+            dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
+
+        return
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModlel.py for an example.
@@ -545,12 +561,11 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def return_values(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+    def return_values(self, dataframe: DataFrame) -> DataFrame:
         """
         User defines the dataframe to be returned to strategy here.
         :param dataframe: DataFrame = the full dataframe for the current prediction (live)
                                       or --timerange (backtesting)
-        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         :return: dataframe: DataFrame = dataframe filled with user defined data
         """
 

@@ -1404,6 +1404,7 @@ def test_api_strategies(botclient):
         'StrategyTestV3',
         'StrategyTestV3Analysis',
         'StrategyTestV3Futures',
+        'freqai_test_multimodel_strat',
         'freqai_test_strat'
     ]}
 
