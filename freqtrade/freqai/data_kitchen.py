@@ -1,6 +1,5 @@
 import copy
 import datetime
-import json
 import logging
 import shutil
 from pathlib import Path
@@ -9,18 +8,14 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from joblib import dump, load  # , Parallel, delayed # used for auto distribution assignment
-from joblib.externals import cloudpickle
 from pandas import DataFrame
 from sklearn import linear_model
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.history import load_pair_history
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
 
@@ -57,7 +52,6 @@ class FreqaiDataKitchen:
     def __init__(
         self,
         config: Dict[str, Any],
-        data_drawer: FreqaiDataDrawer,
         live: bool = False,
         pair: str = "",
     ):
@@ -69,6 +63,7 @@ class FreqaiDataKitchen:
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
         self.label_list: List = []
+        self.training_features_list: List = []
         self.model_filename: str = ""
         self.live = live
         self.pair = pair
@@ -88,8 +83,6 @@ class FreqaiDataKitchen:
                 config["freqai"]["train_period_days"],
                 config["freqai"]["backtest_period_days"],
             )
-
-        self.dd = data_drawer
 
     def set_paths(
         self,
@@ -112,110 +105,6 @@ class FreqaiDataKitchen:
         )
 
         return
-
-    def save_data(self, model: Any, coin: str = "", label=None) -> None:
-        """
-        Saves all data associated with a model for a single sub-train time range
-        :params:
-        :model: User trained model which can be reused for inferencing to generate
-        predictions
-        """
-
-        if not self.data_path.is_dir():
-            self.data_path.mkdir(parents=True, exist_ok=True)
-
-        save_path = Path(self.data_path)
-
-        # Save the trained model
-        if not self.keras:
-            dump(model, save_path / f"{self.model_filename}_model.joblib")
-        else:
-            model.save(save_path / f"{self.model_filename}_model.h5")
-
-        if self.svm_model is not None:
-            dump(self.svm_model, save_path / str(self.model_filename + "_svm_model.joblib"))
-
-        self.data["data_path"] = str(self.data_path)
-        self.data["model_filename"] = str(self.model_filename)
-        self.data["training_features_list"] = list(self.data_dictionary["train_features"].columns)
-        self.data["label_list"] = self.label_list
-        # store the metadata
-        with open(save_path / str(self.model_filename + "_metadata.json"), "w") as fp:
-            json.dump(self.data, fp, default=self.np_encoder)
-
-        # save the train data to file so we can check preds for area of applicability later
-        self.data_dictionary["train_features"].to_pickle(
-            save_path / str(self.model_filename + "_trained_df.pkl")
-        )
-
-        if self.freqai_config.get("feature_parameters", {}).get("principal_component_analysis"):
-            cloudpickle.dump(
-                self.pca, open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "wb")
-            )
-
-        # if self.live:
-        self.dd.model_dictionary[self.model_filename] = model
-        self.dd.pair_dict[coin]["model_filename"] = self.model_filename
-        self.dd.pair_dict[coin]["data_path"] = str(self.data_path)
-        self.dd.save_drawer_to_disk()
-
-        return
-
-    def load_data(self, coin: str = "") -> Any:
-        """
-        loads all data required to make a prediction on a sub-train time range
-        :returns:
-        :model: User trained model which can be inferenced for new predictions
-        """
-
-        if not self.dd.pair_dict[coin]["model_filename"]:
-            return None
-
-        if self.live:
-            self.model_filename = self.dd.pair_dict[coin]["model_filename"]
-            self.data_path = Path(self.dd.pair_dict[coin]["data_path"])
-            if self.freqai_config.get("follow_mode", False):
-                # follower can be on a different system which is rsynced to the leader:
-                self.data_path = Path(
-                    self.config["user_data_dir"]
-                    / "models"
-                    / self.data_path.parts[-2]
-                    / self.data_path.parts[-1]
-                )
-
-        with open(self.data_path / str(self.model_filename + "_metadata.json"), "r") as fp:
-            self.data = json.load(fp)
-            self.training_features_list = self.data["training_features_list"]
-            self.label_list = self.data["label_list"]
-
-        self.data_dictionary["train_features"] = pd.read_pickle(
-            self.data_path / str(self.model_filename + "_trained_df.pkl")
-        )
-
-        # try to access model in memory instead of loading object from disk to save time
-        if self.live and self.model_filename in self.dd.model_dictionary:
-            model = self.dd.model_dictionary[self.model_filename]
-        elif not self.keras:
-            model = load(self.data_path / str(self.model_filename + "_model.joblib"))
-        else:
-            from tensorflow import keras
-
-            model = keras.models.load_model(self.data_path / str(self.model_filename + "_model.h5"))
-
-        if Path(self.data_path / str(self.model_filename + "_svm_model.joblib")).resolve().exists():
-            self.svm_model = load(self.data_path / str(self.model_filename + "_svm_model.joblib"))
-
-        if not model:
-            raise OperationalException(
-                f"Unable to load model, ensure model exists at " f"{self.data_path} "
-            )
-
-        if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
-            self.pca = cloudpickle.load(
-                open(self.data_path / str(self.model_filename + "_pca_object.pkl"), "rb")
-            )
-
-        return model
 
     def make_train_test_datasets(
         self, filtered_dataframe: DataFrame, labels: DataFrame
@@ -953,56 +842,6 @@ class FreqaiDataKitchen:
             prepend=self.config.get("prepend_data", False),
         )
 
-    def update_historic_data(self, strategy: IStrategy) -> None:
-        """
-        Append new candles to our stores historic data (in memory) so that
-        we do not need to load candle history from disk and we dont need to
-        pinging exchange multiple times for the same candle.
-        :params:
-        dataframe: DataFrame = strategy provided dataframe
-        """
-        feat_params = self.freqai_config.get("feature_parameters", {})
-        with self.dd.history_lock:
-            history_data = self.dd.historic_data
-
-            for pair in self.all_pairs:
-                for tf in feat_params.get("include_timeframes"):
-
-                    # check if newest candle is already appended
-                    df_dp = strategy.dp.get_pair_dataframe(pair, tf)
-                    if len(df_dp.index) == 0:
-                        continue
-                    if str(history_data[pair][tf].iloc[-1]["date"]) == str(
-                        df_dp.iloc[-1:]["date"].iloc[-1]
-                    ):
-                        continue
-
-                    try:
-                        index = (
-                            df_dp.loc[
-                                df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]
-                            ].index[0]
-                            + 1
-                        )
-                    except IndexError:
-                        logger.warning(
-                            f"Unable to update pair history for {pair}. "
-                            "If this does not resolve itself after 1 additional candle, "
-                            "please report the error to #freqai discord channel"
-                        )
-                        return
-
-                    history_data[pair][tf] = pd.concat(
-                        [
-                            history_data[pair][tf],
-                            strategy.dp.get_pair_dataframe(pair, tf).iloc[index:],
-                        ],
-                        ignore_index=True,
-                        axis=0,
-                    )
-
-            # logger.info(f'Length of history data {len(history_data[pair][tf])}')
-
     def set_all_pairs(self) -> None:
 
         self.all_pairs = copy.deepcopy(
@@ -1011,63 +850,6 @@ class FreqaiDataKitchen:
         for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
-
-    def load_all_pair_histories(self, timerange: TimeRange) -> None:
-        """
-        Load pair histories for all whitelist and corr_pairlist pairs.
-        Only called once upon startup of bot.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
-        """
-        history_data = self.dd.historic_data
-
-        for pair in self.all_pairs:
-            if pair not in history_data:
-                history_data[pair] = {}
-            for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
-                history_data[pair][tf] = load_pair_history(
-                    datadir=self.config["datadir"],
-                    timeframe=tf,
-                    pair=pair,
-                    timerange=timerange,
-                    data_format=self.config.get("dataformat_ohlcv", "json"),
-                    candle_type=self.config.get("trading_mode", "spot"),
-                )
-
-    def get_base_and_corr_dataframes(
-        self, timerange: TimeRange, pair: str
-    ) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
-        """
-        Searches through our historic_data in memory and returns the dataframes relevant
-        to the present pair.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
-        metadata: dict = strategy furnished pair metadata
-        """
-
-        with self.dd.history_lock:
-            corr_dataframes: Dict[Any, Any] = {}
-            base_dataframes: Dict[Any, Any] = {}
-            historic_data = self.dd.historic_data
-            pairs = self.freqai_config.get("feature_parameters", {}).get(
-                "include_corr_pairlist", []
-            )
-
-            for tf in self.freqai_config.get("feature_parameters", {}).get("include_timeframes"):
-                base_dataframes[tf] = self.slice_dataframe(timerange, historic_data[pair][tf])
-                if pairs:
-                    for p in pairs:
-                        if pair in p:
-                            continue  # dont repeat anything from whitelist
-                        if p not in corr_dataframes:
-                            corr_dataframes[p] = {}
-                        corr_dataframes[p][tf] = self.slice_dataframe(
-                            timerange, historic_data[p][tf]
-                        )
-
-        return corr_dataframes, base_dataframes
 
     def use_strategy_to_populate_indicators(
         self,
@@ -1133,20 +915,6 @@ class FreqaiDataKitchen:
                     )
 
         return dataframe
-
-    def fit_live_predictions(self) -> None:
-        """
-        Fit the labels with a gaussian distribution
-        """
-        import scipy as spy
-
-        num_candles = self.freqai_config.get("fit_live_predictions_candles", 100)
-        self.data["labels_mean"], self.data["labels_std"] = {}, {}
-        for label in self.label_list:
-            f = spy.stats.norm.fit(self.dd.historic_predictions[self.pair][label].tail(num_candles))
-            self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
-
-        return
 
     def fit_labels(self) -> None:
         """

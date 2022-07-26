@@ -7,11 +7,17 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import numpy.typing as npt
 import numpy as np
 import pandas as pd
 from joblib.externals import cloudpickle
 from pandas import DataFrame
-
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from joblib import dump, load
+from freqtrade.strategy.interface import IStrategy
+from freqtrade.exceptions import OperationalException
+from freqtrade.data.history import load_pair_history
+from freqtrade.configuration import TimeRange
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +220,8 @@ class FreqaiDataDrawer:
         # send pair to end of queue
         self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
-    def set_initial_return_values(self, pair: str, dk, pred_df, do_preds) -> None:
+    def set_initial_return_values(self, pair: str, dk: FreqaiDataKitchen,
+                                  pred_df: DataFrame, do_preds: npt.ArrayLike) -> None:
         """
         Set the initial return values to a persistent dataframe. This avoids needing to repredict on
         historical candles, and also stores historical predictions despite retrainings (so stored
@@ -350,6 +357,217 @@ class FreqaiDataDrawer:
         self.load_drawer_from_disk()
         if self.config.get("freqai", {}).get("purge_old_models", False):
             self.purge_old_models()
+
+    # Functions pulled back from FreqaiDataKitchen because they relied on DataDrawer
+
+    def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
+        """
+        Saves all data associated with a model for a single sub-train time range
+        :params:
+        :model: User trained model which can be reused for inferencing to generate
+        predictions
+        """
+
+        if not dk.data_path.is_dir():
+            dk.data_path.mkdir(parents=True, exist_ok=True)
+
+        save_path = Path(dk.data_path)
+
+        # Save the trained model
+        if not dk.keras:
+            dump(model, save_path / f"{dk.model_filename}_model.joblib")
+        else:
+            model.save(save_path / f"{dk.model_filename}_model.h5")
+
+        if dk.svm_model is not None:
+            dump(dk.svm_model, save_path / str(dk.model_filename + "_svm_model.joblib"))
+
+        dk.data["data_path"] = str(dk.data_path)
+        dk.data["model_filename"] = str(dk.model_filename)
+        dk.data["training_features_list"] = list(dk.data_dictionary["train_features"].columns)
+        dk.data["label_list"] = dk.label_list
+        # store the metadata
+        with open(save_path / str(dk.model_filename + "_metadata.json"), "w") as fp:
+            json.dump(dk.data, fp, default=dk.np_encoder)
+
+        # save the train data to file so we can check preds for area of applicability later
+        dk.data_dictionary["train_features"].to_pickle(
+            save_path / str(dk.model_filename + "_trained_df.pkl")
+        )
+
+        if self.freqai_info.get("feature_parameters", {}).get("principal_component_analysis"):
+            cloudpickle.dump(
+                dk.pca, open(dk.data_path / str(dk.model_filename + "_pca_object.pkl"), "wb")
+            )
+
+        # if self.live:
+        self.model_dictionary[dk.model_filename] = model
+        self.pair_dict[coin]["model_filename"] = dk.model_filename
+        self.pair_dict[coin]["data_path"] = str(dk.data_path)
+        self.save_drawer_to_disk()
+
+        return
+
+    def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:
+        """
+        loads all data required to make a prediction on a sub-train time range
+        :returns:
+        :model: User trained model which can be inferenced for new predictions
+        """
+
+        if not self.pair_dict[coin]["model_filename"]:
+            return None
+
+        if dk.live:
+            dk.model_filename = self.pair_dict[coin]["model_filename"]
+            dk.data_path = Path(self.pair_dict[coin]["data_path"])
+            if self.freqai_info.get("follow_mode", False):
+                # follower can be on a different system which is rsynced to the leader:
+                dk.data_path = Path(
+                    self.config["user_data_dir"]
+                    / "models"
+                    / dk.data_path.parts[-2]
+                    / dk.data_path.parts[-1]
+                )
+
+        with open(dk.data_path / str(dk.model_filename + "_metadata.json"), "r") as fp:
+            dk.data = json.load(fp)
+            dk.training_features_list = dk.data["training_features_list"]
+            dk.label_list = dk.data["label_list"]
+
+        dk.data_dictionary["train_features"] = pd.read_pickle(
+            dk.data_path / str(dk.model_filename + "_trained_df.pkl")
+        )
+
+        # try to access model in memory instead of loading object from disk to save time
+        if dk.live and dk.model_filename in self.model_dictionary:
+            model = self.model_dictionary[dk.model_filename]
+        elif not dk.keras:
+            model = load(dk.data_path / str(dk.model_filename + "_model.joblib"))
+        else:
+            from tensorflow import keras
+
+            model = keras.models.load_model(dk.data_path / str(dk.model_filename + "_model.h5"))
+
+        if Path(dk.data_path / str(dk.model_filename + "_svm_model.joblib")).resolve().exists():
+            dk.svm_model = load(dk.data_path / str(dk.model_filename + "_svm_model.joblib"))
+
+        if not model:
+            raise OperationalException(
+                f"Unable to load model, ensure model exists at " f"{dk.data_path} "
+            )
+
+        if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
+            dk.pca = cloudpickle.load(
+                open(dk.data_path / str(dk.model_filename + "_pca_object.pkl"), "rb")
+            )
+
+        return model
+
+    def update_historic_data(self, strategy: IStrategy, dk: FreqaiDataKitchen) -> None:
+        """
+        Append new candles to our stores historic data (in memory) so that
+        we do not need to load candle history from disk and we dont need to
+        pinging exchange multiple times for the same candle.
+        :params:
+        dataframe: DataFrame = strategy provided dataframe
+        """
+        feat_params = self.freqai_info.get("feature_parameters", {})
+        with self.history_lock:
+            history_data = self.historic_data
+
+            for pair in dk.all_pairs:
+                for tf in feat_params.get("include_timeframes"):
+
+                    # check if newest candle is already appended
+                    df_dp = strategy.dp.get_pair_dataframe(pair, tf)
+                    if len(df_dp.index) == 0:
+                        continue
+                    if str(history_data[pair][tf].iloc[-1]["date"]) == str(
+                        df_dp.iloc[-1:]["date"].iloc[-1]
+                    ):
+                        continue
+
+                    try:
+                        index = (
+                            df_dp.loc[
+                                df_dp["date"] == history_data[pair][tf].iloc[-1]["date"]
+                            ].index[0]
+                            + 1
+                        )
+                    except IndexError:
+                        logger.warning(
+                            f"Unable to update pair history for {pair}. "
+                            "If this does not resolve itself after 1 additional candle, "
+                            "please report the error to #freqai discord channel"
+                        )
+                        return
+
+                    history_data[pair][tf] = pd.concat(
+                        [
+                            history_data[pair][tf],
+                            strategy.dp.get_pair_dataframe(pair, tf).iloc[index:],
+                        ],
+                        ignore_index=True,
+                        axis=0,
+                    )
+
+    def load_all_pair_histories(self, timerange: TimeRange, dk: FreqaiDataKitchen) -> None:
+        """
+        Load pair histories for all whitelist and corr_pairlist pairs.
+        Only called once upon startup of bot.
+        :params:
+        timerange: TimeRange = full timerange required to populate all indicators
+        for training according to user defined train_period_days
+        """
+        history_data = self.historic_data
+
+        for pair in dk.all_pairs:
+            if pair not in history_data:
+                history_data[pair] = {}
+            for tf in self.freqai_info.get("feature_parameters", {}).get("include_timeframes"):
+                history_data[pair][tf] = load_pair_history(
+                    datadir=self.config["datadir"],
+                    timeframe=tf,
+                    pair=pair,
+                    timerange=timerange,
+                    data_format=self.config.get("dataformat_ohlcv", "json"),
+                    candle_type=self.config.get("trading_mode", "spot"),
+                )
+
+    def get_base_and_corr_dataframes(
+        self, timerange: TimeRange, pair: str, dk: FreqaiDataKitchen
+    ) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
+        """
+        Searches through our historic_data in memory and returns the dataframes relevant
+        to the present pair.
+        :params:
+        timerange: TimeRange = full timerange required to populate all indicators
+        for training according to user defined train_period_days
+        metadata: dict = strategy furnished pair metadata
+        """
+
+        with self.history_lock:
+            corr_dataframes: Dict[Any, Any] = {}
+            base_dataframes: Dict[Any, Any] = {}
+            historic_data = self.historic_data
+            pairs = self.freqai_info.get("feature_parameters", {}).get(
+                "include_corr_pairlist", []
+            )
+
+            for tf in self.freqai_info.get("feature_parameters", {}).get("include_timeframes"):
+                base_dataframes[tf] = dk.slice_dataframe(timerange, historic_data[pair][tf])
+                if pairs:
+                    for p in pairs:
+                        if pair in p:
+                            continue  # dont repeat anything from whitelist
+                        if p not in corr_dataframes:
+                            corr_dataframes[p] = {}
+                        corr_dataframes[p][tf] = dk.slice_dataframe(
+                            timerange, historic_data[p][tf]
+                        )
+
+        return corr_dataframes, base_dataframes
 
     # to be used if we want to send predictions directly to the follower instead of forcing
     # follower to load models and inference

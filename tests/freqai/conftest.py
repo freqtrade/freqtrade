@@ -1,12 +1,12 @@
 from copy import deepcopy
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 from tests.conftest import get_patched_exchange
@@ -57,9 +57,15 @@ def freqai_conf(default_conf, tmpdir):
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
-    dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
-    dk = FreqaiDataKitchen(freqaiconf, dd)
+    # dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
+    dk = FreqaiDataKitchen(freqaiconf)
     return dk
+
+
+def get_patched_data_drawer(mocker, freqaiconf):
+    # dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
+    dd = FreqaiDataDrawer(freqaiconf)
+    return dd
 
 
 def get_patched_freqai_strategy(mocker, freqaiconf):
