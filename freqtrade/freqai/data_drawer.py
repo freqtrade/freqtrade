@@ -63,7 +63,7 @@ class FreqaiDataDrawer:
         self.historic_predictions: Dict[str, Any] = {}
         self.follower_dict: Dict[str, Any] = {}
         self.full_path = full_path
-        self.follower_name = self.config.get("bot_name", "follower1")
+        self.follower_name: str = self.config.get("bot_name", "follower1")
         self.follower_dict_path = Path(
             self.full_path / f"follower_dictionary-{self.follower_name}.json"
         )
@@ -159,8 +159,7 @@ class FreqaiDataDrawer:
         for pair in whitelist_pairs:
             self.follower_dict[pair] = {}
 
-        with open(self.follower_dict_path, "w") as fp:
-            json.dump(self.follower_dict, fp, default=self.np_encoder)
+        self.save_follower_dict_to_disk()
 
     def np_encoder(self, object):
         if isinstance(object, np.generic):
