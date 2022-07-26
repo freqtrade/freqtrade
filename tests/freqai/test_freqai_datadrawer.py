@@ -4,7 +4,6 @@ from pathlib import Path
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
-# from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from tests.conftest import get_patched_exchange
 from tests.freqai.conftest import get_patched_freqai_strategy

@@ -134,7 +134,7 @@ class IFreqaiModel(ABC):
             time.sleep(1)
             for pair in self.config.get("exchange", {}).get("pair_whitelist"):
 
-                (_, trained_timestamp, _, _) = self.dd.get_pair_dict_info(pair)
+                (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
                 if self.dd.pair_dict[pair]["priority"] != 1:
                     continue
@@ -177,7 +177,7 @@ class IFreqaiModel(ABC):
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            (_, _, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
+            (_, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             gc.collect()
@@ -250,7 +250,7 @@ class IFreqaiModel(ABC):
             self.dd.update_follower_metadata()
 
         # get the model metadata associated with the current pair
-        (_, trained_timestamp, _, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
+        (_, trained_timestamp, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
 
         # if the metadata doesnt exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
