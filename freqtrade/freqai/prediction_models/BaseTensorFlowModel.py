@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Any
 
 from pandas import DataFrame
 
@@ -27,7 +27,7 @@ class BaseTensorFlowModel(IFreqaiModel):
 
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
-    ) -> Tuple[DataFrame, DataFrame]:
+    ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
