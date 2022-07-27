@@ -330,3 +330,8 @@ def test_dp_send_msg(default_conf):
     assert msg not in dp._msg_queue
     dp.send_msg(msg, always_send=True)
     assert msg in dp._msg_queue
+
+    default_conf["runmode"] = RunMode.BACKTEST
+    dp = DataProvider(default_conf, None)
+    dp.send_msg(msg, always_send=True)
+    assert msg not in dp._msg_queue
