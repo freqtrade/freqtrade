@@ -81,8 +81,7 @@ class FreqaiDataDrawer:
         """
         Locate and load a previously saved data drawer full of all pair model metadata in
         present model folder.
-        :returns:
-        exists: bool = whether or not the drawer was located
+        :return: bool - whether or not the drawer was located
         """
         exists = self.pair_dictionary_path.is_file()
         if exists:
@@ -101,8 +100,7 @@ class FreqaiDataDrawer:
     def load_historic_predictions_from_disk(self):
         """
         Locate and load a previously saved historic predictions.
-        :returns:
-        exists: bool = whether or not the drawer was located
+        :return: bool - whether or not the drawer was located
         """
         exists = self.historic_predictions_path.is_file()
         if exists:
@@ -422,7 +420,7 @@ class FreqaiDataDrawer:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
             if self.freqai_info.get("follow_mode", False):
-                # follower can be on a different system which is rsynced to the leader:
+                # follower can be on a different system which is rsynced from the leader:
                 dk.data_path = Path(
                     self.config["user_data_dir"]
                     / "models"
