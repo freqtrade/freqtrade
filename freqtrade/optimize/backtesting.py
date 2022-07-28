@@ -381,7 +381,8 @@ class Backtesting:
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if exit.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
+        if exit.exit_type in (
+                ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS, ExitType.LIQUIDATION):
             return self._get_close_rate_for_stoploss(row, trade, exit, trade_dur)
         elif exit.exit_type == (ExitType.ROI):
             return self._get_close_rate_for_roi(row, trade, exit, trade_dur)
@@ -396,11 +397,16 @@ class Backtesting:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
+        if exit.exit_type == ExitType.LIQUIDATION and trade.liquidation_price:
+            stoploss_value = trade.liquidation_price
+        else:
+            stoploss_value = trade.stop_loss
+
         if is_short:
-            if trade.stop_loss < row[LOW_IDX]:
+            if stoploss_value < row[LOW_IDX]:
                 return row[OPEN_IDX]
         else:
-            if trade.stop_loss > row[HIGH_IDX]:
+            if stoploss_value > row[HIGH_IDX]:
                 return row[OPEN_IDX]
 
         # Special case: trailing triggers within same candle as trade opened. Assume most
@@ -433,7 +439,7 @@ class Backtesting:
                 return max(row[LOW_IDX], stop_rate)
 
         # Set close_rate to stoploss
-        return trade.stop_loss
+        return stoploss_value
 
     def _get_close_rate_for_roi(self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple,
                                 trade_dur: int) -> float:

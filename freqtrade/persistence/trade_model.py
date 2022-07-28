@@ -511,17 +511,9 @@ class LocalTrade():
         Method you should use to set self.stop_loss.
         Assures stop_loss is not passed the liquidation price
         """
-        if self.liquidation_price is not None:
-            if self.is_short:
-                sl = min(stop_loss, self.liquidation_price)
-            else:
-                sl = max(stop_loss, self.liquidation_price)
-        else:
-            sl = stop_loss
-
         if not self.stop_loss:
-            self.initial_stop_loss = sl
-        self.stop_loss = sl
+            self.initial_stop_loss = stop_loss
+        self.stop_loss = stop_loss
 
         self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
