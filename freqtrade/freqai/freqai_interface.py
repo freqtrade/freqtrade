@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -548,7 +548,7 @@ class IFreqaiModel(ABC):
     @abstractmethod
     def predict(
         self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = True
-    ) -> Tuple[DataFrame, npt.ArrayLike]:
+    ) -> Tuple[DataFrame, ArrayLike]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_dataframe: Full dataframe for the current backtest period.

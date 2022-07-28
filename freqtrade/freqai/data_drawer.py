@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from joblib import dump, load
 from joblib.externals import cloudpickle
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -219,7 +219,7 @@ class FreqaiDataDrawer:
         self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
     def set_initial_return_values(self, pair: str, dk: FreqaiDataKitchen,
-                                  pred_df: DataFrame, do_preds: npt.ArrayLike) -> None:
+                                  pred_df: DataFrame, do_preds: ArrayLike) -> None:
         """
         Set the initial return values to a persistent dataframe. This avoids needing to repredict on
         historical candles, and also stores historical predictions despite retrainings (so stored
@@ -238,7 +238,8 @@ class FreqaiDataDrawer:
 
         mrv_df["do_predict"] = do_preds
 
-    def append_model_predictions(self, pair: str, predictions, do_preds, dk, len_df) -> None:
+    def append_model_predictions(self, pair: str, predictions: DataFrame, do_preds: ArrayLike,
+                                 dk: FreqaiDataKitchen, len_df: int) -> None:
 
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
@@ -293,7 +294,7 @@ class FreqaiDataDrawer:
         dataframe = pd.concat([dataframe[to_keep], df], axis=1)
         return dataframe
 
-    def return_null_values_to_strategy(self, dataframe: DataFrame, dk) -> None:
+    def return_null_values_to_strategy(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> None:
         """
         Build 0 filled dataframe to return to strategy
         """
