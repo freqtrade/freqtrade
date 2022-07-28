@@ -1,6 +1,7 @@
 import subprocess
 import watchdog.events
 import watchdog.observers
+from os import system
 
 from wao.brain_config import BrainConfig
 
@@ -13,12 +14,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def do_grep_cmd(self, file_name, grep_string):
         error_check_command = "grep " + grep_string + " " + file_name
-        result = subprocess.Popen([error_check_command],
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
-        out, err = result.communicate()
-        out_put_string = out.decode('latin-1')
-        return out_put_string
+        out_put_string = system(error_check_command)
+        print("out_put_string: " + str(out_put_string))
+        return str(out_put_string)
 
     def on_created(self, event):
         file_name = str(event.src_path)
@@ -45,7 +43,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        out_put_string = self.do_grep_cmd(file_name, "error")
+        out_put_string = self.do_grep_cmd(file_name, "exception")
         if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
