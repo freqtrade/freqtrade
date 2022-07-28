@@ -36,7 +36,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        error_check_command = "grep -i \'exception\|error\' " + file_name
+        error_check_command = "grep -i \'exception\\|error\' " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
