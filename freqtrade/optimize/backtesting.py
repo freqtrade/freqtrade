@@ -598,7 +598,8 @@ class Backtesting:
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
-            if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+            if (exit_.exit_type != ExitType.LIQUIDATION and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair,
                     trade=trade,  # type: ignore[arg-type]
                     order_type='limit',
@@ -607,7 +608,7 @@ class Backtesting:
                     time_in_force=time_in_force,
                     sell_reason=exit_reason,  # deprecated
                     exit_reason=exit_reason,
-                    current_time=exit_candle_time):
+                    current_time=exit_candle_time)):
                 return None
 
             trade.exit_reason = exit_reason

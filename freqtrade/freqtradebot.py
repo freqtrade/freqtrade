@@ -1463,11 +1463,12 @@ class FreqtradeBot(LoggingMixin):
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['exit']
 
-        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+        if (exit_check.exit_type != ExitType.LIQUIDATION and not strategy_safe_wrapper(
+            self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, exit_reason=exit_reason,
                 sell_reason=exit_reason,  # sellreason -> compatibility
-                current_time=datetime.now(timezone.utc)):
+                current_time=datetime.now(timezone.utc))):
             logger.info(f"User denied exit for {trade.pair}.")
             return False
 
