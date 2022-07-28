@@ -12,13 +12,25 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         watchdog.events.PatternMatchingEventHandler.__init__(self,
                                                              ignore_directories=False, case_sensitive=False)
 
-    def do_grep_cmd(self, file_name, grep_string):
-        error_check_command = "grep " + grep_string + " " + file_name
-        result = subprocess.Popen([error_check_command], shell=True)
+    def do_tail_cmd(self, file_name):
+        error_check_command = "tail " + file_name
+        result = subprocess.Popen([error_check_command],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
-        print("out_put_string: " + str(out_put_string))
-        return str(out_put_string)
+        print("out_put_string: " + out_put_string)
+        list_of_lines = self.string_to_list(out_put_string)
+        return list_of_lines
+
+    def string_to_list(self, string):
+        return string.split("\n")
+
+    def get_error_line(self, list_of_lines):
+        for line in list_of_lines:
+            if "error" in line.lower() or "exception" in line.lower():
+                return line
+        return None
 
     def on_created(self, event):
         file_name = str(event.src_path)
@@ -45,10 +57,11 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        out_put_string = self.do_grep_cmd(file_name, "camera")
-        if not self.__freqtrade_error_case(out_put_string):
+        list_of_lines = self.do_tail_cmd(file_name)
+        error_line = self.get_error_line(list_of_lines)
+        if not self.__freqtrade_error_case(error_line):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
-                BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
+                BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
                                    .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
             result_log = subprocess.Popen([stop_bot_command],
                                           stdout=subprocess.PIPE,
