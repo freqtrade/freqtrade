@@ -28,8 +28,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def get_error_line(self, list_of_lines):
         for line in list_of_lines:
-            if "error" in line.lower() or "exception" in line.lower():
-                return line
+            if "error" in str(line).lower() or "exception" in str(line).lower():
+                return str(line)
         return None
 
     def on_created(self, event):
