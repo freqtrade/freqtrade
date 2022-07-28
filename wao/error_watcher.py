@@ -11,8 +11,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         watchdog.events.PatternMatchingEventHandler.__init__(self,
                                                              ignore_directories=False, case_sensitive=False)
 
-    def do_grep(self, file_name, grep_string):
-        error_check_command = "grep -i " + grep_string + " " + file_name
+    def do_grep_cmd(self, file_name, grep_string):
+        error_check_command = "grep " + grep_string + " " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
@@ -45,7 +45,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        out_put_string = self.do_grep(file_name, "error")
+        out_put_string = self.do_grep_cmd(file_name, "error")
         if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
