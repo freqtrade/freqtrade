@@ -14,7 +14,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_created(self, event):
         file_name = str(event.src_path)
 
-        error_check_command = "grep -i error " + file_name + " | grep -i exception " + file_name
+        error_check_command = "grep error " + file_name + " | grep exception " \
+                              + file_name + "grep Error " + file_name + " | grep Exception " + file_name \
+                              + file_name + "grep ERROR " + file_name + " | grep EXCEPTION " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
@@ -22,11 +24,11 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         out_put_string = out.decode('latin-1')
         if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
-                    BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
-                                       .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
+                BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
+                                   .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
             result_log = subprocess.Popen([stop_bot_command],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
 
             out, err = result_log.communicate()
             out_put = out.decode('latin-1')
@@ -34,7 +36,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        error_check_command = "grep -i error " + file_name + " | grep -i exception " + file_name
+        error_check_command = "grep error " + file_name + " | grep exception " \
+                              + file_name + "grep Error " + file_name + " | grep Exception " + file_name \
+                              + file_name + "grep ERROR " + file_name + " | grep EXCEPTION " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
