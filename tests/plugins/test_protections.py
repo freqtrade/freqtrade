@@ -424,7 +424,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 @pytest.mark.parametrize("protectionconf,desc_expected,exception_expected", [
     ({"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2, "stop_duration": 60},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-     "2 stoplosses within 60 minutes.'}]",
+     "2 stoplosses with profit < 0.00% within 60 minutes.'}]",
      None
      ),
     ({"method": "CooldownPeriod", "stop_duration": 60},
@@ -442,9 +442,9 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
      None
      ),
     ({"method": "StoplossGuard", "lookback_period_candles": 12, "trade_limit": 2,
-      "stop_duration": 60},
+      "required_profit": -0.05, "stop_duration": 60},
      "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-     "2 stoplosses within 12 candles.'}]",
+     "2 stoplosses with profit < -5.00% within 12 candles.'}]",
      None
      ),
     ({"method": "CooldownPeriod", "stop_duration_candles": 5},

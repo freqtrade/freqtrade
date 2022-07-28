@@ -50,6 +50,8 @@ This applies across all pairs, unless `only_per_pair` is set to true, which will
 
 Similarly, this protection will by default look at all trades (long and short). For futures bots, setting `only_per_side` will make the bot only consider one side, and will then only lock this one side, allowing for example shorts to continue after a series of long stoplosses.
 
+`required_profit` will determine the required relative profit (or loss) for stoplosses to consider. This should normally not be set and defaults to 0.0 - which means all losing stoplosses will be triggering a block.
+
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
 
 ``` python
@@ -61,6 +63,7 @@ def protections(self):
             "lookback_period_candles": 24,
             "trade_limit": 4,
             "stop_duration_candles": 4,
+            "required_profit": 0.0,
             "only_per_pair": False,
             "only_per_side": False
         }
