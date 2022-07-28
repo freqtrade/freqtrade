@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from joblib import dump, load
 from joblib.externals import cloudpickle
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -81,8 +81,7 @@ class FreqaiDataDrawer:
         """
         Locate and load a previously saved data drawer full of all pair model metadata in
         present model folder.
-        :returns:
-        exists: bool = whether or not the drawer was located
+        :return: bool - whether or not the drawer was located
         """
         exists = self.pair_dictionary_path.is_file()
         if exists:
@@ -101,8 +100,7 @@ class FreqaiDataDrawer:
     def load_historic_predictions_from_disk(self):
         """
         Locate and load a previously saved historic predictions.
-        :returns:
-        exists: bool = whether or not the drawer was located
+        :return: bool - whether or not the drawer was located
         """
         exists = self.historic_predictions_path.is_file()
         if exists:
@@ -221,7 +219,7 @@ class FreqaiDataDrawer:
         self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
     def set_initial_return_values(self, pair: str, dk: FreqaiDataKitchen,
-                                  pred_df: DataFrame, do_preds: npt.ArrayLike) -> None:
+                                  pred_df: DataFrame, do_preds: ArrayLike) -> None:
         """
         Set the initial return values to a persistent dataframe. This avoids needing to repredict on
         historical candles, and also stores historical predictions despite retrainings (so stored
@@ -240,7 +238,8 @@ class FreqaiDataDrawer:
 
         mrv_df["do_predict"] = do_preds
 
-    def append_model_predictions(self, pair: str, predictions, do_preds, dk, len_df) -> None:
+    def append_model_predictions(self, pair: str, predictions: DataFrame, do_preds: ArrayLike,
+                                 dk: FreqaiDataKitchen, len_df: int) -> None:
 
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
@@ -295,7 +294,7 @@ class FreqaiDataDrawer:
         dataframe = pd.concat([dataframe[to_keep], df], axis=1)
         return dataframe
 
-    def return_null_values_to_strategy(self, dataframe: DataFrame, dk) -> None:
+    def return_null_values_to_strategy(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> None:
         """
         Build 0 filled dataframe to return to strategy
         """
@@ -422,7 +421,7 @@ class FreqaiDataDrawer:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
             if self.freqai_info.get("follow_mode", False):
-                # follower can be on a different system which is rsynced to the leader:
+                # follower can be on a different system which is rsynced from the leader:
                 dk.data_path = Path(
                     self.config["user_data_dir"]
                     / "models"
