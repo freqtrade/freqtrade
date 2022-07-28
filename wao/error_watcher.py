@@ -73,5 +73,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
             out_put = out.decode('latin-1')
 
     def __freqtrade_error_case(self, out_put_string):
-        lower_string = out_put_string.lower()
-        return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
+        if out_put_string is not None:
+            lower_string = out_put_string.lower()
+            return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
+        return False
