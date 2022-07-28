@@ -45,7 +45,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_modified(self, event):
         file_name = str(event.src_path)
 
-        out_put_string = self.do_grep_cmd(file_name, "excep")
+        out_put_string = self.do_grep_cmd(file_name, "error")
         if not self.__freqtrade_error_case(out_put_string):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
