@@ -61,19 +61,21 @@ class IFreqaiModel(ABC):
 
         self.config = config
         self.assert_config(self.config)
-        self.freqai_info = config["freqai"]
-        self.data_split_parameters = config.get("freqai", {}).get("data_split_parameters")
-        self.model_training_parameters = config.get("freqai", {}).get("model_training_parameters")
+        self.freqai_info: Dict[str, Any] = config["freqai"]
+        self.data_split_parameters: Dict[str, Any] = config.get("freqai", {}).get(
+            "data_split_parameters", {})
+        self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
+            "model_training_parameters", {})
         self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
         self.retrain = False
         self.first = True
         self.set_full_path()
-        self.follow_mode = self.freqai_info.get("follow_mode", False)
+        self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.lock = threading.Lock()
-        self.identifier = self.freqai_info.get("identifier", "no_id_provided")
+        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
-        self.keras = self.freqai_info.get("keras", False)
+        self.keras: bool = self.freqai_info.get("keras", False)
         if self.keras and self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
             self.freqai_info["feature_parameters"]["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
@@ -253,7 +255,7 @@ class IFreqaiModel(ABC):
         # get the model metadata associated with the current pair
         (_, trained_timestamp, return_null_array) = self.dd.get_pair_dict_info(metadata["pair"])
 
-        # if the metadata doesnt exist, the follower returns null arrays to strategy
+        # if the metadata doesn't exist, the follower returns null arrays to strategy
         if self.follow_mode and return_null_array:
             logger.info("Returning null array from follower to strategy")
             self.dd.return_null_values_to_strategy(dataframe, dk)
@@ -364,7 +366,7 @@ class IFreqaiModel(ABC):
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
                 "but found different features furnished by current strategy."
-                "Change `identifer` to train from scratch, or ensure the"
+                "Change `identifier` to train from scratch, or ensure the"
                 "strategy is furnishing the same features as the pretrained"
                 "model"
             )
@@ -457,7 +459,7 @@ class IFreqaiModel(ABC):
         data_load_timerange: TimeRange,
     ):
         """
-        Retreive data and train model in single threaded mode (only used if model directory is empty
+        Retrieve data and train model in single threaded mode (only used if model directory is empty
         upon startup for dry/live )
         :param new_trained_timerange: TimeRange = the timerange to train the model on
         :param metadata: dict = strategy provided metadata
