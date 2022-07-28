@@ -14,9 +14,9 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def do_grep_cmd(self, file_name, grep_string):
         error_check_command = "grep " + grep_string + " " + file_name
-        out_put_string = subprocess.run(error_check_command, shell=True, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-        # out, err = result.communicate()
-        # out_put_string = out.decode('latin-1')
+        result = subprocess.Popen([error_check_command], shell=True)
+        out, err = result.communicate()
+        out_put_string = out.decode('latin-1')
         print("out_put_string: " + str(out_put_string))
         return str(out_put_string)
 
