@@ -15,8 +15,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         file_name = str(event.src_path)
 
         error_check_command = "grep error " + file_name + " && grep exception " \
-                              + file_name + " grep Error " + file_name + " && grep Exception " + file_name \
-                              + file_name + " grep ERROR " + file_name + " && grep EXCEPTION " + file_name
+                              + file_name + " && grep Error " + file_name + " && grep Exception " + file_name \
+                              + file_name + " && grep ERROR " + file_name + " && grep EXCEPTION " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
@@ -37,8 +37,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         file_name = str(event.src_path)
 
         error_check_command = "grep error " + file_name + " && grep exception " \
-                              + file_name + " grep Error " + file_name + " && grep Exception " + file_name \
-                              + file_name + " grep ERROR " + file_name + " && grep EXCEPTION " + file_name
+                              + file_name + " && grep Error " + file_name + " && grep Exception " + file_name \
+                              + file_name + " && grep ERROR " + file_name + " && grep EXCEPTION " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
