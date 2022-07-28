@@ -19,20 +19,29 @@ class bbrsi_scalp(WAOStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.249,
-        "30": 0.075,
-        "90": 0.022,
-        "209": 0
+        "240": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+        "220": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
+        "200": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+        "180": 0.012,  # Exit after 40 minutes if there is at least 1% profit
+        "160": 0.014,  # Exit after 40 minutes if there is at least 1% profit
+        "140": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+        "120": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+        "80": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.024,  # Exit immediately if there is at least 2% profit
+        "40": 0.026,  # Exit immediately if there is at least 2% profit
+        "20": 0.028,  # Exit immediately if there is at least 2% profit
+        "0": 0.030,  # Exit immediately if there is at least 2% profit
     }
 
     # Stoploss:
-    stoploss = -0.292
+    stoploss = -0.05
 
     # Trailing stop:
-    trailing_stop = True
-    trailing_stop_positive = 0.341
-    trailing_stop_positive_offset = 0.362
-    trailing_only_offset_is_reached = True
+    trailing_stop = False
+    trailing_stop_positive = 0.089
+    trailing_stop_positive_offset = 0.11
+    trailing_only_offset_is_reached = False
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
@@ -40,7 +49,7 @@ class bbrsi_scalp(WAOStrategy):
     # Experimental settings (configuration will overide these if set)
     use_sell_signal = True
     sell_profit_only = True
-    ignore_roi_if_buy_signal = False
+    ignore_roi_if_buy_signal = True
 
     def informative_pairs(self):
         """
@@ -69,7 +78,7 @@ class bbrsi_scalp(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
+        # dataframe['rsi'] = ta.RSI(dataframe)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         # rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -78,7 +87,7 @@ class bbrsi_scalp(WAOStrategy):
         # Bollinger bands
         bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
+        # dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
 
         # SAR Parabol
@@ -97,9 +106,9 @@ class bbrsi_scalp(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['close'].shift(1) < dataframe['bb_lowerband']) &
-                    (dataframe['close'] > dataframe['bb_lowerband']) &
-                    (dataframe['rsi'] < 50)
+                    (dataframe['close'].shift(1) < dataframe['bb_lowerband'])
+                    & (dataframe['close'] > dataframe['bb_lowerband'])
+                    # & (dataframe['rsi'] < 50)
             ),
             'buy'] = 1
 
@@ -113,8 +122,8 @@ class bbrsi_scalp(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['close'] > dataframe['bb_upperband']) |
-                    (dataframe['rsi'] > 60)
+                    (dataframe['close'] > dataframe['bb_upperband'])
+                    # | (dataframe['rsi'] > 60)
             ),
             'sell'] = 1
         return dataframe
