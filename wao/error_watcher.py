@@ -58,6 +58,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         file_name = str(event.src_path)
 
         list_of_lines = self.do_tail_cmd(file_name)
+        print("list_of_lines: " + str(list_of_lines))
         error_line = self.get_error_line(list_of_lines)
         if not self.__freqtrade_error_case(error_line):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
