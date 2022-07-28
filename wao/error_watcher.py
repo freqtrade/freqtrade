@@ -24,7 +24,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         return list_of_lines
 
     def string_to_list(self, string):
-        return string.split("\n")
+        return list(string.split("\n"))
 
     def get_error_line(self, list_of_lines):
         if len(list_of_lines) > 0:
