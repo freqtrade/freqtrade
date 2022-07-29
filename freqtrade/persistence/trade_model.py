@@ -535,14 +535,8 @@ class LocalTrade():
         leverage = self.leverage or 1.0
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss / leverage)))
-            # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = min(self.liquidation_price, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss / leverage)))
-            # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None or refresh:

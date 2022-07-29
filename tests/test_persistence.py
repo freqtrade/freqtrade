@@ -133,13 +133,14 @@ def test_set_stop_loss_isolated_liq(fee):
     trade.set_isolated_liq(0.11)
     trade._set_stop_loss(0.1, 0)
     assert trade.liquidation_price == 0.11
-    assert trade.stop_loss == 0.11
+    # Stoploss does not change from liquidation price
+    assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.1
 
     # lower stop doesn't move stoploss
     trade._set_stop_loss(0.1, 0)
     assert trade.liquidation_price == 0.11
-    assert trade.stop_loss == 0.11
+    assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.1
 
     trade.stop_loss = None
@@ -174,13 +175,14 @@ def test_set_stop_loss_isolated_liq(fee):
     trade.set_isolated_liq(0.07)
     trade._set_stop_loss(0.1, (1.0 / 8.0))
     assert trade.liquidation_price == 0.07
-    assert trade.stop_loss == 0.07
+    # Stoploss does not change from liquidation price
+    assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.08
 
     # Stop doesn't move stop higher
     trade._set_stop_loss(0.1, (1.0 / 9.0))
     assert trade.liquidation_price == 0.07
-    assert trade.stop_loss == 0.07
+    assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.08
 
 
@@ -1609,9 +1611,10 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == -0.05
     assert trade.stop_loss_pct == -0.1
+    # Liquidation price is lower than stoploss - so liquidation would trigger first.
     trade.set_isolated_liq(0.63)
     trade.adjust_stop_loss(0.59, -0.1)
-    assert trade.stop_loss == 0.63
+    assert trade.stop_loss == 0.649
     assert trade.liquidation_price == 0.63
 
 
@@ -2011,8 +2014,8 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     # Stoploss can't go above liquidation price
     trade_adj.set_isolated_liq(0.985)
     trade.adjust_stop_loss(0.9799, -0.05)
-    assert trade_adj.stop_loss == 0.985
-    assert trade_adj.stop_loss == 0.985
+    assert trade_adj.stop_loss == 0.989699
+    assert trade_adj.liquidation_price == 0.985
 
 
 def test_update_fee(fee):
