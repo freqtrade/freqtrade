@@ -11,21 +11,20 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         watchdog.events.PatternMatchingEventHandler.__init__(self,
                                                              ignore_directories=False, case_sensitive=False)
 
-    def do_tail_cmd(self, file_name):
+    def get_tail_cmd_result(self, file_name):
         error_check_command = "tail " + file_name
         result = subprocess.Popen([error_check_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
-        list_of_lines = self.string_to_list(out_put_string)
-        error_line = self.get_error_line(list_of_lines)
-        return error_line
+        return self.string_to_list(out_put_string)
 
     def string_to_list(self, string):
         return list(string.split("\n"))
 
-    def get_error_line(self, list_of_lines):
+    def get_error_line(self, file_name):
+        list_of_lines = self.get_tail_cmd_result(file_name)
         if len(list_of_lines) > 0:
             for line in list_of_lines:
                 if "error" in str(line).lower() or "exception" in str(line).lower():
@@ -34,7 +33,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def on_created(self, event):
         file_name = str(event.src_path)
-        error_line = self.do_tail_cmd(file_name)
+        error_line = self.get_error_line(file_name)
         if not self.__freqtrade_error_case(error_line):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
@@ -48,7 +47,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def on_modified(self, event):
         file_name = str(event.src_path)
-        error_line = self.do_tail_cmd(file_name)
+        error_line = self.get_error_line(file_name)
         if not self.__freqtrade_error_case(error_line):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
