@@ -6,10 +6,8 @@ from wao.brain_config import BrainConfig
 
 
 def is_freqtrade_error(error_line):
-    if error_line is not None:
-        lower_string = error_line.lower()
-        return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
-    return True
+    lower_string = error_line.lower()
+    return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
 
 
 def stop_bot(error_line):
@@ -58,11 +56,11 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
     def on_created(self, event):
         file_name = str(event.src_path)
         error_line = get_error_line(file_name)
-        if not is_freqtrade_error(error_line):
+        if error_line is not None and not is_freqtrade_error(error_line):
             stop_bot(error_line)
 
     def on_modified(self, event):
         file_name = str(event.src_path)
         error_line = get_error_line(file_name)
-        if not is_freqtrade_error(error_line):
+        if error_line is not None and not is_freqtrade_error(error_line):
             stop_bot(error_line)
