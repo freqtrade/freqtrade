@@ -1,9 +1,10 @@
 import logging
 from typing import Any, Tuple
 
+import numpy as np
 import numpy.typing as npt
 from pandas import DataFrame
-import numpy as np
+
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 
