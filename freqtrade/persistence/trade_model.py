@@ -506,10 +506,9 @@ class LocalTrade():
             return
         self.liquidation_price = liquidation_price
 
-    def _set_stop_loss(self, stop_loss: float, percent: float):
+    def __set_stop_loss(self, stop_loss: float, percent: float):
         """
-        Method you should use to set self.stop_loss.
-        Assures stop_loss is not passed the liquidation price
+        Method used internally to set self.stop_loss.
         """
         if not self.stop_loss:
             self.initial_stop_loss = stop_loss
@@ -540,7 +539,7 @@ class LocalTrade():
 
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None or refresh:
-            self._set_stop_loss(new_loss, stoploss)
+            self.__set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             self.initial_stop_loss_pct = -1 * abs(stoploss)
 
@@ -555,7 +554,7 @@ class LocalTrade():
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self._set_stop_loss(new_loss, stoploss)
+                self.__set_stop_loss(new_loss, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 
