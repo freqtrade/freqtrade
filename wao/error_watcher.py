@@ -12,8 +12,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                                              ignore_directories=False, case_sensitive=False)
 
     def get_tail_cmd_result(self, file_name):
-        error_check_command = "tail " + file_name
-        result = subprocess.Popen([error_check_command],
+        tail_command = "tail " + file_name
+        result = subprocess.Popen([tail_command],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
