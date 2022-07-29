@@ -635,20 +635,20 @@ class FreqaiDataKitchen:
         Append backtest prediction from current backtest period to all previous periods
         """
 
-        self.append_df = DataFrame()
+        append_df = DataFrame()
         for label in self.label_list:
-            self.append_df[label] = predictions[label]
-            self.append_df[f"{label}_mean"] = self.data["labels_mean"][label]
-            self.append_df[f"{label}_std"] = self.data["labels_std"][label]
+            append_df[label] = predictions[label]
+            append_df[f"{label}_mean"] = self.data["labels_mean"][label]
+            append_df[f"{label}_std"] = self.data["labels_std"][label]
 
-        self.append_df["do_predict"] = do_predict
+        append_df["do_predict"] = do_predict
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
-            self.append_df["DI_values"] = self.DI_values
+            append_df["DI_values"] = self.DI_values
 
         if self.full_df.empty:
-            self.full_df = self.append_df
+            self.full_df = append_df
         else:
-            self.full_df = pd.concat([self.full_df, self.append_df], axis=0)
+            self.full_df = pd.concat([self.full_df, append_df], axis=0)
 
         return
 
@@ -668,7 +668,7 @@ class FreqaiDataKitchen:
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
 
-        self.append_df = DataFrame()
+        # self.append_df = DataFrame()
         self.full_df = DataFrame()
 
         return

@@ -1,7 +1,6 @@
 # import contextlib
 import copy
 import datetime
-import gc
 import logging
 import shutil
 import threading
@@ -183,8 +182,6 @@ class IFreqaiModel(ABC):
             (_, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
-            gc.collect()
-            dk.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)

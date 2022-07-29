@@ -235,7 +235,7 @@ class FreqaiExampleStrategy(IStrategy):
 
         if (
             "prediction" + entry_tag not in pair_dict[pair]
-            or pair_dict[pair]["prediction" + entry_tag] > 0
+            or pair_dict[pair]["prediction" + entry_tag] == 0
         ):
             with self.freqai.lock:
                 pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
