@@ -18,7 +18,6 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
                                   stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
         out, err = result.communicate()
         out_put_string = out.decode('latin-1')
-        print("out_put_string: " + out_put_string)
         list_of_lines = self.string_to_list(out_put_string)
         error_line = self.get_error_line(list_of_lines)
         return error_line
