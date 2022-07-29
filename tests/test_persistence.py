@@ -120,70 +120,83 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
 
-    trade._set_stop_loss(0.1, (1.0 / 9.0))
+    trade.adjust_stop_loss(2.0, 0.2, True)
     assert trade.liquidation_price == 0.09
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.1
+    assert trade.stop_loss == 1.8
+    assert trade.initial_stop_loss == 1.8
 
     trade.set_isolated_liq(0.08)
     assert trade.liquidation_price == 0.08
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.1
+    assert trade.stop_loss == 1.8
+    assert trade.initial_stop_loss == 1.8
 
     trade.set_isolated_liq(0.11)
-    trade._set_stop_loss(0.1, 0)
+    trade.adjust_stop_loss(2.0, 0.2)
     assert trade.liquidation_price == 0.11
     # Stoploss does not change from liquidation price
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.1
+    assert trade.stop_loss == 1.8
+    assert trade.initial_stop_loss == 1.8
 
     # lower stop doesn't move stoploss
-    trade._set_stop_loss(0.1, 0)
+    trade.adjust_stop_loss(1.8, 0.2)
     assert trade.liquidation_price == 0.11
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.1
+    assert trade.stop_loss == 1.8
+    assert trade.initial_stop_loss == 1.8
+
+    # higher stop does move stoploss
+    trade.adjust_stop_loss(2.1, 0.1)
+    assert trade.liquidation_price == 0.11
+    assert pytest.approx(trade.stop_loss) == 1.994999
+    assert trade.initial_stop_loss == 1.8
 
     trade.stop_loss = None
     trade.liquidation_price = None
     trade.initial_stop_loss = None
+    trade.initial_stop_loss_pct = None
 
-    trade._set_stop_loss(0.07, 0)
+    trade.adjust_stop_loss(2.0, 0.1, True)
     assert trade.liquidation_price is None
-    assert trade.stop_loss == 0.07
-    assert trade.initial_stop_loss == 0.07
+    assert trade.stop_loss == 1.9
+    assert trade.initial_stop_loss == 1.9
 
     trade.is_short = True
     trade.recalc_open_trade_value()
     trade.stop_loss = None
     trade.initial_stop_loss = None
+    trade.initial_stop_loss_pct = None
 
-    trade.set_isolated_liq(0.09)
-    assert trade.liquidation_price == 0.09
+    trade.set_isolated_liq(3.09)
+    assert trade.liquidation_price == 3.09
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
 
-    trade._set_stop_loss(0.08, (1.0 / 9.0))
-    assert trade.liquidation_price == 0.09
-    assert trade.stop_loss == 0.08
-    assert trade.initial_stop_loss == 0.08
+    trade.adjust_stop_loss(2.0, 0.2)
+    assert trade.liquidation_price == 3.09
+    assert trade.stop_loss == 2.2
+    assert trade.initial_stop_loss == 2.2
 
-    trade.set_isolated_liq(0.1)
-    assert trade.liquidation_price == 0.1
-    assert trade.stop_loss == 0.08
-    assert trade.initial_stop_loss == 0.08
+    trade.set_isolated_liq(3.1)
+    assert trade.liquidation_price == 3.1
+    assert trade.stop_loss == 2.2
+    assert trade.initial_stop_loss == 2.2
 
-    trade.set_isolated_liq(0.07)
-    trade._set_stop_loss(0.1, (1.0 / 8.0))
-    assert trade.liquidation_price == 0.07
+    trade.set_isolated_liq(3.8)
+    assert trade.liquidation_price == 3.8
     # Stoploss does not change from liquidation price
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.08
+    assert trade.stop_loss == 2.2
+    assert trade.initial_stop_loss == 2.2
 
     # Stop doesn't move stop higher
-    trade._set_stop_loss(0.1, (1.0 / 9.0))
-    assert trade.liquidation_price == 0.07
-    assert trade.stop_loss == 0.1
-    assert trade.initial_stop_loss == 0.08
+    trade.adjust_stop_loss(2.0, 0.3)
+    assert trade.liquidation_price == 3.8
+    assert trade.stop_loss == 2.2
+    assert trade.initial_stop_loss == 2.2
+
+    # Stoploss does move lower
+    trade.adjust_stop_loss(1.8, 0.1)
+    assert trade.liquidation_price == 3.8
+    assert pytest.approx(trade.stop_loss) == 1.89
+    assert trade.initial_stop_loss == 2.2
 
 
 @pytest.mark.parametrize('exchange,is_short,lev,minutes,rate,interest,trading_mode', [
