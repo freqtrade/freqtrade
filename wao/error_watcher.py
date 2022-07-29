@@ -1,7 +1,6 @@
 import subprocess
 import watchdog.events
 import watchdog.observers
-import sys
 
 from wao.brain_config import BrainConfig
 
@@ -21,7 +20,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         out_put_string = out.decode('latin-1')
         print("out_put_string: " + out_put_string)
         list_of_lines = self.string_to_list(out_put_string)
-        return list_of_lines
+        error_line = self.get_error_line(list_of_lines)
+        return error_line
 
     def string_to_list(self, string):
         return list(string.split("\n"))
@@ -35,31 +35,7 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def on_created(self, event):
         file_name = str(event.src_path)
-
-        error_check_command = "grep error " + file_name + " && grep exception " \
-                              + file_name + " && grep Error " + file_name + " && grep Exception " + file_name \
-                              + file_name + " && grep ERROR " + file_name + " && grep EXCEPTION " + file_name
-        result = subprocess.Popen([error_check_command],
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
-        out, err = result.communicate()
-        out_put_string = out.decode('latin-1')
-        if not self.__freqtrade_error_case(out_put_string):
-            stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
-                BrainConfig.MODE) + " " + out_put_string.split("\n")[0].replace("_", "") \
-                                   .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
-            result_log = subprocess.Popen([stop_bot_command],
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
-
-            out, err = result_log.communicate()
-            out_put = out.decode('latin-1')
-
-    def on_modified(self, event):
-        file_name = str(event.src_path)
-        list_of_lines = self.do_tail_cmd(file_name)
-        print("list_of_lines: " + str(len(list_of_lines)))
-        error_line = self.get_error_line(list_of_lines)
+        error_line = self.do_tail_cmd(file_name)
         if not self.__freqtrade_error_case(error_line):
             stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
                 BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
@@ -71,8 +47,23 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
             out, err = result_log.communicate()
             out_put = out.decode('latin-1')
 
-    def __freqtrade_error_case(self, out_put_string):
-        if out_put_string is not None:
-            lower_string = out_put_string.lower()
+    def on_modified(self, event):
+        file_name = str(event.src_path)
+        error_line = self.do_tail_cmd(file_name)
+        if not self.__freqtrade_error_case(error_line):
+            stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
+                BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
+                                   .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
+            result_log = subprocess.Popen([stop_bot_command],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
+
+            out, err = result_log.communicate()
+            out_put = out.decode('latin-1')
+
+    def __freqtrade_error_case(self, error_line):
+        if error_line is not None:
+            lower_string = error_line.lower()
             return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
-        return True
+        else:
+            return True
