@@ -57,7 +57,6 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def on_modified(self, event):
         file_name = str(event.src_path)
-
         list_of_lines = self.do_tail_cmd(file_name)
         print("list_of_lines: " + str(len(list_of_lines)))
         error_line = self.get_error_line(list_of_lines)
@@ -76,4 +75,4 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         if out_put_string is not None:
             lower_string = out_put_string.lower()
             return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
-        return False
+        return True
