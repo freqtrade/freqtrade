@@ -481,6 +481,8 @@ CONF_SCHEMA = {
         "freqai": {
             "type": "object",
             "properties": {
+                "keras": {"type": "boolean", "default": False},
+                "conv_width": {"type": "integer", "default": 2},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "float", "default": 7},
                 "identifier": {"type": "str", "default": "example"},

@@ -110,6 +110,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
+|  |  **Extraneous parameters**
+| `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
+| `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for `shift` by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. Default value, 2 <br> **Datatype:** integer.
 
 
 ### Important FreqAI dataframe key patterns
