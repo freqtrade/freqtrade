@@ -63,5 +63,4 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
         if error_line is not None:
             lower_string = error_line.lower()
             return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
-        else:
-            return True
+        return True
