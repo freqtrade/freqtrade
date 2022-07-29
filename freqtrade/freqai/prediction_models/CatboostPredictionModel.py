@@ -1,6 +1,7 @@
+import gc
 import logging
 from typing import Any, Dict
-import gc
+
 from catboost import CatBoostRegressor, Pool
 
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel

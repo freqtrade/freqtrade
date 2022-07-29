@@ -3,7 +3,7 @@ from typing import Any, Tuple
 
 import numpy.typing as npt
 from pandas import DataFrame
-
+import numpy as np
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
 
@@ -85,7 +85,7 @@ class BaseRegressionModel(IFreqaiModel):
 
     def predict(
         self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
-    ) -> Tuple[DataFrame, npt.ArrayLike]:
+    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.

@@ -12,7 +12,7 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -204,14 +204,9 @@ class IFreqaiModel(ABC):
 
             dk.data_path = Path(
                 dk.full_path
-                / str(
-                    "sub-train"
-                    + "-"
-                    + metadata["pair"].split("/")[0]
-                    + "_"
-                    + str(int(trained_timestamp.stopts))
+                /
+                f"sub-train-{metadata['pair'].split('/')[0]}_{int(trained_timestamp.stopts)}"
                 )
-            )
             if not self.model_exists(
                 metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
             ):
@@ -331,7 +326,8 @@ class IFreqaiModel(ABC):
             return
         elif self.dk.check_if_model_expired(trained_timestamp):
             pred_df = DataFrame(np.zeros((2, len(dk.label_list))), columns=dk.label_list)
-            do_preds, dk.DI_values = np.ones(2) * 2, np.zeros(2)
+            do_preds = np.ones(2, dtype=np.int_) * 2
+            dk.DI_values = np.zeros(2)
             logger.warning(
                 f"Model expired for {pair}, returning null values to strategy. Strategy "
                 "construction should take care to consider this event with "
@@ -379,15 +375,15 @@ class IFreqaiModel(ABC):
         example of how outlier data points are dropped from the dataframe used for training.
         """
 
-        if self.freqai_info.get("feature_parameters", {}).get(
+        if self.freqai_info["feature_parameters"].get(
             "principal_component_analysis", False
         ):
             dk.principal_component_analysis()
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
+        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
@@ -401,15 +397,15 @@ class IFreqaiModel(ABC):
         of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
         for buy signals.
         """
-        if self.freqai_info.get("feature_parameters", {}).get(
+        if self.freqai_info["feature_parameters"].get(
             "principal_component_analysis", False
         ):
             dk.pca_transform(dataframe)
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
+        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
     def model_exists(
@@ -430,9 +426,9 @@ class IFreqaiModel(ABC):
         coin, _ = pair.split("/")
 
         if not self.live:
-            dk.model_filename = model_filename = "cb_" + coin.lower() + "_" + str(trained_timestamp)
+            dk.model_filename = model_filename = f"cb_{coin.lower()}_{trained_timestamp}"
 
-        path_to_modelfile = Path(dk.data_path / str(model_filename + "_model.joblib"))
+        path_to_modelfile = Path(dk.data_path / f"{model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
         if file_exists and not scanning:
             logger.info("Found model at %s", dk.data_path / dk.model_filename)
@@ -442,7 +438,7 @@ class IFreqaiModel(ABC):
 
     def set_full_path(self) -> None:
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / str(self.freqai_info.get("identifier"))
+            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
         shutil.copy(
@@ -550,7 +546,7 @@ class IFreqaiModel(ABC):
     @abstractmethod
     def predict(
         self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = True
-    ) -> Tuple[DataFrame, ArrayLike]:
+    ) -> Tuple[DataFrame, NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_dataframe: Full dataframe for the current backtest period.

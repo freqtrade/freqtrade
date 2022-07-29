@@ -116,7 +116,7 @@ class FreqaiDataKitchen:
         :filtered_dataframe: cleaned dataframe ready to be split.
         :labels: cleaned labels ready to be split.
         """
-        feat_dict = self.freqai_config.get("feature_parameters", {})
+        feat_dict = self.freqai_config["feature_parameters"]
 
         weights: npt.ArrayLike
         if feat_dict.get("weight_factor", 0) > 0:
@@ -515,7 +515,9 @@ class FreqaiDataKitchen:
             return
 
         if predict:
-            assert self.svm_model, "No svm model available for outlier removal"
+            if not self.svm_model:
+                logger.warning("No svm model available for outlier removal")
+                return
             y_pred = self.svm_model.predict(self.data_dictionary["prediction_features"])
             do_predict = np.where(y_pred == -1, 0, y_pred)
 
@@ -528,7 +530,7 @@ class FreqaiDataKitchen:
 
         else:
             # use SGDOneClassSVM to increase speed?
-            nu = self.freqai_config.get("feature_parameters", {}).get("svm_nu", 0.2)
+            nu = self.freqai_config["feature_parameters"].get("svm_nu", 0.2)
             self.svm_model = linear_model.SGDOneClassSVM(nu=nu).fit(
                 self.data_dictionary["train_features"]
             )
@@ -551,7 +553,7 @@ class FreqaiDataKitchen:
             )
 
             # same for test data
-            if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            if self.freqai_config['data_split_parameters'].get('test_size', 0.1) != 0:
                 y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
                 dropped_points = np.where(y_pred == -1, 0, y_pred)
                 self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
@@ -605,7 +607,7 @@ class FreqaiDataKitchen:
         self.DI_values = distance.min(axis=0) / self.data["avg_mean_dist"]
 
         do_predict = np.where(
-            self.DI_values < self.freqai_config.get("feature_parameters", {}).get("DI_threshold"),
+            self.DI_values < self.freqai_config["feature_parameters"]["DI_threshold"],
             1,
             0,
         )
@@ -640,7 +642,7 @@ class FreqaiDataKitchen:
             self.append_df[f"{label}_std"] = self.data["labels_std"][label]
 
         self.append_df["do_predict"] = do_predict
-        if self.freqai_config.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             self.append_df["DI_values"] = self.DI_values
 
         if self.full_df.empty:
@@ -701,7 +703,7 @@ class FreqaiDataKitchen:
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
+            self.config["user_data_dir"] / "models" / f"{self.freqai_config['identifier']}"
         )
 
         config_path = Path(self.config["config_files"][0])
@@ -741,10 +743,10 @@ class FreqaiDataKitchen:
         data_load_timerange = TimeRange()
 
         # find the max indicator length required
-        max_timeframe_chars = self.freqai_config.get("feature_parameters", {}).get(
+        max_timeframe_chars = self.freqai_config["feature_parameters"].get(
             "include_timeframes"
         )[-1]
-        max_period = self.freqai_config.get("feature_parameters", {}).get(
+        max_period = self.freqai_config["feature_parameters"].get(
             "indicator_max_period_candles", 50
         )
         additional_seconds = 0
@@ -832,7 +834,7 @@ class FreqaiDataKitchen:
         refresh_backtest_ohlcv_data(
             exchange,
             pairs=self.all_pairs,
-            timeframes=self.freqai_config.get("feature_parameters", {}).get("include_timeframes"),
+            timeframes=self.freqai_config["feature_parameters"].get("include_timeframes"),
             datadir=self.config["datadir"],
             timerange=timerange,
             new_pairs_days=new_pairs_days,
@@ -845,7 +847,7 @@ class FreqaiDataKitchen:
     def set_all_pairs(self) -> None:
 
         self.all_pairs = copy.deepcopy(
-            self.freqai_config.get("feature_parameters", {}).get("include_corr_pairlist", [])
+            self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         )
         for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:
@@ -876,8 +878,8 @@ class FreqaiDataKitchen:
         # for prediction dataframe creation, we let dataprovider handle everything in the strategy
         # so we create empty dictionaries, which allows us to pass None to
         # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
-        tfs = self.freqai_config.get("feature_parameters", {}).get("include_timeframes")
-        pairs = self.freqai_config.get("feature_parameters", {}).get("include_corr_pairlist", [])
+        tfs = self.freqai_config["feature_parameters"].get("include_timeframes")
+        pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
             for tf in tfs:

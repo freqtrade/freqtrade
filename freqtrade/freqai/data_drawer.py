@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from joblib import dump, load
 from joblib.externals import cloudpickle
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -233,12 +233,13 @@ class FreqaiDataDrawer:
             mrv_df[f"{label}_mean"] = dk.data["labels_mean"][label]
             mrv_df[f"{label}_std"] = dk.data["labels_std"][label]
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
             mrv_df["DI_values"] = dk.DI_values
 
         mrv_df["do_predict"] = do_preds
 
-    def append_model_predictions(self, pair: str, predictions: DataFrame, do_preds: ArrayLike,
+    def append_model_predictions(self, pair: str, predictions: DataFrame,
+                                 do_preds: NDArray[np.int_],
                                  dk: FreqaiDataKitchen, len_df: int) -> None:
 
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
@@ -266,10 +267,10 @@ class FreqaiDataDrawer:
             df[label].iloc[-1] = predictions[label].iloc[-1]
             df[f"{label}_mean"].iloc[-1] = dk.data["labels_mean"][label]
             df[f"{label}_std"].iloc[-1] = dk.data["labels_std"][label]
-        # df['prediction'].iloc[-1] = predictions[-1]
+
         df["do_predict"].iloc[-1] = do_preds[-1]
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
             df["DI_values"].iloc[-1] = dk.DI_values[-1]
 
         # append the new predictions to persistent storage
@@ -309,7 +310,7 @@ class FreqaiDataDrawer:
         # dataframe['prediction'] = 0
         dataframe["do_predict"] = 0
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0) > 0:
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
             dataframe["DI_value"] = 0
 
         dk.return_dataframe = dataframe
@@ -379,24 +380,24 @@ class FreqaiDataDrawer:
             model.save(save_path / f"{dk.model_filename}_model.h5")
 
         if dk.svm_model is not None:
-            dump(dk.svm_model, save_path / str(dk.model_filename + "_svm_model.joblib"))
+            dump(dk.svm_model, save_path / f"{dk.model_filename}_svm_model.joblib")
 
         dk.data["data_path"] = str(dk.data_path)
         dk.data["model_filename"] = str(dk.model_filename)
         dk.data["training_features_list"] = list(dk.data_dictionary["train_features"].columns)
         dk.data["label_list"] = dk.label_list
         # store the metadata
-        with open(save_path / str(dk.model_filename + "_metadata.json"), "w") as fp:
+        with open(save_path / f"{dk.model_filename}_metadata.json", "w") as fp:
             json.dump(dk.data, fp, default=dk.np_encoder)
 
         # save the train data to file so we can check preds for area of applicability later
         dk.data_dictionary["train_features"].to_pickle(
-            save_path / str(dk.model_filename + "_trained_df.pkl")
+            save_path / f"{dk.model_filename}_trained_df.pkl"
         )
 
-        if self.freqai_info.get("feature_parameters", {}).get("principal_component_analysis"):
+        if self.freqai_info["feature_parameters"].get("principal_component_analysis"):
             cloudpickle.dump(
-                dk.pca, open(dk.data_path / str(dk.model_filename + "_pca_object.pkl"), "wb")
+                dk.pca, open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "wb")
             )
 
         # if self.live:
@@ -429,27 +430,27 @@ class FreqaiDataDrawer:
                     / dk.data_path.parts[-1]
                 )
 
-        with open(dk.data_path / str(dk.model_filename + "_metadata.json"), "r") as fp:
+        with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
             dk.data = json.load(fp)
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
 
         dk.data_dictionary["train_features"] = pd.read_pickle(
-            dk.data_path / str(dk.model_filename + "_trained_df.pkl")
+            dk.data_path / f"{dk.model_filename}_trained_df.pkl"
         )
 
         # try to access model in memory instead of loading object from disk to save time
         if dk.live and dk.model_filename in self.model_dictionary:
             model = self.model_dictionary[dk.model_filename]
         elif not dk.keras:
-            model = load(dk.data_path / str(dk.model_filename + "_model.joblib"))
+            model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
         else:
             from tensorflow import keras
 
-            model = keras.models.load_model(dk.data_path / str(dk.model_filename + "_model.h5"))
+            model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
 
-        if Path(dk.data_path / str(dk.model_filename + "_svm_model.joblib")).resolve().exists():
-            dk.svm_model = load(dk.data_path / str(dk.model_filename + "_svm_model.joblib"))
+        if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
+            dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
 
         if not model:
             raise OperationalException(
@@ -458,7 +459,7 @@ class FreqaiDataDrawer:
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
             dk.pca = cloudpickle.load(
-                open(dk.data_path / str(dk.model_filename + "_pca_object.pkl"), "rb")
+                open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "rb")
             )
 
         return model
@@ -471,7 +472,7 @@ class FreqaiDataDrawer:
         :params:
         dataframe: DataFrame = strategy provided dataframe
         """
-        feat_params = self.freqai_info.get("feature_parameters", {})
+        feat_params = self.freqai_info["feature_parameters"]
         with self.history_lock:
             history_data = self.historic_data
 
@@ -524,7 +525,7 @@ class FreqaiDataDrawer:
         for pair in dk.all_pairs:
             if pair not in history_data:
                 history_data[pair] = {}
-            for tf in self.freqai_info.get("feature_parameters", {}).get("include_timeframes"):
+            for tf in self.freqai_info["feature_parameters"].get("include_timeframes"):
                 history_data[pair][tf] = load_pair_history(
                     datadir=self.config["datadir"],
                     timeframe=tf,
@@ -550,11 +551,11 @@ class FreqaiDataDrawer:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
             historic_data = self.historic_data
-            pairs = self.freqai_info.get("feature_parameters", {}).get(
+            pairs = self.freqai_info["feature_parameters"].get(
                 "include_corr_pairlist", []
             )
 
-            for tf in self.freqai_info.get("feature_parameters", {}).get("include_timeframes"):
+            for tf in self.freqai_info["feature_parameters"].get("include_timeframes"):
                 base_dataframes[tf] = dk.slice_dataframe(timerange, historic_data[pair][tf])
                 if pairs:
                     for p in pairs:
