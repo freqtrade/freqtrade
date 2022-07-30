@@ -1,5 +1,5 @@
-{
-    "max_open_trades": 3,
+  	{
+    "max_open_trades": 1,
     "stake_currency": "USDT",
     "stake_amount": 50,
     "tradable_balance_ratio": 0.99,
@@ -11,9 +11,9 @@
         "sell": 30,
         "unit": "minutes"
     },
-    "bid_strategy": {
-        "price_side": "bid",
-        "ask_last_balance": 0.0,
+    "entry_pricing": {
+        "price_side": "same",
+        "price_last_balance": 0.0,
         "use_order_book": true,
         "order_book_top": 1,
         "check_depth_of_market": {
@@ -21,10 +21,26 @@
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy": {
-        "price_side": "ask",
+    "exit_pricing": {
+        "price_side": "same",
         "use_order_book": true,
-        "order_book_top": 1
+        "order_book_top": 1,
+        "price_last_balance": 0.0
+    },
+    "order_types": {
+        "entry": "limit",
+        "exit": "limit",
+        "emergency_exit": "market",
+        "force_exit": "market",
+        "force_entry": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_on_exchange_interval": 60,
+        "stoploss_on_exchange_limit_ratio": 0.99
+    },
+    "order_time_in_force": {
+        "entry": "gtc",
+        "exit": "gtc"
     },
     "exchange": {
         "name": "binance",
