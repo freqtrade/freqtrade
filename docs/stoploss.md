@@ -175,8 +175,8 @@ Before this, `stoploss` is used for the trailing stoploss.
     * assuming the asset now increases to 102$
     * the stoploss will now be at 91.8$ - 10% below the highest observed rate
     * assuming the asset now increases to 103.5$ (above the offset configured)
-    * the stop loss will now be -2% of 103$ = 101.42$
-    * now the asset drops in value to 102\$, the stop loss will still be 101.42$ and would trigger once price breaks below 101.42$
+    * the stop loss will now be -2% of 103.5$ = 101.43$
+    * now the asset drops in value to 102\$, the stop loss will still be 101.43$ and would trigger once price breaks below 101.43$
 
 ### Trailing stop loss only once the trade has reached a certain offset
 

@@ -40,13 +40,15 @@ pip install -r requirements-hyperopt.txt
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--recursive-strategy-search] [-i TIMEFRAME]
+                          [--timerange TIMERANGE]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [-p PAIRS [PAIRS ...]] [--hyperopt-path PATH]
                           [--eps] [--dmmp] [--enable-protections]
-                          [--dry-run-wallet DRY_RUN_WALLET] [-e INT]
+                          [--dry-run-wallet DRY_RUN_WALLET]
+                          [--timeframe-detail TIMEFRAME_DETAIL] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
@@ -89,6 +91,9 @@ optional arguments:
   --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
+  --timeframe-detail TIMEFRAME_DETAIL
+                        Specify detail timeframe for backtesting (`1m`, `5m`,
+                        `30m`, `1h`, `1d`).
   -e INT, --epochs INT  Specify number of epochs (default: 100).
   --spaces {all,buy,sell,roi,stoploss,trailing,protection,default} [{all,buy,sell,roi,stoploss,trailing,protection,default} ...]
                         Specify which parameters to hyperopt. Space-separated
@@ -146,7 +151,9 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-
+  --recursive-strategy-search
+                        Recursively search for a strategy in the strategies
+                        folder.
 ```
 
 ### Hyperopt checklist
@@ -271,7 +278,8 @@ The last one we call `trigger` and use it to decide which buy trigger we want to
 
 !!! Note "Parameter space assignment"
     Parameters must either be assigned to a variable named `buy_*` or `sell_*` - or contain `space='buy'` | `space='sell'` to be assigned to a space correctly.
-    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.
+    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.  
+    Parameters with unclear space (e.g. `adx_period = IntParameter(4, 24, default=14)` - no explicit nor implicit space) will not be detected and will therefore be ignored.
 
 So let's write the buy strategy using these values:
 
@@ -334,6 +342,7 @@ There are four parameter types each suited for different purposes.
 ## Optimizing an indicator parameter
 
 Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
+By default, we assume a stoploss of 5% - and a take-profit (`minimal_roi`) of 10% - which means freqtrade will sell the trade once 10% profit has been reached.
 
 ``` python
 from pandas import DataFrame
@@ -348,6 +357,9 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 class MyAwesomeStrategy(IStrategy):
     stoploss = -0.05
     timeframe = '15m'
+    minimal_roi = {
+        "0":  0.10
+    },
     # Define the parameter spaces
     buy_ema_short = IntParameter(3, 50, default=5)
     buy_ema_long = IntParameter(15, 200, default=50)
@@ -382,7 +394,7 @@ class MyAwesomeStrategy(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        conditions = []
+          conditions = []
         conditions.append(qtpylib.crossed_above(
                 dataframe[f'ema_long_{self.buy_ema_long.value}'], dataframe[f'ema_short_{self.buy_ema_short.value}']
             ))
@@ -403,7 +415,7 @@ Using `self.buy_ema_short.range` will return a range object containing all entri
 In this case (`IntParameter(3, 50, default=5)`), the loop would run for all numbers between 3 and 50 (`[3, 4, 5, ... 49, 50]`).
 By using this in a loop, hyperopt will generate 48 new columns (`['buy_ema_3', 'buy_ema_4', ... , 'buy_ema_50']`).
 
-Hyperopt itself will then use the selected value to create the buy and sell signals
+Hyperopt itself will then use the selected value to create the buy and sell signals.
 
 While this strategy is most likely too simple to provide consistent profit, it should serve as an example how optimize indicator parameters.
 
@@ -862,10 +874,28 @@ You can also enable position stacking in the configuration file by explicitly se
 As hyperopt consumes a lot of memory (the complete data needs to be in memory once per parallel backtesting process), it's likely that you run into "out of memory" errors.
 To combat these, you have multiple options:
 
-* reduce the amount of pairs
-* reduce the timerange used (`--timerange <timerange>`)
-* reduce the number of parallel processes (`-j <n>`)
-* Increase the memory of your machine
+* Reduce the amount of pairs.
+* Reduce the timerange used (`--timerange <timerange>`).
+* Avoid using `--timeframe-detail` (this loads a lot of additional data into memory).
+* Reduce the number of parallel processes (`-j <n>`).
+* Increase the memory of your machine.
+
+
+## The objective has been evaluated at this point before.
+
+If you see `The objective has been evaluated at this point before.` - then this is a sign that your space has been exhausted, or is close to that.
+Basically all points in your space have been hit (or a local minima has been hit) - and hyperopt does no longer find points in the multi-dimensional space it did not try yet.
+Freqtrade tries to counter the "local minima" problem by using new, randomized points in this case.
+
+Example:
+
+``` python
+buy_ema_short = IntParameter(5, 20, default=10, space="buy", optimize=True)
+# This is the only parameter in the buy space
+```
+
+The `buy_ema_short` space has 15 possible values (`5, 6, ... 19, 20`). If you now run hyperopt for the buy space, hyperopt will only have 15 values to try before running out of options.
+Your epochs should therefore be aligned to the possible values - or you should be ready to interrupt a run if you norice a lot of `The objective has been evaluated at this point before.` warnings.
 
 ## Show details of Hyperopt results
 

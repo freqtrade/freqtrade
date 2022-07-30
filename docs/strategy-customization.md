@@ -646,6 +646,9 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
         return informative_pairs
 ```
 
+??? Note "Plotting with current_whitelist"
+    Current whitelist is not supported for `plot-dataframe`, as this command is usually used by providing an explicit pairlist - and would therefore make the return values of this method misleading.
+
 ### *get_pair_dataframe(pair, timeframe)*
 
 ``` python
