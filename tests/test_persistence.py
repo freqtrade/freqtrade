@@ -148,6 +148,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.liquidation_price == 0.11
     assert pytest.approx(trade.stop_loss) == 1.994999
     assert trade.initial_stop_loss == 1.8
+    assert trade.stoploss_or_liquidation == trade.stop_loss
 
     trade.stop_loss = None
     trade.liquidation_price = None
@@ -158,6 +159,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.liquidation_price is None
     assert trade.stop_loss == 1.9
     assert trade.initial_stop_loss == 1.9
+    assert trade.stoploss_or_liquidation == 1.9
 
     trade.is_short = True
     trade.recalc_open_trade_value()
@@ -174,11 +176,13 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.liquidation_price == 3.09
     assert trade.stop_loss == 2.2
     assert trade.initial_stop_loss == 2.2
+    assert trade.stoploss_or_liquidation == 2.2
 
     trade.set_isolated_liq(3.1)
     assert trade.liquidation_price == 3.1
     assert trade.stop_loss == 2.2
     assert trade.initial_stop_loss == 2.2
+    assert trade.stoploss_or_liquidation == 2.2
 
     trade.set_isolated_liq(3.8)
     assert trade.liquidation_price == 3.8
@@ -193,10 +197,14 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.initial_stop_loss == 2.2
 
     # Stoploss does move lower
+    trade.set_isolated_liq(1.5)
     trade.adjust_stop_loss(1.8, 0.1)
-    assert trade.liquidation_price == 3.8
+    assert trade.liquidation_price == 1.5
     assert pytest.approx(trade.stop_loss) == 1.89
     assert trade.initial_stop_loss == 2.2
+    assert trade.stoploss_or_liquidation == 1.5
+
+
 
 
 @pytest.mark.parametrize('exchange,is_short,lev,minutes,rate,interest,trading_mode', [

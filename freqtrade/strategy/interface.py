@@ -1063,13 +1063,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
-                new_stoploss = (
-                    trade.stop_loss + trade.initial_stop_loss
-                    if trade.is_short else
-                    trade.stop_loss - trade.initial_stop_loss
-                )
-                logger.debug(f"{trade.pair} - Trailing stop saved "
-                             f"{new_stoploss:.6f}")
 
             return ExitCheckTuple(exit_type=exit_type)
 

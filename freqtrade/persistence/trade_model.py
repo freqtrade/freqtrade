@@ -303,6 +303,16 @@ class LocalTrade():
     funding_fees: Optional[float] = None
 
     @property
+    def stoploss_or_liquidation(self) -> float:
+        if self.liquidation_price:
+            if self.is_short:
+                return min(self.stop_loss, self.liquidation_price)
+            else:
+                return max(self.stop_loss, self.liquidation_price)
+
+        return self.stop_loss
+
+    @property
     def buy_tag(self) -> Optional[str]:
         """
         Compatibility between buy_tag (old) and enter_tag (new)
