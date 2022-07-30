@@ -734,6 +734,23 @@ if self.dp:
 !!! Warning "Warning about backtesting"
     This method will always return up-to-date values - so usage during backtesting / hyperopt will lead to wrong results.
 
+### Send Notification
+
+The dataprovider `.send_msg()` function allows you to send custom notifications from your strategy.
+Identical notifications will only be sent once per candle, unless the 2nd argument (`always_send`) is set to True.
+
+``` python
+    self.dp.send_msg(f"{metadata['pair']} just got hot!")
+
+    # Force send this notification, avoid caching (Please read warning below!)
+    self.dp.send_msg(f"{metadata['pair']} just got hot!", always_send=True)
+```
+
+Notifications will only be sent in trading modes (Live/Dry-run) - so this method can be called without conditions for backtesting.
+
+!!! Warning "Spamming"
+    You can spam yourself pretty good by setting `always_send=True` in this method. Use this with great care and only in conditions you know will not happen throughout a candle to avoid a message every 5 seconds.
+
 ### Complete Data-provider sample
 
 ```python
