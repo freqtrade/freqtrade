@@ -530,8 +530,9 @@ class FreqaiDataKitchen:
 
         else:
             # use SGDOneClassSVM to increase speed?
-            nu = self.freqai_config["feature_parameters"].get("svm_nu", 0.2)
-            self.svm_model = linear_model.SGDOneClassSVM(nu=nu).fit(
+            svm_params = self.freqai_config["feature_parameters"].get(
+                "svm_params", {"shuffle": False, "nu": 0.1})
+            self.svm_model = linear_model.SGDOneClassSVM(**svm_params).fit(
                 self.data_dictionary["train_features"]
             )
             y_pred = self.svm_model.predict(self.data_dictionary["train_features"])
