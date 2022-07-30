@@ -1015,7 +1015,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
-            self.execute_trade_exit(trade, trade.stop_loss, exit_check=ExitCheckTuple(
+            self.execute_trade_exit(trade, stop_price, exit_check=ExitCheckTuple(
                 exit_type=ExitType.EMERGENCY_EXIT))
 
         except ExchangeError:
@@ -1114,7 +1114,7 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stop_loss)
+        stoploss_norm = self.exchange.price_to_precision(trade.pair, trade.stoploss_or_liquidation)
 
         if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
             # we check if the update is necessary
@@ -1132,7 +1132,7 @@ class FreqtradeBot(LoggingMixin):
                                      f"for pair {trade.pair}")
 
                 # Create new stoploss order
-                if not self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
+                if not self.create_stoploss_order(trade=trade, stop_price=stoploss_norm):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
@@ -1431,14 +1431,15 @@ class FreqtradeBot(LoggingMixin):
         )
         exit_type = 'exit'
         exit_reason = exit_tag or exit_check.exit_reason
-        if exit_check.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
+        if exit_check.exit_type in (
+                ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS, ExitType.LIQUIDATION):
             exit_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
         if (self.config['dry_run'] and exit_type == 'stoploss'
            and self.strategy.order_types['stoploss_on_exchange']):
-            limit = trade.stop_loss
+            limit = trade.stoploss_or_liquidation
 
         # set custom_exit_price if available
         proposed_limit_rate = limit
