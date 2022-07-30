@@ -87,7 +87,6 @@ class Cluc6werk(WAOStrategy):
         If a desired informative pair does not exist (e.g. if exchange doesnt trade XLM/USD in this example), simply ignore those indicators without errors.
         """
 
-        coin, stake = metadata['pair'].split('/')
 
         informative_pairs += [("ETH/USD", timeframe),
                               ("BTC/USD", timeframe),
