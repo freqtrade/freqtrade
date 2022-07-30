@@ -1085,7 +1085,7 @@ class FreqtradeBot(LoggingMixin):
         if (trade.is_open
                 and stoploss_order
                 and stoploss_order['status'] in ('canceled', 'cancelled')):
-            if self.create_stoploss_order(trade=trade, stop_price=trade.stop_loss):
+            if self.create_stoploss_order(trade=trade, stop_price=trade.stoploss_or_liquidation):
                 return False
             else:
                 trade.stoploss_order_id = None
@@ -1662,7 +1662,7 @@ class FreqtradeBot(LoggingMixin):
                 trade = self.cancel_stoploss_on_exchange(trade)
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
-                trade.set_isolated_liq(self.exchange.get_liquidation_price(
+                trade.set_liquidation_price(self.exchange.get_liquidation_price(
                     leverage=trade.leverage,
                     pair=trade.pair,
                     amount=trade.amount,

@@ -99,7 +99,7 @@ def test_enter_exit_side(fee, is_short):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_set_stop_loss_isolated_liq(fee):
+def test_set_stop_loss_liquidation(fee):
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -115,7 +115,7 @@ def test_set_stop_loss_isolated_liq(fee):
         leverage=2.0,
         trading_mode=margin
     )
-    trade.set_isolated_liq(0.09)
+    trade.set_liquidation_price(0.09)
     assert trade.liquidation_price == 0.09
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
@@ -125,12 +125,12 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 1.8
     assert trade.initial_stop_loss == 1.8
 
-    trade.set_isolated_liq(0.08)
+    trade.set_liquidation_price(0.08)
     assert trade.liquidation_price == 0.08
     assert trade.stop_loss == 1.8
     assert trade.initial_stop_loss == 1.8
 
-    trade.set_isolated_liq(0.11)
+    trade.set_liquidation_price(0.11)
     trade.adjust_stop_loss(2.0, 0.2)
     assert trade.liquidation_price == 0.11
     # Stoploss does not change from liquidation price
@@ -167,7 +167,7 @@ def test_set_stop_loss_isolated_liq(fee):
     trade.initial_stop_loss = None
     trade.initial_stop_loss_pct = None
 
-    trade.set_isolated_liq(3.09)
+    trade.set_liquidation_price(3.09)
     assert trade.liquidation_price == 3.09
     assert trade.stop_loss is None
     assert trade.initial_stop_loss is None
@@ -178,13 +178,13 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.initial_stop_loss == 2.2
     assert trade.stoploss_or_liquidation == 2.2
 
-    trade.set_isolated_liq(3.1)
+    trade.set_liquidation_price(3.1)
     assert trade.liquidation_price == 3.1
     assert trade.stop_loss == 2.2
     assert trade.initial_stop_loss == 2.2
     assert trade.stoploss_or_liquidation == 2.2
 
-    trade.set_isolated_liq(3.8)
+    trade.set_liquidation_price(3.8)
     assert trade.liquidation_price == 3.8
     # Stoploss does not change from liquidation price
     assert trade.stop_loss == 2.2
@@ -197,14 +197,12 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.initial_stop_loss == 2.2
 
     # Stoploss does move lower
-    trade.set_isolated_liq(1.5)
+    trade.set_liquidation_price(1.5)
     trade.adjust_stop_loss(1.8, 0.1)
     assert trade.liquidation_price == 1.5
     assert pytest.approx(trade.stop_loss) == 1.89
     assert trade.initial_stop_loss == 2.2
     assert trade.stoploss_or_liquidation == 1.5
-
-
 
 
 @pytest.mark.parametrize('exchange,is_short,lev,minutes,rate,interest,trading_mode', [
@@ -1633,7 +1631,7 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == -0.05
     assert trade.stop_loss_pct == -0.1
     # Liquidation price is lower than stoploss - so liquidation would trigger first.
-    trade.set_isolated_liq(0.63)
+    trade.set_liquidation_price(0.63)
     trade.adjust_stop_loss(0.59, -0.1)
     assert trade.stop_loss == 0.649
     assert trade.liquidation_price == 0.63
@@ -2033,7 +2031,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade_adj.initial_stop_loss == 1.01
     assert trade_adj.initial_stop_loss_pct == -0.05
     # Stoploss can't go above liquidation price
-    trade_adj.set_isolated_liq(0.985)
+    trade_adj.set_liquidation_price(0.985)
     trade.adjust_stop_loss(0.9799, -0.05)
     assert trade_adj.stop_loss == 0.989699
     assert trade_adj.liquidation_price == 0.985

@@ -507,7 +507,7 @@ class LocalTrade():
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
-    def set_isolated_liq(self, liquidation_price: Optional[float]):
+    def set_liquidation_price(self, liquidation_price: Optional[float]):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price

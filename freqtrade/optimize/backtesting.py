@@ -814,7 +814,7 @@ class Backtesting:
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
-            trade.set_isolated_liq(self.exchange.get_liquidation_price(
+            trade.set_liquidation_price(self.exchange.get_liquidation_price(
                 pair=pair,
                 open_rate=propose_rate,
                 amount=amount,
