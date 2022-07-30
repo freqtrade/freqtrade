@@ -19,6 +19,7 @@ class Cluc6werk(WAOStrategy):
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
+
     # Used for "informative pairs"
     stake = 'BTC'
     fiat = 'USD'
@@ -86,11 +87,6 @@ class Cluc6werk(WAOStrategy):
         Ideally have this work gracefully with a change to the stake/whitelist in the config file.
         If a desired informative pair does not exist (e.g. if exchange doesnt trade XLM/USD in this example), simply ignore those indicators without errors.
         """
-
-
-        informative_pairs += [("ETH/USD", timeframe),
-                              ("BTC/USD", timeframe),
-                              ]
 
         return informative_pairs
 
