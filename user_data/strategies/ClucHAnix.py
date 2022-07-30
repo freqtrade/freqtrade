@@ -4,6 +4,7 @@ import talib.abstract as ta
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy import merge_informative_pair
 from pandas import DataFrame, Series
+from wao.wao_strategy import WAOStrategy
 
 
 def bollinger_bands(stock_price, window_size, num_of_std):

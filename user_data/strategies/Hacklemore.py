@@ -9,6 +9,7 @@ from datetime import datetime
 from freqtrade.persistence import Trade
 from technical.indicators import RMI
 from statistics import mean
+from wao.wao_strategy import WAOStrategy
 
 """
 TODO: 
