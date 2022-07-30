@@ -19,12 +19,13 @@ Among the the features included:
 
 ## General approach
 
-The user provides FreqAI with a set of custom indicators (created inside the strategy the same way
-a typical Freqtrade strategy is created) as well as a target value (typically some price change into the future).
-FreqAI trains a model to predict the target value based on the input of custom indicators.
-FreqAI will train and save a new model for each pair in the config whitelist.
-Users employ FreqAI to backtest a strategy (emulate reality with retraining a model as new data is introduced) and run the model live to generate entry and exit signals. 
-In dry/live, FreqAI works in a background thread to keep all models as updated as possible with consistent retraining.
+The user provides FreqAI with a set of custom *base* indicators (created inside the strategy the same way
+a typical Freqtrade strategy is created) as well as target values which look into the future.
+FreqAI trains a model to predict the target value based on the input of custom indicators for each pair in the whitelist. These models are consistently retrained to adapt to market conditions. FreqAI offers the ability to both backtest strategies (emulating reality with periodic retraining) and deploy dry/live. In dry/live conditions, FreqAI can be set to constant retraining in a background thread in an effort to keep models as young as possible. 
+
+An overview of the algorithm is shown here to help users understand the data processing pipeline and the model usage. 
+
+![freqai-algo](assets/freqai_algo.png)
 
 ## Background and vocabulary
 
@@ -97,7 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `weight_factor` | Used to set weights for training data points according to their recency, see details and a figure of how it works [here](##controlling-the-model-learning-process). <br> **Datatype:** positive float (typically below 1).
 | `principal_component_analysis` | Ask FreqAI to automatically reduce the dimensionality of the data set using PCA. <br> **Datatype:** boolean.
 | `use_SVM_to_remove_outliers` | Ask FreqAI to train a support vector machine to detect and remove outliers from the training data set as well as from incoming data points. <br> **Datatype:** boolean.
-| `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. E.g. `nu` *Very* broadly, is the percentage of data points that should be considered outliers. `shuffle` is by default false to maintain reprodicibility. But these and all others can be added/changed in this dictionary. <br> **Datatype:** dictionary.
+| `svm_nu` | The `nu` parameter for the support vector machine. *Very* broadly, this is the percentage of data points that should be considered outliers. <br> **Datatype:** float between 0 and 1.
 | `stratify_training_data` | This value is used to indicate the stratification of the data. e.g. 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. <br> **Datatype:** positive integer.
 | `indicator_max_period_candles` | The maximum *period* used in `populate_any_indicators()` for indicator creation. FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
 | `indicator_periods_candles` | A list of integers used to duplicate all indicators according to a set of periods and add them to the feature set. <br> **Datatype:** list of positive integers.
@@ -110,9 +111,6 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
-|  |  **Extraneous parameters**
-| `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
-| `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for `shift` by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. Default value, 2 <br> **Datatype:** integer.
 
 
 ### Important FreqAI dataframe key patterns
