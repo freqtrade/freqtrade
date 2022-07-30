@@ -4099,20 +4099,6 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
     )
     assert liq_price == 17.540699999999998
 
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "get_or_calculate_liquidation_price",
-        "fetch_positions",
-        pair="XRP/USDT",
-        open_rate=0.0,
-        is_short=False,
-        position=0.0,
-        wallet_balance=0.0,
-    )
-
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
     ('binance', 0, 2, "2021-09-01 01:00:00", "2021-09-01 04:00:00",  30.0, 0.0),
