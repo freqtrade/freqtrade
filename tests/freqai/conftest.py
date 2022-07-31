@@ -49,7 +49,7 @@ def freqai_conf(default_conf, tmpdir):
                 "data_split_parameters": {"test_size": 0.33, "random_state": 1},
                 "model_training_parameters": {"n_estimators": 100, "verbosity": 0},
             },
-            "config_files": [Path('config_examples', 'config_freqai_futures.example.json')]
+            "config_files": [Path('config_examples', 'config_freqai.example.json')]
         }
     )
     freqaiconf['exchange'].update({'pair_whitelist': ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC']})
@@ -57,7 +57,6 @@ def freqai_conf(default_conf, tmpdir):
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
-    # dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
     dk = FreqaiDataKitchen(freqaiconf)
     return dk
 
