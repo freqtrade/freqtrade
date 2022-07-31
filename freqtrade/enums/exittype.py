@@ -14,6 +14,7 @@ class ExitType(Enum):
     FORCE_EXIT = "force_exit"
     EMERGENCY_EXIT = "emergency_exit"
     CUSTOM_EXIT = "custom_exit"
+    PARTIAL_EXIT = "partial_exit"
     NONE = ""
 
     def __str__(self):

@@ -274,7 +274,7 @@ class Telegram(RPCHandler):
             f"{emoji} *{self._exchange_from_msg(msg)}:*"
             f" {entry_side['entered'] if is_fill else entry_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
-            )
+        )
         message += self._add_analyzed_candle(msg['pair'])
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag') else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
@@ -315,20 +315,36 @@ class Telegram(RPCHandler):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
             msg['profit_extra'] = (
-                f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
-                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']})")
+                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']}")
         else:
             msg['profit_extra'] = ''
+        msg['profit_extra'] = (
+            f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
+            f"{msg['profit_extra']})")
         is_fill = msg['type'] == RPCMessageType.EXIT_FILL
+        is_sub_trade = msg.get('sub_trade')
+        is_sub_profit = msg['profit_amount'] != msg.get('cumulative_profit')
+        profit_prefix = ('Sub ' if is_sub_profit
+                         else 'Cumulative ') if is_sub_trade else ''
+        cp_extra = ''
+        if is_sub_profit and is_sub_trade:
+            if self._rpc._fiat_converter:
+                cp_fiat = self._rpc._fiat_converter.convert_amount(
+                    msg['cumulative_profit'], msg['stake_currency'], msg['fiat_currency'])
+                cp_extra = f" / {cp_fiat:.3f} {msg['fiat_currency']}"
+            else:
+                cp_extra = ''
+            cp_extra = f"*Cumulative Profit:* (`{msg['cumulative_profit']:.8f} " \
+                       f"{msg['stake_currency']}{cp_extra}`)\n"
         message = (
             f"{msg['emoji']} *{self._exchange_from_msg(msg)}:* "
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
             f"{self._add_analyzed_candle(msg['pair'])}"
-            f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
+            f"*{f'{profit_prefix}Profit' if is_fill else f'Unrealized {profit_prefix}Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"{cp_extra}"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
-            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
             f"*Direction:* `{msg['direction']}`\n"
             f"{msg['leverage_text']}"
             f"*Amount:* `{msg['amount']:.8f}`\n"
@@ -336,11 +352,25 @@ class Telegram(RPCHandler):
         )
         if msg['type'] == RPCMessageType.EXIT:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                        f"*Close Rate:* `{msg['limit']:.8f}`")
+                        f"*Exit Rate:* `{msg['limit']:.8f}`")
 
         elif msg['type'] == RPCMessageType.EXIT_FILL:
-            message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
+            message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
+        if msg.get('sub_trade'):
+            if self._rpc._fiat_converter:
+                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+            else:
+                msg['stake_amount_fiat'] = 0
+            rem = round_coin_value(msg['stake_amount'], msg['stake_currency'])
+            message += f"\n*Remaining:* `({rem}"
 
+            if msg.get('fiat_currency', None):
+                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+            message += ")`"
+        else:
+            message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
@@ -353,7 +383,8 @@ class Telegram(RPCHandler):
         elif msg_type in (RPCMessageType.ENTRY_CANCEL, RPCMessageType.EXIT_CANCEL):
             msg['message_side'] = 'enter' if msg_type in [RPCMessageType.ENTRY_CANCEL] else 'exit'
             message = (f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
-                       f"Cancelling {msg['message_side']} Order for {msg['pair']} "
+                       f"Cancelling {'partial ' if msg.get('sub_trade') else ''}"
+                       f"{msg['message_side']} Order for {msg['pair']} "
                        f"(#{msg['trade_id']}). Reason: {msg['reason']}.")
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
@@ -424,7 +455,7 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_entry_details(self, filled_orders: List, quote_currency: str, is_open: bool):
+    def _prepare_order_details(self, filled_orders: List, quote_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
@@ -433,44 +464,51 @@ class Telegram(RPCHandler):
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
-            if not order['ft_is_entry'] or order['is_open'] is True:
+            if order['is_open'] is True:
                 continue
+            wording = 'Entry' if order['ft_is_entry'] else 'Exit'
+
             cur_entry_datetime = arrow.get(order["order_filled_date"])
-            cur_entry_amount = order["amount"]
+            cur_entry_amount = order["filled"] or order["amount"]
             cur_entry_average = order["safe_price"]
             lines.append("  ")
             if x == 0:
-                lines.append(f"*Entry #{x+1}:*")
+                lines.append(f"*{wording} #{x+1}:*")
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
-                lines.append(f"*Average Entry Price:* {cur_entry_average}")
+                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                lines.append(f"*Average Price:* {cur_entry_average}")
             else:
                 sumA = 0
                 sumB = 0
                 for y in range(x):
-                    sumA += (filled_orders[y]["amount"] * filled_orders[y]["safe_price"])
-                    sumB += filled_orders[y]["amount"]
+                    amount = filled_orders[y]["filled"] or filled_orders[y]["amount"]
+                    sumA += amount * filled_orders[y]["safe_price"]
+                    sumB += amount
                 prev_avg_price = sumA / sumB
+                # TODO: This calculation ignores fees.
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
                 minus_on_entry = 0
                 if prev_avg_price:
                     minus_on_entry = (cur_entry_average - prev_avg_price) / prev_avg_price
 
-                dur_entry = cur_entry_datetime - arrow.get(
-                    filled_orders[x - 1]["order_filled_date"])
-                days = dur_entry.days
-                hours, remainder = divmod(dur_entry.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                lines.append(f"*Entry #{x+1}:* at {minus_on_entry:.2%} avg profit")
+                lines.append(f"*{wording} #{x+1}:* at {minus_on_entry:.2%} avg profit")
                 if is_open:
                     lines.append("({})".format(cur_entry_datetime
                                                .humanize(granularity=["day", "hour", "minute"])))
                 lines.append(
-                    f"*Entry Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
-                lines.append(f"*Average Entry Price:* {cur_entry_average} "
+                    f"*Amount:* {cur_entry_amount} ({order['cost']:.8f} {quote_currency})")
+                lines.append(f"*Average {wording} Price:* {cur_entry_average} "
                              f"({price_to_1st_entry:.2%} from 1st entry rate)")
-                lines.append(f"*Order filled at:* {order['order_filled_date']}")
-                lines.append(f"({days}d {hours}h {minutes}m {seconds}s from previous entry)")
+                lines.append(f"*Order filled:* {order['order_filled_date']}")
+
+                # TODO: is this really useful?
+                # dur_entry = cur_entry_datetime - arrow.get(
+                #     filled_orders[x - 1]["order_filled_date"])
+                # days = dur_entry.days
+                # hours, remainder = divmod(dur_entry.seconds, 3600)
+                # minutes, seconds = divmod(remainder, 60)
+                # lines.append(
+                # f"({days}d {hours}h {minutes}m {seconds}s from previous {wording.lower()})")
         return lines
 
     @authorized_only
@@ -486,7 +524,14 @@ class Telegram(RPCHandler):
         if context.args and 'table' in context.args:
             self._status_table(update, context)
             return
+        else:
+            self._status_msg(update, context)
 
+    def _status_msg(self, update: Update, context: CallbackContext) -> None:
+        """
+        handler for `/status` and `/status <id>`.
+
+        """
         try:
 
             # Check if there's at least one numerical ID provided.
@@ -529,6 +574,8 @@ class Telegram(RPCHandler):
                 ])
 
                 if r['is_open']:
+                    if r.get('realized_profit'):
+                        lines.append("*Realized Profit:* `{realized_profit:.8f}`")
                     if (r['stop_loss_abs'] != r['initial_stop_loss_abs']
                             and r['initial_stop_loss_ratio'] is not None):
                         # Adding initial stoploss only if it is different from stoploss
@@ -546,7 +593,7 @@ class Telegram(RPCHandler):
                         else:
                             lines.append("*Open Order:* `{open_order}`")
 
-                lines_detail = self._prepare_entry_details(
+                lines_detail = self._prepare_order_details(
                     r['orders'], r['quote_currency'], r['is_open'])
                 lines.extend(lines_detail if lines_detail else "")
 

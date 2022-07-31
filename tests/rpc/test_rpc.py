@@ -111,6 +111,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
+        'realized_profit': 0.0,
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
@@ -196,6 +197,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
+        'realized_profit': 0.0,
         'leverage': 1.0,
         'interest_rate': 0.0,
         'liquidation_price': None,
@@ -841,7 +843,8 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
             'side': 'sell',
             'amount': amount,
             'remaining': amount,
-            'filled': 0.0
+            'filled': 0.0,
+            'id': trade.orders[0].order_id,
         }
     )
     msg = rpc._rpc_force_exit('3')

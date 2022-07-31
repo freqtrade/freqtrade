@@ -500,7 +500,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    trade.open_order_id = 'something'
+    trade.open_order_id = enter_order['id']
     oobj = Order.parse_from_ccxt_object(enter_order, 'ADA/USDT', entry_side)
     trade.orders.append(oobj)
     trade.update_trade(oobj)
@@ -515,7 +515,7 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
                       caplog)
 
     caplog.clear()
-    trade.open_order_id = 'something'
+    trade.open_order_id = enter_order['id']
     time_machine.move_to("2022-03-31 21:45:05 +00:00")
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', exit_side)
     trade.orders.append(oobj)
@@ -550,7 +550,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         leverage=1.0,
     )
 
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_market_buy'
     oobj = Order.parse_from_ccxt_object(market_buy_order_usdt, 'ADA/USDT', 'buy')
     trade.orders.append(oobj)
     trade.update_trade(oobj)
@@ -565,7 +565,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
     caplog.clear()
     trade.is_open = True
-    trade.open_order_id = 'something'
+    trade.open_order_id = 'mocked_market_sell'
     oobj = Order.parse_from_ccxt_object(market_sell_order_usdt, 'ADA/USDT', 'sell')
     trade.orders.append(oobj)
     trade.update_trade(oobj)
@@ -630,14 +630,14 @@ def test_calc_open_close_trade_price(
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(), open_value)
+    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
     assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
     assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
     assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
+def test_trade_close(fee):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=60.0,
@@ -815,7 +815,7 @@ def test_calc_open_trade_value(
     trade.update_trade(oobj)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == result
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == result
 
 
 @pytest.mark.parametrize(
@@ -905,7 +905,7 @@ def test_calc_close_trade_price(
         ('binance', False, 1, 1.9, 0.003, -3.3209999, -0.055211970, spot, 0),
         ('binance', False, 1, 2.2, 0.003, 5.6520000, 0.093965087, spot, 0),
 
-        # # FUTURES, funding_fee=1
+        # FUTURES, funding_fee=1
         ('binance', False, 1, 2.1, 0.0025, 3.6925, 0.06138819, futures, 1),
         ('binance', False, 3, 2.1, 0.0025, 3.6925, 0.18416458, futures, 1),
         ('binance', True, 1, 2.1, 0.0025, -2.3074999, -0.03855472, futures, 1),
@@ -1191,6 +1191,11 @@ def test_calc_profit(
     assert pytest.approx(trade.calc_profit(rate=close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(rate=close_rate)) == round(profit_ratio, 8)
 
+    assert pytest.approx(trade.calc_profit(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit, 8)
+    assert pytest.approx(trade.calc_profit_ratio(close_rate, trade.amount,
+                         trade.open_rate)) == round(profit_ratio, 8)
+
 
 def test_migrate_new(mocker, default_conf, fee, caplog):
     """
@@ -1382,7 +1387,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
-    assert trade.open_trade_value == trade._calc_open_trade_value()
+    assert trade.open_trade_value == trade._calc_open_trade_value(trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
 
     orders = trade.orders
@@ -1744,6 +1749,7 @@ def test_to_json(fee):
                       'stake_amount': 0.001,
                       'trade_duration': None,
                       'trade_duration_s': None,
+                      'realized_profit': 0.0,
                       'close_profit': None,
                       'close_profit_pct': None,
                       'close_profit_abs': None,
@@ -1820,6 +1826,7 @@ def test_to_json(fee):
                       'initial_stop_loss_abs': None,
                       'initial_stop_loss_pct': None,
                       'initial_stop_loss_ratio': None,
+                      'realized_profit': 0.0,
                       'close_profit': None,
                       'close_profit_pct': None,
                       'close_profit_abs': None,
@@ -2262,7 +2269,7 @@ def test_update_order_from_ccxt(caplog):
         'symbol': 'ADA/USDT',
         'type': 'limit',
         'price': 1234.5,
-        'amount':  20.0,
+        'amount': 20.0,
         'filled': 9,
         'remaining': 11,
         'status': 'open',
@@ -2421,7 +2428,7 @@ def test_recalc_trade_from_orders(fee):
     )
 
     assert fee.return_value == 0.0025
-    assert trade._calc_open_trade_value() == o1_trade_val
+    assert trade._calc_open_trade_value(trade.amount, trade.open_rate) == o1_trade_val
     assert trade.amount == o1_amount
     assert trade.stake_amount == o1_cost
     assert trade.open_rate == o1_rate
@@ -2533,7 +2540,8 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
-    # Just to make sure sell orders are ignored, let's calculate one more time.
+    # Just to make sure full sell orders are ignored, let's calculate one more time.
+
     sell1 = Order(
         ft_order_side='sell',
         ft_pair=trade.pair,
@@ -2695,7 +2703,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
-    # Just to make sure exit orders are ignored, let's calculate one more time.
+    # Reduce position - this will reduce amount again.
     sell1 = Order(
         ft_order_side=exit_side,
         ft_pair=trade.pair,
@@ -2706,7 +2714,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
         side=exit_side,
         price=4,
         average=3,
-        filled=2,
+        filled=o1_amount,
         remaining=1,
         cost=5,
         order_date=trade.open_date,
@@ -2715,11 +2723,11 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     trade.orders.append(sell1)
     trade.recalc_trade_from_orders()
 
-    assert trade.amount == 2 * o1_amount
-    assert trade.stake_amount == 2 * o1_amount
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
-    assert trade.open_trade_value == 2 * o1_trade_val
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
     # Check with 1 order
@@ -2743,11 +2751,11 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     trade.recalc_trade_from_orders()
 
     # Calling recalc with single initial order should not change anything
-    assert trade.amount == 3 * o1_amount
-    assert trade.stake_amount == 3 * o1_amount
+    assert trade.amount == 2 * o1_amount
+    assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 3 * o1_fee_cost
-    assert trade.open_trade_value == 3 * o1_trade_val
+    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 3
 
 
@@ -2815,3 +2823,144 @@ def test_order_to_ccxt(limit_buy_order_open):
     del raw_order['stopPrice']
     del limit_buy_order_open['datetime']
     assert raw_order == limit_buy_order_open
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('data', [
+    {
+        # tuple 1 - side, amount, price
+        # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
+        'orders': [
+            (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
+            (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -25.0, -25.0, -0.04)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 725.0, 750.0, 0.60)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 350.0, -375.0, -0.60)),
+        ],
+        'end_profit': 350.0,
+        'end_profit_ratio': 0.14,
+        'fee': 0.0,
+    },
+    {
+        'orders': [
+            (('buy', 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
+            (('buy', 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
+            (('sell', 50, 12), (150.0, 12.5, 1875.0, -28.0625, -28.0625, -0.044788)),
+            (('sell', 100, 20), (50.0, 12.5, 625.0, 713.8125, 741.875, 0.59201995)),
+            (('sell', 50, 5), (50.0, 12.5, 625.0, 336.625, -377.1875, -0.60199501)),
+        ],
+        'end_profit': 336.625,
+        'end_profit_ratio': 0.1343142,
+        'fee': 0.0025,
+    },
+    {
+        'orders': [
+            (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
+            (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 596.0, 596.0, 1.189027)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 596.0, 596.0, 1.189027)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1388.5, 792.5, 0.7186579)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3175.75, 1787.25, 1.08048062)),
+        ],
+        'end_profit': 3175.75,
+        'end_profit_ratio': 0.9747170,
+        'fee': 0.0025,
+    },
+    {
+        # Test above without fees
+        'orders': [
+            (('buy', 100, 3), (100.0, 3.0, 300.0, 0.0, None, None)),
+            (('buy', 100, 7), (200.0, 5.0, 1000.0, 0.0, None, None)),
+            (('sell', 100, 11), (100.0, 5.0, 500.0, 600.0, 600.0, 1.2)),
+            (('buy', 150, 15), (250.0, 11.0, 2750.0, 600.0, 600.0, 1.2)),
+            (('sell', 100, 19), (150.0, 11.0, 1650.0, 1400.0, 800.0, 0.72727273)),
+            (('sell', 150, 23), (150.0, 11.0, 1650.0, 3200.0, 1800.0, 1.09090909)),
+        ],
+        'end_profit': 3200.0,
+        'end_profit_ratio': 0.98461538,
+        'fee': 0.0,
+    },
+    {
+        'orders': [
+            (('buy', 100, 8), (100.0, 8.0, 800.0, 0.0, None, None)),
+            (('buy', 100, 9), (200.0, 8.5, 1700.0, 0.0, None, None)),
+            (('sell', 100, 10), (100.0, 8.5, 850.0, 150.0, 150.0, 0.17647059)),
+            (('buy', 150, 11), (250.0, 10, 2500.0, 150.0, 150.0, 0.17647059)),
+            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 350.0, 0.2)),
+            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 950.0, 0.40)),
+        ],
+        'end_profit': 950.0,
+        'end_profit_ratio': 0.283582,
+        'fee': 0.0,
+    },
+])
+def test_recalc_trade_from_orders_dca(data) -> None:
+
+    pair = 'ETH/USDT'
+    trade = Trade(
+        id=2,
+        pair=pair,
+        stake_amount=1000,
+        open_rate=data['orders'][0][0][2],
+        amount=data['orders'][0][0][1],
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=data['fee'],
+        fee_close=data['fee'],
+        exchange='binance',
+        is_short=False,
+        leverage=1.0,
+        trading_mode=TradingMode.SPOT
+    )
+    Trade.query.session.add(trade)
+
+    for idx, (order, result) in enumerate(data['orders']):
+        amount = order[1]
+        price = order[2]
+
+        order_obj = Order(
+            ft_order_side=order[0],
+            ft_pair=trade.pair,
+            order_id=f"order_{order[0]}_{idx}",
+            ft_is_open=False,
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side=order[0],
+            price=price,
+            average=price,
+            filled=amount,
+            remaining=0,
+            cost=amount * price,
+            order_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
+            order_filled_date=arrow.utcnow().shift(hours=-10 + idx).datetime,
+        )
+        trade.orders.append(order_obj)
+        trade.recalc_trade_from_orders()
+        Trade.commit()
+
+        orders1 = Order.query.all()
+        assert orders1
+        assert len(orders1) == idx + 1
+
+        trade = Trade.query.first()
+        assert trade
+        assert len(trade.orders) == idx + 1
+        if idx < len(data) - 1:
+            assert trade.is_open is True
+        assert trade.open_order_id is None
+        assert trade.amount == result[0]
+        assert trade.open_rate == result[1]
+        assert trade.stake_amount == result[2]
+        # TODO: enable the below.
+        assert pytest.approx(trade.realized_profit) == result[3]
+        # assert pytest.approx(trade.close_profit_abs) == result[4]
+        assert pytest.approx(trade.close_profit) == result[5]
+
+    trade.close(price)
+    assert pytest.approx(trade.close_profit_abs) == data['end_profit']
+    assert pytest.approx(trade.close_profit) == data['end_profit_ratio']
+    assert not trade.is_open
+    trade = Trade.query.first()
+    assert trade
+    assert trade.open_order_id is None

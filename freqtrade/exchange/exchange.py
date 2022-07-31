@@ -1507,7 +1507,8 @@ class Exchange:
         return price_side
 
     def get_rate(self, pair: str, refresh: bool,
-                 side: EntryExit, is_short: bool) -> float:
+                 side: EntryExit, is_short: bool,
+                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1539,22 +1540,24 @@ class Exchange:
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
-            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            if order_book is None:
+                order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
                 rate = order_book[f"{price_side}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    f"{name} Price at location {order_book_top} from orderbook could not be "
-                    f"determined. Orderbook: {order_book}"
+                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
+                    f"could not be determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
-            logger.debug(f"{name} price from orderbook {price_side_word}"
+            logger.debug(f"{pair} - {name} price from orderbook {price_side_word}"
                          f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
             logger.debug(f"Using Last {price_side_word} / Last Price")
-            ticker = self.fetch_ticker(pair)
+            if ticker is None:
+                ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[price_side]
             if ticker['last'] and ticker_rate:
                 if side == 'entry' and ticker_rate > ticker['last']:
@@ -1570,6 +1573,33 @@ class Exchange:
         cache_rate[pair] = rate
 
         return rate
+
+    def get_rates(self, pair: str, refresh: bool, is_short: bool) -> Tuple[float, float]:
+        entry_rate = None
+        exit_rate = None
+        if not refresh:
+            entry_rate = self._entry_rate_cache.get(pair)
+            exit_rate = self._exit_rate_cache.get(pair)
+            if entry_rate:
+                logger.debug(f"Using cached buy rate for {pair}.")
+            if exit_rate:
+                logger.debug(f"Using cached sell rate for {pair}.")
+
+        entry_pricing = self._config.get('entry_pricing', {})
+        exit_pricing = self._config.get('exit_pricing', {})
+        order_book = ticker = None
+        if not entry_rate and entry_pricing.get('use_order_book', False):
+            order_book_top = max(entry_pricing.get('order_book_top', 1),
+                                 exit_pricing.get('order_book_top', 1))
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, order_book=order_book)
+        elif not entry_rate:
+            ticker = self.fetch_ticker(pair)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
+        if not exit_rate:
+            exit_rate = self.get_rate(pair, refresh, 'exit',
+                                      is_short, order_book=order_book, ticker=ticker)
+        return entry_rate, exit_rate
 
     # Fee handling
 
@@ -1989,7 +2019,7 @@ class Exchange:
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
-                    pair,  since,
+                    pair, since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
