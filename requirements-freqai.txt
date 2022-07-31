@@ -3,7 +3,6 @@
 
 # Required for freqai
 scikit-learn==1.1.1
-scikit-optimize==0.9.0
 joblib==1.1.0
 catboost==1.0.4
 lightgbm==3.3.2
