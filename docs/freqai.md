@@ -60,7 +60,7 @@ pip install -r requirements-freqai.txt
 
 An example strategy, an example prediction model, and example config can all be found in
 `freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMPredictionModel.py`,
-`config_examples/config_freqai_futures.example.json`, respectively.
+`config_examples/config_freqai.example.json`, respectively.
 
 Assuming the user has downloaded the necessary data, Freqai can be executed from these templates with:
 
@@ -98,7 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `weight_factor` | Used to set weights for training data points according to their recency, see details and a figure of how it works [here](##controlling-the-model-learning-process). <br> **Datatype:** positive float (typically below 1).
 | `principal_component_analysis` | Ask FreqAI to automatically reduce the dimensionality of the data set using PCA. <br> **Datatype:** boolean.
 | `use_SVM_to_remove_outliers` | Ask FreqAI to train a support vector machine to detect and remove outliers from the training data set as well as from incoming data points. <br> **Datatype:** boolean.
-| `svm_nu` | The `nu` parameter for the support vector machine. *Very* broadly, this is the percentage of data points that should be considered outliers. <br> **Datatype:** float between 0 and 1.
+| `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. E.g. `nu` *Very* broadly, is the percentage of data points that should be considered outliers. `shuffle` is by default false to maintain reprodicibility. But these and all others can be added/changed in this dictionary. <br> **Datatype:** dictionary.
 | `stratify_training_data` | This value is used to indicate the stratification of the data. e.g. 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. <br> **Datatype:** positive integer.
 | `indicator_max_period_candles` | The maximum *period* used in `populate_any_indicators()` for indicator creation. FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
 | `indicator_periods_candles` | A list of integers used to duplicate all indicators according to a set of periods and add them to the feature set. <br> **Datatype:** list of positive integers.
@@ -111,6 +111,9 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
+|  |  **Extraneous parameters**
+| `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
+| `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for `shift` by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. Default value, 2 <br> **Datatype:** integer.
 
 
 ### Important FreqAI dataframe key patterns
@@ -349,7 +352,7 @@ and adding this to the `train_period_days`. The units need to be in the base can
 The freqai training/backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai_futures.example.json --freqaimodel LightGBMPredictionModel --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel LightGBMPredictionModel --timerange 20210501-20210701
 ```
 
 If this command has never been executed with the existing config file, then it will train a new model

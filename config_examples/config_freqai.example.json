@@ -1,13 +1,14 @@
 {
-    "max_open_trades": 1,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "max_open_trades": 5,
     "stake_currency": "USDT",
-    "stake_amount": 900,
+    "stake_amount": 200,
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
-    "timeframe": "5m",
-    "dry_run_wallet": 4000,
-    "dataformat_ohlcv": "json",
+    "timeframe": "3m",
+    "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": true,
     "unfilledtimeout": {
         "entry": 10,
@@ -25,8 +26,8 @@
             "rateLimit": 200
         },
         "pair_whitelist": [
-            "BTC/USDT",
-            "ETH/USDT"
+            "1INCH/USDT",
+            "ALGO/USDT"
         ],
         "pair_blacklist": []
     },
@@ -52,30 +53,29 @@
     ],
     "freqai": {
         "startup_candles": 10000,
-
-        "train_period_days": 30,
+        "purge_old_models": true,
+        "train_period_days": 15,
         "backtest_period_days": 7,
-        "live_retrain_hours": 1,
-        "identifier": "example",
-        "live_trained_timestamp": 0,
+        "live_retrain_hours": 0,
+        "identifier": "uniqe-id",
         "feature_parameters": {
             "include_timeframes": [
-                "5m",
+                "3m",
                 "15m",
-                "4h"
+                "1h"
             ],
             "include_corr_pairlist": [
                 "BTC/USDT",
                 "ETH/USDT"
             ],
-            "label_period_candles": 500,
-            "include_shifted_candles": 1,
-            "DI_threshold": 0,
+            "label_period_candles": 20,
+            "include_shifted_candles": 2,
+            "DI_threshold": 0.9,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
-            "use_SVM_to_remove_outliers": false,
+            "use_SVM_to_remove_outliers": true,
             "stratify_training_data": 0,
-            "indicator_max_period_candles": 50,
+            "indicator_max_period_candles": 20,
             "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters": {
@@ -83,13 +83,12 @@
             "random_state": 1
         },
         "model_training_parameters": {
-            "n_estimators": 1000,
-            "task_type": "CPU"
+            "n_estimators": 1000
         }
     },
     "bot_name": "",
+    "force_entry_enable": true,
     "initial_state": "running",
-    "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
     }
