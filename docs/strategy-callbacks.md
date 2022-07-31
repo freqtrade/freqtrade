@@ -629,7 +629,7 @@ class AwesomeStrategy(IStrategy):
 
 The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in the strategy.
 For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
-`adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging) or to increase or decrease winning positions.
+`adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging) or to increase or decrease positions.
 
 `max_entry_position_adjustment` property is used to limit the number of additional buys per trade (on top of the first buy) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment buys.
 
@@ -652,12 +652,12 @@ Position adjustments will always be applied in the direction of the trade, so a 
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.
+    Regular stoploss rules still apply (cannot move down).
 
-!!! Warning "/stopbuy"
     While `/stopbuy` command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.
 
 !!! Warning "Backtesting"
-    During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so performance will be affected.
+    During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.
 
 ``` python
 from freqtrade.persistence import Trade
@@ -678,7 +678,7 @@ class DigDeeperStrategy(IStrategy):
     max_dca_multiplier = 5.5
 
     # This is called when placing the initial order (opening trade)
-def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             leverage: float, entry_tag: Optional[str], side: str,
                             **kwargs) -> float:
@@ -756,6 +756,25 @@ def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: f
         return None
 
 ```
+
+### Position adjust calculations
+
+* Entry rates are calculated using weighted averages.
+* Exits will not influence the average entry rate.
+* Partial exit relative profit is relative to the average entry price at this point.
+* Final exit relative profit is calculated based on the total invested capital. (See example below)
+
+??? example "Calculation example"
+    *This example assumes 0 fees for simplicity, and a long position on an imaginary coin.*  
+    
+    * Buy 100@8\$ 
+    * Buy 100@9\$ -> Avg price: 8.5\$
+    * Sell 100@10\$ -> Avg price: 8.5\$, realized profit 150\$, 17.65%
+    * Buy 150@11\$ -> Avg price: 10\$, realized profit 150\$, 17.65%
+    * Sell 100@12\$ -> Avg price: 10\$, total realized profit 350\$, 20%
+    * Sell 150@14\$ -> Avg price: 10\$, total realized profit 950\$, 40%
+
+    The total profit for this trade was 950$ on a 3350$ investment (`100@8$ + 100@9$ + 150@11$`). As such - the final relative profit is 28.35% (`950 / 3350`).
 
 ## Adjust Entry Price
 

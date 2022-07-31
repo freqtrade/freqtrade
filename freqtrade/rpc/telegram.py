@@ -485,6 +485,7 @@ class Telegram(RPCHandler):
                     sumA += amount * filled_orders[y]["safe_price"]
                     sumB += amount
                 prev_avg_price = sumA / sumB
+                # TODO: This calculation ignores fees.
                 price_to_1st_entry = ((cur_entry_average - first_avg) / first_avg)
                 minus_on_entry = 0
                 if prev_avg_price:
