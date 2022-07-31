@@ -238,6 +238,15 @@ class FreqaiDataDrawer:
 
         mrv_df["do_predict"] = do_preds
 
+        # for keras type models, the conv_window needs to be prepended so 
+        # viewing is correct in frequi
+        if self.freqai_info.get('keras', False):
+            n_lost_points = self.freqai_info.get('conv_width', 2)
+            zeros_df = DataFrame(np.zeros((n_lost_points, len(mrv_df.columns))),
+                                 columns=mrv_df.columns)
+            self.model_return_values[pair] = pd.concat(
+                [zeros_df, mrv_df], axis=0, ignore_index=True)
+
     def append_model_predictions(self, pair: str, predictions: DataFrame,
                                  do_preds: NDArray[np.int_],
                                  dk: FreqaiDataKitchen, len_df: int) -> None:
