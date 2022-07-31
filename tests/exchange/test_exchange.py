@@ -2993,6 +2993,9 @@ def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, 
     ({'amount': 10.0, 'fee': {}}, False),
     ({'result': 'testest123'}, False),
     ('hello_world', False),
+    ({'status': 'canceled', 'amount': None, 'fee': None}, False),
+    ({'status': 'canceled', 'filled': None, 'amount': None, 'fee': None}, False),
+
 ])
 def test_is_cancel_order_result_suitable(mocker, default_conf, exchange_name, order, result):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -4178,20 +4181,6 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
         wallet_balance=0.8,
     )
     assert liq_price == 17.540699999999998
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "get_or_calculate_liquidation_price",
-        "fetch_positions",
-        pair="XRP/USDT",
-        open_rate=0.0,
-        is_short=False,
-        position=0.0,
-        wallet_balance=0.0,
-    )
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [

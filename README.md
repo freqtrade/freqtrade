@@ -193,7 +193,7 @@ Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/
 
 The clock must be accurate, synchronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
-### Min hardware required
+### Minimum hardware required
 
 To run this bot we recommend you a cloud instance with a minimum of:
 

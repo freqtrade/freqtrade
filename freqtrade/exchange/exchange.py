@@ -1264,7 +1264,7 @@ class Exchange:
             return False
 
         required = ('fee', 'status', 'amount')
-        return all(k in corder for k in required)
+        return all(corder.get(k, None) is not None for k in required)
 
     def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
         """
@@ -1332,11 +1332,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self) -> List[Dict]:
+    def fetch_positions(self, pair: str = None) -> List[Dict]:
+        """
+        Fetch positions from the exchange.
+        If no pair is given, all positions are returned.
+        :param pair: Pair for the query
+        """
         if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
             return []
         try:
-            positions: List[Dict] = self._api.fetch_positions()
+            symbols = []
+            if pair:
+                symbols.append(pair)
+            positions: List[Dict] = self._api.fetch_positions(symbols)
             self._log_exchange_response('fetch_positions', positions)
             return positions
         except ccxt.DDoSProtection as e:
@@ -2569,7 +2577,6 @@ class Exchange:
         else:
             return 0.0
 
-    @retrier
     def get_or_calculate_liquidation_price(
         self,
         pair: str,
@@ -2603,20 +2610,12 @@ class Exchange:
                 upnl_ex_1=upnl_ex_1
             )
         else:
-            try:
-                positions = self._api.fetch_positions([pair])
-                if len(positions) > 0:
-                    pos = positions[0]
-                    isolated_liq = pos['liquidationPrice']
-                else:
-                    return None
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
+            positions = self.fetch_positions(pair)
+            if len(positions) > 0:
+                pos = positions[0]
+                isolated_liq = pos['liquidationPrice']
+            else:
+                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
