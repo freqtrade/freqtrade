@@ -238,7 +238,7 @@ class FreqaiDataDrawer:
 
         mrv_df["do_predict"] = do_preds
 
-        # for keras type models, the conv_window needs to be prepended so 
+        # for keras type models, the conv_window needs to be prepended so
         # viewing is correct in frequi
         if self.freqai_info.get('keras', False):
             n_lost_points = self.freqai_info.get('conv_width', 2)
