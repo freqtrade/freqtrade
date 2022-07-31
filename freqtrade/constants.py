@@ -241,6 +241,7 @@ CONF_SCHEMA = {
         },
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
+        'freqai': {'$ref': '#/definitions/freqai'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -484,20 +485,21 @@ CONF_SCHEMA = {
                 "keras": {"type": "boolean", "default": False},
                 "conv_width": {"type": "integer", "default": 2},
                 "train_period_days": {"type": "integer", "default": 0},
-                "backtest_period_days": {"type": "float", "default": 7},
-                "identifier": {"type": "str", "default": "example"},
+                "backtest_period_days": {"type": "number", "default": 7},
+                "identifier": {"type": "string", "default": "example"},
                 "feature_parameters": {
                     "type": "object",
                     "properties": {
-                        "include_corr_pairlist": {"type": "list"},
-                        "include_timeframes": {"type": "list"},
+                        "include_corr_pairlist": {"type": "array"},
+                        "include_timeframes": {"type": "array"},
                         "label_period_candles": {"type": "integer"},
                         "include_shifted_candles": {"type": "integer", "default": 0},
-                        "DI_threshold": {"type": "float", "default": 0},
+                        "DI_threshold": {"type": "number", "default": 0},
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
                         "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
                     },
+                    "required": ["include_timeframes", "include_corr_pairlist", ]
                 },
                 "data_split_parameters": {
                     "type": "object",
@@ -516,6 +518,12 @@ CONF_SCHEMA = {
                     },
                 },
             },
+            "required": ["train_period_days",
+                         "backtest_period_days",
+                         "identifier",
+                         "feature_parameters",
+                         "data_split_parameters",
+                         "model_training_parameters"]
         },
     },
 }
@@ -558,17 +566,6 @@ SCHEMA_MINIMAL_REQUIRED = [
     'dry_run',
     'dataformat_ohlcv',
     'dataformat_trades',
-]
-
-SCHEMA_FREQAI_REQUIRED = [
-    'include_timeframes',
-    'train_period_days',
-    'backtest_period_days',
-    'identifier',
-    'include_corr_pairlist',
-    'feature_parameters',
-    'data_split_parameters',
-    'model_training_parameters'
 ]
 
 CANCEL_REASON = {
