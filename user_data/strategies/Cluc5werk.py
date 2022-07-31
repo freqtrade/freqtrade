@@ -15,7 +15,7 @@ def bollinger_bands(stock_price, window_size, num_of_std):
 
 
 class Cluc5werk(WAOStrategy):
-    brain = "Cluc5werk"
+    brain = "Freq_Cluc5werk"
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)

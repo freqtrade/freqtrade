@@ -20,7 +20,7 @@ def ha_typical_price(bars):
 
 
 class ClucHAnix(WAOStrategy):
-    brain = "ClucHAnix"
+    brain = "Freq_ClucHAnix"
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)

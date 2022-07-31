@@ -19,7 +19,7 @@ TODO:
 
 
 class Hacklemore(WAOStrategy):
-    brain = "Hacklemore"
+    brain = "Freq_Hacklemore"
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
