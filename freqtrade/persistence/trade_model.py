@@ -303,6 +303,16 @@ class LocalTrade():
     funding_fees: Optional[float] = None
 
     @property
+    def stoploss_or_liquidation(self) -> float:
+        if self.liquidation_price:
+            if self.is_short:
+                return min(self.stop_loss, self.liquidation_price)
+            else:
+                return max(self.stop_loss, self.liquidation_price)
+
+        return self.stop_loss
+
+    @property
     def buy_tag(self) -> Optional[str]:
         """
         Compatibility between buy_tag (old) and enter_tag (new)
@@ -497,7 +507,7 @@ class LocalTrade():
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
-    def set_isolated_liq(self, liquidation_price: Optional[float]):
+    def set_liquidation_price(self, liquidation_price: Optional[float]):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price
@@ -506,22 +516,13 @@ class LocalTrade():
             return
         self.liquidation_price = liquidation_price
 
-    def _set_stop_loss(self, stop_loss: float, percent: float):
+    def __set_stop_loss(self, stop_loss: float, percent: float):
         """
-        Method you should use to set self.stop_loss.
-        Assures stop_loss is not passed the liquidation price
+        Method used internally to set self.stop_loss.
         """
-        if self.liquidation_price is not None:
-            if self.is_short:
-                sl = min(stop_loss, self.liquidation_price)
-            else:
-                sl = max(stop_loss, self.liquidation_price)
-        else:
-            sl = stop_loss
-
         if not self.stop_loss:
-            self.initial_stop_loss = sl
-        self.stop_loss = sl
+            self.initial_stop_loss = stop_loss
+        self.stop_loss = stop_loss
 
         self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
@@ -543,18 +544,12 @@ class LocalTrade():
         leverage = self.leverage or 1.0
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss / leverage)))
-            # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = min(self.liquidation_price, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss / leverage)))
-            # If trading with leverage, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None or refresh:
-            self._set_stop_loss(new_loss, stoploss)
+            self.__set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             self.initial_stop_loss_pct = -1 * abs(stoploss)
 
@@ -569,7 +564,7 @@ class LocalTrade():
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self._set_stop_loss(new_loss, stoploss)
+                self.__set_stop_loss(new_loss, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 

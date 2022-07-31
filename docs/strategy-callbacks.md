@@ -623,6 +623,7 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning
     `confirm_trade_exit()` can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
+    `confirm_trade_exit()` will not be called for Liquidations - as liquidations are forced by the exchange, and therefore cannot be rejected.
 
 ## Adjust trade position
 

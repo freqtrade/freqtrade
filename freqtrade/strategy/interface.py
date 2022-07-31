@@ -963,7 +963,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # ROI
         # Trailing stoploss
 
-        if stoplossflag.exit_type == ExitType.STOP_LOSS:
+        if stoplossflag.exit_type in (ExitType.STOP_LOSS, ExitType.LIQUIDATION):
 
             logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
             exits.append(stoplossflag)
@@ -1035,6 +1035,17 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         sl_higher_long = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
         sl_lower_short = (trade.stop_loss <= (high or current_rate) and trade.is_short)
+        liq_higher_long = (trade.liquidation_price
+                           and trade.liquidation_price >= (low or current_rate)
+                           and not trade.is_short)
+        liq_lower_short = (trade.liquidation_price
+                           and trade.liquidation_price <= (high or current_rate)
+                           and trade.is_short)
+
+        if (liq_higher_long or liq_lower_short):
+            logger.debug(f"{trade.pair} - Liquidation price hit. exit_type=ExitType.LIQUIDATION")
+            return ExitCheckTuple(exit_type=ExitType.LIQUIDATION)
+
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
@@ -1052,13 +1063,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
-                new_stoploss = (
-                    trade.stop_loss + trade.initial_stop_loss
-                    if trade.is_short else
-                    trade.stop_loss - trade.initial_stop_loss
-                )
-                logger.debug(f"{trade.pair} - Trailing stop saved "
-                             f"{new_stoploss:.6f}")
 
             return ExitCheckTuple(exit_type=exit_type)
 
