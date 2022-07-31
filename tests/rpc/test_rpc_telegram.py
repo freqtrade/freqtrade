@@ -1896,7 +1896,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'order_type': 'market',
         'open_rate': 7.5e-05,
         'current_rate': 3.201e-05,
-        'cumulative_profit': -0.05746268,
+        'cumulative_profit': -0.15746268,
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
@@ -1905,12 +1905,13 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'exit_reason': ExitType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
-        'stake_amount': 1234,
-        'sub_trade': True
+        'stake_amount': 0.01,
+        'sub_trade': True,
     })
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Cumulative Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+        '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+        '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
         '*Enter Tag:* `buy_signal1`\n'
         '*Exit Reason:* `stop_loss`\n'
         '*Direction:* `Long`\n'
@@ -1918,7 +1919,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
         '*Exit Rate:* `0.00003201`\n'
-        '*Remaining:* `(1234 ETH, -24.812 USD)`'
+        '*Remaining:* `(0.01 ETH, -24.812 USD)`'
         )
 
     msg_mock.reset_mock()
