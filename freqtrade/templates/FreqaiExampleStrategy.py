@@ -65,7 +65,7 @@ class FreqaiExampleStrategy(IStrategy):
         return informative_pairs
 
     def populate_any_indicators(
-        self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
+        self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
         """
         Function designed to automatically generate, name and merge features
@@ -78,8 +78,9 @@ class FreqaiExampleStrategy(IStrategy):
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
         :param informative: the dataframe associated with the informative pair
-        :param coin: the name of the coin which will modify the feature names.
         """
+
+        coin = pair.split('/')[0]
 
         with self.freqai.lock:
             if informative is None:
@@ -92,11 +93,8 @@ class FreqaiExampleStrategy(IStrategy):
                 informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
                 informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
                 informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
-                informative[f"{coin}20sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
-                informative[f"{coin}21ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-                informative[f"%-{coin}close_over_20sma-period_{t}"] = (
-                    informative["close"] / informative[f"{coin}20sma-period_{t}"]
-                )
+                informative[f"{coin}sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
+                informative[f"{coin}ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
 
                 informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
 
@@ -148,8 +146,6 @@ class FreqaiExampleStrategy(IStrategy):
                 df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 
                 # user adds targets here by prepending them with &- (see convention below)
-                # If user wishes to use multiple targets, a multioutput prediction model
-                # needs to be used such as templates/CatboostPredictionMultiModel.py
                 df["&-s_close"] = (
                     df["close"]
                     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
@@ -158,6 +154,23 @@ class FreqaiExampleStrategy(IStrategy):
                     / df["close"]
                     - 1
                 )
+
+                # If user wishes to use multiple targets, they can add more by
+                # appending more columns with '&'. User should keep in mind that multi targets
+                # requires a multioutput prediction model such as
+                # templates/CatboostPredictionMultiModel.py,
+
+                # df["&-s_range"] = (
+                #     df["close"]
+                #     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                #     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                #     .max()
+                #     -
+                #     df["close"]
+                #     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                #     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                #     .min()
+                # )
 
         return df
 

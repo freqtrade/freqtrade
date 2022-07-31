@@ -62,7 +62,7 @@ class freqai_test_strat(IStrategy):
         return informative_pairs
 
     def populate_any_indicators(
-        self, metadata, pair, df, tf, informative=None, coin="", set_generalized_indicators=False
+        self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
         """
         Function designed to automatically generate, name and merge features
@@ -78,6 +78,8 @@ class freqai_test_strat(IStrategy):
         :informative: the dataframe associated with the informative pair
         :coin: the name of the coin which will modify the feature names.
         """
+
+        coin = pair.split('/')[0]
 
         with self.freqai.lock:
             if informative is None:

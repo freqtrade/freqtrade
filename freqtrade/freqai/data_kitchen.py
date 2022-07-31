@@ -892,29 +892,26 @@ class FreqaiDataKitchen:
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 
-        sgi = True
+        sgi = False
         for tf in tfs:
+            if tf == tfs[-1]:
+                sgi = True  # doing this last allows user to use all tf raw prices in labels
             dataframe = strategy.populate_any_indicators(
-                pair,
                 pair,
                 dataframe.copy(),
                 tf,
                 informative=base_dataframes[tf],
-                coin=pair.split("/")[0] + "-",
-                set_generalized_indicators=sgi,
+                set_generalized_indicators=sgi
             )
-            sgi = False
             if pairs:
                 for i in pairs:
                     if pair in i:
                         continue  # dont repeat anything from whitelist
                     dataframe = strategy.populate_any_indicators(
-                        pair,
                         i,
                         dataframe.copy(),
                         tf,
-                        informative=corr_dataframes[i][tf],
-                        coin=i.split("/")[0] + "-",
+                        informative=corr_dataframes[i][tf]
                     )
 
         return dataframe

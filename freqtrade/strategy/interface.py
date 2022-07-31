@@ -557,8 +557,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
-    def populate_any_indicators(self, basepair: str, pair: str, df: DataFrame, tf: str,
-                                informative: DataFrame = None, coin: str = "",
+    def populate_any_indicators(self, pair: str, df: DataFrame, tf: str,
+                                informative: DataFrame = None,
                                 set_generalized_indicators: bool = False) -> DataFrame:
         """
         Function designed to automatically generate, name and merge features
@@ -570,7 +570,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
         :param informative: the dataframe associated with the informative pair
-        :param coin: the name of the coin which will modify the feature names.
         """
         return df
 
