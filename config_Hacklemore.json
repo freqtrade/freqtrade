@@ -7,8 +7,8 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-       "buy": 10,
-        "sell": 30,
+       "entry": 10,
+        "exit": 30,
         "unit": "minutes"
     },
     "entry_pricing": {

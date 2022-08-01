@@ -101,7 +101,7 @@ class bbrsi_scalp(WAOStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -115,9 +115,9 @@ class bbrsi_scalp(WAOStrategy):
             ),
             'buy'] = 1
 
-        return dataframe
+        return  self.populate_buy_trend(dataframe, metadata)
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -129,4 +129,4 @@ class bbrsi_scalp(WAOStrategy):
                     # | (dataframe['rsi'] > 60)
             ),
             'sell'] = 1
-        return dataframe
+        return self.populate_sell_trend(dataframe, metadata)
