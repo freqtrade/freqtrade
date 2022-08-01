@@ -50,9 +50,9 @@ class bbrsi_scalp(WAOStrategy):
     process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = True
 
     def informative_pairs(self):
         """
@@ -101,7 +101,7 @@ class bbrsi_scalp(WAOStrategy):
 
         return dataframe
 
-    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -115,9 +115,9 @@ class bbrsi_scalp(WAOStrategy):
             ),
             'buy'] = 1
 
-        return  self.populate_buy_trend(dataframe, metadata)
+        return dataframe
 
-    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -129,4 +129,4 @@ class bbrsi_scalp(WAOStrategy):
                     # | (dataframe['rsi'] > 60)
             ),
             'sell'] = 1
-        return self.populate_sell_trend(dataframe, metadata)
+        return dataframe
