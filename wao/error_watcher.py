@@ -1,4 +1,6 @@
 import subprocess
+import threading
+
 import watchdog.events
 import watchdog.observers
 
@@ -37,6 +39,10 @@ def get_tail_cmd_result(file_name):
 
 
 def get_error_line(file_name):
+    threading.Thread(target=__get_error_line, args=(file_name, )).start()
+
+
+def __get_error_line(file_name):
     list_of_lines = get_tail_cmd_result(file_name)
     if len(list_of_lines) > 0:
         for line in list_of_lines:
