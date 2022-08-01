@@ -37,9 +37,9 @@ class Hacklemore(WAOStrategy):
     # Stoploss:
     stoploss = -0.085
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     startup_candle_count: int = 24
 
