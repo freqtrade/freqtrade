@@ -1300,7 +1300,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if (pair is not None):
             filters.append(Trade.pair == pair)
 
         enter_tag_perf = Trade.query.with_entities(
@@ -1333,7 +1333,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if (pair is not None):
             filters.append(Trade.pair == pair)
 
         sell_tag_perf = Trade.query.with_entities(
@@ -1366,7 +1366,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
 
         filters = [Trade.is_open.is_(False)]
-        if(pair is not None):
+        if (pair is not None):
             filters.append(Trade.pair == pair)
 
         mix_tag_perf = Trade.query.with_entities(
@@ -1386,7 +1386,7 @@ class Trade(_DECL_BASE, LocalTrade):
             enter_tag = enter_tag if enter_tag is not None else "Other"
             exit_reason = exit_reason if exit_reason is not None else "Other"
 
-            if(exit_reason is not None and enter_tag is not None):
+            if (exit_reason is not None and enter_tag is not None):
                 mix_tag = enter_tag + " " + exit_reason
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):

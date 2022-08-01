@@ -3810,8 +3810,8 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         since=unix_time
     )
 
-    assert(isclose(expected_fees, fees_from_datetime))
-    assert(isclose(expected_fees, fees_from_unix_time))
+    assert (isclose(expected_fees, fees_from_datetime))
+    assert (isclose(expected_fees, fees_from_unix_time))
 
     ccxt_exceptionhandlers(
         mocker,

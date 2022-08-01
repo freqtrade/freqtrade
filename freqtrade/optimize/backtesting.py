@@ -595,7 +595,7 @@ class Backtesting:
             if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
                 # Checks and adds an exit tag, after checking that the length of the
                 # row has the length for an exit tag column
-                if(
+                if (
                     len(row) > EXIT_TAG_IDX
                     and row[EXIT_TAG_IDX] is not None
                     and len(row[EXIT_TAG_IDX]) > 0
