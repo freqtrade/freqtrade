@@ -498,6 +498,12 @@ CONF_SCHEMA = {
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
                         "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
+                        "svm_params": {"type": "object",
+                                       "properties": {
+                                           "shuffle": {"type": "boolean", "default": False},
+                                           "nu": {"type": "number", "default": 0.1}
+                                           },
+                                       }
                     },
                     "required": ["include_timeframes", "include_corr_pairlist", ]
                 },
@@ -511,10 +517,7 @@ CONF_SCHEMA = {
                 "model_training_parameters": {
                     "type": "object",
                     "properties": {
-                        "n_estimators": {"type": "integer", "default": 2000},
-                        "random_state": {"type": "integer", "default": 1},
-                        "learning_rate": {"type": "number", "default": 0.02},
-                        "task_type": {"type": "string", "default": "CPU"},
+                        "n_estimators": {"type": "integer", "default": 1000}
                     },
                 },
             },
