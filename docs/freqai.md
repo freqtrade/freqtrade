@@ -56,6 +56,9 @@ Use `pip` to install the prerequisites with:
 pip install -r requirements-freqai.txt
 ```
 
+!!! Note
+    Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since Catboost does not provide wheels for this platform.
+
 ## Running from the example files
 
 An example strategy, an example prediction model, and example config can all be found in

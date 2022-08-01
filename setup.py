@@ -15,7 +15,7 @@ hyperopt = [
 freqai = [
     'scikit-learn',
     'joblib',
-    'catboost',
+    'catboost; platform_machine != "aarch64"',
     'lightgbm',
 ]
 
