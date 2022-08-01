@@ -7,13 +7,13 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-        "buy": 10,
-        "sell": 30,
+       "entry": 10,
+        "exit": 30,
         "unit": "minutes"
     },
-    "bid_strategy": {
-        "price_side": "ask",
-        "ask_last_balance": 0.0,
+    "entry_pricing": {
+        "price_side": "same",
+        "price_last_balance": 0.0,
         "use_order_book": true,
         "order_book_top": 1,
         "check_depth_of_market": {
@@ -21,10 +21,22 @@
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy": {
-        "price_side": "bid",
+    "exit_pricing": {
+        "price_side": "same",
         "use_order_book": true,
-        "order_book_top": 1
+        "order_book_top": 1,
+        "price_last_balance": 0.0
+    },
+    "order_types": {
+        "entry": "limit",
+        "exit": "limit",
+        "emergency_exit": "market",
+        "force_exit": "market",
+        "force_entry": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_on_exchange_interval": 60,
+        "stoploss_on_exchange_limit_ratio": 0.99
     },
     "exchange": {
         "name": "binance",
