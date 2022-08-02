@@ -39,7 +39,7 @@ class FreqaiDataDrawer:
     Robert Caulk @robcaulk
 
     Theoretical brainstorming:
-    Elin Törnquist @thorntwig
+    Elin Törnquist @th0rntwig
 
     Code review, software architecture brainstorming:
     @xmatthias
@@ -238,6 +238,11 @@ class FreqaiDataDrawer:
 
         mrv_df["do_predict"] = do_preds
 
+        if dk.data['extra_returns_per_train']:
+            rets = dk.data['extra_returns_per_train']
+            for return_str in rets:
+                mrv_df[return_str] = rets[return_str]
+
         # for keras type models, the conv_window needs to be prepended so
         # viewing is correct in frequi
         if self.freqai_info.get('keras', False):
@@ -282,9 +287,15 @@ class FreqaiDataDrawer:
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
             df["DI_values"].iloc[-1] = dk.DI_values[-1]
 
+        if dk.data['extra_returns_per_train']:
+            rets = dk.data['extra_returns_per_train']
+            for return_str in rets:
+                df[return_str].iloc[-1] = rets[return_str]
+
         # append the new predictions to persistent storage
         if pair in self.historic_predictions:
-            self.historic_predictions[pair].iloc[-1] = df[label].iloc[-1]
+            for key in df.keys():
+                self.historic_predictions[pair][key].iloc[-1] = df[key].iloc[-1]
 
         if length_difference < 0:
             prepend_df = pd.DataFrame(
@@ -320,7 +331,12 @@ class FreqaiDataDrawer:
         dataframe["do_predict"] = 0
 
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
-            dataframe["DI_value"] = 0
+            dataframe["DI_values"] = 0
+
+        if dk.data['extra_returns_per_train']:
+            rets = dk.data['extra_returns_per_train']
+            for return_str in rets:
+                dataframe[return_str] = 0
 
         dk.return_dataframe = dataframe
 

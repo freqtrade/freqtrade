@@ -1,5 +1,4 @@
 # import contextlib
-import copy
 import datetime
 import logging
 import shutil
@@ -46,7 +45,7 @@ class IFreqaiModel(ABC):
     Robert Caulk @robcaulk
 
     Theoretical brainstorming:
-    Elin Törnquist @thorntwig
+    Elin Törnquist @th0rntwig
 
     Code review, software architecture brainstorming:
     @xmatthias
@@ -81,6 +80,8 @@ class IFreqaiModel(ABC):
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
         self.pair_it = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
+        self.last_trade_database_summary: DataFrame = {}
+        self.current_trade_database_summary: DataFrame = {}
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -479,6 +480,9 @@ class IFreqaiModel(ABC):
 
         model = self.train(unfiltered_dataframe, pair, dk)
 
+        dk.get_current_trade_database()
+        self.analyze_trade_database(dk, pair)
+
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
@@ -493,13 +497,50 @@ class IFreqaiModel(ABC):
     def set_initial_historic_predictions(
         self, df: DataFrame, model: Any, dk: FreqaiDataKitchen, pair: str
     ) -> None:
-        trained_predictions = model.predict(df)
+        """
+        This function is called only if the datadrawer failed to load an
+        existing set of historic predictions. In this case, it builds
+        the structure and sets fake predictions off the first training
+        data. After that, FreqAI will append new real predictions to the
+        set of historic predictions.
+
+        These values are used to generate live statistics which can be used
+        in the strategy for adaptive values. E.g. &*_mean/std are quantities
+        that can computed based on live predictions from the set of historical
+        predictions. Those values can be used in the user strategy to better
+        assess prediction rarity, and thus wait for probabilistically favorable
+        entries relative to the live historical predictions.
+
+        If the user reuses an identifier on a subsequent instance,
+        this function will not be called. In that case, "real" predictions
+        will be appended to the loaded set of historic predictions.
+        :param: df: DataFrame = the dataframe containing the training feature data
+        :param: model: Any = A model which was `fit` using a common librariy such as
+        catboost or lightgbm
+        :param: dk: FreqaiDataKitchen = object containing methods for data analysis
+        :param: pair: str = current pair
+        """
+        num_candles = self.freqai_info.get('fit_live_predictions_candles', 600)
+        df_tail = df.tail(num_candles)
+        trained_predictions = model.predict(df_tail)
         pred_df = DataFrame(trained_predictions, columns=dk.label_list)
 
         pred_df = dk.denormalize_labels_from_metadata(pred_df)
 
-        self.dd.historic_predictions[pair] = pd.DataFrame()
-        self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
+        self.dd.historic_predictions[pair] = pred_df
+        hist_preds_df = self.dd.historic_predictions[pair]
+
+        hist_preds_df['do_predict'] = 0
+
+        if self.freqai_info['feature_parameters'].get('DI_threshold', 0) > 0:
+            hist_preds_df['DI_values'] = 0
+
+        for label in dk.data['labels_mean']:
+            hist_preds_df[f'{label}_mean'] = 0
+            hist_preds_df[f'{label}_std'] = 0
+
+        for return_str in dk.data['extra_returns_per_train']:
+            hist_preds_df[return_str] = 0
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen) -> None:
         """
@@ -563,5 +604,22 @@ class IFreqaiModel(ABC):
                                       or --timerange (backtesting)
         :return: dataframe: DataFrame = dataframe filled with user defined data
         """
+
+        return
+
+    def analyze_trade_database(self, dk: FreqaiDataKitchen, pair: str) -> None:
+        """
+        User analyzes the trade database here and returns summary stats which will be passed back
+        to the strategy for reinforcement learning or for additional adaptive metrics for use
+        in entry/exit signals. Store these metrics in dk.data['extra_returns_per_train'] and
+        they will format themselves into the dataframe as an additional column in the user
+        strategy. User has access to the current trade database in dk.trade_database_df.
+        """
+        if dk.trade_database_df.empty:
+            logger.warning(f'No trades found for {pair} to analyze DB')
+            return
+
+        total_profit = dk.trade_database_df['close_profit_abs'].sum()
+        dk.data['extra_returns_per_train']['total_profit'] = total_profit
 
         return

@@ -619,6 +619,46 @@ If the user sets this value, FreqAI will initially use the predictions from the 
 and then subsequently begin introducing real prediction data as it is generated. FreqAI will save 
 this historical data to be reloaded if the user stops and restarts with the same `identifier`.
 
+## Extra returns per train
+
+Users may find that there are some important metrics that they'd like to return to the strategy at the end of each retrain.
+Users can include these metrics by assigining them to `dk.data['extra_returns_per_train']['my_new_value'] = XYZ` inside their custom prediction
+model class. FreqAI takes the `my_new_value` assigned in this dictionary and expands it to fit the return dataframe to the strategy.
+The user can then use the value in the strategy with `dataframe['my_new_value']`. An example of how this is already used in FreqAI is 
+the `&*_mean` and `&*_std` values, which indicate the mean and standard deviation of that particular label during the most recent training. 
+Another example is shown below if the user wants to use live metrics from the trade databse.
+
+The user needs to set the standard dictionary in the config so FreqAI can return proper dataframe shapes:
+
+```json
+    "freqai": {
+        "extra_returns_per_train": {"total_profit": 4}
+    }
+```
+
+These values will likely be overridden by the user prediction model, but in the case where the user model has yet to set them, or needs
+a default initial value - this is the value that will be returned.
+
+## Analyzing the trade live database
+
+Users can analyze the live trade database by calling `analyze_trade_database()` in their custom prediction model. FreqAI already has the
+database setup in a pandas dataframe and ready to be analyzed. Here is an example usecase:
+
+```python
+    def analyze_trade_database(self, dk: FreqaiDataKitchen, pair: str) -> None:
+        """
+        User analyzes the trade database here and returns summary stats which will be passed back
+        to the strategy for reinforcement learning or for additional adaptive metrics for use
+        in entry/exit signals. Store these metrics in dk.data['extra_returns_per_train'] and
+        they will format themselves into the dataframe as an additional column in the user
+        strategy. User has access to the current trade database in dk.trade_database_df.
+        """
+        total_profit = dk.trade_database_df['close_profit_abs'].sum()
+        dk.data['extra_returns_per_train']['total_profit'] = total_profit
+
+        return
+```
+
 <!-- ## Dynamic target expectation
 
 The labels used for model training have a unique statistical distribution for each separate model training. 
