@@ -330,6 +330,7 @@ class ForceEnterPayload(BaseModel):
 class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
+    amount: Optional[float]
 
 
 class BlacklistPayload(BaseModel):
