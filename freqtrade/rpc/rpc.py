@@ -660,48 +660,48 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
+    def __exec_force_exit(self, trade: Trade, ordertype: Optional[str],
+                          _amount: Optional[float] = None) -> None:
+        # Check if there is there is an open order
+        fully_canceled = False
+        if trade.open_order_id:
+            order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
+
+            if order['side'] == trade.entry_side:
+                fully_canceled = self._freqtrade.handle_cancel_enter(
+                    trade, order, CANCEL_REASON['FORCE_EXIT'])
+
+            if order['side'] == trade.exit_side:
+                # Cancel order - so it is placed anew with a fresh price.
+                self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_EXIT'])
+
+        if not fully_canceled:
+            # Get current rate and execute sell
+            current_rate = self._freqtrade.exchange.get_rate(
+                trade.pair, side='exit', is_short=trade.is_short, refresh=True)
+            exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
+            order_type = ordertype or self._freqtrade.strategy.order_types.get(
+                "force_exit", self._freqtrade.strategy.order_types["exit"])
+            sub_amount: float = None
+            if _amount and _amount < trade.amount:
+                # Partial exit ...
+                min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
+                    trade.pair, current_rate, trade.stop_loss_pct)
+                remaining = (trade.amount - _amount) * current_rate
+                if remaining < min_exit_stake:
+                    raise RPCException(f'Remaining amount of {remaining} would be too small.')
+                sub_amount = _amount
+
+            self._freqtrade.execute_trade_exit(
+                trade, current_rate, exit_check, ordertype=order_type,
+                sub_trade_amt=sub_amount)
+
     def _rpc_force_exit(self, trade_id: str, ordertype: Optional[str] = None, *,
                         amount: Optional[float]) -> Dict[str, str]:
         """
         Handler for forceexit <id>.
         Sells the given trade at current price
         """
-
-        def _exec_force_exit(trade: Trade, ordertype: Optional[str],
-                             _amount: Optional[float] = None) -> None:
-            # Check if there is there is an open order
-            fully_canceled = False
-            if trade.open_order_id:
-                order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
-
-                if order['side'] == trade.entry_side:
-                    fully_canceled = self._freqtrade.handle_cancel_enter(
-                        trade, order, CANCEL_REASON['FORCE_EXIT'])
-
-                if order['side'] == trade.exit_side:
-                    # Cancel order - so it is placed anew with a fresh price.
-                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_EXIT'])
-
-            if not fully_canceled:
-                # Get current rate and execute sell
-                current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, side='exit', is_short=trade.is_short, refresh=True)
-                exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
-                order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                    "force_exit", self._freqtrade.strategy.order_types["exit"])
-                sub_amount: float = None
-                if _amount and _amount < trade.amount:
-                    # Partial exit ...
-                    min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
-                        trade.pair, current_rate, trade.stop_loss_pct)
-                    remaining = (trade.amount - _amount) * current_rate
-                    if remaining < min_exit_stake:
-                        raise RPCException(f'Remaining amount of {remaining} would be too small.')
-                    sub_amount = _amount
-
-                self._freqtrade.execute_trade_exit(
-                    trade, current_rate, exit_check, ordertype=order_type,
-                    sub_trade_amt=sub_amount)
 
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
@@ -710,7 +710,7 @@ class RPC:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
-                    _exec_force_exit(trade)
+                    self.__exec_force_exit(trade)
                 Trade.commit()
                 self._freqtrade.wallets.update()
                 return {'result': 'Created sell orders for all open trades.'}
@@ -723,7 +723,7 @@ class RPC:
                 logger.warning('force_exit: Invalid argument received')
                 raise RPCException('invalid argument')
 
-            _exec_force_exit(trade, ordertype, amount)
+            self.__exec_force_exit(trade, ordertype, amount)
             Trade.commit()
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
