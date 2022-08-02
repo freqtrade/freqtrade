@@ -732,7 +732,8 @@ class RPC:
                          order_type: Optional[str] = None,
                          order_side: SignalDirection = SignalDirection.LONG,
                          stake_amount: Optional[float] = None,
-                         enter_tag: Optional[str] = 'force_entry') -> Optional[Trade]:
+                         enter_tag: Optional[str] = 'force_entry',
+                         leverage: Optional[float] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -774,6 +775,7 @@ class RPC:
                                          ordertype=order_type, trade=trade,
                                          is_short=is_short,
                                          enter_tag=enter_tag,
+                                         leverage_=leverage,
                                          ):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
