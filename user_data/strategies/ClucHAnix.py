@@ -71,9 +71,9 @@ class ClucHAnix(WAOStrategy):
     timeframe = '1m'
 
     # Make sure these match or are not overridden in config
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
