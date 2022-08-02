@@ -697,7 +697,7 @@ class RPC:
                 sub_trade_amt=sub_amount)
 
     def _rpc_force_exit(self, trade_id: str, ordertype: Optional[str] = None, *,
-                        amount: Optional[float]) -> Dict[str, str]:
+                        amount: Optional[float] = None) -> Dict[str, str]:
         """
         Handler for forceexit <id>.
         Sells the given trade at current price
@@ -710,7 +710,7 @@ class RPC:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
-                    self.__exec_force_exit(trade)
+                    self.__exec_force_exit(trade, ordertype)
                 Trade.commit()
                 self._freqtrade.wallets.update()
                 return {'result': 'Created sell orders for all open trades.'}
