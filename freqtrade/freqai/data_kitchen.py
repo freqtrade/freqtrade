@@ -85,9 +85,10 @@ class FreqaiDataKitchen:
                 config["freqai"]["backtest_period_days"],
             )
 
-        db_url = self.config.get('db_url', None)
-        self.database_path = '' if db_url == 'sqlite://' else str(db_url).split('///')[1]
-        self.trade_database_df: DataFrame = pd.DataFrame()
+        if self.live:
+            db_url = self.config.get('db_url', 'sqlite://')
+            self.database_path = '' if db_url == 'sqlite://' else str(db_url).split('///')[1]
+            self.trade_database_df: DataFrame = pd.DataFrame()
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
 

@@ -615,11 +615,11 @@ class IFreqaiModel(ABC):
         they will format themselves into the dataframe as an additional column in the user
         strategy. User has access to the current trade database in dk.trade_database_df.
         """
-        if dk.trade_database_df.empty:
-            logger.warning(f'No trades found for {pair} to analyze DB')
-            return
+        # if dk.trade_database_df.empty:
+        #     logger.warning(f'No trades found for {pair} to analyze DB')
+        #     return
 
-        total_profit = dk.trade_database_df['close_profit_abs'].sum()
-        dk.data['extra_returns_per_train']['total_profit'] = total_profit
+        # total_profit = dk.trade_database_df['close_profit_abs'].sum()
+        # dk.data['extra_returns_per_train']['total_profit'] = total_profit
 
         return
