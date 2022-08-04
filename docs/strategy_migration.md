@@ -192,7 +192,7 @@ class AwesomeStrategy(IStrategy):
         return False 
 ```
 
-### Custom-stake-amount
+### `custom_stake_amount`
 
 New string argument `side` - which can be either `"long"` or `"short"`.
 
