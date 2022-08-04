@@ -1566,7 +1566,7 @@ class FreqtradeBot(LoggingMixin):
             profit_ratio = trade.calc_profit_ratio(profit_rate, amount, trade.open_rate)
         else:
             profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
-            profit = trade.calc_profit(rate=profit_rate) + trade.realized_profit
+            profit = trade.calc_profit(rate=profit_rate) + (0.0 if fill else trade.realized_profit)
             profit_ratio = trade.calc_profit_ratio(profit_rate)
             amount = trade.amount
         gain = "profit" if profit_ratio > 0 else "loss"
