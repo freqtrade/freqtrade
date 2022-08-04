@@ -385,7 +385,12 @@ class IFreqaiModel(ABC):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
         if self.freqai_info["feature_parameters"].get("DBSCAN_outlier_pct", 0):
-            dk.use_DBSCAN_to_remove_outliers(predict=False)
+            if dk.pair in self.dd.old_DBSCAN_eps:
+                eps = self.dd.old_DBSCAN_eps[dk.pair]
+            else:
+                eps = None
+            dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
+            self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """

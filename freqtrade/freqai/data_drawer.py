@@ -76,6 +76,7 @@ class FreqaiDataDrawer:
         self.load_historic_predictions_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
+        self.old_DBSCAN_eps: Dict[str, float] = {}
 
     def load_drawer_from_disk(self):
         """

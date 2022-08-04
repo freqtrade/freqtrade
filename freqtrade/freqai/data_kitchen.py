@@ -582,7 +582,7 @@ class FreqaiDataKitchen:
 
         return
 
-    def use_DBSCAN_to_remove_outliers(self, predict: bool) -> None:
+    def use_DBSCAN_to_remove_outliers(self, predict: bool, eps=None) -> None:
         """
         Use DBSCAN to cluster training data and remove "noisy" data (read outliers).
         User controls this via the config param `DBSCAN_outlier_pct` which indicates the
@@ -615,10 +615,10 @@ class FreqaiDataKitchen:
 
         else:
             outlier_target = self.freqai_config['feature_parameters'].get('DBSCAN_outlier_pct')
-            if 'DBSCAN_eps' in self.data:
-                eps = self.data['DBSCAN_eps']
+            if eps:
+                epsilon = eps
             else:
-                eps = 10
+                epsilon = 10
                 logger.info('DBSCAN starting from high value. This should be faster next train.')
 
             error = 1.
@@ -628,7 +628,7 @@ class FreqaiDataKitchen:
 
             # find optimal value for epsilon using an iterative approach:
             while abs(np.sqrt(error)) > 0.1:
-                clustering = DBSCAN(eps=eps, min_samples=MinPts,
+                clustering = DBSCAN(eps=epsilon, min_samples=MinPts,
                                     n_jobs=int(self.thread_count / 2)).fit(
                                         self.data_dictionary['train_features']
                                     )
@@ -637,13 +637,14 @@ class FreqaiDataKitchen:
                 multiplier = (outlier_pct - outlier_target) if outlier_pct > 0 else 1 * \
                     np.sign(outlier_pct - outlier_target)
                 multiplier = 1 + error * multiplier
-                eps = multiplier * eps
+                epsilon = multiplier * epsilon
                 logger.info(
-                    f'DBSCAN error {error:.2f} for eps {eps:.2f} and outliet pct {outlier_pct:.2f}')
+                    f'DBSCAN error {error:.2f} for eps {epsilon:.2f}'
+                    f' and outlier pct {outlier_pct:.2f}')
 
-            logger.info(f'DBSCAN found eps of {eps}.')
+            logger.info(f'DBSCAN found eps of {epsilon}.')
 
-            self.data['DBSCAN_eps'] = eps
+            self.data['DBSCAN_eps'] = epsilon
             self.data['DBSCAN_min_samples'] = MinPts
             dropped_points = np.where(clustering.labels_ == -1, 1, 0)
 
