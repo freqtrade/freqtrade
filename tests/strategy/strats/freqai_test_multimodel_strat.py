@@ -13,13 +13,8 @@ logger = logging.getLogger(__name__)
 
 class freqai_test_multimodel_strat(IStrategy):
     """
-    Example strategy showing how the user connects their own
-    IFreqaiModel to the strategy. Namely, the user uses:
-    self.freqai.start(dataframe, metadata)
-
-    to make predictions on their data. populate_any_indicators() automatically
-    generates the variety of features indicated by the user in the
-    canonical freqtrade configuration file under config['freqai'].
+    Test strategy - used for testing freqAI multimodel functionalities.
+    DO not use in production.
     """
 
     minimal_roi = {"0": 0.1, "240": -1}
@@ -64,20 +59,6 @@ class freqai_test_multimodel_strat(IStrategy):
     def populate_any_indicators(
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
-        """
-        Function designed to automatically generate, name and merge features
-        from user indicated timeframes in the configuration file. User controls the indicators
-        passed to the training/prediction by prepending indicators with `'%-' + coin `
-        (see convention below). I.e. user should not prepend any supporting metrics
-        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
-        model.
-        :params:
-        :pair: pair to be used as informative
-        :df: strategy dataframe which will receive merges from informatives
-        :tf: timeframe of the dataframe which will modify the feature names
-        :informative: the dataframe associated with the informative pair
-        :coin: the name of the coin which will modify the feature names.
-        """
 
         coin = pair.split('/')[0]
 
@@ -149,11 +130,6 @@ class freqai_test_multimodel_strat(IStrategy):
 
         self.freqai_info = self.config["freqai"]
 
-        # All indicators must be populated by populate_any_indicators() for live functionality
-        # to work correctly.
-        # the model will return 4 values, its prediction, an indication of whether or not the
-        # prediction should be accepted, the target mean/std values from the labels used during
-        # each training period.
         dataframe = self.freqai.start(dataframe, metadata, self)
 
         dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
