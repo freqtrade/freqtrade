@@ -384,6 +384,9 @@ class IFreqaiModel(ABC):
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
+        if self.freqai_info["feature_parameters"].get("DBSCAN_outlier_pct", 0):
+            dk.use_DBSCAN_to_remove_outliers(predict=False)
+
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
@@ -405,6 +408,9 @@ class IFreqaiModel(ABC):
 
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
+
+        if self.freqai_info["feature_parameters"].get("DBSCAN_outlier_pct", 0):
+            dk.use_DBSCAN_to_remove_outliers(predict=True)
 
     def model_exists(
         self,

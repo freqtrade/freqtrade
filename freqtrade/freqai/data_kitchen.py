@@ -19,7 +19,7 @@ from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
-
+from sklearn.cluster import DBSCAN
 
 SECONDS_IN_DAY = 86400
 SECONDS_IN_HOUR = 3600
@@ -91,6 +91,7 @@ class FreqaiDataKitchen:
             self.trade_database_df: DataFrame = pd.DataFrame()
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
+        self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
 
     def set_paths(
         self,
@@ -498,8 +499,7 @@ class FreqaiDataKitchen:
         for prediction confidence in the Dissimilarity Index
         """
         logger.info("computing average mean distance for all training points")
-        tc = self.freqai_config.get("model_training_parameters", {}).get("thread_count", -1)
-        pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=tc)
+        pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=self.thread_count)
         avg_mean_dist = pairwise.mean(axis=1).mean()
 
         return avg_mean_dist
@@ -580,6 +580,76 @@ class FreqaiDataKitchen:
 
         return
 
+    def use_DBSCAN_to_remove_outliers(self, predict: bool) -> None:
+        """
+        Use DBSCAN to cluster training data and remove "noisy" data (read outliers).
+        User controls this via the config param `DBSCAN_outlier_pct` which indicates the
+        pct of training data that they want to be considered outliers.
+        :params:
+        predict: bool = If False (training), iterate to find the best hyper parameters to match
+        user requested outlier percent target. If True (prediction), use the parameters
+        determined from the previous training to estimate if the current prediction point
+        is an outlier.
+        """
+
+        if predict:
+            train_ft_df = self.data_dictionary['train_features']
+            pred_ft_df = self.data_dictionary['prediction_features']
+            num_preds = len(pred_ft_df)
+            df = pd.concat([train_ft_df, pred_ft_df], axis=0, ignore_index=True)
+            clustering = DBSCAN(
+                                    eps=self.data['DBSCAN_eps'],
+                                    min_samples=self.data['DBSCAN_min_samples'],
+                                    n_jobs=-1
+                                ).fit(df)
+            do_predict = np.where(clustering.labels_[-num_preds:] == -1, 0, 1)
+
+            if (len(do_predict) - do_predict.sum()) > 0:
+                logger.info(
+                    f"DBSCAN tossed {len(do_predict) - do_predict.sum()} predictions"
+                )
+            self.do_predict += do_predict
+            self.do_predict -= 1
+
+        else:
+            outlier_target = self.freqai_config['feature_parameters'].get('DBSCAN_outlier_pct')
+            eps = 1.8
+            error = 1.
+            MinPts = len(train_ft_df.columns) * 2
+            logger.info(
+                    f'DBSCAN finding best clustering for {outlier_target}% outliers.')
+
+            # find optimal value for epsilon using an iterative approach:
+            while abs(error) > 0.01:
+                clustering = DBSCAN(eps=eps, min_samples=MinPts, n_jobs=-1).fit(
+                    train_ft_df
+                )
+                outlier_pct = np.count_nonzero(clustering.labels_ == -1) / len(clustering.labels_)
+                error = (outlier_pct - outlier_target) / outlier_target
+                multiplier = 1 + error * (1.01 - 1.)
+                eps = multiplier * eps
+
+            self.data['DBSCAN_eps'] = eps
+            self.data['DBSCAN_min_samples'] = MinPts
+            dropped_points = np.where(clustering.labels_ == -1, 1, 0)
+
+            self.data_dictionary['train_features'] = self.data_dictionary['train_features'][
+                (clustering.labels_ != -1)
+            ]
+            self.data_dictionary["train_labels"] = self.data_dictionary["train_labels"][
+                (clustering.labels_ != -1)
+            ]
+            self.data_dictionary["train_weights"] = self.data_dictionary["train_weights"][
+                (clustering.labels_ != -1)
+            ]
+
+            logger.info(
+                f"DBSCAN tossed {dropped_points.sum()}"
+                f" train points from {len(clustering.labels_)}"
+            )
+
+        return
+
     def find_features(self, dataframe: DataFrame) -> None:
         """
         Find features in the strategy provided dataframe
@@ -596,7 +666,6 @@ class FreqaiDataKitchen:
 
         self.training_features_list = features
         self.label_list = labels
-        # return features, labels
 
     def check_if_pred_in_training_spaces(self) -> None:
         """
@@ -606,11 +675,10 @@ class FreqaiDataKitchen:
         from the training data set.
         """
 
-        tc = self.freqai_config.get("model_training_parameters", {}).get("thread_count", -1)
         distance = pairwise_distances(
             self.data_dictionary["train_features"],
             self.data_dictionary["prediction_features"],
-            n_jobs=tc,
+            n_jobs=self.thread_count,
         )
 
         self.DI_values = distance.min(axis=0) / self.data["avg_mean_dist"]
@@ -677,7 +745,6 @@ class FreqaiDataKitchen:
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
 
-        # self.append_df = DataFrame()
         self.full_df = DataFrame()
 
         return
