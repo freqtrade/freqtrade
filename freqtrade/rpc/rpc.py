@@ -682,7 +682,7 @@ class RPC:
             exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
             order_type = ordertype or self._freqtrade.strategy.order_types.get(
                 "force_exit", self._freqtrade.strategy.order_types["exit"])
-            sub_amount: float = None
+            sub_amount: Optional[float] = None
             if _amount and _amount < trade.amount:
                 # Partial exit ...
                 min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
