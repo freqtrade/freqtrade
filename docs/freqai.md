@@ -539,10 +539,18 @@ The user can tell FreqAI to use DBSCAN to cluster training data and remove outli
 parameter `DBSCAN_outlier_pct` allows the user to indicate the percent of expected outliers to be removed during each training
 (typically set below 0.05). Higher value increases confidence in the model predictions but reduces the entry frequency.
 
-The FreqAI DBSCAN wrapper performs an interative solution to solving the `eps` hyper parameter. `eps` controls the fraction of 
+The FreqAI DBSCAN wrapper performs an iterative solution to solving the `eps` hyper parameter. `eps` controls the fraction of 
 training data considered to be an outlier - thus the iterative solution finds the exact value associated with the user designated
 `DBSCAN_outlier_pct`. This iterative solution is performed once per training. FreqAI stores the `eps` to be used when DBSCAN
 is again called to determine if incoming prediction candles are outliers. 
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+            "DBSCAN_outlier_pct": 0.05
+        }
+    }
+```
 
 ### Stratifying the data
 

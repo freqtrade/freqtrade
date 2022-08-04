@@ -11,6 +11,7 @@ import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
 from sklearn import linear_model
+from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
 
@@ -19,7 +20,7 @@ from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
-from sklearn.cluster import DBSCAN
+
 
 SECONDS_IN_DAY = 86400
 SECONDS_IN_HOUR = 3600
@@ -499,7 +500,8 @@ class FreqaiDataKitchen:
         for prediction confidence in the Dissimilarity Index
         """
         logger.info("computing average mean distance for all training points")
-        pairwise = pairwise_distances(self.data_dictionary["train_features"], n_jobs=self.thread_count)
+        pairwise = pairwise_distances(
+            self.data_dictionary["train_features"], n_jobs=self.thread_count)
         avg_mean_dist = pairwise.mean(axis=1).mean()
 
         return avg_mean_dist
@@ -613,21 +615,33 @@ class FreqaiDataKitchen:
 
         else:
             outlier_target = self.freqai_config['feature_parameters'].get('DBSCAN_outlier_pct')
-            eps = 1.8
+            if 'DBSCAN_eps' in self.data:
+                eps = self.data['DBSCAN_eps']
+            else:
+                eps = 10
+                logger.info('DBSCAN starting from high value. This should be faster next train.')
+
             error = 1.
-            MinPts = len(train_ft_df.columns) * 2
+            MinPts = len(self.data_dictionary['train_features'].columns)
             logger.info(
                     f'DBSCAN finding best clustering for {outlier_target}% outliers.')
 
             # find optimal value for epsilon using an iterative approach:
-            while abs(error) > 0.01:
-                clustering = DBSCAN(eps=eps, min_samples=MinPts, n_jobs=-1).fit(
-                    train_ft_df
-                )
+            while abs(np.sqrt(error)) > 0.1:
+                clustering = DBSCAN(eps=eps, min_samples=MinPts,
+                                    n_jobs=int(self.thread_count / 2)).fit(
+                                        self.data_dictionary['train_features']
+                                    )
                 outlier_pct = np.count_nonzero(clustering.labels_ == -1) / len(clustering.labels_)
-                error = (outlier_pct - outlier_target) / outlier_target
-                multiplier = 1 + error * (1.01 - 1.)
+                error = (outlier_pct - outlier_target) ** 2 / outlier_target
+                multiplier = (outlier_pct - outlier_target) if outlier_pct > 0 else 1 * \
+                    np.sign(outlier_pct - outlier_target)
+                multiplier = 1 + error * multiplier
                 eps = multiplier * eps
+                logger.info(
+                    f'DBSCAN error {error:.2f} for eps {eps:.2f} and outliet pct {outlier_pct:.2f}')
+
+            logger.info(f'DBSCAN found eps of {eps}.')
 
             self.data['DBSCAN_eps'] = eps
             self.data['DBSCAN_min_samples'] = MinPts
