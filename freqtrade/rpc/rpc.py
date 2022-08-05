@@ -431,14 +431,15 @@ class RPC:
 
             if not trade.is_open:
                 profit_ratio = trade.close_profit
-                profit_closed_coin.append(trade.close_profit_abs)
+                profit_abs = trade.close_profit_abs
+                profit_closed_coin.append(profit_abs)
                 profit_closed_ratio.append(profit_ratio)
                 if trade.close_profit >= 0:
                     winning_trades += 1
-                    winning_profit += trade.close_profit_abs
+                    winning_profit += profit_abs
                 else:
                     losing_trades += 1
-                    losing_profit += trade.close_profit_abs
+                    losing_profit += profit_abs
             else:
                 # Get current rate
                 try:
@@ -447,10 +448,10 @@ class RPC:
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
+                profit_abs = trade.calc_profit(
+                    rate=trade.close_rate or current_rate) + trade.realized_profit
 
-            profit_all_coin.append(
-                trade.calc_profit(rate=trade.close_rate or current_rate)
-            )
+            profit_all_coin.append(profit_abs)
             profit_all_ratio.append(profit_ratio)
 
         best_pair = Trade.get_best_pair(start_date)
