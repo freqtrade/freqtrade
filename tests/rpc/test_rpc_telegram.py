@@ -433,10 +433,10 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     assert "Daily Profit over the last 2 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
-    assert '(2)  13.83 USDT  15.21 USD  1.31%' in msg_mock.call_args_list[0][0][0]
+    assert '(2)  6.83 USDT  7.51 USD  0.64%' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
@@ -447,8 +447,8 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
     assert '(1)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
@@ -460,8 +460,8 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     context = MagicMock()
     context.args = ["1"]
     telegram._daily(update=update, context=context)
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
 
 
@@ -523,8 +523,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mach
     today = datetime.utcnow().date()
     first_iso_day_of_current_week = today - timedelta(days=today.weekday())
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -536,8 +536,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mach
     assert "Weekly Profit over the last 8 weeks (starting from Monday)</b>:" \
            in msg_mock.call_args_list[0][0][0]
     assert 'Weekly' in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -592,8 +592,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     today = datetime.utcnow().date()
     current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -606,8 +606,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     assert 'Monthly Profit over the last 6 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -620,8 +620,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     telegram._monthly(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
 
     # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"
@@ -1268,7 +1268,7 @@ def test_telegram_performance_handle(default_conf_usdt, update, ticker, fee, moc
     telegram._performance(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>XRP/USDT\t9.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>XRP/USDT\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_telegram_entry_tag_performance_handle(
@@ -1318,7 +1318,7 @@ def test_telegram_exit_reason_performance_handle(default_conf_usdt, update, tick
     telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>roi\t9.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>roi\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
     context.args = ['XRP/USDT']
 
     telegram._exit_reason_performance(update=update, context=context)
@@ -1350,7 +1350,7 @@ def test_telegram_mix_tag_performance_handle(default_conf_usdt, update, ticker, 
     telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Mix Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert ('<code>TEST3 roi\t9.842 USDT (10.00%) (1)</code>'
+    assert ('<code>TEST3 roi\t2.842 USDT (10.00%) (1)</code>'
             in msg_mock.call_args_list[0][0][0])
 
     context.args = ['XRP/USDT']

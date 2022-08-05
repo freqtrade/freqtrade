@@ -314,10 +314,10 @@ def test__rpc_timeunit_profit(default_conf_usdt, ticker, fee,
         # {'date': datetime.date(2022, 6, 11), 'abs_profit': 13.8299999,
         #  'starting_balance': 1055.37, 'rel_profit': 0.0131044,
         #  'fiat_value': 0.0, 'trade_count': 2}
-        assert day['abs_profit'] in (0.0, pytest.approx(13.8299999), pytest.approx(-4.0))
-        assert day['rel_profit'] in (0.0, pytest.approx(0.01310441), pytest.approx(-0.00377583))
+        assert day['abs_profit'] in (0.0, pytest.approx(6.83), pytest.approx(-4.09))
+        assert day['rel_profit'] in (0.0, pytest.approx(0.00642902), pytest.approx(-0.00383512))
         assert day['trade_count'] in (0, 1, 2)
-        assert day['starting_balance'] in (pytest.approx(1059.37), pytest.approx(1055.37))
+        assert day['starting_balance'] in (pytest.approx(1062.37), pytest.approx(1066.46))
         assert day['fiat_value'] in (0.0, )
     # ensure first day is current date
     assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
@@ -435,9 +435,9 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     create_mock_trades_usdt(fee)
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
-    assert pytest.approx(stats['profit_closed_coin']) == 9.83
+    assert pytest.approx(stats['profit_closed_coin']) == 2.74
     assert pytest.approx(stats['profit_closed_percent_mean']) == -1.67
-    assert pytest.approx(stats['profit_closed_fiat']) == 10.813
+    assert pytest.approx(stats['profit_closed_fiat']) == 3.014
     assert pytest.approx(stats['profit_all_coin']) == -77.45964918
     assert pytest.approx(stats['profit_all_percent_mean']) == -57.86
     assert pytest.approx(stats['profit_all_fiat']) == -85.205614098
@@ -870,9 +870,9 @@ def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
 
     res = rpc._rpc_performance()
     assert len(res) == 3
-    assert res[0]['pair'] == 'XRP/USDT'
+    assert res[0]['pair'] == 'ETC/USDT'
     assert res[0]['count'] == 1
-    assert res[0]['profit_pct'] == 10.0
+    assert res[0]['profit_pct'] == 5.0
 
 
 def test_enter_tag_performance_handle(default_conf, ticker, fee, mocker) -> None:
@@ -896,16 +896,16 @@ def test_enter_tag_performance_handle(default_conf, ticker, fee, mocker) -> None
     res = rpc._rpc_enter_tag_performance(None)
 
     assert len(res) == 3
-    assert res[0]['enter_tag'] == 'TEST3'
+    assert res[0]['enter_tag'] == 'TEST1'
     assert res[0]['count'] == 1
-    assert res[0]['profit_pct'] == 10.0
+    assert res[0]['profit_pct'] == 5.0
 
     res = rpc._rpc_enter_tag_performance(None)
 
     assert len(res) == 3
-    assert res[0]['enter_tag'] == 'TEST3'
+    assert res[0]['enter_tag'] == 'TEST1'
     assert res[0]['count'] == 1
-    assert res[0]['profit_pct'] == 10.0
+    assert res[0]['profit_pct'] == 5.0
 
 
 def test_enter_tag_performance_handle_2(mocker, default_conf, markets, fee):
@@ -956,11 +956,11 @@ def test_exit_reason_performance_handle(default_conf_usdt, ticker, fee, mocker) 
     res = rpc._rpc_exit_reason_performance(None)
 
     assert len(res) == 3
-    assert res[0]['exit_reason'] == 'roi'
+    assert res[0]['exit_reason'] == 'exit_signal'
     assert res[0]['count'] == 1
-    assert res[0]['profit_pct'] == 10.0
+    assert res[0]['profit_pct'] == 5.0
 
-    assert res[1]['exit_reason'] == 'exit_signal'
+    assert res[1]['exit_reason'] == 'roi'
     assert res[2]['exit_reason'] == 'Other'
 
 
@@ -1012,9 +1012,9 @@ def test_mix_tag_performance_handle(default_conf, ticker, fee, mocker) -> None:
     res = rpc._rpc_mix_tag_performance(None)
 
     assert len(res) == 3
-    assert res[0]['mix_tag'] == 'TEST3 roi'
+    assert res[0]['mix_tag'] == 'TEST1 exit_signal'
     assert res[0]['count'] == 1
-    assert res[0]['profit_pct'] == 10.0
+    assert res[0]['profit_pct'] == 5.0
 
 
 def test_mix_tag_performance_handle_2(mocker, default_conf, markets, fee):
