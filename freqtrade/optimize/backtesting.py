@@ -208,7 +208,11 @@ class Backtesting:
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
         if self.config.get('freqai') is not None:
-            self.required_startup += int(self.config.get('freqai', {}).get('startup_candles', 1000))
+            startup_candles = int(self.config.get('freqai', {}).get('startup_candles', 0))
+            if not startup_candles:
+                raise OperationalException('FreqAI backtesting module requires user set '
+                                           'startup_candles in config.')
+            self.required_startup += int(self.config.get('freqai', {}).get('startup_candles', 0))
             logger.info(f'Increasing startup_candle_count for freqai to {self.required_startup}')
             self.config['startup_candle_count'] = self.required_startup
 
