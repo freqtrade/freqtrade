@@ -4,7 +4,7 @@ import logging
 import shutil
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -86,12 +86,12 @@ class FreqaiDataKitchen:
                 config["freqai"]["backtest_period_days"],
             )
 
+        self.database_path: Optional[Path] = None
+
         if self.live:
-            db_url = self.config.get('db_url', 'None')
+            db_url = self.config.get('db_url', None)
             self.database_path = Path(db_url)
             self.database_name = self.database_path.parts[-1]
-        else:
-            self.database_path = Path('None')
 
         self.trade_database_df: DataFrame = pd.DataFrame()
 
@@ -1042,7 +1042,7 @@ class FreqaiDataKitchen:
 
     def get_current_trade_database(self) -> None:
 
-        if str(self.database_path) == 'None':
+        if self.database_path is None:
             logger.warning('No trade database found. Skipping analysis.')
             return
 
