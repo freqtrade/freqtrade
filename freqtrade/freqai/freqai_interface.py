@@ -384,7 +384,7 @@ class IFreqaiModel(ABC):
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
-        if self.freqai_info["feature_parameters"].get("DBSCAN_outlier_pct", 0):
+        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
             if dk.pair in self.dd.old_DBSCAN_eps:
                 eps = self.dd.old_DBSCAN_eps[dk.pair]
             else:
@@ -414,7 +414,7 @@ class IFreqaiModel(ABC):
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
-        if self.freqai_info["feature_parameters"].get("DBSCAN_outlier_pct", 0):
+        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
 
     def model_exists(

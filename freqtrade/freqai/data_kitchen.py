@@ -21,6 +21,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
 
+from sklearn.neighbors import NearestNeighbors
+
 
 SECONDS_IN_DAY = 86400
 SECONDS_IN_HOUR = 3600
@@ -91,7 +93,7 @@ class FreqaiDataKitchen:
         if self.live:
             db_url = self.config.get('db_url', None)
             self.database_path = Path(db_url)
-            self.database_name = self.database_path.parts[-1]
+            self.database_name = Path(*self.database_path.parts[1:])
 
         self.trade_database_df: DataFrame = pd.DataFrame()
 
@@ -606,7 +608,7 @@ class FreqaiDataKitchen:
             clustering = DBSCAN(
                                     eps=self.data['DBSCAN_eps'],
                                     min_samples=self.data['DBSCAN_min_samples'],
-                                    n_jobs=-1
+                                    n_jobs=self.thread_count
                                 ).fit(df)
             do_predict = np.where(clustering.labels_[-num_preds:] == -1, 0, 1)
 
@@ -618,33 +620,22 @@ class FreqaiDataKitchen:
             self.do_predict -= 1
 
         else:
-            outlier_target = self.freqai_config['feature_parameters'].get('DBSCAN_outlier_pct')
-            if eps:
-                epsilon = eps
-            else:
-                epsilon = 10
-                logger.info('DBSCAN starting from high value. This should be faster next train.')
 
-            error = 1.
-            MinPts = len(self.data_dictionary['train_features'].columns)
-            logger.info(
-                    f'DBSCAN finding best clustering for {outlier_target}% outliers.')
+            MinPts = len(self.data_dictionary['train_features'].columns)*2
+            # measure pairwise distances to train_features.shape[1]*2 nearest neighbours
+            neighbors = NearestNeighbors(
+                n_neighbors=MinPts, n_jobs=self.thread_count)
+            neighbors_fit = neighbors.fit(self.data_dictionary['train_features'])
+            distances, _ = neighbors_fit.kneighbors(self.data_dictionary['train_features'])
+            distances = np.sort(distances, axis=0)
+            index_ten_pct = int(len(distances[:, 1]) * 0.1)
+            distances = distances[index_ten_pct:, 1]
+            epsilon = distances[-1]
 
-            # find optimal value for epsilon using an iterative approach:
-            while abs(np.sqrt(error)) > 0.1:
-                clustering = DBSCAN(eps=epsilon, min_samples=MinPts,
-                                    n_jobs=int(self.thread_count / 2)).fit(
-                                        self.data_dictionary['train_features']
-                                    )
-                outlier_pct = np.count_nonzero(clustering.labels_ == -1) / len(clustering.labels_)
-                error = (outlier_pct - outlier_target) ** 2 / outlier_target
-                multiplier = (outlier_pct - outlier_target) if outlier_pct > 0 else 1 * \
-                    np.sign(outlier_pct - outlier_target)
-                multiplier = 1 + error * multiplier
-                epsilon = multiplier * epsilon
-                logger.info(
-                    f'DBSCAN error {error:.2f} for eps {epsilon:.2f}'
-                    f' and outlier pct {outlier_pct:.2f}')
+            clustering = DBSCAN(eps=epsilon, min_samples=MinPts,
+                                n_jobs=int(self.thread_count)).fit(
+                                                    self.data_dictionary['train_features']
+                                                )
 
             logger.info(f'DBSCAN found eps of {epsilon}.')
 
@@ -939,6 +930,8 @@ class FreqaiDataKitchen:
             prepend=self.config.get("prepend_data", False),
         )
 
+        exchange.close()
+
     def set_all_pairs(self) -> None:
 
         self.all_pairs = copy.deepcopy(
@@ -1052,6 +1045,26 @@ class FreqaiDataKitchen:
         df = pd.DataFrame.from_records(data=query.fetchall(), columns=cols)
         self.trade_database_df = df.dropna(subset='close_date')
         data.close()
+
+    def fit_circle_2d(self, x, y, w=[]) -> float:
+
+        A = np.array([x, y, np.ones(len(x))]).T
+        b = x**2 + y**2
+
+        # Modify A,b for weighted least squares
+        if len(w) == len(x):
+            W = np.diag(w)
+            A = np.dot(W, A)
+            b = np.dot(W, b)
+
+        # Solve by method of least squares
+        c = np.linalg.lstsq(A, b, rcond=None)[0]
+
+        # Get circle parameters from solution c
+        xc = c[0] / 2
+        yc = c[1] / 2
+        r = np.sqrt(c[2] + xc**2 + yc**2)
+        return r
 
     def np_encoder(self, object):
         if isinstance(object, np.generic):
