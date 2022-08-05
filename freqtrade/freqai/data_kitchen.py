@@ -1046,26 +1046,6 @@ class FreqaiDataKitchen:
         self.trade_database_df = df.dropna(subset='close_date')
         data.close()
 
-    def fit_circle_2d(self, x, y, w=[]) -> float:
-
-        A = np.array([x, y, np.ones(len(x))]).T
-        b = x**2 + y**2
-
-        # Modify A,b for weighted least squares
-        if len(w) == len(x):
-            W = np.diag(w)
-            A = np.dot(W, A)
-            b = np.dot(W, b)
-
-        # Solve by method of least squares
-        c = np.linalg.lstsq(A, b, rcond=None)[0]
-
-        # Get circle parameters from solution c
-        xc = c[0] / 2
-        yc = c[1] / 2
-        r = np.sqrt(c[2] + xc**2 + yc**2)
-        return r
-
     def np_encoder(self, object):
         if isinstance(object, np.generic):
             return object.item()
