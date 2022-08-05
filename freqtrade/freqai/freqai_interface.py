@@ -532,6 +532,8 @@ class IFreqaiModel(ABC):
         :param: pair: str = current pair
         """
         num_candles = self.freqai_info.get('fit_live_predictions_candles', 600)
+        if not num_candles:
+            num_candles = 600
         df_tail = df.tail(num_candles)
         trained_predictions = model.predict(df_tail)
         pred_df = DataFrame(trained_predictions, columns=dk.label_list)
