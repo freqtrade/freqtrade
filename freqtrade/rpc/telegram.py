@@ -16,8 +16,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
-                      ParseMode, ReplyKeyboardMarkup, Update)
+from telegram import (MAX_MESSAGE_LENGTH, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
+                      KeyboardButton, ParseMode, ReplyKeyboardMarkup, Update)
 from telegram.error import BadRequest, NetworkError, TelegramError
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
@@ -34,8 +34,6 @@ from freqtrade.rpc import RPC, RPCException, RPCHandler
 logger = logging.getLogger(__name__)
 
 logger.debug('Included module rpc.telegram ...')
-
-MAX_TELEGRAM_MESSAGE_LENGTH = 4096
 
 
 @dataclass
@@ -908,7 +906,7 @@ class Telegram(RPCHandler):
                     total_dust_currencies += 1
 
                 # Handle overflowing message length
-                if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(output + curr_output) >= MAX_MESSAGE_LENGTH:
                     self._send_msg(output)
                     output = curr_output
                 else:
@@ -1171,7 +1169,7 @@ class Telegram(RPCHandler):
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
 
-                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
                     self._send_msg(output, parse_mode=ParseMode.HTML)
                     output = stat_line
                 else:
@@ -1206,7 +1204,7 @@ class Telegram(RPCHandler):
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
 
-                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
                     self._send_msg(output, parse_mode=ParseMode.HTML)
                     output = stat_line
                 else:
@@ -1241,7 +1239,7 @@ class Telegram(RPCHandler):
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
 
-                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
                     self._send_msg(output, parse_mode=ParseMode.HTML)
                     output = stat_line
                 else:
@@ -1276,7 +1274,7 @@ class Telegram(RPCHandler):
                     f"({trade['profit']:.2%}) "
                     f"({trade['count']})</code>\n")
 
-                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(output + stat_line) >= MAX_MESSAGE_LENGTH:
                     self._send_msg(output, parse_mode=ParseMode.HTML)
                     output = stat_line
                 else:
@@ -1415,7 +1413,7 @@ class Telegram(RPCHandler):
                                           escape_markdown(logrec[2], version=2),
                                           escape_markdown(logrec[3], version=2),
                                           escape_markdown(logrec[4], version=2))
-                if len(msgs + msg) + 10 >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                if len(msgs + msg) + 10 >= MAX_MESSAGE_LENGTH:
                     # Send message immediately if it would become too long
                     self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
                     msgs = msg + '\n'
