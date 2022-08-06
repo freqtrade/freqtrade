@@ -221,7 +221,7 @@ class IFreqaiModel(ABC):
 
             pred_df, do_preds = self.predict(dataframe_backtest, dk)
 
-            dk.append_predictions(pred_df, do_preds, len(dataframe_backtest))
+            dk.append_predictions(pred_df, do_preds)
 
         dk.fill_predictions(dataframe)
 
@@ -543,14 +543,16 @@ class IFreqaiModel(ABC):
         self.dd.historic_predictions[pair] = pred_df
         hist_preds_df = self.dd.historic_predictions[pair]
 
+        for label in hist_preds_df.columns:
+            if hist_preds_df[label].dtype == object:
+                continue
+            hist_preds_df[f'{label}_mean'] = 0
+            hist_preds_df[f'{label}_std'] = 0
+
         hist_preds_df['do_predict'] = 0
 
         if self.freqai_info['feature_parameters'].get('DI_threshold', 0) > 0:
             hist_preds_df['DI_values'] = 0
-
-        for label in dk.data['labels_mean']:
-            hist_preds_df[f'{label}_mean'] = 0
-            hist_preds_df[f'{label}_std'] = 0
 
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = 0

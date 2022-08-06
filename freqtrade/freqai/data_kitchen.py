@@ -342,7 +342,7 @@ class FreqaiDataKitchen:
         :df: Dataframe of predictions to be denormalized
         """
 
-        for label in self.label_list:
+        for label in df.columns:
             if df[label].dtype == object:
                 continue
             df[label] = (
@@ -716,14 +716,16 @@ class FreqaiDataKitchen:
         weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
-    def append_predictions(self, predictions, do_predict, len_dataframe):
+    def append_predictions(self, predictions: DataFrame, do_predict: npt.ArrayLike) -> None:
         """
         Append backtest prediction from current backtest period to all previous periods
         """
 
         append_df = DataFrame()
-        for label in self.label_list:
+        for label in predictions.columns:
             append_df[label] = predictions[label]
+            if append_df[label].dtype == object:
+                continue
             append_df[f"{label}_mean"] = self.data["labels_mean"][label]
             append_df[f"{label}_std"] = self.data["labels_std"][label]
 
@@ -1009,7 +1011,7 @@ class FreqaiDataKitchen:
         import scipy as spy
 
         self.data["labels_mean"], self.data["labels_std"] = {}, {}
-        for label in self.label_list:
+        for label in self.data_dictionary["train_labels"].columns:
             if self.data_dictionary["train_labels"][label].dtype == object:
                 continue
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])

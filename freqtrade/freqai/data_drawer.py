@@ -245,7 +245,7 @@ class FreqaiDataDrawer:
             logger.info(f'Setting initial FreqUI plots from historical data for {pair}.')
 
         else:
-            for label in dk.label_list:
+            for label in pred_df.columns:
                 mrv_df[label] = pred_df[label]
                 if mrv_df[label].dtype == object:
                     continue
@@ -278,15 +278,16 @@ class FreqaiDataDrawer:
         # strat seems to feed us variable sized dataframes - and since we are trying to build our
         # own return array in the same shape, we need to figure out how the size has changed
         # and adapt our stored/returned info accordingly.
-        length_difference = len(self.model_return_values[pair]) - len_df
-        i = 0
 
-        if length_difference == 0:
-            i = 1
-        elif length_difference > 0:
-            i = length_difference + 1
+        # length_difference = len(self.model_return_values[pair]) - len_df
+        # i = 0
 
-        df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
+        # if length_difference == 0:
+        #     i = 1
+        # elif length_difference > 0:
+        #     i = length_difference + 1
+
+        df = self.model_return_values[pair] = self.model_return_values[pair].shift(-1)
 
         if pair in self.historic_predictions:
             hp_df = self.historic_predictions[pair]
@@ -296,7 +297,8 @@ class FreqaiDataDrawer:
             hp_df = pd.concat([hp_df, nan_df], ignore_index=True, axis=0)
             self.historic_predictions[pair] = hp_df[:-1]
 
-        for label in dk.label_list:
+        # incase user adds additional "predictions" e.g. predict_proba output:
+        for label in predictions.columns:
             df[label].iloc[-1] = predictions[label].iloc[-1]
             if df[label].dtype == object:
                 continue
@@ -318,11 +320,11 @@ class FreqaiDataDrawer:
             for key in df.keys():
                 self.historic_predictions[pair][key].iloc[-1] = df[key].iloc[-1]
 
-        if length_difference < 0:
-            prepend_df = pd.DataFrame(
-                np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
-            )
-            df = pd.concat([prepend_df, df], axis=0)
+        # if length_difference < 0:
+        #     prepend_df = pd.DataFrame(
+        #         np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
+        #     )
+        #     df = pd.concat([prepend_df, df], axis=0)
 
     def attach_return_values_to_return_dataframe(
             self, pair: str, dataframe: DataFrame) -> DataFrame:
@@ -343,7 +345,12 @@ class FreqaiDataDrawer:
 
         dk.find_features(dataframe)
 
-        for label in dk.label_list:
+        if self.freqai_info.get('predict_proba', []):
+            full_labels = dk.label_list + self.freqai_info['predict_proba']
+        else:
+            full_labels = dk.label_list
+
+        for label in full_labels:
             dataframe[label] = 0
             dataframe[f"{label}_mean"] = 0
             dataframe[f"{label}_std"] = 0

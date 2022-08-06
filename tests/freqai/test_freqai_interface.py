@@ -74,8 +74,8 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
 def test_train_model_in_series_Catboost(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "CatboostRegressor"})
-    freqai_conf.get('freqai', {}).update(
-        {'model_training_parameters': {"n_estimators": 100, "verbose": 0}})
+    # freqai_conf.get('freqai', {}).update(
+    #     {'model_training_parameters': {"n_estimators": 100, "verbose": 0}})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)

@@ -62,13 +62,13 @@ pip install -r requirements-freqai.txt
 ## Running from the example files
 
 An example strategy, an example prediction model, and example config can all be found in
-`freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMPredictionModel.py`,
+`freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMRegressor.py`,
 `config_examples/config_freqai.example.json`, respectively.
 
 Assuming the user has downloaded the necessary data, Freqai can be executed from these templates with:
 
 ```bash
-freqtrade backtesting --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMPredictionModel --strategy-path freqtrade/templates --timerange 20220101-20220201
+freqtrade backtesting --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates --timerange 20220101-20220201
 ```
 
 ## Configuring the bot
@@ -111,7 +111,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** positive float below 1.
 | `shuffle` | Shuffle the training data points during training. Typically for time-series forecasting, this is set to False. **Datatype:** boolean.
 |  |  **Model training parameters**
-| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected library. For example, if the user uses `LightGBMPredictionModel`, then this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html). If the user selects a different model, then this dictionary can contain any parameter from that different model.  <br> **Datatype:** dictionary.
+| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected library. For example, if the user uses `LightGBMRegressor`, then this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html). If the user selects a different model, then this dictionary can contain any parameter from that different model.  <br> **Datatype:** dictionary.
 | `n_estimators` | A common parameter among regressors which sets the number of boosted trees to fit <br> **Datatype:** integer.
 | `learning_rate` | A common parameter among regressors which sets the boosting learning rate. <br> **Datatype:** float.
 | `n_jobs`, `thread_count`, `task_type` | Different libraries use different parameter names to control the number of threads used for parallel processing or whether or not it is a `task_type` of `gpu` or `cpu`. <br> **Datatype:** float.
@@ -356,7 +356,7 @@ and adding this to the `train_period_days`. The units need to be in the base can
 The freqai training/backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel LightGBMPredictionModel --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
 ```
 
 If this command has never been executed with the existing config file, then it will train a new model
