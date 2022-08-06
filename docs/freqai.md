@@ -411,9 +411,17 @@ The Freqai strategy requires the user to include the following lines of code in 
 The user should also include `populate_any_indicators()` from `templates/FreqaiExampleStrategy.py` which builds 
 the feature set with a proper naming convention for the IFreqaiModel to use later.
 
+### Setting classifier targets
+
+FreqAI includes a the `CatboostClassifier` via the flag `--freqaimodel CatboostClassifier`. Typically, the user would set the targets using strings:
+
+```python
+df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'down')
+```
+
 ### Building an IFreqaiModel
 
-FreqAI has multiple example prediction model based libraries such as `Catboost` regression (`freqai/prediction_models/CatboostPredictionModel.py`) and `LightGBM` regression. 
+FreqAI has multiple example prediction model based libraries such as `Catboost` regression (`freqai/prediction_models/CatboostRegressor.py`) and `LightGBM` regression. 
 However, users can customize and create their own prediction models using the `IFreqaiModel` class.
 Users are encouraged to inherit `train()` and `predict()` to let them customize various aspects of their training procedures.
 
