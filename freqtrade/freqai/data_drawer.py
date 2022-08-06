@@ -230,7 +230,7 @@ class FreqaiDataDrawer:
         # dynamic df returned to strategy and plotted in frequi
         mrv_df = self.model_return_values[pair] = pd.DataFrame()
 
-        # if user reused `idenfitier` in config and has historical predictions collected, loadthem
+        # if user reused `identifier` in config and has historical predictions collected, load them
         # so that frequi remains uninterrupted after a crash
         hist_df = self.historic_predictions
         if pair in hist_df:

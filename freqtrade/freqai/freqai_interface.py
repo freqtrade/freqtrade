@@ -526,7 +526,7 @@ class IFreqaiModel(ABC):
         this function will not be called. In that case, "real" predictions
         will be appended to the loaded set of historic predictions.
         :param: df: DataFrame = the dataframe containing the training feature data
-        :param: model: Any = A model which was `fit` using a common librariy such as
+        :param: model: Any = A model which was `fit` using a common library such as
         catboost or lightgbm
         :param: dk: FreqaiDataKitchen = object containing methods for data analysis
         :param: pair: str = current pair
