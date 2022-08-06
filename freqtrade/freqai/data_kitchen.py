@@ -4,7 +4,7 @@ import logging
 import shutil
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -14,14 +14,13 @@ from sklearn import linear_model
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
-
-from sklearn.neighbors import NearestNeighbors
 
 
 SECONDS_IN_DAY = 86400
@@ -505,7 +504,7 @@ class FreqaiDataKitchen:
         point. This metric defines the neighborhood of trained data and is used
         for prediction confidence in the Dissimilarity Index
         """
-        logger.info("computing average mean distance for all training points")
+        # logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(
             self.data_dictionary["train_features"], n_jobs=self.thread_count)
         avg_mean_dist = pairwise.mean(axis=1).mean()
@@ -538,7 +537,7 @@ class FreqaiDataKitchen:
 
             if (len(do_predict) - do_predict.sum()) > 0:
                 logger.info(
-                    f"svm_remove_outliers() tossed {len(do_predict) - do_predict.sum()} predictions"
+                    f"SVM tossed {len(do_predict) - do_predict.sum()} predictions."
                 )
             self.do_predict += do_predict
             self.do_predict -= 1
@@ -564,8 +563,8 @@ class FreqaiDataKitchen:
             ]
 
             logger.info(
-                f"svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}"
-                f" train points from {len(y_pred)}"
+                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f" train points from {len(y_pred)} total points."
             )
 
             # same for test data
@@ -582,8 +581,8 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"svm_remove_outliers() tossed {len(y_pred) - dropped_points.sum()}"
-                f" test points from {len(y_pred)}"
+                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f" test points from {len(y_pred)} total points."
             )
 
         return
@@ -621,7 +620,7 @@ class FreqaiDataKitchen:
 
         else:
 
-            MinPts = len(self.data_dictionary['train_features'].columns)*2
+            MinPts = len(self.data_dictionary['train_features'].columns) * 2
             # measure pairwise distances to train_features.shape[1]*2 nearest neighbours
             neighbors = NearestNeighbors(
                 n_neighbors=MinPts, n_jobs=self.thread_count)

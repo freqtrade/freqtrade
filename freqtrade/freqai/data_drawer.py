@@ -238,9 +238,10 @@ class FreqaiDataDrawer:
                 df_concat = pd.concat([pred_df.iloc[:abs(len_diff)], hist_df[pair]],
                                       ignore_index=True, keys=hist_df[pair].keys())
             else:
-                df_concat = hist_df[pair].tail(len(pred_df.index))
+                df_concat = hist_df[pair].tail(len(pred_df.index)).reset_index(drop=True)
             df_concat = df_concat.fillna(0)
             self.model_return_values[pair] = df_concat
+            logger.info(f'Setting initial FreqUI plots from historical data for {pair}.')
 
         else:
             for label in dk.label_list:
