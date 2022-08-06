@@ -61,7 +61,7 @@ class FreqaiDataKitchen:
         self.data: Dict[Any, Any] = {}
         self.data_dictionary: Dict[Any, Any] = {}
         self.config = config
-        self.freqai_config = config["freqai"]
+        self.freqai_config: Dict[str, Any] = config["freqai"]
         self.full_df: DataFrame = DataFrame()
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
@@ -71,14 +71,14 @@ class FreqaiDataKitchen:
         self.live = live
         self.pair = pair
         self.svm_model: linear_model.SGDOneClassSVM = None
-        self.keras = self.freqai_config.get("keras", False)
+        self.keras: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
         if not self.live:
             if not self.config["timerange"]:
                 raise OperationalException(
                     'Please pass --timerange if you intend to use FreqAI for backtesting.')
             self.full_timerange = self.create_fulltimerange(
-                self.config["timerange"], self.freqai_config.get("train_period_days")
+                self.config["timerange"], self.freqai_config.get("train_period_days", 0)
             )
 
             (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
@@ -203,9 +203,8 @@ class FreqaiDataKitchen:
 
         drop_index = pd.isnull(filtered_dataframe).any(1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
-        if (
-            training_filter
-        ):  # we don't care about total row number (total no. datapoints) in training, we only care
+        if (training_filter):
+            # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple models), we detect here
             labels = unfiltered_dataframe.filter(label_list, axis=1)
@@ -320,8 +319,7 @@ class FreqaiDataKitchen:
         """
         Normalize a set of data using the mean and standard deviation from
         the associated training data.
-        :params:
-        :df: Dataframe to be standardized
+        :param df: Dataframe to be standardized
         """
 
         for item in df.keys():
@@ -338,8 +336,7 @@ class FreqaiDataKitchen:
         """
         Normalize a set of data using the mean and standard deviation from
         the associated training data.
-        :params:
-        :df: Dataframe of predictions to be denormalized
+        :param df: Dataframe of predictions to be denormalized
         """
 
         for label in df.columns:
@@ -367,7 +364,7 @@ class FreqaiDataKitchen:
 
         if not isinstance(train_split, int) or train_split < 1:
             raise OperationalException(
-                "train_period_days must be an integer greater than 0. " f"Got {train_split}."
+                f"train_period_days must be an integer greater than 0. Got {train_split}."
             )
         train_period_days = train_split * SECONDS_IN_DAY
         bt_period = bt_split * SECONDS_IN_DAY
@@ -423,10 +420,9 @@ class FreqaiDataKitchen:
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """
         Given a full dataframe, extract the user desired window
-        :params:
-        :tr: timerange string that we wish to extract from df
-        :df: Dataframe containing all candles to run the entire backtest. Here
-        it is sliced down to just the present training period.
+        :param tr: timerange string that we wish to extract from df
+        :param df: Dataframe containing all candles to run the entire backtest. Here
+                   it is sliced down to just the present training period.
         """
 
         start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
@@ -536,9 +532,7 @@ class FreqaiDataKitchen:
             do_predict = np.where(y_pred == -1, 0, y_pred)
 
             if (len(do_predict) - do_predict.sum()) > 0:
-                logger.info(
-                    f"SVM tossed {len(do_predict) - do_predict.sum()} predictions."
-                )
+                logger.info(f"SVM tossed {len(do_predict) - do_predict.sum()} predictions.")
             self.do_predict += do_predict
             self.do_predict -= 1
 
@@ -568,6 +562,8 @@ class FreqaiDataKitchen:
             )
 
             # same for test data
+            # TODO: This (and the part above) could be refactored into a separate function
+            # to reduce code duplication
             if self.freqai_config['data_split_parameters'].get('test_size', 0.1) != 0:
                 y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
                 dropped_points = np.where(y_pred == -1, 0, y_pred)
@@ -604,17 +600,14 @@ class FreqaiDataKitchen:
             pred_ft_df = self.data_dictionary['prediction_features']
             num_preds = len(pred_ft_df)
             df = pd.concat([train_ft_df, pred_ft_df], axis=0, ignore_index=True)
-            clustering = DBSCAN(
-                                    eps=self.data['DBSCAN_eps'],
-                                    min_samples=self.data['DBSCAN_min_samples'],
-                                    n_jobs=self.thread_count
+            clustering = DBSCAN(eps=self.data['DBSCAN_eps'],
+                                min_samples=self.data['DBSCAN_min_samples'],
+                                n_jobs=self.thread_count
                                 ).fit(df)
             do_predict = np.where(clustering.labels_[-num_preds:] == -1, 0, 1)
 
             if (len(do_predict) - do_predict.sum()) > 0:
-                logger.info(
-                    f"DBSCAN tossed {len(do_predict) - do_predict.sum()} predictions"
-                )
+                logger.info(f"DBSCAN tossed {len(do_predict) - do_predict.sum()} predictions")
             self.do_predict += do_predict
             self.do_predict -= 1
 
@@ -662,9 +655,8 @@ class FreqaiDataKitchen:
     def find_features(self, dataframe: DataFrame) -> None:
         """
         Find features in the strategy provided dataframe
-        :params:
-        dataframe: DataFrame = strategy provided dataframe
-        :returns:
+        :param dataframe: DataFrame = strategy provided dataframe
+        :return:
         features: list = the features to be used for training/prediction
         """
         column_names = dataframe.columns
@@ -772,7 +764,7 @@ class FreqaiDataKitchen:
 
         if backtest_timerange.stopts == 0:
             # typically open ended time ranges do work, however, there are some edge cases where
-            # it does not. accomodating these kinds of edge cases just to allow open-ended
+            # it does not. accommodating these kinds of edge cases just to allow open-ended
             # timerange is not high enough priority to warrant the effort. It is safer for now
             # to simply ask user to add their end date
             raise OperationalException("FreqAI backtesting does not allow open ended timeranges. "
@@ -808,10 +800,9 @@ class FreqaiDataKitchen:
         """
         A model age checker to determine if the model is trustworthy based on user defined
         `expiration_hours` in the configuration file.
-        :params:
-        trained_timestamp: int = The time of training for the most recent model.
-        :returns:
-        bool = If the model is expired or not.
+        :param trained_timestamp: int = The time of training for the most recent model.
+        :return:
+            bool = If the model is expired or not.
         """
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
@@ -873,7 +864,7 @@ class FreqaiDataKitchen:
                 data_load_timerange.stopts = int(time)
         else:  # user passed no live_trained_timerange in config
             trained_timerange.startts = int(
-                time - self.freqai_config.get("train_period_days") * SECONDS_IN_DAY
+                time - self.freqai_config.get("train_period_days", 0) * SECONDS_IN_DAY
             )
             trained_timerange.stopts = int(time)
 
@@ -1053,7 +1044,7 @@ class FreqaiDataKitchen:
         if isinstance(object, np.generic):
             return object.item()
 
-    # Functions containing useful data manpulation examples. but not actively in use.
+    # Functions containing useful data manipulation examples. but not actively in use.
 
     # Possibly phasing these outlier removal methods below out in favor of
     # use_SVM_to_remove_outliers (computationally more efficient and apparently higher performance).

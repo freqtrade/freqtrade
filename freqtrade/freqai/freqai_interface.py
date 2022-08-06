@@ -572,7 +572,7 @@ class IFreqaiModel(ABC):
         return
 
     # Following methods which are overridden by user made prediction models.
-    # See freqai/prediction_models/CatboostPredictionModlel.py for an example.
+    # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 
     @abstractmethod
     def train(self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen) -> Any:
