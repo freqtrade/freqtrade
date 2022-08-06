@@ -75,7 +75,7 @@ def test_process_calls_sendmsg(mocker, default_conf_usdt) -> None:
 
 
 def test_bot_cleanup(mocker, default_conf_usdt, caplog) -> None:
-    mock_cleanup = mocker.patch('freqtrade.freqtradebot.cleanup_db')
+    mock_cleanup = mocker.patch('freqtrade.freqtradebot.Trade.commit')
     coo_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders')
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     freqtrade.cleanup()

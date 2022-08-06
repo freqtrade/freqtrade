@@ -26,7 +26,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
-from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
+from freqtrade.persistence import Order, PairLocks, Trade, init_db
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -150,7 +150,7 @@ class FreqtradeBot(LoggingMixin):
         self.check_for_open_trades()
 
         self.rpc.cleanup()
-        cleanup_db()
+        Trade.commit()
         self.exchange.close()
 
     def startup(self) -> None:
@@ -1701,7 +1701,6 @@ class FreqtradeBot(LoggingMixin):
         self.handle_order_fee(trade, order_obj, order)
 
         trade.update_trade(order_obj)
-        Trade.commit()
 
         if order.get('status') in constants.NON_OPEN_EXCHANGE_STATES:
             # If a entry order was closed, force update on stoploss on exchange
@@ -1725,6 +1724,7 @@ class FreqtradeBot(LoggingMixin):
 
             # Updating wallets when order is closed
             self.wallets.update()
+        Trade.commit()
 
         self.order_close_notify(trade, order_obj, stoploss_order, send_msg)
 
