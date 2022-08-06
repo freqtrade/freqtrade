@@ -4,6 +4,7 @@ import sys
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
+from keys import Keys
 from _429_file_util import delete_429_file, write_to_429_file
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
@@ -22,9 +23,9 @@ def post_request(text, is_from_429_watcher=False):
         print("post_request: " + text + " ---------------------")
 
     if Config.NOTIFIER_ENABLED:
-        telegram_bot_api_token = Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Config.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
+        telegram_bot_api_token = Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
         result = requests.post('https://api.telegram.org/bot' + telegram_bot_api_token +
-                            '/sendMessage?chat_id=' + Config.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST +
+                            '/sendMessage?chat_id=' + Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST +
                             '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
         print(str(result))

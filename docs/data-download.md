@@ -29,6 +29,8 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
                                [--data-format-trades {json,jsongz,hdf5}]
+                               [--trading-mode {spot,margin,futures}]
+                               [--prepend]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -59,6 +61,9 @@ optional arguments:
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
                         `jsongz`).
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
+  --prepend             Allow data prepending.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -154,10 +159,21 @@ freqtrade download-data --exchange binance --pairs .*/USDT
 - To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
 - To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
 - To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
-- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020. Eventually set end dates are ignored.
+- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020.
 - Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 - To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 
+#### Download additional data before the current timerange
+
+Assuming you downloaded all data from 2022 (`--timerange 20220101-`) - but you'd now like to also backtest with earlier data.
+You can do so by using the `--prepend` flag, combined with `--timerange` - specifying an end-date.
+
+``` bash
+freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT --prepend --timerange 20210101-20220101
+```
+
+!!! Note
+    Freqtrade will ignore the end-date in this mode if data is available, updating the end-date to the existing data start point.
 
 ### Data format
 
@@ -193,11 +209,14 @@ usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                               {json,jsongz,hdf5} --format-to
                               {json,jsongz,hdf5} [--erase]
                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+                              [--exchange EXCHANGE]
+                              [--trading-mode {spot,margin,futures}]
+                              [--candle-types {spot,,futures,mark,index,premiumIndex,funding_rate} [{spot,,futures,mark,index,premiumIndex,funding_rate} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --format-from {json,jsongz,hdf5}
                         Source format for data conversion.
@@ -208,6 +227,12 @@ optional arguments:
   -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
+  --candle-types {spot,,futures,mark,index,premiumIndex,funding_rate} [{spot,,futures,mark,index,premiumIndex,funding_rate} ...]
+                        Select candle type to use
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -224,6 +249,7 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
+
 ```
 
 ##### Example converting data
@@ -347,6 +373,7 @@ usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--userdir PATH] [--exchange EXCHANGE]
                            [--data-format-ohlcv {json,jsongz,hdf5}]
                            [-p PAIRS [PAIRS ...]]
+                           [--trading-mode {spot,margin,futures}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -356,8 +383,10 @@ optional arguments:
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `json`).
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
+  --trading-mode {spot,margin,futures}
+                        Select Trading mode
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

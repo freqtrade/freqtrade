@@ -6,7 +6,6 @@ from wao.wao_strategy_controller import WAOStrategyController
 
 
 class WAOStrategy(IStrategy):
-
     # Optional order type mapping
     order_types = {
         'buy': 'market',

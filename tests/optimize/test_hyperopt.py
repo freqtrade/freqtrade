@@ -10,39 +10,40 @@ from filelock import Timeout
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
-from freqtrade.strategy.hyper import IntParameter
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from freqtrade.strategy import IntParameter
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
 def generate_result_metrics():
     return {
-            'trade_count': 1,
-            'total_trades': 1,
-            'avg_profit': 0.1,
-            'total_profit': 0.001,
-            'profit': 0.01,
-            'duration': 20.0,
-            'wins': 1,
-            'draws': 0,
-            'losses': 0,
-            'profit_mean': 0.01,
-            'profit_total_abs': 0.001,
-            'profit_total': 0.01,
-            'holding_avg': timedelta(minutes=20),
-            'max_drawdown': 0.001,
-            'max_drawdown_abs': 0.001,
-            'loss': 0.001,
-            'is_initial_point': 0.001,
-            'is_best': 1,
-        }
+        'trade_count': 1,
+        'total_trades': 1,
+        'avg_profit': 0.1,
+        'total_profit': 0.001,
+        'profit': 0.01,
+        'duration': 20.0,
+        'wins': 1,
+        'draws': 0,
+        'losses': 0,
+        'profit_mean': 0.01,
+        'profit_total_abs': 0.001,
+        'profit_total': 0.01,
+        'holding_avg': timedelta(minutes=20),
+        'max_drawdown': 0.001,
+        'max_drawdown_abs': 0.001,
+        'loss': 0.001,
+        'is_initial_point': 0.001,
+        'is_random': False,
+        'is_best': 1,
+    }
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -144,7 +145,7 @@ def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--stake-amount', '1',
         '--starting-balance', '0.5'
     ]
@@ -247,6 +248,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
             'total_profit': 0,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'is_initial_point': False,
+            'is_random': False,
             'is_best': True
         }
     )
@@ -329,8 +331,8 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     # Should be called for historical candle data
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -355,9 +357,10 @@ def test_hyperopt_format_results(hyperopt):
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
                                  "is_open": [False, False, False, True],
+                                 "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "exit_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_EXIT]
                                  }),
         'config': hyperopt.config,
         'locks': [],
@@ -365,6 +368,9 @@ def test_hyperopt_format_results(hyperopt):
         'rejected_signals': 2,
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
+        'canceled_trade_entries': 0,
+        'canceled_entry_orders': 0,
+        'replaced_entry_orders': 0,
         'backtest_start_time': 1619718665,
         'backtest_end_time': 1619718665,
     }
@@ -425,15 +431,19 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
                                  "is_open": [False, False, False, True],
+                                 "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 "exit_reason": [ExitType.ROI, ExitType.STOP_LOSS,
+                                                 ExitType.ROI, ExitType.FORCE_EXIT]
                                  }),
         'config': hyperopt_conf,
         'locks': [],
         'rejected_signals': 20,
         'timedout_entry_orders': 0,
         'timedout_exit_orders': 0,
+        'canceled_trade_entries': 0,
+        'canceled_entry_orders': 0,
+        'replaced_entry_orders': 0,
         'final_balance': 1000,
     }
 
@@ -499,7 +509,6 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
     hyperopt.min_date = Arrow(2017, 12, 10)
     hyperopt.max_date = Arrow(2017, 12, 13)
     hyperopt.init_spaces()
-    hyperopt.dimensions = hyperopt.dimensions
     generate_optimizer_value = hyperopt.generate_optimizer(list(optimizer_param.values()))
     assert generate_optimizer_value == response_expected
 
@@ -686,8 +695,8 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
 
-    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -759,8 +768,8 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     assert dumper.called
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -801,8 +810,8 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     assert dumper.called
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -849,8 +858,10 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
         'spaces': ['all']
     })
     hyperopt = Hyperopt(hyperopt_conf)
+    hyperopt.backtesting.exchange.get_max_leverage = MagicMock(return_value=1.0)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
+    assert hyperopt.backtesting.strategy.bot_loop_started is True
 
     assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35

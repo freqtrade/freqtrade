@@ -12,7 +12,7 @@ from freqtrade.constants import DEFAULT_CONFIG
 
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
-ARGS_STRATEGY = ["strategy", "strategy_path"]
+ARGS_STRATEGY = ["strategy", "strategy_path", "recursive_strategy_search"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
@@ -37,7 +37,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
-ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
+ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized",
+                        "recursive_strategy_search"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
@@ -48,7 +49,8 @@ ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
-                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
+                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all",
+                   "trading_mode"]
 
 ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
                       "list_pairs_print_json", "exchange"]
@@ -60,15 +62,18 @@ ARGS_BUILD_CONFIG = ["config"]
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
-ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
+
+ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "exchange", "trading_mode",
+                                               "candle_types"]
 
 ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]
 
-ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
+ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs", "trading_mode"]
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "include_inactive",
                       "timerange", "download_trades", "exchange", "timeframes",
-                      "erase", "dataformat_ohlcv", "dataformat_trades"]
+                      "erase", "dataformat_ohlcv", "dataformat_trades", "trading_mode",
+                      "prepend_data"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
@@ -77,7 +82,9 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe", "plot_auto_open", ]
 
-ARGS_INSTALL_UI = ["erase_ui_only", 'ui_version']
+ARGS_CONVERT_DB = ["db_url", "db_url_from"]
+
+ARGS_INSTALL_UI = ["erase_ui_only", "ui_version"]
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
@@ -93,6 +100,9 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperoptexportfilename", "hyperopt_show_no_header",
                       "disableparamexport", "backtest_breakdown"]
+
+ARGS_ANALYZE_ENTRIES_EXITS = ["exportfilename", "analysis_groups", "enter_reason_list",
+                              "exit_reason_list", "indicator_list"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
@@ -175,8 +185,9 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtesting, start_backtesting_show,
-                                        start_convert_data, start_convert_trades,
+        from freqtrade.commands import (start_analysis_entries_exits, start_backtesting,
+                                        start_backtesting_show, start_convert_data,
+                                        start_convert_db, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
                                         start_hyperopt, start_hyperopt_list, start_hyperopt_show,
                                         start_install_ui, start_list_data, start_list_exchanges,
@@ -276,6 +287,13 @@ class Arguments:
         backtesting_show_cmd.set_defaults(func=start_backtesting_show)
         self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
 
+        # Add backtesting analysis subcommand
+        analysis_cmd = subparsers.add_parser('backtesting-analysis',
+                                             help='Backtest Analysis module.',
+                                             parents=[_common_parser])
+        analysis_cmd.set_defaults(func=start_analysis_entries_exits)
+        self._build_args(optionlist=ARGS_ANALYZE_ENTRIES_EXITS, parser=analysis_cmd)
+
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
                                          parents=[_common_parser, _strategy_parser])
@@ -368,6 +386,14 @@ class Arguments:
         )
         test_pairlist_cmd.set_defaults(func=start_test_pairlist)
         self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
+
+        # Add db-convert subcommand
+        convert_db = subparsers.add_parser(
+            "convert-db",
+            help="Migrate database to different system",
+        )
+        convert_db.set_defaults(func=start_convert_db)
+        self._build_args(optionlist=ARGS_CONVERT_DB, parser=convert_db)
 
         # Add install-ui subcommand
         install_ui_cmd = subparsers.add_parser(

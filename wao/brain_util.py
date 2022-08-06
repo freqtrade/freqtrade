@@ -5,7 +5,7 @@ import os
 import time
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
-from wao.notifier import post_request
+from wao.error_watcher import Error_Watcher
 import pickle
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
@@ -30,10 +30,9 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours
-    Config.ROMEO_D_UP_PERCENTAGE = dup if is_test_mode else 0.1
+    Config.ROMEO_D_UP_PERCENTAGE = dup
 
     romeo = Romeo.instance(is_test_mode, True)
-    post_request(str(romeo.__hash__()))
     BrainConfig.ROMEO_POOL[coin] = romeo
     romeo.start()
 
@@ -59,23 +58,58 @@ def perform_create_429_watcher():
     observer.join()
 
 
-def setup_429():
+def perform_create_error_watcher():
+    print("perform_create_error_watcher: watching:- " + str(BrainConfig._WAO_LOGS_DIRECTORY))
+    event_handler = Error_Watcher()
+    observer = watchdog.observers.Observer()
+    observer.schedule(event_handler, path=BrainConfig._WAO_LOGS_DIRECTORY, recursive=True)
+    # Start the observer
+    observer.start()
+    try:
+        while True:
+            # Set the thread sleep time
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+
+def create_watchers():
     if Config.ENABLE_429_SOLUTION:
         __create_429_directory()
         __create_429_watcher()
+    if BrainConfig.IS_ERROR_WATCHER_ENABLED:
+        __create_error_watcher()
 
 
 def clear_cumulative_value():
     # delete cumulative file
-    file_name = BrainConfig.CUMULATIVE_PROFIT_FILE_PATH
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_FILE_PATH)
+    _delete_file(BrainConfig.CUMULATIVE_PROFIT_BINANCE_FILE_PATH)
+    _delete_file(BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH)
+
+
+def _delete_file(file_name):
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def create_initial_account_balance_binance_file():
+    file_path = BrainConfig.INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH
+    if not os.path.exists(file_path):
+        with open(file_path, 'w+') as file:
+            file.write("")
+        file.close()
 
 
 def __create_429_directory():
     print("create_429_directory:..." + BrainConfig._429_DIRECTORY + "...")
     if not os.path.exists(BrainConfig._429_DIRECTORY):
         os.mkdir(BrainConfig._429_DIRECTORY)
+
+
+def __create_error_watcher():
+    threading.Thread(target=perform_create_error_watcher).start()
 
 
 def __create_429_watcher():
@@ -86,3 +120,12 @@ def delete_backtest_table_file():
     file_name = BrainConfig.BACKTEST_SIGNAL_LIST_PICKLE_FILE_PATH
     if os.path.isfile(file_name):
         os.remove(file_name)
+
+
+def is_romeo_alive(coin):
+    return BrainConfig.ROMEO_POOL.get(coin) is not None
+
+
+def remove_from_pool(coin):
+    if is_romeo_alive(coin):
+        del BrainConfig.ROMEO_POOL[coin]

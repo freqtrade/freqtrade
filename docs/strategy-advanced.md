@@ -49,7 +49,7 @@ from freqtrade.exchange import timeframe_to_prev_date
 
 class AwesomeStrategy(IStrategy):
     def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: 'datetime', **kwargs) -> bool:
         # Obtain pair dataframe.
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -77,47 +77,47 @@ class AwesomeStrategy(IStrategy):
 
 ***
 
-## Buy Tag
+## Enter Tag
 
 When your strategy has multiple buy signals, you can name the signal that triggered.
-Then you can access you buy signal on `custom_sell`
+Then you can access you buy signal on `custom_exit`
 
 ```python
-def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (dataframe['rsi'] < 35) &
             (dataframe['volume'] > 0)
         ),
-        ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+        ['enter_long', 'enter_tag']] = (1, 'buy_signal_rsi')
 
     return dataframe
 
-def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, **kwargs):
+def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                current_profit: float, **kwargs):
     dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
     last_candle = dataframe.iloc[-1].squeeze()
-    if trade.buy_tag == 'buy_signal_rsi' and last_candle['rsi'] > 80:
+    if trade.enter_tag == 'buy_signal_rsi' and last_candle['rsi'] > 80:
         return 'sell_signal_rsi'
     return None
 
 ```
 
 !!! Note
-    `buy_tag` is limited to 100 characters, remaining data will be truncated.
+    `enter_tag` is limited to 100 characters, remaining data will be truncated.
 
 ## Exit tag
 
 Similar to [Buy Tagging](#buy-tag), you can also specify a sell tag.
 
 ``` python
-def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
     dataframe.loc[
         (
             (dataframe['rsi'] > 70) &
             (dataframe['volume'] > 0)
         ),
-        ['sell', 'exit_tag']] = (1, 'exit_rsi')
+        ['exit_long', 'exit_tag']] = (1, 'exit_rsi')
 
     return dataframe
 ```
@@ -125,7 +125,7 @@ def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 The provided exit-tag is then used as sell-reason - and shown as such in backtest results.
 
 !!! Note
-    `sell_reason` is limited to 100 characters, remaining data will be truncated.
+    `exit_reason` is limited to 100 characters, remaining data will be truncated.
 
 ## Strategy version
 

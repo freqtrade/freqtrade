@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
+from freqtrade.optimize.hyperopt_loss.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
 
@@ -85,6 +85,7 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SharpeHyperOptLoss",
     "SharpeHyperOptLossDaily",
     "MaxDrawDownHyperOptLoss",
+    "MaxDrawDownRelativeHyperOptLoss",
     "CalmarHyperOptLoss",
     "ProfitDrawDownHyperOptLoss",
 

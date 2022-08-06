@@ -1,15 +1,16 @@
 # pragma pylint: disable=missing-docstring,C0103
 
 import datetime
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.misc import (decimals_per_coin, file_dump_json, file_load_json, format_ms_time,
-                            pair_to_filename, parse_db_uri_for_logging, plural, render_template,
-                            render_template_with_fallback, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2, shorten_date)
+from freqtrade.misc import (decimals_per_coin, deep_merge_dicts, file_dump_json, file_load_json,
+                            format_ms_time, pair_to_filename, parse_db_uri_for_logging, plural,
+                            render_template, render_template_with_fallback, round_coin_value,
+                            safe_value_fallback, safe_value_fallback2, shorten_date)
 
 
 def test_decimals_per_coin():
@@ -72,14 +73,17 @@ def test_file_load_json(mocker, testdatadir) -> None:
     ("ETH/BTC", 'ETH_BTC'),
     ("ETH/USDT", 'ETH_USDT'),
     ("ETH/USDT:USDT", 'ETH_USDT_USDT'),  # swap with USDT as settlement currency
-    ("ETH/USDT:USDT-210625", 'ETH_USDT_USDT_210625'),  # expiring futures
+    ("ETH/USD:USD", 'ETH_USD_USD'),  # swap with USD as settlement currency
+    ("AAVE/USD:USD", 'AAVE_USD_USD'),  # swap with USDT as settlement currency
+    ("ETH/USDT:USDT-210625", 'ETH_USDT_USDT-210625'),  # expiring futures
     ("Fabric Token/ETH", 'Fabric_Token_ETH'),
     ("ETHH20", 'ETHH20'),
     (".XBTBON2H", '_XBTBON2H'),
     ("ETHUSD.d", 'ETHUSD_d'),
-    ("ADA-0327", 'ADA_0327'),
-    ("BTC-USD-200110", 'BTC_USD_200110'),
-    ("F-AKRO/USDT", 'F_AKRO_USDT'),
+    ("ADA-0327", 'ADA-0327'),
+    ("BTC-USD-200110", 'BTC-USD-200110'),
+    ("BTC-PERP:USDT", 'BTC-PERP_USDT'),
+    ("F-AKRO/USDT", 'F-AKRO_USDT'),
     ("LC+/ETH", 'LC__ETH'),
     ("CMT@18/ETH", 'CMT_18_ETH'),
     ("LBTC:1022/SAI", 'LBTC_1022_SAI'),
@@ -202,3 +206,16 @@ def test_render_template_fallback(mocker):
 def test_parse_db_uri_for_logging(conn_url, expected) -> None:
 
     assert parse_db_uri_for_logging(conn_url) == expected
+
+
+def test_deep_merge_dicts():
+    a = {'first': {'rows': {'pass': 'dog', 'number': '1', 'test': None}}}
+    b = {'first': {'rows': {'fail': 'cat', 'number': '5', 'test': 'asdf'}}}
+    res = {'first': {'rows': {'pass': 'dog', 'fail': 'cat', 'number': '5', 'test': 'asdf'}}}
+    res2 = {'first': {'rows': {'pass': 'dog', 'fail': 'cat', 'number': '1', 'test': None}}}
+    assert deep_merge_dicts(b, deepcopy(a)) == res
+
+    assert deep_merge_dicts(a, deepcopy(b)) == res2
+
+    res2['first']['rows']['test'] = 'asdf'
+    assert deep_merge_dicts(a, deepcopy(b), allow_null_overrides=False) == res2

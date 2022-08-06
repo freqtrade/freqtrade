@@ -56,7 +56,7 @@ Currently, the arguments are:
 
 * `results`: DataFrame containing the resulting trades.
     The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
-    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, sell_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
+    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, exit_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the timerange used
 * `min_date`: End date of the timerange used
@@ -97,6 +97,23 @@ class MyAwesomeStrategy(IStrategy):
 
 !!! Note
     All overrides are optional and can be mixed/matched as necessary.
+
+### Dynamic parameters
+
+Parameters can also be defined dynamically, but must be available to the instance once the * [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
+
+``` python
+
+class MyAwesomeStrategy(IStrategy):
+
+    def bot_start(self, **kwargs) -> None:
+        self.buy_adx = IntParameter(20, 30, default=30, optimize=True)
+
+    # ...
+```
+
+!!! Warning
+    Parameters created this way will not show up in the `list-strategies` parameter count.
 
 ### Overriding Base estimator
 

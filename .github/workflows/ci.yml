@@ -13,32 +13,36 @@ on:
   schedule:
     - cron:  '0 5 * * 4'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_linux:
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-20.04 ]
+        os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (linux)
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
@@ -62,15 +66,15 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-      if: matrix.python-version != '3.9'
+      if: matrix.python-version != '3.9' || matrix.os != 'ubuntu-22.04'
 
     - name: Tests incl. ccxt compatibility tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
-      if: matrix.python-version == '3.9'
+      if: matrix.python-version == '3.9' && matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
+      if: (runner.os == 'Linux' && matrix.python-version == '3.9')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
@@ -78,11 +82,13 @@ jobs:
         # Allow failure for coveralls
         coveralls || true
 
-    - name: Backtesting
+    - name: Backtesting (multi)
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+        freqtrade new-strategy -s AwesomeStrategy
+        freqtrade new-strategy -s AwesomeStrategyMin --template minimal
+        freqtrade backtesting --datadir tests/testdata --strategy-list AwesomeStrategy AwesomeStrategyMin -i 5m
 
     - name: Hyperopt
       run: |
@@ -100,7 +106,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -121,19 +127,19 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache_dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: ~/dependencies/
         key: ${{ runner.os }}-dependencies
 
     - name: pip cache (macOS)
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
@@ -158,22 +164,14 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-
-    - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.8')
-      env:
-        # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
-        COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
-      run: |
-        # Allow failure for coveralls
-        coveralls -v  || true
+        pytest --random-order
 
     - name: Backtesting
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
+        freqtrade new-strategy -s AwesomeStrategyAdv --template advanced
+        freqtrade backtesting --datadir tests/testdata --strategy AwesomeStrategyAdv
 
     - name: Hyperopt
       run: |
@@ -213,12 +211,12 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Pip cache (Windows)
-      uses: actions/cache@preview
+      uses: actions/cache@v3
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ matrix.os }}-${{ matrix.python-version }}-pip
@@ -229,7 +227,7 @@ jobs:
 
     - name: Tests
       run: |
-        pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+        pytest --random-order
 
     - name: Backtesting
       run: |
@@ -249,7 +247,7 @@ jobs:
 
     - name: Mypy
       run: |
-        mypy freqtrade scripts
+        mypy freqtrade scripts tests
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
@@ -258,6 +256,21 @@ jobs:
           severity: error
           details: Test Failed
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  mypy_version_check:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: pre-commit dependencies
+      run: |
+        pip install pyaml
+        python build_helpers/pre_commit_update.py
 
   docs_check:
     runs-on: ubuntu-20.04
@@ -269,9 +282,9 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: "3.10"
 
     - name: Documentation build
       run: |
@@ -287,19 +300,14 @@ jobs:
           details: Freqtrade doc test failed!
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
-  cleanup-prior-runs:
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Cleanup previous runs on this branch
-      uses: rokroskar/workflow-run-cleanup-action@v0.3.3
-      if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
-      env:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
+    # Discord notification can't handle schedule events
+    if: (github.event_name != 'schedule')
+    permissions:
+      repository-projects: read
     steps:
 
     - name: Check user permission
@@ -319,7 +327,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
     runs-on: ubuntu-20.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -328,9 +336,9 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: "3.9"
 
     - name: Extract branch name
       shell: bash
@@ -391,7 +399,7 @@ jobs:
 
     - name: Discord notification
       uses: rjstone/discord-webhook-notify@v1
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
       with:
           severity: info
           details: Deploy Succeeded!

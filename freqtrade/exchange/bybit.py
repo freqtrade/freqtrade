@@ -1,7 +1,8 @@
 """ Bybit exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, List, Tuple
 
+from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.exchange import Exchange
 
 
@@ -20,4 +21,25 @@ class Bybit(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
+        "ccxt_futures_name": "linear"
     }
+
+    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.FUTURES, MarginMode.CROSS),
+        # (TradingMode.FUTURES, MarginMode.ISOLATED)
+    ]
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        # ccxt defaults to swap mode.
+        config = {}
+        if self.trading_mode == TradingMode.SPOT:
+            config.update({
+                "options": {
+                    "defaultType": "spot"
+                }
+            })
+        config.update(super()._ccxt_config)
+        return config

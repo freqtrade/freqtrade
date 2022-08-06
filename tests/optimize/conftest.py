@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import ExitType, RunMode
 from freqtrade.optimize.hyperopt import Hyperopt
 from tests.conftest import patch_exchange
 
@@ -44,7 +44,7 @@ def hyperopt_results():
             'profit_abs': [-0.2, 0.4, -0.2, 0.6],
             'trade_duration': [10, 30, 10, 10],
             'amount': [0.1, 0.1, 0.1, 0.1],
-            'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.STOP_LOSS, SellType.ROI],
+            'exit_reason': [ExitType.STOP_LOSS, ExitType.ROI, ExitType.STOP_LOSS, ExitType.ROI],
             'open_date':
             [
                 datetime(2019, 1, 1, 9, 15, 0),

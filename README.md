@@ -9,10 +9,6 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 ![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
 
-## Sponsored promotion
-
-[![tokenbot-promo](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/TokenBot-Freqtrade-banner.png)](https://tokenbot.com/?utm_source=github&utm_medium=freqtrade&utm_campaign=algodevs)
-
 ## Disclaimer
 
 This software is for educational purposes only. Do not risk money which
@@ -38,6 +34,14 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Kraken](https://kraken.com/)
 - [X] [OKX](https://okx.com/) (Former OKEX)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+
+### Supported Futures Exchanges (experimental)
+
+- [X] [Binance](https://www.binance.com/)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [OKX](https://okx.com/).
+
+Please make sure to read the [exchange specific notes](docs/exchanges.md), as well as the [trading with leverage](docs/leverage.md) documentation before diving in.
 
 ### Community tested
 
@@ -128,7 +132,8 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 - `/stopbuy`: Stop entering new trades.
 - `/status <trade_id>|[table]`: Lists all or specific open trades.
 - `/profit [<n>]`: Lists cumulative profit from all finished trades, over the last n days.
-- `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
+- `/forceexit <trade_id>|all`: Instantly exits the given trade (Ignoring `minimum_roi`).
+- `/fx <trade_id>|all`: Alias to `/forceexit`
 - `/performance`: Show performance of each finished trade grouped by pair
 - `/balance`: Show account balance per currency.
 - `/daily <n>`: Shows profit or loss per day, over the last n days.
