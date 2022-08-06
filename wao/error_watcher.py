@@ -1,6 +1,7 @@
 import subprocess
 import watchdog.events
 import watchdog.observers
+import sys
 
 from wao.brain_config import BrainConfig
 
