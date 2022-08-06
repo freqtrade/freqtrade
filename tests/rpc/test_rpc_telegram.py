@@ -342,7 +342,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     # close_rate should not be included in the message as the trade is not closed
     # and no line should be empty
     lines = msg_mock.call_args_list[0][0][0].split('\n')
-    assert '' not in lines
+    assert '' not in lines[:-1]
     assert 'Close Rate' not in ''.join(lines)
     assert 'Close Profit' not in ''.join(lines)
 
@@ -357,7 +357,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     telegram._status(update=update, context=context)
 
     lines = msg_mock.call_args_list[0][0][0].split('\n')
-    assert '' not in lines
+    assert '' not in lines[:-1]
     assert 'Close Rate' not in ''.join(lines)
     assert 'Close Profit' not in ''.join(lines)
 

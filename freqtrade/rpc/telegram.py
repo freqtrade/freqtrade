@@ -457,11 +457,12 @@ class Telegram(RPCHandler):
         """
         Prepare details of trade with entry adjustment enabled
         """
-        lines: List[str] = []
+        lines_detail: List[str] = []
         if len(filled_orders) > 0:
             first_avg = filled_orders[0]["safe_price"]
 
         for x, order in enumerate(filled_orders):
+            lines: List[str] = []
             if order['is_open'] is True:
                 continue
             wording = 'Entry' if order['ft_is_entry'] else 'Exit'
@@ -507,7 +508,8 @@ class Telegram(RPCHandler):
                 # minutes, seconds = divmod(remainder, 60)
                 # lines.append(
                 # f"({days}d {hours}h {minutes}m {seconds}s from previous {wording.lower()})")
-        return lines
+            lines_detail.append("\n".join(lines))
+        return lines_detail
 
     @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
@@ -541,7 +543,6 @@ class Telegram(RPCHandler):
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
             position_adjust = self._config.get('position_adjustment_enable', False)
             max_entries = self._config.get('max_entry_position_adjustment', -1)
-            messages = []
             for r in results:
                 r['open_date_hum'] = arrow.get(r['open_date']).humanize()
                 r['num_entries'] = len([o for o in r['orders'] if o['ft_is_entry']])
@@ -594,12 +595,16 @@ class Telegram(RPCHandler):
                 lines_detail = self._prepare_order_details(
                     r['orders'], r['quote_currency'], r['is_open'])
                 lines.extend(lines_detail if lines_detail else "")
+                msg = ''
+                for line in lines:
+                    if line:
+                        if (len(msg) + len(line) + 1) < MAX_MESSAGE_LENGTH:
+                            msg += line + '\n'
+                        else:
+                            self._send_msg(msg.format(**r))
+                            msg = "*Trade ID:* `{trade_id}` - continued\n" + line + '\n'
 
-                # Filter empty lines using list-comprehension
-                messages.append("\n".join([line for line in lines if line]).format(**r))
-
-            for msg in messages:
-                self._send_msg(msg)
+                self._send_msg(msg.format(**r))
 
         except RPCException as e:
             self._send_msg(str(e))
