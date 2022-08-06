@@ -876,7 +876,7 @@ class RPC:
             lock.active = False
             lock.lock_end_time = datetime.now(timezone.utc)
 
-        PairLock.query.session.commit()
+        Trade.commit()
 
         return self._rpc_locks()
 

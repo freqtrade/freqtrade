@@ -196,7 +196,7 @@ class Order(_DECL_BASE):
         if filtered_orders:
             oobj = filtered_orders[0]
             oobj.update_from_ccxt_object(order)
-            Order.query.session.commit()
+            Trade.commit()
         else:
             logger.warning(f"Did not find order for {order}.")
 
@@ -1147,6 +1147,10 @@ class Trade(_DECL_BASE, LocalTrade):
     @staticmethod
     def commit():
         Trade.query.session.commit()
+
+    @staticmethod
+    def rollback():
+        Trade.query.session.rollback()
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,

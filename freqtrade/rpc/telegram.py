@@ -70,7 +70,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             )
             return wrapper
         # Rollback session to avoid getting data stored in a transaction.
-        Trade.query.session.rollback()
+        Trade.rollback()
         logger.debug(
             'Executing handler: %s for chat_id: %s',
             command_handler.__name__,

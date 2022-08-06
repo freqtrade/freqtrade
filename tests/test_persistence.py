@@ -2375,6 +2375,7 @@ def test_Trade_object_idem():
         'delete',
         'session',
         'commit',
+        'rollback',
         'query',
         'open_date',
         'get_best_pair',
