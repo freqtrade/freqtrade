@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from catboost import CatBoostClassifier, Pool
+from lightgbm import LGBMClassifier
 
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
 
@@ -9,7 +9,7 @@ from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressio
 logger = logging.getLogger(__name__)
 
 
-class CatboostClassifier(BaseRegressionModel):
+class LightGBMClassifier(BaseRegressionModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which
@@ -24,18 +24,15 @@ class CatboostClassifier(BaseRegressionModel):
         all the training and test data/labels.
         """
 
-        train_data = Pool(
-            data=data_dictionary["train_features"],
-            label=data_dictionary["train_labels"],
-            weight=data_dictionary["train_weights"],
-        )
+        if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
+            eval_set = None
+        else:
+            eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])
+        X = data_dictionary["train_features"]
+        y = data_dictionary["train_labels"]
 
-        cbr = CatBoostClassifier(
-            allow_writing_files=False,
-            loss_function='MultiClass',
-            **self.model_training_parameters,
-        )
+        model = LGBMClassifier(**self.model_training_parameters)
 
-        cbr.fit(train_data)
+        model.fit(X=X, y=y, eval_set=eval_set)
 
-        return cbr
+        return model

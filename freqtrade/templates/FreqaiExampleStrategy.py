@@ -155,6 +155,10 @@ class FreqaiExampleStrategy(IStrategy):
                     - 1
                 )
 
+                # Classifiers are typically set up with strings as targets:
+                # df['&s-up_or_down'] = np.where( df["close"].shift(-100) >
+                #                                 df["close"], 'up', 'down')
+
                 # If user wishes to use multiple targets, they can add more by
                 # appending more columns with '&'. User should keep in mind that multi targets
                 # requires a multioutput prediction model such as
