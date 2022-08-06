@@ -587,27 +587,33 @@ class Telegram(RPCHandler):
                     lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
                                  "`({stoploss_current_dist_ratio:.2%})`")
                     if r['open_order']:
-                        if r['exit_order_status']:
-                            lines.append("*Open Order:* `{open_order}` - `{exit_order_status}`")
-                        else:
-                            lines.append("*Open Order:* `{open_order}`")
+                        lines.append(
+                            "*Open Order:* `{open_order}`"
+                            + "- `{exit_order_status}`" if r['exit_order_status'] else "")
 
                 lines_detail = self._prepare_order_details(
                     r['orders'], r['quote_currency'], r['is_open'])
                 lines.extend(lines_detail if lines_detail else "")
-                msg = ''
-                for line in lines:
-                    if line:
-                        if (len(msg) + len(line) + 1) < MAX_MESSAGE_LENGTH:
-                            msg += line + '\n'
-                        else:
-                            self._send_msg(msg.format(**r))
-                            msg = "*Trade ID:* `{trade_id}` - continued\n" + line + '\n'
-
-                self._send_msg(msg.format(**r))
+                self.__send_status_msg(lines, r)
 
         except RPCException as e:
             self._send_msg(str(e))
+
+    def __send_status_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
+        """
+        Send status message.
+        """
+        msg = ''
+
+        for line in lines:
+            if line:
+                if (len(msg) + len(line) + 1) < MAX_MESSAGE_LENGTH:
+                    msg += line + '\n'
+                else:
+                    self._send_msg(msg.format(**r))
+                    msg = "*Trade ID:* `{trade_id}` - continued\n" + line + '\n'
+
+        self._send_msg(msg.format(**r))
 
     @authorized_only
     def _status_table(self, update: Update, context: CallbackContext) -> None:
