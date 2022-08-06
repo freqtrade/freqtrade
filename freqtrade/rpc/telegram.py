@@ -549,7 +549,7 @@ class Telegram(RPCHandler):
                 r['exit_reason'] = r.get('exit_reason', "")
                 lines = [
                     "*Trade ID:* `{trade_id}`" +
-                    ("` (since {open_date_hum})`" if r['is_open'] else ""),
+                    (" `(since {open_date_hum})`" if r['is_open'] else ""),
                     "*Current Pair:* {pair}",
                     "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
                     "*Leverage:* `{leverage}`" if r.get('leverage') else "",

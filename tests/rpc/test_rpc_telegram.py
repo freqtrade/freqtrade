@@ -364,6 +364,22 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert msg_mock.call_count == 2
     assert 'LTC/BTC' in msg_mock.call_args_list[0][0][0]
 
+    mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 500)
+
+    msg_mock.reset_mock()
+    context = MagicMock()
+    context.args = ["2"]
+    telegram._status(update=update, context=context)
+
+    assert msg_mock.call_count == 2
+
+    msg1 = msg_mock.call_args_list[0][0][0]
+    msg2 = msg_mock.call_args_list[1][0][0]
+
+    assert 'Close Rate' not in msg1
+    assert 'Trade ID:* `2`' in msg1
+    assert 'Trade ID:* `2` - continued' in msg2
+
 
 def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(
