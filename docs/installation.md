@@ -326,6 +326,13 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
+Patch conda libta-lib
+
+```bash
+cd build_helpers
+bash install_ta-lib_conda.sh
+```
+
 ### Congratulations
 
 [You are ready](#you-are-ready), and run the bot
