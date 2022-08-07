@@ -109,6 +109,9 @@ def test_api_ui_fallback(botclient, mocker):
     rc = client_get(client, "/something")
     assert rc.status_code == 200
 
+    rc = client_get(client, "/something.js")
+    assert rc.status_code == 200
+
     # Test directory traversal without mock
     rc = client_get(client, '%2F%2F%2Fetc/passwd')
     assert rc.status_code == 200
