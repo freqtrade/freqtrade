@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # 2.14: Add entry/exit orders to trade response
 # 2.15: Add backtest history endpoints
 # 2.16: Additional daily metrics
-# 2.16: Forceentry - leverage, partial force_exit
+# 2.17: Forceentry - leverage, partial force_exit
 API_VERSION = 2.17
 
 # Public API, requires no auth.
