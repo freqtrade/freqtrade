@@ -279,15 +279,15 @@ class FreqaiDataDrawer:
         # own return array in the same shape, we need to figure out how the size has changed
         # and adapt our stored/returned info accordingly.
 
-        # length_difference = len(self.model_return_values[pair]) - len_df
-        # i = 0
+        length_difference = len(self.model_return_values[pair]) - len_df
+        i = 0
 
-        # if length_difference == 0:
-        #     i = 1
-        # elif length_difference > 0:
-        #     i = length_difference + 1
+        if length_difference == 0:
+            i = 1
+        elif length_difference > 0:
+            i = length_difference + 1
 
-        df = self.model_return_values[pair] = self.model_return_values[pair].shift(-1)
+        df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
 
         if pair in self.historic_predictions:
             hp_df = self.historic_predictions[pair]
@@ -320,11 +320,11 @@ class FreqaiDataDrawer:
             for key in df.keys():
                 self.historic_predictions[pair][key].iloc[-1] = df[key].iloc[-1]
 
-        # if length_difference < 0:
-        #     prepend_df = pd.DataFrame(
-        #         np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
-        #     )
-        #     df = pd.concat([prepend_df, df], axis=0)
+        if length_difference < 0:
+            prepend_df = pd.DataFrame(
+                np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
+            )
+            df = pd.concat([prepend_df, df], axis=0)
 
     def attach_return_values_to_return_dataframe(
             self, pair: str, dataframe: DataFrame) -> DataFrame:
@@ -355,7 +355,6 @@ class FreqaiDataDrawer:
             dataframe[f"{label}_mean"] = 0
             dataframe[f"{label}_std"] = 0
 
-        # dataframe['prediction'] = 0
         dataframe["do_predict"] = 0
 
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
