@@ -7,7 +7,7 @@
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
-       "entry": 10,
+        "entry": 10,
         "exit": 30,
         "unit": "minutes"
     },
@@ -38,7 +38,7 @@
         "stoploss_on_exchange_interval": 60,
         "stoploss_on_exchange_limit_ratio": 0.99
     },
-     "order_time_in_force": {
+    "order_time_in_force": {
         "entry": "gtc",
         "exit": "gtc"
     },

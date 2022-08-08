@@ -12,6 +12,9 @@ class bbrsi_scalp(WAOStrategy):
     brain = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
+        self.coin = str(config.get('pairs')[0]).split('/')[0]
+        if self.coin == 'BTC' or self.coin == 'ADA':
+            self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
         # self.coin = str(config.get('pairs')[0]).split('/')[0]
 
@@ -47,9 +50,9 @@ class bbrsi_scalp(WAOStrategy):
     process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = True
 
     def informative_pairs(self):
         """
