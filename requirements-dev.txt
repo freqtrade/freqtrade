@@ -5,7 +5,7 @@
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
-flake8==5.0.1
+flake8==5.0.4
 flake8-tidy-imports==4.8.0
 mypy==0.971
 pre-commit==2.20.0
