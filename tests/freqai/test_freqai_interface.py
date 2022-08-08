@@ -12,6 +12,10 @@ from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
 
 
+def is_arm() -> bool:
+    machine = platform.machine()
+    return "arm" in machine or "aarch64" in machine
+
 def test_train_model_in_series_LightGBM(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
 
@@ -70,7 +74,7 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-@pytest.mark.skipif("arm" in platform.uname()[-1], reason="no ARM for Catboost ...")
+@pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
 def test_train_model_in_series_Catboost(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "CatboostRegressor"})
@@ -103,7 +107,7 @@ def test_train_model_in_series_Catboost(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-@pytest.mark.skipif("arm" in platform.uname()[-1], reason="no ARM for Catboost ...")
+@pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
 def test_train_model_in_series_CatboostClassifier(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "CatboostClassifier"})
