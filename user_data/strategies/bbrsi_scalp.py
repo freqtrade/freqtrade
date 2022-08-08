@@ -81,7 +81,7 @@ class bbrsi_scalp(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        # dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe['rsi'] = ta.RSI(dataframe)
 
         # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
         # rsi = 0.1 * (dataframe['rsi'] - 50)
@@ -109,9 +109,8 @@ class bbrsi_scalp(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['close'].shift(1) < dataframe['bb_lowerband'])
-                    & (dataframe['close'] > dataframe['bb_lowerband'])
-                    # & (dataframe['rsi'] < 50)
+                (qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])) &
+                (dataframe['rsi'] < 50)
             ),
             'buy'] = 1
 
@@ -125,8 +124,8 @@ class bbrsi_scalp(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['close'] > dataframe['bb_upperband'])
-                    # | (dataframe['rsi'] > 60)
+                    (dataframe['close'] > dataframe['bb_upperband']) |
+                    (dataframe['rsi'] > 60)
             ),
             'sell'] = 1
         return dataframe
