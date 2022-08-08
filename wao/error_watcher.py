@@ -1,8 +1,12 @@
 import subprocess
 import watchdog.events
 import watchdog.observers
+import sys
 
 from wao.brain_config import BrainConfig
+
+sys.path.append(BrainConfig.EXECUTION_PATH)
+from config import Config
 
 
 def is_freqtrade_error(error_line):
@@ -12,7 +16,7 @@ def is_freqtrade_error(error_line):
 
 def stop_bot(error_line):
     stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
-        BrainConfig.MODE) + " " + error_line.split("\n")[0].replace("_", "") \
+        BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
                            .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
     result_log = subprocess.Popen([stop_bot_command],
                                   stdout=subprocess.PIPE,
