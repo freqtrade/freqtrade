@@ -657,7 +657,7 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, Any]) -> Any:
+    def fit(self, data_dictionary: Dict[str, Any], pair: str = '') -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data

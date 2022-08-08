@@ -123,8 +123,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
 |  |  **Extraneous parameters**
-| `keras` | If your model makes use of Keras (typical for Tensorflow-based prediction models), activate this flag so that the model save/loading follows Keras standards. <br> **Datatype:** Boolean. Default: `False`.
-| `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for shifting candles (`include_shifted_candles`) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> **Datatype:** Integer. Default: 2.
+| `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
+| `conv_width` | The width of a convolutional neural network input tensor or the `ReinforcementLearningModel` `window_size`. This replaces the need for `shift` by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. Default value, 2 <br> **Datatype:** integer.
 
 ### Important dataframe key patterns
 

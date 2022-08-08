@@ -520,10 +520,7 @@ CONF_SCHEMA = {
                     },
                 },
                 "model_training_parameters": {
-                    "type": "object",
-                    "properties": {
-                        "n_estimators": {"type": "integer", "default": 1000}
-                    },
+                    "type": "object"
                 },
             },
             "required": [
