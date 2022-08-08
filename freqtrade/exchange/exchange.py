@@ -482,7 +482,6 @@ class Exchange:
 
     def reload_markets(self) -> None:
         """Reload markets both sync and async if refresh interval has passed """
-        asyncio.set_event_loop(self.loop)
         # Check whether markets have to be reloaded
         if (self._last_markets_refresh > 0) and (
                 self._last_markets_refresh + self.markets_refresh_interval

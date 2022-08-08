@@ -17,9 +17,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.resolvers import ExchangeResolver
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -895,22 +895,20 @@ class FreqaiDataKitchen:
 
         self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
 
-    def download_all_data_for_training(self, timerange: TimeRange) -> None:
+    def download_all_data_for_training(self, timerange: TimeRange, dp: DataProvider) -> None:
         """
         Called only once upon start of bot to download the necessary data for
         populating indicators and training the model.
-        :params:
-        timerange: TimeRange = The full data timerange for populating the indicators
-        and training the model.
+        :param timerange: TimeRange = The full data timerange for populating the indicators
+                                      and training the model.
+        :param dp: DataProvider instance attached to the strategy
         """
-        exchange = ExchangeResolver.load_exchange(
-            self.config["exchange"]["name"], self.config, validate=False, load_leverage_tiers=False
-        )
-
         new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
-
+        if not dp._exchange:
+            # Not realistic - this is only called in live mode.
+            raise OperationalException("Dataprovider did not have an exchange attached.")
         refresh_backtest_ohlcv_data(
-            exchange,
+            dp._exchange,
             pairs=self.all_pairs,
             timeframes=self.freqai_config["feature_parameters"].get("include_timeframes"),
             datadir=self.config["datadir"],
@@ -921,8 +919,6 @@ class FreqaiDataKitchen:
             trading_mode=self.config.get("trading_mode", "spot"),
             prepend=self.config.get("prepend_data", False),
         )
-
-        exchange.close()
 
     def set_all_pairs(self) -> None:
 

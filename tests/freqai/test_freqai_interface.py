@@ -16,6 +16,7 @@ def is_arm() -> bool:
     machine = platform.machine()
     return "arm" in machine or "aarch64" in machine
 
+
 def test_train_model_in_series_LightGBM(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
 

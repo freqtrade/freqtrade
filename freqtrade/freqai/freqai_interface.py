@@ -273,7 +273,7 @@ class IFreqaiModel(ABC):
                     "corr_pairlist, this may take a while if you do not have the "
                     "data saved"
                 )
-                dk.download_all_data_for_training(data_load_timerange)
+                dk.download_all_data_for_training(data_load_timerange, strategy.dp)
                 self.dd.load_all_pair_histories(data_load_timerange, dk)
 
             if not self.scanning:
