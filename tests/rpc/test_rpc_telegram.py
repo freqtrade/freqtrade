@@ -272,7 +272,7 @@ def test_telegram_status_multi_entry(default_conf, update, mocker, fee) -> None:
     msg = msg_mock.call_args_list[0][0][0]
     assert re.search(r'Number of Entries.*2', msg)
     assert re.search(r'Average Entry Price', msg)
-    assert re.search(r'Order filled at', msg)
+    assert re.search(r'Order filled', msg)
     assert re.search(r'Close Date:', msg) is None
     assert re.search(r'Close Profit:', msg) is None
 
@@ -342,7 +342,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     # close_rate should not be included in the message as the trade is not closed
     # and no line should be empty
     lines = msg_mock.call_args_list[0][0][0].split('\n')
-    assert '' not in lines
+    assert '' not in lines[:-1]
     assert 'Close Rate' not in ''.join(lines)
     assert 'Close Profit' not in ''.join(lines)
 
@@ -357,12 +357,28 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     telegram._status(update=update, context=context)
 
     lines = msg_mock.call_args_list[0][0][0].split('\n')
-    assert '' not in lines
+    assert '' not in lines[:-1]
     assert 'Close Rate' not in ''.join(lines)
     assert 'Close Profit' not in ''.join(lines)
 
     assert msg_mock.call_count == 2
     assert 'LTC/BTC' in msg_mock.call_args_list[0][0][0]
+
+    mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 500)
+
+    msg_mock.reset_mock()
+    context = MagicMock()
+    context.args = ["2"]
+    telegram._status(update=update, context=context)
+
+    assert msg_mock.call_count == 2
+
+    msg1 = msg_mock.call_args_list[0][0][0]
+    msg2 = msg_mock.call_args_list[1][0][0]
+
+    assert 'Close Rate' not in msg1
+    assert 'Trade ID:* `2`' in msg1
+    assert 'Trade ID:* `2` - continued' in msg2
 
 
 def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -433,10 +449,10 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     assert "Daily Profit over the last 2 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert 'Day ' in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
-    assert '(2)  13.83 USDT  15.21 USD  1.31%' in msg_mock.call_args_list[0][0][0]
+    assert '(2)  6.83 USDT  7.51 USD  0.64%' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
     # Reset msg_mock
@@ -447,8 +463,8 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     assert "Daily Profit over the last 7 days</b>:" in msg_mock.call_args_list[0][0][0]
     assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
     assert str((datetime.utcnow() - timedelta(days=5)).date()) in msg_mock.call_args_list[0][0][0]
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
     assert '(1)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
@@ -460,8 +476,8 @@ def test_daily_handle(default_conf_usdt, update, ticker, fee, mocker, time_machi
     context = MagicMock()
     context.args = ["1"]
     telegram._daily(update=update, context=context)
-    assert '  13.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  15.21 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  6.83 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  7.51 USD' in msg_mock.call_args_list[0][0][0]
     assert '(2)' in msg_mock.call_args_list[0][0][0]
 
 
@@ -523,8 +539,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mach
     today = datetime.utcnow().date()
     first_iso_day_of_current_week = today - timedelta(days=today.weekday())
     assert str(first_iso_day_of_current_week) in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -536,8 +552,8 @@ def test_weekly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mach
     assert "Weekly Profit over the last 8 weeks (starting from Monday)</b>:" \
            in msg_mock.call_args_list[0][0][0]
     assert 'Weekly' in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -592,8 +608,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     today = datetime.utcnow().date()
     current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -606,8 +622,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     assert 'Monthly Profit over the last 6 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     assert current_month in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
     assert '(0)' in msg_mock.call_args_list[0][0][0]
 
@@ -620,8 +636,8 @@ def test_monthly_handle(default_conf_usdt, update, ticker, fee, mocker, time_mac
     telegram._monthly(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
-    assert '  9.83 USDT' in msg_mock.call_args_list[0][0][0]
-    assert '  10.81 USD' in msg_mock.call_args_list[0][0][0]
+    assert '  2.74 USDT' in msg_mock.call_args_list[0][0][0]
+    assert '  3.01 USD' in msg_mock.call_args_list[0][0][0]
     assert '(3)' in msg_mock.call_args_list[0][0][0]
 
     # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"
@@ -959,6 +975,9 @@ def test_telegram_forceexit_handle(default_conf, update, ticker, fee,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == last_msg
 
 
@@ -1028,6 +1047,9 @@ def test_telegram_force_exit_down_handle(default_conf, update, ticker, fee,
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == last_msg
 
 
@@ -1087,6 +1109,9 @@ def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'open_date': ANY,
         'close_date': ANY,
         'close_rate': ANY,
+        'stake_amount': 0.0009999999999054,
+        'sub_trade': False,
+        'cumulative_profit': 0.0,
     } == msg
 
 
@@ -1259,7 +1284,7 @@ def test_telegram_performance_handle(default_conf_usdt, update, ticker, fee, moc
     telegram._performance(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>XRP/USDT\t9.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>XRP/USDT\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_telegram_entry_tag_performance_handle(
@@ -1309,7 +1334,7 @@ def test_telegram_exit_reason_performance_handle(default_conf_usdt, update, tick
     telegram._exit_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Exit Reason Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>roi\t9.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>roi\t2.842 USDT (10.00%) (1)</code>' in msg_mock.call_args_list[0][0][0]
     context.args = ['XRP/USDT']
 
     telegram._exit_reason_performance(update=update, context=context)
@@ -1341,7 +1366,7 @@ def test_telegram_mix_tag_performance_handle(default_conf_usdt, update, ticker, 
     telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Mix Tag Performance' in msg_mock.call_args_list[0][0][0]
-    assert ('<code>TEST3 roi\t9.842 USDT (10.00%) (1)</code>'
+    assert ('<code>TEST3 roi\t2.842 USDT (10.00%) (1)</code>'
             in msg_mock.call_args_list[0][0][0])
 
     context.args = ['XRP/USDT']
@@ -1437,7 +1462,7 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     default_conf['pairlists'] = [{'method': 'VolumePairList',
-                                 'number_assets': 4
+                                  'number_assets': 4
                                   }]
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -1507,7 +1532,7 @@ def test_telegram_logs(default_conf, update, mocker) -> None:
 
     msg_mock.reset_mock()
     # Test with changed MaxMessageLength
-    mocker.patch('freqtrade.rpc.telegram.MAX_TELEGRAM_MESSAGE_LENGTH', 200)
+    mocker.patch('freqtrade.rpc.telegram.MAX_MESSAGE_LENGTH', 200)
     context = MagicMock()
     context.args = []
     telegram._logs(update=update, context=context)
@@ -1789,7 +1814,6 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'leverage': leverage,
         'stake_amount': 0.01465333,
         'direction': entered,
-        # 'stake_amount_fiat': 0.0,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'open_rate': 1.099e-05,
@@ -1797,6 +1821,33 @@ def test_send_msg_entry_fill_notification(default_conf, mocker, message_type, en
         'open_date': arrow.utcnow().shift(hours=-1)
     })
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
+    assert msg_mock.call_args[0][0] == (
+        f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        '*Amount:* `1333.33333333`\n'
+        f"{leverage_text}"
+        '*Open Rate:* `0.00001099`\n'
+        '*Total:* `(0.01465333 BTC, 180.895 USD)`'
+    )
+
+    msg_mock.reset_mock()
+    telegram.send_msg({
+        'type': message_type,
+        'trade_id': 1,
+        'enter_tag': enter_signal,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'leverage': leverage,
+        'stake_amount': 0.01465333,
+        'sub_trade': True,
+        'direction': entered,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+        'open_rate': 1.099e-05,
+        'amount': 1333.3333333333335,
+        'open_date': arrow.utcnow().shift(hours=-1)
+    })
+
     assert msg_mock.call_args[0][0] == (
         f'\N{CHECK MARK} *Binance (dry):* {entered}ed ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
@@ -1840,13 +1891,52 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
         '*Enter Tag:* `buy_signal1`\n'
         '*Exit Reason:* `stop_loss`\n'
-        '*Duration:* `1:00:00 (60.0 min)`\n'
         '*Direction:* `Long`\n'
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`'
+        '*Exit Rate:* `0.00003201`\n'
+        '*Duration:* `1:00:00 (60.0 min)`'
     )
+
+    msg_mock.reset_mock()
+    telegram.send_msg({
+        'type': RPCMessageType.EXIT,
+        'trade_id': 1,
+        'exchange': 'Binance',
+        'pair': 'KEY/ETH',
+        'direction': 'Long',
+        'gain': 'loss',
+        'limit': 3.201e-05,
+        'amount': 1333.3333333333335,
+        'order_type': 'market',
+        'open_rate': 7.5e-05,
+        'current_rate': 3.201e-05,
+        'cumulative_profit': -0.15746268,
+        'profit_amount': -0.05746268,
+        'profit_ratio': -0.57405275,
+        'stake_currency': 'ETH',
+        'fiat_currency': 'USD',
+        'enter_tag': 'buy_signal1',
+        'exit_reason': ExitType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
+        'close_date': arrow.utcnow(),
+        'stake_amount': 0.01,
+        'sub_trade': True,
+    })
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Sub Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+        '*Cumulative Profit:* (`-0.15746268 ETH / -24.812 USD`)\n'
+        '*Enter Tag:* `buy_signal1`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Direction:* `Long`\n'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Exit Rate:* `0.00003201`\n'
+        '*Remaining:* `(0.01 ETH, -24.812 USD)`'
+        )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1871,15 +1961,15 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Profit:* `-57.41%`\n'
+        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
         '*Enter Tag:* `buy_signal1`\n'
         '*Exit Reason:* `stop_loss`\n'
-        '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
         '*Direction:* `Long`\n'
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`'
+        '*Exit Rate:* `0.00003201`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
     )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
@@ -1954,15 +2044,15 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n'
-        '*Profit:* `-57.41%`\n'
+        '*Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
-        '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
         f"*Direction:* `{direction}`\n"
         f"{leverage_text}"
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
-        '*Close Rate:* `0.00003201`'
+        '*Exit Rate:* `0.00003201`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`'
     )
 
 
@@ -1992,6 +2082,16 @@ def test_startup_notification(default_conf, mocker) -> None:
         'status': '*Custom:* `Hello World`'
     })
     assert msg_mock.call_args[0][0] == '*Custom:* `Hello World`'
+
+
+def test_send_msg_strategy_msg_notification(default_conf, mocker) -> None:
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram.send_msg({
+        'type': RPCMessageType.STRATEGY_MSG,
+        'msg': 'hello world, Test msg'
+    })
+    assert msg_mock.call_args[0][0] == 'hello world, Test msg'
 
 
 def test_send_msg_unknown_type(default_conf, mocker) -> None:
@@ -2080,16 +2180,16 @@ def test_send_msg_sell_notification_no_fiat(
     leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n'
-        '*Unrealized Profit:* `-57.41%`\n'
+        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH)`\n'
         f'*Enter Tag:* `{enter_signal}`\n'
         '*Exit Reason:* `stop_loss`\n'
-        '*Duration:* `2:35:03 (155.1 min)`\n'
         f'*Direction:* `{direction}`\n'
         f'{leverage_text}'
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
-        '*Close Rate:* `0.00003201`'
+        '*Exit Rate:* `0.00003201`\n'
+        '*Duration:* `2:35:03 (155.1 min)`'
     )
 
 

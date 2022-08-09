@@ -68,6 +68,36 @@ def test_method_to_test(caplog):
 
 ```
 
+### Debug configuration
+
+To debug freqtrade, we recommend VSCode with the following launch configuration (located in `.vscode/launch.json`).
+Details will obviously vary between setups - but this should work to get you started.
+
+``` json
+{
+    "name": "freqtrade trade",
+    "type": "python",
+    "request": "launch",
+    "module": "freqtrade",
+    "console": "integratedTerminal",
+    "args": [
+        "trade",
+        // Optional:
+        // "--userdir", "user_data",
+        "--strategy", 
+        "MyAwesomeStrategy",
+    ]
+},
+```
+
+Command line arguments can be added in the `"args"` array.
+This method can also be used to debug a strategy, by setting the breakpoints within the strategy.
+
+A similar setup can also be taken for Pycharm - using `freqtrade` as module name, and setting the command line arguments as "parameters".
+
+!!! Note "Startup directory"
+    This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).
+
 ## ErrorHandling
 
 Freqtrade Exceptions all inherit from `FreqtradeException`.

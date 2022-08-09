@@ -136,7 +136,7 @@ def test_adjust(mocker, edge_conf):
     ))
 
     pairs = ['A/B', 'C/D', 'E/F', 'G/H']
-    assert(edge.adjust(pairs) == ['E/F', 'C/D'])
+    assert (edge.adjust(pairs) == ['E/F', 'C/D'])
 
 
 def test_stoploss(mocker, edge_conf):

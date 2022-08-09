@@ -408,28 +408,31 @@ def test_min_roi_reached3(default_conf, fee) -> None:
 
 
 @pytest.mark.parametrize(
-    'profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
+    'profit,adjusted,expected,liq,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
         # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
-        (0.2, 0.9, ExitType.NONE, False, False, 0.3, 0.9, ExitType.NONE, None),
-        (0.2, 0.9, ExitType.NONE, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
-        (0.2, 1.14, ExitType.NONE, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS, None),
-        (0.01, 0.96, ExitType.NONE, True, False, 0.05, 1, ExitType.NONE, None),
-        (0.05, 1, ExitType.NONE, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
+        (0.2, 0.9, ExitType.NONE, None, False, False, 0.3, 0.9, ExitType.NONE, None),
+        (0.2, 0.9, ExitType.NONE, None, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
+        (0.2, 0.9, ExitType.NONE, 0.8, False, False, -0.2, 0.9, ExitType.LIQUIDATION, None),
+        (0.2, 1.14, ExitType.NONE, None, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS,
+         None),
+        (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),
+        (0.05, 1, ExitType.NONE, None, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
         # Default custom case - trails with 10%
-        (0.05, 0.95, ExitType.NONE, False, True, -0.02, 0.95, ExitType.NONE, None),
-        (0.05, 0.95, ExitType.NONE, False, True, -0.06, 0.95, ExitType.TRAILING_STOP_LOSS, None),
-        (0.05, 1, ExitType.NONE, False, True, -0.06, 1, ExitType.TRAILING_STOP_LOSS,
+        (0.05, 0.95, ExitType.NONE, None, False, True, -0.02, 0.95, ExitType.NONE, None),
+        (0.05, 0.95, ExitType.NONE, None, False, True, -0.06, 0.95, ExitType.TRAILING_STOP_LOSS,
+         None),
+        (0.05, 1, ExitType.NONE, None, False, True, -0.06, 1, ExitType.TRAILING_STOP_LOSS,
          lambda **kwargs: -0.05),
-        (0.05, 1, ExitType.NONE, False, True, 0.09, 1.04, ExitType.NONE,
+        (0.05, 1, ExitType.NONE, None, False, True, 0.09, 1.04, ExitType.NONE,
          lambda **kwargs: -0.05),
-        (0.05, 0.95, ExitType.NONE, False, True, 0.09, 0.98, ExitType.NONE,
+        (0.05, 0.95, ExitType.NONE, None, False, True, 0.09, 0.98, ExitType.NONE,
          lambda current_profit, **kwargs: -0.1 if current_profit < 0.6 else -(current_profit * 2)),
         # Error case - static stoploss in place
-        (0.05, 0.9, ExitType.NONE, False, True, 0.09, 0.9, ExitType.NONE,
+        (0.05, 0.9, ExitType.NONE, None, False, True, 0.09, 0.9, ExitType.NONE,
          lambda **kwargs: None),
     ])
-def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
+def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
                            profit2, adjusted2, expected2, custom_stop) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -442,6 +445,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        liquidation_price=liq,
     )
     trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing

@@ -95,6 +95,7 @@ def migrate_trades_and_orders_table(
     exit_reason = get_column_def(cols, 'sell_reason', get_column_def(cols, 'exit_reason', 'null'))
     strategy = get_column_def(cols, 'strategy', 'null')
     enter_tag = get_column_def(cols, 'buy_tag', get_column_def(cols, 'enter_tag', 'null'))
+    realized_profit = get_column_def(cols, 'realized_profit', '0.0')
 
     trading_mode = get_column_def(cols, 'trading_mode', 'null')
 
@@ -155,7 +156,7 @@ def migrate_trades_and_orders_table(
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
-            interest_rate, funding_fees
+            interest_rate, funding_fees, realized_profit
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -181,7 +182,7 @@ def migrate_trades_and_orders_table(
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fees} funding_fees
+            {funding_fees} funding_fees, {realized_profit} realized_profit
             from {trade_back_name}
             """))
 
@@ -297,8 +298,9 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
-    if not has_column(cols_orders, 'stop_price'):
-        # if not has_column(cols_trades, 'base_currency'):
+    # if ('orders' not in previous_tables
+    # or not has_column(cols_orders, 'stop_price')):
+    if not has_column(cols_trades, 'realized_profit'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(

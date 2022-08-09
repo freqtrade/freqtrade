@@ -12,6 +12,7 @@ from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 
 from freqtrade.constants import SUPPORTED_FIAT
+from freqtrade.mixins.logging_mixin import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ coingecko_mapping = {
 }
 
 
-class CryptoToFiatConverter:
+class CryptoToFiatConverter(LoggingMixin):
     """
     Main class to initiate Crypto to FIAT.
     This object contains a list of pair Crypto, FIAT
@@ -54,6 +55,7 @@ class CryptoToFiatConverter:
         # Timeout: 6h
         self._pair_price: TTLCache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
 
+        LoggingMixin.__init__(self, logger, 3600)
         self._load_cryptomap()
 
     def _load_cryptomap(self) -> None:
@@ -177,7 +179,9 @@ class CryptoToFiatConverter:
 
         if not _gekko_id:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
-            logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
+            self.log_once(
+                f"unsupported crypto-symbol {crypto_symbol.upper()} - returning 0.0",
+                logger.warning)
             return 0.0
 
         try:
