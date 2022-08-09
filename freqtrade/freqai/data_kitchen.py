@@ -20,6 +20,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -58,8 +59,8 @@ class FreqaiDataKitchen:
         live: bool = False,
         pair: str = "",
     ):
-        self.data: Dict[Any, Any] = {}
-        self.data_dictionary: Dict[Any, Any] = {}
+        self.data: Dict[str, Any] = {}
+        self.data_dictionary: Dict[str, DataFrame] = {}
         self.config = config
         self.freqai_config: Dict[str, Any] = config["freqai"]
         self.full_df: DataFrame = DataFrame()
@@ -98,6 +99,7 @@ class FreqaiDataKitchen:
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
+        self.train_dates: DataFrame = pd.DataFrame()
 
     def set_paths(
         self,
@@ -206,16 +208,20 @@ class FreqaiDataKitchen:
         if (training_filter):
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
-            # if labels has multiple columns (user wants to train multiple models), we detect here
+            # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_dataframe.filter(label_list, axis=1)
             drop_index_labels = pd.isnull(labels).any(1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
+            dates = unfiltered_dataframe.filter('date', axis=1)
             filtered_dataframe = filtered_dataframe[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # dropping values
             labels = labels[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # assuming the labels depend entirely on the dataframe here.
+            self.train_dates = dates[
+                (drop_index == 0) & (drop_index_labels == 0)
+            ]
             logger.info(
                 f"dropped {len(unfiltered_dataframe) - len(filtered_dataframe)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_dataframe)}."
@@ -266,6 +272,7 @@ class FreqaiDataKitchen:
             "test_labels": test_labels,
             "train_weights": train_weights,
             "test_weights": test_weights,
+            "train_dates": self.train_dates
         }
 
         return self.data_dictionary
@@ -351,7 +358,7 @@ class FreqaiDataKitchen:
         return df
 
     def split_timerange(
-        self, tr: str, train_split: int = 28, bt_split: int = 7
+        self, tr: str, train_split: int = 28, bt_split: float = 7
     ) -> Tuple[list, list]:
         """
         Function which takes a single time range (tr) and splits it
@@ -359,7 +366,7 @@ class FreqaiDataKitchen:
         tr: str, full timerange to train on
         train_split: the period length for the each training (days). Specified in user
         configuration file
-        bt_split: the backtesting length (dats). Specified in user configuration file
+        bt_split: the backtesting length (days). Specified in user configuration file
         """
 
         if not isinstance(train_split, int) or train_split < 1:
@@ -386,7 +393,7 @@ class FreqaiDataKitchen:
 
         while True:
             if not first:
-                timerange_train.startts = timerange_train.startts + bt_period
+                timerange_train.startts = timerange_train.startts + int(bt_period)
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
@@ -399,7 +406,7 @@ class FreqaiDataKitchen:
 
             timerange_backtest.startts = timerange_train.stopts
 
-            timerange_backtest.stopts = timerange_backtest.startts + bt_period
+            timerange_backtest.stopts = timerange_backtest.startts + int(bt_period)
 
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
@@ -820,30 +827,21 @@ class FreqaiDataKitchen:
         trained_timerange = TimeRange()
         data_load_timerange = TimeRange()
 
-        # find the max indicator length required
-        max_timeframe_chars = self.freqai_config["feature_parameters"].get(
-            "include_timeframes"
-        )[-1]
-        max_period = self.freqai_config["feature_parameters"].get(
-            "indicator_max_period_candles", 50
-        )
-        additional_seconds = 0
-        if max_timeframe_chars[-1] == "d":
-            additional_seconds = max_period * SECONDS_IN_DAY * int(max_timeframe_chars[-2])
-        elif max_timeframe_chars[-1] == "h":
-            additional_seconds = max_period * 3600 * int(max_timeframe_chars[-2])
-        elif max_timeframe_chars[-1] == "m":
-            if len(max_timeframe_chars) == 2:
-                additional_seconds = max_period * 60 * int(max_timeframe_chars[-2])
-            elif len(max_timeframe_chars) == 3:
-                additional_seconds = max_period * 60 * int(float(max_timeframe_chars[0:2]))
-            else:
-                logger.warning(
-                    "FreqAI could not detect max timeframe and therefore may not "
-                    "download the proper amount of data for training"
-                )
+        timeframes = self.freqai_config["feature_parameters"].get("include_timeframes")
 
-        # logger.info(f'Extending data download by {additional_seconds/SECONDS_IN_DAY:.2f} days')
+        max_tf_seconds = 0
+        for tf in timeframes:
+            secs = timeframe_to_seconds(tf)
+            if secs > max_tf_seconds:
+                max_tf_seconds = secs
+
+        # We notice that users like to use exotic indicators where
+        # they do not know the required timeperiod. Here we include a factor
+        # of safety by multiplying the user considered "max" by 2.
+        max_period = self.freqai_config["feature_parameters"].get(
+            "indicator_max_period_candles", 20
+        ) * 2
+        additional_seconds = max_period * max_tf_seconds
 
         if trained_timestamp != 0:
             elapsed_time = (time - trained_timestamp) / SECONDS_IN_HOUR

@@ -5,10 +5,11 @@ import re
 import shutil
 import threading
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TypedDict
 
 import numpy as np
 import pandas as pd
+import rapidjson
 from joblib import dump, load
 from joblib.externals import cloudpickle
 from numpy.typing import ArrayLike, NDArray
@@ -22,6 +23,14 @@ from freqtrade.strategy.interface import IStrategy
 
 
 logger = logging.getLogger(__name__)
+
+
+class pair_info(TypedDict):
+    model_filename: str
+    first: bool
+    trained_timestamp: int
+    priority: int
+    data_path: str
 
 
 class FreqaiDataDrawer:
@@ -54,14 +63,13 @@ class FreqaiDataDrawer:
         self.config = config
         self.freqai_info = config.get("freqai", {})
         # dictionary holding all pair metadata necessary to load in from disk
-        self.pair_dict: Dict[str, Any] = {}
+        self.pair_dict: Dict[str, pair_info] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
         self.model_dictionary: Dict[str, Any] = {}
-        self.model_return_values: Dict[str, Any] = {}
-        self.pair_data_dict: Dict[str, Any] = {}
-        self.historic_data: Dict[str, Any] = {}
-        self.historic_predictions: Dict[str, Any] = {}
-        self.follower_dict: Dict[str, Any] = {}
+        self.model_return_values: Dict[str, DataFrame] = {}
+        self.historic_data: Dict[str, Dict[str, DataFrame]] = {}
+        self.historic_predictions: Dict[str, DataFrame] = {}
+        self.follower_dict: Dict[str, pair_info] = {}
         self.full_path = full_path
         self.follower_name: str = self.config.get("bot_name", "follower1")
         self.follower_dict_path = Path(
@@ -77,6 +85,9 @@ class FreqaiDataDrawer:
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
         self.old_DBSCAN_eps: Dict[str, float] = {}
+        self.empty_pair_dict: pair_info = {
+                "model_filename": "", "trained_timestamp": 0,
+                "priority": 1, "first": True, "data_path": ""}
 
     def load_drawer_from_disk(self):
         """
@@ -133,15 +144,17 @@ class FreqaiDataDrawer:
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.pair_dictionary_path, "w") as fp:
-            json.dump(self.pair_dict, fp, default=self.np_encoder)
+        with open(self.pair_dictionary_path, 'w') as fp:
+            rapidjson.dump(self.pair_dict, fp, default=self.np_encoder,
+                           number_mode=rapidjson.NM_NATIVE)
 
     def save_follower_dict_to_disk(self):
         """
         Save follower dictionary to disk (used by strategy for persistent prediction targets)
         """
         with open(self.follower_dict_path, "w") as fp:
-            json.dump(self.follower_dict, fp, default=self.np_encoder)
+            rapidjson.dump(self.follower_dict, fp, default=self.np_encoder,
+                           number_mode=rapidjson.NM_NATIVE)
 
     def create_follower_dict(self):
         """
@@ -175,18 +188,19 @@ class FreqaiDataDrawer:
             trained_timestamp: int = the last time the coin was trained
             return_null_array: bool = Follower could not find pair metadata
         """
+
         pair_dict = self.pair_dict.get(pair)
-        data_path_set = self.pair_dict.get(pair, {}).get("data_path", None)
+        data_path_set = self.pair_dict.get(pair, self.empty_pair_dict).get("data_path", "")
         return_null_array = False
 
         if pair_dict:
             model_filename = pair_dict["model_filename"]
             trained_timestamp = pair_dict["trained_timestamp"]
         elif not self.follow_mode:
-            pair_dict = self.pair_dict[pair] = {}
-            model_filename = pair_dict["model_filename"] = ""
-            trained_timestamp = pair_dict["trained_timestamp"] = 0
-            pair_dict["priority"] = len(self.pair_dict)
+            self.pair_dict[pair] = self.empty_pair_dict.copy()
+            model_filename = ""
+            trained_timestamp = 0
+            self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
         if not data_path_set and self.follow_mode:
             logger.warning(
@@ -205,11 +219,9 @@ class FreqaiDataDrawer:
         if pair_in_dict:
             return
         else:
-            self.pair_dict[metadata["pair"]] = {}
-            self.pair_dict[metadata["pair"]]["model_filename"] = ""
-            self.pair_dict[metadata["pair"]]["first"] = True
-            self.pair_dict[metadata["pair"]]["trained_timestamp"] = 0
+            self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
             self.pair_dict[metadata["pair"]]["priority"] = len(self.pair_dict)
+
             return
 
     def pair_to_end_of_training_queue(self, pair: str) -> None:
@@ -440,11 +452,15 @@ class FreqaiDataDrawer:
         dk.data["label_list"] = dk.label_list
         # store the metadata
         with open(save_path / f"{dk.model_filename}_metadata.json", "w") as fp:
-            json.dump(dk.data, fp, default=dk.np_encoder)
+            rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
         # save the train data to file so we can check preds for area of applicability later
         dk.data_dictionary["train_features"].to_pickle(
             save_path / f"{dk.model_filename}_trained_df.pkl"
+        )
+
+        dk.data_dictionary["train_dates"].to_pickle(
+            save_path / f"{dk.model_filename}_trained_dates_df.pkl"
         )
 
         if self.freqai_info["feature_parameters"].get("principal_component_analysis"):
