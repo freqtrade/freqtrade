@@ -358,10 +358,12 @@ class FreqaiDataDrawer:
 
         dk.find_features(dataframe)
 
-        if self.freqai_info.get('predict_proba', []):
-            full_labels = dk.label_list + self.freqai_info['predict_proba']
-        else:
-            full_labels = dk.label_list
+        added_labels = []
+        if dk.unique_classes:
+            for label in dk.unique_classes:
+                added_labels += dk.unique_classes[label]
+   
+        full_labels = dk.label_list + added_labels
 
         for label in full_labels:
             dataframe[label] = 0
