@@ -31,6 +31,7 @@ class pair_info(TypedDict):
     trained_timestamp: int
     priority: int
     data_path: str
+    extras: dict
 
 
 class FreqaiDataDrawer:
@@ -87,7 +88,7 @@ class FreqaiDataDrawer:
         self.old_DBSCAN_eps: Dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
-                "priority": 1, "first": True, "data_path": ""}
+                "priority": 1, "first": True, "data_path": "", "extras": {}}
 
     def load_drawer_from_disk(self):
         """

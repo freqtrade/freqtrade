@@ -252,16 +252,16 @@ class FreqaiExampleStrategy(IStrategy):
 
         if (
             "prediction" + entry_tag not in pair_dict[pair]
-            or pair_dict[pair]["prediction" + entry_tag] == 0
+            or pair_dict[pair]['extras']["prediction" + entry_tag] == 0
         ):
             with self.freqai.lock:
-                pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
+                pair_dict[pair]['extras']["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
                 if not follow_mode:
                     self.freqai.dd.save_drawer_to_disk()
                 else:
                     self.freqai.dd.save_follower_dict_to_disk()
 
-        roi_price = pair_dict[pair]["prediction" + entry_tag]
+        roi_price = pair_dict[pair]['extras']["prediction" + entry_tag]
         roi_time = self.max_roi_time_long.value
 
         roi_decay = roi_price * (
@@ -299,7 +299,7 @@ class FreqaiExampleStrategy(IStrategy):
             pair_dict = self.freqai.dd.follower_dict
 
         with self.freqai.lock:
-            pair_dict[pair]["prediction" + entry_tag] = 0
+            pair_dict[pair]['extras']["prediction" + entry_tag] = 0
             if not follow_mode:
                 self.freqai.dd.save_drawer_to_disk()
             else:
