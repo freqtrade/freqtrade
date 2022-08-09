@@ -194,11 +194,11 @@ class OrderSchema(BaseModel):
     pair: str
     order_id: str
     status: str
-    remaining: float
+    remaining: Optional[float]
     amount: float
     safe_price: float
     cost: float
-    filled: float
+    filled: Optional[float]
     ft_order_side: str
     order_type: str
     is_open: bool
