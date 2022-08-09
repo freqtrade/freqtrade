@@ -93,7 +93,12 @@ class FreqaiDataKitchen:
         if self.live:
             db_url = self.config.get('db_url', None)
             self.database_path = Path(db_url)
-            self.database_name = Path(*self.database_path.parts[1:])
+            if 'sqlite' not in self.database_path.parts[0]:
+                self.database_path = None
+                logger.warning('FreqAI database analyzer only available for sqlite dbs. '
+                               ' FreqAI will still run, but user cannot use database analyzer.')
+            else:
+                self.database_name = Path(*self.database_path.parts[1:])
 
         self.trade_database_df: DataFrame = pd.DataFrame()
 
