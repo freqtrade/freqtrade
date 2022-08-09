@@ -884,7 +884,7 @@ class RPC:
         """ Returns the currently active whitelist"""
         res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.active_pair_whitelist),
-               'whitelist': self._freqtrade.active_pair_whitelist
+               'whitelist': sorted(self._freqtrade.active_pair_whitelist)
                }
         return res
 
