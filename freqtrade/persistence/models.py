@@ -61,11 +61,3 @@ def init_db(db_url: str) -> None:
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
     check_migrate(engine, decl_base=_DECL_BASE, previous_tables=previous_tables)
-
-
-def cleanup_db() -> None:
-    """
-    Flushes all pending operations to disk.
-    :return: None
-    """
-    Trade.commit()

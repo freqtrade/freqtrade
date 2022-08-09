@@ -18,9 +18,9 @@ def get_rpc_optional() -> Optional[RPC]:
 def get_rpc() -> Optional[Iterator[RPC]]:
     _rpc = get_rpc_optional()
     if _rpc:
-        Trade.query.session.rollback()
+        Trade.rollback()
         yield _rpc
-        Trade.query.session.rollback()
+        Trade.rollback()
     else:
         raise RPCException('Bot is not in the correct state')
 

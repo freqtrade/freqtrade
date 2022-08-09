@@ -514,6 +514,7 @@ You can then load the trades to perform further analysis as shown in the [data a
 
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
+- Exchange [trading limits](#trading-limits-in-backtesting) are respected
 - Buys happen at open-price
 - All orders are filled at the requested price (no slippage, no unfilled orders)
 - Exit-signal exits happen at open-price of the consecutive candle
@@ -543,7 +544,24 @@ Also, keep in mind that past results don't guarantee future success.
 
 In addition to the above assumptions, strategy authors should carefully read the [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) section, to avoid using data in backtesting which is not available in real market conditions.
 
-### Improved backtest accuracy
+### Trading limits in backtesting
+
+Exchanges have certain trading limits, like minimum base currency, or minimum stake (quote) currency.
+These limits are usually listed in the exchange documentation as "trading rules" or similar.
+
+Backtesting (as well as live and dry-run) does honor these limits, and will ensure that a stoploss can be placed below this value - so the value will be slightly higher than what the exchange specifies.
+Freqtrade has however no information about historic limits.
+
+This can lead to situations where trading-limits are inflated by using a historic price, resulting in minimum amounts > 50$.
+
+For example:
+
+BTC minimum tradable amount is 0.001.
+BTC trades at 22.000\$ today (0.001 BTC is related to this) - but the backtesting period includes prices as high as 50.000\$.
+Today's minimum would be `0.001 * 22_000` - or 22\$.  
+However the limit could also be 50$ - based on `0.001 * 50_000` in some historic setting.
+
+## Improved backtest accuracy
 
 One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).
 So assuming you run backtesting with a 1h timeframe, there will be 4 prices for that candle (Open, High, Low, Close).

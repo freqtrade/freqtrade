@@ -296,8 +296,8 @@ class Backtesting:
 
             if unavailable_pairs:
                 raise OperationalException(
-                        f"Pairs {', '.join(unavailable_pairs)} got no leverage tiers available. "
-                        "It is therefore impossible to backtest with this pair at the moment.")
+                    f"Pairs {', '.join(unavailable_pairs)} got no leverage tiers available. "
+                    "It is therefore impossible to backtest with this pair at the moment.")
         else:
             self.futures_data = {}
 
@@ -390,7 +390,8 @@ class Backtesting:
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if exit.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
+        if exit.exit_type in (
+                ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS, ExitType.LIQUIDATION):
             return self._get_close_rate_for_stoploss(row, trade, exit, trade_dur)
         elif exit.exit_type == (ExitType.ROI):
             return self._get_close_rate_for_roi(row, trade, exit, trade_dur)
@@ -405,11 +406,16 @@ class Backtesting:
         is_short = trade.is_short or False
         leverage = trade.leverage or 1.0
         side_1 = -1 if is_short else 1
+        if exit.exit_type == ExitType.LIQUIDATION and trade.liquidation_price:
+            stoploss_value = trade.liquidation_price
+        else:
+            stoploss_value = trade.stop_loss
+
         if is_short:
-            if trade.stop_loss < row[LOW_IDX]:
+            if stoploss_value < row[LOW_IDX]:
                 return row[OPEN_IDX]
         else:
-            if trade.stop_loss > row[HIGH_IDX]:
+            if stoploss_value > row[HIGH_IDX]:
                 return row[OPEN_IDX]
 
         # Special case: trailing triggers within same candle as trade opened. Assume most
@@ -442,7 +448,7 @@ class Backtesting:
                 return max(row[LOW_IDX], stop_rate)
 
         # Set close_rate to stoploss
-        return trade.stop_loss
+        return stoploss_value
 
     def _get_close_rate_for_roi(self, row: Tuple, trade: LocalTrade, exit: ExitCheckTuple,
                                 trade_dur: int) -> float:
@@ -506,16 +512,20 @@ class Backtesting:
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
-        current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
-        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
-        max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, row[OPEN_IDX])
+        current_rate = row[OPEN_IDX]
+        current_date = row[DATE_IDX].to_pydatetime()
+        current_profit = trade.calc_profit_ratio(current_rate)
+        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, current_rate, -0.1)
+        max_stake = self.exchange.get_max_pair_stake_amount(trade.pair, current_rate)
         stake_available = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             trade=trade,  # type: ignore[arg-type]
-            current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            current_time=current_date, current_rate=current_rate,
             current_profit=current_profit, min_stake=min_stake,
-            max_stake=min(max_stake, stake_available))
+            max_stake=min(max_stake, stake_available),
+            current_entry_rate=current_rate, current_exit_rate=current_rate,
+            current_entry_profit=current_profit, current_exit_profit=current_profit)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
@@ -523,6 +533,24 @@ class Backtesting:
             pos_trade = self._enter_trade(
                 trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade)
             if pos_trade is not None:
+                self.wallets.update()
+                return pos_trade
+
+        if stake_amount is not None and stake_amount < 0.0:
+            amount = abs(stake_amount) / current_rate
+            if amount > trade.amount:
+                # This is currently ineffective as remaining would become < min tradable
+                amount = trade.amount
+            remaining = (trade.amount - amount) * current_rate
+            if remaining < min_stake:
+                # Remaining stake is too low to be sold.
+                return trade
+            pos_trade = self._exit_trade(trade, row, current_rate, amount)
+            if pos_trade is not None:
+                order = pos_trade.orders[-1]
+                if self._get_order_filled(order.price, row):
+                    order.close_bt_order(current_date, trade)
+                    trade.recalc_trade_from_orders()
                 self.wallets.update()
                 return pos_trade
 
@@ -576,7 +604,7 @@ class Backtesting:
             if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
                 # Checks and adds an exit tag, after checking that the length of the
                 # row has the length for an exit tag column
-                if(
+                if (
                     len(row) > EXIT_TAG_IDX
                     and row[EXIT_TAG_IDX] is not None
                     and len(row[EXIT_TAG_IDX]) > 0
@@ -601,45 +629,52 @@ class Backtesting:
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
-            if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+            if (exit_.exit_type != ExitType.LIQUIDATION and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_exit, default_retval=True)(
                     pair=trade.pair,
                     trade=trade,  # type: ignore[arg-type]
-                    order_type='limit',
+                    order_type=order_type,
                     amount=trade.amount,
                     rate=close_rate,
                     time_in_force=time_in_force,
                     sell_reason=exit_reason,  # deprecated
                     exit_reason=exit_reason,
-                    current_time=exit_candle_time):
+                    current_time=exit_candle_time)):
                 return None
 
             trade.exit_reason = exit_reason
 
-            self.order_id_counter += 1
-            order = Order(
-                id=self.order_id_counter,
-                ft_trade_id=trade.id,
-                order_date=exit_candle_time,
-                order_update_date=exit_candle_time,
-                ft_is_open=True,
-                ft_pair=trade.pair,
-                order_id=str(self.order_id_counter),
-                symbol=trade.pair,
-                ft_order_side=trade.exit_side,
-                side=trade.exit_side,
-                order_type=order_type,
-                status="open",
-                price=close_rate,
-                average=close_rate,
-                amount=trade.amount,
-                filled=0,
-                remaining=trade.amount,
-                cost=trade.amount * close_rate,
-            )
-            trade.orders.append(order)
-            return trade
-
+            return self._exit_trade(trade, row, close_rate, trade.amount)
         return None
+
+    def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
+                    close_rate: float, amount: float = None) -> Optional[LocalTrade]:
+        self.order_id_counter += 1
+        exit_candle_time = sell_row[DATE_IDX].to_pydatetime()
+        order_type = self.strategy.order_types['exit']
+        amount = amount or trade.amount
+        order = Order(
+            id=self.order_id_counter,
+            ft_trade_id=trade.id,
+            order_date=exit_candle_time,
+            order_update_date=exit_candle_time,
+            ft_is_open=True,
+            ft_pair=trade.pair,
+            order_id=str(self.order_id_counter),
+            symbol=trade.pair,
+            ft_order_side=trade.exit_side,
+            side=trade.exit_side,
+            order_type=order_type,
+            status="open",
+            price=close_rate,
+            average=close_rate,
+            amount=amount,
+            filled=0,
+            remaining=amount,
+            cost=amount * close_rate,
+        )
+        trade.orders.append(order)
+        return trade
 
     def _get_exit_trade_entry(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
@@ -816,7 +851,7 @@ class Backtesting:
 
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
-            trade.set_isolated_liq(self.exchange.get_liquidation_price(
+            trade.set_liquidation_price(self.exchange.get_liquidation_price(
                 pair=pair,
                 open_rate=propose_rate,
                 amount=amount,
@@ -867,6 +902,8 @@ class Backtesting:
                         # Ignore trade if entry-order did not fill yet
                         continue
                     exit_row = data[pair][-1]
+                    self._exit_trade(trade, exit_row, exit_row[OPEN_IDX], trade.amount)
+                    trade.orders[-1].close_bt_order(exit_row[DATE_IDX].to_pydatetime(), trade)
 
                     trade.close_date = exit_row[DATE_IDX].to_pydatetime()
                     trade.exit_reason = ExitType.FORCE_EXIT.value
@@ -1008,7 +1045,7 @@ class Backtesting:
             return None
         return row
 
-    def backtest(self, processed: Dict,
+    def backtest(self, processed: Dict,  # noqa: max-complexity: 13
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
                  enable_protections: bool = False) -> Dict[str, Any]:
@@ -1110,14 +1147,19 @@ class Backtesting:
                     if order and self._get_order_filled(order.price, row):
                         order.close_bt_order(current_time, trade)
                         trade.open_order_id = None
-                        trade.close_date = current_time
-                        trade.close(order.price, show_msg=False)
+                        sub_trade = order.safe_amount_after_fee != trade.amount
+                        if sub_trade:
+                            order.close_bt_order(current_time, trade)
+                            trade.recalc_trade_from_orders()
+                        else:
+                            trade.close_date = current_time
+                            trade.close(order.price, show_msg=False)
 
-                        # logger.debug(f"{pair} - Backtesting exit {trade}")
-                        open_trade_count -= 1
-                        open_trades[pair].remove(trade)
-                        LocalTrade.close_bt_trade(trade)
-                        trades.append(trade)
+                            # logger.debug(f"{pair} - Backtesting exit {trade}")
+                            open_trade_count -= 1
+                            open_trades[pair].remove(trade)
+                            LocalTrade.close_bt_trade(trade)
+                            trades.append(trade)
                         self.wallets.update()
                         self.run_protections(
                             enable_protections, pair, current_time, trade.trade_direction)

@@ -105,7 +105,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
 
     ``` json title="Result"
     {
-        "max_open_trades": 10,
+        "max_open_trades": 3,
         "stake_currency": "USDT",
         "stake_amount": "unlimited"
     }

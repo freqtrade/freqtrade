@@ -472,10 +472,13 @@ class IStrategy(ABC, HyperStrategyMixin):
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
                               current_rate: float, current_profit: float,
                               min_stake: Optional[float], max_stake: float,
+                              current_entry_rate: float, current_exit_rate: float,
+                              current_entry_profit: float, current_exit_profit: float,
                               **kwargs) -> Optional[float]:
         """
-        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
-        This means extra buy orders with additional fees.
+        Custom trade adjustment logic, returning the stake amount that a trade should be
+        increased or decreased.
+        This means extra buy or sell orders with additional fees.
         Only called when `position_adjustment_enable` is set to True.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
@@ -486,10 +489,16 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Current buy rate.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
-        :param min_stake: Minimal stake size allowed by exchange.
-        :param max_stake: Balance available for trading.
+        :param min_stake: Minimal stake size allowed by exchange (for both entries and exits)
+        :param max_stake: Maximum stake allowed (either through balance, or by exchange limits).
+        :param current_entry_rate: Current rate using entry pricing.
+        :param current_exit_rate: Current rate using exit pricing.
+        :param current_entry_profit: Current profit using entry pricing.
+        :param current_exit_profit: Current profit using exit pricing.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: Stake amount to adjust your trade
+        :return float: Stake amount to adjust your trade,
+                       Positive values to increase position, Negative values to decrease position.
+                       Return None for no action.
         """
         return None
 
@@ -988,7 +997,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # ROI
         # Trailing stoploss
 
-        if stoplossflag.exit_type == ExitType.STOP_LOSS:
+        if stoplossflag.exit_type in (ExitType.STOP_LOSS, ExitType.LIQUIDATION):
 
             logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
             exits.append(stoplossflag)
@@ -1060,6 +1069,17 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         sl_higher_long = (trade.stop_loss >= (low or current_rate) and not trade.is_short)
         sl_lower_short = (trade.stop_loss <= (high or current_rate) and trade.is_short)
+        liq_higher_long = (trade.liquidation_price
+                           and trade.liquidation_price >= (low or current_rate)
+                           and not trade.is_short)
+        liq_lower_short = (trade.liquidation_price
+                           and trade.liquidation_price <= (high or current_rate)
+                           and trade.is_short)
+
+        if (liq_higher_long or liq_lower_short):
+            logger.debug(f"{trade.pair} - Liquidation price hit. exit_type=ExitType.LIQUIDATION")
+            return ExitCheckTuple(exit_type=ExitType.LIQUIDATION)
+
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
@@ -1077,13 +1097,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
-                new_stoploss = (
-                    trade.stop_loss + trade.initial_stop_loss
-                    if trade.is_short else
-                    trade.stop_loss - trade.initial_stop_loss
-                )
-                logger.debug(f"{trade.pair} - Trailing stop saved "
-                             f"{new_stoploss:.6f}")
 
             return ExitCheckTuple(exit_type=exit_type)
 

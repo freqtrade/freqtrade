@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 import time
+from collections import deque
 from unittest.mock import MagicMock
 
 from freqtrade.enums import RPCMessageType
@@ -81,9 +82,25 @@ def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
     assert telegram_mock.call_count == 0
 
 
+def test_process_msg_queue(mocker, default_conf, caplog) -> None:
+    telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg')
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc_manager = RPCManager(freqtradebot)
+    queue = deque()
+    queue.append('Test message')
+    queue.append('Test message 2')
+    rpc_manager.process_msg_queue(queue)
+
+    assert log_has("Sending rpc message: {'type': strategy_msg, 'msg': 'Test message'}", caplog)
+    assert log_has("Sending rpc message: {'type': strategy_msg, 'msg': 'Test message 2'}", caplog)
+    assert telegram_mock.call_count == 2
+
+
 def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
-    telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
-    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+    telegram_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg')
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init')
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
