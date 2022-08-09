@@ -90,6 +90,7 @@ class FreqaiDataKitchen:
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
         self.train_dates: DataFrame = pd.DataFrame()
+        self.unique_classes: Dict[str, list] = {}
 
     def set_paths(
         self,
@@ -977,6 +978,8 @@ class FreqaiDataKitchen:
                         informative=corr_dataframes[i][tf]
                     )
 
+        self.get_unique_classes_from_labels(dataframe)
+
         return dataframe
 
     def fit_labels(self) -> None:
@@ -1003,3 +1006,11 @@ class FreqaiDataKitchen:
             col for col in dataframe.columns if not col.startswith("%") or col.startswith("%%")
         ]
         return dataframe[to_keep]
+
+    def get_unique_classes_from_labels(self, dataframe: DataFrame) -> None:
+
+        self.find_features(dataframe)
+
+        for key in self.label_list:
+            if dataframe[key].dtype == object:
+                self.unique_classes[key] = dataframe[key].dropna().unique()
