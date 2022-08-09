@@ -1183,7 +1183,7 @@ def test_rpc_whitelist(mocker, default_conf) -> None:
     ret = rpc._rpc_whitelist()
     assert len(ret['method']) == 1
     assert 'StaticPairList' in ret['method']
-    assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
+    assert ret['whitelist'] == sorted(default_conf['exchange']['pair_whitelist'])
 
 
 def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
@@ -1199,7 +1199,7 @@ def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     assert len(ret['method']) == 1
     assert 'VolumePairList' in ret['method']
     assert ret['length'] == 4
-    assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
+    assert ret['whitelist'] == sorted(default_conf['exchange']['pair_whitelist'])
 
 
 def test_rpc_blacklist(mocker, default_conf) -> None:
