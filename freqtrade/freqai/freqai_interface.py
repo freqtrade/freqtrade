@@ -340,7 +340,7 @@ class IFreqaiModel(ABC):
 
         self.dd.save_historic_predictions_to_disk()
         if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
-            self.fit_live_predictions(dk)
+            self.fit_live_predictions(dk, pair)
         self.dd.append_model_predictions(pair, pred_df, do_preds, dk, len(dataframe))
         dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
 
@@ -551,7 +551,7 @@ class IFreqaiModel(ABC):
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = 0
 
-    def fit_live_predictions(self, dk: FreqaiDataKitchen) -> None:
+    def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """
         Fit the labels with a gaussian distribution
         """
