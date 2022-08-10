@@ -624,7 +624,8 @@ class FreqtradeBot(LoggingMixin):
         ordertype: Optional[str] = None,
         enter_tag: Optional[str] = None,
         trade: Optional[Trade] = None,
-        order_adjust: bool = False
+        order_adjust: bool = False,
+        leverage_: Optional[float] = None,
     ) -> bool:
         """
         Executes a limit buy for the given pair
@@ -640,7 +641,7 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount, leverage = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust)
+            pair, price, stake_amount, trade_side, enter_tag, trade, order_adjust, leverage_)
 
         if not stake_amount:
             return False
@@ -787,6 +788,7 @@ class FreqtradeBot(LoggingMixin):
         entry_tag: Optional[str],
         trade: Optional[Trade],
         order_adjust: bool,
+        leverage_: Optional[float],
     ) -> Tuple[float, float, float]:
 
         if price:
@@ -809,16 +811,19 @@ class FreqtradeBot(LoggingMixin):
         if not enter_limit_requested:
             raise PricingError('Could not determine entry price.')
 
-        if trade is None:
+        if self.trading_mode != TradingMode.SPOT and trade is None:
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
-            leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-                pair=pair,
-                current_time=datetime.now(timezone.utc),
-                current_rate=enter_limit_requested,
-                proposed_leverage=1.0,
-                max_leverage=max_leverage,
-                side=trade_side, entry_tag=entry_tag,
-            ) if self.trading_mode != TradingMode.SPOT else 1.0
+            if leverage_:
+                leverage = leverage_
+            else:
+                leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                    pair=pair,
+                    current_time=datetime.now(timezone.utc),
+                    current_rate=enter_limit_requested,
+                    proposed_leverage=1.0,
+                    max_leverage=max_leverage,
+                    side=trade_side, entry_tag=entry_tag,
+                )
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)
         else:

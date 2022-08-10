@@ -325,11 +325,13 @@ class ForceEnterPayload(BaseModel):
     ordertype: Optional[OrderTypeValues]
     stakeamount: Optional[float]
     entry_tag: Optional[str]
+    leverage: Optional[float]
 
 
 class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
+    amount: Optional[float]
 
 
 class BlacklistPayload(BaseModel):
