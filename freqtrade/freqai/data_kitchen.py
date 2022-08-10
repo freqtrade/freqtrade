@@ -2,9 +2,8 @@ import copy
 import datetime
 import logging
 import shutil
-import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -87,20 +86,6 @@ class FreqaiDataKitchen:
                 config["freqai"]["train_period_days"],
                 config["freqai"]["backtest_period_days"],
             )
-
-        self.database_path: Optional[Path] = None
-
-        if self.live:
-            db_url = self.config.get('db_url', None)
-            self.database_path = Path(db_url)
-            if 'sqlite' not in self.database_path.parts[0]:
-                self.database_path = None
-                logger.warning('FreqAI database analyzer only available for sqlite dbs. '
-                               ' FreqAI will still run, but user cannot use database analyzer.')
-            else:
-                self.database_name = Path(*self.database_path.parts[1:])
-
-        self.trade_database_df: DataFrame = pd.DataFrame()
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
@@ -1007,13 +992,6 @@ class FreqaiDataKitchen:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
-        # KEEPME incase we want to let user start to grab quantiles.
-        # upper_q = spy.stats.norm.ppf(self.freqai_config['feature_parameters'][
-        #                                                   'target_quantile'], *f)
-        # lower_q = spy.stats.norm.ppf(1 - self.freqai_config['feature_parameters'][
-        #                                                       'target_quantile'], *f)
-        # self.data["upper_quantile"] = upper_q
-        # self.data["lower_quantile"] = lower_q
         return
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
@@ -1025,181 +1003,3 @@ class FreqaiDataKitchen:
             col for col in dataframe.columns if not col.startswith("%") or col.startswith("%%")
         ]
         return dataframe[to_keep]
-
-    def get_current_trade_database(self) -> None:
-
-        if self.database_path is None:
-            logger.warning('No trade database found. Skipping analysis.')
-            return
-
-        data = sqlite3.connect(self.database_name)
-        query = data.execute("SELECT * From trades")
-        cols = [column[0] for column in query.description]
-        df = pd.DataFrame.from_records(data=query.fetchall(), columns=cols)
-        self.trade_database_df = df.dropna(subset='close_date')
-        data.close()
-
-    def np_encoder(self, object):
-        if isinstance(object, np.generic):
-            return object.item()
-
-    # Functions containing useful data manipulation examples. but not actively in use.
-
-    # Possibly phasing these outlier removal methods below out in favor of
-    # use_SVM_to_remove_outliers (computationally more efficient and apparently higher performance).
-    # But these have good data manipulation examples, so keep them commented here for now.
-
-    # def determine_statistical_distributions(self) -> None:
-    #     from fitter import Fitter
-
-    #     logger.info('Determining best model for all features, may take some time')
-
-    #     def compute_quantiles(ft):
-    #         f = Fitter(self.data_dictionary["train_features"][ft],
-    #                    distributions=['gamma', 'cauchy', 'laplace',
-    #                                   'beta', 'uniform', 'lognorm'])
-    #         f.fit()
-    #         # f.summary()
-    #         dist = list(f.get_best().items())[0][0]
-    #         params = f.get_best()[dist]
-    #         upper_q = getattr(spy.stats, list(f.get_best().items())[0][0]).ppf(0.999, **params)
-    #         lower_q = getattr(spy.stats, list(f.get_best().items())[0][0]).ppf(0.001, **params)
-
-    #         return ft, upper_q, lower_q, dist
-
-    #     quantiles_tuple = Parallel(n_jobs=-1)(
-    #         delayed(compute_quantiles)(ft) for ft in self.data_dictionary[
-    #                                                       'train_features'].columns)
-
-    #     df = pd.DataFrame(quantiles_tuple, columns=['features', 'upper_quantiles',
-    #                                                 'lower_quantiles', 'dist'])
-    #     self.data_dictionary['upper_quantiles'] = df['upper_quantiles']
-    #     self.data_dictionary['lower_quantiles'] = df['lower_quantiles']
-
-    #     return
-
-    # def remove_outliers(self, predict: bool) -> None:
-    #     """
-    #     Remove data that looks like an outlier based on the distribution of each
-    #     variable.
-    #     :params:
-    #     :predict: boolean which tells the function if this is prediction data or
-    #     training data coming in.
-    #     """
-
-    #     lower_quantile = self.data_dictionary["lower_quantiles"].to_numpy()
-    #     upper_quantile = self.data_dictionary["upper_quantiles"].to_numpy()
-
-    #     if predict:
-
-    #         df = self.data_dictionary["prediction_features"][
-    #             (self.data_dictionary["prediction_features"] < upper_quantile)
-    #             & (self.data_dictionary["prediction_features"] > lower_quantile)
-    #         ]
-    #         drop_index = pd.isnull(df).any(1)
-    #         self.data_dictionary["prediction_features"].fillna(0, inplace=True)
-    #         drop_index = ~drop_index
-    #         do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
-
-    #         logger.info(
-    #             "remove_outliers() tossed %s predictions",
-    #             len(do_predict) - do_predict.sum(),
-    #         )
-    #         self.do_predict += do_predict
-    #         self.do_predict -= 1
-
-    #     else:
-
-    #         filter_train_df = self.data_dictionary["train_features"][
-    #             (self.data_dictionary["train_features"] < upper_quantile)
-    #             & (self.data_dictionary["train_features"] > lower_quantile)
-    #         ]
-    #         drop_index = pd.isnull(filter_train_df).any(1)
-    #         drop_index = drop_index.replace(True, 1).replace(False, 0)
-    #         self.data_dictionary["train_features"] = self.data_dictionary["train_features"][
-    #             (drop_index == 0)
-    #         ]
-    #         self.data_dictionary["train_labels"] = self.data_dictionary["train_labels"][
-    #             (drop_index == 0)
-    #         ]
-    #         self.data_dictionary["train_weights"] = self.data_dictionary["train_weights"][
-    #             (drop_index == 0)
-    #         ]
-
-    #         logger.info(
-    #             f'remove_outliers() tossed {drop_index.sum()}'
-    #             f' training points from {len(filter_train_df)}'
-    #         )
-
-    #         # do the same for the test data
-    #         filter_test_df = self.data_dictionary["test_features"][
-    #             (self.data_dictionary["test_features"] < upper_quantile)
-    #             & (self.data_dictionary["test_features"] > lower_quantile)
-    #         ]
-    #         drop_index = pd.isnull(filter_test_df).any(1)
-    #         drop_index = drop_index.replace(True, 1).replace(False, 0)
-    #         self.data_dictionary["test_labels"] = self.data_dictionary["test_labels"][
-    #             (drop_index == 0)
-    #         ]
-    #         self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
-    #             (drop_index == 0)
-    #         ]
-    #         self.data_dictionary["test_weights"] = self.data_dictionary["test_weights"][
-    #             (drop_index == 0)
-    #         ]
-
-    #         logger.info(
-    #             f'remove_outliers() tossed {drop_index.sum()}'
-    #             f' test points from {len(filter_test_df)}'
-    #         )
-
-    #     return
-
-    # def standardize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
-    #     """
-    #     standardize all data in the data_dictionary according to the training dataset
-    #     :params:
-    #     :data_dictionary: dictionary containing the cleaned and split training/test data/labels
-    #     :returns:
-    #     :data_dictionary: updated dictionary with standardized values.
-    #     """
-    #     # standardize the data by training stats
-    #     train_mean = data_dictionary["train_features"].mean()
-    #     train_std = data_dictionary["train_features"].std()
-    #     data_dictionary["train_features"] = (
-    #         data_dictionary["train_features"] - train_mean
-    #     ) / train_std
-    #     data_dictionary["test_features"] = (
-    #         data_dictionary["test_features"] - train_mean
-    #     ) / train_std
-
-    #     train_labels_std = data_dictionary["train_labels"].std()
-    #     train_labels_mean = data_dictionary["train_labels"].mean()
-    #     data_dictionary["train_labels"] = (
-    #         data_dictionary["train_labels"] - train_labels_mean
-    #     ) / train_labels_std
-    #     data_dictionary["test_labels"] = (
-    #         data_dictionary["test_labels"] - train_labels_mean
-    #     ) / train_labels_std
-
-    #     for item in train_std.keys():
-    #         self.data[item + "_std"] = train_std[item]
-    #         self.data[item + "_mean"] = train_mean[item]
-
-    #     self.data["labels_std"] = train_labels_std
-    #     self.data["labels_mean"] = train_labels_mean
-
-    #     return data_dictionary
-
-    # def standardize_data_from_metadata(self, df: DataFrame) -> DataFrame:
-    # """
-    # Normalizes a set of data using the mean and standard deviation from
-    # the associated training data.
-    # :params:
-    # :df: Dataframe to be standardized
-    # """
-
-    # for item in df.keys():
-    #     df[item] = (df[item] - self.data[item + "_mean"]) / self.data[item + "_std"]
-
-    # return df

@@ -663,78 +663,12 @@ The user needs to set the standard dictionary in the config so FreqAI can return
 These values will likely be overridden by the user prediction model, but in the case where the user model has yet to set them, or needs
 a default initial value - this is the value that will be returned.
 
-## Analyzing the trade live database
 
-Users can analyze the live trade database by calling `analyze_trade_database()` in their custom prediction model. FreqAI already has the
-database setup in a pandas dataframe and ready to be analyzed. Here is an example usecase:
-
-```python
-    def analyze_trade_database(self, dk: FreqaiDataKitchen, pair: str) -> None:
-        """
-        User analyzes the trade database here and returns summary stats which will be passed back
-        to the strategy for reinforcement learning or for additional adaptive metrics for use
-        in entry/exit signals. Store these metrics in dk.data['extra_returns_per_train'] and
-        they will format themselves into the dataframe as an additional column in the user
-        strategy. User has access to the current trade database in dk.trade_database_df.
-        """
-        total_profit = dk.trade_database_df['close_profit_abs'].sum()
-        dk.data['extra_returns_per_train']['total_profit'] = total_profit
-
-        return
-```
 ## Building an IFreqaiModel
 
 FreqAI has multiple example prediction model based libraries such as `Catboost` regression (`freqai/prediction_models/CatboostRegressor.py`) and `LightGBM` regression. 
 However, users can customize and create their own prediction models using the `IFreqaiModel` class.
 Users are encouraged to inherit `train()` and `predict()` to let them customize various aspects of their training procedures.
-
-<!-- ## Dynamic target expectation
-
-The labels used for model training have a unique statistical distribution for each separate model training. 
-We can use this information to know if our current prediction is in the realm of what the model was trained on, 
-and if so, what is the statistical probability of the current prediction. With this information, we can
-make more informed prediction.
-FreqAI builds this label distribution and provides a quantile to the strategy, which can be optionally used as a
-dynamic threshold. The `target_quantile: X` means that X% of the labels are below this value. So setting:
-
-```json
-    "freqai": {
-        "feature_parameters" : {
-            "target_quantile": 0.9
-        }
-    }
-```
-
-Means the user will get back in the strategy the label threshold at which 90% of the labels were 
-below this value. An example usage in the strategy may look something like:
-
-```python
-
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        # ... #
-
-        (
-            dataframe["prediction"],
-            dataframe["do_predict"],
-            dataframe["target_upper_quantile"],
-            dataframe["target_lower_quantile"],
-        ) = self.freqai.start(dataframe, metadata, self)
-
-        return dataframe
-
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        buy_conditions = [
-            (dataframe["prediction"] > dataframe["target_upper_quantile"]) & (dataframe["do_predict"] == 1)
-        ]
-
-        if buy_conditions:
-            dataframe.loc[reduce(lambda x, y: x | y, buy_conditions), "buy"] = 1
-
-        return dataframe
-
-``` -->
 
 ## Additional information
 

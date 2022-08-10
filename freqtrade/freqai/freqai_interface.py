@@ -491,9 +491,6 @@ class IFreqaiModel(ABC):
 
         model = self.train(unfiltered_dataframe, pair, dk)
 
-        dk.get_current_trade_database()
-        self.analyze_trade_database(dk, pair)
-
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
@@ -612,20 +609,3 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
-
-    def analyze_trade_database(self, dk: FreqaiDataKitchen, pair: str) -> None:
-        """
-        User analyzes the trade database here and returns summary stats which will be passed back
-        to the strategy for reinforcement learning or for additional adaptive metrics for use
-        in entry/exit signals. Store these metrics in dk.data['extra_returns_per_train'] and
-        they will format themselves into the dataframe as an additional column in the user
-        strategy. User has access to the current trade database in dk.trade_database_df.
-        """
-        # if dk.trade_database_df.empty:
-        #     logger.warning(f'No trades found for {pair} to analyze DB')
-        #     return
-
-        # total_profit = dk.trade_database_df['close_profit_abs'].sum()
-        # dk.data['extra_returns_per_train']['total_profit'] = total_profit
-
-        return
