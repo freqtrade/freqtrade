@@ -3,7 +3,6 @@ This module contains the class to persist trades into SQLite
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from math import isclose
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +16,7 @@ from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
+from freqtrade.util import FtPrecise
 
 
 logger = logging.getLogger(__name__)
@@ -694,8 +694,8 @@ class LocalTrade():
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        open_trade = Decimal(amount) * Decimal(open_rate)
-        fees = open_trade * Decimal(self.fee_open)
+        open_trade = FtPrecise(amount) * FtPrecise(open_rate)
+        fees = open_trade * FtPrecise(self.fee_open)
         if self.is_short:
             return float(open_trade - fees)
         else:
@@ -708,30 +708,30 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value(self.amount, self.open_rate)
 
-    def calculate_interest(self) -> Decimal:
+    def calculate_interest(self) -> FtPrecise:
         """
         Calculate interest for this trade. Only applicable for Margin trading.
         """
-        zero = Decimal(0.0)
+        zero = FtPrecise(0.0)
         # If nothing was borrowed
         if self.trading_mode != TradingMode.MARGIN or self.has_no_leverage:
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
         now = (self.close_date or datetime.now(timezone.utc)).replace(tzinfo=None)
-        sec_per_hour = Decimal(3600)
-        total_seconds = Decimal((now - open_date).total_seconds())
+        sec_per_hour = FtPrecise(3600)
+        total_seconds = FtPrecise((now - open_date).total_seconds())
         hours = total_seconds / sec_per_hour or zero
 
-        rate = Decimal(self.interest_rate)
-        borrowed = Decimal(self.borrowed)
+        rate = FtPrecise(self.interest_rate)
+        borrowed = FtPrecise(self.borrowed)
 
         return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
 
-    def _calc_base_close(self, amount: Decimal, rate: float, fee: float) -> Decimal:
+    def _calc_base_close(self, amount: FtPrecise, rate: float, fee: float) -> FtPrecise:
 
-        close_trade = amount * Decimal(rate)
-        fees = close_trade * Decimal(fee)
+        close_trade = amount * FtPrecise(rate)
+        fees = close_trade * FtPrecise(fee)
 
         if self.is_short:
             return close_trade + fees
@@ -747,7 +747,7 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        amount1 = Decimal(amount or self.amount)
+        amount1 = FtPrecise(amount or self.amount)
         trading_mode = self.trading_mode or TradingMode.SPOT
 
         if trading_mode == TradingMode.SPOT:
