@@ -849,6 +849,7 @@ class Exchange:
             dry_order.update({
                 'average': average,
                 'filled': _amount,
+                'remaining': 0.0,
                 'cost': (dry_order['amount'] * average) / leverage
             })
             # market orders will always incurr taker fees
