@@ -73,3 +73,8 @@ def test_FtPrecise():
 
     assert FtPrecise('3.1415') <= FtPrecise('3.1415')
     assert FtPrecise('3.1415') <= FtPrecise('3.14150000000000000000001')
+
+    assert FtPrecise(213) == '213'
+    assert FtPrecise(-213) == '-213'
+    assert str(FtPrecise(-213)) == '-213'
+    assert FtPrecise(213.2) == '213.2'

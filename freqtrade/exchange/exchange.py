@@ -709,8 +709,8 @@ class Exchange:
             #                                    counting_mode=self.precisionMode,
             #                                    ))
             if self.precisionMode == TICK_SIZE:
-                precision = FtPrecise(str(self.markets[pair]['precision']['price']))
-                price_str = FtPrecise(str(price))
+                precision = FtPrecise(self.markets[pair]['precision']['price'])
+                price_str = FtPrecise(price)
                 missing = price_str % precision
                 if not missing == FtPrecise("0"):
                     price = round(float(str(price_str - missing + precision)), 14)
