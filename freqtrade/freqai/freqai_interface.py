@@ -534,8 +534,6 @@ class IFreqaiModel(ABC):
         :param: pair: str = current pair
         """
 
-        pred_df = dk.denormalize_labels_from_metadata(pred_df)
-
         self.dd.historic_predictions[pair] = pred_df
         hist_preds_df = self.dd.historic_predictions[pair]
 
