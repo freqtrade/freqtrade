@@ -661,7 +661,7 @@ class RPC:
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
     def __exec_force_exit(self, trade: Trade, ordertype: Optional[str],
-                          _amount: Optional[float] = None) -> None:
+                          amount: Optional[float] = None) -> None:
         # Check if there is there is an open order
         fully_canceled = False
         if trade.open_order_id:
@@ -683,14 +683,14 @@ class RPC:
             order_type = ordertype or self._freqtrade.strategy.order_types.get(
                 "force_exit", self._freqtrade.strategy.order_types["exit"])
             sub_amount: Optional[float] = None
-            if _amount and _amount < trade.amount:
+            if amount and amount < trade.amount:
                 # Partial exit ...
                 min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
                     trade.pair, current_rate, trade.stop_loss_pct)
-                remaining = (trade.amount - _amount) * current_rate
+                remaining = (trade.amount - amount) * current_rate
                 if remaining < min_exit_stake:
                     raise RPCException(f'Remaining amount of {remaining} would be too small.')
-                sub_amount = _amount
+                sub_amount = amount
 
             self._freqtrade.execute_trade_exit(
                 trade, current_rate, exit_check, ordertype=order_type,
