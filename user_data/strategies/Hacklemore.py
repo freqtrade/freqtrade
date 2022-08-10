@@ -63,7 +63,8 @@ class Hacklemore(WAOStrategy):
 
             if active_trade:
                 current_rate = self.get_current_price(metadata['pair'])
-                active_trade[0].adjust_min_max_rates(current_rate)
+                current_price_low = self.get_current_price_low(metadata['pair'])
+                active_trade[0].adjust_min_max_rates(current_rate, current_price_low)
                 trade_data['active_trade'] = True
                 trade_data['current_profit'] = active_trade[0].calc_profit_ratio(current_rate)
                 trade_data['peak_profit'] = active_trade[0].calc_profit_ratio(active_trade[0].max_rate)
@@ -196,6 +197,22 @@ class Hacklemore(WAOStrategy):
         if (self.config['ask_strategy']['price_side'] == "bid"):
             side = "bids"
         
+        ob = self.dp.orderbook(pair, 1)
+        current_price = ob[side][0][0]
+        """
+
+        ticker = self.dp.ticker(pair)
+        current_price = ticker['last']
+
+        return current_price
+
+    def get_current_price_low(self, pair: str) -> float:
+        """
+        # Using ticker seems significantly faster than orderbook.
+        side = "asks"
+        if (self.config['ask_strategy']['price_side'] == "bid"):
+            side = "bids"
+
         ob = self.dp.orderbook(pair, 1)
         current_price = ob[side][0][0]
         """
