@@ -62,15 +62,6 @@ class BaseRegressionModel(IFreqaiModel):
 
         model = self.fit(data_dictionary)
 
-        if pair not in self.dd.historic_predictions:
-            self.set_initial_historic_predictions(
-                data_dictionary['train_features'], model, dk, pair)
-
-        if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
-            self.fit_live_predictions(dk)
-
-        self.dd.save_historic_predictions_to_disk()
-
         logger.info(f"--------------------done training {pair}--------------------")
 
         return model

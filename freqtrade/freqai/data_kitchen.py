@@ -91,6 +91,7 @@ class FreqaiDataKitchen:
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
         self.train_dates: DataFrame = pd.DataFrame()
         self.unique_classes: Dict[str, list] = {}
+        self.unique_class_list: list = []
 
     def set_paths(
         self,
@@ -338,7 +339,7 @@ class FreqaiDataKitchen:
         """
 
         for label in df.columns:
-            if df[label].dtype == object:
+            if df[label].dtype == object or label in self.unique_class_list:
                 continue
             df[label] = (
                 (df[label] + 1)
@@ -995,6 +996,10 @@ class FreqaiDataKitchen:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
+        # incase targets are classifications
+        for label in self.unique_class_list:
+            self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
+
         return
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
@@ -1014,3 +1019,7 @@ class FreqaiDataKitchen:
         for key in self.label_list:
             if dataframe[key].dtype == object:
                 self.unique_classes[key] = dataframe[key].dropna().unique()
+
+        if self.unique_classes:
+            for label in self.unique_classes:
+                self.unique_class_list += list(self.unique_classes[label])
