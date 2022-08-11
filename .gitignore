@@ -80,6 +80,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+# Mkdocs documentation
+site/
 
 # PyBuilder
 target/

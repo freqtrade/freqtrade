@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi.exceptions import HTTPException
@@ -50,8 +51,12 @@ async def index_html(rest_of_path: str):
     filename = uibase / rest_of_path
     # It's security relevant to check "relative_to".
     # Without this, Directory-traversal is possible.
+    media_type: Optional[str] = None
+    if filename.suffix == '.js':
+        # Force text/javascript for .js files - Circumvent faulty system configuration
+        media_type = 'application/javascript'
     if filename.is_file() and is_relative_to(filename, uibase):
-        return FileResponse(str(filename))
+        return FileResponse(str(filename), media_type=media_type)
 
     index_file = uibase / 'index.html'
     if not index_file.is_file():

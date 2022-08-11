@@ -311,3 +311,27 @@ def test_no_exchange_mode(default_conf):
 
     with pytest.raises(OperationalException, match=message):
         dp.available_pairs()
+
+
+def test_dp_send_msg(default_conf):
+
+    default_conf["runmode"] = RunMode.DRY_RUN
+
+    default_conf["timeframe"] = '1h'
+    dp = DataProvider(default_conf, None)
+    msg = 'Test message'
+    dp.send_msg(msg)
+
+    assert msg in dp._msg_queue
+    dp._msg_queue.pop()
+    assert msg not in dp._msg_queue
+    # Message is not resent due to caching
+    dp.send_msg(msg)
+    assert msg not in dp._msg_queue
+    dp.send_msg(msg, always_send=True)
+    assert msg in dp._msg_queue
+
+    default_conf["runmode"] = RunMode.BACKTEST
+    dp = DataProvider(default_conf, None)
+    dp.send_msg(msg, always_send=True)
+    assert msg not in dp._msg_queue

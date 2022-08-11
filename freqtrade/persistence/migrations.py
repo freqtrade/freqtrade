@@ -1,9 +1,10 @@
 import logging
 from typing import List
 
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text, tuple_, update
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence.trade_model import Order, Trade
 
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ def migrate_trades_and_orders_table(
     exit_reason = get_column_def(cols, 'sell_reason', get_column_def(cols, 'exit_reason', 'null'))
     strategy = get_column_def(cols, 'strategy', 'null')
     enter_tag = get_column_def(cols, 'buy_tag', get_column_def(cols, 'enter_tag', 'null'))
+    realized_profit = get_column_def(cols, 'realized_profit', '0.0')
 
     trading_mode = get_column_def(cols, 'trading_mode', 'null')
 
@@ -154,7 +156,7 @@ def migrate_trades_and_orders_table(
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
-            interest_rate, funding_fees
+            interest_rate, funding_fees, realized_profit
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -180,7 +182,7 @@ def migrate_trades_and_orders_table(
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fees} funding_fees
+            {funding_fees} funding_fees, {realized_profit} realized_profit
             from {trade_back_name}
             """))
 
@@ -201,16 +203,18 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
 
     ft_fee_base = get_column_def(cols_order, 'ft_fee_base', 'null')
     average = get_column_def(cols_order, 'average', 'null')
+    stop_price = get_column_def(cols_order, 'stop_price', 'null')
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, ft_fee_base)
+            stop_price, order_date, order_filled_date, order_update_date, ft_fee_base)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
-            cost, order_date, order_filled_date, order_update_date, {ft_fee_base} ft_fee_base
+            cost, {stop_price} stop_price, order_date, order_filled_date,
+            order_update_date, {ft_fee_base} ft_fee_base
             from {table_back_name}
             """))
 
@@ -249,31 +253,31 @@ def set_sqlite_to_wal(engine):
 
 def fix_old_dry_orders(engine):
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                """
-                update orders
-                set ft_is_open = 0
-                where ft_is_open = 1 and (ft_trade_id, order_id) not in (
-                    select id, stoploss_order_id from trades where stoploss_order_id is not null
-                ) and ft_order_side = 'stoploss'
-                and order_id like 'dry_%'
-                """
-            )
-        )
-        connection.execute(
-            text(
-                """
-                update orders
-                set ft_is_open = 0
-                where ft_is_open = 1
-                and (ft_trade_id, order_id) not in (
-                    select id, open_order_id from trades where open_order_id is not null
-                ) and ft_order_side != 'stoploss'
-                and order_id like 'dry_%'
-                """
-            )
-        )
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.stoploss_order_id
+                ).where(Trade.stoploss_order_id.is_not(None))
+                  ),
+            Order.ft_order_side == 'stoploss',
+            Order.order_id.like('dry%'),
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
+
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.open_order_id
+                ).where(Trade.open_order_id.is_not(None))
+                  ),
+            Order.ft_order_side != 'stoploss',
+            Order.order_id.like('dry%')
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
 
 
 def check_migrate(engine, decl_base, previous_tables) -> None:
@@ -295,8 +299,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Check if migration necessary
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
-    # or not has_column(cols_orders, 'leverage')):
-    if not has_column(cols_trades, 'base_currency'):
+    # or not has_column(cols_orders, 'stop_price')):
+    if not has_column(cols_trades, 'realized_profit'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(

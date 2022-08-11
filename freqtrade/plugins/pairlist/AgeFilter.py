@@ -8,11 +8,11 @@ from typing import Any, Dict, List, Optional
 import arrow
 from pandas import DataFrame
 
-from freqtrade.configuration import PeriodicCache
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.util import PeriodicCache
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class AgeFilter(IPairList):
         self._symbolsCheckFailed = PeriodicCache(maxsize=1000, ttl=86_400)
 
         self._min_days_listed = pairlistconfig.get('min_days_listed', 10)
-        self._max_days_listed = pairlistconfig.get('max_days_listed', None)
+        self._max_days_listed = pairlistconfig.get('max_days_listed')
 
         candle_limit = exchange.ohlcv_candle_limit('1d', self._config['candle_type_def'])
         if self._min_days_listed < 1:

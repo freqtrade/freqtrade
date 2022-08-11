@@ -18,9 +18,9 @@ def get_rpc_optional() -> Optional[RPC]:
 def get_rpc() -> Optional[Iterator[RPC]]:
     _rpc = get_rpc_optional()
     if _rpc:
-        Trade.query.session.rollback()
+        Trade.rollback()
         yield _rpc
-        Trade.query.session.rollback()
+        Trade.rollback()
     else:
         raise RPCException('Bot is not in the correct state')
 
@@ -37,7 +37,7 @@ def get_exchange(config=Depends(get_config)):
     if not ApiServer._exchange:
         from freqtrade.resolvers import ExchangeResolver
         ApiServer._exchange = ExchangeResolver.load_exchange(
-            config['exchange']['name'], config)
+            config['exchange']['name'], config, load_leverage_tiers=False)
     return ApiServer._exchange
 
 

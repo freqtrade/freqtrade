@@ -78,9 +78,21 @@ def get_args(args):
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
-def get_mock_coro(return_value):
+# TODO: This should be replaced with AsyncMock once support for python 3.7 is dropped.
+def get_mock_coro(return_value=None, side_effect=None):
     async def mock_coro(*args, **kwargs):
-        return return_value
+        if side_effect:
+            if isinstance(side_effect, list):
+                effect = side_effect.pop(0)
+            else:
+                effect = side_effect
+            if isinstance(effect, Exception):
+                raise effect
+            if callable(effect):
+                return effect(*args, **kwargs)
+            return effect
+        else:
+            return return_value
 
     return Mock(wraps=mock_coro)
 
@@ -100,11 +112,8 @@ def patch_exchange(
     mock_supported_modes=True
 ) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
-    mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
+    mocker.patch('freqtrade.exchange.Exchange.validate_config', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_ordertypes', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency', MagicMock())
-    mocker.patch('freqtrade.exchange.Exchange.validate_pricing')
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
@@ -139,7 +148,7 @@ def get_patched_exchange(mocker, config, api_mock=None, id='binance',
     patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
     config['exchange']['name'] = id
     try:
-        exchange = ExchangeResolver.load_exchange(id, config)
+        exchange = ExchangeResolver.load_exchange(id, config, load_leverage_tiers=True)
     except ImportError:
         exchange = Exchange(config)
     return exchange
@@ -1618,8 +1627,8 @@ def limit_buy_order_open():
         'timestamp': arrow.utcnow().int_timestamp * 1000,
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00001099,
+        'average': 0.00001099,
         'amount': 90.99181073,
-        'average': None,
         'filled': 0.0,
         'cost': 0.0009999,
         'remaining': 90.99181073,
@@ -1682,6 +1691,7 @@ def limit_buy_order_old_partial():
         'price': 0.00001099,
         'amount': 90.99181073,
         'filled': 23.0,
+        'cost': 90.99181073 * 23.0,
         'remaining': 67.99181073,
         'status': 'open'
     }
@@ -2599,7 +2609,7 @@ def open_trade_usdt():
         pair='ADA/USDT',
         open_rate=2.0,
         exchange='binance',
-        open_order_id='123456789',
+        open_order_id='123456789_exit',
         amount=30.0,
         fee_open=0.0,
         fee_close=0.0,
@@ -2617,6 +2627,23 @@ def open_trade_usdt():
             symbol=trade.pair,
             order_type="market",
             side="buy",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=trade.amount,
+            remaining=0,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        ),
+        Order(
+            ft_order_side='exit',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id='123456789_exit',
+            status="open",
+            symbol=trade.pair,
+            order_type="limit",
+            side="sell",
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,
@@ -2790,6 +2817,7 @@ def limit_buy_order_usdt_open():
         'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp * 1000,
         'price': 2.00,
+        'average': 2.00,
         'amount': 30.0,
         'filled': 0.0,
         'cost': 60.0,
@@ -3153,60 +3181,46 @@ def leverage_tiers():
         "AAVE/USDT": [
             {
                 'min': 0,
-                'max': 50000,
+                'max': 5000,
                 'mmr': 0.01,
                 'lev': 50,
                 'maintAmt': 0.0
             },
             {
-                'min': 50000,
-                'max': 250000,
+                'min': 5000,
+                'max': 25000,
                 'mmr': 0.02,
                 'lev': 25,
-                'maintAmt': 500.0
+                'maintAmt': 75.0
+            },
+            {
+                'min': 25000,
+                'max': 100000,
+                'mmr': 0.05,
+                'lev': 10,
+                'maintAmt': 700.0
+            },
+            {
+                'min': 100000,
+                'max': 250000,
+                'mmr': 0.1,
+                'lev': 5,
+                'maintAmt': 5700.0
             },
             {
                 'min': 250000,
                 'max': 1000000,
-                'mmr': 0.05,
-                'lev': 10,
-                'maintAmt': 8000.0
-            },
-            {
-                'min': 1000000,
-                'max': 2000000,
-                'mmr': 0.1,
-                'lev': 5,
-                'maintAmt': 58000.0
-            },
-            {
-                'min': 2000000,
-                'max': 5000000,
                 'mmr': 0.125,
-                'lev': 4,
-                'maintAmt': 108000.0
-            },
-            {
-                'min': 5000000,
-                'max': 10000000,
-                'mmr': 0.1665,
-                'lev': 3,
-                'maintAmt': 315500.0
+                'lev': 2,
+                'maintAmt': 11950.0
             },
             {
                 'min': 10000000,
-                'max': 20000000,
-                'mmr': 0.25,
-                'lev': 2,
-                'maintAmt': 1150500.0
+                'max': 50000000,
+                'mmr': 0.5,
+                'lev': 1,
+                'maintAmt': 386950.0
             },
-            {
-                "min": 20000000,
-                "max": 50000000,
-                "mmr": 0.5,
-                "lev": 1,
-                "maintAmt": 6150500.0
-            }
         ],
         "ADA/BUSD": [
             {

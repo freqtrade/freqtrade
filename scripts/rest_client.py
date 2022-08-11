@@ -275,14 +275,20 @@ class FtRestClient():
                 }
         return self._post("forceenter", data=data)
 
-    def forceexit(self, tradeid):
+    def forceexit(self, tradeid, ordertype=None, amount=None):
         """Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
+        :param ordertype: Order type to use (must be market or limit)
+        :param amount: Amount to sell. Full sell if not given
         :return: json object
         """
 
-        return self._post("forceexit", data={"tradeid": tradeid})
+        return self._post("forceexit", data={
+            "tradeid": tradeid,
+            "ordertype": ordertype,
+            "amount": amount,
+            })
 
     def strategies(self):
         """Lists available strategies

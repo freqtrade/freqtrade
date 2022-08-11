@@ -203,7 +203,7 @@ def test_fetch_stoploss_order_ftx(default_conf, mocker, limit_sell_order, limit_
          'info': {
              'orderId': 'mocked_limit_sell',
          }}])
-    api_mock.fetch_order = MagicMock(return_value=limit_sell_order)
+    api_mock.fetch_order = MagicMock(return_value=limit_sell_order.copy())
 
     # No orderId field - no call to fetch_order
     resp = exchange.fetch_stoploss_order('X', 'TKN/BTC')
@@ -219,11 +219,23 @@ def test_fetch_stoploss_order_ftx(default_conf, mocker, limit_sell_order, limit_
     order = {'id': 'X', 'status': 'closed', 'info': {'orderId': None}, 'average': 0.254}
     api_mock.fetch_orders = MagicMock(return_value=[order])
     api_mock.fetch_order.reset_mock()
+    api_mock.privateGetConditionalOrdersConditionalOrderIdTriggers = MagicMock(
+        return_value={'result': [
+            {'orderId': 'mocked_market_sell', 'type': 'market', 'side': 'sell', 'price': 0.254}
+        ]})
     resp = exchange.fetch_stoploss_order('X', 'TKN/BTC')
     assert resp
     # fetch_order not called (no regular order ID)
-    assert api_mock.fetch_order.call_count == 0
-    assert order == order
+    assert api_mock.fetch_order.call_count == 1
+    api_mock.privateGetConditionalOrdersConditionalOrderIdTriggers.call_count == 1
+    expected_resp = limit_sell_order.copy()
+    expected_resp.update({
+        'id_stop': 'X',
+        'id': 'X',
+        'type': 'stop',
+        'status_stop': 'triggered',
+    })
+    assert expected_resp == resp
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_orders = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))

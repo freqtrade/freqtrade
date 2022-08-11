@@ -66,12 +66,12 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
-      if: matrix.python-version != '3.9'
+      if: matrix.python-version != '3.9' || matrix.os != 'ubuntu-22.04'
 
     - name: Tests incl. ccxt compatibility tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
-      if: matrix.python-version == '3.9'
+      if: matrix.python-version == '3.9' && matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
       if: (runner.os == 'Linux' && matrix.python-version == '3.9')
@@ -351,7 +351,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1.5.1
       if: (github.event_name == 'release')
       with:
         user: __token__
@@ -359,7 +359,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1.5.1
       if: (github.event_name == 'release')
       with:
         user: __token__

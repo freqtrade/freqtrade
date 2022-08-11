@@ -1,6 +1,6 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
@@ -116,9 +116,17 @@ class Ftx(Exchange):
             if len(order) == 1:
                 if order[0].get('status') == 'closed':
                     # Trigger order was triggered ...
-                    real_order_id = order[0].get('info', {}).get('orderId')
+                    real_order_id: Optional[str] = order[0].get('info', {}).get('orderId')
                     # OrderId may be None for stoploss-market orders
-                    # But contains "average" in these cases.
+                    # So we need to get it through the endpoint
+                    # /conditional_orders/{conditional_order_id}/triggers
+                    if not real_order_id:
+                        res = self._api.privateGetConditionalOrdersConditionalOrderIdTriggers(
+                            params={'conditional_order_id': order_id})
+                        self._log_exchange_response('fetch_stoploss_order2', res)
+                        real_order_id = res['result'][0]['orderId'] if res.get(
+                            'result', []) else None
+
                     if real_order_id:
                         order1 = self._api.fetch_order(real_order_id, pair)
                         self._log_exchange_response('fetch_stoploss_order1', order1)

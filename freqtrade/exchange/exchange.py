@@ -16,11 +16,11 @@ import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
-from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_precision
+from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, PairWithTimeframe)
+                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -32,6 +32,7 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGE
                                        retrier_async)
 from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.util import FtPrecise
 
 
 CcxtModuleType = Any
@@ -77,7 +78,9 @@ class Exchange:
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap",
+        "fee_cost_in_contracts": False,  # Fee cost needs contract conversion
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "order_props_in_contracts": ['amount', 'cost', 'filled', 'remaining'],
     }
     _ft_has: Dict = {}
     _ft_has_futures: Dict = {}
@@ -86,7 +89,8 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
+    def __init__(self, config: Dict[str, Any], validate: bool = True,
+                 load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
         it does basic validation whether the specified exchange and pairs are valid.
@@ -174,29 +178,17 @@ class Exchange:
         logger.info(f'Using Exchange "{self.name}"')
 
         if validate:
-            # Check if timeframe is available
-            self.validate_timeframes(config.get('timeframe'))
-
             # Initial markets load
             self._load_markets()
-
-            # Check if all pairs are available
-            self.validate_stakecurrency(config['stake_currency'])
-            if not exchange_config.get('skip_pair_validation'):
-                self.validate_pairs(config['exchange']['pair_whitelist'])
-            self.validate_ordertypes(config.get('order_types', {}))
-            self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+            self.validate_config(config)
             self.required_candle_call_count = self.validate_required_startup_candles(
                 config.get('startup_candle_count', 0), config.get('timeframe', ''))
-            self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
-            self.validate_pricing(config['exit_pricing'])
-            self.validate_pricing(config['entry_pricing'])
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
 
-        if self.trading_mode != TradingMode.SPOT:
+        if self.trading_mode != TradingMode.SPOT and load_leverage_tiers:
             self.fill_leverage_tiers()
         self.additional_exchange_init()
 
@@ -212,6 +204,20 @@ class Exchange:
                 and self._api_async.session):
             logger.info("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
+
+    def validate_config(self, config):
+        # Check if timeframe is available
+        self.validate_timeframes(config.get('timeframe'))
+
+        # Check if all pairs are available
+        self.validate_stakecurrency(config['stake_currency'])
+        if not config['exchange'].get('skip_pair_validation'):
+            self.validate_pairs(config['exchange']['pair_whitelist'])
+        self.validate_ordertypes(config.get('order_types', {}))
+        self.validate_order_time_in_force(config.get('order_time_in_force', {}))
+        self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
+        self.validate_pricing(config['exit_pricing'])
+        self.validate_pricing(config['entry_pricing'])
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
@@ -387,7 +393,7 @@ class Exchange:
             and market.get('base', None) is not None
             and (self.precisionMode != TICK_SIZE
                  # Too low precision will falsify calculations
-                 or market.get('precision', {}).get('price', None) > 1e-11)
+                 or market.get('precision', {}).get('price') > 1e-11)
             and ((self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
                  or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
                  or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market)))
@@ -422,7 +428,7 @@ class Exchange:
         if 'symbol' in order and order['symbol'] is not None:
             contract_size = self._get_contract_size(order['symbol'])
             if contract_size != 1:
-                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
                         order[prop] = order[prop] * contract_size
         return order
@@ -537,7 +543,7 @@ class Exchange:
                 # The internal info array is different for each particular market,
                 # its contents depend on the exchange.
                 # It can also be a string or similar ... so we need to verify that first.
-            elif (isinstance(self.markets[pair].get('info', None), dict)
+            elif (isinstance(self.markets[pair].get('info'), dict)
                   and self.markets[pair].get('info', {}).get('prohibitedIn', False)):
                 # Warn users about restricted pairs in whitelist.
                 # We cannot determine reliably if Users are affected.
@@ -703,10 +709,10 @@ class Exchange:
             #                                    counting_mode=self.precisionMode,
             #                                    ))
             if self.precisionMode == TICK_SIZE:
-                precision = Precise(str(self.markets[pair]['precision']['price']))
-                price_str = Precise(str(price))
+                precision = FtPrecise(self.markets[pair]['precision']['price'])
+                price_str = FtPrecise(price)
                 missing = price_str % precision
-                if not missing == Precise("0"):
+                if not missing == FtPrecise("0"):
                     price = round(float(str(price_str - missing + precision)), 14)
             else:
                 symbol_prec = self.markets[pair]['precision']['price']
@@ -820,7 +826,7 @@ class Exchange:
             'price': rate,
             'average': rate,
             'amount': _amount,
-            'cost': _amount * rate / leverage,
+            'cost': _amount * rate,
             'type': ordertype,
             'side': side,
             'filled': 0,
@@ -844,22 +850,30 @@ class Exchange:
             dry_order.update({
                 'average': average,
                 'filled': _amount,
+                'remaining': 0.0,
                 'cost': (dry_order['amount'] * average) / leverage
             })
-            dry_order = self.add_dry_order_fee(pair, dry_order)
+            # market orders will always incurr taker fees
+            dry_order = self.add_dry_order_fee(pair, dry_order, 'taker')
 
-        dry_order = self.check_dry_limit_order_filled(dry_order)
+        dry_order = self.check_dry_limit_order_filled(dry_order, immediate=True)
 
         self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def add_dry_order_fee(self, pair: str, dry_order: Dict[str, Any]) -> Dict[str, Any]:
+    def add_dry_order_fee(
+        self,
+        pair: str,
+        dry_order: Dict[str, Any],
+        taker_or_maker: MakerTaker,
+    ) -> Dict[str, Any]:
+        fee = self.get_fee(pair, taker_or_maker=taker_or_maker)
         dry_order.update({
             'fee': {
                 'currency': self.get_pair_quote_currency(pair),
-                'cost': dry_order['cost'] * self.get_fee(pair),
-                'rate': self.get_fee(pair)
+                'cost': dry_order['cost'] * fee,
+                'rate': fee
             }
         })
         return dry_order
@@ -925,7 +939,8 @@ class Exchange:
             pass
         return False
 
-    def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    def check_dry_limit_order_filled(
+            self, order: Dict[str, Any], immediate: bool = False) -> Dict[str, Any]:
         """
         Check dry-run limit order fill and update fee (if it filled).
         """
@@ -939,7 +954,12 @@ class Exchange:
                     'filled': order['amount'],
                     'remaining': 0,
                 })
-                self.add_dry_order_fee(pair, order)
+
+                self.add_dry_order_fee(
+                    pair,
+                    order,
+                    'taker' if immediate else 'maker',
+                )
 
         return order
 
@@ -1246,7 +1266,7 @@ class Exchange:
             return False
 
         required = ('fee', 'status', 'amount')
-        return all(k in corder for k in required)
+        return all(corder.get(k, None) is not None for k in required)
 
     def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
         """
@@ -1314,11 +1334,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self) -> List[Dict]:
+    def fetch_positions(self, pair: str = None) -> List[Dict]:
+        """
+        Fetch positions from the exchange.
+        If no pair is given, all positions are returned.
+        :param pair: Pair for the query
+        """
         if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
             return []
         try:
-            positions: List[Dict] = self._api.fetch_positions()
+            symbols = []
+            if pair:
+                symbols.append(pair)
+            positions: List[Dict] = self._api.fetch_positions(symbols)
             self._log_exchange_response('fetch_positions', positions)
             return positions
         except ccxt.DDoSProtection as e:
@@ -1481,7 +1509,8 @@ class Exchange:
         return price_side
 
     def get_rate(self, pair: str, refresh: bool,
-                 side: EntryExit, is_short: bool) -> float:
+                 side: EntryExit, is_short: bool,
+                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1513,22 +1542,24 @@ class Exchange:
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
-            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            if order_book is None:
+                order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
                 rate = order_book[f"{price_side}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    f"{name} Price at location {order_book_top} from orderbook could not be "
-                    f"determined. Orderbook: {order_book}"
+                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
+                    f"could not be determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
-            logger.debug(f"{name} price from orderbook {price_side_word}"
+            logger.debug(f"{pair} - {name} price from orderbook {price_side_word}"
                          f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
             logger.debug(f"Using Last {price_side_word} / Last Price")
-            ticker = self.fetch_ticker(pair)
+            if ticker is None:
+                ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[price_side]
             if ticker['last'] and ticker_rate:
                 if side == 'entry' and ticker_rate > ticker['last']:
@@ -1544,6 +1575,33 @@ class Exchange:
         cache_rate[pair] = rate
 
         return rate
+
+    def get_rates(self, pair: str, refresh: bool, is_short: bool) -> Tuple[float, float]:
+        entry_rate = None
+        exit_rate = None
+        if not refresh:
+            entry_rate = self._entry_rate_cache.get(pair)
+            exit_rate = self._exit_rate_cache.get(pair)
+            if entry_rate:
+                logger.debug(f"Using cached buy rate for {pair}.")
+            if exit_rate:
+                logger.debug(f"Using cached sell rate for {pair}.")
+
+        entry_pricing = self._config.get('entry_pricing', {})
+        exit_pricing = self._config.get('exit_pricing', {})
+        order_book = ticker = None
+        if not entry_rate and entry_pricing.get('use_order_book', False):
+            order_book_top = max(entry_pricing.get('order_book_top', 1),
+                                 exit_pricing.get('order_book_top', 1))
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, order_book=order_book)
+        elif not entry_rate:
+            ticker = self.fetch_ticker(pair)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
+        if not exit_rate:
+            exit_rate = self.get_rate(pair, refresh, 'exit',
+                                      is_short, order_book=order_book, ticker=ticker)
+        return entry_rate, exit_rate
 
     # Fee handling
 
@@ -1597,7 +1655,7 @@ class Exchange:
 
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
+                price: float = 1, taker_or_maker: MakerTaker = 'maker') -> float:
         try:
             if self._config['dry_run'] and self._config.get('fee', None) is not None:
                 return self._config['fee']
@@ -1631,27 +1689,35 @@ class Exchange:
                 and order['fee']['cost'] is not None
                 )
 
-    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+    def calculate_fee_rate(
+            self, fee: Dict, symbol: str, cost: float, amount: float) -> Optional[float]:
         """
         Calculate fee rate if it's not given by the exchange.
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         """
-        if order['fee'].get('rate') is not None:
-            return order['fee'].get('rate')
-        fee_curr = order['fee']['currency']
+        if fee.get('rate') is not None:
+            return fee.get('rate')
+        fee_curr = fee.get('currency')
+        if fee_curr is None:
+            return None
+        fee_cost = float(fee['cost'])
+        if self._ft_has['fee_cost_in_contracts']:
+            # Convert cost via "contracts" conversion
+            fee_cost = self._contracts_to_amount(symbol, fee['cost'])
+
         # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(order['symbol']):
+        if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(
-                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
-        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            return round(fee_cost / amount, 8)
+        elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
-            return round(self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) / order['cost'],
-                8) if order['cost'] else None
+            return round(fee_cost / cost, 8) if cost else None
         else:
             # If Fee currency is a different currency
-            if not order['cost']:
+            if not cost:
                 # If cost is None or 0.0 -> falsy, return None
                 return None
             try:
@@ -1663,19 +1729,28 @@ class Exchange:
                 fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
                 if not fee_to_quote_rate:
                     return None
-            return round((self._contracts_to_amount(
-                order['symbol'], order['fee']['cost']) * fee_to_quote_rate) / order['cost'], 8)
+            return round((fee_cost * fee_to_quote_rate) / cost, 8)
 
-    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+    def extract_cost_curr_rate(self, fee: Dict, symbol: str, cost: float,
+                               amount: float) -> Tuple[float, str, Optional[float]]:
         """
         Extract tuple of cost, currency, rate.
         Requires order_has_fee to run first!
-        :param order: Order or trade (one trade) dict
+        :param fee: ccxt Fee dict - must contain cost / currency / rate
+        :param symbol: Symbol of the order
+        :param cost: Total cost of the order
+        :param amount: Amount of the order
         :return: Tuple with cost, currency, rate of the given fee dict
         """
-        return (order['fee']['cost'],
-                order['fee']['currency'],
-                self.calculate_fee_rate(order))
+        return (float(fee['cost']),
+                fee['currency'],
+                self.calculate_fee_rate(
+                    fee,
+                    symbol,
+                    cost,
+                    amount
+                    )
+                )
 
     # Historic data
 
@@ -1946,7 +2021,7 @@ class Exchange:
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
-                    pair,  since,
+                    pair, since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
@@ -2131,10 +2206,11 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def get_market_leverage_tiers(self, symbol) -> List[Dict]:
+    @retrier_async
+    async def get_market_leverage_tiers(self, symbol: str) -> Tuple[str, List[Dict]]:
         try:
-            return self._api.fetch_market_leverage_tiers(symbol)
+            tier = await self._api_async.fetch_market_leverage_tiers(symbol)
+            return symbol, tier
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2168,8 +2244,14 @@ class Exchange:
                     f"Initializing leverage_tiers for {len(symbols)} markets. "
                     "This will take about a minute.")
 
-                for symbol in sorted(symbols):
-                    tiers[symbol] = self.get_market_leverage_tiers(symbol)
+                coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
+
+                for input_coro in chunks(coros, 100):
+
+                    results = self.loop.run_until_complete(
+                        asyncio.gather(*input_coro, return_exceptions=True))
+                    for symbol, res in results:
+                        tiers[symbol] = res
 
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
@@ -2497,7 +2579,6 @@ class Exchange:
         else:
             return 0.0
 
-    @retrier
     def get_or_calculate_liquidation_price(
         self,
         pair: str,
@@ -2531,20 +2612,12 @@ class Exchange:
                 upnl_ex_1=upnl_ex_1
             )
         else:
-            try:
-                positions = self._api.fetch_positions([pair])
-                if len(positions) > 0:
-                    pos = positions[0]
-                    isolated_liq = pos['liquidationPrice']
-                else:
-                    return None
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
+            positions = self.fetch_positions(pair)
+            if len(positions) > 0:
+                pos = positions[0]
+                isolated_liq = pos['liquidationPrice']
+            else:
+                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer

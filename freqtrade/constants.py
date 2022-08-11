@@ -313,6 +313,14 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                         },
+                        'show_candle': {
+                            'type': 'string',
+                            'enum': ['off', 'ohlc'],
+                        },
+                        'strategy_msg': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},
@@ -538,3 +546,4 @@ TradeList = List[List]
 LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
+MakerTaker = Literal['maker', 'taker']

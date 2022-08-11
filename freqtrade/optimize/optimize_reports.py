@@ -639,7 +639,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-    if(tag_type == "enter_tag"):
+    if (tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
         headers = _get_line_header("TAG", stake_currency, 'Sells')
