@@ -5,7 +5,6 @@ import copy
 import logging
 import traceback
 from datetime import datetime, time, timedelta, timezone
-from decimal import Decimal
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,6 +32,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.util import FtPrecise
 from freqtrade.wallets import Wallets
 
 
@@ -565,7 +565,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
+            amount = abs(float(FtPrecise(stake_amount) / FtPrecise(current_exit_rate)))
             if amount > trade.amount:
                 # This is currently ineffective as remaining would become < min tradable
                 # Fixing this would require checking for 0.0 there -
