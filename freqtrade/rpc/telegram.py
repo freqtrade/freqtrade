@@ -407,6 +407,8 @@ class Telegram(RPCHandler):
             message = f"{msg['status']}"
         elif msg_type == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
+        elif msg_type == RPCMessageType.CUSTOM_MSG:
+            message = f"{msg['msg']}"
         else:
             raise NotImplementedError(f"Unknown message type: {msg_type}")
         return message

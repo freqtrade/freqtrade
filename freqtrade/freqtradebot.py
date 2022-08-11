@@ -81,6 +81,7 @@ class FreqtradeBot(LoggingMixin):
         # the initial state of the bot.
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
+        self.strategy.set_rpc_send_msg_function(self.rpc.send_msg)
 
         self.pairlists = PairListManager(self.exchange, self.config)
 

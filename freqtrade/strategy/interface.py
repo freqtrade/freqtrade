@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Callable
 
 import arrow
 from pandas import DataFrame
@@ -18,6 +18,7 @@ from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.rpc import RPC
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -118,6 +119,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
+
+    # Add rpc handler to send custom messages
+    send_msg = lambda x: x
 
     def __init__(self, config: dict) -> None:
         self.config = config
@@ -1191,3 +1195,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         if 'exit_long' not in df.columns:
             df = df.rename({'sell': 'exit_long'}, axis='columns')
         return df
+
+    def set_rpc_send_msg_function(self, rpc_send_msg_function: Callable):
+        self.send_msg = rpc_send_msg_function

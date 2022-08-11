@@ -6,6 +6,7 @@ import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
 
+from freqtrade.enums import RPCMessageType
 from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
                                 IStrategy, IntParameter)
 
@@ -107,6 +108,12 @@ class SampleStrategy(IStrategy):
             }
         }
     }
+
+    def bot_start(self, **kwargs) -> None:
+        self.send_msg({
+            'type': RPCMessageType.CUSTOM_MSG,
+            'msg': "This is a custom message sent to all RPCs"
+        })
 
     def informative_pairs(self):
         """
