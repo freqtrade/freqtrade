@@ -179,8 +179,10 @@ class RPC:
                 else:
                     current_rate = trade.close_rate
                 if len(trade.select_filled_orders(trade.entry_side)) > 0:
-                    current_profit = trade.calc_profit_ratio(current_rate)
-                    current_profit_abs = trade.calc_profit(current_rate)
+                    current_profit = trade.calc_profit_ratio(
+                        current_rate) if not isnan(current_rate) else NAN
+                    current_profit_abs = trade.calc_profit(
+                        current_rate) if not isnan(current_rate) else NAN
                     current_profit_fiat: Optional[float] = None
                     # Calculate fiat profit
                     if self._fiat_converter:
