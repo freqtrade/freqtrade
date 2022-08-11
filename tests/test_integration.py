@@ -189,7 +189,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == result1
+        assert pytest.approx(trade.stake_amount) == result1
         # Reset trade open order id's
         trade.open_order_id = None
     trades = Trade.get_open_trades()

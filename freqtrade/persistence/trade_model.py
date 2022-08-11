@@ -827,11 +827,11 @@ class LocalTrade():
         return float(f"{profit_ratio:.8f}")
 
     def recalc_trade_from_orders(self, is_closing: bool = False):
-
-        current_amount = 0.0
-        current_stake = 0.0
+        ZERO = FtPrecise(0.0)
+        current_amount = FtPrecise(0.0)
+        current_stake = FtPrecise(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
-        avg_price = 0.0
+        avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
 
@@ -839,28 +839,29 @@ class LocalTrade():
             if o.ft_is_open or not o.filled:
                 continue
 
-            tmp_amount = o.safe_amount_after_fee
-            tmp_price = o.safe_price
+            tmp_amount = FtPrecise(o.safe_amount_after_fee)
+            tmp_price = FtPrecise(o.safe_price)
 
             is_exit = o.ft_order_side != self.entry_side
-            side = -1 if is_exit else 1
-            if tmp_amount > 0.0 and tmp_price is not None:
+            side = FtPrecise(-1 if is_exit else 1)
+            if tmp_amount > ZERO and tmp_price is not None:
                 current_amount += tmp_amount * side
                 price = avg_price if is_exit else tmp_price
                 current_stake += price * tmp_amount * side
 
-                if current_amount > 0:
+                if current_amount > ZERO:
                     avg_price = current_stake / current_amount
 
             if is_exit:
                 # Process partial exits
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
-                profit = self.calc_profit(rate=exit_rate, amount=exit_amount, open_rate=avg_price)
+                profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
+                                          open_rate=float(avg_price))
                 close_profit_abs += profit
                 close_profit = self.calc_profit_ratio(
                     exit_rate, amount=exit_amount, open_rate=avg_price)
-                if current_amount <= 0:
+                if current_amount <= ZERO:
                     profit = close_profit_abs
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
@@ -870,13 +871,13 @@ class LocalTrade():
             self.realized_profit = close_profit_abs
             self.close_profit_abs = profit
 
-        if current_amount > 0:
+        if current_amount > ZERO:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
-            self.open_rate = current_stake / current_amount
-            self.stake_amount = current_stake / (self.leverage or 1.0)
-            self.amount = current_amount
-            self.fee_open_cost = self.fee_open * current_stake
+            self.open_rate = float(current_stake / current_amount)
+            self.stake_amount = float(current_stake) / (self.leverage or 1.0)
+            self.amount = float(current_amount)
+            self.fee_open_cost = self.fee_open * float(current_stake)
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
