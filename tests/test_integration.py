@@ -291,7 +291,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        amount_to_precision=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: round(y, 4),
         price_to_precision=lambda s, x, y: y,
     )
 
@@ -303,6 +303,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(trade.orders) == 1
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 2.02
+    assert trade.orders[0].amount == trade.amount
     # No adjustment
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -331,8 +332,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
     assert pytest.approx(trade.stake_amount) == 120
-    # assert trade.orders[0].amount == 30
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+    assert trade.orders[1].amount == round(60 / ticker_usdt_modif['ask'], 4)
 
     assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_entries == 2
@@ -344,7 +344,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.is_open is False
     # assert trade.orders[0].amount == 30
     assert trade.orders[0].side == 'sell'
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+    assert trade.orders[1].amount == round(60 / ticker_usdt_modif['ask'], 4)
     # Sold everything
     assert trade.orders[-1].side == 'buy'
     assert trade.orders[2].amount == trade.amount
