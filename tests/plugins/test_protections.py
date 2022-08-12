@@ -305,6 +305,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
         min_ago_open=800, min_ago_close=450, profit_rate=0.9,
     ))
 
+    Trade.commit()
     # Not locked with 1 trade
     assert not freqtrade.protections.global_stop()
     assert not freqtrade.protections.stop_per_pair('XRP/BTC')
@@ -316,6 +317,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
         min_ago_open=200, min_ago_close=120, profit_rate=0.9,
     ))
 
+    Trade.commit()
     # Not locked with 1 trade (first trade is outside of lookback_period)
     assert not freqtrade.protections.global_stop()
     assert not freqtrade.protections.stop_per_pair('XRP/BTC')
@@ -327,14 +329,16 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.ROI.value,
         min_ago_open=20, min_ago_close=10, profit_rate=1.15, is_short=True
     ))
+    Trade.commit()
     assert freqtrade.protections.stop_per_pair('XRP/BTC') != only_per_side
     assert not PairLocks.is_pair_locked('XRP/BTC', side='*')
     assert PairLocks.is_pair_locked('XRP/BTC', side='long') == only_per_side
 
     Trade.query.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=110, min_ago_close=20, profit_rate=0.8,
+        min_ago_open=110, min_ago_close=21, profit_rate=0.8,
     ))
+    Trade.commit()
 
     # Locks due to 2nd trade
     assert freqtrade.protections.global_stop() != only_per_side
@@ -342,6 +346,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
     assert PairLocks.is_pair_locked('XRP/BTC', side='long')
     assert PairLocks.is_pair_locked('XRP/BTC', side='*') != only_per_side
     assert not PairLocks.is_global_lock()
+    Trade.commit()
 
 
 @pytest.mark.usefixtures("init_persistence")

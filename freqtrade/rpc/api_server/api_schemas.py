@@ -194,11 +194,11 @@ class OrderSchema(BaseModel):
     pair: str
     order_id: str
     status: str
-    remaining: float
+    remaining: Optional[float]
     amount: float
     safe_price: float
     cost: float
-    filled: float
+    filled: Optional[float]
     ft_order_side: str
     order_type: str
     is_open: bool
@@ -325,11 +325,13 @@ class ForceEnterPayload(BaseModel):
     ordertype: Optional[OrderTypeValues]
     stakeamount: Optional[float]
     entry_tag: Optional[str]
+    leverage: Optional[float]
 
 
 class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
+    amount: Optional[float]
 
 
 class BlacklistPayload(BaseModel):
