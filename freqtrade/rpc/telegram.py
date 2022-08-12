@@ -1371,7 +1371,7 @@ class Telegram(RPCHandler):
             if context.args:
                 if "sorted" in context.args:
                     whitelist['whitelist'] = sorted(whitelist['whitelist'])
-                if "nobase" in context.args:
+                if "baseonly" in context.args:
                     whitelist['whitelist'] = [pair.split("/")[0] for pair in whitelist['whitelist']]
 
             message = f"Using whitelist `{whitelist['method']}` with {whitelist['length']} pairs\n"
@@ -1493,8 +1493,8 @@ class Telegram(RPCHandler):
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
-            "*/whitelist [sorted] [nobase]:* `Show current whitelist. Optionally in "
-            "order and/or without the base currency.`\n"
+            "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
+            "order and/or only displaying the base currency of each pairing.`\n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
             "to the blacklist.` \n"
             "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
