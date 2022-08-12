@@ -232,85 +232,43 @@ class FreqaiDataDrawer:
         # send pair to end of queue
         self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
-    def set_initial_return_values(self, pair: str, dk: FreqaiDataKitchen,
-                                  pred_df: DataFrame, do_preds: ArrayLike) -> None:
+    def set_initial_return_values(self, pair: str, pred_df: DataFrame) -> None:
         """
-        Set the initial return values to a persistent dataframe. This avoids needing to repredict on
-        historical candles, and also stores historical predictions despite retrainings (so stored
-        predictions are true predictions, not just inferencing on trained data)
+        Set the initial return values to the historical predictions dataframe. This avoids needing
+        to repredict on historical candles, and also stores historical predictions despite
+        retrainings (so stored predictions are true predictions, not just inferencing on trained
+        data)
         """
 
-        # dynamic df returned to strategy and plotted in frequi
-        # mrv_df = self.model_return_values[pair] = pd.DataFrame()
-
-        # if user reused `identifier` in config and has historical predictions collected, load them
-        # so that frequi remains uninterrupted after a crash
         hist_df = self.historic_predictions
-        # if pair in hist_df:
         len_diff = len(hist_df[pair].index) - len(pred_df.index)
         if len_diff < 0:
             df_concat = pd.concat([pred_df.iloc[:abs(len_diff)], hist_df[pair]],
-                                    ignore_index=True, keys=hist_df[pair].keys())
+                                  ignore_index=True, keys=hist_df[pair].keys())
         else:
             df_concat = hist_df[pair].tail(len(pred_df.index)).reset_index(drop=True)
         df_concat = df_concat.fillna(0)
         self.model_return_values[pair] = df_concat
-        logger.info(f'Setting initial FreqUI plots from historical data for {pair}.')
-
-        # else:
-        #     for label in pred_df.columns:
-        #         mrv_df[label] = pred_df[label]
-        #         if mrv_df[label].dtype == object:
-        #             continue
-        #         mrv_df[f"{label}_mean"] = dk.data["labels_mean"][label]
-        #         mrv_df[f"{label}_std"] = dk.data["labels_std"][label]
-
-        #     if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
-        #         mrv_df["DI_values"] = dk.DI_values
-
-        #     mrv_df["do_predict"] = do_preds
-
-        #     if dk.data['extra_returns_per_train']:
-        #         rets = dk.data['extra_returns_per_train']
-        #         for return_str in rets:
-        #             mrv_df[return_str] = rets[return_str]
-
-        # # for keras type models, the conv_window needs to be prepended so
-        # # viewing is correct in frequi
-        # if self.freqai_info.get('keras', False):
-        #     n_lost_points = self.freqai_info.get('conv_width', 2)
-        #     zeros_df = DataFrame(np.zeros((n_lost_points, len(mrv_df.columns))),
-        #                          columns=mrv_df.columns)
-        #     self.model_return_values[pair] = pd.concat(
-        #         [zeros_df, mrv_df], axis=0, ignore_index=True)
 
     def append_model_predictions(self, pair: str, predictions: DataFrame,
                                  do_preds: NDArray[np.int_],
                                  dk: FreqaiDataKitchen, len_df: int) -> None:
-
-        # strat seems to feed us variable sized dataframes - and since we are trying to build our
-        # own return array in the same shape, we need to figure out how the size has changed
-        # and adapt our stored/returned info accordingly.
-
-        # length_difference = len(self.model_return_values[pair]) - len_df
-        # i = 0
-
-        # if length_difference == 0:
-        #     i = 1
-        # elif length_difference > 0:
-        #     i = length_difference + 1
-
-        # df = self.model_return_values[pair] = self.model_return_values[pair].shift(-i)
-
-        # if pair in self.historic_predictions:
+        """
+        Append model predictions to historic predictions dataframe, then set the
+        strategy return dataframe to the tail of the historic predictions. The length of
+        the tail is equivalent to the length of the dataframe that entered FreqAI from
+        the strategy originally. Doing this allows FreqUI to always display the correct
+        historic predictions.
+        """
         df = self.historic_predictions[pair]
+
         # here are some pandas hula hoops to accommodate the possibility of a series
         # or dataframe depending number of labels requested by user
         nan_df = pd.DataFrame(np.nan, index=df.index[-2:] + 2, columns=df.columns)
         df = pd.concat([df, nan_df], ignore_index=True, axis=0)
         df = self.historic_predictions[pair] = df[:-1]
 
-        # incase user adds additional "predictions" e.g. predict_proba output:
+        # model outputs and associated statistics
         for label in predictions.columns:
             df[label].iloc[-1] = predictions[label].iloc[-1]
             if df[label].dtype == object:
@@ -318,28 +276,18 @@ class FreqaiDataDrawer:
             df[f"{label}_mean"].iloc[-1] = dk.data["labels_mean"][label]
             df[f"{label}_std"].iloc[-1] = dk.data["labels_std"][label]
 
+        # outlier indicators
         df["do_predict"].iloc[-1] = do_preds[-1]
-
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
             df["DI_values"].iloc[-1] = dk.DI_values[-1]
 
+        # extra values the user added within custom prediction model
         if dk.data['extra_returns_per_train']:
             rets = dk.data['extra_returns_per_train']
             for return_str in rets:
                 df[return_str].iloc[-1] = rets[return_str]
 
         self.model_return_values[pair] = df.tail(len_df).reset_index(drop=True)
-
-        # # append the new predictions to persistent storage
-        # if pair in self.historic_predictions:
-        #     for key in df.keys():
-        #         self.historic_predictions[pair][key].iloc[-1] = df[key].iloc[-1]
-
-        # if length_difference < 0:
-        #     prepend_df = pd.DataFrame(
-        #         np.zeros((abs(length_difference) - 1, len(df.columns))), columns=df.columns
-        #     )
-        #     df = pd.concat([prepend_df, df], axis=0)
 
     def attach_return_values_to_return_dataframe(
             self, pair: str, dataframe: DataFrame) -> DataFrame:
