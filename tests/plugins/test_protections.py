@@ -336,7 +336,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
 
     Trade.query.session.add(generate_mock_trade(
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
-        min_ago_open=110, min_ago_close=20, profit_rate=0.8,
+        min_ago_open=110, min_ago_close=21, profit_rate=0.8,
     ))
     Trade.commit()
 
