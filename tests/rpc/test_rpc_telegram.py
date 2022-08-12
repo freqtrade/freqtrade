@@ -1461,20 +1461,24 @@ def test_whitelist_static(default_conf, update, mocker) -> None:
     context = MagicMock()
     context.args = ['sorted']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH/BTC, LTC/BTC, NEO/BTC, XRP/BTC`" in sorted(msg_mock.call_args_list[0][0][0]))
 
     context = MagicMock()
-    context.args = ['nobase']
+    context.args = ['baseonly']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH, LTC, XRP, NEO`" in msg_mock.call_args_list[0][0][0])
 
     context = MagicMock()
-    context.args = ['nobase', 'sorted']
+    context.args = ['baseonly', 'sorted']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH, LTC, NEO, XRP`" in msg_mock.call_args_list[0][0][0])
+
 
 def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -1491,20 +1495,24 @@ def test_whitelist_dynamic(default_conf, update, mocker) -> None:
     context = MagicMock()
     context.args = ['sorted']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH/BTC, LTC/BTC, NEO/BTC, XRP/BTC`" in sorted(msg_mock.call_args_list[0][0][0]))
 
     context = MagicMock()
-    context.args = ['nobase']
+    context.args = ['baseonly']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH, LTC, XRP, NEO`" in msg_mock.call_args_list[0][0][0])
 
     context = MagicMock()
-    context.args = ['nobase', 'sorted']
+    context.args = ['baseonly', 'sorted']
     msg_mock.reset_mock()
+    telegram._whitelist(update=update, context=MagicMock())
     assert ("Using whitelist `['StaticPairList']` with 4 pairs\n"
             "`ETH, LTC, NEO, XRP`" in msg_mock.call_args_list[0][0][0])
+
 
 def test_blacklist_static(default_conf, update, mocker) -> None:
 
