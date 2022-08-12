@@ -335,6 +335,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
         'XRP/BTC', fee.return_value, False, exit_reason=ExitType.STOP_LOSS.value,
         min_ago_open=110, min_ago_close=20, profit_rate=0.8,
     ))
+    Trade.commit()
 
     # Locks due to 2nd trade
     assert freqtrade.protections.global_stop() != only_per_side
@@ -342,6 +343,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
     assert PairLocks.is_pair_locked('XRP/BTC', side='long')
     assert PairLocks.is_pair_locked('XRP/BTC', side='*') != only_per_side
     assert not PairLocks.is_global_lock()
+    Trade.commit()
 
 
 @pytest.mark.usefixtures("init_persistence")
