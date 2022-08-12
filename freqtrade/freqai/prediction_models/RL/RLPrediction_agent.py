@@ -1,17 +1,15 @@
 # common library
 
 import numpy as np
-from stable_baselines3 import A2C
-from stable_baselines3 import DDPG
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
-from stable_baselines3 import TD3
-from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.noise import NormalActionNoise
-from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
-# from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 
 from freqtrade.freqai.prediction_models.RL import config
+
+
+# from stable_baselines3.common.vec_env import DummyVecEnv
+
 # from meta.env_stock_trading.env_stock_trading import StockTradingEnv
 
 # RL models from stable-baselines
@@ -74,8 +72,10 @@ class RLPrediction_agent:
         policy="MlpPolicy",
         policy_kwargs=None,
         model_kwargs=None,
+        reward_kwargs=None,
+        #total_timesteps=None,
         verbose=1,
-        seed=None,
+        seed=None
     ):
         if model_name not in MODELS:
             raise NotImplementedError("NotImplementedError")
@@ -95,68 +95,23 @@ class RLPrediction_agent:
             tensorboard_log=f"{config.TENSORBOARD_LOG_DIR}/{model_name}",
             verbose=verbose,
             policy_kwargs=policy_kwargs,
-            seed=seed,
-            **model_kwargs,
+            #model_kwargs=model_kwargs,
+            #total_timesteps=model_kwargs["total_timesteps"],
+            seed=seed
+            #**model_kwargs,
         )
+
+
+
+
         return model
 
-    def train_model(self, model, tb_log_name, total_timesteps=5000):
+    def train_model(self, model, tb_log_name, model_kwargs):
+
         model = model.learn(
-            total_timesteps=total_timesteps,
+            total_timesteps=model_kwargs["total_timesteps"],
             tb_log_name=tb_log_name,
+            #callback=eval_callback,
             callback=TensorboardCallback(),
         )
         return model
-
-    @staticmethod
-    def DRL_prediction(model, environment):
-        test_env, test_obs = environment.get_sb_env()
-        """make a prediction"""
-        account_memory = []
-        actions_memory = []
-        test_env.reset()
-        for i in range(len(environment.df.index.unique())):
-            action, _states = model.predict(test_obs)
-            # account_memory = test_env.env_method(method_name="save_asset_memory")
-            # actions_memory = test_env.env_method(method_name="save_action_memory")
-            test_obs, rewards, dones, info = test_env.step(action)
-            if i == (len(environment.df.index.unique()) - 2):
-                account_memory = test_env.env_method(method_name="save_asset_memory")
-                actions_memory = test_env.env_method(method_name="save_action_memory")
-            if dones[0]:
-                print("hit end!")
-                break
-        return account_memory[0], actions_memory[0]
-
-    @staticmethod
-    def DRL_prediction_load_from_file(model_name, environment, cwd):
-        if model_name not in MODELS:
-            raise NotImplementedError("NotImplementedError")
-        try:
-            # load agent
-            model = MODELS[model_name].load(cwd)
-            print("Successfully load model", cwd)
-        except BaseException:
-            raise ValueError("Fail to load agent!")
-
-        # test on the testing env
-        state = environment.reset()
-        episode_returns = list()  # the cumulative_return / initial_account
-        episode_total_assets = list()
-        episode_total_assets.append(environment.initial_total_asset)
-        done = False
-        while not done:
-            action = model.predict(state)[0]
-            state, reward, done, _ = environment.step(action)
-
-            total_asset = (
-                environment.cash
-                + (environment.price_array[environment.time] * environment.stocks).sum()
-            )
-            episode_total_assets.append(total_asset)
-            episode_return = total_asset / environment.initial_total_asset
-            episode_returns.append(episode_return)
-
-        print("episode_return", episode_return)
-        print("Test Finished!")
-        return episode_total_assets

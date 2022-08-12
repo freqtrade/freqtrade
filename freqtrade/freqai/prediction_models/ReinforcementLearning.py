@@ -1,13 +1,19 @@
 import logging
-from typing import Any, Tuple, Dict
-from freqtrade.freqai.prediction_models.RL.RLPrediction_env import GymAnytrading
-from freqtrade.freqai.prediction_models.RL.RLPrediction_agent import RLPrediction_agent
-from pandas import DataFrame
-import pandas as pd
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from typing import Any, Dict, Tuple
+
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
+from pandas import DataFrame
+from stable_baselines.common.callbacks import CallbackList, CheckpointCallback, EvalCallback
+
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
+from freqtrade.freqai.prediction_models.RL.RLPrediction_agent import RLPrediction_agent
+#from freqtrade.freqai.prediction_models.RL.RLPrediction_env import GymAnytrading
+from freqtrade.freqai.prediction_models.RL.RLPrediction_env import DEnv
+from freqtrade.persistence import Trade
+
 
 logger = logging.getLogger(__name__)
 
@@ -69,28 +75,68 @@ class ReinforcementLearningModel(IFreqaiModel):
     def fit(self, data_dictionary: Dict[str, Any], pair: str = ''):
 
         train_df = data_dictionary["train_features"]
+        # train_labels = data_dictionary["train_labels"]
+        test_df = data_dictionary["test_features"]
+        # test_labels = data_dictionary["test_labels"]
 
-        sep = '/'
-        coin = pair.split(sep, 1)[0]
-        price = train_df[f"%-{coin}raw_price_{self.config['timeframe']}"]
-        price.reset_index(inplace=True, drop=True)
+        # sep = '/'
+        # coin = pair.split(sep, 1)[0]
+        # price = train_df[f"%-{coin}raw_price_{self.config['timeframe']}"]
+        # price.reset_index(inplace=True, drop=True)
+        # price = price.to_frame()
+        price = self.dd.historic_data[pair][f"{self.config['timeframe']}"].tail(len(train_df.index))
+
 
         model_name = 'ppo'
 
-        env_instance = GymAnytrading(train_df, price, self.CONV_WIDTH)
+        #env_instance = GymAnytrading(train_df, price, self.CONV_WIDTH)
 
         agent_params = self.freqai_info['model_training_parameters']
-        total_timesteps = agent_params.get('total_timesteps', 1000)
+        reward_params = self.freqai_info['model_reward_parameters']
 
+        env_instance = DEnv(df=train_df, prices=price, window_size=self.CONV_WIDTH, reward_kwargs=reward_params)
         agent = RLPrediction_agent(env_instance)
+
+        # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path='./logs/')
+        # eval_callback = EvalCallback(test_df, best_model_save_path='./models/',
+        #                log_path='./logs/', eval_freq=10000,
+        #                deterministic=True, render=False)
+
+        # #Create the callback list
+        # callback = CallbackList([checkpoint_callback, eval_callback])
 
         model = agent.get_model(model_name, model_kwargs=agent_params)
         trained_model = agent.train_model(model=model,
                                           tb_log_name=model_name,
-                                          total_timesteps=total_timesteps)
+                                          model_kwargs=agent_params)
+                                          #eval_callback=callback)
+
+
         print('Training finished!')
 
         return trained_model
+
+    def get_state_info(self, pair):
+        open_trades = Trade.get_trades(trade_filter=Trade.is_open.is_(True))
+        market_side = 0.5
+        current_profit = 0
+        for trade in open_trades:
+            if trade.pair == pair:
+                current_value = trade.open_trade_value
+                openrate = trade.open_rate
+                if 'long' in trade.enter_tag:
+                    market_side = 1
+                else:
+                    market_side = 0
+                current_profit = current_value / openrate -1
+
+        total_profit = 0
+        closed_trades = Trade.get_trades(trade_filter=[Trade.is_open.is_(False), Trade.pair == pair])
+        for trade in closed_trades:
+            total_profit += trade.close_profit
+
+        return market_side, current_profit, total_profit
+
 
     def predict(
         self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
