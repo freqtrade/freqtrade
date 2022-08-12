@@ -202,7 +202,7 @@ class FreqaiDataKitchen:
             labels = unfiltered_dataframe.filter(label_list, axis=1)
             drop_index_labels = pd.isnull(labels).any(1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
-            dates = unfiltered_dataframe.filter('date', axis=1)
+            dates = unfiltered_dataframe['date']
             filtered_dataframe = filtered_dataframe[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # dropping values
