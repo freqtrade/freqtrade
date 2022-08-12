@@ -321,7 +321,7 @@ class IFreqaiModel(ABC):
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
                 self.set_initial_historic_predictions(pred_df, dk, pair)
-            self.dd.set_initial_return_values(pair, dk, pred_df, do_preds)
+            self.dd.set_initial_return_values(pair, pred_df)
 
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
             return
@@ -558,7 +558,7 @@ class IFreqaiModel(ABC):
             n_lost_points = self.freqai_info.get('conv_width', 2)
             zeros_df = DataFrame(np.zeros((n_lost_points, len(hist_preds_df.columns))),
                                  columns=hist_preds_df.columns)
-            self.model_return_values[pair] = pd.concat(
+            self.dd.historic_predictions[pair] = pd.concat(
                 [zeros_df, hist_preds_df], axis=0, ignore_index=True)
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
