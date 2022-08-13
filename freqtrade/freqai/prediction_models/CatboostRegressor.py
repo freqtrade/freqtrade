@@ -1,6 +1,7 @@
+import gc
 import logging
 from typing import Any, Dict
-import gc
+
 from catboost import CatBoostRegressor, Pool
 
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
@@ -9,7 +10,7 @@ from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressio
 logger = logging.getLogger(__name__)
 
 
-class CatboostPredictionModel(BaseRegressionModel):
+class CatboostRegressor(BaseRegressionModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which

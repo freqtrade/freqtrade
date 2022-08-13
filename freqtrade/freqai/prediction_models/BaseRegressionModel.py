@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Tuple
 
+import numpy as np
 import numpy.typing as npt
 from pandas import DataFrame
 
@@ -17,15 +18,6 @@ class BaseRegressionModel(IFreqaiModel):
     User *must* inherit from this class and set fit() and predict(). See example scripts
     such as prediction_models/CatboostPredictionModel.py for guidance.
     """
-
-    def return_values(self, dataframe: DataFrame) -> DataFrame:
-        """
-        User uses this function to add any additional return values to the dataframe.
-        e.g.
-        dataframe['volatility'] = dk.volatility_values
-        """
-
-        return dataframe
 
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
@@ -55,6 +47,8 @@ class BaseRegressionModel(IFreqaiModel):
                     f"{end_date}--------------------")
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
+        if not self.freqai_info.get('fit_live_predictions', 0) or not self.live:
+            dk.fit_labels()
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
 
@@ -74,8 +68,6 @@ class BaseRegressionModel(IFreqaiModel):
 
         if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
             self.fit_live_predictions(dk)
-        else:
-            dk.fit_labels()
 
         self.dd.save_historic_predictions_to_disk()
 
@@ -85,7 +77,7 @@ class BaseRegressionModel(IFreqaiModel):
 
     def predict(
         self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
-    ) -> Tuple[DataFrame, npt.ArrayLike]:
+    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param: unfiltered_dataframe: Full dataframe for the current backtest period.

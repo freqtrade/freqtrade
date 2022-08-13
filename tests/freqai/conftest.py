@@ -21,10 +21,11 @@ def freqai_conf(default_conf, tmpdir):
             "strategy": "freqai_test_strat",
             "user_data_dir": Path(tmpdir),
             "strategy-path": "freqtrade/tests/strategy/strats",
-            "freqaimodel": "LightGBMPredictionModel",
+            "freqaimodel": "LightGBMRegressor",
             "freqaimodel_path": "freqai/prediction_models",
             "timerange": "20180110-20180115",
             "freqai": {
+                "enabled": True,
                 "startup_candles": 10000,
                 "purge_old_models": True,
                 "train_period_days": 5,
@@ -47,9 +48,9 @@ def freqai_conf(default_conf, tmpdir):
                     "indicator_periods_candles": [10],
                 },
                 "data_split_parameters": {"test_size": 0.33, "random_state": 1},
-                "model_training_parameters": {"n_estimators": 100, "verbosity": 0},
+                "model_training_parameters": {"n_estimators": 100},
             },
-            "config_files": [Path('config_examples', 'config_freqai_futures.example.json')]
+            "config_files": [Path('config_examples', 'config_freqai.example.json')]
         }
     )
     freqaiconf['exchange'].update({'pair_whitelist': ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC']})
@@ -57,7 +58,6 @@ def freqai_conf(default_conf, tmpdir):
 
 
 def get_patched_data_kitchen(mocker, freqaiconf):
-    # dd = mocker.patch('freqtrade.freqai.data_drawer', MagicMock())
     dk = FreqaiDataKitchen(freqaiconf)
     return dk
 

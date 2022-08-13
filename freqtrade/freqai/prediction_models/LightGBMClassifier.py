@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from lightgbm import LGBMRegressor
+from lightgbm import LGBMClassifier
 
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
 
@@ -9,7 +9,7 @@ from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressio
 logger = logging.getLogger(__name__)
 
 
-class LightGBMPredictionModel(BaseRegressionModel):
+class LightGBMClassifier(BaseRegressionModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which
@@ -18,11 +18,10 @@ class LightGBMPredictionModel(BaseRegressionModel):
 
     def fit(self, data_dictionary: Dict) -> Any:
         """
-        Most regressors use the same function names and arguments e.g. user
-        can drop in LGBMRegressor in place of CatBoostRegressor and all data
-        management will be properly handled by Freqai.
-        :param data_dictionary: the dictionary constructed by DataHandler to hold
-                                all the training and test data/labels.
+        User sets up the training and test data to fit their desired model here
+        :params:
+        :data_dictionary: the dictionary constructed by DataHandler to hold
+        all the training and test data/labels.
         """
 
         if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
@@ -32,7 +31,7 @@ class LightGBMPredictionModel(BaseRegressionModel):
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
 
-        model = LGBMRegressor(**self.model_training_parameters)
+        model = LGBMClassifier(**self.model_training_parameters)
 
         model.fit(X=X, y=y, eval_set=eval_set)
 

@@ -67,7 +67,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "text",
             "name": "stake_amount",
             "message": f"Please insert your stake amount (Number or '{UNLIMITED_STAKE_AMOUNT}'):",
-            "default": "100",
+            "default": "unlimited",
             "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_float(val),
             "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
             if val == UNLIMITED_STAKE_AMOUNT
@@ -164,7 +164,7 @@ def ask_user_config() -> Dict[str, Any]:
             "when": lambda x: x['telegram']
         },
         {
-            "type": "text",
+            "type": "password",
             "name": "telegram_chat_id",
             "message": "Insert Telegram chat id",
             "when": lambda x: x['telegram']
@@ -191,7 +191,7 @@ def ask_user_config() -> Dict[str, Any]:
             "when": lambda x: x['api_server']
         },
         {
-            "type": "text",
+            "type": "password",
             "name": "api_server_password",
             "message": "Insert api-server password",
             "when": lambda x: x['api_server']

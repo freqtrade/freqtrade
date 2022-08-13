@@ -2,8 +2,7 @@
 -r requirements.txt
 
 # Required for freqai
-scikit-learn==1.1.1
-scikit-optimize==0.9.0
+scikit-learn==1.1.2
 joblib==1.1.0
-catboost==1.0.4
+catboost==1.0.6; platform_machine != 'aarch64'
 lightgbm==3.3.2

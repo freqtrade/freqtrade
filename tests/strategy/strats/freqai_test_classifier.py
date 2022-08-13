@@ -1,6 +1,7 @@
 import logging
 from functools import reduce
 
+import numpy as np
 import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
@@ -11,9 +12,9 @@ from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_
 logger = logging.getLogger(__name__)
 
 
-class freqai_test_multimodel_strat(IStrategy):
+class freqai_test_classifier(IStrategy):
     """
-    Test strategy - used for testing freqAI multimodel functionalities.
+    Test strategy - used for testing freqAI functionalities.
     DO not use in production.
     """
 
@@ -103,26 +104,7 @@ class freqai_test_multimodel_strat(IStrategy):
                 # user adds targets here by prepending them with &- (see convention below)
                 # If user wishes to use multiple targets, a multioutput prediction model
                 # needs to be used such as templates/CatboostPredictionMultiModel.py
-                df["&-s_close"] = (
-                    df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .mean()
-                    / df["close"]
-                    - 1
-                )
-
-                df["&-s_range"] = (
-                    df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .max()
-                    -
-                    df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .min()
-                )
+            df['&s-up_or_down'] = np.where(df["close"].shift(-100) > df["close"], 'up', 'down')
 
         return df
 
@@ -132,20 +114,18 @@ class freqai_test_multimodel_strat(IStrategy):
 
         dataframe = self.freqai.start(dataframe, metadata, self)
 
-        dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
-        dataframe["sell_roi"] = dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * 1.25
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        enter_long_conditions = [df["do_predict"] == 1, df["&-s_close"] > df["target_roi"]]
+        enter_long_conditions = [df['&s-up_or_down'] == 'up']
 
         if enter_long_conditions:
             df.loc[
                 reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
             ] = (1, "long")
 
-        enter_short_conditions = [df["do_predict"] == 1, df["&-s_close"] < df["sell_roi"]]
+        enter_short_conditions = [df['&s-up_or_down'] == 'down']
 
         if enter_short_conditions:
             df.loc[
@@ -155,12 +135,5 @@ class freqai_test_multimodel_strat(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [df["do_predict"] == 1, df["&-s_close"] < df["sell_roi"] * 0.25]
-        if exit_long_conditions:
-            df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
-
-        exit_short_conditions = [df["do_predict"] == 1, df["&-s_close"] > df["target_roi"] * 0.25]
-        if exit_short_conditions:
-            df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
         return df

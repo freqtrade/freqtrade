@@ -1,7 +1,5 @@
 # import contextlib
-import copy
 import datetime
-import gc
 import logging
 import shutil
 import threading
@@ -12,7 +10,7 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
@@ -47,7 +45,7 @@ class IFreqaiModel(ABC):
     Robert Caulk @robcaulk
 
     Theoretical brainstorming:
-    Elin Törnquist @thorntwig
+    Elin Törnquist @th0rntwig
 
     Code review, software architecture brainstorming:
     @xmatthias
@@ -82,6 +80,8 @@ class IFreqaiModel(ABC):
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
         self.pair_it = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
+        self.last_trade_database_summary: DataFrame = {}
+        self.current_trade_database_summary: DataFrame = {}
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -123,7 +123,7 @@ class IFreqaiModel(ABC):
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         del dk
-        return self.return_values(dataframe)
+        return dataframe
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
@@ -183,8 +183,6 @@ class IFreqaiModel(ABC):
             (_, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
-            gc.collect()
-            dk.data = {}  # clean the pair specific data between training window sliding
             self.training_timerange = tr_train
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
@@ -204,14 +202,9 @@ class IFreqaiModel(ABC):
 
             dk.data_path = Path(
                 dk.full_path
-                / str(
-                    "sub-train"
-                    + "-"
-                    + metadata["pair"].split("/")[0]
-                    + "_"
-                    + str(int(trained_timestamp.stopts))
+                /
+                f"sub-train-{metadata['pair'].split('/')[0]}_{int(trained_timestamp.stopts)}"
                 )
-            )
             if not self.model_exists(
                 metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
             ):
@@ -228,7 +221,7 @@ class IFreqaiModel(ABC):
 
             pred_df, do_preds = self.predict(dataframe_backtest, dk)
 
-            dk.append_predictions(pred_df, do_preds, len(dataframe_backtest))
+            dk.append_predictions(pred_df, do_preds)
 
         dk.fill_predictions(dataframe)
 
@@ -280,7 +273,7 @@ class IFreqaiModel(ABC):
                     "corr_pairlist, this may take a while if you do not have the "
                     "data saved"
                 )
-                dk.download_all_data_for_training(data_load_timerange)
+                dk.download_all_data_for_training(data_load_timerange, strategy.dp)
                 self.dd.load_all_pair_histories(data_load_timerange, dk)
 
             if not self.scanning:
@@ -331,7 +324,8 @@ class IFreqaiModel(ABC):
             return
         elif self.dk.check_if_model_expired(trained_timestamp):
             pred_df = DataFrame(np.zeros((2, len(dk.label_list))), columns=dk.label_list)
-            do_preds, dk.DI_values = np.ones(2) * 2, np.zeros(2)
+            do_preds = np.ones(2, dtype=np.int_) * 2
+            dk.DI_values = np.zeros(2)
             logger.warning(
                 f"Model expired for {pair}, returning null values to strategy. Strategy "
                 "construction should take care to consider this event with "
@@ -379,16 +373,24 @@ class IFreqaiModel(ABC):
         example of how outlier data points are dropped from the dataframe used for training.
         """
 
-        if self.freqai_info.get("feature_parameters", {}).get(
+        if self.freqai_info["feature_parameters"].get(
             "principal_component_analysis", False
         ):
             dk.principal_component_analysis()
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
+        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
+
+        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+            if dk.pair in self.dd.old_DBSCAN_eps:
+                eps = self.dd.old_DBSCAN_eps[dk.pair]
+            else:
+                eps = None
+            dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
+            self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
@@ -401,16 +403,19 @@ class IFreqaiModel(ABC):
         of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
         for buy signals.
         """
-        if self.freqai_info.get("feature_parameters", {}).get(
+        if self.freqai_info["feature_parameters"].get(
             "principal_component_analysis", False
         ):
             dk.pca_transform(dataframe)
 
-        if self.freqai_info.get("feature_parameters", {}).get("use_SVM_to_remove_outliers", False):
+        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
 
-        if self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
+        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
+
+        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+            dk.use_DBSCAN_to_remove_outliers(predict=True)
 
     def model_exists(
         self,
@@ -430,9 +435,9 @@ class IFreqaiModel(ABC):
         coin, _ = pair.split("/")
 
         if not self.live:
-            dk.model_filename = model_filename = "cb_" + coin.lower() + "_" + str(trained_timestamp)
+            dk.model_filename = model_filename = f"cb_{coin.lower()}_{trained_timestamp}"
 
-        path_to_modelfile = Path(dk.data_path / str(model_filename + "_model.joblib"))
+        path_to_modelfile = Path(dk.data_path / f"{model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
         if file_exists and not scanning:
             logger.info("Found model at %s", dk.data_path / dk.model_filename)
@@ -442,7 +447,7 @@ class IFreqaiModel(ABC):
 
     def set_full_path(self) -> None:
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / str(self.freqai_info.get("identifier"))
+            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
         shutil.copy(
@@ -500,13 +505,54 @@ class IFreqaiModel(ABC):
     def set_initial_historic_predictions(
         self, df: DataFrame, model: Any, dk: FreqaiDataKitchen, pair: str
     ) -> None:
-        trained_predictions = model.predict(df)
+        """
+        This function is called only if the datadrawer failed to load an
+        existing set of historic predictions. In this case, it builds
+        the structure and sets fake predictions off the first training
+        data. After that, FreqAI will append new real predictions to the
+        set of historic predictions.
+
+        These values are used to generate live statistics which can be used
+        in the strategy for adaptive values. E.g. &*_mean/std are quantities
+        that can computed based on live predictions from the set of historical
+        predictions. Those values can be used in the user strategy to better
+        assess prediction rarity, and thus wait for probabilistically favorable
+        entries relative to the live historical predictions.
+
+        If the user reuses an identifier on a subsequent instance,
+        this function will not be called. In that case, "real" predictions
+        will be appended to the loaded set of historic predictions.
+        :param: df: DataFrame = the dataframe containing the training feature data
+        :param: model: Any = A model which was `fit` using a common library such as
+        catboost or lightgbm
+        :param: dk: FreqaiDataKitchen = object containing methods for data analysis
+        :param: pair: str = current pair
+        """
+        num_candles = self.freqai_info.get('fit_live_predictions_candles', 600)
+        if not num_candles:
+            num_candles = 600
+        df_tail = df.tail(num_candles)
+        trained_predictions = model.predict(df_tail)
         pred_df = DataFrame(trained_predictions, columns=dk.label_list)
 
         pred_df = dk.denormalize_labels_from_metadata(pred_df)
 
-        self.dd.historic_predictions[pair] = pd.DataFrame()
-        self.dd.historic_predictions[pair] = copy.deepcopy(pred_df)
+        self.dd.historic_predictions[pair] = pred_df
+        hist_preds_df = self.dd.historic_predictions[pair]
+
+        for label in hist_preds_df.columns:
+            if hist_preds_df[label].dtype == object:
+                continue
+            hist_preds_df[f'{label}_mean'] = 0
+            hist_preds_df[f'{label}_std'] = 0
+
+        hist_preds_df['do_predict'] = 0
+
+        if self.freqai_info['feature_parameters'].get('DI_threshold', 0) > 0:
+            hist_preds_df['DI_values'] = 0
+
+        for return_str in dk.data['extra_returns_per_train']:
+            hist_preds_df[return_str] = 0
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen) -> None:
         """
@@ -517,13 +563,15 @@ class IFreqaiModel(ABC):
         num_candles = self.freqai_info.get("fit_live_predictions_candles", 100)
         dk.data["labels_mean"], dk.data["labels_std"] = {}, {}
         for label in dk.label_list:
+            if self.dd.historic_predictions[dk.pair][label].dtype == object:
+                continue
             f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
         return
 
     # Following methods which are overridden by user made prediction models.
-    # See freqai/prediction_models/CatboostPredictionModlel.py for an example.
+    # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 
     @abstractmethod
     def train(self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen) -> Any:
@@ -550,7 +598,7 @@ class IFreqaiModel(ABC):
     @abstractmethod
     def predict(
         self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = True
-    ) -> Tuple[DataFrame, ArrayLike]:
+    ) -> Tuple[DataFrame, NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_dataframe: Full dataframe for the current backtest period.
@@ -561,14 +609,3 @@ class IFreqaiModel(ABC):
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
         data (NaNs) or felt uncertain about data (i.e. SVM and/or DI index)
         """
-
-    @abstractmethod
-    def return_values(self, dataframe: DataFrame) -> DataFrame:
-        """
-        User defines the dataframe to be returned to strategy here.
-        :param dataframe: DataFrame = the full dataframe for the current prediction (live)
-                                      or --timerange (backtesting)
-        :return: dataframe: DataFrame = dataframe filled with user defined data
-        """
-
-        return
