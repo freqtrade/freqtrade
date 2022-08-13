@@ -1,7 +1,7 @@
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import PropertyMock
 
 import pytest
 
