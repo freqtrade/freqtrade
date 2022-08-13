@@ -3451,7 +3451,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
 
     trade.stop_loss = 2.0 * 1.01 if is_short else 2.0 * 0.99
     freqtrade.execute_trade_exit(
-        trade=trade, limit=(ticker_usdt_sell_up if is_short else ticker_usdt_sell_down())['bid'],
+        trade=trade, limit=trade.stop_loss,
         exit_check=ExitCheckTuple(exit_type=ExitType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
