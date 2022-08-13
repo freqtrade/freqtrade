@@ -17,6 +17,7 @@ def freqai_conf(default_conf, tmpdir):
     freqaiconf = deepcopy(default_conf)
     freqaiconf.update(
         {
+            "enabled": True,
             "datadir": Path(default_conf["datadir"]),
             "strategy": "freqai_test_strat",
             "user_data_dir": Path(tmpdir),

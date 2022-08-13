@@ -486,6 +486,7 @@ CONF_SCHEMA = {
         "freqai": {
             "type": "object",
             "properties": {
+                "enabled": {"type": "boolean", "default": False},
                 "keras": {"type": "boolean", "default": False},
                 "conv_width": {"type": "integer", "default": 2},
                 "train_period_days": {"type": "integer", "default": 0},
@@ -525,12 +526,15 @@ CONF_SCHEMA = {
                     },
                 },
             },
-            "required": ["train_period_days",
-                         "backtest_period_days",
-                         "identifier",
-                         "feature_parameters",
-                         "data_split_parameters",
-                         "model_training_parameters"]
+            "required": [
+                "enabled",
+                "train_period_days",
+                "backtest_period_days",
+                "identifier",
+                "feature_parameters",
+                "data_split_parameters",
+                "model_training_parameters"
+                ]
         },
     },
 }

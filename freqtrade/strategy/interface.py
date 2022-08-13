@@ -146,7 +146,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self._ft_informative.append((informative_data, cls_method))
 
     def load_freqAI_model(self) -> None:
-        if self.config.get('freqai', None):
+        if self.config.get('freqai', {}).get('enabled', False):
             # Import here to avoid importing this if freqAI is disabled
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 
