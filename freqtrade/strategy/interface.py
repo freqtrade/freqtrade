@@ -157,7 +157,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             class DummyClass():
                 def start(self, *args, **kwargs):
                     raise OperationalException(
-                        'freqAI is not enabled. Please enable it in your config to use this strategy.')
+                        'freqAI is not enabled. '
+                        'Please enable it in your config to use this strategy.')
             self.freqai = DummyClass()  # type: ignore
 
     def ft_bot_start(self, **kwargs) -> None:
