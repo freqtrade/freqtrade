@@ -302,6 +302,13 @@ def test_populate_any_indicators(default_conf, testdatadir) -> None:
     assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
 
 
+def test_freqai_not_initialized(default_conf) -> None:
+    strategy = StrategyResolver.load_strategy(default_conf)
+    strategy.ft_bot_start()
+    with pytest.raises(OperationalException, match=r'freqAI is not enabled\.'):
+        strategy.freqai.start()
+
+
 def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
     aimock = mocker.patch('freqtrade.strategy.interface.IStrategy.advise_indicators')
