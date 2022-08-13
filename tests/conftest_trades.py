@@ -214,7 +214,8 @@ def mock_trade_4(fee, is_short: bool):
         open_order_id=f'prod_buy_{direc(is_short)}_12345',
         strategy='StrategyTestV3',
         timeframe=5,
-        is_short=is_short
+        is_short=is_short,
+        stop_loss_pct=0.10
     )
     o = Order.parse_from_ccxt_object(mock_order_4(is_short), 'ETC/BTC', entry_side(is_short))
     trade.orders.append(o)
@@ -270,7 +271,8 @@ def mock_trade_5(fee, is_short: bool):
         enter_tag='TEST1',
         stoploss_order_id=f'prod_stoploss_{direc(is_short)}_3455',
         timeframe=5,
-        is_short=is_short
+        is_short=is_short,
+        stop_loss_pct=0.10,
     )
     o = Order.parse_from_ccxt_object(mock_order_5(is_short), 'XRP/BTC', entry_side(is_short))
     trade.orders.append(o)

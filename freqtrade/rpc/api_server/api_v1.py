@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 # 2.14: Add entry/exit orders to trade response
 # 2.15: Add backtest history endpoints
 # 2.16: Additional daily metrics
-API_VERSION = 2.16
+# 2.17: Forceentry - leverage, partial force_exit
+API_VERSION = 2.17
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -142,12 +143,11 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 @router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
 def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    stake_amount = payload.stakeamount if payload.stakeamount else None
-    entry_tag = payload.entry_tag if payload.entry_tag else 'force_entry'
 
     trade = rpc._rpc_force_entry(payload.pair, payload.price, order_side=payload.side,
-                                 order_type=ordertype, stake_amount=stake_amount,
-                                 enter_tag=entry_tag)
+                                 order_type=ordertype, stake_amount=payload.stakeamount,
+                                 enter_tag=payload.entry_tag or 'force_entry',
+                                 leverage=payload.leverage)
 
     if trade:
         return ForceEnterResponse.parse_obj(trade.to_json())
@@ -161,7 +161,7 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_force_exit(payload.tradeid, ordertype)
+    return rpc._rpc_force_exit(payload.tradeid, ordertype, amount=payload.amount)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

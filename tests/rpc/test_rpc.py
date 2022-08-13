@@ -461,46 +461,6 @@ def test_rpc_trade_statistics(default_conf_usdt, ticker, fee, mocker) -> None:
     assert isnan(stats['profit_all_coin'])
 
 
-# Test that rpc_trade_statistics can handle trades that lacks
-# trade.open_rate (it is set to None)
-def test_rpc_trade_statistics_closed(mocker, default_conf_usdt, ticker, fee):
-    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
-                 return_value=1.1)
-    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        get_fee=fee,
-    )
-
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf_usdt)
-    patch_get_signal(freqtradebot)
-    stake_currency = default_conf_usdt['stake_currency']
-    fiat_display_currency = default_conf_usdt['fiat_display_currency']
-
-    rpc = RPC(freqtradebot)
-
-    # Create some test data
-    create_mock_trades_usdt(fee)
-
-    for trade in Trade.query.order_by(Trade.id).all():
-        trade.open_rate = None
-
-    stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
-    assert stats['profit_closed_coin'] == 0
-    assert stats['profit_closed_percent_mean'] == 0
-    assert stats['profit_closed_fiat'] == 0
-    assert stats['profit_all_coin'] == 0
-    assert stats['profit_all_percent_mean'] == 0
-    assert stats['profit_all_fiat'] == 0
-    assert stats['trade_count'] == 7
-    assert stats['first_trade_date'] == '2 days ago'
-    assert stats['latest_trade_date'] == '17 minutes ago'
-    assert stats['avg_duration'] == '0:00:00'
-    assert stats['best_pair'] == 'XRP/USDT'
-    assert stats['best_rate'] == 10.0
-
-
 def test_rpc_balance_handle_error(default_conf, mocker):
     mock_balance = {
         'BTC': {

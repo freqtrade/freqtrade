@@ -973,6 +973,14 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     trade.is_short = is_short
     assert pytest.approx(trade.stake_amount) == 500
 
+    order['id'] = '55673'
+
+    freqtrade.strategy.leverage.reset_mock()
+    assert freqtrade.execute_entry(pair, 200, leverage_=3)
+    assert freqtrade.strategy.leverage.call_count == 0
+    trade = Trade.query.all()[10]
+    assert trade.leverage == 1 if trading_mode == 'spot' else 3
+
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order, is_short) -> None:

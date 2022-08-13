@@ -12,12 +12,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.configuration.PeriodicCache import PeriodicCache
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.util import PeriodicCache
 
 
 logger = logging.getLogger(__name__)

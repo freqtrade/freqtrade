@@ -1205,7 +1205,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
         fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets),
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
     patch_get_signal(ftbot)
 
@@ -1215,12 +1215,27 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
     Trade.query.session.rollback()
 
-    ftbot.enter_positions()
+    create_mock_trades(fee)
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert pytest.approx(trade.amount) == 123
+    rc = client_post(client, f"{BASE_URI}/forceexit",
+                     data='{"tradeid": "5", "ordertype": "market", "amount": 23}')
+    assert_response(rc)
+    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    Trade.query.session.rollback()
+
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert pytest.approx(trade.amount) == 100
+    assert trade.is_open is True
 
     rc = client_post(client, f"{BASE_URI}/forceexit",
-                     data='{"tradeid": "1"}')
+                     data='{"tradeid": "5"}')
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 1.'}
+    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    Trade.query.session.rollback()
+
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert trade.is_open is False
 
 
 def test_api_pair_candles(botclient, ohlcv_history):

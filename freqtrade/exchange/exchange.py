@@ -16,7 +16,7 @@ import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
-from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_precision
+from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
@@ -32,6 +32,7 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGE
                                        retrier_async)
 from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.util import FtPrecise
 
 
 CcxtModuleType = Any
@@ -708,10 +709,10 @@ class Exchange:
             #                                    counting_mode=self.precisionMode,
             #                                    ))
             if self.precisionMode == TICK_SIZE:
-                precision = Precise(str(self.markets[pair]['precision']['price']))
-                price_str = Precise(str(price))
+                precision = FtPrecise(self.markets[pair]['precision']['price'])
+                price_str = FtPrecise(price)
                 missing = price_str % precision
-                if not missing == Precise("0"):
+                if not missing == FtPrecise("0"):
                     price = round(float(str(price_str - missing + precision)), 14)
             else:
                 symbol_prec = self.markets[pair]['precision']['price']
@@ -849,6 +850,7 @@ class Exchange:
             dry_order.update({
                 'average': average,
                 'filled': _amount,
+                'remaining': 0.0,
                 'cost': (dry_order['amount'] * average) / leverage
             })
             # market orders will always incurr taker fees
