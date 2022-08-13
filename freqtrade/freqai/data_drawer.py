@@ -473,7 +473,9 @@ class FreqaiDataDrawer:
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
         elif model_type == 'stable_baselines':
             from stable_baselines3.ppo.ppo import PPO
-            model = PPO.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            from stable_baselines3 import DQN
+            #model = PPO.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = DQN.load(dk.data_path / f"best_model.zip")
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
