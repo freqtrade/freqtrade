@@ -17,7 +17,6 @@ def freqai_conf(default_conf, tmpdir):
     freqaiconf = deepcopy(default_conf)
     freqaiconf.update(
         {
-            "enabled": True,
             "datadir": Path(default_conf["datadir"]),
             "strategy": "freqai_test_strat",
             "user_data_dir": Path(tmpdir),
@@ -26,6 +25,7 @@ def freqai_conf(default_conf, tmpdir):
             "freqaimodel_path": "freqai/prediction_models",
             "timerange": "20180110-20180115",
             "freqai": {
+                "enabled": True,
                 "startup_candles": 10000,
                 "purge_old_models": True,
                 "train_period_days": 5,
