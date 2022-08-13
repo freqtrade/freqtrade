@@ -3,13 +3,13 @@ from typing import Any, Dict
 
 from lightgbm import LGBMClassifier
 
-from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
+from freqtrade.freqai.prediction_models.BaseClassifierModel import BaseClassifierModel
 
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(BaseRegressionModel):
+class LightGBMClassifier(BaseClassifierModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which

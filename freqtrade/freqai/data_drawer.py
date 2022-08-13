@@ -12,7 +12,7 @@ import pandas as pd
 import rapidjson
 from joblib import dump, load
 from joblib.externals import cloudpickle
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
