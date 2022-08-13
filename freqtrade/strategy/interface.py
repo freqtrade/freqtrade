@@ -151,6 +151,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
+            self.freqai_info = self.config["freqai"]
 
     def ft_bot_start(self, **kwargs) -> None:
         """

@@ -180,8 +180,6 @@ class FreqaiExampleStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        self.freqai_info = self.config["freqai"]
-
         # All indicators must be populated by populate_any_indicators() for live functionality
         # to work correctly.
 
