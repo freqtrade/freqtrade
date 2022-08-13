@@ -89,6 +89,9 @@ class Backtesting:
         self.dataprovider = DataProvider(self.config, self.exchange)
 
         if self.config.get('strategy_list'):
+            if self.config.get('freqai'):
+                raise OperationalException(
+                    "You can't use strategy_list and freqai at the same time.")
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
