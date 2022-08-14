@@ -70,7 +70,6 @@ class IFreqaiModel(ABC):
         self.set_full_path()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
-        self.lock = threading.Lock()
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.keras: bool = self.freqai_info.get("keras", False)
