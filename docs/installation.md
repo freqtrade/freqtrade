@@ -326,11 +326,14 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-Patch conda libta-lib
+Patch conda libta-lib (Linux only)
 
 ```bash
+# Ensure that the environment is active!
+conda activate freqtrade-conda
+
 cd build_helpers
-bash install_ta-lib_conda.sh
+bash install_ta-lib.sh ${CONDA_PREFIX} nosudo
 ```
 
 ### Congratulations
