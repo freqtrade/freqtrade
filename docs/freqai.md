@@ -177,8 +177,6 @@ The user interface is isolated to the typical config file. A typical FreqAI conf
 Features are added by the user inside the `populate_any_indicators()` method of the strategy
 by prepending indicators with `%` and labels are added by prepending `&`.  
 There are some important components/structures that the user *must* include when building their feature set.
-As shown below, `with self.freqai.lock:` must be used to ensure thread safety - especially when using third
-party libraries for indicator construction such as TA-lib.  
 Another structure to consider is the  location of the labels at the bottom of the example function (below `if set_generalized_indicators:`).
 This is where the user will add single features and labels to their feature set to avoid duplication from
 various configuration parameters which multiply the feature set such as `include_timeframes`.
@@ -203,69 +201,68 @@ various configuration parameters which multiply the feature set such as `include
 
         coint = pair.split('/')[0]
 
-        with self.freqai.lock:
-            if informative is None:
-                informative = self.dp.get_pair_dataframe(pair, tf)
+        if informative is None:
+            informative = self.dp.get_pair_dataframe(pair, tf)
 
-            # first loop is automatically duplicating indicators for time periods
-            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
-                t = int(t)
-                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+        # first loop is automatically duplicating indicators for time periods
+        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+            t = int(t)
+            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-                bollinger = qtpylib.bollinger_bands(
-                    qtpylib.typical_price(informative), window=t, stds=2.2
-                )
-                informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
-                informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
-                informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
+            bollinger = qtpylib.bollinger_bands(
+                qtpylib.typical_price(informative), window=t, stds=2.2
+            )
+            informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
+            informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
+            informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
 
-                informative[f"%-{coin}bb_width-period_{t}"] = (
-                    informative[f"{coin}bb_upperband-period_{t}"]
-                    - informative[f"{coin}bb_lowerband-period_{t}"]
-                ) / informative[f"{coin}bb_middleband-period_{t}"]
-                informative[f"%-{coin}close-bb_lower-period_{t}"] = (
-                    informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
-                )
+            informative[f"%-{coin}bb_width-period_{t}"] = (
+                informative[f"{coin}bb_upperband-period_{t}"]
+                - informative[f"{coin}bb_lowerband-period_{t}"]
+            ) / informative[f"{coin}bb_middleband-period_{t}"]
+            informative[f"%-{coin}close-bb_lower-period_{t}"] = (
+                informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
+            )
 
-                informative[f"%-{coin}relative_volume-period_{t}"] = (
-                    informative["volume"] / informative["volume"].rolling(t).mean()
-                )
+            informative[f"%-{coin}relative_volume-period_{t}"] = (
+                informative["volume"] / informative["volume"].rolling(t).mean()
+            )
 
-            indicators = [col for col in informative if col.startswith("%")]
-            # This loop duplicates and shifts all indicators to add a sense of recency to data
-            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-                if n == 0:
-                    continue
-                informative_shift = informative[indicators].shift(n)
-                informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-                informative = pd.concat((informative, informative_shift), axis=1)
+        indicators = [col for col in informative if col.startswith("%")]
+        # This loop duplicates and shifts all indicators to add a sense of recency to data
+        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+            if n == 0:
+                continue
+            informative_shift = informative[indicators].shift(n)
+            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+            informative = pd.concat((informative, informative_shift), axis=1)
 
-            df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-            skip_columns = [
-                (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-            ]
-            df = df.drop(columns=skip_columns)
+        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+        skip_columns = [
+            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+        ]
+        df = df.drop(columns=skip_columns)
 
-            # Add generalized indicators here (because in live, it will call this
-            # function to populate indicators during training). Notice how we ensure not to
-            # add them multiple times
-            if set_generalized_indicators:
-                df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-                df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+        # Add generalized indicators here (because in live, it will call this
+        # function to populate indicators during training). Notice how we ensure not to
+        # add them multiple times
+        if set_generalized_indicators:
+            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
+            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 
-                # user adds targets here by prepending them with &- (see convention below)
-                # If user wishes to use multiple targets, a multioutput prediction model
-                # needs to be used such as templates/CatboostPredictionMultiModel.py
-                df["&-s_close"] = (
-                    df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .mean()
-                    / df["close"]
-                    - 1
-                )
+            # user adds targets here by prepending them with &- (see convention below)
+            # If user wishes to use multiple targets, a multioutput prediction model
+            # needs to be used such as templates/CatboostPredictionMultiModel.py
+            df["&-s_close"] = (
+                df["close"]
+                .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                .mean()
+                / df["close"]
+                - 1
+            )
 
         return df
 ```
@@ -430,48 +427,47 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
         coin = pair.split('/')[0]
 
-        with self.freqai.lock:
-            if informative is None:
-                informative = self.dp.get_pair_dataframe(pair, tf)
+        if informative is None:
+            informative = self.dp.get_pair_dataframe(pair, tf)
 
-            # first loop is automatically duplicating indicators for time periods
-            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
-                t = int(t)
-                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+        # first loop is automatically duplicating indicators for time periods
+        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+            t = int(t)
+            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-            indicators = [col for col in informative if col.startswith("%")]
-            # This loop duplicates and shifts all indicators to add a sense of recency to data
-            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-                if n == 0:
-                    continue
-                informative_shift = informative[indicators].shift(n)
-                informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-                informative = pd.concat((informative, informative_shift), axis=1)
+        indicators = [col for col in informative if col.startswith("%")]
+        # This loop duplicates and shifts all indicators to add a sense of recency to data
+        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+            if n == 0:
+                continue
+            informative_shift = informative[indicators].shift(n)
+            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+            informative = pd.concat((informative, informative_shift), axis=1)
 
-            df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-            skip_columns = [
-                (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-            ]
-            df = df.drop(columns=skip_columns)
+        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+        skip_columns = [
+            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+        ]
+        df = df.drop(columns=skip_columns)
 
-            # Add generalized indicators here (because in live, it will call this
-            # function to populate indicators during training). Notice how we ensure not to
-            # add them multiple times
-            if set_generalized_indicators:
+        # Add generalized indicators here (because in live, it will call this
+        # function to populate indicators during training). Notice how we ensure not to
+        # add them multiple times
+        if set_generalized_indicators:
 
-                # user adds targets here by prepending them with &- (see convention below)
-                # If user wishes to use multiple targets, a multioutput prediction model
-                # needs to be used such as templates/CatboostPredictionMultiModel.py
-                df["&-s_close"] = (
-                    df["close"]
-                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-                    .mean()
-                    / df["close"]
-                    - 1
-                )
+            # user adds targets here by prepending them with &- (see convention below)
+            # If user wishes to use multiple targets, a multioutput prediction model
+            # needs to be used such as templates/CatboostPredictionMultiModel.py
+            df["&-s_close"] = (
+                df["close"]
+                .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                .mean()
+                / df["close"]
+                - 1
+            )
 
         return df
 

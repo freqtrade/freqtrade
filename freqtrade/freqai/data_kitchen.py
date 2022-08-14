@@ -961,23 +961,25 @@ class FreqaiDataKitchen:
         for tf in tfs:
             if tf == tfs[-1]:
                 sgi = True  # doing this last allows user to use all tf raw prices in labels
-            dataframe = strategy.populate_any_indicators(
-                pair,
-                dataframe.copy(),
-                tf,
-                informative=base_dataframes[tf],
-                set_generalized_indicators=sgi
-            )
-            if pairs:
-                for i in pairs:
-                    if pair in i:
-                        continue  # dont repeat anything from whitelist
-                    dataframe = strategy.populate_any_indicators(
-                        i,
-                        dataframe.copy(),
-                        tf,
-                        informative=corr_dataframes[i][tf]
-                    )
+            with strategy.freqai.lock:
+                dataframe = strategy.populate_any_indicators(
+                    pair,
+                    dataframe.copy(),
+                    tf,
+                    informative=base_dataframes[tf],
+                    set_generalized_indicators=sgi
+                )
+            with strategy.freqai.lock:
+                if pairs:
+                    for i in pairs:
+                        if pair in i:
+                            continue  # dont repeat anything from whitelist
+                        dataframe = strategy.populate_any_indicators(
+                            i,
+                            dataframe.copy(),
+                            tf,
+                            informative=corr_dataframes[i][tf]
+                        )
 
         self.get_unique_classes_from_labels(dataframe)
 
