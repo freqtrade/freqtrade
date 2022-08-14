@@ -1,23 +1,18 @@
-import torch as th
-from torch import nn
-from typing import Dict, List, Tuple, Type, Optional, Any, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+
 import gym
-from stable_baselines3.common.type_aliases import GymEnv, Schedule
-from stable_baselines3.common.torch_layers import (
-    BaseFeaturesExtractor,
-    FlattenExtractor,
-    CombinedExtractor
-)
-from stable_baselines3.common.buffers import ReplayBuffer
-from stable_baselines3 import DQN
-
-
-from stable_baselines3.common.policies import BasePolicy
-#from stable_baselines3.common.policies import register_policy
-from stable_baselines3.dqn.policies import (
-    QNetwork, DQNPolicy, MultiInputPolicy,
-    CnnPolicy, DQNPolicy, MlpPolicy)
 import torch
+import torch as th
+from stable_baselines3 import DQN
+from stable_baselines3.common.buffers import ReplayBuffer
+from stable_baselines3.common.policies import BasePolicy
+from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor, CombinedExtractor,
+                                                   FlattenExtractor)
+from stable_baselines3.common.type_aliases import GymEnv, Schedule
+#from stable_baselines3.common.policies import register_policy
+from stable_baselines3.dqn.policies import (CnnPolicy, DQNPolicy, MlpPolicy, MultiInputPolicy,
+                                            QNetwork)
+from torch import nn
 
 
 def create_mlp_(
@@ -30,7 +25,7 @@ def create_mlp_(
     dropout = 0.2
     if len(net_arch) > 0:
         number_of_neural = net_arch[0]
- 
+
     modules = [
         nn.Linear(input_dim, number_of_neural),
         nn.BatchNorm1d(number_of_neural),
@@ -69,19 +64,19 @@ class TDQNetwork(QNetwork):
             features_dim=features_dim,
             net_arch=net_arch,
             activation_fn=activation_fn,
-            normalize_images=normalize_images      
+            normalize_images=normalize_images
         )
         action_dim = self.action_space.n
         q_net = create_mlp_(self.features_dim, action_dim, self.net_arch, self.activation_fn)
         self.q_net = nn.Sequential(*q_net).apply(self.init_weights)
-        
+
     def init_weights(self, m):
         if type(m) == nn.Linear:
             torch.nn.init.kaiming_uniform_(m.weight)
-            
-            
+
+
 class TDQNPolicy(DQNPolicy):
-    
+
     def __init__(
         self,
         observation_space: gym.spaces.Space,
@@ -107,7 +102,7 @@ class TDQNPolicy(DQNPolicy):
             optimizer_class=optimizer_class,
             optimizer_kwargs=optimizer_kwargs
         )
-        
+
     @staticmethod
     def init_weights(module: nn.Module, gain: float = 1) -> None:
         """
@@ -117,13 +112,13 @@ class TDQNPolicy(DQNPolicy):
             nn.init.kaiming_uniform_(module.weight)
             if module.bias is not None:
                 module.bias.data.fill_(0.0)
-    
+
     def make_q_net(self) -> TDQNetwork:
         # Make sure we always have separate networks for features extractors etc
         net_args = self._update_features_extractor(self.net_args, features_extractor=None)
         return TDQNetwork(**net_args).to(self.device)
 
-    
+
 class TMultiInputPolicy(TDQNPolicy):
     def __init__(
         self,
@@ -150,8 +145,8 @@ class TMultiInputPolicy(TDQNPolicy):
             optimizer_class,
             optimizer_kwargs,
         )
-        
-        
+
+
 class TDQN(DQN):
 
     policy_aliases: Dict[str, Type[BasePolicy]] = {
@@ -216,9 +211,9 @@ class TDQN(DQN):
             device=device,
             _init_setup_model=_init_setup_model
         )
-    
 
-        
+
+
 # try:
 #     register_policy("TMultiInputPolicy", TMultiInputPolicy)
 # except:

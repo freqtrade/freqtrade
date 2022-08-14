@@ -2,6 +2,7 @@ import logging
 import random
 from collections import deque
 from enum import Enum
+#from sklearn.decomposition import PCA, KernelPCA
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import gym
@@ -10,7 +11,6 @@ import numpy as np
 import pandas as pd
 from gym import spaces
 from gym.utils import seeding
-from sklearn.decomposition import PCA, KernelPCA
 
 
 logger = logging.getLogger(__name__)
@@ -29,12 +29,8 @@ logger = logging.getLogger(__name__)
 #     Label, LabelSet
 # )
 
-class Actions(Enum):
-    Short = 0
-    Long = 1
-    Neutral = 2
 
-class Actions_v2(Enum):
+class Actions(Enum):
     Neutral = 0
     Long_buy = 1
     Long_sell = 2
@@ -75,7 +71,7 @@ class DEnv(gym.Env):
 
         # # spaces
         self.shape = (window_size, self.signal_features.shape[1])
-        self.action_space = spaces.Discrete(len(Actions_v2))
+        self.action_space = spaces.Discrete(len(Actions))
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
 
         # episode
@@ -152,7 +148,7 @@ class DEnv(gym.Env):
 
 
         trade_type = None
-        if self.is_tradesignal_v2(action): # exclude 3 case not trade
+        if self.is_tradesignal(action): # exclude 3 case not trade
             # Update position
             """
             Action: Neutral, position: Long ->  Close Long
@@ -167,19 +163,19 @@ class DEnv(gym.Env):
 
 
             temp_position = self._position
-            if action == Actions_v2.Neutral.value:
+            if action == Actions.Neutral.value:
                 self._position = Positions.Neutral
                 trade_type = "neutral"
-            elif action == Actions_v2.Long_buy.value:
+            elif action == Actions.Long_buy.value:
                 self._position = Positions.Long
                 trade_type = "long"
-            elif action == Actions_v2.Short_buy.value:
+            elif action == Actions.Short_buy.value:
                 self._position = Positions.Short
                 trade_type = "short"
-            elif action == Actions_v2.Long_sell.value:
+            elif action == Actions.Long_sell.value:
                 self._position = Positions.Neutral
                 trade_type = "neutral"
-            elif action == Actions_v2.Short_sell.value:
+            elif action == Actions.Short_sell.value:
                 self._position = Positions.Neutral
                 trade_type = "neutral"
             else:
@@ -208,11 +204,11 @@ class DEnv(gym.Env):
         return observation, step_reward, self._done, info
 
 
-    def processState(self, state):
-        return state.to_numpy()
+    # def processState(self, state):
+    #     return state.to_numpy()
 
-    def convert_mlp_Policy(self, obs_):
-        pass
+    # def convert_mlp_Policy(self, obs_):
+    #     pass
 
     def _get_observation(self):
         return self.signal_features[(self._current_tick - self.window_size):self._current_tick]
@@ -245,46 +241,26 @@ class DEnv(gym.Env):
         Action: Long, position: Long -> Hold Long
         Action: Short, position: Short -> Hold Short
         """
-        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral)
-                    or (action == Actions.Short.value and self._position == Positions.Short)
-                    or (action == Actions.Long.value and self._position == Positions.Long))
+        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral) or
+                    (action == Actions.Short_buy.value and self._position == Positions.Short) or
+                    (action == Actions.Short_sell.value and self._position == Positions.Short) or
+                    (action == Actions.Short_buy.value and self._position == Positions.Long) or
+                    (action == Actions.Short_sell.value and self._position == Positions.Long) or
 
-    def is_tradesignal_v2(self, action):
-        # trade signal
-        """
-        not trade signal is :
-        Action: Neutral, position: Neutral -> Nothing
-        Action: Long, position: Long -> Hold Long
-        Action: Short, position: Short -> Hold Short
-        """
-        return not ((action == Actions_v2.Neutral.value and self._position == Positions.Neutral) or
-                    (action == Actions_v2.Short_buy.value and self._position == Positions.Short) or
-                    (action == Actions_v2.Short_sell.value and self._position == Positions.Short) or
-                    (action == Actions_v2.Short_buy.value and self._position == Positions.Long) or
-                    (action == Actions_v2.Short_sell.value and self._position == Positions.Long) or
-
-                    (action == Actions_v2.Long_buy.value and self._position == Positions.Long) or
-                    (action == Actions_v2.Long_sell.value and self._position == Positions.Long) or
-                    (action == Actions_v2.Long_buy.value and self._position == Positions.Short) or
-                    (action == Actions_v2.Long_sell.value and self._position == Positions.Short))
-
+                    (action == Actions.Long_buy.value and self._position == Positions.Long) or
+                    (action == Actions.Long_sell.value and self._position == Positions.Long) or
+                    (action == Actions.Long_buy.value and self._position == Positions.Short) or
+                    (action == Actions.Long_sell.value and self._position == Positions.Short))
 
 
     def _is_trade(self, action: Actions):
-        return ((action == Actions.Long.value and self._position == Positions.Short) or
-        (action == Actions.Short.value and self._position == Positions.Long) or
+        return ((action == Actions.Long_buy.value and self._position == Positions.Short) or
+        (action == Actions.Short_buy.value and self._position == Positions.Long) or
         (action == Actions.Neutral.value and self._position == Positions.Long) or
-        (action == Actions.Neutral.value and self._position == Positions.Short)
-        )
+        (action == Actions.Neutral.value and self._position == Positions.Short) or
 
-    def _is_trade_v2(self, action: Actions_v2):
-        return ((action == Actions_v2.Long_buy.value and self._position == Positions.Short) or
-        (action == Actions_v2.Short_buy.value and self._position == Positions.Long) or
-        (action == Actions_v2.Neutral.value and self._position == Positions.Long) or
-        (action == Actions_v2.Neutral.value and self._position == Positions.Short) or
-
-        (action == Actions_v2.Neutral.Short_sell and self._position == Positions.Long) or
-        (action == Actions_v2.Neutral.Long_sell and self._position == Positions.Short)
+        (action == Actions.Neutral.Short_sell and self._position == Positions.Long) or
+        (action == Actions.Neutral.Long_sell and self._position == Positions.Short)
         )
 
 
@@ -292,9 +268,6 @@ class DEnv(gym.Env):
         return ((action == Actions.Short.value and self._position == Positions.Short)
                 or (action == Actions.Long.value and self._position == Positions.Long))
 
-    def is_hold_v2(self, action):
-        return ((action == Actions_v2.Short_buy.value and self._position == Positions.Short)
-                or (action == Actions_v2.Long_buy.value and self._position == Positions.Long))
 
 
     def add_buy_fee(self, price):
@@ -311,156 +284,158 @@ class DEnv(gym.Env):
             self.history[key].append(value)
 
 
-    def render(self, mode='human'):
+    # def render(self, mode='human'):
 
-        def _plot_position(position, tick):
-            color = None
-            if position == Positions.Short:
-                color = 'red'
-            elif position == Positions.Long:
-                color = 'green'
-            if color:
-                plt.scatter(tick, self.prices.loc[tick].open, color=color)
+    #     def _plot_position(position, tick):
+    #         color = None
+    #         if position == Positions.Short:
+    #             color = 'red'
+    #         elif position == Positions.Long:
+    #             color = 'green'
+    #         if color:
+    #             plt.scatter(tick, self.prices.loc[tick].open, color=color)
 
-        if self._first_rendering:
-            self._first_rendering = False
-            plt.cla()
-            plt.plot(self.prices)
-            start_position = self._position_history[self._start_tick]
-            _plot_position(start_position, self._start_tick)
+    #     if self._first_rendering:
+    #         self._first_rendering = False
+    #         plt.cla()
+    #         plt.plot(self.prices)
+    #         start_position = self._position_history[self._start_tick]
+    #         _plot_position(start_position, self._start_tick)
 
-        plt.cla()
-        plt.plot(self.prices)
-        _plot_position(self._position, self._current_tick)
+    #     plt.cla()
+    #     plt.plot(self.prices)
+    #     _plot_position(self._position, self._current_tick)
 
-        plt.suptitle("Total Reward: %.6f" % self.total_reward + ' ~ ' + "Total Profit: %.6f" % self._total_profit)
-        plt.pause(0.01)
-
-
-    def render_all(self):
-        plt.figure()
-        window_ticks = np.arange(len(self._position_history))
-        plt.plot(self.prices['open'], alpha=0.5)
-
-        short_ticks = []
-        long_ticks = []
-        neutral_ticks = []
-        for i, tick in enumerate(window_ticks):
-            if self._position_history[i] == Positions.Short:
-                short_ticks.append(tick - 1)
-            elif self._position_history[i] == Positions.Long:
-                long_ticks.append(tick - 1)
-            elif self._position_history[i] == Positions.Neutral:
-                neutral_ticks.append(tick - 1)
-
-        plt.plot(neutral_ticks, self.prices.loc[neutral_ticks].open,
-                 'o', color='grey', ms=3, alpha=0.1)
-        plt.plot(short_ticks, self.prices.loc[short_ticks].open,
-                 'o', color='r', ms=3, alpha=0.8)
-        plt.plot(long_ticks, self.prices.loc[long_ticks].open,
-                 'o', color='g', ms=3, alpha=0.8)
-
-        plt.suptitle("Generalising")
-        fig = plt.gcf()
-        fig.set_size_inches(15, 10)
+    #     plt.suptitle("Total Reward: %.6f" % self.total_reward + ' ~ ' + "Total Profit: %.6f" % self._total_profit)
+    #     plt.pause(0.01)
 
 
+    # def render_all(self):
+    #     plt.figure()
+    #     window_ticks = np.arange(len(self._position_history))
+    #     plt.plot(self.prices['open'], alpha=0.5)
+
+    #     short_ticks = []
+    #     long_ticks = []
+    #     neutral_ticks = []
+    #     for i, tick in enumerate(window_ticks):
+    #         if self._position_history[i] == Positions.Short:
+    #             short_ticks.append(tick - 1)
+    #         elif self._position_history[i] == Positions.Long:
+    #             long_ticks.append(tick - 1)
+    #         elif self._position_history[i] == Positions.Neutral:
+    #             neutral_ticks.append(tick - 1)
+
+    #     plt.plot(neutral_ticks, self.prices.loc[neutral_ticks].open,
+    #              'o', color='grey', ms=3, alpha=0.1)
+    #     plt.plot(short_ticks, self.prices.loc[short_ticks].open,
+    #              'o', color='r', ms=3, alpha=0.8)
+    #     plt.plot(long_ticks, self.prices.loc[long_ticks].open,
+    #              'o', color='g', ms=3, alpha=0.8)
+
+    #     plt.suptitle("Generalising")
+    #     fig = plt.gcf()
+    #     fig.set_size_inches(15, 10)
 
 
-    def close_trade_report(self):
-        small_trade = 0
-        positive_big_trade = 0
-        negative_big_trade = 0
-        small_profit = 0.003
-        for i in self.close_trade_profit:
-            if i < small_profit and i > -small_profit:
-                small_trade+=1
-            elif i > small_profit:
-                positive_big_trade += 1
-            elif i < -small_profit:
-                negative_big_trade += 1
-        print(f"small trade={small_trade/len(self.close_trade_profit)}; positive_big_trade={positive_big_trade/len(self.close_trade_profit)}; negative_big_trade={negative_big_trade/len(self.close_trade_profit)}")
 
 
-    def report(self):
-
-        # get total trade
-        long_trade = 0
-        short_trade = 0
-        neutral_trade = 0
-        for trade in self.trade_history:
-            if trade['type'] == 'long':
-                long_trade += 1
-
-            elif trade['type'] == 'short':
-                short_trade += 1
-            else:
-                neutral_trade += 1
-
-        negative_trade = 0
-        positive_trade = 0
-        for tr in self.close_trade_profit:
-            if tr < 0.:
-                negative_trade += 1
-
-            if tr > 0.:
-                positive_trade += 1
-
-        total_trade_lr = negative_trade+positive_trade
+    # def close_trade_report(self):
+    #     small_trade = 0
+    #     positive_big_trade = 0
+    #     negative_big_trade = 0
+    #     small_profit = 0.003
+    #     for i in self.close_trade_profit:
+    #         if i < small_profit and i > -small_profit:
+    #             small_trade+=1
+    #         elif i > small_profit:
+    #             positive_big_trade += 1
+    #         elif i < -small_profit:
+    #             negative_big_trade += 1
+    #     print(f"small trade={small_trade/len(self.close_trade_profit)}; positive_big_trade={positive_big_trade/len(self.close_trade_profit)}; negative_big_trade={negative_big_trade/len(self.close_trade_profit)}")
 
 
-        total_trade = long_trade + short_trade
-        sharp_ratio = self.sharpe_ratio()
-        sharp_log = self.get_sharpe_ratio()
+    # def report(self):
 
-        from tabulate import tabulate
+    #     # get total trade
+    #     long_trade = 0
+    #     short_trade = 0
+    #     neutral_trade = 0
+    #     for trade in self.trade_history:
+    #         if trade['type'] == 'long':
+    #             long_trade += 1
 
-        headers = ["Performance", ""]
-        performanceTable = [["Total Trade", "{0:.2f}".format(total_trade)],
-                         ["Total reward", "{0:.3f}".format(self.total_reward)],
-                         ["Start profit(unit)", "{0:.2f}".format(1.)],
-                         ["End profit(unit)", "{0:.3f}".format(self._total_profit)],
-                         ["Sharp ratio", "{0:.3f}".format(sharp_ratio)],
-                         ["Sharp log", "{0:.3f}".format(sharp_log)],
-                         # ["Sortino ratio", "{0:.2f}".format(0) + '%'],
-                         ["winrate", "{0:.2f}".format(positive_trade*100/total_trade_lr) + '%']
-                         ]
-        tabulation = tabulate(performanceTable, headers, tablefmt="fancy_grid", stralign="center")
-        print(tabulation)
+    #         elif trade['type'] == 'short':
+    #             short_trade += 1
+    #         else:
+    #             neutral_trade += 1
 
-        result = {
-            "Start": "{0:.2f}".format(1.),
-            "End": "{0:.2f}".format(self._total_profit),
-            "Sharp": "{0:.3f}".format(sharp_ratio),
-            "Winrate": "{0:.2f}".format(positive_trade*100/total_trade_lr)
-        }
-        return result
+    #     negative_trade = 0
+    #     positive_trade = 0
+    #     for tr in self.close_trade_profit:
+    #         if tr < 0.:
+    #             negative_trade += 1
 
-    def close(self):
-        plt.close()
+    #         if tr > 0.:
+    #             positive_trade += 1
+
+    #     total_trade_lr = negative_trade+positive_trade
+
+
+    #     total_trade = long_trade + short_trade
+    #     sharp_ratio = self.sharpe_ratio()
+    #     sharp_log = self.get_sharpe_ratio()
+
+    #     from tabulate import tabulate
+
+    #     headers = ["Performance", ""]
+    #     performanceTable = [["Total Trade", "{0:.2f}".format(total_trade)],
+    #                      ["Total reward", "{0:.3f}".format(self.total_reward)],
+    #                      ["Start profit(unit)", "{0:.2f}".format(1.)],
+    #                      ["End profit(unit)", "{0:.3f}".format(self._total_profit)],
+    #                      ["Sharp ratio", "{0:.3f}".format(sharp_ratio)],
+    #                      ["Sharp log", "{0:.3f}".format(sharp_log)],
+    #                      # ["Sortino ratio", "{0:.2f}".format(0) + '%'],
+    #                      ["winrate", "{0:.2f}".format(positive_trade*100/total_trade_lr) + '%']
+    #                      ]
+    #     tabulation = tabulate(performanceTable, headers, tablefmt="fancy_grid", stralign="center")
+    #     print(tabulation)
+
+    #     result = {
+    #         "Start": "{0:.2f}".format(1.),
+    #         "End": "{0:.2f}".format(self._total_profit),
+    #         "Sharp": "{0:.3f}".format(sharp_ratio),
+    #         "Winrate": "{0:.2f}".format(positive_trade*100/total_trade_lr)
+    #     }
+    #     return result
+
+    # def close(self):
+    #     plt.close()
 
     def get_sharpe_ratio(self):
         return mean_over_std(self.get_portfolio_log_returns())
 
 
-    def save_rendering(self, filepath):
-        plt.savefig(filepath)
+    # def save_rendering(self, filepath):
+    #     plt.savefig(filepath)
 
 
-    def pause_rendering(self):
-        plt.show()
+    # def pause_rendering(self):
+    #     plt.show()
 
 
     def _calculate_reward(self, action):
         # rw = self.transaction_profit_reward(action)
         #rw = self.reward_rr_profit_config(action)
-        rw = self.reward_rr_profit_config_v2(action)
+        #rw = self.reward_rr_profit_config(action) # main
+        #rw = self.profit_only_when_close_reward(action)
+        rw = self.profit_only_when_close_reward_aim(action)
         return rw
 
 
     def _update_profit(self, action):
         #if self._is_trade(action) or self._done:
-        if self._is_trade_v2(action) or self._done:
+        if self._is_trade(action) or self._done:
             pnl = self.get_unrealized_profit()
 
             if self._position == Positions.Long:
@@ -485,7 +460,7 @@ class DEnv(gym.Env):
         if self._position == Positions.Long:
             current_price = self.prices.iloc[self._current_tick].open
             #if action == Actions.Short.value or action == Actions.Neutral.value:
-            if action == Actions_v2.Short_buy.value or action == Actions_v2.Neutral.value:
+            if action == Actions.Short_buy.value or action == Actions.Neutral.value:
                 current_price = self.add_sell_fee(current_price)
 
             previous_price = self.prices.iloc[self._current_tick - 1].open
@@ -500,7 +475,7 @@ class DEnv(gym.Env):
         if self._position == Positions.Short:
             current_price = self.prices.iloc[self._current_tick].open
             #if action == Actions.Long.value or action == Actions.Neutral.value:
-            if action == Actions_v2.Long_buy.value or action == Actions_v2.Neutral.value:
+            if action == Actions.Long_buy.value or action == Actions.Neutral.value:
                 current_price = self.add_buy_fee(current_price)
 
             previous_price = self.prices.iloc[self._current_tick - 1].open
@@ -574,8 +549,57 @@ class DEnv(gym.Env):
         return np.clip(rw, 0, 1)
 
 
+    def profit_only_when_close_reward(self, action):
 
-    def reward_rr_profit_config_v2(self, action):
+        if self._last_trade_tick == None:
+            return 0.
+
+        # close long
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(current_price) - np.log(last_trade_price))
+
+        # close short
+        if action == Actions.Short_buy.value  and self._position == Positions.Short:
+            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(last_trade_price) - np.log(current_price))
+
+        return 0.
+
+    def profit_only_when_close_reward_aim(self, action):
+
+        if self._last_trade_tick == None:
+            return 0.
+
+        # close long
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(current_price) - np.log(last_trade_price))
+
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
+
+        # close short
+        if action == Actions.Short_buy.value  and self._position == Positions.Short:
+            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(last_trade_price) - np.log(current_price))
+
+        if action == Actions.Short_buy.value  and self._position == Positions.Short:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
+
+        return 0.
+
+    def reward_rr_profit_config(self, action):
         rw = 0.
 
         pt_1 = self.current_price()
@@ -587,61 +611,61 @@ class DEnv(gym.Env):
                 pt_1 = self.add_sell_fee(self.current_price())
                 po = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
 
-                if action == Actions_v2.Short_buy.value:
+                if action == Actions.Short_buy.value:
                     if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                        rw = 10 * 2
-                    elif self.close_trade_profit[-1] > 0 and self.close_trade_profit[-1] < self.profit_aim * self.rr:
-                        rw = 10 * 1 * 1
+                        rw = 15
+                    elif self.close_trade_profit[-1] > 0.01 and self.close_trade_profit[-1] < self.profit_aim * self.rr:
+                        rw = -1
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 10 * -1
+                        rw = -10
                     elif self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 3 * -1
+                        rw = -15
 
-                if action == Actions_v2.Long_sell.value:
+                if action == Actions.Long_sell.value:
                     if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                        rw = 10 * 5
-                    elif self.close_trade_profit[-1] > 0 and self.close_trade_profit[-1] < self.profit_aim * self.rr:
-                        rw = 10 * 1 * 3
+                        rw = 20
+                    elif self.close_trade_profit[-1] > 0.01 and self.close_trade_profit[-1] < self.profit_aim * self.rr:
+                        rw = -1
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 10 * -1
+                        rw = -15
                     elif self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 3 * -1
+                        rw = -25
 
-                if action == Actions_v2.Neutral.value:
-                    if self.close_trade_profit[-1] > 0:
-                        rw = 2
+                if action == Actions.Neutral.value:
+                    if self.close_trade_profit[-1] > 0.005:
+                        rw = 0
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 2 * -1
+                        rw = 0
 
             # short
             if self._position == Positions.Short:
                 pt_1 = self.add_sell_fee(self.current_price())
                 po = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
 
-                if action == Actions_v2.Long_buy.value:
+                if action == Actions.Long_buy.value:
                     if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                        rw = 10 * 2
-                    elif self.close_trade_profit[-1] > 0 and self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 1 * 1
+                        rw = 15
+                    elif self.close_trade_profit[-1] > 0.01 and self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
+                        rw = -1
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 10 * -1
+                        rw = -10
                     elif self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 3 * -1
+                        rw =- -25
 
-                if action == Actions_v2.Short_sell.value:
+                if action == Actions.Short_sell.value:
                     if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                        rw = 10 * 5
-                    elif self.close_trade_profit[-1] > 0 and self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 1 * 3
+                        rw = 20
+                    elif self.close_trade_profit[-1] > 0.01 and self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
+                        rw = -1
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 10 * -1
+                        rw = -15
                     elif self.close_trade_profit[-1] < (self.profit_aim * -1) * self.rr:
-                        rw = 10 * 3 * -1
+                        rw = -25
 
-                if action == Actions_v2.Neutral.value:
-                    if self.close_trade_profit[-1] > 0:
-                        rw = 2
+                if action == Actions.Neutral.value:
+                    if self.close_trade_profit[-1] > 0.005:
+                        rw = 0
                     elif self.close_trade_profit[-1] < 0:
-                        rw = 2 * -1
+                        rw = 0
 
         return np.clip(rw, 0, 1)

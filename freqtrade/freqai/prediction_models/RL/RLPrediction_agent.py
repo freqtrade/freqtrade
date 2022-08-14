@@ -1,11 +1,15 @@
 # common library
 
+import gym
 import numpy as np
 from stable_baselines3 import A2C, DDPG, PPO, SAC, TD3
-from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from stable_baselines3.common.callbacks import (BaseCallback, CallbackList, CheckpointCallback,
+                                                EvalCallback, StopTrainingOnRewardThreshold)
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 
 from freqtrade.freqai.prediction_models.RL import config
+#from freqtrade.freqai.prediction_models.RL.RLPrediction_agent_v2 import TDQN
+from freqtrade.freqai.prediction_models.RL.RLPrediction_env import DEnv
 
 
 # from stable_baselines3.common.vec_env import DummyVecEnv
@@ -106,12 +110,30 @@ class RLPrediction_agent:
 
         return model
 
-    def train_model(self, model, tb_log_name, model_kwargs):
+    def train_model(self, model, tb_log_name, model_kwargs, train_df, test_df, price, price_test, window_size):
+
+
+        agent_params = self.freqai_info['model_training_parameters']
+        reward_params = self.freqai_info['model_reward_parameters']
+        train_env = DEnv(df=train_df, prices=price, window_size=window_size, reward_kwargs=reward_params)
+        eval_env = DEnv(df=test_df, prices=price_test, window_size=window_size, reward_kwargs=reward_params)
+
+        # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path='./logs/',
+        #         name_prefix='rl_model')
+
+        checkpoint_callback = CheckpointCallback(save_freq=1000, save_path='./logs/')
+
+        eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_model', log_path='./logs/results', eval_freq=500)
+        #callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=-200, verbose=1)
+
+        # Create the callback list
+        callback = CallbackList([checkpoint_callback, eval_callback])
+
 
         model = model.learn(
             total_timesteps=model_kwargs["total_timesteps"],
             tb_log_name=tb_log_name,
-            #callback=eval_callback,
-            callback=TensorboardCallback(),
+            callback=callback,
+            #callback=TensorboardCallback(),
         )
         return model
