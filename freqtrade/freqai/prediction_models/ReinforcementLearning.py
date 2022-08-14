@@ -21,7 +21,7 @@ from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
 
-class ReinforcementLearningModel(IFreqaiModel):
+class ReinforcementLearning(IFreqaiModel):
     """
     User created Reinforcement Learning Model prediction model.
     """
