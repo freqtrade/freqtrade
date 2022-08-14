@@ -38,8 +38,7 @@ class FreqaiDataDrawer:
     """
     Class aimed at holding all pair models/info in memory for better inferencing/retrainig/saving
     /loading to/from disk.
-    This object remains persistent throughout live/dry, unlike FreqaiDataKitchen, which is
-    reinstantiated for each coin.
+    This object remains persistent throughout live/dry.
 
     Record of contribution:
     FreqAI was developed by a group of individuals who all contributed specific skillsets to the
@@ -56,7 +55,7 @@ class FreqaiDataDrawer:
 
     Beta testing and bug reporting:
     @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
-    Juha Nykänen @suikula, Wagner Costa @wagnercosta
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
     def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
@@ -85,6 +84,7 @@ class FreqaiDataDrawer:
         self.load_historic_predictions_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
+        self.save_lock = threading.Lock()
         self.old_DBSCAN_eps: Dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
@@ -145,9 +145,10 @@ class FreqaiDataDrawer:
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with open(self.pair_dictionary_path, 'w') as fp:
-            rapidjson.dump(self.pair_dict, fp, default=self.np_encoder,
-                           number_mode=rapidjson.NM_NATIVE)
+        with self.save_lock:
+            with open(self.pair_dictionary_path, 'w') as fp:
+                rapidjson.dump(self.pair_dict, fp, default=self.np_encoder,
+                               number_mode=rapidjson.NM_NATIVE)
 
     def save_follower_dict_to_disk(self):
         """

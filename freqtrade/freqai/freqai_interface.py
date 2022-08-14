@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
-
+from threading import Lock
 from freqtrade.configuration import TimeRange
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -52,7 +52,7 @@ class IFreqaiModel(ABC):
 
     Beta testing and bug reporting:
     @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
-    Juha Nykänen @suikula, Wagner Costa @wagnercosta
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
@@ -81,6 +81,7 @@ class IFreqaiModel(ABC):
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.last_trade_database_summary: DataFrame = {}
         self.current_trade_database_summary: DataFrame = {}
+        self.analysis_lock = Lock()
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -114,10 +115,10 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
-
-            dataframe = self.dk.use_strategy_to_populate_indicators(
-                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-            )
+            with self.analysis_lock:
+                dataframe = self.dk.use_strategy_to_populate_indicators(
+                    strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+                )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
@@ -289,9 +290,10 @@ class IFreqaiModel(ABC):
         # load the model and associated data into the data kitchen
         self.model = self.dd.load_data(metadata["pair"], dk)
 
-        dataframe = self.dk.use_strategy_to_populate_indicators(
-            strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-        )
+        with self.analysis_lock:
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
 
         if not self.model:
             logger.warning(
@@ -485,9 +487,10 @@ class IFreqaiModel(ABC):
             data_load_timerange, pair, dk
         )
 
-        unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
-            strategy, corr_dataframes, base_dataframes, pair
-        )
+        with self.analysis_lock:
+            unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
+                strategy, corr_dataframes, base_dataframes, pair
+            )
 
         unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
@@ -500,7 +503,7 @@ class IFreqaiModel(ABC):
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
-            with dk.analysis_lock:
+            with self.analysis_lock:
                 self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
 

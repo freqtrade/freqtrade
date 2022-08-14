@@ -3,7 +3,6 @@ import datetime
 import logging
 import shutil
 from pathlib import Path
-from threading import Lock
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -35,6 +34,9 @@ class FreqaiDataKitchen:
     Class designed to analyze data for a single pair. Employed by the IFreqaiModel class.
     Functionalities include holding, saving, loading, and analyzing the data.
 
+    This object is not persistent, it is reinstantiated for each coin, each time the coin
+    model needs to be inferenced or trained.
+
     Record of contribution:
     FreqAI was developed by a group of individuals who all contributed specific skillsets to the
     project.
@@ -50,7 +52,7 @@ class FreqaiDataKitchen:
 
     Beta testing and bug reporting:
     @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
-    Juha Nykänen @suikula, Wagner Costa @wagnercosta
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
     def __init__(
@@ -71,7 +73,6 @@ class FreqaiDataKitchen:
         self.model_filename: str = ""
         self.live = live
         self.pair = pair
-        self.analysis_lock = Lock()
 
         self.svm_model: linear_model.SGDOneClassSVM = None
         self.keras: bool = self.freqai_config.get("keras", False)
@@ -964,7 +965,6 @@ class FreqaiDataKitchen:
         for tf in tfs:
             if tf == tfs[-1]:
                 sgi = True  # doing this last allows user to use all tf raw prices in labels
-            with self.analysis_lock:
                 dataframe = strategy.populate_any_indicators(
                     pair,
                     dataframe.copy(),
@@ -972,7 +972,6 @@ class FreqaiDataKitchen:
                     informative=base_dataframes[tf],
                     set_generalized_indicators=sgi
                 )
-            with self.analysis_lock:
                 if pairs:
                     for i in pairs:
                         if pair in i:
