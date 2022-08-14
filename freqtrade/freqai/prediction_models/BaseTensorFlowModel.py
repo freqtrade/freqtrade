@@ -24,11 +24,11 @@ class BaseTensorFlowModel(IFreqaiModel):
         for storing, saving, loading, and analyzing the data.
         :param unfiltered_dataframe: Full dataframe for the current training period
         :param metadata: pair metadata from strategy.
-        :returns:
+        :return:
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        logger.info("--------------------Starting training " f"{pair} --------------------")
+        logger.info("-------------------- Starting training " f"{pair} --------------------")
 
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
@@ -38,9 +38,14 @@ class BaseTensorFlowModel(IFreqaiModel):
             training_filter=True,
         )
 
+        start_date = unfiltered_dataframe["date"].iloc[0].strftime("%Y-%m-%d")
+        end_date = unfiltered_dataframe["date"].iloc[-1].strftime("%Y-%m-%d")
+        logger.info(f"-------------------- Training on data from {start_date} to "
+                    f"{end_date}--------------------")
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
-
+        if not self.freqai_info.get('fit_live_predictions', 0) or not self.live:
+            dk.fit_labels()
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
 
@@ -53,17 +58,6 @@ class BaseTensorFlowModel(IFreqaiModel):
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
-
-        if pair not in self.dd.historic_predictions:
-            self.set_initial_historic_predictions(
-                data_dictionary['train_features'], model, dk, pair)
-
-        if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
-            self.fit_live_predictions(dk)
-        else:
-            dk.fit_labels()
-
-        self.dd.save_historic_predictions_to_disk()
 
         logger.info(f"--------------------done training {pair}--------------------")
 

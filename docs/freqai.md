@@ -6,16 +6,16 @@ FreqAI is a module designed to automate a variety of tasks associated with train
 
 Among the the features included:
 
-* **Self-adaptive retraining**: automatically retrain models during live deployments to self-adapt to the market in an unsupervised manner.
+* **Self-adaptive retraining**: retrain models during live deployments to self-adapt to the market in an unsupervised manner.
 * **Rapid feature engineering**: create large rich feature sets (10k+ features) based on simple user created strategies.
 * **High performance**: adaptive retraining occurs on separate thread (or on GPU if available) from inferencing and bot trade operations. Keep newest models and data in memory for rapid inferencing. 
 * **Realistic backtesting**: emulate self-adaptive retraining with backtesting module that automates past retraining.
 * **Modifiable**: use the generalized and robust architecture for incorporating any machine learning library/method available in Python. Seven examples available.
-* **Smart outlier removal**: remove outliers automatically from training and prediction sets using a variety of outlier detection techniques.
-* **Crash resilience**: automatic model storage to disk to make reloading from a crash fast and easy (and purge obsolete files automatically for sustained dry/live runs).
-* **Automated data normalization**: automatically normalize the data automatically in a smart and statistically safe way.
-* **Automatic data download**: automatically compute the data download timerange and downloads data accordingly (in live deployments).
-* **Clean the incoming data of NaNs in a safe way before training and prediction.
+* **Smart outlier removal**: remove outliers from training and prediction sets using a variety of outlier detection techniques.
+* **Crash resilience**: model storage to disk to make reloading from a crash fast and easy (and purge obsolete files for sustained dry/live runs).
+* **Automated data normalization**: normalize the data in a smart and statistically safe way.
+* **Automatic data download**: compute the data download timerange and update historic data (in live deployments).
+* **Clean incoming data** safe NaN handling before training and prediction.
 * **Dimensionality reduction**: reduce the size of the training data via Principal Component Analysis.
 * **Deploy bot fleets**: set one bot to train models while a fleet of other bots inference into the models and handle trades.
 
@@ -412,10 +412,75 @@ The FreqAI strategy requires the user to include the following lines of code in 
         dataframe = self.freqai.start(dataframe, metadata, self)
 
         return dataframe
+
+    def populate_any_indicators(
+        self, pair, df, tf, informative=None, set_generalized_indicators=False
+    ):
+        """
+        Function designed to automatically generate, name and merge features
+        from user indicated timeframes in the configuration file. User controls the indicators
+        passed to the training/prediction by prepending indicators with `'%-' + coin `
+        (see convention below). I.e. user should not prepend any supporting metrics
+        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
+        model.
+        :param pair: pair to be used as informative
+        :param df: strategy dataframe which will receive merges from informatives
+        :param tf: timeframe of the dataframe which will modify the feature names
+        :param informative: the dataframe associated with the informative pair
+        :param coin: the name of the coin which will modify the feature names.
+        """
+
+        coint = pair.split('/')[0]
+
+        with self.freqai.lock:
+            if informative is None:
+                informative = self.dp.get_pair_dataframe(pair, tf)
+
+            # first loop is automatically duplicating indicators for time periods
+            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+                t = int(t)
+                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+
+            indicators = [col for col in informative if col.startswith("%")]
+            # This loop duplicates and shifts all indicators to add a sense of recency to data
+            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+                if n == 0:
+                    continue
+                informative_shift = informative[indicators].shift(n)
+                informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+                informative = pd.concat((informative, informative_shift), axis=1)
+
+            df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+            skip_columns = [
+                (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+            ]
+            df = df.drop(columns=skip_columns)
+
+            # Add generalized indicators here (because in live, it will call this
+            # function to populate indicators during training). Notice how we ensure not to
+            # add them multiple times
+            if set_generalized_indicators:
+
+                # user adds targets here by prepending them with &- (see convention below)
+                # If user wishes to use multiple targets, a multioutput prediction model
+                # needs to be used such as templates/CatboostPredictionMultiModel.py
+                df["&-s_close"] = (
+                    df["close"]
+                    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+                    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+                    .mean()
+                    / df["close"]
+                    - 1
+                )
+
+        return df
+
+
 ```
 
-The user should also include `populate_any_indicators()` from `templates/FreqaiExampleStrategy.py` which builds 
-the feature set with a proper naming convention for the IFreqaiModel to use later.
+Notice how the `populate_any_indicators()` is where the user adds their own features and labels (more information [here](#feature-engineering)). See a full example at `templates/FreqaiExampleStrategy.py`.
 
 ### Setting classifier targets
 
