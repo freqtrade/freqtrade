@@ -71,6 +71,7 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
+    assert(len(freqai.dk.data['training_features_list']) == 26)
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
