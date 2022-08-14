@@ -85,6 +85,7 @@ class FreqaiDataDrawer:
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
         self.save_lock = threading.Lock()
+        self.pair_dict_lock = threading.Lock()
         self.old_DBSCAN_eps: Dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
@@ -228,10 +229,11 @@ class FreqaiDataDrawer:
 
     def pair_to_end_of_training_queue(self, pair: str) -> None:
         # march all pairs up in the queue
-        for p in self.pair_dict:
-            self.pair_dict[p]["priority"] -= 1
-        # send pair to end of queue
-        self.pair_dict[pair]["priority"] = len(self.pair_dict)
+        with self.pair_dict_lock:
+            for p in self.pair_dict:
+                self.pair_dict[p]["priority"] -= 1
+            # send pair to end of queue
+            self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
     def set_initial_return_values(self, pair: str, pred_df: DataFrame) -> None:
         """
@@ -261,13 +263,14 @@ class FreqaiDataDrawer:
         the strategy originally. Doing this allows FreqUI to always display the correct
         historic predictions.
         """
-        df = self.historic_predictions[pair]
 
-        # here are some pandas hula hoops to accommodate the possibility of a series
-        # or dataframe depending number of labels requested by user
-        nan_df = pd.DataFrame(np.nan, index=df.index[-2:] + 2, columns=df.columns)
-        df = pd.concat([df, nan_df], ignore_index=True, axis=0)
-        df = self.historic_predictions[pair] = df[:-1]
+        index = self.historic_predictions[pair].index[-1:]
+        columns = self.historic_predictions[pair].columns
+
+        nan_df = pd.DataFrame(np.nan, index=index, columns=columns)
+        self.historic_predictions[pair] = pd.concat(
+            [self.historic_predictions[pair], nan_df], ignore_index=True, axis=0)
+        df = self.historic_predictions[pair]
 
         # model outputs and associated statistics
         for label in predictions.columns:
@@ -523,7 +526,7 @@ class FreqaiDataDrawer:
                     history_data[pair][tf] = pd.concat(
                         [
                             history_data[pair][tf],
-                            strategy.dp.get_pair_dataframe(pair, tf).iloc[index:],
+                            df_dp.iloc[index:],
                         ],
                         ignore_index=True,
                         axis=0,

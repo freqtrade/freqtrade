@@ -7,11 +7,11 @@ import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
-
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
+from freqtrade.exchange import timeframe_to_seconds
 from threading import Lock
 from freqtrade.configuration import TimeRange
 from freqtrade.enums import RunMode
@@ -82,6 +82,9 @@ class IFreqaiModel(ABC):
         self.last_trade_database_summary: DataFrame = {}
         self.current_trade_database_summary: DataFrame = {}
         self.analysis_lock = Lock()
+        self.inference_time: float = 0
+        self.begin_time: float = 0
+        self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -104,6 +107,7 @@ class IFreqaiModel(ABC):
         self.dd.set_pair_dict_info(metadata)
 
         if self.live:
+            self.inference_timer('start')
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
 
@@ -123,6 +127,8 @@ class IFreqaiModel(ABC):
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         del dk
+        if self.live:
+            self.inference_timer('stop')
         return dataframe
 
     @threaded
@@ -154,6 +160,8 @@ class IFreqaiModel(ABC):
                     self.train_model_in_series(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
+
+            self.dd.save_historic_predictions_to_disk()
 
     def start_backtesting(
         self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
@@ -340,7 +348,6 @@ class IFreqaiModel(ABC):
             # historical accuracy reasons.
             pred_df, do_preds = self.predict(dataframe.iloc[-self.CONV_WIDTH:], dk, first=False)
 
-        self.dd.save_historic_predictions_to_disk()
         if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
             self.fit_live_predictions(dk, pair)
         self.dd.append_model_predictions(pair, pred_df, do_preds, dk, len(dataframe))
@@ -503,8 +510,7 @@ class IFreqaiModel(ABC):
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
-            with self.analysis_lock:
-                self.dd.pair_to_end_of_training_queue(pair)
+            self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
@@ -580,6 +586,28 @@ class IFreqaiModel(ABC):
             f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
+        return
+
+    def inference_timer(self, do='start'):
+        """
+        Timer designed to track the cumulative time spent in FreqAI for one pass through
+        the whitelist. This will check if the time spent is more than 1/4 the time
+        of a single candle, and if so, it will warn the user of degraded performance
+        """
+        if do == 'start':
+            self.pair_it += 1
+            self.begin_time = time.time()
+        elif do == 'stop':
+            end = time.time()
+            self.inference_time += (end - self.begin_time)
+            if self.pair_it == self.total_pairs:
+                logger.info(
+                    f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
+                if self.inference_time > 0.25 * self.base_tf_seconds:
+                    logger.warning('Inference took over 25/% of the candle time. Reduce pairlist to'
+                                   ' avoid blinding open trades and degrading performance.')
+                self.pair_it = 0
+                self.inference_time = 0
         return
 
     # Following methods which are overridden by user made prediction models.
