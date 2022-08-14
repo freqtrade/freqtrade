@@ -500,7 +500,7 @@ class IFreqaiModel(ABC):
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
-            with self.lock:
+            with dk.analysis_lock:
                 self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
 
