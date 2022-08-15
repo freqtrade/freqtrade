@@ -35,10 +35,12 @@ class Base3ActionRLEnv(gym.Env):
 
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, prices, reward_kwargs, window_size=10, starting_point=True, ):
+    def __init__(self, df, prices, reward_kwargs, window_size=10, starting_point=True,
+                 id: str = 'baseenv-1', seed: int = 1):
         assert df.ndim == 2
 
-        self.seed()
+        self.id = id
+        self.seed(seed)
         self.df = df
         self.signal_features = self.df
         self.prices = prices
