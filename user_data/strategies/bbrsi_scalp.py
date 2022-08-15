@@ -16,43 +16,33 @@ class bbrsi_scalp(WAOStrategy):
         if self.coin == 'BTC' or self.coin == 'ADA':
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
-        # self.coin = str(config.get('pairs')[0]).split('/')[0]
+
+    # Minimal ROI designed for the strategy.
+    # This attribute will be overridden if the config file contains "minimal_roi"
+    minimal_roi = {
+        "0": 0.07
+    }
+
+    # Optimal stoploss designed for the strategy
+    # This attribute will be overridden if the config file contains "stoploss"
+    stoploss = -0.035
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    minimal_roi = {
-        "240": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "220": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
-        "200": 0.010,  # Exit after 40 minutes if there is at least 1% profit
-        "180": 0.012,  # Exit after 40 minutes if there is at least 1% profit
-        "160": 0.014,  # Exit after 40 minutes if there is at least 1% profit
-        "140": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
-        "120": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
-        "80": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.024,  # Exit immediately if there is at least 2% profit
-        "40": 0.026,  # Exit immediately if there is at least 2% profit
-        "20": 0.028,  # Exit immediately if there is at least 2% profit
-        "0": 0.030,  # Exit immediately if there is at least 2% profit
-    }
-
-    # Stoploss:
-    stoploss = -0.05
-
-    # Trailing stop:
+    # trailing stoploss
     trailing_stop = False
-    trailing_stop_positive = 0.089
-    trailing_stop_positive_offset = 0.11
-    trailing_only_offset_is_reached = False
+    trailing_stop_positive = 0.01
+    trailing_stop_positive_offset = 0.02
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
-    use_exit_signal = True
-    exit_profit_only = True
-    ignore_roi_if_entry_signal = True
+    use_sell_signal = True
+    sell_profit_only = True
+    ignore_roi_if_buy_signal = False
+
 
     def informative_pairs(self):
         """
