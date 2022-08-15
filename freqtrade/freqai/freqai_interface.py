@@ -6,16 +6,18 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
+from threading import Lock
 from typing import Any, Dict, Tuple
+
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
-from freqtrade.exchange import timeframe_to_seconds
-from threading import Lock
+
 from freqtrade.configuration import TimeRange
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
