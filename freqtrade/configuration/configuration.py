@@ -97,6 +97,8 @@ class Configuration:
 
         self._process_analyze_options(config)
 
+        self._process_freqai_options(config)
+
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
@@ -460,6 +462,16 @@ class Configuration:
             logger.info(f"Runmode set to {self.runmode.value}.")
 
         config.update({'runmode': self.runmode})
+
+    def _process_freqai_options(self, config: Dict[str, Any]) -> None:
+
+        self._args_to_config(config, argname='freqaimodel',
+                             logstring='Using freqaimodel class name: {}')
+
+        self._args_to_config(config, argname='freqaimodel_path',
+                             logstring='Using freqaimodel path: {}')
+
+        return
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
                         logstring: str, logfun: Optional[Callable] = None,

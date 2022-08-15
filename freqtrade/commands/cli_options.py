@@ -647,4 +647,14 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         default=[],
     ),
+    "freqaimodel": Arg(
+        '--freqaimodel',
+        help='Specify a custom freqaimodels.',
+        metavar='NAME',
+    ),
+    "freqaimodel_path": Arg(
+        '--freqaimodel-path',
+        help='Specify additional lookup path for freqaimodels.',
+        metavar='PATH',
+    ),
 }

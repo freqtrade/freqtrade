@@ -1420,7 +1420,10 @@ def test_api_strategies(botclient):
         'InformativeDecoratorTest',
         'StrategyTestV2',
         'StrategyTestV3',
-        'StrategyTestV3Futures'
+        'StrategyTestV3Futures',
+        'freqai_test_classifier',
+        'freqai_test_multimodel_strat',
+        'freqai_test_strat'
     ]}
 
 
