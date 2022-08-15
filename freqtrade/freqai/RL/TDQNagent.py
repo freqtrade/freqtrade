@@ -6,11 +6,10 @@ import torch as th
 from stable_baselines3 import DQN
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.policies import BasePolicy
-from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor, CombinedExtractor,
+from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor,
                                                    FlattenExtractor)
 from stable_baselines3.common.type_aliases import GymEnv, Schedule
-#from stable_baselines3.common.policies import register_policy
-from stable_baselines3.dqn.policies import (CnnPolicy, DQNPolicy, MlpPolicy, MultiInputPolicy,
+from stable_baselines3.dqn.policies import (CnnPolicy, DQNPolicy, MlpPolicy,
                                             QNetwork)
 from torch import nn
 
@@ -47,16 +46,17 @@ def create_mlp_(
     ]
     return modules
 
+
 class TDQNetwork(QNetwork):
     def __init__(self,
-        observation_space: gym.spaces.Space,
-        action_space: gym.spaces.Space,
-        features_extractor: nn.Module,
-        features_dim: int,
-        net_arch: Optional[List[int]] = None,
-        activation_fn: Type[nn.Module] = nn.ReLU,
-        normalize_images: bool = True
-    ):
+                 observation_space: gym.spaces.Space,
+                 action_space: gym.spaces.Space,
+                 features_extractor: nn.Module,
+                 features_dim: int,
+                 net_arch: Optional[List[int]] = None,
+                 activation_fn: Type[nn.Module] = nn.ReLU,
+                 normalize_images: bool = True
+                 ):
         super().__init__(
             observation_space=observation_space,
             action_space=action_space,
@@ -211,10 +211,3 @@ class TDQN(DQN):
             device=device,
             _init_setup_model=_init_setup_model
         )
-
-
-
-# try:
-#     register_policy("TMultiInputPolicy", TMultiInputPolicy)
-# except:
-#     print("already registered")
