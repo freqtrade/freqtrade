@@ -680,21 +680,33 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
+    def get_precision_amount(self, pair: str) -> Optional[float]:
+        """
+        Returns the amount precision of the exchange.
+        :param pair:
+        """
+        return self.markets[pair].get('precision', {}).get('amount', None)
+
+    def get_precision_price(self, pair: str) -> Optional[float]:
+        """
+        Returns the price precision of the exchange.
+        :param pair:
+        """
+        return self.markets[pair].get('precision', {}).get('price', None)
+
     def amount_to_precision(self, pair: str, amount: float) -> float:
         """
         Returns the amount to buy or sell to a precision the Exchange accepts
 
         """
-        return amount_to_precision(amount, self.markets[pair]['precision']['amount'],
-                                   self.precisionMode)
+        return amount_to_precision(amount, self.get_precision_amount(pair), self.precisionMode)
 
     def price_to_precision(self, pair: str, price: float) -> float:
         """
         Returns the price rounded up to the precision the Exchange accepts.
         Rounds up
         """
-        return price_to_precision(price, self.markets[pair]['precision']['price'],
-                                  self.precisionMode)
+        return price_to_precision(price, self.get_precision_price(pair), self.precisionMode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
