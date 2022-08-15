@@ -826,7 +826,7 @@ class LocalTrade():
 
         return float(f"{profit_ratio:.8f}")
 
-    def recalc_trade_from_orders(self, is_closing: bool = False):
+    def recalc_trade_from_orders(self, *, is_closing: bool = False):
         ZERO = FtPrecise(0.0)
         current_amount = FtPrecise(0.0)
         current_stake = FtPrecise(0.0)

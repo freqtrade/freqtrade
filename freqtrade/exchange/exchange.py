@@ -683,42 +683,18 @@ class Exchange:
     def amount_to_precision(self, pair: str, amount: float) -> float:
         """
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Re-implementation of ccxt internal methods - ensuring we can test the result is correct
-        based on our definitions.
-        """
-        if self.markets[pair]['precision']['amount'] is not None:
-            amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
-                                                precision=self.markets[pair]['precision']['amount'],
-                                                counting_mode=self.precisionMode,
-                                                ))
 
-        return amount
+        """
+        return amount_to_precision(amount, self.markets[pair]['precision']['amount'],
+                                   self.precisionMode)
 
     def price_to_precision(self, pair: str, price: float) -> float:
         """
         Returns the price rounded up to the precision the Exchange accepts.
-        Partial Re-implementation of ccxt internal method decimal_to_precision(),
-        which does not support rounding up
-        TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
-        align with amount_to_precision().
         Rounds up
         """
-        if self.markets[pair]['precision']['price']:
-            # price = float(decimal_to_precision(price, rounding_mode=ROUND,
-            #                                    precision=self.markets[pair]['precision']['price'],
-            #                                    counting_mode=self.precisionMode,
-            #                                    ))
-            if self.precisionMode == TICK_SIZE:
-                precision = FtPrecise(self.markets[pair]['precision']['price'])
-                price_str = FtPrecise(price)
-                missing = price_str % precision
-                if not missing == FtPrecise("0"):
-                    price = round(float(str(price_str - missing + precision)), 14)
-            else:
-                symbol_prec = self.markets[pair]['precision']['price']
-                big_price = price * pow(10, symbol_prec)
-                price = ceil(big_price) / pow(10, symbol_prec)
-        return price
+        return price_to_precision(price, self.markets[pair]['precision']['price'],
+                                  self.precisionMode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
@@ -2849,3 +2825,59 @@ def market_is_active(market: Dict) -> bool:
     # See https://github.com/ccxt/ccxt/issues/4874,
     # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
     return market.get('active', True) is not False
+
+
+def amount_to_precision(amount: float, amount_precision: Optional[float],
+                        precisionMode: int) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: truncated amount
+    """
+    if amount_precision is not None:
+        amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
+                                            precision=amount_precision,
+                                            counting_mode=precisionMode,
+                                            ))
+
+    return amount
+
+
+def price_to_precision(price: float, price_precision: Optional[float],
+                       precisionMode: int) -> float:
+    """
+    Returns the price rounded up to the precision the Exchange accepts.
+    Partial Re-implementation of ccxt internal method decimal_to_precision(),
+    which does not support rounding up
+    TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
+    align with amount_to_precision().
+    !!! Rounds up
+    :param price: price to convert
+    :param price_precision: price precision to use. Used from markets[pair]['precision']['price']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: price rounded up to the precision the Exchange accepts
+
+    """
+    if price_precision:
+        # price = float(decimal_to_precision(price, rounding_mode=ROUND,
+        #                                    precision=price_precision,
+        #                                    counting_mode=self.precisionMode,
+        #                                    ))
+        if precisionMode == TICK_SIZE:
+            precision = FtPrecise(price_precision)
+            price_str = FtPrecise(price)
+            missing = price_str % precision
+            if not missing == FtPrecise("0"):
+                price = round(float(str(price_str - missing + precision)), 14)
+        else:
+            symbol_prec = price_precision
+            big_price = price * pow(10, symbol_prec)
+            price = ceil(big_price) / pow(10, symbol_prec)
+    return price
