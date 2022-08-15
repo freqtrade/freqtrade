@@ -28,7 +28,7 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
         reward_params = self.freqai_info['model_reward_parameters']
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = agent_params["eval_cycles"] * len(test_df)
+        eval_freq = agent_params.get("eval_cycles", 4) * len(test_df)
         total_timesteps = agent_params["train_cycles"] * len(train_df)
 
         # price data for model training and evaluation
@@ -71,67 +71,6 @@ class MyRLEnv(BaseRLEnv):
     """
     User can override any function in BaseRLEnv and gym.Env
     """
-
-    def step(self, action):
-        self._done = False
-        self._current_tick += 1
-
-        if self._current_tick == self._end_tick:
-            self._done = True
-
-        self.update_portfolio_log_returns(action)
-
-        self._update_profit(action)
-        step_reward = self._calculate_reward(action)
-        self.total_reward += step_reward
-
-        trade_type = None
-        if self.is_tradesignal(action):
-            """
-            Action: Neutral, position: Long ->  Close Long
-            Action: Neutral, position: Short -> Close Short
-
-            Action: Long, position: Neutral -> Open Long
-            Action: Long, position: Short -> Close Short and Open Long
-
-            Action: Short, position: Neutral -> Open Short
-            Action: Short, position: Long -> Close Long and Open Short
-            """
-
-            if action == Actions.Neutral.value:
-                self._position = Positions.Neutral
-                trade_type = "neutral"
-            elif action == Actions.Long.value:
-                self._position = Positions.Long
-                trade_type = "long"
-            elif action == Actions.Short.value:
-                self._position = Positions.Short
-                trade_type = "short"
-            else:
-                print("case not defined")
-
-            # Update last trade tick
-            self._last_trade_tick = self._current_tick
-
-            if trade_type is not None:
-                self.trade_history.append(
-                    {'price': self.current_price(), 'index': self._current_tick,
-                     'type': trade_type})
-
-        if self._total_profit < 0.2:
-            self._done = True
-
-        self._position_history.append(self._position)
-        observation = self._get_observation()
-        info = dict(
-            tick=self._current_tick,
-            total_reward=self.total_reward,
-            total_profit=self._total_profit,
-            position=self._position.value
-        )
-        self._update_history(info)
-
-        return observation, step_reward, self._done, info
 
     def calculate_reward(self, action):
 
