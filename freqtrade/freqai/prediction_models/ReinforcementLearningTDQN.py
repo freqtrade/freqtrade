@@ -7,8 +7,11 @@ from stable_baselines3.common.monitor import Monitor
 from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 from freqtrade.freqai.RL.TDQNagent import TDQN
+from stable_baselines3 import DQN
 from stable_baselines3.common.buffers import ReplayBuffer
 import numpy as np
+
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,7 @@ class ReinforcementLearningTDQN(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit(self, data_dictionary: Dict[str, Any], pair: str = ''):
+    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen):
 
         agent_params = self.freqai_info['model_training_parameters']
         reward_params = self.freqai_info['model_reward_parameters']
@@ -40,7 +43,7 @@ class ReinforcementLearningTDQN(BaseReinforcementLearningModel):
         eval_env = Monitor(eval, ".")
         eval_env.reset()
 
-        path = self.dk.data_path
+        path = dk.data_path
         eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
                                      log_path=f"{path}/tdqn/logs/", eval_freq=int(eval_freq),
                                      deterministic=True, render=False)
@@ -63,9 +66,11 @@ class ReinforcementLearningTDQN(BaseReinforcementLearningModel):
             callback=eval_callback
         )
 
+        best_model = DQN.load(dk.data_path / "best_model.zip")
+
         print('Training finished!')
 
-        return model
+        return best_model
 
 
 class MyRLEnv(Base3ActionRLEnv):

@@ -1,0 +1,110 @@
+{
+    "trading_mode": "futures",
+    "new_pairs_days": 30,
+    "margin_mode": "isolated",
+    "max_open_trades": 8,
+    "stake_currency": "USDT",
+    "stake_amount": 1000,
+    "tradable_balance_ratio": 1,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "timeframe": "5m",
+    "dataformat_ohlcv": "json",
+    "dry_run_wallet": 12000,
+    "cancel_open_orders_on_exit": true,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 30
+    },
+    "exchange": {
+        "name": "binance",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "rateLimit": 200
+        },
+        "pair_whitelist": [
+            "1INCH/USDT",
+            "AAVE/USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "purge_old_models": true,
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "freqai": {
+        "model_save_type": "stable_baselines_ppo",
+        "conv_width": 10,
+        "follow_mode": false,
+        "purge_old_models": true,
+        "train_period_days": 10,
+        "backtest_period_days": 2,
+        "identifier": "unique-id",
+        "data_kitchen_thread_count": 4,
+        "feature_parameters": {
+            "include_corr_pairlist": [
+                "BTC/USDT",
+                "ETH/USDT"
+            ],
+            "include_timeframes": [
+                "5m",
+                "30m"
+            ],
+            "label_period_candles": 80,
+            "include_shifted_candles": 0,
+            "DI_threshold": 0,
+            "weight_factor": 0.9,
+            "principal_component_analysis": false,
+            "use_SVM_to_remove_outliers": false,
+            "svm_params": {"shuffle": true, "nu": 0.1},
+            "stratify_training_data": 0,
+            "indicator_max_period_candles": 10,
+            "indicator_periods_candles": [5]
+        },
+        "data_split_parameters": {
+            "test_size": 0.5,
+            "random_state": 1,
+            "shuffle": false
+        },
+        "model_training_parameters": {
+            "n_steps": 2048,
+            "ent_coef": 0.005,
+            "learning_rate": 0.000025,
+            "batch_size": 256, 
+            "eval_cycles" : 5,
+            "train_cycles" : 15
+        },
+        "model_reward_parameters": {
+            "rr": 1,
+            "profit_aim": 0.01
+        }
+    },
+    "bot_name": "RL_test",
+    "force_entry_enable": true,
+    "initial_state": "running",
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

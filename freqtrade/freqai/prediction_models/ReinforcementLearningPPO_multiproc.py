@@ -13,7 +13,9 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 import gym
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +44,7 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit(self, data_dictionary: Dict[str, Any], pair: str = ''):
+    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen):
 
         agent_params = self.freqai_info['model_training_parameters']
         reward_params = self.freqai_info['model_reward_parameters']
@@ -58,16 +60,15 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
             len(test_df.index))
 
         env_id = "train_env"
-        train_num_cpu = 6
+        num_cpu = int(dk.thread_count / 2)
         train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, price, reward_params,
                                    self.CONV_WIDTH) for i in range(train_num_cpu)])
 
-        eval_num_cpu = 6
         eval_env_id = 'eval_env'
         eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, price_test, reward_params,
-                                  self.CONV_WIDTH) for i in range(eval_num_cpu)])
+                                  self.CONV_WIDTH) for i in range(num_cpu)])
 
-        path = self.dk.data_path
+        path = dk.data_path
         eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
                                      log_path=f"{path}/ppo/logs/", eval_freq=int(eval_freq),
                                      deterministic=True, render=False)
@@ -85,10 +86,12 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
             callback=eval_callback
         )
 
+        # TODO get callback working so the best model is saved. For now we save last model
+        # best_model = PPO.load(dk.data_path / "best_model.zip")
         print('Training finished!')
         eval_env.close()
 
-        return model
+        return model  # best_model
 
 
 class MyRLEnv(Base3ActionRLEnv):

@@ -56,7 +56,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         )
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
-        model = self.fit(data_dictionary, pair)
+        model = self.fit_rl(data_dictionary, pair, dk)
 
         if pair not in self.dd.historic_predictions:
             self.set_initial_historic_predictions(
@@ -69,7 +69,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         return model
 
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, Any], pair: str = ''):
+    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen):
         """
         Agent customizations and abstract Reinforcement Learning customizations
         go in here. Abstract method, so this function must be overridden by
@@ -163,6 +163,21 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = 0
+
+    # TODO take care of this appendage. Right now it needs to be called because FreqAI enforces it.
+    # But FreqaiRL needs more objects passed to fit() (like DK) and we dont want to go refactor
+    # all the other existing fit() functions to include dk argument. For now we instantiate and
+    # leave it.
+    def fit(self, data_dictionary: Dict[str, Any], pair: str = '') -> Any:
+        """
+        Most regressors use the same function names and arguments e.g. user
+        can drop in LGBMRegressor in place of CatBoostRegressor and all data
+        management will be properly handled by Freqai.
+        :param data_dictionary: Dict = the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
+        """
+
+        return
 
 
 class MyRLEnv(Base3ActionRLEnv):

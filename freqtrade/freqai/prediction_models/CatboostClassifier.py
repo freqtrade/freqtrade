@@ -16,7 +16,7 @@ class CatboostClassifier(BaseClassifierModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def fit(self, data_dictionary: Dict) -> Any:
+    def fit(self, data_dictionary: Dict[str, Any], pair: str = '') -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :params:
