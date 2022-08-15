@@ -11,7 +11,7 @@ from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_
 logger = logging.getLogger(__name__)
 
 
-class ReinforcementLearningExample(IStrategy):
+class RLExample5ac(IStrategy):
     """
     Test strategy - used for testing freqAI functionalities.
     DO not use in production.
@@ -126,7 +126,7 @@ class ReinforcementLearningExample(IStrategy):
                 reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
             ] = (1, "long")
 
-        enter_short_conditions = [df["do_predict"] == 1, df["&-action"] == 2]
+        enter_short_conditions = [df["do_predict"] == 1, df["&-action"] == 3]
 
         if enter_short_conditions:
             df.loc[
@@ -140,7 +140,7 @@ class ReinforcementLearningExample(IStrategy):
         if exit_long_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
 
-        exit_short_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
+        exit_short_conditions = [df["do_predict"] == 1, df["&-action"] == 4]
         if exit_short_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
