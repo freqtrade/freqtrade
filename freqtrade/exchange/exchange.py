@@ -683,14 +683,16 @@ class Exchange:
     def get_precision_amount(self, pair: str) -> Optional[float]:
         """
         Returns the amount precision of the exchange.
-        :param pair:
+        :param pair: Pair to get precision for
+        :return: precision for amount or None. Must be used in combination with precisionMode
         """
         return self.markets.get(pair, {}).get('precision', {}).get('amount', None)
 
     def get_precision_price(self, pair: str) -> Optional[float]:
         """
         Returns the price precision of the exchange.
-        :param pair:
+        :param pair: Pair to get precision for
+        :return: precision for price or None. Must be used in combination with precisionMode
         """
         return self.markets.get(pair, {}).get('precision', {}).get('price', None)
 
