@@ -2855,8 +2855,10 @@ def amount_to_precision(amount: float, amount_precision: Optional[float],
     :return: truncated amount
     """
     if amount_precision is not None and precisionMode is not None:
+        precision = int(amount_precision) if precisionMode != TICK_SIZE else amount_precision
+        # precision must be an int for non-ticksize inputs.
         amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
-                                            precision=amount_precision,
+                                            precision=precision,
                                             counting_mode=precisionMode,
                                             ))
 

@@ -761,7 +761,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     # and trade amount is updated
     rpc._rpc_force_exit('3')
     assert cancel_order_mock.call_count == 1
-    assert trade.amount == filled_amount
+    assert pytest.approx(trade.amount) == filled_amount
 
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
