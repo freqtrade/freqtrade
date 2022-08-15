@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class Actions(Enum):
-    Short = 0
-    Long = 1
-    Neutral = 2
+    Neutral = 0
+    Long_buy = 1
+    Long_sell = 2
+    Short_buy = 3
+    Short_sell = 4
 
 
 class Positions(Enum):
@@ -31,8 +33,10 @@ def mean_over_std(x):
     return mean / std if std > 0 else 0
 
 
-class BaseRLEnv(gym.Env):
-
+class Base5ActionRLEnv(gym.Env):
+    """
+    Base class for a 5 action environment
+    """
     metadata = {'render.modes': ['human']}
 
     def __init__(self, df, prices, reward_kwargs, window_size=10, starting_point=True, ):
@@ -69,11 +73,12 @@ class BaseRLEnv(gym.Env):
         self.history = None
         self.trade_history = []
 
+        # self.A_t, self.B_t = 0.000639, 0.00001954
         self.r_t_change = 0.
 
         self.returns_report = []
 
-    def seed(self, seed: int = 1):
+    def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
@@ -105,7 +110,7 @@ class BaseRLEnv(gym.Env):
 
         return self._get_observation()
 
-    def step(self, action: int):
+    def step(self, action):
         self._done = False
         self._current_tick += 1
 
@@ -135,12 +140,18 @@ class BaseRLEnv(gym.Env):
             if action == Actions.Neutral.value:
                 self._position = Positions.Neutral
                 trade_type = "neutral"
-            elif action == Actions.Long.value:
+            elif action == Actions.Long_buy.value:
                 self._position = Positions.Long
                 trade_type = "long"
-            elif action == Actions.Short.value:
+            elif action == Actions.Short_buy.value:
                 self._position = Positions.Short
                 trade_type = "short"
+            elif action == Actions.Long_sell.value:
+                self._position = Positions.Neutral
+                trade_type = "neutral"
+            elif action == Actions.Short_sell.value:
+                self._position = Positions.Neutral
+                trade_type = "neutral"
             else:
                 print("case not defined")
 
@@ -167,6 +178,12 @@ class BaseRLEnv(gym.Env):
 
         return observation, step_reward, self._done, info
 
+    # def processState(self, state):
+    #     return state.to_numpy()
+
+    # def convert_mlp_Policy(self, obs_):
+    #     pass
+
     def _get_observation(self):
         return self.signal_features[(self._current_tick - self.window_size):self._current_tick]
 
@@ -188,7 +205,7 @@ class BaseRLEnv(gym.Env):
         else:
             return 0.
 
-    def is_tradesignal(self, action: int):
+    def is_tradesignal(self, action):
         # trade signal
         """
         not trade signal is :
@@ -196,15 +213,25 @@ class BaseRLEnv(gym.Env):
         Action: Long, position: Long -> Hold Long
         Action: Short, position: Short -> Hold Short
         """
-        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral)
-                    or (action == Actions.Short.value and self._position == Positions.Short)
-                    or (action == Actions.Long.value and self._position == Positions.Long))
+        return not ((action == Actions.Neutral.value and self._position == Positions.Neutral) or
+                    (action == Actions.Short_buy.value and self._position == Positions.Short) or
+                    (action == Actions.Short_sell.value and self._position == Positions.Short) or
+                    (action == Actions.Short_buy.value and self._position == Positions.Long) or
+                    (action == Actions.Short_sell.value and self._position == Positions.Long) or
+
+                    (action == Actions.Long_buy.value and self._position == Positions.Long) or
+                    (action == Actions.Long_sell.value and self._position == Positions.Long) or
+                    (action == Actions.Long_buy.value and self._position == Positions.Short) or
+                    (action == Actions.Long_sell.value and self._position == Positions.Short))
 
     def _is_trade(self, action: Actions):
-        return ((action == Actions.Long.value and self._position == Positions.Short) or
-                (action == Actions.Short.value and self._position == Positions.Long) or
+        return ((action == Actions.Long_buy.value and self._position == Positions.Short) or
+                (action == Actions.Short_buy.value and self._position == Positions.Long) or
                 (action == Actions.Neutral.value and self._position == Positions.Long) or
-                (action == Actions.Neutral.value and self._position == Positions.Short)
+                (action == Actions.Neutral.value and self._position == Positions.Short) or
+
+                (action == Actions.Neutral.Short_sell and self._position == Positions.Long) or
+                (action == Actions.Neutral.Long_sell and self._position == Positions.Short)
                 )
 
     def is_hold(self, action):
@@ -227,28 +254,8 @@ class BaseRLEnv(gym.Env):
     def get_sharpe_ratio(self):
         return mean_over_std(self.get_portfolio_log_returns())
 
-    def calculate_reward(self, action):
-
-        if self._last_trade_tick is None:
-            return 0.
-
-        # close long
-        if (action == Actions.Short.value or
-                action == Actions.Neutral.value) and self._position == Positions.Long:
-            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(current_price) - np.log(last_trade_price))
-
-        # close short
-        if (action == Actions.Long.value or
-                action == Actions.Neutral.value) and self._position == Positions.Short:
-            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(last_trade_price) - np.log(current_price))
-
-        return 0.
-
     def _update_profit(self, action):
+        # if self._is_trade(action) or self._done:
         if self._is_trade(action) or self._done:
             pnl = self.get_unrealized_profit()
 
@@ -262,7 +269,7 @@ class BaseRLEnv(gym.Env):
                 self._profits.append((self._current_tick, self._total_profit))
                 self.close_trade_profit.append(pnl)
 
-    def most_recent_return(self, action: int):
+    def most_recent_return(self, action):
         """
         We support Long, Neutral and Short positions.
         Return is generated from rising prices in Long
@@ -272,7 +279,8 @@ class BaseRLEnv(gym.Env):
         # Long positions
         if self._position == Positions.Long:
             current_price = self.prices.iloc[self._current_tick].open
-            if action == Actions.Short.value or action == Actions.Neutral.value:
+            # if action == Actions.Short.value or action == Actions.Neutral.value:
+            if action == Actions.Short_buy.value or action == Actions.Neutral.value:
                 current_price = self.add_sell_fee(current_price)
 
             previous_price = self.prices.iloc[self._current_tick - 1].open
@@ -286,7 +294,8 @@ class BaseRLEnv(gym.Env):
         # Short positions
         if self._position == Positions.Short:
             current_price = self.prices.iloc[self._current_tick].open
-            if action == Actions.Long.value or action == Actions.Neutral.value:
+            # if action == Actions.Long.value or action == Actions.Neutral.value:
+            if action == Actions.Long_buy.value or action == Actions.Neutral.value:
                 current_price = self.add_buy_fee(current_price)
 
             previous_price = self.prices.iloc[self._current_tick - 1].open
@@ -300,6 +309,9 @@ class BaseRLEnv(gym.Env):
 
     def get_portfolio_log_returns(self):
         return self.portfolio_log_returns[1:self._current_tick + 1]
+
+    def get_trading_log_return(self):
+        return self.portfolio_log_returns[self._start_tick:]
 
     def update_portfolio_log_returns(self, action):
         self.portfolio_log_returns[self._current_tick] = self.most_recent_return(action)
@@ -316,3 +328,37 @@ class BaseRLEnv(gym.Env):
         returns = np.array(self.close_trade_profit)
         reward = (np.mean(returns) - 0. + 1e-9) / (np.std(returns) + 1e-9)
         return reward
+
+    def get_bnh_log_return(self):
+        return np.diff(np.log(self.prices['open'][self._start_tick:]))
+
+    def calculate_reward(self, action):
+
+        if self._last_trade_tick is None:
+            return 0.
+
+        # close long
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(current_price) - np.log(last_trade_price))
+
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
+
+        # close short
+        if action == Actions.Short_buy.value and self._position == Positions.Short:
+            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(last_trade_price) - np.log(current_price))
+
+        if action == Actions.Short_buy.value and self._position == Positions.Short:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
+
+        return 0.

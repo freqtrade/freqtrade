@@ -8,7 +8,7 @@ from pandas import DataFrame
 from abc import abstractmethod
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
-from freqtrade.freqai.RL.BaseRLEnv import BaseRLEnv, Actions, Positions
+from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
 from freqtrade.persistence import Trade
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             hist_preds_df[return_str] = 0
 
 
-class MyRLEnv(BaseRLEnv):
+class MyRLEnv(Base3ActionRLEnv):
 
     def step(self, action):
         self._done = False

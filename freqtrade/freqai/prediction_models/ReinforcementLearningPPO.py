@@ -10,7 +10,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 # from stable_baselines3.common.vec_env import SubprocVecEnv
-from freqtrade.freqai.RL.BaseRLEnv import BaseRLEnv, Actions, Positions
+from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 
 
@@ -67,7 +67,7 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
         return model
 
 
-class MyRLEnv(BaseRLEnv):
+class MyRLEnv(Base3ActionRLEnv):
     """
     User can override any function in BaseRLEnv and gym.Env
     """
