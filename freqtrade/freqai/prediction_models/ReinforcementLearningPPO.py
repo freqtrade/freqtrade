@@ -53,8 +53,8 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=[256, 256, 128])
 
-        model = PPO('MultiInputPolicy', train_env, policy_kwargs=policy_kwargs,
-                    tensorboard_log=f"{path}/ppo/tensorboard/", learning_rate=0.00025, gamma=0.9
+        model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
+                    tensorboard_log=f"{path}/ppo/tensorboard/", learning_rate=0.00025, gamma=0.9, verbose=1
                     )
 
         model.learn(
