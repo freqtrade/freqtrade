@@ -685,14 +685,14 @@ class Exchange:
         Returns the amount precision of the exchange.
         :param pair:
         """
-        return self.markets[pair].get('precision', {}).get('amount', None)
+        return self.markets.get(pair, {}).get('precision', {}).get('amount', None)
 
     def get_precision_price(self, pair: str) -> Optional[float]:
         """
         Returns the price precision of the exchange.
         :param pair:
         """
-        return self.markets[pair].get('precision', {}).get('price', None)
+        return self.markets.get(pair, {}).get('precision', {}).get('price', None)
 
     def amount_to_precision(self, pair: str, amount: float) -> float:
         """
