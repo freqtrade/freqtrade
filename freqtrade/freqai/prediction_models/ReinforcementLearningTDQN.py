@@ -15,7 +15,7 @@ from stable_baselines3.common.buffers import ReplayBuffer
 logger = logging.getLogger(__name__)
 
 
-class ReinforcementLearningPPO(BaseReinforcementLearningModel):
+class ReinforcementLearningTDQN(BaseReinforcementLearningModel):
     """
     User created Reinforcement Learning Model prediction model.
     """
