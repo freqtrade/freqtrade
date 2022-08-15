@@ -14,12 +14,12 @@ from pandas import DataFrame
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
-from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
+from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_precision,
+                                date_minus_candles, market_is_active, price_to_precision,
+                                timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
+                                timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_credentials)
-from freqtrade.exchange.exchange import (date_minus_candles, market_is_active, timeframe_to_minutes,
-                                         timeframe_to_msecs, timeframe_to_next_date,
-                                         timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
@@ -279,62 +279,35 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
-@pytest.mark.parametrize("amount,precision_mode,precision,contract_size,expected,trading_mode", [
-    (2.34559, 2, 4, 1, 2.3455, 'spot'),
-    (2.34559, 2, 5, 1, 2.34559, 'spot'),
-    (2.34559, 2, 3, 1, 2.345, 'spot'),
-    (2.9999, 2, 3, 1, 2.999, 'spot'),
-    (2.9909, 2, 3, 1, 2.990, 'spot'),
-    (2.9909, 2, 0, 1, 2, 'spot'),
-    (29991.5555, 2, 0, 1, 29991, 'spot'),
-    (29991.5555, 2, -1, 1, 29990, 'spot'),
-    (29991.5555, 2, -2, 1, 29900, 'spot'),
+@pytest.mark.parametrize("amount,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 2.3455),
+    (2.34559, 2, 5, 2.34559),
+    (2.34559, 2, 3, 2.345),
+    (2.9999, 2, 3, 2.999),
+    (2.9909, 2, 3, 2.990),
+    (2.9909, 2, 0, 2),
+    (29991.5555, 2, 0, 29991),
+    (29991.5555, 2, -1, 29990),
+    (29991.5555, 2, -2, 29900),
     # Tests for Tick-size
-    (2.34559, 4, 0.0001, 1, 2.3455, 'spot'),
-    (2.34559, 4, 0.00001, 1, 2.34559, 'spot'),
-    (2.34559, 4, 0.001, 1, 2.345, 'spot'),
-    (2.9999, 4, 0.001, 1, 2.999, 'spot'),
-    (2.9909, 4, 0.001, 1, 2.990, 'spot'),
-    (2.9909, 4, 0.005, 0.01, 2.99, 'futures'),
-    (2.9999, 4, 0.005, 10, 2.995, 'futures'),
+    (2.34559, 4, 0.0001, 2.3455),
+    (2.34559, 4, 0.00001, 2.34559),
+    (2.34559, 4, 0.001, 2.345),
+    (2.9999, 4, 0.001, 2.999),
+    (2.9909, 4, 0.001, 2.990),
+    (2.9909, 4, 0.005, 2.99),
+    (2.9999, 4, 0.005, 2.995),
 ])
-def test_amount_to_precision(
-    default_conf,
-    mocker,
-    amount,
-    precision_mode,
-    precision,
-    contract_size,
-    expected,
-    trading_mode
-):
+def test_amount_to_precision(amount, precision_mode, precision, expected,):
     """
     Test rounds down
     """
-
-    markets = PropertyMock(return_value={
-        'ETH/BTC': {
-            'contractSize': contract_size,
-            'precision': {
-                'amount': precision
-            }
-        }
-    })
-
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = 'isolated'
-
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
     # digits counting mode
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
-                 PropertyMock(return_value=precision_mode))
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
-    pair = 'ETH/BTC'
-    assert exchange.amount_to_precision(pair, amount) == expected
+    assert amount_to_precision(amount, precision, precision_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -359,21 +332,13 @@ def test_amount_to_precision(
     (0.000000003483, 4, 1e-12, 0.000000003483),
 
 ])
-def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
-    """Test price to precision"""
-    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
-
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+def test_price_to_precision(price, precision_mode, precision, expected):
     # digits counting mode
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
-                 PropertyMock(return_value=precision_mode))
 
-    pair = 'ETH/BTC'
-    assert exchange.price_to_precision(pair, price) == expected
+    assert price_to_precision(price, precision, precision_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
