@@ -62,7 +62,7 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
         env_id = "train_env"
         num_cpu = int(dk.thread_count / 2)
         train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, price, reward_params,
-                                   self.CONV_WIDTH) for i in range(train_num_cpu)])
+                                   self.CONV_WIDTH) for i in range(num_cpu)])
 
         eval_env_id = 'eval_env'
         eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, price_test, reward_params,
