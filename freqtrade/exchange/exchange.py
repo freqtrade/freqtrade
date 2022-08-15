@@ -2840,7 +2840,7 @@ def market_is_active(market: Dict) -> bool:
 
 
 def amount_to_precision(amount: float, amount_precision: Optional[float],
-                        precisionMode: int) -> float:
+                        precisionMode: Optional[int]) -> float:
     """
     Returns the amount to buy or sell to a precision the Exchange accepts
     Re-implementation of ccxt internal methods - ensuring we can test the result is correct
@@ -2852,7 +2852,7 @@ def amount_to_precision(amount: float, amount_precision: Optional[float],
                           one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
     :return: truncated amount
     """
-    if amount_precision is not None:
+    if amount_precision is not None and precisionMode is not None:
         amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                             precision=amount_precision,
                                             counting_mode=precisionMode,
@@ -2862,7 +2862,7 @@ def amount_to_precision(amount: float, amount_precision: Optional[float],
 
 
 def price_to_precision(price: float, price_precision: Optional[float],
-                       precisionMode: int) -> float:
+                       precisionMode: Optional[int]) -> float:
     """
     Returns the price rounded up to the precision the Exchange accepts.
     Partial Re-implementation of ccxt internal method decimal_to_precision(),
@@ -2877,7 +2877,7 @@ def price_to_precision(price: float, price_precision: Optional[float],
     :return: price rounded up to the precision the Exchange accepts
 
     """
-    if price_precision:
+    if price_precision is not None and precisionMode is not None:
         # price = float(decimal_to_precision(price, rounding_mode=ROUND,
         #                                    precision=price_precision,
         #                                    counting_mode=self.precisionMode,
