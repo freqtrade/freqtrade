@@ -159,6 +159,8 @@ class FreqtradeBot(LoggingMixin):
         performs startup tasks
         """
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
+        # Update older trades with precision and precision mode
+        self.startup_backpopulate_precision()
         if not self.edge:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
@@ -285,6 +287,15 @@ class FreqtradeBot(LoggingMixin):
                 trade.funding_fees = funding_fees
         else:
             return 0.0
+
+    def startup_backpopulate_precision(self):
+
+        trades = Trade.get_trades([Trade.precision_mode.is_(None)])
+        for trade in trades:
+            trade.precision_mode = self.exchange.precisionMode
+            trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
+            trade.price_precision = self.exchange.get_precision_price(trade.pair)
+        Trade.commit()
 
     def startup_update_open_orders(self):
         """
@@ -738,7 +749,10 @@ class FreqtradeBot(LoggingMixin):
                 leverage=leverage,
                 is_short=is_short,
                 trading_mode=self.trading_mode,
-                funding_fees=funding_fees
+                funding_fees=funding_fees,
+                amount_precision=self.exchange.get_precision_amount(pair),
+                price_precision=self.exchange.get_precision_price(pair),
+                precision_mode=self.exchange.precisionMode,
             )
         else:
             # This is additional buy, we reset fee_open_currency so timeout checking can work

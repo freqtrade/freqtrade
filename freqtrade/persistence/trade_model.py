@@ -14,6 +14,7 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPE
                                  BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exchange import amount_to_precision, price_to_precision
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
 from freqtrade.util import FtPrecise
@@ -292,6 +293,9 @@ class LocalTrade():
     timeframe: Optional[int] = None
 
     trading_mode: TradingMode = TradingMode.SPOT
+    amount_precision: Optional[float] = None
+    price_precision: Optional[float] = None
+    precision_mode: Optional[int] = None
 
     # Leverage trading properties
     liquidation_price: Optional[float] = None
@@ -874,9 +878,11 @@ class LocalTrade():
         if current_amount > ZERO:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
-            self.open_rate = float(current_stake / current_amount)
+            self.open_rate = price_to_precision(float(current_stake / current_amount),
+                                                self.price_precision, self.precision_mode)
+            self.amount = amount_to_precision(float(current_amount),
+                                              self.amount_precision, self.precision_mode)
             self.stake_amount = float(current_stake) / (self.leverage or 1.0)
-            self.amount = float(current_amount)
             self.fee_open_cost = self.fee_open * float(current_stake)
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
@@ -1120,6 +1126,9 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     trading_mode = Column(Enum(TradingMode), nullable=True)
+    amount_precision = Column(Float)
+    price_precision = Column(Float)
+    precision_mode = Column(Integer)
 
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)

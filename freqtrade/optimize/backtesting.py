@@ -837,6 +837,9 @@ class Backtesting:
                     trading_mode=self.trading_mode,
                     leverage=leverage,
                     # interest_rate=interest_rate,
+                    amount_precision=self.exchange.get_precision_amount(pair),
+                    price_precision=self.exchange.get_precision_price(pair),
+                    precision_mode=self.exchange.precisionMode,
                     orders=[],
                 )
 
