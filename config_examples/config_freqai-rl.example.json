@@ -55,6 +55,7 @@
         }
     ],
     "freqai": {
+        "enabled": true,
         "model_save_type": "stable_baselines_ppo",
         "conv_width": 10,
         "follow_mode": false,

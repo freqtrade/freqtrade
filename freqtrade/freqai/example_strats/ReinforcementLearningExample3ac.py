@@ -62,56 +62,54 @@ class ReinforcementLearningExample3ac(IStrategy):
 
         coin = pair.split('/')[0]
 
-        with self.freqai.lock:
-            if informative is None:
-                informative = self.dp.get_pair_dataframe(pair, tf)
 
-            # first loop is automatically duplicating indicators for time periods
-            for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
+        if informative is None:
+            informative = self.dp.get_pair_dataframe(pair, tf)
 
-                t = int(t)
-                informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
-                informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-                informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+        # first loop is automatically duplicating indicators for time periods
+        for t in self.freqai_info["feature_parameters"]["indicator_periods_candles"]:
 
-            informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
-            informative[f"%-{coin}raw_volume"] = informative["volume"]
+            t = int(t)
+            informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
+            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
+            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
 
-            # Raw price currently necessary for RL models:
-            informative[f"%-{coin}raw_price"] = informative["close"]
+        informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
+        informative[f"%-{coin}raw_volume"] = informative["volume"]
 
-            indicators = [col for col in informative if col.startswith("%")]
-            # This loop duplicates and shifts all indicators to add a sense of recency to data
-            for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
-                if n == 0:
-                    continue
-                informative_shift = informative[indicators].shift(n)
-                informative_shift = informative_shift.add_suffix("_shift-" + str(n))
-                informative = pd.concat((informative, informative_shift), axis=1)
+        # Raw price currently necessary for RL models:
+        informative[f"%-{coin}raw_price"] = informative["close"]
 
-            df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
-            skip_columns = [
-                (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
-            ]
-            df = df.drop(columns=skip_columns)
+        indicators = [col for col in informative if col.startswith("%")]
+        # This loop duplicates and shifts all indicators to add a sense of recency to data
+        for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
+            if n == 0:
+                continue
+            informative_shift = informative[indicators].shift(n)
+            informative_shift = informative_shift.add_suffix("_shift-" + str(n))
+            informative = pd.concat((informative, informative_shift), axis=1)
 
-            # Add generalized indicators here (because in live, it will call this
-            # function to populate indicators during training). Notice how we ensure not to
-            # add them multiple times
-            if set_generalized_indicators:
-                df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-                df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+        df = merge_informative_pair(df, informative, self.config["timeframe"], tf, ffill=True)
+        skip_columns = [
+            (s + "_" + tf) for s in ["date", "open", "high", "low", "close", "volume"]
+        ]
+        df = df.drop(columns=skip_columns)
 
-                # user adds targets here by prepending them with &- (see convention below)
-                # If user wishes to use multiple targets, a multioutput prediction model
-                # needs to be used such as templates/CatboostPredictionMultiModel.py
-                df["&-action"] = 2
+        # Add generalized indicators here (because in live, it will call this
+        # function to populate indicators during training). Notice how we ensure not to
+        # add them multiple times
+        if set_generalized_indicators:
+            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
+            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
+
+            # user adds targets here by prepending them with &- (see convention below)
+            # If user wishes to use multiple targets, a multioutput prediction model
+            # needs to be used such as templates/CatboostPredictionMultiModel.py
+            df["&-action"] = 2
 
         return df
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        self.freqai_info = self.config["freqai"]
 
         dataframe = self.freqai.start(dataframe, metadata, self)
 
