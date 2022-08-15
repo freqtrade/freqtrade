@@ -9,3 +9,4 @@ lightgbm==3.3.2
 torch==1.12.1
 stable-baselines3==1.5.0
 gym==0.21.0
+tensorboard==2.9.1
