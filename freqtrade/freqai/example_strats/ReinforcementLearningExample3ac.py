@@ -11,7 +11,7 @@ from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_
 logger = logging.getLogger(__name__)
 
 
-class RLExample3ac(IStrategy):
+class ReinforcementLearningExample3ac(IStrategy):
     """
     Test strategy - used for testing freqAI functionalities.
     DO not use in production.
