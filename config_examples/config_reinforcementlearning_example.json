@@ -8,7 +8,7 @@
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
-    "timeframe": "3m",
+    "timeframe": "5m",
     "dataformat_ohlcv": "json",
     "dry_run_wallet": 12000,
     "cancel_open_orders_on_exit": true,
@@ -62,15 +62,15 @@
         "expiration_hours": 1,
         "train_period_days": 10,
         "backtest_period_days": 2,
-        "identifier": "test_rl9",
+        "identifier": "test_rl10",
         "feature_parameters": {
             "include_corr_pairlist": [
                 "BTC/USDT",
                 "ETH/USDT"
             ],
             "include_timeframes": [
-                "3m",
-                "15m"
+                "15m",
+                "30m"
             ],
             "label_period_candles": 80,
             "include_shifted_candles": 0,
