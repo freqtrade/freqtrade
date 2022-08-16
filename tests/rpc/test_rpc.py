@@ -830,7 +830,7 @@ def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
 
     res = rpc._rpc_performance()
     assert len(res) == 3
-    assert res[0]['pair'] == 'ETC/USDT'
+    assert res[0]['pair'] == 'NEO/USDT'
     assert res[0]['count'] == 1
     assert res[0]['profit_pct'] == 5.0
 

@@ -23,9 +23,9 @@ from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.worker import Worker
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
-                            log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
-                            patch_wallet, patch_whitelist)
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_patched_freqtradebot,
+                            get_patched_worker, log_has, log_has_re, patch_edge, patch_exchange,
+                            patch_get_signal, patch_wallet, patch_whitelist)
 from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_1,
                                    mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
                                    mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
@@ -4886,6 +4886,31 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert hto_mock.call_count == 2
     assert hto_mock.call_args_list[0][0][0]['status'] == 'canceled'
     assert hto_mock.call_args_list[1][0][0]['status'] == 'canceled'
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_startup_backpopulate_precision(mocker, default_conf_usdt, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    trades = Trade.get_trades().all()
+    trades[-1].exchange = 'some_other_exchange'
+    for trade in trades:
+        assert trade.price_precision is None
+        assert trade.amount_precision is None
+        assert trade.precision_mode is None
+
+    freqtrade.startup_backpopulate_precision()
+    trades = Trade.get_trades().all()
+    for trade in trades:
+        if trade.exchange == 'some_other_exchange':
+            assert trade.price_precision is None
+            assert trade.amount_precision is None
+            assert trade.precision_mode is None
+        else:
+            assert trade.price_precision is not None
+            assert trade.amount_precision is not None
+            assert trade.precision_mode is not None
 
 
 @pytest.mark.usefixtures("init_persistence")

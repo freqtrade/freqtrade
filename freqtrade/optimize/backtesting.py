@@ -852,7 +852,7 @@ class Backtesting:
                     # interest_rate=interest_rate,
                     amount_precision=self.exchange.get_precision_amount(pair),
                     price_precision=self.exchange.get_precision_price(pair),
-                    precision_mode=self.self.precision_mode,
+                    precision_mode=self.precision_mode,
                     orders=[],
                 )
 
