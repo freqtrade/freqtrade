@@ -395,7 +395,7 @@ class FreqaiDataDrawer:
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
         elif model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
-        elif model_type == 'stable_baselines':
+        elif 'stable_baselines' in model_type:
             model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
@@ -473,10 +473,10 @@ class FreqaiDataDrawer:
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
         elif model_type == 'stable_baselines_ppo':
             from stable_baselines3.ppo.ppo import PPO
-            model = PPO.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = PPO.load(dk.data_path / f"{dk.model_filename}_model")
         elif model_type == 'stable_baselines_dqn':
             from stable_baselines3 import DQN
-            model = DQN.load(dk.data_path / f"{dk.model_filename}_model.zip")
+            model = DQN.load(dk.data_path / f"{dk.model_filename}_model")
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
