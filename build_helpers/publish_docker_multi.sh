@@ -5,7 +5,7 @@
 # Replace / with _ to create a valid tag
 TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG_PLOT=${TAG}_plot
-TAG_FREQAI=${TAG}_plot
+TAG_FREQAI=${TAG}_freqai
 TAG_PI="${TAG}_pi"
 
 PI_PLATFORM="linux/arm/v7"
