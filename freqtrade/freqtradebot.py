@@ -292,6 +292,8 @@ class FreqtradeBot(LoggingMixin):
 
         trades = Trade.get_trades([Trade.precision_mode.is_(None)])
         for trade in trades:
+            if trade.exchange != self.exchange.id:
+                continue
             trade.precision_mode = self.exchange.precisionMode
             trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
             trade.price_precision = self.exchange.get_precision_price(trade.pair)
