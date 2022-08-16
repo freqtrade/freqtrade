@@ -4553,6 +4553,76 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
     assert freqtrade.get_real_amount(trade, order, order_obj) == amount
 
 
+def test_get_real_amount_in_point(default_conf_usdt, buy_order_fee, fee, mocker, caplog):
+    limit_buy_order_usdt = deepcopy(buy_order_fee)
+
+    # Fees amount in "POINT"
+    trades = [{
+        "info": {
+        },
+        "id": "some_trade_id",
+        "timestamp": 1660092505903,
+        "datetime": "2022-08-10T00:48:25.903Z",
+        "symbol": "CEL/USDT",
+        "order": "some_order_id",
+        "type": None,
+        "side": "sell",
+        "takerOrMaker": "taker",
+        "price": 1.83255,
+        "amount": 83.126,
+        "cost": 152.3325513,
+        "fee": {
+            "currency": "POINT",
+            "cost": 0.3046651026
+        },
+        "fees": [
+            {
+                "cost": "0",
+                "currency": "USDT"
+            },
+            {
+                "cost": "0",
+                "currency": "GT"
+            },
+            {
+                "cost": "0.3046651026",
+                "currency": "POINT"
+            }
+        ]
+    }]
+
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades)
+    amount = float(sum(x['amount'] for x in trades))
+    trade = Trade(
+        pair='CEL/USDT',
+        amount=amount,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    limit_buy_order_usdt['amount'] = amount
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    order_obj = Order.parse_from_ccxt_object(buy_order_fee, 'LTC/ETH', 'buy')
+    res = freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj)
+    assert res == amount
+    assert trade.fee_open_currency is None
+    assert trade.fee_open_cost is None
+    message = "Not updating buy-fee - rate: None, POINT."
+    assert log_has(message, caplog)
+    caplog.clear()
+    freqtrade.config['exchange']['unknown_fee_rate'] = 1
+    res = freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj)
+    assert res == amount
+    assert trade.fee_open_currency == 'POINT'
+    assert pytest.approx(trade.fee_open_cost) == 0.3046651026
+    assert trade.fee_open == 0.002
+    assert trade.fee_open != fee.return_value
+    assert not log_has(message, caplog)
+
+
 @pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
     (8.0, 0.0, 10, 8),
     (8.0, 0.0, 0, 8),

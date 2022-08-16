@@ -1866,6 +1866,9 @@ class FreqtradeBot(LoggingMixin):
             if fee_rate is not None and fee_rate < 0.02:
                 # Only update if fee-rate is < 2%
                 trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+            else:
+                logger.warning(
+                    f"Not updating {order.get('side', '')}-fee - rate: {fee_rate}, {fee_currency}.")
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             # * Leverage could be a cause for this warning
