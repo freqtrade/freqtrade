@@ -263,7 +263,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.orders[0].amount == 30
     assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
 
-    assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
+    assert pytest.approx(trade.amount) == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_buys == 2
     assert trade.nr_of_successful_entries == 2
 
