@@ -875,13 +875,14 @@ class LocalTrade():
             self.realized_profit = close_profit_abs
             self.close_profit_abs = profit
 
-        if current_amount > ZERO:
+        current_amount_tr = amount_to_precision(float(current_amount),
+                                                self.amount_precision, self.precision_mode)
+        if current_amount_tr > 0.0:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = price_to_precision(float(current_stake / current_amount),
                                                 self.price_precision, self.precision_mode)
-            self.amount = amount_to_precision(float(current_amount),
-                                              self.amount_precision, self.precision_mode)
+            self.amount = current_amount_tr
             self.stake_amount = float(current_stake) / (self.leverage or 1.0)
             self.fee_open_cost = self.fee_open * float(current_stake)
             self.recalc_open_trade_value()
