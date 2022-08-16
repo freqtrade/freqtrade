@@ -27,13 +27,17 @@ class LightGBMRegressor(BaseRegressionModel):
 
         if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
             eval_set = None
+            eval_weights = None
         else:
             eval_set = (data_dictionary["test_features"], data_dictionary["test_labels"])
+            eval_weights = data_dictionary["test_weights"]
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
+        train_weights = data_dictionary["train_weights"]
 
         model = LGBMRegressor(**self.model_training_parameters)
 
-        model.fit(X=X, y=y, eval_set=eval_set)
+        model.fit(X=X, y=y, eval_set=eval_set, sample_weight=train_weights,
+                  eval_sample_weight=[eval_weights])
 
         return model
