@@ -621,7 +621,8 @@ class LocalTrade():
             else:
                 logger.warning(
                     f'Got different open_order_id {self.open_order_id} != {order.order_id}')
-            if isclose(order.safe_amount_after_fee, self.amount, abs_tol=MATH_CLOSE_PREC):
+            amount_tr = amount_to_precision(self.amount, self.amount_precision, self.precision_mode)
+            if isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)
             else:
                 self.recalc_trade_from_orders()
