@@ -62,7 +62,6 @@ class ReinforcementLearningExample5ac(IStrategy):
 
         coin = pair.split('/')[0]
 
-
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
 

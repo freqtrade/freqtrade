@@ -71,10 +71,6 @@ class Base3ActionRLEnv(gym.Env):
         self.history = None
         self.trade_history = []
 
-        self.r_t_change = 0.
-
-        self.returns_report = []
-
     def seed(self, seed: int = 1):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -101,9 +97,6 @@ class Base3ActionRLEnv(gym.Env):
 
         self._profits = [(self._start_tick, 1)]
         self.close_trade_profit = []
-        self.r_t_change = 0.
-
-        self.returns_report = []
 
         return self._get_observation()
 

@@ -81,7 +81,10 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
                              net_arch=[512, 512, 512])
 
         model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
-                    tensorboard_log=f"{path}/ppo/tensorboard/", learning_rate=learning_rate, gamma=0.9, verbose=1
+                    tensorboard_log=f"{path}/ppo/tensorboard/",
+                    learning_rate=learning_rate,
+                    gamma=0.9,
+                    verbose=1
                     )
 
         model.learn(

@@ -73,11 +73,6 @@ class Base5ActionRLEnv(gym.Env):
         self.history = None
         self.trade_history = []
 
-        # self.A_t, self.B_t = 0.000639, 0.00001954
-        self.r_t_change = 0.
-
-        self.returns_report = []
-
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -104,9 +99,6 @@ class Base5ActionRLEnv(gym.Env):
 
         self._profits = [(self._start_tick, 1)]
         self.close_trade_profit = []
-        self.r_t_change = 0.
-
-        self.returns_report = []
 
         return self._get_observation()
 
@@ -177,12 +169,6 @@ class Base5ActionRLEnv(gym.Env):
         self._update_history(info)
 
         return observation, step_reward, self._done, info
-
-    # def processState(self, state):
-    #     return state.to_numpy()
-
-    # def convert_mlp_Policy(self, obs_):
-    #     pass
 
     def _get_observation(self):
         return self.signal_features[(self._current_tick - self.window_size):self._current_tick]
