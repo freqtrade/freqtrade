@@ -131,6 +131,7 @@ class Backtesting:
             self.fee = config['fee']
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
+        self.precision_mode = self.exchange.precisionMode
 
         self.timerange = TimeRange.parse_timerange(
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))
@@ -851,7 +852,7 @@ class Backtesting:
                     # interest_rate=interest_rate,
                     amount_precision=self.exchange.get_precision_amount(pair),
                     price_precision=self.exchange.get_precision_price(pair),
-                    precision_mode=self.exchange.precisionMode,
+                    precision_mode=self.self.precision_mode,
                     orders=[],
                 )
 
