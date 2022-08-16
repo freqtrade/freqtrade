@@ -1,12 +1,12 @@
-numpy==1.23.1
+numpy==1.23.2
 pandas==1.4.3
 pandas-ta==0.3.14b
 
-ccxt==1.92.9
+ccxt==1.92.20
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==37.0.4
 aiohttp==3.8.1
-SQLAlchemy==1.4.39
+SQLAlchemy==1.4.40
 python-telegram-bot==13.13
 arrow==1.2.2
 cachetools==4.2.2
@@ -28,7 +28,7 @@ py_find_1st==1.1.5
 # Load ticker files 30% faster
 python-rapidjson==1.8
 # Properly format api responses
-orjson==3.7.11
+orjson==3.7.12
 
 # Notify systemd
 sdnotify==0.3.2

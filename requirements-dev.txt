@@ -2,6 +2,7 @@
 -r requirements.txt
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
+-r requirements-freqai.txt
 -r docs/requirements-docs.txt
 
 coveralls==3.3.1
@@ -19,7 +20,7 @@ isort==5.10.1
 time-machine==2.7.1
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.5.0
+nbconvert==6.5.3
 
 # mypy types
 types-cachetools==5.2.1

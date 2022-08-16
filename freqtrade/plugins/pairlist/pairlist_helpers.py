@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import Any, Dict, List
 
 
 def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
@@ -40,3 +40,13 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
     return result
+
+
+def dynamic_expand_pairlist(config: Dict[str, Any], markets: List[str]) -> List[str]:
+    expanded_pairs = expand_pairlist(config['pairs'], markets)
+    if config.get('freqai', {}).get('enabled', False):
+        corr_pairlist = config['freqai']['feature_parameters']['include_corr_pairlist']
+        expanded_pairs += [pair for pair in corr_pairlist
+                           if pair not in config['pairs']]
+
+    return expanded_pairs

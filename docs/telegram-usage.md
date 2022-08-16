@@ -187,7 +187,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/stats` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
 | `/exits` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
 | `/entries` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
-| `/whitelist` | Show the current whitelist
+| `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
 | `/help` | Show help message

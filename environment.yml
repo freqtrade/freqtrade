@@ -9,6 +9,7 @@ dependencies:
     - pandas
     - pip
 
+    - py-find-1st
     - aiohttp
     - SQLAlchemy
     - python-telegram-bot
@@ -64,7 +65,7 @@ dependencies:
 
     - pip:
         - pycoingecko
-        - py_find_1st
+        # - py_find_1st
         - tables
         - pytest-random-order
         - ccxt

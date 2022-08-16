@@ -12,6 +12,13 @@ hyperopt = [
     'progressbar2',
 ]
 
+freqai = [
+    'scikit-learn',
+    'joblib',
+    'catboost; platform_machine != "aarch64"',
+    'lightgbm',
+]
+
 develop = [
     'coveralls',
     'flake8',
@@ -31,7 +38,7 @@ jupyter = [
     'nbconvert',
 ]
 
-all_extra = plot + develop + jupyter + hyperopt
+all_extra = plot + develop + jupyter + hyperopt + freqai
 
 setup(
     tests_require=[
@@ -79,6 +86,7 @@ setup(
         'plot': plot,
         'jupyter': jupyter,
         'hyperopt': hyperopt,
+        'freqai': freqai,
         'all': all_extra,
     },
 )

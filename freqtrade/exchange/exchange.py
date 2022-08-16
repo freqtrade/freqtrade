@@ -1009,7 +1009,8 @@ class Exchange:
         time_in_force: str = 'gtc',
     ) -> Dict:
         if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
+            dry_order = self.create_dry_run_order(
+                pair, ordertype, side, amount, self.price_to_precision(pair, rate), leverage)
             return dry_order
 
         params = self._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
