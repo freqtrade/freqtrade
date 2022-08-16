@@ -1128,9 +1128,9 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     trading_mode = Column(Enum(TradingMode), nullable=True)
-    amount_precision = Column(Float)
-    price_precision = Column(Float)
-    precision_mode = Column(Integer)
+    amount_precision = Column(Float, nullable=True)
+    price_precision = Column(Float, nullable=True)
+    precision_mode = Column(Integer, nullable=True)
 
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
