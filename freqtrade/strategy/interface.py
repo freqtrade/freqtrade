@@ -149,9 +149,20 @@ class IStrategy(ABC, HyperStrategyMixin):
         if self.config.get('freqai', {}).get('enabled', False):
             # Import here to avoid importing this if freqAI is disabled
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
-
+            from freqtrade.freqai.data_kitchen import (get_required_data_timerange,
+                                                       download_all_data_for_training)
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
             self.freqai_info = self.config["freqai"]
+
+            # download the desired data in dry/live
+            if self.config.get('runmode') in (RunMode.DRY_RUN, RunMode.LIVE):
+                logger.info(
+                    "Downloading all training data for all pairs in whitelist and "
+                    "corr_pairlist, this may take a while if you do not have the "
+                    "data saved"
+                )
+                data_load_timerange = get_required_data_timerange(self.config)
+                download_all_data_for_training(data_load_timerange, self.dp, self.config)
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():

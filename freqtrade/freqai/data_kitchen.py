@@ -816,7 +816,7 @@ class FreqaiDataKitchen:
             return False
 
     def check_if_new_training_required(
-        self, trained_timestamp: int
+        self, trained_timestamp: int = 0
     ) -> Tuple[bool, TimeRange, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
@@ -888,31 +888,6 @@ class FreqaiDataKitchen:
         )
 
         self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
-
-    def download_all_data_for_training(self, timerange: TimeRange, dp: DataProvider) -> None:
-        """
-        Called only once upon start of bot to download the necessary data for
-        populating indicators and training the model.
-        :param timerange: TimeRange = The full data timerange for populating the indicators
-                                      and training the model.
-        :param dp: DataProvider instance attached to the strategy
-        """
-        new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
-        if not dp._exchange:
-            # Not realistic - this is only called in live mode.
-            raise OperationalException("Dataprovider did not have an exchange attached.")
-        refresh_backtest_ohlcv_data(
-            dp._exchange,
-            pairs=self.all_pairs,
-            timeframes=self.freqai_config["feature_parameters"].get("include_timeframes"),
-            datadir=self.config["datadir"],
-            timerange=timerange,
-            new_pairs_days=new_pairs_days,
-            erase=False,
-            data_format=self.config.get("dataformat_ohlcv", "json"),
-            trading_mode=self.config.get("trading_mode", "spot"),
-            prepend=self.config.get("prepend_data", False),
-        )
 
     def set_all_pairs(self) -> None:
 
@@ -1027,3 +1002,78 @@ class FreqaiDataKitchen:
         if self.unique_classes:
             for label in self.unique_classes:
                 self.unique_class_list += list(self.unique_classes[label])
+
+# Methods called by interface.py (load_freqai_model())
+
+
+def download_all_data_for_training(timerange: TimeRange,
+                                   dp: DataProvider, config: dict) -> None:
+    """
+    Called only once upon start of bot to download the necessary data for
+    populating indicators and training the model.
+    :param timerange: TimeRange = The full data timerange for populating the indicators
+                                    and training the model.
+    :param dp: DataProvider instance attached to the strategy
+    """
+    all_pairs = copy.deepcopy(
+        config["freqai"]["feature_parameters"].get("include_corr_pairlist", [])
+    )
+    for pair in config.get("exchange", "").get("pair_whitelist"):
+        if pair not in all_pairs:
+            all_pairs.append(pair)
+
+    new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
+    if not dp._exchange:
+        # Not realistic - this is only called in live mode.
+        raise OperationalException("Dataprovider did not have an exchange attached.")
+    refresh_backtest_ohlcv_data(
+        dp._exchange,
+        pairs=all_pairs,
+        timeframes=config["freqai"]["feature_parameters"].get("include_timeframes"),
+        datadir=config["datadir"],
+        timerange=timerange,
+        new_pairs_days=new_pairs_days,
+        erase=False,
+        data_format=config.get("dataformat_ohlcv", "json"),
+        trading_mode=config.get("trading_mode", "spot"),
+        prepend=config.get("prepend_data", False),
+    )
+
+
+def get_required_data_timerange(
+    config: dict
+) -> TimeRange:
+    """
+    Used by interface.py to pre-download necessary data for FreqAI
+    user.
+    """
+    time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+    trained_timerange = TimeRange()
+    data_load_timerange = TimeRange()
+
+    timeframes = config["freqai"]["feature_parameters"].get("include_timeframes")
+
+    max_tf_seconds = 0
+    for tf in timeframes:
+        secs = timeframe_to_seconds(tf)
+        if secs > max_tf_seconds:
+            max_tf_seconds = secs
+
+    max_period = config["freqai"]["feature_parameters"].get(
+        "indicator_max_period_candles", 20
+    ) * 2
+    additional_seconds = max_period * max_tf_seconds
+
+    trained_timerange.startts = int(
+        time - config["freqai"].get("train_period_days", 0) * SECONDS_IN_DAY
+    )
+    trained_timerange.stopts = int(time)
+
+    data_load_timerange.startts = int(
+        time
+        - config["freqai"].get("train_period_days", 0) * SECONDS_IN_DAY
+        - additional_seconds
+    )
+    data_load_timerange.stopts = int(time)
+
+    return data_load_timerange
