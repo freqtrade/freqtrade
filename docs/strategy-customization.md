@@ -630,7 +630,7 @@ The strategy might look something like this:
 
 *Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500-1000 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
 Since we can't resample the data we will have to use an informative pair; and since the whitelist will be dynamic we don't know which pair(s) to use.
 
@@ -732,7 +732,7 @@ if self.dp:
     data returned from the exchange and add appropriate error handling / defaults.
 
 !!! Warning "Warning about backtesting"
-    This method will always return up-to-date values - so usage during backtesting / hyperopt will lead to wrong results.
+    This method will always return up-to-date values - so usage during backtesting / hyperopt without runmode checks will lead to wrong results.
 
 ### Send Notification
 
