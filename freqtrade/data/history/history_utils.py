@@ -56,7 +56,7 @@ def load_pair_history(pair: str,
                                    fill_missing=fill_up_missing,
                                    drop_incomplete=drop_incomplete,
                                    startup_candles=startup_candles,
-                                   candle_type=candle_type
+                                   candle_type=candle_type,
                                    )
 
 
@@ -97,14 +97,14 @@ def load_data(datadir: Path,
                                  fill_up_missing=fill_up_missing,
                                  startup_candles=startup_candles,
                                  data_handler=data_handler,
-                                 candle_type=candle_type
+                                 candle_type=candle_type,
                                  )
         if not hist.empty:
             result[pair] = hist
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
                 logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
-                result[pair] = DataFrame(columns=["open", "close", "high", "low", "volume"])
+            result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
