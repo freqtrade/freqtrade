@@ -148,9 +148,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def load_freqAI_model(self) -> None:
         if self.config.get('freqai', {}).get('enabled', False):
             # Import here to avoid importing this if freqAI is disabled
+            from freqtrade.freqai.data_kitchen import (download_all_data_for_training,
+                                                       get_required_data_timerange)
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
-            from freqtrade.freqai.data_kitchen import (get_required_data_timerange,
-                                                       download_all_data_for_training)
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
             self.freqai_info = self.config["freqai"]
 
