@@ -8,7 +8,7 @@
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
-    "timeframe": "5m",
+    "timeframe": "3m",
     "dataformat_ohlcv": "json",
     "dry_run_wallet": 12000,
     "cancel_open_orders_on_exit": true,
@@ -56,6 +56,7 @@
     ],
     "freqai": {
         "enabled": true,
+        "startup_candles": 1000,
         "model_save_type": "stable_baselines_ppo",
         "conv_width": 10,
         "follow_mode": false,
@@ -70,8 +71,8 @@
                 "ETH/USDT"
             ],
             "include_timeframes": [
-                "5m",
-                "30m"
+                "3m",
+                "15m"
             ],
             "include_shifted_candles": 0,
             "weight_factor": 0.9,
