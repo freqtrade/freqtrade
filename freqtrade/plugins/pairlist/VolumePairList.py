@@ -4,14 +4,14 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
-import arrow
 from cachetools import TTLCache
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
@@ -158,16 +158,16 @@ class VolumePairList(IPairList):
             filtered_tickers: List[Dict[str, Any]] = [{'symbol': k} for k in pairlist]
 
             # get lookback period in ms, for exchange ohlcv fetch
-            since_ms = int(arrow.utcnow()
-                           .floor('minute')
-                           .shift(minutes=-(self._lookback_period * self._tf_in_min)
-                                  - self._tf_in_min)
-                           .int_timestamp) * 1000
+            since_ms = int(timeframe_to_prev_date(
+                self._lookback_timeframe,
+                datetime.now(timezone.utc) + timedelta(
+                    minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min)
+                    ).timestamp()) * 1000
 
-            to_ms = int(arrow.utcnow()
-                        .floor('minute')
-                        .shift(minutes=-self._tf_in_min)
-                        .int_timestamp) * 1000
+            to_ms = int(timeframe_to_prev_date(
+                            self._lookback_timeframe,
+                            datetime.now(timezone.utc) - timedelta(minutes=self._tf_in_min)
+                            ).timestamp()) * 1000
 
             # todo: utc date output for starting date
             self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: "

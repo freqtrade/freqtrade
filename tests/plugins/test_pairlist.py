@@ -12,7 +12,7 @@ from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import (create_mock_trades_usdt, get_patched_exchange, get_patched_freqtradebot,
@@ -1282,6 +1282,22 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
             expand_pairlist(wildcardlist, pairs)
     else:
         assert sorted(expand_pairlist(wildcardlist, pairs)) == sorted(expected)
+        conf = {
+            'pairs': wildcardlist,
+            'freqai': {
+                "enabled": True,
+                "feature_parameters": {
+                    "include_corr_pairlist": [
+                        "BTC/USDT:USDT",
+                        "XRP/BUSD",
+                    ]
+                }
+            }
+        }
+        assert sorted(dynamic_expand_pairlist(conf, pairs)) == sorted(expected + [
+            "BTC/USDT:USDT",
+            "XRP/BUSD",
+        ])
 
 
 @pytest.mark.parametrize('wildcardlist,pairs,expected', [

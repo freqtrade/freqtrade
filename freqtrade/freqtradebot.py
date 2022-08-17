@@ -1475,12 +1475,6 @@ class FreqtradeBot(LoggingMixin):
                 ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS, ExitType.LIQUIDATION):
             exit_type = 'stoploss'
 
-        # if stoploss is on exchange and we are on dry_run mode,
-        # we consider the sell price stop price
-        if (self.config['dry_run'] and exit_type == 'stoploss'
-                and self.strategy.order_types['stoploss_on_exchange']):
-            limit = trade.stoploss_or_liquidation
-
         # set custom_exit_price if available
         proposed_limit_rate = limit
         current_profit = trade.calc_profit_ratio(limit)

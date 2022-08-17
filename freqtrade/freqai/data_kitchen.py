@@ -34,6 +34,9 @@ class FreqaiDataKitchen:
     Class designed to analyze data for a single pair. Employed by the IFreqaiModel class.
     Functionalities include holding, saving, loading, and analyzing the data.
 
+    This object is not persistent, it is reinstantiated for each coin, each time the coin
+    model needs to be inferenced or trained.
+
     Record of contribution:
     FreqAI was developed by a group of individuals who all contributed specific skillsets to the
     project.
@@ -49,7 +52,7 @@ class FreqaiDataKitchen:
 
     Beta testing and bug reporting:
     @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
-    Juha Nykänen @suikula, Wagner Costa @wagnercosta
+    Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
     def __init__(
@@ -70,6 +73,7 @@ class FreqaiDataKitchen:
         self.model_filename: str = ""
         self.live = live
         self.pair = pair
+
         self.svm_model: linear_model.SGDOneClassSVM = None
         self.keras: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
@@ -90,6 +94,8 @@ class FreqaiDataKitchen:
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
         self.train_dates: DataFrame = pd.DataFrame()
+        self.unique_classes: Dict[str, list] = {}
+        self.unique_class_list: list = []
 
     def set_paths(
         self,
@@ -337,7 +343,7 @@ class FreqaiDataKitchen:
         """
 
         for label in df.columns:
-            if df[label].dtype == object:
+            if df[label].dtype == object or label in self.unique_class_list:
                 continue
             df[label] = (
                 (df[label] + 1)
@@ -977,6 +983,8 @@ class FreqaiDataKitchen:
                         informative=corr_dataframes[i][tf]
                     )
 
+        self.get_unique_classes_from_labels(dataframe)
+
         return dataframe
 
     def fit_labels(self) -> None:
@@ -992,6 +1000,10 @@ class FreqaiDataKitchen:
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
+        # incase targets are classifications
+        for label in self.unique_class_list:
+            self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
+
         return
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
@@ -1003,3 +1015,15 @@ class FreqaiDataKitchen:
             col for col in dataframe.columns if not col.startswith("%") or col.startswith("%%")
         ]
         return dataframe[to_keep]
+
+    def get_unique_classes_from_labels(self, dataframe: DataFrame) -> None:
+
+        self.find_features(dataframe)
+
+        for key in self.label_list:
+            if dataframe[key].dtype == object:
+                self.unique_classes[key] = dataframe[key].dropna().unique()
+
+        if self.unique_classes:
+            for label in self.unique_classes:
+                self.unique_class_list += list(self.unique_classes[label])
