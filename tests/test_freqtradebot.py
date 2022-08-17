@@ -4143,6 +4143,7 @@ def test_trailing_stop_loss_positive(
             'last': enter_price + (-0.06 if is_short else 0.06),
         })
     )
+    caplog.clear()
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
     caplog_text = (f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: "
