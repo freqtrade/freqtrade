@@ -617,9 +617,8 @@ Please always check the mode of operation to select the correct method to get da
 ### *available_pairs*
 
 ``` python
-if self.dp:
-    for pair, timeframe in self.dp.available_pairs:
-        print(f"available {pair}, {timeframe}")
+for pair, timeframe in self.dp.available_pairs:
+    print(f"available {pair}, {timeframe}")
 ```
 
 ### *current_whitelist()*
@@ -653,10 +652,9 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 
 ``` python
 # fetch live / historical candle (OHLCV) data for the first informative pair
-if self.dp:
-    inf_pair, inf_timeframe = self.informative_pairs()[0]
-    informative = self.dp.get_pair_dataframe(pair=inf_pair,
-                                             timeframe=inf_timeframe)
+inf_pair, inf_timeframe = self.informative_pairs()[0]
+informative = self.dp.get_pair_dataframe(pair=inf_pair,
+                                            timeframe=inf_timeframe)
 ```
 
 !!! Warning "Warning about backtesting"
@@ -671,10 +669,9 @@ It can also be used in specific callbacks to get the signal that caused the acti
 
 ``` python
 # fetch current dataframe
-if self.dp:
-    if self.dp.runmode.value in ('live', 'dry_run'):
-        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
-                                                                 timeframe=self.timeframe)
+if self.dp.runmode.value in ('live', 'dry_run'):
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                                timeframe=self.timeframe)
 ```
 
 !!! Note "No data available"
@@ -684,11 +681,10 @@ if self.dp:
 ### *orderbook(pair, maximum)*
 
 ``` python
-if self.dp:
-    if self.dp.runmode.value in ('live', 'dry_run'):
-        ob = self.dp.orderbook(metadata['pair'], 1)
-        dataframe['best_bid'] = ob['bids'][0][0]
-        dataframe['best_ask'] = ob['asks'][0][0]
+if self.dp.runmode.value in ('live', 'dry_run'):
+    ob = self.dp.orderbook(metadata['pair'], 1)
+    dataframe['best_bid'] = ob['bids'][0][0]
+    dataframe['best_ask'] = ob['asks'][0][0]
 ```
 
 The orderbook structure is aligned with the order structure from [ccxt](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure), so the result will look as follows:
@@ -717,12 +713,11 @@ Therefore, using `ob['bids'][0][0]` as demonstrated above will result in using t
 ### *ticker(pair)*
 
 ``` python
-if self.dp:
-    if self.dp.runmode.value in ('live', 'dry_run'):
-        ticker = self.dp.ticker(metadata['pair'])
-        dataframe['last_price'] = ticker['last']
-        dataframe['volume24h'] = ticker['quoteVolume']
-        dataframe['vwap'] = ticker['vwap']
+if self.dp.runmode.value in ('live', 'dry_run'):
+    ticker = self.dp.ticker(metadata['pair'])
+    dataframe['last_price'] = ticker['last']
+    dataframe['volume24h'] = ticker['quoteVolume']
+    dataframe['vwap'] = ticker['vwap']
 ```
 
 !!! Warning
