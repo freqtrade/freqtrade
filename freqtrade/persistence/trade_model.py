@@ -14,7 +14,7 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPE
                                  BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange import amount_to_precision
+from freqtrade.exchange import amount_to_precision, price_to_precision
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
 from freqtrade.util import FtPrecise
@@ -527,9 +527,10 @@ class LocalTrade():
         """
         Method used internally to set self.stop_loss.
         """
+        stop_loss_norm = price_to_precision(stop_loss, self.price_precision, self.precision_mode)
         if not self.stop_loss:
-            self.initial_stop_loss = stop_loss
-        self.stop_loss = stop_loss
+            self.initial_stop_loss = stop_loss_norm
+        self.stop_loss = stop_loss_norm
 
         self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
@@ -557,7 +558,8 @@ class LocalTrade():
         # no stop loss assigned yet
         if self.initial_stop_loss_pct is None or refresh:
             self.__set_stop_loss(new_loss, stoploss)
-            self.initial_stop_loss = new_loss
+            self.initial_stop_loss = price_to_precision(
+                new_loss, self.price_precision, self.precision_mode)
             self.initial_stop_loss_pct = -1 * abs(stoploss)
 
         # evaluate if the stop loss needs to be updated

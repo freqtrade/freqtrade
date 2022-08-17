@@ -4,7 +4,6 @@
 import logging
 import time
 from copy import deepcopy
-from math import isclose
 from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
@@ -12,7 +11,7 @@ import arrow
 import pytest
 from pandas import DataFrame
 
-from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.constants import CANCEL_REASON, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RPCMessageType, RunMode,
                              SignalDirection, State)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
@@ -569,7 +568,7 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
     assert trade.open_rate == ticker_usdt.return_value[ticker_side]
-    assert isclose(trade.amount, 60 / ticker_usdt.return_value[ticker_side])
+    assert pytest.approx(trade.amount) == 60 / ticker_usdt.return_value[ticker_side]
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
@@ -1801,7 +1800,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss initially at 20% as edge dictated it.
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert isclose(trade.stop_loss, 1.76)
+    assert pytest.approx(trade.stop_loss) == 1.76
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
@@ -1818,7 +1817,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     # stoploss should remain the same
-    assert isclose(trade.stop_loss, 1.76)
+    assert pytest.approx(trade.stop_loss) == 1.76
 
     # stoploss on exchange should not be canceled
     cancel_order_mock.assert_not_called()
@@ -4524,11 +4523,8 @@ def test_get_real_amount_wrong_amount_rounding(default_conf_usdt, trades_for_ord
 
     order_obj = Order.parse_from_ccxt_object(buy_order_fee, 'LTC/ETH', 'buy')
     # Amount changes by fee amount.
-    assert isclose(
-        freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj),
-        amount - (amount * 0.001),
-        abs_tol=MATH_CLOSE_PREC,
-    )
+    assert pytest.approx(freqtrade.get_real_amount(
+        trade, limit_buy_order_usdt, order_obj)) == amount - (amount * 0.001)
 
 
 def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
