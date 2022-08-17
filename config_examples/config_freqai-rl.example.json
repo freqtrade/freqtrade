@@ -73,16 +73,12 @@
                 "5m",
                 "30m"
             ],
-            "label_period_candles": 80,
             "include_shifted_candles": 0,
-            "DI_threshold": 0,
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": false,
-            "svm_params": {"shuffle": true, "nu": 0.1},
-            "stratify_training_data": 0,
             "indicator_max_period_candles": 10,
-            "indicator_periods_candles": [5]
+            "indicator_periods_candles": [5, 10]
         },
         "data_split_parameters": {
             "test_size": 0.5,
@@ -90,7 +86,6 @@
             "shuffle": false
         },
         "model_training_parameters": {
-            "n_steps": 2048,
             "ent_coef": 0.005,
             "learning_rate": 0.000025,
             "batch_size": 256, 

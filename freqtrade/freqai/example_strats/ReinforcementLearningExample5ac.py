@@ -76,8 +76,11 @@ class ReinforcementLearningExample5ac(IStrategy):
         informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
         informative[f"%-{coin}raw_volume"] = informative["volume"]
 
-        # Raw price currently necessary for RL models:
-        informative[f"%-{coin}raw_price"] = informative["close"]
+        # The following features are necessary for RL models
+        informative[f"%-{coin}raw_close"] = informative["close"]
+        informative[f"%-{coin}raw_open"] = informative["open"]
+        informative[f"%-{coin}raw_high"] = informative["high"]
+        informative[f"%-{coin}raw_low"] = informative["low"]
 
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
@@ -101,9 +104,8 @@ class ReinforcementLearningExample5ac(IStrategy):
             df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
             df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
 
-            # user adds targets here by prepending them with &- (see convention below)
-            # If user wishes to use multiple targets, a multioutput prediction model
-            # needs to be used such as templates/CatboostPredictionMultiModel.py
+            # For RL, there are no direct targets to set. This is filler (neutral)
+            # until the agent sends an action.
             df["&-action"] = 2
 
         return df

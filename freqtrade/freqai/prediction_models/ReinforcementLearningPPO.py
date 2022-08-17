@@ -3,9 +3,8 @@ from typing import Any, Dict  # , Tuple
 
 import numpy as np
 # import numpy.typing as npt
-# import pandas as pd
 import torch as th
-# from pandas import DataFrame
+from pandas import DataFrame
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
@@ -22,7 +21,8 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen):
+    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
+               prices_train: DataFrame, prices_test: DataFrame):
 
         agent_params = self.freqai_info['model_training_parameters']
         reward_params = self.freqai_info['model_reward_parameters']
@@ -31,18 +31,12 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
         eval_freq = agent_params.get("eval_cycles", 4) * len(test_df)
         total_timesteps = agent_params["train_cycles"] * len(train_df)
 
-        # price data for model training and evaluation
-        price = self.dd.historic_data[pair][f"{self.config['timeframe']}"].tail(len(train_df.index))
-        price_test = self.dd.historic_data[pair][f"{self.config['timeframe']}"].tail(
-            len(test_df.index))
-
         # environments
-        train_env = MyRLEnv(df=train_df, prices=price, window_size=self.CONV_WIDTH,
+        train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
                             reward_kwargs=reward_params)
-        eval = MyRLEnv(df=test_df, prices=price_test,
+        eval = MyRLEnv(df=test_df, prices=prices_test,
                        window_size=self.CONV_WIDTH, reward_kwargs=reward_params)
         eval_env = Monitor(eval, ".")
-        eval_env.reset()
 
         path = dk.data_path
         eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
@@ -63,7 +57,7 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
             callback=eval_callback
         )
 
-        best_model = PPO.load(dk.data_path / "best_model.zip")
+        best_model = PPO.load(dk.data_path / "best_model")
 
         print('Training finished!')
 

@@ -16,6 +16,7 @@ from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Posi
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 import gym
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen):
+    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
+               prices_train: DataFrame, prices_test: DataFrame):
 
         agent_params = self.freqai_info['model_training_parameters']
         reward_params = self.freqai_info['model_reward_parameters']
@@ -57,18 +59,14 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
         total_timesteps = agent_params["train_cycles"] * len(train_df)
         learning_rate = agent_params["learning_rate"]
 
-        # price data for model training and evaluation
-        price = self.dd.historic_data[pair][f"{self.config['timeframe']}"].tail(len(train_df.index))
-        price_test = self.dd.historic_data[pair][f"{self.config['timeframe']}"].tail(
-            len(test_df.index))
-
         env_id = "train_env"
+        th.set_num_threads(dk.thread_count)
         num_cpu = int(dk.thread_count / 2)
-        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, price, reward_params,
+        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train, reward_params,
                                    self.CONV_WIDTH) for i in range(num_cpu)])
 
         eval_env_id = 'eval_env'
-        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, price_test, reward_params,
+        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test, reward_params,
                                   self.CONV_WIDTH, monitor=True) for i in range(num_cpu)])
 
         path = dk.data_path
@@ -92,7 +90,7 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
             callback=eval_callback
         )
 
-        best_model = PPO.load(dk.data_path / "best_model.zip")
+        best_model = PPO.load(dk.data_path / "best_model")
         print('Training finished!')
         eval_env.close()
 
