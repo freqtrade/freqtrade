@@ -75,7 +75,6 @@ class bbrsi_scalp(WAOStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
-
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.

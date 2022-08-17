@@ -51,7 +51,7 @@ class WAOStrategy(IStrategy):
         # else:
         #     self.controller.on_buy_signal(current_time, coin)
         #     return True
-        self.controller.on_buy_signal(current_time, coin)
+        # self.controller.on_buy_signal(current_time, coin)
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
@@ -82,5 +82,5 @@ class WAOStrategy(IStrategy):
         """
         coin = pair.split("/")[0]
 
-        self.controller.on_sell_signal(sell_reason, current_time, coin)
+        # self.controller.on_sell_signal(sell_reason, current_time, coin)
         return True
