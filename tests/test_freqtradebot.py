@@ -4,7 +4,6 @@
 import logging
 import time
 from copy import deepcopy
-from math import isclose
 from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
@@ -12,7 +11,7 @@ import arrow
 import pytest
 from pandas import DataFrame
 
-from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.constants import CANCEL_REASON, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RPCMessageType, RunMode,
                              SignalDirection, State)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
@@ -23,9 +22,9 @@ from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.worker import Worker
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
-                            log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
-                            patch_wallet, patch_whitelist)
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_patched_freqtradebot,
+                            get_patched_worker, log_has, log_has_re, patch_edge, patch_exchange,
+                            patch_get_signal, patch_wallet, patch_whitelist)
 from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_1,
                                    mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
                                    mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
@@ -569,7 +568,7 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
     assert trade.open_rate == ticker_usdt.return_value[ticker_side]
-    assert isclose(trade.amount, 60 / ticker_usdt.return_value[ticker_side])
+    assert pytest.approx(trade.amount) == 60 / ticker_usdt.return_value[ticker_side]
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
@@ -1801,7 +1800,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss initially at 20% as edge dictated it.
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert isclose(trade.stop_loss, 1.76)
+    assert pytest.approx(trade.stop_loss) == 1.76
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
@@ -1818,7 +1817,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     # stoploss should remain the same
-    assert isclose(trade.stop_loss, 1.76)
+    assert pytest.approx(trade.stop_loss) == 1.76
 
     # stoploss on exchange should not be canceled
     cancel_order_mock.assert_not_called()
@@ -2172,7 +2171,7 @@ def test_handle_trade(
 
     assert trade.close_rate == (2.0 if is_short else 2.2)
     assert pytest.approx(trade.close_profit) == close_profit
-    assert trade.calc_profit(trade.close_rate) == 5.685
+    assert pytest.approx(trade.calc_profit(trade.close_rate)) == 5.685
     assert trade.close_date is not None
     assert trade.exit_reason == 'sell_signal1'
 
@@ -4144,6 +4143,7 @@ def test_trailing_stop_loss_positive(
             'last': enter_price + (-0.06 if is_short else 0.06),
         })
     )
+    caplog.clear()
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
     caplog_text = (f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: "
@@ -4524,11 +4524,8 @@ def test_get_real_amount_wrong_amount_rounding(default_conf_usdt, trades_for_ord
 
     order_obj = Order.parse_from_ccxt_object(buy_order_fee, 'LTC/ETH', 'buy')
     # Amount changes by fee amount.
-    assert isclose(
-        freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj),
-        amount - (amount * 0.001),
-        abs_tol=MATH_CLOSE_PREC,
-    )
+    assert pytest.approx(freqtrade.get_real_amount(
+        trade, limit_buy_order_usdt, order_obj)) == amount - (amount * 0.001)
 
 
 def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
@@ -4551,6 +4548,76 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     order_obj = Order.parse_from_ccxt_object(order, 'LTC/ETH', 'buy')
     assert freqtrade.get_real_amount(trade, order, order_obj) == amount
+
+
+def test_get_real_amount_in_point(default_conf_usdt, buy_order_fee, fee, mocker, caplog):
+    limit_buy_order_usdt = deepcopy(buy_order_fee)
+
+    # Fees amount in "POINT"
+    trades = [{
+        "info": {
+        },
+        "id": "some_trade_id",
+        "timestamp": 1660092505903,
+        "datetime": "2022-08-10T00:48:25.903Z",
+        "symbol": "CEL/USDT",
+        "order": "some_order_id",
+        "type": None,
+        "side": "sell",
+        "takerOrMaker": "taker",
+        "price": 1.83255,
+        "amount": 83.126,
+        "cost": 152.3325513,
+        "fee": {
+            "currency": "POINT",
+            "cost": 0.3046651026
+        },
+        "fees": [
+            {
+                "cost": "0",
+                "currency": "USDT"
+            },
+            {
+                "cost": "0",
+                "currency": "GT"
+            },
+            {
+                "cost": "0.3046651026",
+                "currency": "POINT"
+            }
+        ]
+    }]
+
+    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades)
+    amount = float(sum(x['amount'] for x in trades))
+    trade = Trade(
+        pair='CEL/USDT',
+        amount=amount,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    limit_buy_order_usdt['amount'] = amount
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    order_obj = Order.parse_from_ccxt_object(buy_order_fee, 'LTC/ETH', 'buy')
+    res = freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj)
+    assert res == amount
+    assert trade.fee_open_currency is None
+    assert trade.fee_open_cost is None
+    message = "Not updating buy-fee - rate: None, POINT."
+    assert log_has(message, caplog)
+    caplog.clear()
+    freqtrade.config['exchange']['unknown_fee_rate'] = 1
+    res = freqtrade.get_real_amount(trade, limit_buy_order_usdt, order_obj)
+    assert res == amount
+    assert trade.fee_open_currency == 'POINT'
+    assert pytest.approx(trade.fee_open_cost) == 0.3046651026
+    assert trade.fee_open == 0.002
+    assert trade.fee_open != fee.return_value
+    assert not log_has(message, caplog)
 
 
 @pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
@@ -4886,6 +4953,31 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert hto_mock.call_count == 2
     assert hto_mock.call_args_list[0][0][0]['status'] == 'canceled'
     assert hto_mock.call_args_list[1][0][0]['status'] == 'canceled'
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_startup_backpopulate_precision(mocker, default_conf_usdt, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    trades = Trade.get_trades().all()
+    trades[-1].exchange = 'some_other_exchange'
+    for trade in trades:
+        assert trade.price_precision is None
+        assert trade.amount_precision is None
+        assert trade.precision_mode is None
+
+    freqtrade.startup_backpopulate_precision()
+    trades = Trade.get_trades().all()
+    for trade in trades:
+        if trade.exchange == 'some_other_exchange':
+            assert trade.price_precision is None
+            assert trade.amount_precision is None
+            assert trade.precision_mode is None
+        else:
+            assert trade.price_precision is not None
+            assert trade.amount_precision is not None
+            assert trade.precision_mode is not None
 
 
 @pytest.mark.usefixtures("init_persistence")

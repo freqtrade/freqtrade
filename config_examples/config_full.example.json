@@ -93,6 +93,7 @@
         "secret": "your_exchange_secret",
         "password": "",
         "log_responses": false,
+        // "unknown_fee_rate": 1,
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [

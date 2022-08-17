@@ -617,9 +617,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                 )
                 informative_pairs.append(pair_tf)
             else:
-                if not self.dp:
-                    raise OperationalException('@informative decorator with unspecified asset '
-                                               'requires DataProvider instance.')
                 for pair in self.dp.current_whitelist():
                     informative_pairs.append((pair, inf_data.timeframe, candle_type))
         return list(set(informative_pairs))
@@ -713,10 +710,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
-            if self.dp:
-                self.dp._set_cached_df(
-                    pair, self.timeframe, dataframe,
-                    candle_type=self.config.get('candle_type_def', CandleType.SPOT))
+            self.dp._set_cached_df(
+                pair, self.timeframe, dataframe,
+                candle_type=self.config.get('candle_type_def', CandleType.SPOT))
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0
@@ -737,8 +733,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
         :param pair: Pair to analyze.
         """
-        if not self.dp:
-            raise OperationalException("DataProvider not found.")
         dataframe = self.dp.ohlcv(
             pair, self.timeframe, candle_type=self.config.get('candle_type_def', CandleType.SPOT)
         )

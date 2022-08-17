@@ -130,6 +130,10 @@ def migrate_trades_and_orders_table(
                                        get_column_def(cols, 'sell_order_status', 'null'))
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
+    amount_precision = get_column_def(cols, 'amount_precision', 'null')
+    price_precision = get_column_def(cols, 'price_precision', 'null')
+    precision_mode = get_column_def(cols, 'precision_mode', 'null')
+
     # Schema migration necessary
     with engine.begin() as connection:
         connection.execute(text(f"alter table trades rename to {trade_back_name}"))
@@ -156,7 +160,8 @@ def migrate_trades_and_orders_table(
             max_rate, min_rate, exit_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
-            interest_rate, funding_fees, realized_profit
+            interest_rate, funding_fees, realized_profit,
+            amount_precision, price_precision, precision_mode
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -182,7 +187,9 @@ def migrate_trades_and_orders_table(
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {liquidation_price} liquidation_price,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fees} funding_fees, {realized_profit} realized_profit
+            {funding_fees} funding_fees, {realized_profit} realized_profit,
+            {amount_precision} amount_precision, {price_precision} price_precision,
+            {precision_mode} precision_mode
             from {trade_back_name}
             """))
 
@@ -300,7 +307,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'stop_price')):
-    if not has_column(cols_trades, 'realized_profit'):
+    if not has_column(cols_trades, 'precision_mode'):
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(

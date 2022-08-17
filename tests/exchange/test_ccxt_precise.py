@@ -78,3 +78,5 @@ def test_FtPrecise():
     assert FtPrecise(-213) == '-213'
     assert str(FtPrecise(-213)) == '-213'
     assert FtPrecise(213.2) == '213.2'
+    assert float(FtPrecise(213.2)) == 213.2
+    assert float(FtPrecise(-213.2)) == -213.2

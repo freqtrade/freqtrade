@@ -189,7 +189,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == result1
+        assert pytest.approx(trade.stake_amount) == result1
         # Reset trade open order id's
         trade.open_order_id = None
     trades = Trade.get_open_trades()
@@ -220,8 +220,6 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        amount_to_precision=lambda s, x, y: y,
-        price_to_precision=lambda s, x, y: y,
     )
 
     patch_get_signal(freqtrade)
@@ -249,7 +247,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(trade.orders) == 2
     for o in trade.orders:
         assert o.status == "closed"
-    assert trade.stake_amount == 120
+    assert pytest.approx(trade.stake_amount) == 120
 
     # Open-rate averaged between 2.0 and 2.0 * 0.995
     assert trade.open_rate < 2.0
@@ -259,11 +257,11 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
-    assert trade.stake_amount == 120
+    assert pytest.approx(trade.stake_amount) == 120
     assert trade.orders[0].amount == 30
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
+    assert pytest.approx(trade.orders[1].amount) == 60 / ticker_usdt_modif['bid']
 
-    assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
+    assert pytest.approx(trade.amount) == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_buys == 2
     assert trade.nr_of_successful_entries == 2
 
@@ -274,7 +272,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.is_open is False
     assert trade.orders[0].amount == 30
     assert trade.orders[0].side == 'buy'
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
+    assert pytest.approx(trade.orders[1].amount) == 60 / ticker_usdt_modif['bid']
     # Sold everything
     assert trade.orders[-1].side == 'sell'
     assert trade.orders[2].amount == trade.amount

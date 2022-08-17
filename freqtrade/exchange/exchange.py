@@ -116,6 +116,7 @@ class Exchange:
         self._last_markets_refresh: int = 0
 
         # Cache for 10 minutes ...
+        self._cache_lock = Lock()
         self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=2, ttl=60 * 10)
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
@@ -680,45 +681,35 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
+    def get_precision_amount(self, pair: str) -> Optional[float]:
+        """
+        Returns the amount precision of the exchange.
+        :param pair: Pair to get precision for
+        :return: precision for amount or None. Must be used in combination with precisionMode
+        """
+        return self.markets.get(pair, {}).get('precision', {}).get('amount', None)
+
+    def get_precision_price(self, pair: str) -> Optional[float]:
+        """
+        Returns the price precision of the exchange.
+        :param pair: Pair to get precision for
+        :return: precision for price or None. Must be used in combination with precisionMode
+        """
+        return self.markets.get(pair, {}).get('precision', {}).get('price', None)
+
     def amount_to_precision(self, pair: str, amount: float) -> float:
         """
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Re-implementation of ccxt internal methods - ensuring we can test the result is correct
-        based on our definitions.
-        """
-        if self.markets[pair]['precision']['amount'] is not None:
-            amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
-                                                precision=self.markets[pair]['precision']['amount'],
-                                                counting_mode=self.precisionMode,
-                                                ))
 
-        return amount
+        """
+        return amount_to_precision(amount, self.get_precision_amount(pair), self.precisionMode)
 
     def price_to_precision(self, pair: str, price: float) -> float:
         """
         Returns the price rounded up to the precision the Exchange accepts.
-        Partial Re-implementation of ccxt internal method decimal_to_precision(),
-        which does not support rounding up
-        TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
-        align with amount_to_precision().
         Rounds up
         """
-        if self.markets[pair]['precision']['price']:
-            # price = float(decimal_to_precision(price, rounding_mode=ROUND,
-            #                                    precision=self.markets[pair]['precision']['price'],
-            #                                    counting_mode=self.precisionMode,
-            #                                    ))
-            if self.precisionMode == TICK_SIZE:
-                precision = FtPrecise(self.markets[pair]['precision']['price'])
-                price_str = FtPrecise(price)
-                missing = price_str % precision
-                if not missing == FtPrecise("0"):
-                    price = round(float(str(price_str - missing + precision)), 14)
-            else:
-                symbol_prec = self.markets[pair]['precision']['price']
-                big_price = price * pow(10, symbol_prec)
-                price = ceil(big_price) / pow(10, symbol_prec)
-        return price
+        return price_to_precision(price, self.get_precision_price(pair), self.precisionMode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
@@ -1019,7 +1010,8 @@ class Exchange:
         time_in_force: str = 'gtc',
     ) -> Dict:
         if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
+            dry_order = self.create_dry_run_order(
+                pair, ordertype, side, amount, self.price_to_precision(pair, rate), leverage)
             return dry_order
 
         params = self._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
@@ -1387,12 +1379,14 @@ class Exchange:
         if not self.exchange_has('fetchBidsAsks'):
             return {}
         if cached:
-            tickers = self._fetch_tickers_cache.get('fetch_bids_asks')
+            with self._cache_lock:
+                tickers = self._fetch_tickers_cache.get('fetch_bids_asks')
             if tickers:
                 return tickers
         try:
             tickers = self._api.fetch_bids_asks(symbols)
-            self._fetch_tickers_cache['fetch_bids_asks'] = tickers
+            with self._cache_lock:
+                self._fetch_tickers_cache['fetch_bids_asks'] = tickers
             return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1413,12 +1407,14 @@ class Exchange:
         :return: fetch_tickers result
         """
         if cached:
-            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            with self._cache_lock:
+                tickers = self._fetch_tickers_cache.get('fetch_tickers')
             if tickers:
                 return tickers
         try:
             tickers = self._api.fetch_tickers(symbols)
-            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            with self._cache_lock:
+                self._fetch_tickers_cache['fetch_tickers'] = tickers
             return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1527,7 +1523,8 @@ class Exchange:
 
         cache_rate: TTLCache = self._entry_rate_cache if side == "entry" else self._exit_rate_cache
         if not refresh:
-            rate = cache_rate.get(pair)
+            with self._cache_lock:
+                rate = cache_rate.get(pair)
             # Check if cache has been invalidated
             if rate:
                 logger.debug(f"Using cached {side} rate for {pair}.")
@@ -1572,7 +1569,8 @@ class Exchange:
 
         if rate is None:
             raise PricingError(f"{name}-Rate for {pair} was empty.")
-        cache_rate[pair] = rate
+        with self._cache_lock:
+            cache_rate[pair] = rate
 
         return rate
 
@@ -1580,8 +1578,9 @@ class Exchange:
         entry_rate = None
         exit_rate = None
         if not refresh:
-            entry_rate = self._entry_rate_cache.get(pair)
-            exit_rate = self._exit_rate_cache.get(pair)
+            with self._cache_lock:
+                entry_rate = self._entry_rate_cache.get(pair)
+                exit_rate = self._exit_rate_cache.get(pair)
             if entry_rate:
                 logger.debug(f"Using cached buy rate for {pair}.")
             if exit_rate:
@@ -2246,10 +2245,14 @@ class Exchange:
 
                 coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
 
+                async def gather_results():
+                    return await asyncio.gather(*input_coro, return_exceptions=True)
+
                 for input_coro in chunks(coros, 100):
 
-                    results = self.loop.run_until_complete(
-                        asyncio.gather(*input_coro, return_exceptions=True))
+                    with self._loop_lock:
+                        results = self.loop.run_until_complete(gather_results())
+
                     for symbol, res in results:
                         tiers[symbol] = res
 
@@ -2849,3 +2852,61 @@ def market_is_active(market: Dict) -> bool:
     # See https://github.com/ccxt/ccxt/issues/4874,
     # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
     return market.get('active', True) is not False
+
+
+def amount_to_precision(amount: float, amount_precision: Optional[float],
+                        precisionMode: Optional[int]) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: truncated amount
+    """
+    if amount_precision is not None and precisionMode is not None:
+        precision = int(amount_precision) if precisionMode != TICK_SIZE else amount_precision
+        # precision must be an int for non-ticksize inputs.
+        amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
+                                            precision=precision,
+                                            counting_mode=precisionMode,
+                                            ))
+
+    return amount
+
+
+def price_to_precision(price: float, price_precision: Optional[float],
+                       precisionMode: Optional[int]) -> float:
+    """
+    Returns the price rounded up to the precision the Exchange accepts.
+    Partial Re-implementation of ccxt internal method decimal_to_precision(),
+    which does not support rounding up
+    TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
+    align with amount_to_precision().
+    !!! Rounds up
+    :param price: price to convert
+    :param price_precision: price precision to use. Used from markets[pair]['precision']['price']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: price rounded up to the precision the Exchange accepts
+
+    """
+    if price_precision is not None and precisionMode is not None:
+        # price = float(decimal_to_precision(price, rounding_mode=ROUND,
+        #                                    precision=price_precision,
+        #                                    counting_mode=self.precisionMode,
+        #                                    ))
+        if precisionMode == TICK_SIZE:
+            precision = FtPrecise(price_precision)
+            price_str = FtPrecise(price)
+            missing = price_str % precision
+            if not missing == FtPrecise("0"):
+                price = round(float(str(price_str - missing + precision)), 14)
+        else:
+            symbol_prec = price_precision
+            big_price = price * pow(10, symbol_prec)
+            price = ceil(big_price) / pow(10, symbol_prec)
+    return price

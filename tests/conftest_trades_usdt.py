@@ -81,7 +81,7 @@ def mock_trade_usdt_1(fee, is_short: bool):
 def mock_order_usdt_2(is_short: bool):
     return {
         'id': f'1235_{direc(is_short)}',
-        'symbol': 'ETC/USDT',
+        'symbol': 'NEO/USDT',
         'status': 'closed',
         'side': entry_side(is_short),
         'type': 'limit',
@@ -95,7 +95,7 @@ def mock_order_usdt_2(is_short: bool):
 def mock_order_usdt_2_exit(is_short: bool):
     return {
         'id': f'12366_{direc(is_short)}',
-        'symbol': 'ETC/USDT',
+        'symbol': 'NEO/USDT',
         'status': 'closed',
         'side': exit_side(is_short),
         'type': 'limit',
@@ -111,7 +111,7 @@ def mock_trade_usdt_2(fee, is_short: bool):
     Closed trade...
     """
     trade = Trade(
-        pair='ETC/USDT',
+        pair='NEO/USDT',
         stake_amount=200.0,
         amount=100.0,
         amount_requested=100.0,
@@ -132,10 +132,10 @@ def mock_trade_usdt_2(fee, is_short: bool):
         close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
         is_short=is_short,
     )
-    o = Order.parse_from_ccxt_object(mock_order_usdt_2(is_short), 'ETC/USDT', entry_side(is_short))
+    o = Order.parse_from_ccxt_object(mock_order_usdt_2(is_short), 'NEO/USDT', entry_side(is_short))
     trade.orders.append(o)
     o = Order.parse_from_ccxt_object(
-        mock_order_usdt_2_exit(is_short), 'ETC/USDT', exit_side(is_short))
+        mock_order_usdt_2_exit(is_short), 'NEO/USDT', exit_side(is_short))
     trade.orders.append(o)
     return trade
 
@@ -205,7 +205,7 @@ def mock_trade_usdt_3(fee, is_short: bool):
 def mock_order_usdt_4(is_short: bool):
     return {
         'id': f'prod_buy_12345_{direc(is_short)}',
-        'symbol': 'ETC/USDT',
+        'symbol': 'NEO/USDT',
         'status': 'open',
         'side': entry_side(is_short),
         'type': 'limit',
@@ -221,7 +221,7 @@ def mock_trade_usdt_4(fee, is_short: bool):
     Simulate prod entry
     """
     trade = Trade(
-        pair='ETC/USDT',
+        pair='NEO/USDT',
         stake_amount=20.0,
         amount=10.0,
         amount_requested=10.01,
@@ -236,7 +236,7 @@ def mock_trade_usdt_4(fee, is_short: bool):
         timeframe=5,
         is_short=is_short,
     )
-    o = Order.parse_from_ccxt_object(mock_order_usdt_4(is_short), 'ETC/USDT', entry_side(is_short))
+    o = Order.parse_from_ccxt_object(mock_order_usdt_4(is_short), 'NEO/USDT', entry_side(is_short))
     trade.orders.append(o)
     return trade
 
