@@ -96,20 +96,20 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_pct': -0.41,
         'profit_abs': -4.09e-06,
         'profit_fiat': ANY,
-        'stop_loss_abs': 9.882e-06,
+        'stop_loss_abs': 9.89e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss_abs': 9.882e-06,
+        'initial_stop_loss_abs': 9.89e-06,
         'initial_stop_loss_pct': -10.0,
         'initial_stop_loss_ratio': -0.1,
-        'stoploss_current_dist': -1.1080000000000002e-06,
-        'stoploss_current_dist_ratio': -0.10081893,
-        'stoploss_current_dist_pct': -10.08,
-        'stoploss_entry_dist': -0.00010475,
-        'stoploss_entry_dist_ratio': -0.10448878,
+        'stoploss_current_dist': pytest.approx(-1.0999999e-06),
+        'stoploss_current_dist_ratio': -0.10009099,
+        'stoploss_current_dist_pct': -10.01,
+        'stoploss_entry_dist': -0.00010402,
+        'stoploss_entry_dist_ratio': -0.10376381,
         'open_order': None,
         'realized_profit': 0.0,
         'exchange': 'binance',
@@ -181,20 +181,20 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_pct': ANY,
         'profit_abs': ANY,
         'profit_fiat': ANY,
-        'stop_loss_abs': 9.882e-06,
+        'stop_loss_abs': 9.89e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
         'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss_abs': 9.882e-06,
+        'initial_stop_loss_abs': 9.89e-06,
         'initial_stop_loss_pct': -10.0,
         'initial_stop_loss_ratio': -0.1,
         'stoploss_current_dist': ANY,
         'stoploss_current_dist_ratio': ANY,
         'stoploss_current_dist_pct': ANY,
-        'stoploss_entry_dist': -0.00010475,
-        'stoploss_entry_dist_ratio': -0.10448878,
+        'stoploss_entry_dist': -0.00010402,
+        'stoploss_entry_dist_ratio': -0.10376381,
         'open_order': None,
         'exchange': 'binance',
         'realized_profit': 0.0,
@@ -761,7 +761,7 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     # and trade amount is updated
     rpc._rpc_force_exit('3')
     assert cancel_order_mock.call_count == 1
-    assert trade.amount == filled_amount
+    assert pytest.approx(trade.amount) == filled_amount
 
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',
@@ -830,7 +830,7 @@ def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
 
     res = rpc._rpc_performance()
     assert len(res) == 3
-    assert res[0]['pair'] == 'ETC/USDT'
+    assert res[0]['pair'] == 'NEO/USDT'
     assert res[0]['count'] == 1
     assert res[0]['profit_pct'] == 5.0
 

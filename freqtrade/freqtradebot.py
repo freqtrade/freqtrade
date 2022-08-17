@@ -5,7 +5,6 @@ import copy
 import logging
 import traceback
 from datetime import datetime, time, timedelta, timezone
-from decimal import Decimal
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,6 +32,7 @@ from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.util import FtPrecise
 from freqtrade.wallets import Wallets
 
 
@@ -159,6 +159,8 @@ class FreqtradeBot(LoggingMixin):
         performs startup tasks
         """
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
+        # Update older trades with precision and precision mode
+        self.startup_backpopulate_precision()
         if not self.edge:
             # Adjust stoploss if it was changed
             Trade.stoploss_reinitialization(self.strategy.stoploss)
@@ -285,6 +287,17 @@ class FreqtradeBot(LoggingMixin):
                 trade.funding_fees = funding_fees
         else:
             return 0.0
+
+    def startup_backpopulate_precision(self):
+
+        trades = Trade.get_trades([Trade.precision_mode.is_(None)])
+        for trade in trades:
+            if trade.exchange != self.exchange.id:
+                continue
+            trade.precision_mode = self.exchange.precisionMode
+            trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
+            trade.price_precision = self.exchange.get_precision_price(trade.pair)
+        Trade.commit()
 
     def startup_update_open_orders(self):
         """
@@ -565,7 +578,7 @@ class FreqtradeBot(LoggingMixin):
 
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
-            amount = abs(float(Decimal(stake_amount) / Decimal(current_exit_rate)))
+            amount = abs(float(FtPrecise(stake_amount) / FtPrecise(current_exit_rate)))
             if amount > trade.amount:
                 # This is currently ineffective as remaining would become < min tradable
                 # Fixing this would require checking for 0.0 there -
@@ -738,7 +751,10 @@ class FreqtradeBot(LoggingMixin):
                 leverage=leverage,
                 is_short=is_short,
                 trading_mode=self.trading_mode,
-                funding_fees=funding_fees
+                funding_fees=funding_fees,
+                amount_precision=self.exchange.get_precision_amount(pair),
+                price_precision=self.exchange.get_precision_price(pair),
+                precision_mode=self.exchange.precisionMode,
             )
         else:
             # This is additional buy, we reset fee_open_currency so timeout checking can work

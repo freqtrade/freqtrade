@@ -735,7 +735,7 @@ def test_PerformanceFilter_lookback(mocker, default_conf_usdt, fee, caplog) -> N
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/USDT']
+        assert pm.whitelist == ['XRP/USDT', 'NEO/USDT']
         assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
@@ -762,8 +762,8 @@ def test_PerformanceFilter_keep_mid_order(mocker, default_conf_usdt, fee, caplog
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/USDT', 'ETC/USDT', 'ETH/USDT', 'LTC/USDT',
-                                'NEO/USDT', 'TKN/USDT', 'ADA/USDT', ]
+        assert pm.whitelist == ['XRP/USDT', 'NEO/USDT', 'ETH/USDT', 'LTC/USDT',
+                                'TKN/USDT', 'ADA/USDT', 'ETC/USDT', ]
         # assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.

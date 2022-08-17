@@ -1387,7 +1387,8 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
-    assert trade.open_trade_value == trade._calc_open_trade_value(trade.amount, trade.open_rate)
+    assert pytest.approx(trade.open_trade_value) == trade._calc_open_trade_value(
+        trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
 
     orders = trade.orders
