@@ -816,7 +816,7 @@ class FreqaiDataKitchen:
             return False
 
     def check_if_new_training_required(
-        self, trained_timestamp: int = 0
+        self, trained_timestamp: int
     ) -> Tuple[bool, TimeRange, TimeRange]:
 
         time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
