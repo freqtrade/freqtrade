@@ -508,6 +508,7 @@ class FreqaiDataKitchen:
             self.data_dictionary["train_features"], n_jobs=self.thread_count)
         avg_mean_dist = pairwise.mean(axis=1).mean()
 
+
         return avg_mean_dist
 
     def use_SVM_to_remove_outliers(self, predict: bool) -> None:
