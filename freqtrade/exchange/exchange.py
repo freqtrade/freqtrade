@@ -2255,10 +2255,14 @@ class Exchange:
 
                 coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
 
+                async def gather_results():
+                    return await asyncio.gather(*input_coro, return_exceptions=True)
+
                 for input_coro in chunks(coros, 100):
 
-                    results = self.loop.run_until_complete(
-                        asyncio.gather(*input_coro, return_exceptions=True))
+                    with self._loop_lock:
+                        results = self.loop.run_until_complete(gather_results())
+
                     for symbol, res in results:
                         tiers[symbol] = res
 
