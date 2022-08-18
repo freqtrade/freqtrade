@@ -79,13 +79,9 @@
             "random_state": 1,
             "shuffle": false
         },
-        "model_training_parameters": {    
+        "model_training_parameters": {
             "learning_rate": 0.00025,
             "gamma": 0.9,
-            "target_update_interval": 5000,
-            "buffer_size": 50000,
-            "exploration_initial_eps":1, 
-            "exploration_final_eps": 0.1,
             "verbose": 1
         },
         "rl_config": {

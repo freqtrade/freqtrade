@@ -1,16 +1,17 @@
+import gc
 import logging
 from typing import Any, Dict  # , Tuple
 
 import numpy as np
 # import numpy.typing as npt
 import torch as th
-from pandas import DataFrame
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
-from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
+
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.RL.Base3ActionRLEnv import Actions, Base3ActionRLEnv, Positions
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 
 
 logger = logging.getLogger(__name__)
@@ -21,23 +22,15 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
-               prices_train: DataFrame, prices_test: DataFrame):
+    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
 
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
         eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
-        # environments
-        train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
-                            reward_kwargs=self.reward_params)
-        eval = MyRLEnv(df=test_df, prices=prices_test,
-                       window_size=self.CONV_WIDTH, reward_kwargs=self.reward_params)
-        eval_env = Monitor(eval, ".")
-
         path = dk.data_path
-        eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
+        eval_callback = EvalCallback(self.eval_env, best_model_save_path=f"{path}/",
                                      log_path=f"{path}/ppo/logs/", eval_freq=int(eval_freq),
                                      deterministic=True, render=False)
 
@@ -45,8 +38,8 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=[256, 256, 128])
 
-        model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
-                    tensorboard_log=f"{path}/ppo/tensorboard/", learning_rate=0.00025,
+        model = PPO('MlpPolicy', self.train_env, policy_kwargs=policy_kwargs,
+                    tensorboard_log=f"{path}/ppo/tensorboard/",
                     **self.freqai_info['model_training_parameters']
                     )
 
@@ -55,11 +48,33 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
             callback=eval_callback
         )
 
+        del model
         best_model = PPO.load(dk.data_path / "best_model")
 
         print('Training finished!')
+        gc.collect()
 
         return best_model
+
+    def set_train_and_eval_environments(self, data_dictionary, prices_train, prices_test):
+        """
+        User overrides this as shown here if they are using a custom MyRLEnv
+        """
+        train_df = data_dictionary["train_features"]
+        test_df = data_dictionary["test_features"]
+
+        # environments
+        if not self.train_env:
+            self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
+                                     reward_kwargs=self.reward_params)
+            self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
+                                    window_size=self.CONV_WIDTH,
+                                    reward_kwargs=self.reward_params), ".")
+        else:
+            self.train_env.reset_env(train_df, prices_train, self.CONV_WIDTH, self.reward_params)
+            self.eval_env.reset_env(train_df, prices_train, self.CONV_WIDTH, self.reward_params)
+            self.train_env.reset()
+            self.eval_env.reset()
 
 
 class MyRLEnv(Base3ActionRLEnv):
