@@ -61,7 +61,7 @@
         "train_period_days": 10,
         "backtest_period_days": 2,
         "identifier": "unique-id",
-        "data_kitchen_thread_count": 4,
+        "data_kitchen_thread_count": 2,
         "feature_parameters": {
             "include_corr_pairlist": [
                 "BTC/USDT",

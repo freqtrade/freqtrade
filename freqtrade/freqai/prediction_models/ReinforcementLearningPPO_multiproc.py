@@ -3,9 +3,7 @@ from typing import Any, Dict  # , Tuple
 
 import numpy as np
 # import numpy.typing as npt
-# import pandas as pd
 import torch as th
-# from pandas import DataFrame
 from stable_baselines3.common.monitor import Monitor
 from typing import Callable
 from stable_baselines3 import PPO
@@ -16,7 +14,6 @@ from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Posi
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 import gym
-from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -48,26 +45,15 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
-               prices_train: DataFrame, prices_test: DataFrame):
+    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
 
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
         eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
-        env_id = "train_env"
-        num_cpu = int(dk.thread_count / 2)
-        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
-                                   self.reward_params, self.CONV_WIDTH) for i in range(num_cpu)])
-
-        eval_env_id = 'eval_env'
-        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
-                                  self.reward_params, self.CONV_WIDTH, monitor=True) for i in
-                                  range(num_cpu)])
-
         path = dk.data_path
-        eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
+        eval_callback = EvalCallback(self.eval_env, best_model_save_path=f"{path}/",
                                      log_path=f"{path}/ppo/logs/", eval_freq=int(eval_freq),
                                      deterministic=True, render=False)
 
@@ -75,7 +61,7 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=[512, 512, 512])
 
-        model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
+        model = PPO('MlpPolicy', self.train_env, policy_kwargs=policy_kwargs,
                     tensorboard_log=f"{path}/ppo/tensorboard/",
                     **self.freqai_info['model_training_parameters']
                     )
@@ -87,9 +73,36 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
 
         best_model = PPO.load(dk.data_path / "best_model")
         print('Training finished!')
-        eval_env.close()
 
         return best_model
+
+    def set_train_and_eval_environments(self, data_dictionary, prices_train, prices_test):
+        """
+        User overrides this in their prediction model if they are custom a MyRLEnv. Othwerwise
+        leaving this will default to Base5ActEnv
+        """
+        train_df = data_dictionary["train_features"]
+        test_df = data_dictionary["test_features"]
+
+        # environments
+        if not self.train_env:
+            env_id = "train_env"
+            num_cpu = int(self.freqai_info["data_kitchen_thread_count"] / 2)
+            self.train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
+                                            self.reward_params, self.CONV_WIDTH) for i
+                                            in range(num_cpu)])
+
+            eval_env_id = 'eval_env'
+            self.eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
+                                           self.reward_params, self.CONV_WIDTH, monitor=True) for i
+                                           in range(num_cpu)])
+        else:
+            self.train_env.env_method('reset_env', train_df, prices_train,
+                                      self.CONV_WIDTH, self.reward_params)
+            self.eval_env.env_method('reset_env', train_df, prices_train,
+                                     self.CONV_WIDTH, self.reward_params)
+            self.train_env.env_method('reset')
+            self.eval_env.env_method('reset')
 
 
 class MyRLEnv(Base3ActionRLEnv):

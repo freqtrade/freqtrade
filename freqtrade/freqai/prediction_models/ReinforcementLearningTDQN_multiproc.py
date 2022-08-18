@@ -4,8 +4,8 @@ import torch as th
 import numpy as np
 import gym
 from typing import Callable
-from stable_baselines3.common.callbacks import (
-    EvalCallback, StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold)
+from stable_baselines3.common.callbacks import EvalCallback
+# EvalCallback , StopTrainingOnNoModelImprovement, StopTrainingOnRewardThreshold
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
@@ -15,7 +15,6 @@ from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcement
 from freqtrade.freqai.RL.TDQNagent import TDQN
 from stable_baselines3.common.buffers import ReplayBuffer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -47,46 +46,23 @@ class ReinforcementLearningTDQN_multiproc(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
-               prices_train: DataFrame, prices_test: DataFrame):
+    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
 
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
         eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
-        env_id = "train_env"
-        num_cpu = int(dk.thread_count / 2)
-        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
-                                   self.reward_params, self.CONV_WIDTH) for i in range(num_cpu)])
-
-        eval_env_id = 'eval_env'
-        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
-                                  self.reward_params, self.CONV_WIDTH, monitor=True) for i in
-                                  range(num_cpu)])
-
         path = dk.data_path
-        stop_train_callback = StopTrainingOnNoModelImprovement(
-            max_no_improvement_evals=5,
-            min_evals=10,
-            verbose=2
-        )
-        callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=-200, verbose=2)
-        eval_callback = EvalCallback(
-            eval_env, best_model_save_path=f"{path}/",
-            log_path=f"{path}/tdqn/logs/",
-            eval_freq=int(eval_freq),
-            deterministic=True,
-            render=True,
-            callback_after_eval=stop_train_callback,
-            callback_on_new_best=callback_on_best,
-            verbose=2
-        )
+
+        eval_callback = EvalCallback(self.eval_env, best_model_save_path=f"{path}/",
+                                     log_path=f"{path}/tdqn/logs/", eval_freq=int(eval_freq),
+                                     deterministic=True, render=False)
         # model arch
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=[512, 512, 512])
 
-        model = TDQN('TMultiInputPolicy', train_env,
+        model = TDQN('TMultiInputPolicy', self.train_env,
                      policy_kwargs=policy_kwargs,
                      tensorboard_log=f"{path}/tdqn/tensorboard/",
                      replay_buffer_class=ReplayBuffer,
@@ -100,12 +76,40 @@ class ReinforcementLearningTDQN_multiproc(BaseReinforcementLearningModel):
 
         best_model = DQN.load(dk.data_path / "best_model.zip")
         print('Training finished!')
-        eval_env.close()
 
         return best_model
 
+    def set_train_and_eval_environments(self, data_dictionary, prices_train, prices_test):
+        """
+        User overrides this in their prediction model if they are custom a MyRLEnv. Othwerwise
+        leaving this will default to Base5ActEnv
+        """
+        train_df = data_dictionary["train_features"]
+        test_df = data_dictionary["test_features"]
+
+        # environments
+        if not self.train_env:
+            env_id = "train_env"
+            num_cpu = int(self.freqai_info["data_kitchen_thread_count"] / 2)
+            self.train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
+                                            self.reward_params, self.CONV_WIDTH) for i
+                                            in range(num_cpu)])
+
+            eval_env_id = 'eval_env'
+            self.eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
+                                           self.reward_params, self.CONV_WIDTH, monitor=True) for i
+                                           in range(num_cpu)])
+        else:
+            self.train_env.env_method('reset_env', train_df, prices_train,
+                                      self.CONV_WIDTH, self.reward_params)
+            self.eval_env.env_method('reset_env', train_df, prices_train,
+                                     self.CONV_WIDTH, self.reward_params)
+            self.train_env.env_method('reset')
+            self.eval_env.env_method('reset')
 
 # User can inherit and customize 5 action environment
+
+
 class MyRLEnv(Base5ActionRLEnv):
     """
     User can override any function in BaseRLEnv and gym.Env. Here the user

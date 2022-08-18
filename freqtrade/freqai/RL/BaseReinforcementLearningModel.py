@@ -8,9 +8,10 @@ from pandas import DataFrame
 from abc import abstractmethod
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.freqai_interface import IFreqaiModel
-from freqtrade.freqai.RL.Base3ActionRLEnv import Base3ActionRLEnv, Actions, Positions
+from freqtrade.freqai.RL.Base5ActionRLEnv import Base5ActionRLEnv, Actions, Positions
 from freqtrade.persistence import Trade
 import torch.multiprocessing
+from stable_baselines3.common.monitor import Monitor
 import torch as th
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         super().__init__(config=kwargs['config'])
         th.set_num_threads(self.freqai_info.get('data_kitchen_thread_count', 4))
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
+        self.train_env: Base5ActionRLEnv = None
 
     def train(
         self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
@@ -65,15 +67,37 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         )
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
-        model = self.fit_rl(data_dictionary, pair, dk, prices_train, prices_test)
+        self.set_train_and_eval_environments(data_dictionary, prices_train, prices_test)
+
+        model = self.fit_rl(data_dictionary, dk)
 
         logger.info(f"--------------------done training {pair}--------------------")
 
         return model
 
+    def set_train_and_eval_environments(self, data_dictionary, prices_train, prices_test):
+        """
+        User overrides this in their prediction model if they are custom a MyRLEnv. Othwerwise
+        leaving this will default to Base5ActEnv
+        """
+        train_df = data_dictionary["train_features"]
+        test_df = data_dictionary["test_features"]
+
+        # environments
+        if not self.train_env:
+            self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
+                                     reward_kwargs=self.reward_params)
+            self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
+                                    window_size=self.CONV_WIDTH,
+                                    reward_kwargs=self.reward_params), ".")
+        else:
+            self.train_env.reset_env(train_df, prices_train, self.CONV_WIDTH, self.reward_params)
+            self.eval_env.reset_env(train_df, prices_train, self.CONV_WIDTH, self.reward_params)
+            self.train_env.reset()
+            self.eval_env.reset()
+
     @abstractmethod
-    def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
-               prices_train: DataFrame, prices_test: DataFrame):
+    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
         """
         Agent customizations and abstract Reinforcement Learning customizations
         go in here. Abstract method, so this function must be overridden by
@@ -193,66 +217,39 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         return
 
 
-class MyRLEnv(Base3ActionRLEnv):
+class MyRLEnv(Base5ActionRLEnv):
+    """
+    User can override any function in BaseRLEnv and gym.Env. Here the user
+    Adds 5 actions.
+    """
 
-    def step(self, action):
-        self._done = False
-        self._current_tick += 1
+    def calculate_reward(self, action):
 
-        if self._current_tick == self._end_tick:
-            self._done = True
+        if self._last_trade_tick is None:
+            return 0.
 
-        self.update_portfolio_log_returns(action)
+        # close long
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(current_price) - np.log(last_trade_price))
 
-        self._update_profit(action)
-        step_reward = self._calculate_reward(action)
-        self.total_reward += step_reward
+        if action == Actions.Long_sell.value and self._position == Positions.Long:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
 
-        trade_type = None
-        if self.is_tradesignal(action):  # exclude 3 case not trade
-            # Update position
-            """
-            Action: Neutral, position: Long ->  Close Long
-            Action: Neutral, position: Short -> Close Short
+        # close short
+        if action == Actions.Short_buy.value and self._position == Positions.Short:
+            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(last_trade_price) - np.log(current_price))
 
-            Action: Long, position: Neutral -> Open Long
-            Action: Long, position: Short -> Close Short and Open Long
+        if action == Actions.Short_buy.value and self._position == Positions.Short:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
 
-            Action: Short, position: Neutral -> Open Short
-            Action: Short, position: Long -> Close Long and Open Short
-            """
-
-            if action == Actions.Neutral.value:
-                self._position = Positions.Neutral
-                trade_type = "neutral"
-            elif action == Actions.Long.value:
-                self._position = Positions.Long
-                trade_type = "long"
-            elif action == Actions.Short.value:
-                self._position = Positions.Short
-                trade_type = "short"
-            else:
-                print("case not defined")
-
-            # Update last trade tick
-            self._last_trade_tick = self._current_tick
-
-            if trade_type is not None:
-                self.trade_history.append(
-                    {'price': self.current_price(), 'index': self._current_tick,
-                     'type': trade_type})
-
-        if self._total_profit < 0.2:
-            self._done = True
-
-        self._position_history.append(self._position)
-        observation = self._get_observation()
-        info = dict(
-            tick=self._current_tick,
-            total_reward=self.total_reward,
-            total_profit=self._total_profit,
-            position=self._position.value
-        )
-        self._update_history(info)
-
-        return observation, step_reward, self._done, info
+        return 0.
