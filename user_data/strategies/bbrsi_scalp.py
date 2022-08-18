@@ -81,7 +81,7 @@ class bbrsi(WAOStrategy):
     # }
 
     # Stoploss:
-    stoploss = -0.05
+    stoploss = -0.01
 
     # Trailing stop:
     trailing_stop = False
