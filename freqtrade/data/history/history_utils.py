@@ -104,7 +104,8 @@ def load_data(datadir: Path,
         else:
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
                 logger.warn(f"{pair} using user specified [{user_futures_funding_rate}]")
-            result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
+            elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
+                result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
