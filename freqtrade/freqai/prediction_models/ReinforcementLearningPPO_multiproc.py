@@ -51,23 +51,20 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
     def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
                prices_train: DataFrame, prices_test: DataFrame):
 
-        agent_params = self.freqai_info['model_training_parameters']
-        reward_params = self.freqai_info['model_reward_parameters']
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = agent_params.get("eval_cycles", 4) * len(test_df)
-        total_timesteps = agent_params["train_cycles"] * len(train_df)
-        learning_rate = agent_params["learning_rate"]
+        eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
+        total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
         env_id = "train_env"
-        th.set_num_threads(dk.thread_count)
         num_cpu = int(dk.thread_count / 2)
-        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train, reward_params,
-                                   self.CONV_WIDTH) for i in range(num_cpu)])
+        train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
+                                   self.reward_params, self.CONV_WIDTH) for i in range(num_cpu)])
 
         eval_env_id = 'eval_env'
-        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test, reward_params,
-                                  self.CONV_WIDTH, monitor=True) for i in range(num_cpu)])
+        eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
+                                  self.reward_params, self.CONV_WIDTH, monitor=True) for i in
+                                  range(num_cpu)])
 
         path = dk.data_path
         eval_callback = EvalCallback(eval_env, best_model_save_path=f"{path}/",
@@ -80,9 +77,7 @@ class ReinforcementLearningPPO_multiproc(BaseReinforcementLearningModel):
 
         model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
                     tensorboard_log=f"{path}/ppo/tensorboard/",
-                    learning_rate=learning_rate,
-                    gamma=0.9,
-                    verbose=1
+                    **self.freqai_info['model_training_parameters']
                     )
 
         model.learn(

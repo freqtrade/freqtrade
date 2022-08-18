@@ -8,7 +8,7 @@
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "dry_run": true,
-    "timeframe": "3m",
+    "timeframe": "5m",
     "dataformat_ohlcv": "json",
     "dry_run_wallet": 12000,
     "cancel_open_orders_on_exit": true,
@@ -35,7 +35,6 @@
     },
     "entry_pricing": {
         "price_side": "same",
-        "purge_old_models": true,
         "use_order_book": true,
         "order_book_top": 1,
         "price_last_balance": 0.0,
@@ -56,10 +55,8 @@
     ],
     "freqai": {
         "enabled": true,
-        "startup_candles": 1000,
-        "model_save_type": "stable_baselines_ppo",
+        "model_save_type": "stable_baselines_dqn",
         "conv_width": 10,
-        "follow_mode": false,
         "purge_old_models": true,
         "train_period_days": 10,
         "backtest_period_days": 2,
@@ -71,13 +68,9 @@
                 "ETH/USDT"
             ],
             "include_timeframes": [
-                "3m",
-                "15m"
+                "5m",
+                "30m"
             ],
-            "include_shifted_candles": 0,
-            "weight_factor": 0.9,
-            "principal_component_analysis": false,
-            "use_SVM_to_remove_outliers": false,
             "indicator_max_period_candles": 10,
             "indicator_periods_candles": [5, 10]
         },
@@ -86,16 +79,22 @@
             "random_state": 1,
             "shuffle": false
         },
-        "model_training_parameters": {
-            "ent_coef": 0.005,
-            "learning_rate": 0.000025,
-            "batch_size": 256, 
-            "eval_cycles" : 5,
-            "train_cycles" : 15
+        "model_training_parameters": {    
+            "learning_rate": 0.00025,
+            "gamma": 0.9,
+            "target_update_interval": 5000,
+            "buffer_size": 50000,
+            "exploration_initial_eps":1, 
+            "exploration_final_eps": 0.1,
+            "verbose": 1
         },
-        "model_reward_parameters": {
-            "rr": 1,
-            "profit_aim": 0.01
+        "rl_config": {
+            "train_cycles": 15,
+            "eval_cycles": 5,
+            "model_reward_parameters": {
+                "rr": 1,
+                "profit_aim": 0.02
+            }
         }
     },
     "bot_name": "RL_test",

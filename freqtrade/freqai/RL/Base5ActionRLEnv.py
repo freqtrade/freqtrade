@@ -6,6 +6,7 @@ import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,8 @@ class Base5ActionRLEnv(gym.Env):
     """
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, prices, reward_kwargs, window_size=10, starting_point=True,
+    def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
+                 reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1):
         assert df.ndim == 2
 
@@ -56,7 +58,7 @@ class Base5ActionRLEnv(gym.Env):
         self.fee = 0.0015
 
         # # spaces
-        self.shape = (window_size, self.signal_features.shape[1])
+        self.shape = (window_size, self.signal_features.shape[1] + 2)
         self.action_space = spaces.Discrete(len(Actions))
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
@@ -161,19 +163,26 @@ class Base5ActionRLEnv(gym.Env):
             self._done = True
 
         self._position_history.append(self._position)
-        observation = self._get_observation()
+
         info = dict(
             tick=self._current_tick,
             total_reward=self.total_reward,
             total_profit=self._total_profit,
             position=self._position.value
         )
+
+        observation = self._get_observation()
+
         self._update_history(info)
 
         return observation, step_reward, self._done, info
 
     def _get_observation(self):
-        return self.signal_features[(self._current_tick - self.window_size):self._current_tick]
+        features_and_state = self.signal_features[(
+            self._current_tick - self.window_size):self._current_tick]
+        features_and_state['current_profit_pct'] = self.get_unrealized_profit()
+        features_and_state['position'] = self._position.value
+        return features_and_state
 
     def get_unrealized_profit(self):
 

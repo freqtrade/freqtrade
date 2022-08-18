@@ -6,6 +6,7 @@ import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ class Base3ActionRLEnv(gym.Env):
 
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, prices, reward_kwargs, window_size=10, starting_point=True,
+    def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
+                 reward_kwargs: dict = {}, window_size=10, starting_point=True,
                  id: str = 'baseenv-1', seed: int = 1):
         assert df.ndim == 2
 

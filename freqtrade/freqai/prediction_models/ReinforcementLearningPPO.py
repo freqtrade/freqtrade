@@ -24,18 +24,16 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
     def fit_rl(self, data_dictionary: Dict[str, Any], pair: str, dk: FreqaiDataKitchen,
                prices_train: DataFrame, prices_test: DataFrame):
 
-        agent_params = self.freqai_info['model_training_parameters']
-        reward_params = self.freqai_info['model_reward_parameters']
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = agent_params.get("eval_cycles", 4) * len(test_df)
-        total_timesteps = agent_params["train_cycles"] * len(train_df)
+        eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
+        total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
         # environments
         train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
-                            reward_kwargs=reward_params)
+                            reward_kwargs=self.reward_params)
         eval = MyRLEnv(df=test_df, prices=prices_test,
-                       window_size=self.CONV_WIDTH, reward_kwargs=reward_params)
+                       window_size=self.CONV_WIDTH, reward_kwargs=self.reward_params)
         eval_env = Monitor(eval, ".")
 
         path = dk.data_path
@@ -49,7 +47,7 @@ class ReinforcementLearningPPO(BaseReinforcementLearningModel):
 
         model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs,
                     tensorboard_log=f"{path}/ppo/tensorboard/", learning_rate=0.00025,
-                    gamma=0.9, verbose=1
+                    **self.freqai_info['model_training_parameters']
                     )
 
         model.learn(
