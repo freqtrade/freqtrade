@@ -2406,7 +2406,6 @@ class Exchange:
         if self.trading_mode in TradingMode.SPOT:
             return None
         elif (
-            self.margin_mode == MarginMode.ISOLATED and
             self.trading_mode == TradingMode.FUTURES
         ):
             wallet_balance = (amount * open_rate) / leverage
@@ -2422,7 +2421,7 @@ class Exchange:
             return isolated_liq
         else:
             raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
+                "Freqtrade currently only supports futures for leverage trading.")
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
