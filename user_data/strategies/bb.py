@@ -8,8 +8,8 @@ import numpy  # noqa
 from wao.wao_strategy import WAOStrategy
 
 
-class bbrsi(WAOStrategy):
-    brain = "Freq_bbrsi_scalp"
+class bb(WAOStrategy):
+    brain = "Freq_bb"
 
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
@@ -132,7 +132,7 @@ class bbrsi(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
+        # dataframe['rsi'] = ta.RSI(dataframe)
         # SMA
         # dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
         # EMA
@@ -171,7 +171,7 @@ class bbrsi(WAOStrategy):
         dataframe.loc[
             (
                    qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
-                    & (dataframe['rsi'] < 50)
+                    # & (dataframe['rsi'] < 50)
                     # & (dataframe['ema_9'] > dataframe['sma_200'])
                     # & (dataframe['macdhist'] > -0.08)
             ),
@@ -188,7 +188,7 @@ class bbrsi(WAOStrategy):
         dataframe.loc[
             (
                     (dataframe['close'] > dataframe['bb_upperband'])
-                    | (dataframe['rsi'] > 60)
+                    # | (dataframe['rsi'] > 60)
                     # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
