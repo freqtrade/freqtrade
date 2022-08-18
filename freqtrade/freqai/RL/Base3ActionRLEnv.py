@@ -127,25 +127,17 @@ class Base3ActionRLEnv(gym.Env):
             Action: Short, position: Long -> Close Long and Open Short
             """
 
-            u_pnl = self.get_unrealized_profit()
-            # keep current position if upnl from -0.4% to 0.4%
-            if u_pnl <= 0.004 and u_pnl >= -0.004 and self._position != Positions.Neutral:
-                if action == Actions.Long.value and self._position == Positions.Short:
-                    self._position = Positions.Short
-                elif action == Actions.Short.value and self._position == Positions.Long:
-                    self._position = Positions.Long
+            if action == Actions.Neutral.value:
+                self._position = Positions.Neutral
+                trade_type = "neutral"
+            elif action == Actions.Long.value:
+                self._position = Positions.Long
+                trade_type = "long"
+            elif action == Actions.Short.value:
+                self._position = Positions.Short
+                trade_type = "short"
             else:
-                if action == Actions.Neutral.value:
-                    self._position = Positions.Neutral
-                    trade_type = "neutral"
-                elif action == Actions.Long.value:
-                    self._position = Positions.Long
-                    trade_type = "long"
-                elif action == Actions.Short.value:
-                    self._position = Positions.Short
-                    trade_type = "short"
-                else:
-                    print("case not defined")
+                print("case not defined")
 
             # Update last trade tick
             self._last_trade_tick = self._current_tick
