@@ -723,80 +723,103 @@ class FreqaiDataKitchen:
             )
 
         return
-        
-    def compute_inlier_metric(self) -> None:
+
+    def compute_inlier_metric(self, set_='train') -> None:
         """
-        
-        Compute inlier metric from backwards distance distributions. 
-        This metric defines how well features from a timepoint fit 
+
+        Compute inlier metric from backwards distance distributions.
+        This metric defines how well features from a timepoint fit
         into previous timepoints.
         """
 
         import scipy.stats as ss
-    
-        nmb_previous_points = self.data['InlierMetric_nmb_points']
-        weibull_percentile = self.data['InlierMetric_weib_perc']
 
-        train_ft_df = self.data_dictionary['train_features']
-        train_ft_df_reindexed = train_ft_df.reindex(
-            index=np.flip(train_ft_df.index) 
+        no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
+        weib_pct = self.freqai_config["feature_parameters"]["inlier_metric_weibull_cutoff"]
+
+        if set_ == 'train':
+            compute_df = copy.deepcopy(self.data_dictionary['train_features'])
+        elif set_ == 'test':
+            compute_df = copy.deepcopy(self.data_dictionary['test_features'])
+        else:
+            compute_df = copy.deepcopy(self.data_dictionary['prediction_features'])
+
+        compute_df_reindexed = compute_df.reindex(
+            index=np.flip(compute_df.index)
         )
 
         pairwise = pd.DataFrame(
             np.triu(
-                pairwise_distances(train_ft_df_reindexed, n_jobs=self.thread_count)
+                pairwise_distances(compute_df_reindexed, n_jobs=self.thread_count)
             ),
-            columns=train_ft_df_reindexed.index,
-            index=train_ft_df_reindexed.index
+            columns=compute_df_reindexed.index,
+            index=compute_df_reindexed.index
         )
         pairwise = pairwise.round(5)
 
         column_labels = [
-            '{}{}'.format('d', i) for i in range(1, nmb_previous_points+1)
+            '{}{}'.format('d', i) for i in range(1, no_prev_pts + 1)
         ]
         distances = pd.DataFrame(
-            columns=column_labels, index=train_ft_df.index
+            columns=column_labels, index=compute_df.index
         )
-        for index in train_ft_df.index[nmb_previous_points]:
+
+        for index in compute_df.index[no_prev_pts:]:
             current_row = pairwise.loc[[index]]
             current_row_no_zeros = current_row.loc[
-                :, (current_row!=0).any(axis=0)
+                :, (current_row != 0).any(axis=0)
             ]
             distances.loc[[index]] = current_row_no_zeros.iloc[
-                :, :nmb_previous_points
+                :, :no_prev_pts
             ]
         distances = distances.replace([np.inf, -np.inf], np.nan)
         drop_index = pd.isnull(distances).any(1)
-        distances = distances[drop_index==0]
+        distances = distances[drop_index == 0]
 
         inliers = pd.DataFrame(index=distances.index)
         for key in distances.keys():
             current_distances = distances[key].dropna()
             fit_params = ss.weibull_min.fit(current_distances)
-            cutoff = ss.weibull_min.ppf(weibull_percentile, *fit_params)
+            cutoff = ss.weibull_min.ppf(weib_pct, *fit_params)
             is_inlier = np.where(
-                current_distances<=cutoff, 1, 0
+                current_distances <= cutoff, 1, 0
             )
             df_inlier = pd.DataFrame(
-                {key+'_IsInlier':is_inlier}, index=distances.index
+                {key + '_IsInlier': is_inlier}, index=distances.index
             )
             inliers = pd.concat(
                 [inliers, df_inlier], axis=1
             )
 
-        self.data_dictionary['train_features'] = pd.DataFrame(
-            data=inliers.sum(axis=1)/nmb_previous_points,
+        inlier_metric = pd.DataFrame(
+            data=inliers.sum(axis=1) / no_prev_pts,
             columns=['inlier_metric'],
-            index = train_ft_df.index
+            index=compute_df.index
         )
 
-        percent_outliers = np.round(
-            100*(1-self.data_dictionary['iniler_metric'].sum()/
-            len(train_ft_df.index)), 2
-        )
-        logger.info('{percent_outliers}%% of data points were identified as outliers')
+        inlier_metric = 2 * (inlier_metric - inlier_metric.min()) / \
+            (inlier_metric.max() - inlier_metric.min()) - 1
+
+        if set_ in ('train', 'test'):
+            inlier_metric = inlier_metric.iloc[no_prev_pts:]
+            compute_df = compute_df.iloc[no_prev_pts:]
+            self.remove_beginning_points_from_data_dict(set_, no_prev_pts)
+            self.data_dictionary[f'{set_}_features'] = pd.concat(
+                [compute_df, inlier_metric], axis=1)
+        else:
+            self.data_dictionary['prediction_features'] = pd.concat(
+                [compute_df, inlier_metric], axis=1)
+            self.data_dictionary['prediction_features'].fillna(0, inplace=True)
 
         return None
+
+    def remove_beginning_points_from_data_dict(self, set_='train', no_prev_pts: int = 10):
+        features = self.data_dictionary[f'{set_}_features']
+        weights = self.data_dictionary[f'{set_}_weights']
+        labels = self.data_dictionary[f'{set_}_labels']
+        self.data_dictionary[f'{set_}_weights'] = weights[no_prev_pts:]
+        self.data_dictionary[f'{set_}_features'] = features.iloc[no_prev_pts:]
+        self.data_dictionary[f'{set_}_labels'] = labels.iloc[no_prev_pts:]
 
     def find_features(self, dataframe: DataFrame) -> None:
         """
