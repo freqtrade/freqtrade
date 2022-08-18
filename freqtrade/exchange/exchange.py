@@ -2377,7 +2377,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            res = self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2441,7 +2442,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(margin_mode.value, pair, params)
+            res = self._api.set_margin_mode(margin_mode.value, pair, params)
+            self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
