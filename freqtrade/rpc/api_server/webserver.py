@@ -54,7 +54,11 @@ class ApiServer(RPCHandler):
             ApiServer.__initialized = False
         return ApiServer.__instance
 
-    def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        standalone: bool = False,
+    ) -> None:
         ApiServer._config = config
         if self.__initialized and (standalone or self._standalone):
             return
@@ -70,8 +74,6 @@ class ApiServer(RPCHandler):
                            default_response_class=FTJSONResponse,
                            )
         self.configure_app(self.app, self._config)
-
-        self.start_api()
 
     def add_rpc_handler(self, rpc: RPC):
         """

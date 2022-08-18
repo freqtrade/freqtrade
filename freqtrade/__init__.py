@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = '2022.8.dev'
+__version__ = '2022.8.1+pubsub'  # Metadata 1.2 mandates PEP 440 version, but 'develop' is not
 
 if 'dev' in __version__:
     try:

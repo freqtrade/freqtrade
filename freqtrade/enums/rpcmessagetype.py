@@ -19,6 +19,8 @@ class RPCMessageType(Enum):
 
     STRATEGY_MSG = 'strategy_msg'
 
+    EMIT_DATA = 'emit_data'
+
     def __repr__(self):
         return self.value
 

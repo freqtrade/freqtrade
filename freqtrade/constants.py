@@ -60,6 +60,8 @@ USERPATH_FREQAIMODELS = 'freqaimodels'
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 
+FOLLOWER_MODE_OPTIONS = ['follower', 'leader']
+
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
 NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
@@ -242,6 +244,7 @@ CONF_SCHEMA = {
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
         'freqai': {'$ref': '#/definitions/freqai'},
+        'replicate': {'$ref': '#/definitions/replicate'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -482,6 +485,31 @@ CONF_SCHEMA = {
                 'remove_pumps': {'type': 'boolean'}
             },
             'required': ['process_throttle_secs', 'allowed_risk']
+        },
+        'replicate': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean', 'default': False},
+                'mode': {
+                    'type': 'string',
+                    'enum': FOLLOWER_MODE_OPTIONS
+                },
+                'api_key': {'type': 'string', 'default': ''},
+                'leaders': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'url': {'type': 'string', 'default': ''},
+                            'token': {'type': 'string', 'default': ''},
+                        }
+                    }
+                },
+                'follower_reply_timeout': {'type': 'integer'},
+                'follower_sleep_time': {'type': 'integer'},
+                'follower_ping_timeout': {'type': 'integer'},
+            },
+            'required': ['mode']
         },
         "freqai": {
             "type": "object",

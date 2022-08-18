@@ -44,9 +44,22 @@ class RPCManager:
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
+
+            # Pass replicate_rpc as param or defer starting api_server
+            # until we register the replicate rpc enpoint?
             apiserver = ApiServer(config)
             apiserver.add_rpc_handler(self._rpc)
             self.registered_modules.append(apiserver)
+
+            # Enable Replicate mode
+            # For this to be enabled, the API server must also be enabled
+            if config.get('replicate', {}).get('enabled', False):
+                logger.info('Enabling rpc.replicate')
+                from freqtrade.rpc.replicate import ReplicateController
+                replicate_rpc = ReplicateController(self._rpc, config, apiserver)
+                self.registered_modules.append(replicate_rpc)
+
+            apiserver.start_api()
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
