@@ -174,7 +174,6 @@ class FreqaiExampleStrategy(IStrategy):
             #     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
             #     .min()
             # )
-
         return df
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
