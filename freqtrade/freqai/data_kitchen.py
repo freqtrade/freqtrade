@@ -723,6 +723,80 @@ class FreqaiDataKitchen:
             )
 
         return
+        
+    def compute_inlier_metric(self) -> None:
+        """
+        
+        Compute inlier metric from backwards distance distributions. 
+        This metric defines how well features from a timepoint fit 
+        into previous timepoints.
+        """
+
+        import scipy.stats as ss
+    
+        nmb_previous_points = self.data['InlierMetric_nmb_points']
+        weibull_percentile = self.data['InlierMetric_weib_perc']
+
+        train_ft_df = self.data_dictionary['train_features']
+        train_ft_df_reindexed = train_ft_df.reindex(
+            index=np.flip(train_ft_df.index) 
+        )
+
+        pairwise = pd.DataFrame(
+            np.triu(
+                pairwise_distances(train_ft_df_reindexed, n_jobs=self.thread_count)
+            ),
+            columns=train_ft_df_reindexed.index,
+            index=train_ft_df_reindexed.index
+        )
+        pairwise = pairwise.round(5)
+
+        column_labels = [
+            '{}{}'.format('d', i) for i in range(1, nmb_previous_points+1)
+        ]
+        distances = pd.DataFrame(
+            columns=column_labels, index=train_ft_df.index
+        )
+        for index in train_ft_df.index[nmb_previous_points]:
+            current_row = pairwise.loc[[index]]
+            current_row_no_zeros = current_row.loc[
+                :, (current_row!=0).any(axis=0)
+            ]
+            distances.loc[[index]] = current_row_no_zeros.iloc[
+                :, :nmb_previous_points
+            ]
+        distances = distances.replace([np.inf, -np.inf], np.nan)
+        drop_index = pd.isnull(distances).any(1)
+        distances = distances[drop_index==0]
+
+        inliers = pd.DataFrame(index=distances.index)
+        for key in distances.keys():
+            current_distances = distances[key].dropna()
+            fit_params = ss.weibull_min.fit(current_distances)
+            cutoff = ss.weibull_min.ppf(weibull_percentile, *fit_params)
+            is_inlier = np.where(
+                current_distances<=cutoff, 1, 0
+            )
+            df_inlier = pd.DataFrame(
+                {key+'_IsInlier':is_inlier}, index=distances.index
+            )
+            inliers = pd.concat(
+                [inliers, df_inlier], axis=1
+            )
+
+        self.data_dictionary['train_features'] = pd.DataFrame(
+            data=inliers.sum(axis=1)/nmb_previous_points,
+            columns=['inlier_metric'],
+            index = train_ft_df.index
+        )
+
+        percent_outliers = np.round(
+            100*(1-self.data_dictionary['iniler_metric'].sum()/
+            len(train_ft_df.index)), 2
+        )
+        logger.info('{percent_outliers}%% of data points were identified as outliers')
+
+        return None
 
     def find_features(self, dataframe: DataFrame) -> None:
         """
