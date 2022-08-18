@@ -2600,7 +2600,7 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
+        elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
                 f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
 
