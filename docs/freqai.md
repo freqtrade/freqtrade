@@ -10,7 +10,7 @@ Features include:
 * **Rapid feature engineering**: create large rich [feature sets](#feature-engineering) (10k+ features) based on simple user-created strategies.
 * **High performance**: adaptive retraining occurs on a separate thread (or on GPU if available) from inferencing and bot trade operations. Newest models and data are kept in memory for rapid inferencing.
 * **Realistic backtesting**: emulate self-adaptive retraining with a [backtesting module](#backtesting) that automates past retraining.
-* **Modifiability**: use the generalized and robust architecture for incorporating any machine learning library/method available in Python. Seven examples are currently available.
+* **Modifiability**: use the generalized and robust architecture for incorporating any [machine learning library/method](#building-a-custom-prediction-model) available in Python. Eight examples are currently available, including classifiers, regressors, and a convolutional neural network.
 * **Smart outlier removal**: remove outliers from training and prediction data sets using a variety of [outlier detection techniques](#outlier-removal).
 * **Crash resilience**: store model to disk to make reloading from a crash fast and easy, and [purge obsolete files](#purging-old-model-data) for sustained dry/live runs.
 * **Automatic data normalization**: [normalize the data](#feature-normalization) in a smart and statistically safe way.
@@ -81,7 +81,7 @@ This image contains the regular freqAI dependencies. Similar to native installs,
 
 ### Parameter table
 
-The table below will list all configuration parameters available for FreqAI, sorted based on where they should be placed in the config.
+The table below will list all configuration parameters available for FreqAI, presented in the same order as `config_examples/config_freqai.example.json`.
 
 Mandatory parameters are marked as **Required**, which means that they are required to be set in one of the possible ways.
 
@@ -116,7 +116,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
-| `shuffle` | Shuffle the training data points during training. Typically, for time series forecasting, this is set to `False`. <br> 
+| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> 
 |  |  **Model training parameters**
 | `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.**Datatype:** Boolean.
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
@@ -134,8 +134,8 @@ Below are the values the user can expect to include/use inside a typical strateg
 |------------|-------------|
 | `df['&*']` | Any dataframe column prepended with `&` in `populate_any_indicators()` is treated as a training target (label) inside FreqAI (typically following the naming convention `&-s*`). The names of these dataframe columns are fed back to the user as the predictions. For example, if the user wishes to predict the price change in the next 40 candles (similar to `templates/FreqaiExampleStrategy.py`), they set `df['&-s_close']`. FreqAI makes the predictions and gives them back under the same key (`df['&-s_close']`) to be used in `populate_entry/exit_trend()`. <br> **Datatype:** Depends on the output of the model.
 | `df['&*_std/mean']` | Standard deviation and mean values of the user-defined labels during training (or live tracking with `fit_live_predictions_candles`). Commonly used to understand the rarity of a prediction (use the z-score as shown in `templates/FreqaiExampleStrategy.py` to evaluate how often a particular prediction was observed during training or historically with `fit_live_predictions_candles`). <br> **Datatype:** Float.
-| `df['do_predict']` | Indication of prediction confidence. The return value is integer between -1 and 2 that lets the user know if the prediction is trustworthy or not. `do_predict==1` means the prediction is trustworthy. If the Dissimilarity Index (DI, see details [here](#removing-outliers-with-the-dissimilarity-index)) of the prediction is above the user-defined threshold (prediction seems to be an outlier), it will subtract 1 from `do_predict`, resulting in `do_predict==0`. If `use_SVM_to_remove_outliers()` is active, the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract 1 from `do_predict`. If the prediction was considered an outlier by the SVM but not by the DI, the result will be `do_predict==0`. If both the DI and the SVM considers the prediction an outlier, the result will be `do_predict==-1`. A particular case is when `do_predict == 2`, which means that the model has expired due to exceeding `expired_hours`. <br> **Datatype:** Integer between -1 and 2.
-| `df['DI_values']` | Dissimilarity Index values that indicate the level of confidence the user should have in the prediction. A lower DI means the prediction is close to the training data, i.e., higher prediction confidence. <br> **Datatype:** Float.
+| `df['do_predict']` | Indication of an outlier data point. The return value is integer between -1 and 2, which lets the user know if the prediction is trustworthy or not. `do_predict==1` means the prediction is trustworthy. If the Dissimilarity Index (DI, see details [here](#removing-outliers-with-the-dissimilarity-index)) of the input data point is above the user-defined threshold, FreqAI will subtract 1 from `do_predict`, resulting in `do_predict==0`. If `use_SVM_to_remove_outliers()` is active, the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract 1 from `do_predict`. If the input data point was considered an outlier by the SVM but not by the DI, the result will be `do_predict==0`. If both the DI and the SVM considers the input data point to be an outlier, the result will be `do_predict==-1`. A particular case is when `do_predict == 2`, which means that the model has expired due to exceeding `expired_hours`. <br> **Datatype:** Integer between -1 and 2.
+| `df['DI_values']` | Dissimilarity Index values are proxies to the level of confidence FreqAI has in the prediction. A lower DI means the prediction is close to the training data, i.e., higher prediction confidence. <br> **Datatype:** Float.
 | `df['%*']` | Any dataframe column prepended with `%` in `populate_any_indicators()` is treated as a training feature. For example, the user can include the RSI in the training feature set (similar to in `templates/FreqaiExampleStrategy.py`) by setting `df['%-rsi']`. See more details on how this is done [here](#feature-engineering). <br> **Note**: Since the number of features prepended with `%` can multiply very quickly (10s of thousands of features is easily engineered using the multiplictative functionality described in the `feature_parameters` table shown above), these features are removed from the dataframe upon return from FreqAI. If the user wishes to keep a particular type of feature for plotting purposes, they can prepend it with `%%`. <br> **Datatype:** Depends on the output of the model.
 
 ### File structure
@@ -146,10 +146,11 @@ and should therefore not be modified.
 
 ### Example config file
 
-The user interface is isolated to the typical Freqtrade config file. A typical FreqAI config setup could include:
+The user interface is isolated to the typical Freqtrade config file. A FreqAI config should include:
 
 ```json
     "freqai": {
+        "enabled": true,
         "startup_candles": 10000,
         "purge_old_models": true,
         "train_period_days": 30,
@@ -164,19 +165,14 @@ The user interface is isolated to the typical Freqtrade config file. A typical F
             ],
             "label_period_candles": 24,
             "include_shifted_candles": 2,
-            "weight_factor":  0,
             "indicator_max_period_candles": 20,
             "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters" : {
-            "test_size": 0.25,
-            "random_state": 42
+            "test_size": 0.25
         },
         "model_training_parameters" : {
-            "n_estimators": 100,
-            "random_state": 42,
-            "learning_rate": 0.02,
-            "task_type": "CPU",
+            "n_estimators": 100
         },
     }
 ```
@@ -201,9 +197,6 @@ The FreqAI strategy requires the user to include the following lines of code in 
         return informative_pairs
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        # All indicators must be populated by populate_any_indicators() for live functionality
-        # to work correctly.
 
         # the model will return all labels created by user in `populate_any_indicators` 
         # (& appended targets), an indication of whether or not the prediction should be accepted, 
@@ -280,19 +273,19 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
 ```
 
-Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](#feature-engineering)) and targets ([more information](#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`.
+Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](#feature-engineering)) and labels ([more information](#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`.
 
 ## Creating a dynamic target
 
-The `target_roi` describes the target (label) the model has been trained on and allows the model to know what magnitude of a target to be expecting during prediction.
-As shown in `templates/FreqaiExampleStrategy.py`, the `target_roi` is based on two metrics computed
-by FreqAI: `label_mean` and `label_std`. These are the statistics associated with the labels used
-*during the most recent training*.   
-By default, FreqAI computes this based on the training data and assumes that the labels follow a Gaussian distribution.
-This is a big assumption that the user should consider when creating their labels. 
+The `&*_std/mean` return values describe the statistical fit of the user defined label *during the most recent training*. This value allows the user to know the rarity of a given prediction. For example, `templates/FreqaiExampleStrategy.py`, creates a `target_roi` which is based on filtering out predictions that are below a given z-score of 1.25.
 
-If the user wants to consider the population
-of *historical predictions* for creating the dynamic target instead of the trained labels, the user
+```python
+dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * 1.25
+dataframe["sell_roi"] = dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * 1.25
+```
+
+If the user wishes to consider the population
+of *historical predictions* for creating the dynamic target instead of the trained labels, (as discussed above) the user
 can do so by setting `fit_live_prediction_candles` in the config to the number of historical prediction candles
 the user wishes to use to generate target statistics.
 
@@ -306,7 +299,7 @@ If the user sets this value, FreqAI will initially use the predictions from the 
 and subsequently begin introducing real prediction data as it is generated. FreqAI will save
 this historical data to be reloaded if the user stops and restarts a model with the same `identifier`.
 
-## Building an IFreqaiModel
+## Building a custom prediction model
 
 FreqAI has multiple example prediction model libraries, such as `Catboost` regression (`freqai/prediction_models/CatboostRegressor.py`) and `LightGBM` regression.
 However, the user can customize and create their own prediction models using the `IFreqaiModel` class.
@@ -337,7 +330,7 @@ There are some important components/structures that the user *must* include when
         :param coin: the name of the coin which will modify the feature names.
         """
 
-        coint = pair.split('/')[0]
+        coin = pair.split('/')[0]
 
         if informative is None:
             informative = self.dp.get_pair_dataframe(pair, tf)
@@ -429,7 +422,7 @@ This is where the user will add single features and labels to their feature set 
 various configuration parameters that multiply the feature set, such as `include_timeframes`.
 
 !!! Note
-    Features **must** be defined in `populate_any_indicators()`. Definint features in `populate_indicators()`
+    Features **must** be defined in `populate_any_indicators()`. Definining FreqAI features in `populate_indicators()`
     will cause the algorithm to fail in live/dry mode. If the user wishes to add generalized features that are not associated with 
     a specific pair or timeframe, they should use the following structure inside `populate_any_indicators()`
     (as exemplified in `freqtrade/templates/FreqaiExampleStrategy.py`):
@@ -461,13 +454,15 @@ various configuration parameters that multiply the feature set, such as `include
 
     (Please see the example script located in `freqtrade/templates/FreqaiExampleStrategy.py` for a full example of `populate_any_indicators()`.)
 
-## Target/label creation
+## Setting classifier targets
 
-FreqAI includes the `CatboostClassifier` via the flag `--freqaimodel CatboostClassifier`. Typically, the user would set the targets using strings:
+FreqAI includes the `CatboostClassifier` via the flag `--freqaimodel CatboostClassifier`. The user should take care to set the classes using strings:
 
 ```python
 df['&s-up_or_down'] = np.where( df["close"].shift(-100) > df["close"], 'up', 'down')
 ```
+
+Additionally, the example classifier models do not accommodate multiple labels, but they do allow multi-class classification within a single label column.
 
 ## Running FreqAI
 
@@ -484,15 +479,15 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 ```
 
 By default, FreqAI will not find any existing models and will start by training a new one
-based on the user's configuration settings. Following training, the model will be used to make predictions on incoming candles until a new model is available. New models are typically generated as often as possible, with FreqAI managing an internal queue of the coin pairs to try to keep all models equally up to date. FreqAI will always use the most recently trained model to make predictions on incoming live data. If the user do not want FreqAI to retrain new models as often as possible, they can set `live_retrain_hours` to tell FreqAI to wait at least that number of hours before training a new model. Additionally, userthe user can set `expired_hours` to tell FreqAI to avoid making predictions on models that are older than that number of hours.
+based on the user's configuration settings. Following training, the model will be used to make predictions on incoming candles until a new model is available. New models are typically generated as often as possible, with FreqAI managing an internal queue of the coin pairs to try to keep all models equally up to date. FreqAI will always use the most recently trained model to make predictions on incoming live data. If the user does not want FreqAI to retrain new models as often as possible, they can set `live_retrain_hours` to tell FreqAI to wait at least that number of hours before training a new model. Additionally, the user can set `expired_hours` to tell FreqAI to avoid making predictions on models that are older than that number of hours.
 
-If the user wishes to start a dry/live run from a saved backtest model, the user only needs to reuse
+If the user wishes to start a dry/live run from a saved backtest model (or from a previously crashed dry/live session), the user only needs to reuse
 the same `identifier` parameter:
 
 ```json
     "freqai": {
         "identifier": "example",
-        "live_retrain_hours": 1
+        "live_retrain_hours": 0.5
     }
 ```
 
@@ -548,11 +543,7 @@ and adding this to the `train_period_days`. The units need to be in the base can
 
 ### Defining model expirations
 
-During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main
-Freqtrade bot). This means that there is always an age discrepancy between models. If a user is training
-on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. 
-This may be undesirable if the characteristic time scale (the trade duration target) for a strategy 
-is less than 4 hours. The user can decide to only make trade entries if the model is less than 
+During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main Freqtrade bot). This means that there is always an age discrepancy between models. If a user is training on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. This may be undesirable if the characteristic time scale (the trade duration target) for a strategy is less than 4 hours. The user can decide to only make trade entries if the model is less than 
 a certain number of hours old by setting the `expiration_hours` in the config file:
 
 ```json
@@ -561,15 +552,11 @@ a certain number of hours old by setting the `expiration_hours` in the config fi
     }
 ```
 
-In the presented example config, the user will only allow predictions on models that are less than 1/2 hours
-old.
+In the presented example config, the user will only allow predictions on models that are less than 1/2 hours old.
 
 ### Purging old model data
 
-FreqAI stores new model files each time it retrains. These files become obsolete as new models
-are trained and FreqAI adapts to new market conditions. Users planning to leave FreqAI running
-for extended periods of time with high frequency retraining should enable `purge_old_models` in their
-config:
+FreqAI stores new model files each time it retrains. These files become obsolete as new models are trained and FreqAI adapts to new market conditions. Users planning to leave FreqAI running for extended periods of time with high frequency retraining should enable `purge_old_models` in their config:
 
 ```json
     "freqai": {
@@ -582,8 +569,7 @@ This will automatically purge all models older than the two most recently traine
 ### Returning additional info from training
 
 The user may find that there are some important metrics that they'd like to return to the strategy at the end of each model training.
-The user can include these metrics by assigning them to `dk.data['extra_returns_per_train']['my_new_value'] = XYZ` inside their custom prediction
-model class. FreqAI takes the `my_new_value` assigned in this dictionary and expands it to fit the return dataframe to the strategy.
+The user can include these metrics by assigning them to `dk.data['extra_returns_per_train']['my_new_value'] = XYZ` inside their custom prediction model class. FreqAI takes the `my_new_value` assigned in this dictionary and expands it to fit the return dataframe to the strategy.
 The user can then use the value in the strategy with `dataframe['my_new_value']`. An example of how this is already used in FreqAI is
 the `&*_mean` and `&*_std` values, which indicate the mean and standard deviation of the particular target (label) during the most recent training.
 An example, where the user wants to use live metrics from the trade database, is shown below:
@@ -594,8 +580,7 @@ An example, where the user wants to use live metrics from the trade database, is
     }
 ```
 
-The user needs to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes.  These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs
-a default initial value, this is the value that will be returned.
+The user needs to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes.  These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, this is the value that will be returned.
 
 ### Setting up a follower
 
@@ -608,17 +593,14 @@ The user can define:
     }
 ```
 
-to indicate to the bot that it should not train models, but instead should look for models trained
-by a leader with the same `identifier`. In this example, the user has a leader bot with the
-`identifier: "example"`. The leader bot is already running or launching simultaneously as the follower.
+to indicate to the bot that it should not train models, but instead should look for models trained by a leader with the same `identifier`. In this example, the user has a leader bot with the `identifier: "example"`. The leader bot is already running or launching simultaneously as the follower.
 The follower will load models created by the leader and inference them to obtain predictions.
 
 ## Data manipulation techniques
 
 ### Feature normalization
 
-The feature set created by the user is automatically normalized to the training data.
-This includes all test data and unseen prediction data (dry/live/backtest).
+The feature set created by the user is automatically normalized to the training data. This includes all test data and unseen prediction data (dry/live/backtest).
 
 ### Reducing data dimensionality with Principal Component Analysis
 
@@ -632,8 +614,7 @@ Users can reduce the dimensionality of their features by activating the `princip
     }
 ```
 
-This will perform PCA on the features and reduce the dimensionality of the data so that the explained
-variance of the data set is >= 0.999.
+This will perform PCA on the features and reduce the dimensionality of the data so that the explained variance of the data set is >= 0.999.
 
 ### Stratifying the data for training and testing the model
 
@@ -677,22 +658,15 @@ the user is asking for `labels` that are 24 candles in the future.
 
 #### Removing outliers with the Dissimilarity Index
 
-The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each
-prediction made by the model. To do so, FreqAI measures the distance between each training
-data point (feature vector), $X_{a}$, and all other training data points:
+The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
 
 $$ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} $$
 
-where $d_{ab}$ is the distance between the normalized points $a$ and $b$. $p$
-is the number of features, i.e., the length of the vector $X$. 
-The characteristic distance, $\overline{d}$ for a set of training data points is simply the mean
-of the average distances:
+where $d_{ab}$ is the distance between the normalized points $a$ and $b$. $p$ is the number of features, i.e., the length of the vector $X$. The characteristic distance, $\overline{d}$ for a set of training data points is simply the mean of the average distances:
 
 $$ \overline{d} = \sum_{a=1}^n(\sum_{b=1}^n(d_{ab}/n)/n) $$
 
-$\overline{d}$ quantifies the spread of the training data, which is compared to
-the distance between a new prediction feature vectors, $X_k$ and all the training
-data:
+$\overline{d}$ quantifies the spread of the training data, which is compared to the distance between a new prediction feature vectors, $X_k$ and all the training data:
 
 $$ d_k = \arg \min d_{k,i} $$
 
@@ -750,11 +724,10 @@ The user can configure FreqAI to use DBSCAN to cluster and remove outliers from 
 
 ### Common pitfalls
 
-FreqAI cannot be combined with `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
+FreqAI cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
 This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively,
 it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
-new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due
-to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist`.
+new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
 
 ## Credits
 
@@ -763,7 +736,7 @@ FreqAI was developed by a group of individuals who all contributed specific skil
 Conception and software development:
 Robert Caulk @robcaulk
 
-Theoretical brainstorming:
+Theoretical brainstorming, data analysis:
 Elin Törnquist @th0rntwig
 
 Code review, software architecture brainstorming:
