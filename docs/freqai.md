@@ -647,7 +647,7 @@ $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
 where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. Below is a figure showing the effect of different weight factors on the data points (candles) in a feature set.
 
-![weight-factor](assets/weights_factor.png)
+![weight-factor](assets/freqai_weight-factor.png)
 
 `train_test_split()` has a parameters called `shuffle` that allows the user to keep the data unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data.
 
@@ -658,7 +658,19 @@ the user is asking for `labels` that are 24 candles in the future.
 
 #### Removing outliers with the Dissimilarity Index
 
-The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
+The user can tell FreqAI to remove outlier data points from the training/test data sets using a Dissimilarity Index by including the following statement in the config:
+
+```json
+    "freqai": {
+        "feature_parameters" : {
+            "DI_threshold": 1
+        }
+    }
+```
+
+Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. 
+
+To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
 
 $$ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} $$
 
@@ -674,24 +686,15 @@ which enables the estimation of the Dissimilarity Index as:
 
 $$ DI_k = d_k/\overline{d} $$
 
-Equity and crypto markets suffer from a high level of non-patterned noise in the
-form of outlier data points. The DI allows predictions which
-are outliers (not existent in the model feature space) to be thrown out due
-to low levels of certainty. Activating the DI is done by including the following statement in the config:
+The user can tweak the DI through the `DI_threshold` to increase or decrease the extrapolation of the trained model. 
 
-```json
-    "freqai": {
-        "feature_parameters" : {
-            "DI_threshold": 1
-        }
-    }
-```
+Below is a figure that describes the DI for a 3D data set.
 
-The user can tweak the DI through the `DI_threshold` to increase or decrease the extrapolation of the trained model.
+![DI](assets/freqai_DI.png)
 
 #### Removing outliers using a Support Vector Machine (SVM)
 
-The user can tell FreqAI to remove outlier data points from the training/test data sets by setting:
+The user can tell FreqAI to remove outlier data points from the training/test data sets using a SVM by setting:
 
 ```json
     "freqai": {
@@ -710,7 +713,7 @@ The parameter `nu`, *very* broadly, is the amount of data points that should be 
 
 #### Removing outliers with DBSCAN
 
-The user can configure FreqAI to use DBSCAN to cluster and remove outliers from the training data set or incoming outliers from predictions, by activating `use_DBSCAN_to_remove_outliers` in the config:
+The user can configure FreqAI to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating `use_DBSCAN_to_remove_outliers` in the config:
 
 ```json
     "freqai": {
@@ -719,6 +722,14 @@ The user can configure FreqAI to use DBSCAN to cluster and remove outliers from 
         }
     }
 ```
+
+DBSCAN is an unsupervised machine learning algorithm that clusters data without needing to know how many clusters there should be.
+
+Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters the data set by setting all data points that have $N-1$ other data points within a distance of $\varepsilon$ as *core points*. A data point that is within a distance of $\varepsilon$ from a *core point* but that does not have $N-1$ other data points within a distance of $\varepsilon$ from itself is considered an *edge point*. A cluster is then the collection of *core points* and *edge points*. Data points that have no other data points at a distance $<\varepsilon$ are considered outliers. The figure below shows a cluster with $N = 3$.
+
+![dbscan](assets/freqai_dbscan.png)
+
+FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as double the no. of user-defined features, and `eps` ($\varepsilon$) taken as the longest distance in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
 
 ## Additional information
 
