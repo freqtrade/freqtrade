@@ -20,32 +20,20 @@ class bbrsi_optimized(WAOStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
-        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
-        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
-        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
-        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
-        "45": 0.014,  # Exit immediately if there is at least 2% profit
-        "30": 0.016,  # Exit immediately if there is at least 2% profit
-        "15": 0.018,  # Exit immediately if there is at least 2% profit
-        "0": 0.020,  # Exit immediately if there is at least 2% profit
+        "0": 0.181,
+        "32": 0.073,
+        "85": 0.013,
+        "196": 0
     }
 
-    # Optimal stoploss designed for the strategy
-    # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.01
+    # Stoploss:
+    stoploss = -0.301
 
-    # Optimal timeframe for the strategy
-    timeframe = '5m'
-
-    # trailing stoploss
-    trailing_stop = False
-    trailing_stop_positive = 0.01
-    trailing_stop_positive_offset = 0.02
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.11
+    trailing_stop_positive_offset = 0.116
+    trailing_only_offset_is_reached = True
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
@@ -54,7 +42,6 @@ class bbrsi_optimized(WAOStrategy):
     use_sell_signal = True
     sell_profit_only = True
     ignore_roi_if_buy_signal = False
-
 
     def informative_pairs(self):
         """
@@ -110,8 +97,8 @@ class bbrsi_optimized(WAOStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])) &
-                (dataframe['rsi'] < 50)
+                    (qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])) &
+                    (dataframe['rsi'] < 50)
             ),
             'buy'] = 1
 
