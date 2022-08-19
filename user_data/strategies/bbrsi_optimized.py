@@ -29,6 +29,8 @@ class bbrsi_optimized(WAOStrategy):
     # Stoploss:
     stoploss = -0.301
 
+    timeframe = '5m'
+
     # Trailing stop:
     trailing_stop = True
     trailing_stop_positive = 0.11
