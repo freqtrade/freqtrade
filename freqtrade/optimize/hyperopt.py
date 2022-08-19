@@ -406,6 +406,14 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
+    def advise_and_trim(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+        preprocessed = self.backtesting.strategy.advise_all_indicators(data)
+
+        # Trim startup period from analyzed dataframe to get correct dates for output.
+        processed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
+        self.min_date, self.max_date = get_timerange(processed)
+        return processed
+
     def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
         self.backtesting.load_bt_data_detail()
@@ -413,9 +421,7 @@ class Hyperopt:
 
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
-        # Trim startup period from analyzed dataframe to get correct dates for output.
-        processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
-        self.min_date, self.max_date = get_timerange(processed)
+        preprocessed = self.advise_and_trim(data)
 
         logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
