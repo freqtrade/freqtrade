@@ -5,7 +5,7 @@ import asyncio
 import logging
 import secrets
 import socket
-from threading import Thread
+from threading import Event, Thread
 from typing import Any, Coroutine, Dict, Union
 
 import websockets
@@ -50,6 +50,9 @@ class ReplicateController(RPCHandler):
         self._thread = None
         self._queue = None
 
+        self._stop_event = Event()
+        self._follower_tasks = None
+
         self.channel_manager = ChannelManager()
 
         self.replicate_config = config.get('replicate', {})
@@ -93,10 +96,7 @@ class ReplicateController(RPCHandler):
 
         self.start_threaded_loop()
 
-        if self.mode == ReplicateModeType.follower:
-            self.start_follower_mode()
-        elif self.mode == ReplicateModeType.leader:
-            self.start_leader_mode()
+        self.start()
 
     def start_threaded_loop(self):
         """
@@ -129,6 +129,29 @@ class ReplicateController(RPCHandler):
             logger.error(f"Error running coroutine - {str(e)}")
             return None
 
+    async def main_loop(self):
+        """
+        Main loop coro
+
+        Start the loop based on what mode we're in
+        """
+        try:
+            if self.mode == ReplicateModeType.leader:
+                await self.leader_loop()
+            elif self.mode == ReplicateModeType.follower:
+                await self.follower_loop()
+
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._loop.stop()
+
+    def start(self):
+        """
+        Start the controller main loop
+        """
+        self.submit_coroutine(self.main_loop())
+
     def cleanup(self) -> None:
         """
         Cleanup pending module resources.
@@ -144,27 +167,62 @@ class ReplicateController(RPCHandler):
                     task.cancel()
 
                 self._loop.call_soon_threadsafe(self.channel_manager.disconnect_all)
-                # This must be called threadsafe, otherwise would not work
-                self._loop.call_soon_threadsafe(self._loop.stop)
 
             self._thread.join()
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
-        """ Push message through """
-
+        """
+        Support RPC calls
+        """
         if msg["type"] == RPCMessageType.EMIT_DATA:
-            self._send_message(
+            self.send_message(
                 {
-                    "type": msg["data_type"],
-                    "content": msg["data"]
+                    "data_type": msg.get("data_type"),
+                    "data": msg.get("data")
                 }
             )
 
+    def send_message(self, msg: Dict[str, Any]) -> None:
+        """ Push message through """
+
+        if self.channel_manager.has_channels():
+            self._send_message(msg)
+        else:
+            logger.debug("No listening followers, skipping...")
+            pass
+
+    def _send_message(self, msg: Dict[Any, Any]):
+        """
+        Add data to the internal queue to be broadcasted. This func will block
+        if the queue is full. This is meant to be called in the main thread.
+        """
+
+        if self._queue:
+            queue = self._queue.sync_q
+            queue.put(msg)
+        else:
+            logger.warning("Can not send data, leader loop has not started yet!")
+
+    def is_leader(self):
+        """
+        Leader flag
+        """
+        return self.enabled() and self.mode == ReplicateModeType.leader
+
+    def enabled(self):
+        """
+        Enabled flag
+        """
+        return self.replicate_config.get('enabled', False)
+
     # ----------------------- LEADER LOGIC ------------------------------
 
-    def start_leader_mode(self):
+    async def leader_loop(self):
         """
-        Register the endpoint and start the leader loop
+        Main leader coroutine
+
+        This starts all of the leader coros and registers the endpoint on
+        the ApiServer
         """
 
         logger.info("Running rpc.replicate in Leader mode")
@@ -173,29 +231,12 @@ class ReplicateController(RPCHandler):
         logger.info("-" * 15)
 
         self.register_leader_endpoint()
-        self.submit_coroutine(self.leader_loop())
 
-    async def leader_loop(self):
-        """
-        Main leader coroutine
-        At the moment this just broadcasts data that's in the queue to the followers
-        """
         try:
             await self._broadcast_queue_data()
         except Exception as e:
             logger.error("Exception occurred in leader loop: ")
             logger.exception(e)
-
-    def _send_message(self, data: Dict[Any, Any]):
-        """
-        Add data to the internal queue to be broadcasted. This func will block
-        if the queue is full. This is meant to be called in the main thread.
-        """
-
-        if self._queue:
-            self._queue.put(data)
-        else:
-            logger.warning("Can not send data, leader loop has not started yet!")
 
     async def _broadcast_queue_data(self):
         """
@@ -209,6 +250,8 @@ class ReplicateController(RPCHandler):
             while self._running:
                 # Get data from queue
                 data = await async_queue.get()
+
+                logger.info(f"Found data - broadcasting: {data}")
 
                 # Broadcast it to everyone
                 await self.channel_manager.broadcast(data)
@@ -263,6 +306,9 @@ class ReplicateController(RPCHandler):
                 channel = await self.channel_manager.on_connect(websocket)
 
                 # Send initial data here
+                # Data is being broadcasted right away as soon as startup,
+                # we may not have to send initial data at all. Further testing
+                # required.
 
                 # Keep connection open until explicitly closed, and sleep
                 try:
@@ -286,20 +332,15 @@ class ReplicateController(RPCHandler):
 
     # -------------------------------FOLLOWER LOGIC----------------------------
 
-    def start_follower_mode(self):
-        """
-        Start the ReplicateController in Follower mode
-        """
-        logger.info("Starting rpc.replicate in Follower mode")
-
-        self.submit_coroutine(self.follower_loop())
-
     async def follower_loop(self):
         """
         Main follower coroutine
 
-        This starts all of the leader connection coros
+        This starts all of the follower connection coros
         """
+
+        logger.info("Starting rpc.replicate in Follower mode")
+
         try:
             await self._connect_to_leaders()
         except Exception as e:
@@ -307,79 +348,76 @@ class ReplicateController(RPCHandler):
             logger.exception(e)
 
     async def _connect_to_leaders(self):
+        """
+        For each leader in `self.leaders_list` create a connection and
+        listen for data.
+        """
         rpc_lock = asyncio.Lock()
 
         logger.info("Starting connections to Leaders...")
-        await asyncio.wait(
-            [
-                self._handle_leader_connection(leader, rpc_lock)
-                for leader in self.leaders_list
-            ]
-        )
+
+        self.follower_tasks = [
+            self._loop.create_task(self._handle_leader_connection(leader, rpc_lock))
+            for leader in self.leaders_list
+        ]
+        return await asyncio.gather(*self.follower_tasks, return_exceptions=True)
 
     async def _handle_leader_connection(self, leader, lock):
         """
         Given a leader, connect and wait on data. If connection is lost,
         it will attempt to reconnect.
         """
-        url, token = leader["url"], leader["token"]
+        try:
+            url, token = leader["url"], leader["token"]
 
-        websocket_url = f"{url}?token={token}"
+            websocket_url = f"{url}?token={token}"
 
-        logger.info(f"Attempting to connect to leader at: {url}")
-        # TODO: limit the amount of connection retries
-        while True:
-            try:
-                async with websockets.connect(websocket_url) as ws:
-                    channel = await self.channel_manager.on_connect(ws)
-                    while True:
-                        try:
-                            data = await asyncio.wait_for(
-                                channel.recv(),
-                                timeout=self.reply_timeout
-                            )
-                        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
-                            # We haven't received data yet. Just check the connection and continue.
+            logger.info(f"Attempting to connect to leader at: {url}")
+            # TODO: limit the amount of connection retries
+            while True:
+                try:
+                    async with websockets.connect(websocket_url) as ws:
+                        channel = await self.channel_manager.on_connect(ws)
+                        while True:
                             try:
-                                # ping
-                                ping = await channel.ping()
-                                await asyncio.wait_for(ping, timeout=self.ping_timeout)
-                                logger.info(f"Connection to {url} still alive...")
-                                continue
-                            except Exception:
-                                logger.info(f"Ping error {url} - retrying in {self.sleep_time}s")
-                                asyncio.sleep(self.sleep_time)
-                                break
+                                data = await asyncio.wait_for(
+                                    channel.recv(),
+                                    timeout=self.reply_timeout
+                                )
+                            except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                                # We haven't received data yet. Check the connection and continue.
+                                try:
+                                    # ping
+                                    ping = await channel.ping()
+                                    await asyncio.wait_for(ping, timeout=self.ping_timeout)
+                                    logger.debug(f"Connection to {url} still alive...")
+                                    continue
+                                except Exception:
+                                    logger.info(
+                                        f"Ping error {url} - retrying in {self.sleep_time}s")
+                                    asyncio.sleep(self.sleep_time)
+                                    break
 
-                        with lock:
-                            # Should we have a lock here?
-                            await self._handle_leader_message(data)
+                            async with lock:
+                                # Acquire lock so only 1 coro handling at a time
+                                # as we might call the RPC module in the main thread
+                                await self._handle_leader_message(data)
 
-            except socket.gaierror:
-                logger.info(f"Socket error - retrying connection in {self.sleep_time}s")
-                await asyncio.sleep(self.sleep_time)
-                continue
-            except ConnectionRefusedError:
-                logger.info(f"Connection Refused - retrying connection in {self.sleep_time}s")
-                await asyncio.sleep(self.sleep_time)
-                continue
+                except socket.gaierror:
+                    logger.info(f"Socket error - retrying connection in {self.sleep_time}s")
+                    await asyncio.sleep(self.sleep_time)
+                    continue
+                except ConnectionRefusedError:
+                    logger.info(f"Connection Refused - retrying connection in {self.sleep_time}s")
+                    await asyncio.sleep(self.sleep_time)
+                    continue
+
+        except asyncio.CancelledError:
+            pass
 
     async def _handle_leader_message(self, message):
-        type = message.get("type")
+        type = message.get('data_type')
+        data = message.get('data')
 
-        message_type_handlers = {
-            LeaderMessageType.Pairlist.value: self._handle_pairlist_message,
-            LeaderMessageType.Dataframe.value: self._handle_dataframe_message
-        }
-
-        handler = message_type_handlers.get(type, self._handle_default_message)
-        return await handler(message)
-
-    async def _handle_default_message(self, message):
-        logger.info(f"Default message handled: {message}")
-
-    async def _handle_pairlist_message(self, message):
-        logger.info(f"Pairlist message handled: {message}")
-
-    async def _handle_dataframe_message(self, message):
-        logger.info(f"Dataframe message handled: {message}")
+        if type == LeaderMessageType.whitelist:
+            logger.info(f"Received whitelist from Leader: {data}")

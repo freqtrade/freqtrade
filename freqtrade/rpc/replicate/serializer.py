@@ -33,10 +33,10 @@ class WebSocketSerializer(ABC):
 
 
 class JSONWebSocketSerializer(WebSocketSerializer):
-    def _serialize(self, data: bytes) -> bytes:
+    def _serialize(self, data):
         # json expects string not bytes
-        return json.dumps(data.decode()).encode()
+        return json.dumps(data)
 
-    def _deserialize(self, data: bytes) -> bytes:
+    def _deserialize(self, data):
         # The WebSocketSerializer gives bytes not string
-        return json.loads(data).encode()
+        return json.loads(data)

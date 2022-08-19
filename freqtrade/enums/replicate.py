@@ -7,5 +7,4 @@ class ReplicateModeType(str, Enum):
 
 
 class LeaderMessageType(str, Enum):
-    Pairlist = "pairlist"
-    Dataframe = "dataframe"
+    whitelist = "whitelist"

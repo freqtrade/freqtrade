@@ -75,6 +75,8 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
+        self.replicate_controller = None
+
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
         # so anything in the Freqtradebot instance should be ready (initialized), including
@@ -264,6 +266,17 @@ class FreqtradeBot(LoggingMixin):
             # Extend active-pair whitelist with pairs of open trades
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+
+        # If replicate leader, broadcast whitelist data
+        if self.replicate_controller:
+            if self.replicate_controller.is_leader():
+                self.replicate_controller.send_message(
+                    {
+                        "data_type": "whitelist",
+                        "data": _whitelist
+                    }
+                )
+
         return _whitelist
 
     def get_free_open_trades(self) -> int:

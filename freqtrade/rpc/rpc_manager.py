@@ -59,6 +59,9 @@ class RPCManager:
                 replicate_rpc = ReplicateController(self._rpc, config, apiserver)
                 self.registered_modules.append(replicate_rpc)
 
+                # Attach the controller to FreqTrade
+                freqtrade.replicate_controller = replicate_rpc
+
             apiserver.start_api()
 
     def cleanup(self) -> None:

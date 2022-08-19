@@ -1,8 +1,12 @@
+import logging
 from typing import Type
 
 from freqtrade.rpc.replicate.proxy import WebSocketProxy
 from freqtrade.rpc.replicate.serializer import JSONWebSocketSerializer, WebSocketSerializer
 from freqtrade.rpc.replicate.types import WebSocketType
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketChannel:
@@ -85,9 +89,12 @@ class ChannelManager:
         """
         if websocket in self.channels.keys():
             channel = self.channels[websocket]
+
+            logger.debug(f"Disconnecting channel - {channel}")
+
             if not channel.is_closed():
                 await channel.close()
-            del channel
+            del self.channels[websocket]
 
     async def disconnect_all(self):
         """
@@ -102,5 +109,15 @@ class ChannelManager:
 
         :param data: The data to send
         """
-        for channel in self.channels.values():
-            await channel.send(data)
+        for websocket, channel in self.channels.items():
+            try:
+                await channel.send(data)
+            except RuntimeError:
+                # Handle cannot send after close cases
+                await self.on_disconnect(websocket)
+
+    def has_channels(self):
+        """
+        Flag for more than 0 channels
+        """
+        return len(self.channels) > 0

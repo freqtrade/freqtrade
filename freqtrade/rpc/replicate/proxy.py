@@ -1,11 +1,9 @@
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
 from fastapi import WebSocket as FastAPIWebSocket
 from websockets import WebSocketClientProtocol as WebSocket
 
-
-if TYPE_CHECKING:
-    from freqtrade.rpc.replicate.types import WebSocketType
+from freqtrade.rpc.replicate.types import WebSocketType
 
 
 class WebSocketProxy:
@@ -21,6 +19,9 @@ class WebSocketProxy:
         """
         Send data on the wrapped websocket
         """
+        if isinstance(data, str):
+            data = data.encode()
+
         if hasattr(self._websocket, "send_bytes"):
             await self._websocket.send_bytes(data)
         else:
