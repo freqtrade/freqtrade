@@ -374,6 +374,7 @@ usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--data-format-ohlcv {json,jsongz,hdf5}]
                            [-p PAIRS [PAIRS ...]]
                            [--trading-mode {spot,margin,futures}]
+                           [--show-timerange]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -387,6 +388,8 @@ optional arguments:
                         separated.
   --trading-mode {spot,margin,futures}
                         Select Trading mode
+  --show-timerange      Show timerange available for available data. (May take
+                        a while to calculate).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
