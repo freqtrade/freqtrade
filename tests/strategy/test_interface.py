@@ -12,7 +12,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
+from freqtrade.enums.hyperoptstate import HyperoptState
 from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
@@ -859,7 +861,9 @@ def test_strategy_safe_wrapper_trade_copy(fee):
 
 
 def test_hyperopt_parameters():
+    HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
     from skopt.space import Categorical, Integer, Real
+
     with pytest.raises(OperationalException, match=r"Name is determined.*"):
         IntParameter(low=0, high=5, default=1, name='hello')
 
@@ -936,6 +940,12 @@ def test_hyperopt_parameters():
     assert len(list(boolpar.range)) == 2
 
     assert list(boolpar.range) == [True, False]
+
+    HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
+    assert len(list(intpar.range)) == 1
+    assert len(list(fltpar.range)) == 1
+    assert len(list(catpar.range)) == 1
+    assert len(list(boolpar.range)) == 1
 
 
 def test_auto_hyperopt_interface(default_conf):
