@@ -821,6 +821,17 @@ class FreqaiDataKitchen:
         self.data_dictionary[f'{set_}_features'] = features.iloc[no_prev_pts:]
         self.data_dictionary[f'{set_}_labels'] = labels.iloc[no_prev_pts:]
 
+    def add_noise_to_training_features(self) -> None:
+        """
+        Add noise to train features to reduce the risk of overfitting.
+        """
+        mu = 0  # no shift
+        sigma = self.freqai_config["feature_parameters"]["noise_standard_deviation"]
+        compute_df = self.data_dictionary['train_features']
+        noise = np.random.normal(mu, sigma, [compute_df.shape[0], compute_df.shape[1]])
+        self.data_dictionary['train_features'] += noise
+        return
+
     def find_features(self, dataframe: DataFrame) -> None:
         """
         Find features in the strategy provided dataframe

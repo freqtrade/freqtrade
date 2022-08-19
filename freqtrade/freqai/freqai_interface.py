@@ -399,10 +399,9 @@ class IFreqaiModel(ABC):
 
     def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
         """
-        Base data cleaning method for train
-        Any function inside this method should drop training data points from the filtered_dataframe
-        based on user decided logic. See FreqaiDataKitchen::use_SVM_to_remove_outliers() for an
-        example of how outlier data points are dropped from the dataframe used for training.
+        Base data cleaning method for train.
+        Functions here improve/modify the input data by identifying outliers,
+        computing additional metrics, adding noise, reducing dimensionality etc.
         """
 
         ft_params = self.freqai_info["feature_parameters"]
@@ -431,16 +430,13 @@ class IFreqaiModel(ABC):
             if self.freqai_info["data_split_parameters"]["test_size"] > 0:
                 dk.compute_inlier_metric(set_='test')
 
+        if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
+            dk.add_noise_to_training_features()
+
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
-        These functions each modify dk.do_predict, which is a dataframe with equal length
-        to the number of candles coming from and returning to the strategy. Inside do_predict,
-         1 allows prediction and < 0 signals to the strategy that the model is not confident in
-         the prediction.
-         See FreqaiDataKitchen::remove_outliers() for an example
-        of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
-        for buy signals.
+        Functions here are complementary to the functions of data_cleaning_train.
         """
         ft_params = self.freqai_info["feature_parameters"]
 
