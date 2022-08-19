@@ -7,6 +7,9 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from typing import Any, Optional, Sequence, Union
 
+from freqtrade.enums.hyperoptstate import HyperoptState
+from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
+
 
 with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
@@ -61,6 +64,7 @@ class BaseParameter(ABC):
         return (
             self.in_space
             and self.optimize
+            and HyperoptStateContainer.state != HyperoptState.OPTIMIZE
         )
 
 

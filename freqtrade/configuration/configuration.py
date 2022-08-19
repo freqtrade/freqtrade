@@ -302,6 +302,9 @@ class Configuration:
         self._args_to_config(config, argname='spaces',
                              logstring='Parameter -s/--spaces detected: {}')
 
+        self._args_to_config(config, argname='analyze_per_epoch',
+                             logstring='Parameter --analyze-per-epoch detected.')
+
         self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 

@@ -40,7 +40,8 @@ pip install -r requirements-hyperopt.txt
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [--recursive-strategy-search] [-i TIMEFRAME]
+                          [--recursive-strategy-search] [--freqaimodel NAME]
+                          [--freqaimodel-path PATH] [-i TIMEFRAME]
                           [--timerange TIMERANGE]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
@@ -53,7 +54,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
                           [--hyperopt-loss NAME] [--disable-param-export]
-                          [--ignore-missing-spaces]
+                          [--ignore-missing-spaces] [--analyze-per-epoch]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -129,6 +130,7 @@ optional arguments:
   --ignore-missing-spaces, --ignore-unparameterized-spaces
                         Suppress errors for any requested Hyperopt spaces that
                         do not contain any parameters.
+  --analyze-per-epoch   Run populate_indicators once per epoch.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -154,6 +156,10 @@ Strategy arguments:
   --recursive-strategy-search
                         Recursively search for a strategy in the strategies
                         folder.
+  --freqaimodel NAME    Specify a custom freqaimodels.
+  --freqaimodel-path PATH
+                        Specify additional lookup path for freqaimodels.
+
 ```
 
 ### Hyperopt checklist
