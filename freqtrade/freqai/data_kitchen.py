@@ -510,6 +510,7 @@ class FreqaiDataKitchen:
         np.fill_diagonal(pairwise, np.NaN)
         pairwise = pairwise.reshape(-1, 1)
         avg_mean_dist = pairwise[~np.isnan(pairwise)].mean()
+
         return avg_mean_dist
 
     def use_SVM_to_remove_outliers(self, predict: bool) -> None:
