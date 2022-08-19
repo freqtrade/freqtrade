@@ -434,6 +434,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
+    "show_timerange": Arg(
+        '--show-timerange',
+        help='Show timerange available for available data. (May take a while to calculate).',
+        action='store_true',
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '

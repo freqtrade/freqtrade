@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
@@ -177,17 +178,31 @@ def start_list_data(args: Dict[str, Any]) -> None:
         paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]
 
     print(f"Found {len(paircombs)} pair / timeframe combinations.")
-    groupedpair = defaultdict(list)
-    for pair, timeframe, candle_type in sorted(
-        paircombs,
-        key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
-    ):
-        groupedpair[(pair, candle_type)].append(timeframe)
+    if not config.get('show_timerange'):
+        groupedpair = defaultdict(list)
+        for pair, timeframe, candle_type in sorted(
+            paircombs,
+            key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
+        ):
+            groupedpair[(pair, candle_type)].append(timeframe)
 
-    if groupedpair:
+        if groupedpair:
+            print(tabulate([
+                (pair, ', '.join(timeframes), candle_type)
+                for (pair, candle_type), timeframes in groupedpair.items()
+            ],
+                headers=("Pair", "Timeframe", "Type"),
+                tablefmt='psql', stralign='right'))
+    else:
+        paircombs1 = [(
+            pair, timeframe, candle_type,
+            *dhc.ohlcv_data_min_max(pair, timeframe, candle_type)
+        ) for pair, timeframe, candle_type in paircombs]
         print(tabulate([
-            (pair, ', '.join(timeframes), candle_type)
-            for (pair, candle_type), timeframes in groupedpair.items()
-        ],
-            headers=("Pair", "Timeframe", "Type"),
+            (pair, timeframe, candle_type,
+                start.strftime(DATETIME_PRINT_FORMAT),
+                end.strftime(DATETIME_PRINT_FORMAT))
+            for pair, timeframe, candle_type, start, end in paircombs1
+            ],
+            headers=("Pair", "Timeframe", "Type", 'From', 'To'),
             tablefmt='psql', stralign='right'))
