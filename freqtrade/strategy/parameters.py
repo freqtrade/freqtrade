@@ -57,6 +57,12 @@ class BaseParameter(ABC):
         Get-space - will be used by Hyperopt to get the hyperopt Space
         """
 
+    def can_optimize(self):
+        return (
+            self.in_space
+            and self.optimize
+        )
+
 
 class NumericParameter(BaseParameter):
     """ Internal parameter used for Numeric purposes """
@@ -133,7 +139,7 @@ class IntParameter(NumericParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.in_space and self.optimize:
+        if self.can_optimize():
             # Scikit-optimize ranges are "inclusive", while python's "range" is exclusive
             return range(self.low, self.high + 1)
         else:
@@ -212,7 +218,7 @@ class DecimalParameter(NumericParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.in_space and self.optimize:
+        if self.can_optimize():
             low = int(self.low * pow(10, self._decimals))
             high = int(self.high * pow(10, self._decimals)) + 1
             return [round(n * pow(0.1, self._decimals), self._decimals) for n in range(low, high)]
@@ -261,7 +267,7 @@ class CategoricalParameter(BaseParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.in_space and self.optimize:
+        if self.can_optimize():
             return self.opt_range
         else:
             return [self.value]
