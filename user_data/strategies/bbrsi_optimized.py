@@ -8,7 +8,7 @@ import numpy  # noqa
 from wao.wao_strategy import WAOStrategy
 
 
-class bbrsi_scalp(WAOStrategy):
+class bbrsi_optimized(WAOStrategy):
     brain = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
