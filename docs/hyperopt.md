@@ -191,7 +191,7 @@ Rarely you may also need to create a [nested class](advanced-hyperopt.md#overrid
 
 ### Hyperopt execution logic
 
-Hyperopt will first load your data into memory and will then run `populate_indicators()` once per Pair to generate all indicators.
+Hyperopt will first load your data into memory and will then run `populate_indicators()` once per Pair to generate all indicators, unless `--analyze-per-epoch` is specified.
 
 Hyperopt will then spawn into different processes (number of processors, or `-j <n>`), and run backtesting over and over again, changing the parameters that are part of the `--spaces` defined.
 
@@ -434,7 +434,8 @@ While this strategy is most likely too simple to provide consistent profit, it s
 ??? Hint "Performance tip"
     By doing the calculation of all possible indicators in `populate_indicators()`, the calculation of the indicator happens only once for every parameter.  
     While this may slow down the hyperopt startup speed, the overall performance will increase as the Hyperopt execution itself may pick the same value for multiple epochs (changing other values).
-    You should however try to use space ranges as small as possible. Every new column will require more memory, and every possibility hyperopt can try will increase the search space.
+    As this also has Performance implications, hyperopt provides `--analyze-per-epoch` - which will move the execution of `populate_indicators()` to the epoch process. This will implicitly also change the `.range` functionality to only return the actually used value.
+    You should however try to use space ranges as small as possible. 
 
 ## Optimizing protections
 
@@ -885,6 +886,7 @@ To combat these, you have multiple options:
 * Avoid using `--timeframe-detail` (this loads a lot of additional data into memory).
 * Reduce the number of parallel processes (`-j <n>`).
 * Increase the memory of your machine.
+* Use `--analyze-per-epoch` if you're using a lot of parameters with `.range` functionality.
 
 
 ## The objective has been evaluated at this point before.
