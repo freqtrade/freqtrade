@@ -30,7 +30,7 @@ class JsonDataHandler(IDataHandler):
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
         :param trading_mode: trading-mode to be used
-        :return: List of Tuples of (pair, timeframe)
+        :return: List of Tuples of (pair, timeframe, CandleType)
         """
         if trading_mode == 'futures':
             datadir = datadir.joinpath('futures')
