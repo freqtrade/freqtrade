@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Optional, Tuple, Type
 
 from pandas import DataFrame
 
@@ -83,6 +83,18 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
+
+    def ohlcv_data_min_max(self, pair: str, timeframe: str,
+                           candle_type: CandleType) -> Tuple[datetime, datetime]:
+        """
+        Returns the min and max timestamp for the given pair and timeframe.
+        :param pair: Pair to get min/max for
+        :param timeframe: Timeframe to get min/max for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :return: (min, max)
+        """
+        data = self._ohlcv_load(pair, timeframe, None, candle_type)
+        return data.iloc[0]['date'].to_pydatetime(), data.iloc[-1]['date'].to_pydatetime()
 
     @abstractmethod
     def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange],

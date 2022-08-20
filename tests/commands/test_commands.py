@@ -1430,6 +1430,27 @@ def test_start_list_data(testdatadir, capsys):
     assert "\n|      XRP/USDT |          1h |      futures |\n" in captured.out
     assert "\n|      XRP/USDT |      1h, 8h |         mark |\n" in captured.out
 
+    args = [
+        "list-data",
+        "--data-format-ohlcv",
+        "json",
+        "--pairs", "XRP/ETH",
+        "--datadir",
+        str(testdatadir),
+        "--show-timerange",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found 2 pair / timeframe combinations." in captured.out
+    assert ("\n|    Pair |   Timeframe |   Type |                From |                  To |\n"
+            in captured.out)
+    assert "UNITTEST/BTC" not in captured.out
+    assert (
+            "\n| XRP/ETH |          1m |   spot | 2019-10-11 00:00:00 | 2019-10-13 11:19:00 |\n"
+            in captured.out)
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_show_trades(mocker, fee, capsys, caplog):
