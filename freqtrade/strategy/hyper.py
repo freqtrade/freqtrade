@@ -112,10 +112,13 @@ class HyperStrategyMixin:
         self._ft_load_params(protection_params, 'protection', hyperopt)
 
     def load_params_from_file(self) -> Dict:
-        filename_str = getattr(self, '__file__', '')
-        if not filename_str:
-            return {}
+        filename_str = self.__class__.__name__
         filename = Path(filename_str).with_suffix('.json')
+        if not filename.is_file():
+            filename_str = getattr(self, '__file__', '')
+            if not filename_str:
+                return {}
+            filename = Path(filename_str).with_suffix('.json')
 
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
