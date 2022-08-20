@@ -35,16 +35,11 @@ def hyperopt_serializer(x):
 
 class HyperoptStateContainer():
     """ Singleton class to track state of hyperopt"""
-    __state = HyperoptState.OPTIMIZE
+    state: HyperoptState = HyperoptState.OPTIMIZE
 
     @classmethod
     def set_state(cls, value: HyperoptState):
-        cls.__state = value
-
-    @classmethod
-    @property
-    def state(cls) -> HyperoptState:
-        return cls.__state
+        cls.state = value
 
 
 class HyperoptTools():
