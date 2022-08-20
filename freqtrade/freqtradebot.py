@@ -17,8 +17,8 @@ from freqtrade.constants import BuySell, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, SignalDirection,
-                             State, TradingMode)
+from freqtrade.enums import (ExitCheckTuple, ExitType, LeaderMessageType, RPCMessageType, RunMode,
+                             SignalDirection, State, TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -257,6 +257,22 @@ class FreqtradeBot(LoggingMixin):
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
 
+        # If replicate leader, broadcast whitelist data
+        # Should we broadcast before trade pairs are added? What if
+        # the follower doesn't have trades with those pairs. They would be added for
+        # no reason.
+
+        # Or should this class be made available to the PairListManager and ran
+        # when filter_pairlist is called?
+        if self.replicate_controller:
+            if self.replicate_controller.is_leader():
+                self.replicate_controller.send_message(
+                    {
+                        "data_type": LeaderMessageType.pairlist,
+                        "data": _whitelist
+                    }
+                )
+
         # Calculating Edge positioning
         if self.edge:
             self.edge.calculate(_whitelist)
@@ -266,16 +282,6 @@ class FreqtradeBot(LoggingMixin):
             # Extend active-pair whitelist with pairs of open trades
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
-
-        # If replicate leader, broadcast whitelist data
-        if self.replicate_controller:
-            if self.replicate_controller.is_leader():
-                self.replicate_controller.send_message(
-                    {
-                        "data_type": "whitelist",
-                        "data": _whitelist
-                    }
-                )
 
         return _whitelist
 

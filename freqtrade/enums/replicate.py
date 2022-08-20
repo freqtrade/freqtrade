@@ -7,4 +7,4 @@ class ReplicateModeType(str, Enum):
 
 
 class LeaderMessageType(str, Enum):
-    whitelist = "whitelist"
+    pairlist = "pairlist"

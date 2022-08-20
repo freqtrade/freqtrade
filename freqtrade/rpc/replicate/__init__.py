@@ -40,6 +40,7 @@ class ReplicateController(RPCHandler):
         """
         super().__init__(rpc, config)
 
+        self.freqtrade = rpc._freqtrade
         self.api_server = api_server
 
         if not self.api_server:
@@ -122,7 +123,6 @@ class ReplicateController(RPCHandler):
             raise RuntimeError("Loop must be started before any function can"
                                " be submitted")
 
-        logger.debug(f"Running coroutine {repr(coroutine)} in loop")
         try:
             return asyncio.run_coroutine_threadsafe(coroutine, self._loop)
         except Exception as e:
@@ -185,6 +185,8 @@ class ReplicateController(RPCHandler):
     def send_message(self, msg: Dict[str, Any]) -> None:
         """ Push message through """
 
+        # We should probably do some type of schema validation here
+
         if self.channel_manager.has_channels():
             self._send_message(msg)
         else:
@@ -199,7 +201,7 @@ class ReplicateController(RPCHandler):
 
         if self._queue:
             queue = self._queue.sync_q
-            queue.put(msg)
+            queue.put(msg)  # This will block if the queue is full
         else:
             logger.warning("Can not send data, leader loop has not started yet!")
 
@@ -235,7 +237,7 @@ class ReplicateController(RPCHandler):
         try:
             await self._broadcast_queue_data()
         except Exception as e:
-            logger.error("Exception occurred in leader loop: ")
+            logger.error("Exception occurred in Leader loop: ")
             logger.exception(e)
 
     async def _broadcast_queue_data(self):
@@ -342,10 +344,14 @@ class ReplicateController(RPCHandler):
         logger.info("Starting rpc.replicate in Follower mode")
 
         try:
-            await self._connect_to_leaders()
+            results = await self._connect_to_leaders()
         except Exception as e:
-            logger.error("Exception occurred in follower loop: ")
+            logger.error("Exception occurred in Follower loop: ")
             logger.exception(e)
+        finally:
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.debug(f"Exception in Follower loop: {result}")
 
     async def _connect_to_leaders(self):
         """
@@ -372,7 +378,7 @@ class ReplicateController(RPCHandler):
 
             websocket_url = f"{url}?token={token}"
 
-            logger.info(f"Attempting to connect to leader at: {url}")
+            logger.info(f"Attempting to connect to Leader at: {url}")
             # TODO: limit the amount of connection retries
             while True:
                 try:
@@ -415,9 +421,12 @@ class ReplicateController(RPCHandler):
         except asyncio.CancelledError:
             pass
 
-    async def _handle_leader_message(self, message):
+    async def _handle_leader_message(self, message: Dict[str, Any]):
         type = message.get('data_type')
         data = message.get('data')
 
-        if type == LeaderMessageType.whitelist:
-            logger.info(f"Received whitelist from Leader: {data}")
+        logger.info(f"Received message from Leader: {type} - {data}")
+
+        if type == LeaderMessageType.pairlist:
+            # Add the data to the ExternalPairlist
+            self.freqtrade.pairlists._pairlist_handlers[0].add_pairlist_data(data)
