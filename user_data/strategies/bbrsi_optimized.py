@@ -17,24 +17,23 @@ class bbrsi_optimized(WAOStrategy):
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
 
-    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
+    timeframe = '5m'
+
+    # ROI table:
     minimal_roi = {
-        "0": 0.181,
-        "32": 0.073,
-        "85": 0.013,
-        "196": 0
+        "0": 0.226,
+        "33": 0.048,
+        "81": 0.01,
+        "176": 0
     }
 
     # Stoploss:
-    stoploss = -0.301
-
-    timeframe = '5m'
+    stoploss = -0.225
 
     # Trailing stop:
     trailing_stop = True
-    trailing_stop_positive = 0.11
-    trailing_stop_positive_offset = 0.116
+    trailing_stop_positive = 0.197
+    trailing_stop_positive_offset = 0.229
     trailing_only_offset_is_reached = True
 
     # run "populate_indicators" only for new candle
