@@ -1,12 +1,12 @@
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 import talib.abstract as ta
-from freqtrade.strategy import (DecimalParameter, IntParameter, IStrategy,
-                                merge_informative_pair)
 from pandas import DataFrame
+
+from freqtrade.strategy import IntParameter, IStrategy, merge_informative_pair
+
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
     sell_p2 = IntParameter(7, 21, default=10)
     sell_p3 = IntParameter(7, 21, default=10)
 
-    # FreqAI required function, leave as is or add you additional informatives to existing structure.
+    # FreqAI required function, leave as is or add additional informatives to existing structure.
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
         corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
@@ -120,7 +120,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
         """
-        User feeds these indicators to FreqAI to train a classifier to decide 
+        User feeds these indicators to FreqAI to train a classifier to decide
         if the market will go up or down.
 
         :param pair: pair to be used as informative
@@ -177,6 +177,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         return df
 
+    # flake8: noqa: C901
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         # User creates their own custom strat here. Present example is a supertrend
@@ -280,12 +281,6 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         return True
 
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
-                 **kwargs) -> float:
-
-        return 1
-
     """
     Supertrend Indicator; adapted for freqtrade, optimized by the math genius.
     from: Perkmeister#2394
@@ -312,10 +307,10 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         # Compute final upper and lower bands
         for i in range(period, last_row + 1):
-            FINAL_UB[i] = BASIC_UB[i] if BASIC_UB[i] < FINAL_UB[i -
-                                                                1] or CLOSE[i - 1] > FINAL_UB[i - 1] else FINAL_UB[i - 1]
-            FINAL_LB[i] = BASIC_LB[i] if BASIC_LB[i] > FINAL_LB[i -
-                                                                1] or CLOSE[i - 1] < FINAL_LB[i - 1] else FINAL_LB[i - 1]
+            FINAL_UB[i] = (BASIC_UB[i] if BASIC_UB[i] < FINAL_UB[i - 1]
+                           or CLOSE[i - 1] > FINAL_UB[i - 1] else FINAL_UB[i - 1])
+            FINAL_LB[i] = (BASIC_LB[i] if BASIC_LB[i] > FINAL_LB[i - 1]
+                           or CLOSE[i - 1] < FINAL_LB[i - 1] else FINAL_LB[i - 1])
 
         # Set the Supertrend value
         for i in range(period, last_row + 1):
