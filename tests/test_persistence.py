@@ -1387,6 +1387,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
+    assert log_has("Database migration finished.", caplog)
     assert pytest.approx(trade.open_trade_value) == trade._calc_open_trade_value(
         trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
@@ -1885,6 +1886,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
     Trade.query.session.add(trade)
+    Trade.commit()
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.06)
@@ -1946,6 +1948,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
     assert trade.initial_stop_loss == 0.98
     assert trade.initial_stop_loss_pct == -0.1
     Trade.query.session.add(trade)
+    Trade.commit()
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.15)
@@ -2007,6 +2010,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade.initial_stop_loss == 1.02
     assert trade.initial_stop_loss_pct == -0.1
     Trade.query.session.add(trade)
+    Trade.commit()
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
     trades = Trade.get_open_trades()

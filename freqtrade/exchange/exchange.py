@@ -2377,7 +2377,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            res = self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2405,7 +2406,6 @@ class Exchange:
         if self.trading_mode in TradingMode.SPOT:
             return None
         elif (
-            self.margin_mode == MarginMode.ISOLATED and
             self.trading_mode == TradingMode.FUTURES
         ):
             wallet_balance = (amount * open_rate) / leverage
@@ -2421,7 +2421,7 @@ class Exchange:
             return isolated_liq
         else:
             raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
+                "Freqtrade currently only supports futures for leverage trading.")
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
@@ -2441,7 +2441,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(margin_mode.value, pair, params)
+            res = self._api.set_margin_mode(margin_mode.value, pair, params)
+            self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2599,7 +2600,7 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
+        elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
                 f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
 

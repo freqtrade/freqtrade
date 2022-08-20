@@ -677,6 +677,7 @@ def test_process_trade_no_whitelist_pair(default_conf_usdt, ticker_usdt, limit_b
         open_rate=0.001,
         exchange='binance',
     ))
+    Trade.commit()
 
     assert pair not in freqtrade.active_pair_whitelist
     freqtrade.process()
@@ -2414,6 +2415,7 @@ def test_manage_open_orders_entry_usercustom(
     open_trade.orders[0].side = 'sell' if is_short else 'buy'
     open_trade.orders[0].ft_order_side = 'sell' if is_short else 'buy'
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # Ensure default is to return empty (so not mocked yet)
     freqtrade.manage_open_orders()
@@ -2472,6 +2474,7 @@ def test_manage_open_orders_entry(
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1234)
@@ -2509,6 +2512,7 @@ def test_adjust_entry_cancel(
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # Timeout to not interfere
     freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
@@ -2549,6 +2553,7 @@ def test_adjust_entry_maintain_replace(
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # Timeout to not interfere
     freqtrade.strategy.ft_check_timed_out = MagicMock(return_value=False)
@@ -2601,6 +2606,7 @@ def test_check_handle_cancelled_buy(
     open_trade.orders = []
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
@@ -2631,6 +2637,7 @@ def test_manage_open_orders_buy_exception(
 
     open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
@@ -2672,6 +2679,7 @@ def test_manage_open_orders_exit_usercustom(
     open_trade_usdt.is_open = False
 
     Trade.query.session.add(open_trade_usdt)
+    Trade.commit()
     # Ensure default is false
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
@@ -2754,6 +2762,7 @@ def test_manage_open_orders_exit(
     open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
+    Trade.commit()
 
     freqtrade.strategy.check_exit_timeout = MagicMock(return_value=False)
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=False)
@@ -2794,6 +2803,7 @@ def test_check_handle_cancelled_exit(
     open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
+    Trade.commit()
 
     # check it does cancel sell orders over the time limit
     freqtrade.manage_open_orders()
@@ -2830,6 +2840,7 @@ def test_manage_open_orders_partial(
     freqtrade = FreqtradeBot(default_conf_usdt)
     prior_stake = open_trade.stake_amount
     Trade.query.session.add(open_trade)
+    Trade.commit()
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
@@ -2874,6 +2885,7 @@ def test_manage_open_orders_partial_fee(
     open_trade.fee_open = fee()
     open_trade.fee_close = fee()
     Trade.query.session.add(open_trade)
+    Trade.commit()
     # cancelling a half-filled order should update the amount to the bought amount
     # and apply fees if necessary.
     freqtrade.manage_open_orders()
@@ -2923,6 +2935,7 @@ def test_manage_open_orders_partial_except(
     open_trade.fee_open = fee()
     open_trade.fee_close = fee()
     Trade.query.session.add(open_trade)
+    Trade.commit()
     # cancelling a half-filled order should update the amount to the bought amount
     # and apply fees if necessary.
     freqtrade.manage_open_orders()
@@ -2961,6 +2974,7 @@ def test_manage_open_orders_exception(default_conf_usdt, ticker_usdt, open_trade
     freqtrade = FreqtradeBot(default_conf_usdt)
 
     Trade.query.session.add(open_trade_usdt)
+    Trade.commit()
 
     caplog.clear()
     freqtrade.manage_open_orders()

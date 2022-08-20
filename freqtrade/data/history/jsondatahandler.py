@@ -8,9 +8,9 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, TradeList
 from freqtrade.data.converter import trades_dict_to_list
-from freqtrade.enums import CandleType, TradingMode
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 
@@ -22,28 +22,6 @@ class JsonDataHandler(IDataHandler):
 
     _use_zip = False
     _columns = DEFAULT_DATAFRAME_COLUMNS
-
-    @classmethod
-    def ohlcv_get_available_data(
-            cls, datadir: Path, trading_mode: TradingMode) -> ListPairsWithTimeframes:
-        """
-        Returns a list of all pairs with ohlcv data available in this datadir
-        :param datadir: Directory to search for ohlcv files
-        :param trading_mode: trading-mode to be used
-        :return: List of Tuples of (pair, timeframe)
-        """
-        if trading_mode == 'futures':
-            datadir = datadir.joinpath('futures')
-        _tmp = [
-            re.search(
-                cls._OHLCV_REGEX, p.name
-            ) for p in datadir.glob(f"*.{cls._get_file_extension()}")]
-        return [
-            (
-                cls.rebuild_pair_from_filename(match[1]),
-                cls.rebuild_timeframe_from_filename(match[2]),
-                CandleType.from_string(match[3])
-            ) for match in _tmp if match and len(match.groups()) > 1]
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:

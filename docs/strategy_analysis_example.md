@@ -14,7 +14,7 @@ from freqtrade.configuration import Configuration
 
 # Initialize empty configuration object
 config = Configuration.from_files([])
-# Optionally, use existing configuration file
+# Optionally (recommended), use existing configuration file
 # config = Configuration.from_files(["config.json"])
 
 # Define some constants
@@ -22,7 +22,7 @@ config["timeframe"] = "5m"
 # Name of the strategy class
 config["strategy"] = "SampleStrategy"
 # Location of the data
-data_location = Path(config['user_data_dir'], 'data', 'binance')
+data_location = config['datadir']
 # Pair to analyze - Only use one pair here
 pair = "BTC/USDT"
 ```
