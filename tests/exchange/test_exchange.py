@@ -4791,6 +4791,20 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
     )
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('exchange_name', EXCHANGES)
+async def test_get_market_leverage_tiers(mocker, default_conf, exchange_name):
+    default_conf['exchange']['name'] = exchange_name
+    await async_ccxt_exception(
+        mocker,
+        default_conf,
+        MagicMock(),
+        "get_market_leverage_tiers",
+        "fetch_market_leverage_tiers",
+        symbol='BTC/USDT:USDT'
+    )
+
+
 def test_parse_leverage_tier(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
 

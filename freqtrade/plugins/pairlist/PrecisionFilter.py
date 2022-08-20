@@ -51,6 +51,11 @@ class PrecisionFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
+        if ticker.get('last', None) is None:
+            self.log_once(f"Removed {ticker['symbol']} from whitelist, because "
+                          "ticker['last'] is empty (Usually no trade in the last 24h).",
+                          logger.info)
+            return False
         stop_price = ticker['last'] * self._stoploss
 
         # Adjust stop-prices to precision

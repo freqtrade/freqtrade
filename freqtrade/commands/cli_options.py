@@ -367,7 +367,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='BASE_CURRENCY',
     ),
     "trading_mode": Arg(
-        '--trading-mode',
+        '--trading-mode', '--tradingmode',
         help='Select Trading mode',
         choices=constants.TRADING_MODES,
     ),
@@ -433,6 +433,11 @@ AVAILABLE_CLI_OPTIONS = {
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
+    ),
+    "show_timerange": Arg(
+        '--show-timerange',
+        help='Show timerange available for available data. (May take a while to calculate).',
+        action='store_true',
     ),
     "exchange": Arg(
         '--exchange',

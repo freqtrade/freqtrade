@@ -418,7 +418,7 @@ class FreqtradeBot(LoggingMixin):
 
         whitelist = copy.deepcopy(self.active_pair_whitelist)
         if not whitelist:
-            logger.info("Active pair whitelist is empty.")
+            self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
         for trade in Trade.get_open_trades():
@@ -427,8 +427,8 @@ class FreqtradeBot(LoggingMixin):
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
-            logger.info("No currency pair in active pair whitelist, "
-                        "but checking to exit open trades.")
+            self.log_once("No currency pair in active pair whitelist, "
+                          "but checking to exit open trades.", logger.info)
             return trades_created
         if PairLocks.is_global_lock(side='*'):
             # This only checks for total locks (both sides).

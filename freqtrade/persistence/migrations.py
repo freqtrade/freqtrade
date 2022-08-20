@@ -307,7 +307,9 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Migrates both trades and orders table!
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'stop_price')):
+    migrating = False
     if not has_column(cols_trades, 'precision_mode'):
+        migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
@@ -315,6 +317,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
             order_table_bak_name, cols_orders)
 
     if not has_column(cols_pairlocks, 'side'):
+        migrating = True
         logger.info(f"Running database migration for pairlocks - "
                     f"backup: {pairlock_table_bak_name}")
 
@@ -329,3 +332,6 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     set_sqlite_to_wal(engine)
     fix_old_dry_orders(engine)
+
+    if migrating:
+        logger.info("Database migration finished.")
