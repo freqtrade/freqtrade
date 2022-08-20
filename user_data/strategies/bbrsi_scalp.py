@@ -17,30 +17,25 @@ class bbrsi_scalp(WAOStrategy):
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
 
-    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
-    # minimal_roi = {
-    #     "0": 0.07
-    # }
     minimal_roi = {
-        "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
-        "220": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "200": 0.007,  # Exit after 40 minutes if there is at least 1% profit
-        "180": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-        "160": 0.009,  # Exit after 40 minutes if there is at least 1% profit
-        "140": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
-        "120": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-        "80": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.014,  # Exit immediately if there is at least 2% profit
-        "40": 0.016,  # Exit immediately if there is at least 2% profit
-        "20": 0.018,  # Exit immediately if there is at least 2% profit
+        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
+        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
+        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
+        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
+        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
+        "45": 0.014,  # Exit immediately if there is at least 2% profit
+        "30": 0.016,  # Exit immediately if there is at least 2% profit
+        "15": 0.018,  # Exit immediately if there is at least 2% profit
         "0": 0.020,  # Exit immediately if there is at least 2% profit
     }
 
     # Optimal stoploss designed for the strategy
     # This attribute will be overridden if the config file contains "stoploss"
-    stoploss = -0.035
+    stoploss = -0.01
 
     # Optimal timeframe for the strategy
     timeframe = '5m'
