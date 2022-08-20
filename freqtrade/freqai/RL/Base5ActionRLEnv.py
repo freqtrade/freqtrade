@@ -266,59 +266,28 @@ class Base5ActionRLEnv(gym.Env):
 
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if len(self.close_trade_profit):
-                # aim x2 rw
-                if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                    last_trade_price = self.add_buy_fee(
-                        self.prices.iloc[self._last_trade_tick].open)
-                    current_price = self.add_sell_fee(
-                        self.prices.iloc[self._current_tick].open)
-                    return float((np.log(current_price) - np.log(last_trade_price)) * 2)
-                # less than aim x1 rw
-                elif self.close_trade_profit[-1] < self.profit_aim * self.rr:
-                    last_trade_price = self.add_buy_fee(
-                        self.prices.iloc[self._last_trade_tick].open
-                    )
-                    current_price = self.add_sell_fee(
-                        self.prices.iloc[self._current_tick].open
-                    )
-                    return float(np.log(current_price) - np.log(last_trade_price))
-                # # less than RR SL x2 neg rw
-                # elif self.close_trade_profit[-1] < (self.profit_aim * -1):
-                #     last_trade_price = self.add_buy_fee(
-                #         self.prices.iloc[self._last_trade_tick].open)
-                #     current_price = self.add_sell_fee(
-                #         self.prices.iloc[self._current_tick].open)
-                #     return float((np.log(current_price) - np.log(last_trade_price)) * 2) * -1
+            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(current_price) - np.log(last_trade_price))
+
+        if action == Actions.Long_exit.value and self._position == Positions.Long:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
 
         # close short
         if action == Actions.Short_exit.value and self._position == Positions.Short:
-            if len(self.close_trade_profit):
-                # aim x2 rw
-                if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                    last_trade_price = self.add_sell_fee(
-                        self.prices.iloc[self._last_trade_tick].open
-                    )
-                    current_price = self.add_buy_fee(
-                        self.prices.iloc[self._current_tick].open
-                    )
-                    return float((np.log(last_trade_price) - np.log(current_price)) * 2)
-                # less than aim x1 rw
-                elif self.close_trade_profit[-1] < self.profit_aim * self.rr:
-                    last_trade_price = self.add_sell_fee(
-                        self.prices.iloc[self._last_trade_tick].open
-                    )
-                    current_price = self.add_buy_fee(
-                        self.prices.iloc[self._current_tick].open
-                    )
-                    return float(np.log(last_trade_price) - np.log(current_price))
-                # # less than RR SL x2 neg rw
-                # elif self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                #     last_trade_price = self.add_sell_fee(
-                #         self.prices.iloc[self._last_trade_tick].open)
-                #     current_price = self.add_buy_fee(
-                #         self.prices.iloc[self._current_tick].open)
-                #     return float((np.log(last_trade_price) - np.log(current_price)) * 2) * -1
+            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+            return float(np.log(last_trade_price) - np.log(current_price))
+
+        if action == Actions.Short_exit.value and self._position == Positions.Short:
+            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
+                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
+
         return 0.
 
     def _update_profit(self, action):

@@ -1,17 +1,59 @@
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
-
-import gym
-import torch
+import logging
 import torch as th
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 from stable_baselines3 import DQN
 from stable_baselines3.common.buffers import ReplayBuffer
-from stable_baselines3.common.policies import BasePolicy
-from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor,
-                                                   FlattenExtractor)
-from stable_baselines3.common.type_aliases import GymEnv, Schedule
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from pathlib import Path
 from stable_baselines3.dqn.policies import (CnnPolicy, DQNPolicy, MlpPolicy,
                                             QNetwork)
 from torch import nn
+import gym
+from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor,
+                                                   FlattenExtractor)
+from stable_baselines3.common.type_aliases import GymEnv, Schedule
+from stable_baselines3.common.policies import BasePolicy
+
+logger = logging.getLogger(__name__)
+
+
+class ReinforcementLearnerCustomAgent(BaseReinforcementLearningModel):
+    """
+    User can customize agent by defining the class and using it directly.
+    Here the example is "TDQN"
+    """
+
+    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
+
+        train_df = data_dictionary["train_features"]
+        total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
+
+        policy_kwargs = dict(activation_fn=th.nn.ReLU,
+                             net_arch=[256, 256, 128])
+
+        # TDQN is a custom agent defined below
+        model = TDQN(self.policy_type, self.train_env,
+                     tensorboard_log=Path(dk.data_path / "tensorboard"),
+                     policy_kwargs=policy_kwargs,
+                     **self.freqai_info['model_training_parameters']
+                     )
+
+        model.learn(
+            total_timesteps=int(total_timesteps),
+            callback=self.eval_callback
+        )
+
+        if Path(dk.data_path / "best_model.zip").is_file():
+            logger.info('Callback found a best model.')
+            best_model = self.MODELCLASS.load(dk.data_path / "best_model")
+            return best_model
+
+        logger.info('Couldnt find best model, using final model instead.')
+
+        return model
+
+# User creates their custom agent and networks as shown below
 
 
 def create_mlp_(
@@ -72,7 +114,7 @@ class TDQNetwork(QNetwork):
 
     def init_weights(self, m):
         if type(m) == nn.Linear:
-            torch.nn.init.kaiming_uniform_(m.weight)
+            th.nn.init.kaiming_uniform_(m.weight)
 
 
 class TDQNPolicy(DQNPolicy):
@@ -175,7 +217,7 @@ class TDQN(DQN):
         exploration_initial_eps: float = 1.0,
         exploration_final_eps: float = 0.05,
         max_grad_norm: float = 10,
-        tensorboard_log: Optional[str] = None,
+        tensorboard_log: Optional[Path] = None,
         create_eval_env: bool = False,
         policy_kwargs: Optional[Dict[str, Any]] = None,
         verbose: int = 1,

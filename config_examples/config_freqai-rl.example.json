@@ -55,7 +55,7 @@
     ],
     "freqai": {
         "enabled": true,
-        "model_save_type": "stable_baselines_dqn",
+        "model_save_type": "stable_baselines",
         "conv_width": 10,
         "purge_old_models": true,
         "train_period_days": 10,
@@ -85,8 +85,11 @@
             "verbose": 1
         },
         "rl_config": {
-            "train_cycles": 15,
-            "eval_cycles": 5,
+            "train_cycles": 10,
+            "eval_cycles": 3,
+            "thread_count": 4,
+            "model_type": "PPO",
+            "policy_type": "MlpPolicy",
             "model_reward_parameters": {
                 "rr": 1,
                 "profit_aim": 0.02
