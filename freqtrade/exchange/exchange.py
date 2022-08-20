@@ -2280,6 +2280,8 @@ class Exchange:
     def cache_leverage_tiers(self, tiers: Dict[str, List[Dict]], stake_currency: str) -> None:
 
         filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if not filename.parent.is_dir():
+            filename.parent.mkdir(parents=True)
         data = {
             "updated": datetime.now(timezone.utc),
             "data": tiers,
@@ -2293,7 +2295,6 @@ class Exchange:
             updated = tiers.get('updated')
             if updated:
                 updated_dt = parser.parse(updated)
-                print(updated_dt)
                 if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
                     logger.info("Cached leverage tiers are outdated. Will update.")
                     return None

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import get_mock_coro, get_patched_exchange
+from tests.conftest import get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -267,7 +268,10 @@ def test_additional_exchange_init_okx(default_conf, mocker):
                            "additional_exchange_init", "fetch_accounts")
 
 
-def test_load_leverage_tiers_okx(default_conf, mocker, markets):
+def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, time_machine):
+
+    default_conf['datadir'] = Path(tmpdir)
+    # fd_mock = mocker.patch('freqtrade.exchange.exchange.file_dump_json')
     api_mock = MagicMock()
     type(api_mock).has = PropertyMock(return_value={
         'fetchLeverageTiers': False,
@@ -455,3 +459,21 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets):
             },
         ],
     }
+    filename = (default_conf['datadir'] /
+                f"futures/leverage_tiers_{default_conf['stake_currency']}.json")
+    assert filename.is_file()
+
+    logmsg = 'Cached leverage tiers are outdated. Will update.'
+    assert not log_has(logmsg, caplog)
+
+    api_mock.fetch_market_leverage_tiers.reset_mock()
+
+    exchange.load_leverage_tiers()
+    assert not log_has(logmsg, caplog)
+
+    api_mock.fetch_market_leverage_tiers.call_count == 0
+    # 2 day passes ...
+    time_machine.move_to(datetime.now() + timedelta(days=2))
+    exchange.load_leverage_tiers()
+
+    assert log_has(logmsg, caplog)
