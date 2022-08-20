@@ -454,7 +454,6 @@ class FreqaiDataKitchen:
         logger.info("reduced feature dimension by %s", n_components - n_keep_components)
         logger.info("explained variance %f", np.sum(pca2.explained_variance_ratio_))
         train_components = pca2.transform(self.data_dictionary["train_features"])
-        test_components = pca2.transform(self.data_dictionary["test_features"])
 
         self.data_dictionary["train_features"] = pd.DataFrame(
             data=train_components,
@@ -468,6 +467,7 @@ class FreqaiDataKitchen:
         self.training_features_list = self.data_dictionary["train_features"].columns
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            test_components = pca2.transform(self.data_dictionary["test_features"])
             self.data_dictionary["test_features"] = pd.DataFrame(
                 data=test_components,
                 columns=["PC" + str(i) for i in range(0, n_keep_components)],
@@ -506,7 +506,10 @@ class FreqaiDataKitchen:
         # logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(
             self.data_dictionary["train_features"], n_jobs=self.thread_count)
-        avg_mean_dist = pairwise.mean(axis=1).mean()
+        # remove the diagonal distances which are itself distances ~0
+        np.fill_diagonal(pairwise, np.NaN)
+        pairwise = pairwise.reshape(-1, 1)
+        avg_mean_dist = pairwise[~np.isnan(pairwise)].mean()
 
         return avg_mean_dist
 
