@@ -367,7 +367,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='BASE_CURRENCY',
     ),
     "trading_mode": Arg(
-        '--trading-mode',
+        '--trading-mode', '--tradingmode',
         help='Select Trading mode',
         choices=constants.TRADING_MODES,
     ),
