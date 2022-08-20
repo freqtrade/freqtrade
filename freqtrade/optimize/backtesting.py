@@ -821,7 +821,12 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
-            amount = round((stake_amount / propose_rate) * leverage, 8)
+            amount_p = (stake_amount / propose_rate) * leverage
+            amount = self.exchange._contracts_to_amount(pair, self.exchange.amount_to_precision(
+                pair, self.exchange._amount_to_contracts(pair, amount_p)))
+            # Backcalculate actual stake amount.
+            stake_amount = amount * propose_rate / leverage
+
             is_short = (direction == 'short')
             # Necessary for Margin trading. Disabled until support is enabled.
             # interest_rate = self.exchange.get_interest_rate()
