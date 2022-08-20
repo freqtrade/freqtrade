@@ -1,52 +1,65 @@
 import logging
-from datetime import datetime, timedelta
-from functools import reduce
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import talib.abstract as ta
-from freqtrade.exchange import timeframe_to_prev_date
-from freqtrade.persistence import Trade
 from freqtrade.strategy import (DecimalParameter, IntParameter, IStrategy,
                                 merge_informative_pair)
-from numpy.lib import math
 from pandas import DataFrame
-from technical import qtpylib
 
 logger = logging.getLogger(__name__)
 
 
 class FreqaiExampleHybridStrategy(IStrategy):
     """
-    Example classifier hybrid strategy showing how the user connects their own
-    IFreqaiModel to the strategy. Namely, the user uses:
-    self.freqai.start(dataframe, metadata)
+    Example of a hybrid FreqAI strat, designed to illustrate how a user may employ
+    FreqAI to bolster a typical Freqtrade strategy.
 
-    to make predictions on their data. populate_any_indicators() automatically
-    generates the variety of features indicated by the user in the
-    canonical freqtrade configuration file under config['freqai'].
-    
-    The underlying original supertrend strat is authored by @juankysoriano (Juan Carlos Soriano)
-    * github: https://github.com/juankysoriano/
-    
+    Launching this strategy would be:
+
+    freqtrade trade --strategy FreqaiExampleHyridStrategy --strategy-path freqtrade/templates
+    --freqaimodel CatboostClassifier --config config_examples/config_freqai.example.json
+
+    or the user simply adds this to their config:
+
+    "freqai": {
+        "enabled": true,
+        "purge_old_models": true,
+        "train_period_days": 15,
+        "identifier": "uniqe-id",
+        "feature_parameters": {
+            "include_timeframes": [
+                "3m",
+                "15m",
+                "1h"
+            ],
+            "include_corr_pairlist": [
+                "BTC/USDT",
+                "ETH/USDT"
+            ],
+            "label_period_candles": 20,
+            "include_shifted_candles": 2,
+            "DI_threshold": 0.9,
+            "weight_factor": 0.9,
+            "principal_component_analysis": false,
+            "use_SVM_to_remove_outliers": true,
+            "indicator_max_period_candles": 20,
+            "indicator_periods_candles": [10, 20]
+        },
+        "data_split_parameters": {
+            "test_size": 0.33,
+            "random_state": 1
+        },
+        "model_training_parameters": {
+            "n_estimators": 800
+        }
+    },
+
     This strategy is not designed to be used live
     """
 
     minimal_roi = {"0": 0.1, "30": 0.75, "60": 0.05, "120": 0.025, "240": -1}
-
-    plot_config = {
-        "main_plot": {},
-        "subplots": {
-            "prediction": {"prediction": {"color": "blue"}},
-            "target_roi": {
-                "target_roi": {"color": "brown"},
-            },
-            "do_predict": {
-                "do_predict": {"color": "brown"},
-            },
-        },
-    }
 
     process_only_new_candles = True
     stoploss = -0.1
@@ -54,11 +67,6 @@ class FreqaiExampleHybridStrategy(IStrategy):
     startup_candle_count: int = 300
     can_short = True
 
-    linear_roi_offset = DecimalParameter(
-        0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
-    )
-    max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
-    
     buy_params = {
         "buy_m1": 4,
         "buy_m2": 7,
@@ -77,7 +85,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         "sell_p2": 18,
         "sell_p3": 18,
     }
-    
+
     buy_m1 = IntParameter(1, 7, default=1)
     buy_m2 = IntParameter(1, 7, default=3)
     buy_m3 = IntParameter(1, 7, default=4)
@@ -92,6 +100,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
     sell_p2 = IntParameter(7, 21, default=10)
     sell_p3 = IntParameter(7, 21, default=10)
 
+    # FreqAI required function, leave as is or add you additional informatives to existing structure.
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
         corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
@@ -105,16 +114,15 @@ class FreqaiExampleHybridStrategy(IStrategy):
                 informative_pairs.append((pair, tf))
         return informative_pairs
 
+    # FreqAI required function, user can add or remove indicators, but general structure
+    # must stay the same.
     def populate_any_indicators(
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
         """
-        Function designed to automatically generate, name and merge features
-        from user indicated timeframes in the configuration file. User controls the indicators
-        passed to the training/prediction by prepending indicators with `'%-' + coin `
-        (see convention below). I.e. user should not prepend any supporting metrics
-        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the
-        model.
+        User feeds these indicators to FreqAI to train a classifier to decide 
+        if the market will go up or down.
+
         :param pair: pair to be used as informative
         :param df: strategy dataframe which will receive merges from informatives
         :param tf: timeframe of the dataframe which will modify the feature names
@@ -135,34 +143,14 @@ class FreqaiExampleHybridStrategy(IStrategy):
             informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
             informative[f"%-{coin}sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
             informative[f"%-{coin}ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-
             informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-
-            bollinger = qtpylib.bollinger_bands(
-                qtpylib.typical_price(informative), window=t, stds=2.2
-            )
-            informative[f"{coin}bb_lowerband-period_{t}"] = bollinger["lower"]
-            informative[f"{coin}bb_middleband-period_{t}"] = bollinger["mid"]
-            informative[f"{coin}bb_upperband-period_{t}"] = bollinger["upper"]
-
-            informative[f"%-{coin}bb_width-period_{t}"] = (
-                informative[f"{coin}bb_upperband-period_{t}"]
-                - informative[f"{coin}bb_lowerband-period_{t}"]
-            ) / informative[f"{coin}bb_middleband-period_{t}"]
-            informative[f"%-{coin}close-bb_lower-period_{t}"] = (
-                informative["close"] / informative[f"{coin}bb_lowerband-period_{t}"]
-            )
-
             informative[f"%-{coin}roc-period_{t}"] = ta.ROC(informative, timeperiod=t)
-
             informative[f"%-{coin}relative_volume-period_{t}"] = (
                 informative["volume"] / informative["volume"].rolling(t).mean()
             )
 
-        informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
-        informative[f"%-{coin}raw_volume"] = informative["volume"]
-        informative[f"%-{coin}raw_price"] = informative["close"]
-
+        # FreqAI needs the following lines in order to detect features and automatically
+        # expand upon them.
         indicators = [col for col in informative if col.startswith("%")]
         # This loop duplicates and shifts all indicators to add a sense of recency to data
         for n in range(self.freqai_info["feature_parameters"]["include_shifted_candles"] + 1):
@@ -178,56 +166,22 @@ class FreqaiExampleHybridStrategy(IStrategy):
         ]
         df = df.drop(columns=skip_columns)
 
-        # Add generalized indicators here (because in live, it will call this
-        # function to populate indicators during training). Notice how we ensure not to
-        # add them multiple times
+        # User can set the "target" here (in present case it is the
+        # "up" or "down")
         if set_generalized_indicators:
-            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
-            df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
-
-            # Classifiers are typically set up with strings as targets:
-            df['&s-up_or_down'] = np.where( df["close"].shift(-50) >
-                                            df["close"], 'up', 'down')
-
-            # REGRESSOR Model: Can use single or multi traget
-            # user adds targets here by prepending them with &- (see convention below)
-            #df["&-s_close"] = (
-            #    df["close"]
-            #    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-            #    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-            #    .mean()
-            #    / df["close"]
-            #    - 1
-            #)
-            # If user wishes to use multiple targets, they can add more by
-            # appending more columns with '&'. User should keep in mind that multi targets
-            # requires a multioutput prediction model such as
-            # templates/CatboostPredictionMultiModel.py,
-
-            # df["&-s_range"] = (
-            #     df["close"]
-            #     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-            #     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-            #     .max()
-            #     -
-            #     df["close"]
-            #     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
-            #     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
-            #     .min()
-            # )
+            # User "looks into the future" here to figure out if the future
+            # will be "up" or "down". This same column name is available to
+            # the user
+            df['&s-up_or_down'] = np.where(df["close"].shift(-50) >
+                                           df["close"], 'up', 'down')
 
         return df
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        # All indicators must be populated by populate_any_indicators() for live functionality
-        # to work correctly.
+        # User creates their own custom strat here. Present example is a supertrend
+        # based strategy.
 
-        # the model will return all labels created by user in `populate_any_indicators`
-        # (& appended targets), an indication of whether or not the prediction should be accepted,
-        # the target mean/std values for each of the labels created by user in
-        # `populate_any_indicators()` for each training period.
-        
         for multiplier in self.buy_m1.range:
             for period in self.buy_p1.range:
                 dataframe[f"supertrend_1_buy_{multiplier}_{period}"] = self.supertrend(
@@ -270,20 +224,23 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
+        # User now can use their custom strat creation in addition to their
+        # future prediction "up" or "down".
+
         df.loc[
             (df[f"supertrend_1_buy_{self.buy_m1.value}_{self.buy_p1.value}"] == "up") &
             (df[f"supertrend_2_buy_{self.buy_m2.value}_{self.buy_p2.value}"] == "up") &
             (df[f"supertrend_3_buy_{self.buy_m3.value}_{self.buy_p3.value}"] == "up") &
             (df["do_predict"] == 1) &
-            (df['&s-up_or_down'] == 'up'), 
+            (df['&s-up_or_down'] == 'up'),
             "enter_long",
         ] = 1
 
         df.loc[
-            (df[f"supertrend_1_sell_{self.sell_m1.value}_{self.sell_p1.value}"] == "down") & 
-            (df[f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"] == "down") & 
-            (df[f"supertrend_3_sell_{self.sell_m3.value}_{self.sell_p3.value}"] == "down") & 
-            (df["do_predict"] == 1) & 
+            (df[f"supertrend_1_sell_{self.sell_m1.value}_{self.sell_p1.value}"] == "down") &
+            (df[f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"] == "down") &
+            (df[f"supertrend_3_sell_{self.sell_m3.value}_{self.sell_p3.value}"] == "down") &
+            (df["do_predict"] == 1) &
             (df['&s-up_or_down'] == 'down'),
             "enter_short",
         ] = 1
@@ -291,7 +248,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        
+
         df.loc[
             (df[f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"] == "down"),
             "exit_long",
@@ -308,8 +265,8 @@ class FreqaiExampleHybridStrategy(IStrategy):
         return int(self.config["timeframe"][:-1])
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float,
-        rate: float, time_in_force: str, current_time, entry_tag, side: str,
-        **kwargs, ) -> bool:
+                            rate: float, time_in_force: str, current_time, entry_tag, side: str,
+                            **kwargs, ) -> bool:
 
         df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = df.iloc[-1].squeeze()
@@ -322,7 +279,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
                 return False
 
         return True
-    
+
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
                  **kwargs) -> float:
@@ -335,6 +292,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
     """
 
     def supertrend(self, dataframe: DataFrame, multiplier, period):
+
         df = dataframe.copy()
         last_row = dataframe.tail(1).index.item()
 
@@ -354,17 +312,19 @@ class FreqaiExampleHybridStrategy(IStrategy):
 
         # Compute final upper and lower bands
         for i in range(period, last_row + 1):
-            FINAL_UB[i] = BASIC_UB[i] if BASIC_UB[i] < FINAL_UB[i - 1] or CLOSE[i - 1] > FINAL_UB[i - 1] else FINAL_UB[i - 1]
-            FINAL_LB[i] = BASIC_LB[i] if BASIC_LB[i] > FINAL_LB[i - 1] or CLOSE[i - 1] < FINAL_LB[i - 1] else FINAL_LB[i - 1]
+            FINAL_UB[i] = BASIC_UB[i] if BASIC_UB[i] < FINAL_UB[i -
+                                                                1] or CLOSE[i - 1] > FINAL_UB[i - 1] else FINAL_UB[i - 1]
+            FINAL_LB[i] = BASIC_LB[i] if BASIC_LB[i] > FINAL_LB[i -
+                                                                1] or CLOSE[i - 1] < FINAL_LB[i - 1] else FINAL_LB[i - 1]
 
         # Set the Supertrend value
         for i in range(period, last_row + 1):
             ST[i] = FINAL_UB[i] if ST[i - 1] == FINAL_UB[i - 1] and CLOSE[i] <= FINAL_UB[i] else \
-                    FINAL_LB[i] if ST[i - 1] == FINAL_UB[i - 1] and CLOSE[i] >  FINAL_UB[i] else \
+                    FINAL_LB[i] if ST[i - 1] == FINAL_UB[i - 1] and CLOSE[i] > FINAL_UB[i] else \
                     FINAL_LB[i] if ST[i - 1] == FINAL_LB[i - 1] and CLOSE[i] >= FINAL_LB[i] else \
-                    FINAL_UB[i] if ST[i - 1] == FINAL_LB[i - 1] and CLOSE[i] <  FINAL_LB[i] else 0.00
+                    FINAL_UB[i] if ST[i - 1] == FINAL_LB[i - 1] and CLOSE[i] < FINAL_LB[i] else 0.00
         df_ST = pd.DataFrame(ST, columns=[st])
-        df = pd.concat([df, df_ST],axis=1)
+        df = pd.concat([df, df_ST], axis=1)
 
         # Mark the trend direction up/down
         df[stx] = np.where((df[st] > 0.00), np.where((df['close'] < df[st]), 'down',  'up'), np.NaN)
@@ -372,6 +332,6 @@ class FreqaiExampleHybridStrategy(IStrategy):
         df.fillna(0, inplace=True)
 
         return DataFrame(index=df.index, data={
-            'ST' : df[st],
-            'STX' : df[stx]
+            'ST': df[st],
+            'STX': df[stx]
         })
