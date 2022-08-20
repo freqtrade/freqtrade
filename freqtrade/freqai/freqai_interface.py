@@ -66,7 +66,6 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
-        self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -74,11 +73,14 @@ class IFreqaiModel(ABC):
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
+        self.ft_params = self.freqai_info["feature_parameters"]
         self.keras: bool = self.freqai_info.get("keras", False)
-        if self.keras and self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
-            self.freqai_info["feature_parameters"]["DI_threshold"] = 0
+        if self.keras and self.ft_params.get("DI_threshold", 0):
+            self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
+        if self.ft_params.get("inlier_metric_window", 0):
+            self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
         self.pair_it = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.last_trade_database_summary: DataFrame = {}
@@ -383,24 +385,25 @@ class IFreqaiModel(ABC):
 
     def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
         """
-        Base data cleaning method for train
-        Any function inside this method should drop training data points from the filtered_dataframe
-        based on user decided logic. See FreqaiDataKitchen::use_SVM_to_remove_outliers() for an
-        example of how outlier data points are dropped from the dataframe used for training.
+        Base data cleaning method for train.
+        Functions here improve/modify the input data by identifying outliers,
+        computing additional metrics, adding noise, reducing dimensionality etc.
         """
 
-        if self.freqai_info["feature_parameters"].get(
+        ft_params = self.freqai_info["feature_parameters"]
+
+        if ft_params.get(
             "principal_component_analysis", False
         ):
             dk.principal_component_analysis()
 
-        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
+        if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
 
-        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
+        if ft_params.get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
-        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             if dk.pair in self.dd.old_DBSCAN_eps:
                 eps = self.dd.old_DBSCAN_eps[dk.pair]
             else:
@@ -408,29 +411,36 @@ class IFreqaiModel(ABC):
             dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
             self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
 
+        if ft_params.get('inlier_metric_window', 0):
+            dk.compute_inlier_metric(set_='train')
+            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
+                dk.compute_inlier_metric(set_='test')
+
+        if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
+            dk.add_noise_to_training_features()
+
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
-        These functions each modify dk.do_predict, which is a dataframe with equal length
-        to the number of candles coming from and returning to the strategy. Inside do_predict,
-         1 allows prediction and < 0 signals to the strategy that the model is not confident in
-         the prediction.
-         See FreqaiDataKitchen::remove_outliers() for an example
-        of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
-        for buy signals.
+        Functions here are complementary to the functions of data_cleaning_train.
         """
-        if self.freqai_info["feature_parameters"].get(
+        ft_params = self.freqai_info["feature_parameters"]
+
+        if ft_params.get('inlier_metric_window', 0):
+            dk.compute_inlier_metric(set_='predict')
+
+        if ft_params.get(
             "principal_component_analysis", False
         ):
             dk.pca_transform(dataframe)
 
-        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
+        if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
 
-        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
+        if ft_params.get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
-        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
 
     def model_exists(
