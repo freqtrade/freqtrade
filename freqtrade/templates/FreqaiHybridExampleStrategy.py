@@ -56,7 +56,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         }
     },
 
-    This strategy is not designed to be used live
+    Thanks to @smarm and @jooopieeert for developing and sharing the strategy.
     """
 
     minimal_roi = {"0": 0.1, "30": 0.75, "60": 0.05, "120": 0.025, "240": -1}
