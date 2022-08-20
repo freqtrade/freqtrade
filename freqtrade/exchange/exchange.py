@@ -17,6 +17,7 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
 from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
+from dateutil import parser
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
@@ -30,7 +31,8 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGE
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        SUPPORTED_EXCHANGES, remove_credentials, retrier,
                                        retrier_async)
-from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
+from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
+                            safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import FtPrecise
 
@@ -2207,6 +2209,7 @@ class Exchange:
 
     @retrier_async
     async def get_market_leverage_tiers(self, symbol: str) -> Tuple[str, List[Dict]]:
+        """ Leverage tiers per symbol """
         try:
             tier = await self._api_async.fetch_market_leverage_tiers(symbol)
             return symbol, tier
@@ -2238,12 +2241,21 @@ class Exchange:
 
                 tiers: Dict[str, List[Dict]] = {}
 
-                # Be verbose here, as this delays startup by ~1 minute.
-                logger.info(
-                    f"Initializing leverage_tiers for {len(symbols)} markets. "
-                    "This will take about a minute.")
+                tiers_cached = self.load_cached_leverage_tiers(self._config['stake_currency'])
+                if tiers_cached:
+                    tiers = tiers_cached
 
-                coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
+                coros = [
+                    self.get_market_leverage_tiers(symbol)
+                    for symbol in sorted(symbols) if symbol not in tiers]
+
+                # Be verbose here, as this delays startup by ~1 minute.
+                if coros:
+                    logger.info(
+                        f"Initializing leverage_tiers for {len(symbols)} markets. "
+                        "This will take about a minute.")
+                else:
+                    logger.info("Using cached leverage_tiers.")
 
                 async def gather_results():
                     return await asyncio.gather(*input_coro, return_exceptions=True)
@@ -2255,7 +2267,8 @@ class Exchange:
 
                     for symbol, res in results:
                         tiers[symbol] = res
-
+                if len(coros) > 0:
+                    self.cache_leverage_tiers(tiers, self._config['stake_currency'])
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
@@ -2263,6 +2276,29 @@ class Exchange:
                 return {}
         else:
             return {}
+
+    def cache_leverage_tiers(self, tiers: Dict[str, List[Dict]], stake_currency: str) -> None:
+
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        data = {
+            "updated": datetime.now(timezone.utc),
+            "data": tiers,
+        }
+        file_dump_json(filename, data)
+
+    def load_cached_leverage_tiers(self, stake_currency: str) -> Optional[Dict[str, List[Dict]]]:
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if filename.is_file():
+            tiers = file_load_json(filename)
+            updated = tiers.get('updated')
+            if updated:
+                updated_dt = parser.parse(updated)
+                print(updated_dt)
+                if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
+                    logger.info("Cached leverage tiers are outdated. Will update.")
+                    return None
+            return tiers['data']
+        return None
 
     def fill_leverage_tiers(self) -> None:
         """
