@@ -1689,6 +1689,7 @@ def test_get_open(fee, is_short, use_db):
 
     create_mock_trades(fee, is_short, use_db)
     assert len(Trade.get_open_trades()) == 4
+    assert Trade.get_open_trade_count() == 4
 
     Trade.use_db = True
 
@@ -1701,6 +1702,7 @@ def test_get_open_lev(fee, use_db):
 
     create_mock_trades_with_leverage(fee, use_db)
     assert len(Trade.get_open_trades()) == 5
+    assert Trade.get_open_trade_count() == 5
 
     Trade.use_db = True
 

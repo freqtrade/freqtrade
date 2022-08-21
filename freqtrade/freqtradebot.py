@@ -271,7 +271,7 @@ class FreqtradeBot(LoggingMixin):
         Return the number of free open trades slots or 0 if
         max number of open trades reached
         """
-        open_trades = len(Trade.get_open_trades())
+        open_trades = Trade.get_open_trade_count()
         return max(0, self.config['max_open_trades'] - open_trades)
 
     def update_funding_fees(self):

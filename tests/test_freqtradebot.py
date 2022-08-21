@@ -473,8 +473,6 @@ def test_create_trade_no_signal(default_conf_usdt, fee, mocker) -> None:
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_long=False, exit_long=False)
 
-    Trade.query = MagicMock()
-    Trade.query.filter = MagicMock()
     assert not freqtrade.create_trade('ETH/USDT')
 
 

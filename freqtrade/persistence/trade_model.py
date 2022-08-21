@@ -1045,6 +1045,16 @@ class LocalTrade():
         return Trade.get_trades_proxy(is_open=True)
 
     @staticmethod
+    def get_open_trade_count() -> int:
+        """
+        get open trade count
+        """
+        if Trade.use_db:
+            return Trade.query.filter(Trade.is_open.is_(True)).count()
+        else:
+            return len(LocalTrade.trades_open)
+
+    @staticmethod
     def stoploss_reinitialization(desired_stoploss):
         """
         Adjust initial Stoploss to desired stoploss for all open trades.
