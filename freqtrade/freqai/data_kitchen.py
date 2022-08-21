@@ -601,7 +601,7 @@ class FreqaiDataKitchen:
         is an outlier.
         """
 
-        from math import sin, cos
+        from math import cos, sin
 
         if predict:
             train_ft_df = self.data_dictionary['train_features']
@@ -622,13 +622,17 @@ class FreqaiDataKitchen:
         else:
 
             def normalise_distances(distances):
-                normalised_distances = (distances - distances.min()) / (distances.max() - distances.min())
+                normalised_distances = (distances - distances.min()) / \
+                                        (distances.max() - distances.min())
                 return normalised_distances
 
-            def rotate_point(origin,point,angle):
-                # rotate a point counterclockwise by a given angle (in radians) around a given origin
-                x = origin[0] + cos(angle) * (point[0] - origin[0]) - sin(angle) * (point[1] - origin[1])
-                y = origin[1] + sin(angle) * (point[0] - origin[0]) + cos(angle) * (point[1] - origin[1])
+            def rotate_point(origin, point, angle):
+                # rotate a point counterclockwise by a given angle (in radians)
+                # around a given origin
+                x = origin[0] + cos(angle) * (point[0] - origin[0]) - \
+                                    sin(angle) * (point[1] - origin[1])
+                y = origin[1] + sin(angle) * (point[0] - origin[0]) + \
+                    cos(angle) * (point[1] - origin[1])
                 return (x, y)
 
             MinPts = len(self.data_dictionary['train_features'].columns) * 2
@@ -638,15 +642,16 @@ class FreqaiDataKitchen:
             neighbors_fit = neighbors.fit(self.data_dictionary['train_features'])
             distances, _ = neighbors_fit.kneighbors(self.data_dictionary['train_features'])
             distances = np.sort(distances, axis=0).mean(axis=1)
-            
+
             normalised_distances = normalise_distances(distances)
             x_range = np.linspace(0, 1, len(distances))
-            line = np.linspace(normalise_distances[0], normalise_distances[-1], len(normalise_distances))
-            deflection = np.abs(normalise_distances - line)
-            max_deflection_loc = np.where(deflection==deflection.max())[0][0]
-            origin = x_range[max_deflection_loc], line[max_deflection_loc] 
+            line = np.linspace(normalised_distances[0],
+                               normalised_distances[-1], len(normalised_distances))
+            deflection = np.abs(normalised_distances - line)
+            max_deflection_loc = np.where(deflection == deflection.max())[0][0]
+            origin = x_range[max_deflection_loc], line[max_deflection_loc]
             point = x_range[max_deflection_loc], normalised_distances[max_deflection_loc]
-            rot_angle = np.pi/4
+            rot_angle = np.pi / 4
             elbow_loc = rotate_point(origin, point, rot_angle)
 
             epsilon = elbow_loc[1] * (distances[-1] - distances[0]) + distances[0]
