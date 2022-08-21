@@ -302,8 +302,8 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
         if trading_mode == 'futures':
             # Predefined candletype (and timeframe) depending on exchange
             # Downloads what is necessary to backtest based on futures data.
-            tf_mark = exchange._ft_has['mark_ohlcv_timeframe']
-            fr_candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
+            tf_mark = exchange.get_option('mark_ohlcv_timeframe')
+            fr_candle_type = CandleType.from_string(exchange.get_option('mark_ohlcv_price'))
             # All exchanges need FundingRate for futures trading.
             # The timeframe is aligned to the mark-price timeframe.
             for funding_candle_type in (CandleType.FUNDING_RATE, fr_candle_type):

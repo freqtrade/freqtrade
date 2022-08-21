@@ -674,6 +674,12 @@ class Exchange:
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
 
+    def get_option(self, param: str, default: Any = None) -> Any:
+        """
+        Get parameter value from _ft_has
+        """
+        return self._ft_has.get(param, default)
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.

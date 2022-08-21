@@ -267,7 +267,7 @@ class Backtesting:
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -279,12 +279,12 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
-                candle_type=CandleType.from_string(self.exchange._ft_has["mark_ohlcv_price"])
+                candle_type=CandleType.from_string(self.exchange.get_option("mark_ohlcv_price"))
             )
             # Combine data to avoid combining the data per trade.
             unavailable_pairs = []

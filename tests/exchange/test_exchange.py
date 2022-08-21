@@ -2352,10 +2352,10 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
         assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
         # Not all exchanges support all limits for orderbook
-        if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+        if not exchange.get_option('l2_limit_range') or val in exchange.get_option('l2_limit_range'):
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
         else:
-            next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+            next_limit = exchange.get_next_limit_in_list(val, exchange.get_option('l2_limit_range'))
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
@@ -3311,16 +3311,16 @@ def test_merge_ft_has_dict(default_conf, mocker):
 
     ex = Kraken(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'since'
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'since'
 
     # Binance defines different values
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['stoploss_on_exchange']
-    assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'fromId'
+    assert ex.get_option('stoploss_on_exchange')
+    assert ex.get_option('order_time_in_force') == ['gtc', 'fok', 'ioc']
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'fromId'
 
     conf = copy.deepcopy(default_conf)
     conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
