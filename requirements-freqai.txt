@@ -10,3 +10,5 @@ torch==1.12.1
 stable-baselines3==1.6.0
 gym==0.21.0
 tensorboard==2.9.1
+optuna==2.10.1
+sb3-contrib==1.6.0

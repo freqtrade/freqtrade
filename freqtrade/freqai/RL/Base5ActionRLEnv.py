@@ -223,12 +223,10 @@ class Base5ActionRLEnv(gym.Env):
                     (action == Actions.Neutral.value and self._position == Positions.Long) or
                     (action == Actions.Short_enter.value and self._position == Positions.Short) or
                     (action == Actions.Short_enter.value and self._position == Positions.Long) or
-                    # (action == Actions.Short_exit.value and self._position == Positions.Short) or
                     (action == Actions.Short_exit.value and self._position == Positions.Long) or
                     (action == Actions.Short_exit.value and self._position == Positions.Neutral) or
                     (action == Actions.Long_enter.value and self._position == Positions.Long) or
                     (action == Actions.Long_enter.value and self._position == Positions.Short) or
-                    # (action == Actions.Long_exit.value and self._position == Positions.Long) or
                     (action == Actions.Long_exit.value and self._position == Positions.Short) or
                     (action == Actions.Long_exit.value and self._position == Positions.Neutral))
 
