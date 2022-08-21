@@ -36,7 +36,7 @@ class ReinforcementLearningExample5ac(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     startup_candle_count: int = 300
-    can_short = False
+    can_short = True
 
     linear_roi_offset = DecimalParameter(
         0.00, 0.02, default=0.005, space="sell", optimize=False, load=True

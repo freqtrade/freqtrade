@@ -200,12 +200,12 @@ class Base5ActionRLEnv(gym.Env):
         if self._position == Positions.Neutral:
             return 0.
         elif self._position == Positions.Short:
-            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
             return (last_trade_price - current_price) / last_trade_price
         elif self._position == Positions.Long:
-            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
             return (current_price - last_trade_price) / last_trade_price
         else:
             return 0.
@@ -223,12 +223,12 @@ class Base5ActionRLEnv(gym.Env):
                     (action == Actions.Neutral.value and self._position == Positions.Long) or
                     (action == Actions.Short_enter.value and self._position == Positions.Short) or
                     (action == Actions.Short_enter.value and self._position == Positions.Long) or
-                    (action == Actions.Short_exit.value and self._position == Positions.Short) or
+                    # (action == Actions.Short_exit.value and self._position == Positions.Short) or
                     (action == Actions.Short_exit.value and self._position == Positions.Long) or
                     (action == Actions.Short_exit.value and self._position == Positions.Neutral) or
                     (action == Actions.Long_enter.value and self._position == Positions.Long) or
                     (action == Actions.Long_enter.value and self._position == Positions.Short) or
-                    (action == Actions.Long_exit.value and self._position == Positions.Long) or
+                    # (action == Actions.Long_exit.value and self._position == Positions.Long) or
                     (action == Actions.Long_exit.value and self._position == Positions.Short) or
                     (action == Actions.Long_exit.value and self._position == Positions.Neutral))
 
@@ -243,10 +243,10 @@ class Base5ActionRLEnv(gym.Env):
                 (action == Actions.Neutral.value and self._position == Positions.Short) or
                 (action == Actions.Neutral.value and self._position == Positions.Neutral))
 
-    def add_buy_fee(self, price):
+    def add_entry_fee(self, price):
         return price * (1 + self.fee)
 
-    def add_sell_fee(self, price):
+    def add_exit_fee(self, price):
         return price / (1 + self.fee)
 
     def _update_history(self, info):
@@ -266,27 +266,21 @@ class Base5ActionRLEnv(gym.Env):
 
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:
-            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(current_price) - np.log(last_trade_price))
-
-        if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
-                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            factor = 1
+            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                factor = 2
+            return float((np.log(current_price) - np.log(last_trade_price)) * factor)
 
         # close short
         if action == Actions.Short_exit.value and self._position == Positions.Short:
-            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(last_trade_price) - np.log(current_price))
-
-        if action == Actions.Short_exit.value and self._position == Positions.Short:
-            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
-                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
+            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
+            factor = 1
+            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                factor = 2
+            return float(np.log(last_trade_price) - np.log(current_price) * factor)
 
         return 0.
 
@@ -315,27 +309,21 @@ class Base5ActionRLEnv(gym.Env):
         # Long positions
         if self._position == Positions.Long:
             current_price = self.prices.iloc[self._current_tick].open
-            if action == Actions.Short_enter.value or action == Actions.Neutral.value:
-                current_price = self.add_sell_fee(current_price)
-
             previous_price = self.prices.iloc[self._current_tick - 1].open
 
             if (self._position_history[self._current_tick - 1] == Positions.Short
                     or self._position_history[self._current_tick - 1] == Positions.Neutral):
-                previous_price = self.add_buy_fee(previous_price)
+                previous_price = self.add_entry_fee(previous_price)
 
             return np.log(current_price) - np.log(previous_price)
 
         # Short positions
         if self._position == Positions.Short:
             current_price = self.prices.iloc[self._current_tick].open
-            if action == Actions.Long_enter.value or action == Actions.Neutral.value:
-                current_price = self.add_buy_fee(current_price)
-
             previous_price = self.prices.iloc[self._current_tick - 1].open
             if (self._position_history[self._current_tick - 1] == Positions.Long
                     or self._position_history[self._current_tick - 1] == Positions.Neutral):
-                previous_price = self.add_sell_fee(previous_price)
+                previous_price = self.add_exit_fee(previous_price)
 
             return np.log(previous_price) - np.log(current_price)
 
