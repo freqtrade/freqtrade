@@ -25,8 +25,8 @@ class WAOHyperOptLoss(IHyperOptLoss):
         win_trade_duration = []
         lost_trade_duration = []
         win_trades_number = 0
-        for profit in results['profit_ratio']:
-            if profit > 0:
+        for profit_ratio in results['profit_ratio']:
+            if profit_ratio > 0:
                 win_trades_number += 1
                 win_trade_duration.append(results['trade_duration'][x])
 
@@ -35,13 +35,11 @@ class WAOHyperOptLoss(IHyperOptLoss):
 
             x += 1
 
-        win_trade_percentage = win_trades_number / trade_count
-
         """We can put that into a function above"""
         y = 0
         profit_sell_signal = []
-        for exit in results['exit_reason']:
-            if exit == 'exit_signal':
+        for exit_reason in results['exit_reason']:
+            if exit_reason == 'exit_signal':
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
 
