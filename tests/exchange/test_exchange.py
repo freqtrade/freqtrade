@@ -2352,7 +2352,8 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
         assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
         # Not all exchanges support all limits for orderbook
-        if not exchange.get_option('l2_limit_range') or val in exchange.get_option('l2_limit_range'):
+        if (not exchange.get_option('l2_limit_range')
+                or val in exchange.get_option('l2_limit_range')):
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
         else:
             next_limit = exchange.get_next_limit_in_list(val, exchange.get_option('l2_limit_range'))
