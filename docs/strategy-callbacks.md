@@ -75,7 +75,7 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
-### Stake size management
+## Stake size management
 
 Called before entering a trade, makes it possible to manage your position size when placing a new trade.
 
