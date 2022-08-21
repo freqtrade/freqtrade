@@ -42,9 +42,10 @@ class Base5ActionRLEnv(gym.Env):
 
     def __init__(self, df: DataFrame = DataFrame(), prices: DataFrame = DataFrame(),
                  reward_kwargs: dict = {}, window_size=10, starting_point=True,
-                 id: str = 'baseenv-1', seed: int = 1):
+                 id: str = 'baseenv-1', seed: int = 1, config: dict = {}):
         assert df.ndim == 2
 
+        self.rl_config = config['freqai']['rl_config']
         self.id = id
         self.seed(seed)
         self.reset_env(df, prices, window_size, reward_kwargs, starting_point)
@@ -268,7 +269,7 @@ class Base5ActionRLEnv(gym.Env):
             current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
             factor = 1
             if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                factor = 2
+                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
             return float((np.log(current_price) - np.log(last_trade_price)) * factor)
 
         # close short
@@ -277,7 +278,7 @@ class Base5ActionRLEnv(gym.Env):
             current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
             factor = 1
             if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                factor = 2
+                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
             return float(np.log(last_trade_price) - np.log(current_price) * factor)
 
         return 0.

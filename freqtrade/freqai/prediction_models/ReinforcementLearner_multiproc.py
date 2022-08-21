@@ -62,12 +62,12 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
             env_id = "train_env"
             num_cpu = int(self.freqai_info["data_kitchen_thread_count"] / 2)
             self.train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
-                                            self.reward_params, self.CONV_WIDTH) for i
+                                            self.reward_params, self.CONV_WIDTH, config=self.config) for i
                                             in range(num_cpu)])
 
             eval_env_id = 'eval_env'
             self.eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
-                                           self.reward_params, self.CONV_WIDTH, monitor=True) for i
+                                           self.reward_params, self.CONV_WIDTH, monitor=True, config=self.config) for i
                                            in range(num_cpu)])
             self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                               render=False, eval_freq=eval_freq,

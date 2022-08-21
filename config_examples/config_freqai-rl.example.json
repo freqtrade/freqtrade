@@ -92,7 +92,8 @@
             "policy_type": "MlpPolicy",
             "model_reward_parameters": {
                 "rr": 1,
-                "profit_aim": 0.02
+                "profit_aim": 0.02,
+                "win_reward_factor": 2
             }
         }
     },

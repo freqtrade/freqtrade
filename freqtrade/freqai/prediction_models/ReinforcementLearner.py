@@ -57,26 +57,20 @@ class MyRLEnv(Base5ActionRLEnv):
 
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:
-            last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(current_price) - np.log(last_trade_price))
-
-        if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                last_trade_price = self.add_buy_fee(self.prices.iloc[self._last_trade_tick].open)
-                current_price = self.add_sell_fee(self.prices.iloc[self._current_tick].open)
-                return float((np.log(current_price) - np.log(last_trade_price)) * 2)
+            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
+            factor = 1
+            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+            return float((np.log(current_price) - np.log(last_trade_price)) * factor)
 
         # close short
         if action == Actions.Short_exit.value and self._position == Positions.Short:
-            last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-            return float(np.log(last_trade_price) - np.log(current_price))
-
-        if action == Actions.Short_exit.value and self._position == Positions.Short:
-            if self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                last_trade_price = self.add_sell_fee(self.prices.iloc[self._last_trade_tick].open)
-                current_price = self.add_buy_fee(self.prices.iloc[self._current_tick].open)
-                return float((np.log(last_trade_price) - np.log(current_price)) * 2)
+            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
+            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
+            factor = 1
+            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+            return float(np.log(last_trade_price) - np.log(current_price) * factor)
 
         return 0.
