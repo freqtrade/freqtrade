@@ -123,7 +123,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         return
 
     def get_state_info(self, pair):
-        open_trades = Trade.get_trades(trade_filter=Trade.is_open.is_(True))
+        open_trades = Trade.get_trades_proxy(is_open=True)
         market_side = 0.5
         current_profit = 0
         for trade in open_trades:
@@ -137,8 +137,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                 current_profit = current_value / openrate - 1
 
         total_profit = 0
-        closed_trades = Trade.get_trades(
-            trade_filter=[Trade.is_open.is_(False), Trade.pair == pair])
+        closed_trades = Trade.get_trades_proxy(pair = pair, is_open=False)
         for trade in closed_trades:
             total_profit += trade.close_profit
 
