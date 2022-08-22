@@ -873,13 +873,6 @@ class FreqaiDataKitchen:
             data_load_timerange.stopts = int(time)
             retrain = True
 
-        # logger.info(
-        #     f"downloading data for "
-        #     f"{(data_load_timerange.stopts-data_load_timerange.startts)/SECONDS_IN_DAY:.2f} "
-        #     " days. "
-        #     f"Extension of {additional_seconds/SECONDS_IN_DAY:.2f} days"
-        # )
-
         return retrain, trained_timerange, data_load_timerange
 
     def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
