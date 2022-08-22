@@ -4288,7 +4288,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 0.01, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures')
 ])
-def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
+def est__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'
@@ -4307,7 +4307,7 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
             'contractSize': '10',
         }
     })
-    size = exchange._get_contract_size(pair)
+    size = exchange.get_contract_size(pair)
     assert expected_size == size
 
 
@@ -5146,7 +5146,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._get_contract_size = MagicMock(return_value=contract_size)
+    exchange.get_contract_size = MagicMock(return_value=contract_size)
 
     api_mock.create_order.reset_mock()
     order = exchange.stoploss(
