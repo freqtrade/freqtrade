@@ -11,7 +11,7 @@ MAX_ACCEPTED_WIN_TRADE_DURATION = 120
 MAX_ACCEPTED_LOST_TRADE_DURATION = 90
 
 
-class WAOHyperOptLoss1(IHyperOptLoss):
+class WAOHyperOptLoss2(IHyperOptLoss):
 
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
