@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict
+import statistics
 
 from pandas import DataFrame
 
@@ -43,7 +44,7 @@ class WAOHyperOptLoss2(IHyperOptLoss):
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
 
-        av_profit_sell_signal = profit_sell_signal.mean()
+        av_profit_sell_signal = statistics.mean(profit_sell_signal)
         # win_trades_duration_av = win_trades_duration.mean()
         # lost_trades_duration_av = lost_trades_duration.mean()
 

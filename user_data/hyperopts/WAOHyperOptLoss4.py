@@ -46,7 +46,7 @@ class WAOHyperOptLoss4(IHyperOptLoss):
 
         # av_profit_sell_signal = profit_sell_signal.mean()
         # win_trades_duration_av = win_trades_duration.mean()
-        lost_trades_duration_av = lost_trades_duration.mean()
+        lost_trades_duration_av = statistics.mean(lost_trades_duration)
 
         # win_trade_percentage_loss = min(0, 1 - win_trades_percentage / MIN_ACCEPTED_WIN_PERCENTAGE)
         # av_profit_sell_signal_loss = min(0, 1 - av_profit_sell_signal / MIN_ACCEPTED_AV_PROFIT)
