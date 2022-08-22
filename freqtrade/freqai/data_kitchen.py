@@ -661,7 +661,7 @@ class FreqaiDataKitchen:
                                                     self.data_dictionary['train_features']
                                                 )
 
-            logger.info(f'DBSCAN found eps of {epsilon}.')
+            logger.info(f'DBSCAN found eps of {epsilon:.2f}.')
 
             self.data['DBSCAN_eps'] = epsilon
             self.data['DBSCAN_min_samples'] = MinPts
@@ -680,7 +680,6 @@ class FreqaiDataKitchen:
             logger.info(
                 f"DBSCAN tossed {dropped_points.sum()}"
                 f" train points from {len(clustering.labels_)}"
-                f" ({np.round(dropped_points.sum()/len(clustering.labels_),0)}%)"
             )
 
         return
@@ -725,7 +724,7 @@ class FreqaiDataKitchen:
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f"DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for "
+                f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
                 "being too far from training data"
             )
 
