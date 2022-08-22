@@ -80,12 +80,15 @@ class IFreqaiModel(ABC):
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
         self.pair_it = 0
+        self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.last_trade_database_summary: DataFrame = {}
         self.current_trade_database_summary: DataFrame = {}
         self.analysis_lock = Lock()
         self.inference_time: float = 0
+        self.train_time: float = 0
         self.begin_time: float = 0
+        self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
 
     def assert_config(self, config: Dict[str, Any]) -> None:
@@ -128,10 +131,19 @@ class IFreqaiModel(ABC):
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
-        del dk
+        self.clean_up()
         if self.live:
             self.inference_timer('stop')
         return dataframe
+
+    def clean_up(self):
+        """
+        Objects that should be handled by GC already between coins, but
+        are explicitly shown here to help demonstrate the non-persistence of these
+        objects.
+        """
+        self.model = None
+        self.dk = None
 
     @threaded
     def start_scanning(self, strategy: IStrategy) -> None:
@@ -159,9 +171,11 @@ class IFreqaiModel(ABC):
                 dk.set_paths(pair, new_trained_timerange.stopts)
 
                 if retrain:
+                    self.train_timer('start')
                     self.train_model_in_series(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
+                    self.train_timer('stop')
 
             self.dd.save_historic_predictions_to_disk()
 
@@ -480,8 +494,7 @@ class IFreqaiModel(ABC):
         data_load_timerange: TimeRange,
     ):
         """
-        Retrieve data and train model in single threaded mode (only used if model directory is empty
-        upon startup for dry/live )
+        Retrieve data and train model.
         :param new_trained_timerange: TimeRange = the timerange to train the model on
         :param metadata: dict = strategy provided metadata
         :param strategy: IStrategy = user defined strategy object
@@ -610,6 +623,24 @@ class IFreqaiModel(ABC):
                                    ' avoid blinding open trades and degrading performance.')
                 self.pair_it = 0
                 self.inference_time = 0
+        return
+
+    def train_timer(self, do='start'):
+        """
+        Timer designed to track the cumulative time spent training the full pairlist in
+        FreqAI.
+        """
+        if do == 'start':
+            self.pair_it_train += 1
+            self.begin_time_train = time.time()
+        elif do == 'stop':
+            end = time.time()
+            self.train_time += (end - self.begin_time_train)
+            if self.pair_it_train == self.total_pairs:
+                logger.info(
+                    f'Total time spent training pairlist {self.train_time:.2f} seconds')
+                self.pair_it_train = 0
+                self.train_time = 0
         return
 
     # Following methods which are overridden by user made prediction models.
