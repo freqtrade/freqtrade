@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -18,6 +18,7 @@ from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.rpc.replicate import ReplicateController
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -110,6 +111,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
     dp: DataProvider
+    replicate_controller: Optional[ReplicateController]
     wallets: Optional[Wallets] = None
     # Filled from configuration
     stake_currency: str
@@ -123,6 +125,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        self._last_candle_seen_external: Dict[str, datetime] = {}
         super().__init__(config)
 
         # Gather informative pairs from @informative-decorated methods.
@@ -678,7 +681,12 @@ class IStrategy(ABC, HyperStrategyMixin):
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
             return PairLocks.is_pair_locked(pair, lock_time, side=side)
 
-    def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def analyze_ticker(
+        self,
+        dataframe: DataFrame,
+        metadata: dict,
+        populate_indicators: bool = True
+    ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and entry order signal to it
@@ -687,12 +695,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         logger.debug("TA Analysis Launched")
-        dataframe = self.advise_indicators(dataframe, metadata)
+        if populate_indicators:
+            dataframe = self.advise_indicators(dataframe, metadata)
         dataframe = self.advise_entry(dataframe, metadata)
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
-    def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def _analyze_ticker_internal(
+        self,
+        dataframe: DataFrame,
+        metadata: dict,
+        external_data: bool = False,
+        finish_callback: Optional[Callable] = None,
+    ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and buy signal to it
@@ -707,12 +722,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         # always run if process_only_new_candles is set to false
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
+
+            populate_indicators = not external_data
             # Defs that only make change on new candle data.
-            dataframe = self.analyze_ticker(dataframe, metadata)
+            dataframe = self.analyze_ticker(dataframe, metadata, populate_indicators)
+
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
-            self.dp._set_cached_df(
-                pair, self.timeframe, dataframe,
-                candle_type=self.config.get('candle_type_def', CandleType.SPOT))
+
+            candle_type = self.config.get('candle_type_def', CandleType.SPOT)
+            self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
+
+            if finish_callback:
+                finish_callback(pair, dataframe, self.timeframe, candle_type)
+
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0
@@ -726,16 +748,25 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return dataframe
 
-    def analyze_pair(self, pair: str) -> None:
+    def analyze_pair(
+        self,
+        pair: str,
+        external_data: bool = False,
+        finish_callback: Optional[Callable] = None,
+    ) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
         Stores the dataframe into the dataprovider.
         The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
         :param pair: Pair to analyze.
         """
-        dataframe = self.dp.ohlcv(
-            pair, self.timeframe, candle_type=self.config.get('candle_type_def', CandleType.SPOT)
-        )
+        candle_type = self.config.get('candle_type_def', CandleType.SPOT)
+
+        if not external_data:
+            dataframe = self.dp.ohlcv(pair, self.timeframe, candle_type)
+        else:
+            dataframe, last_analyzed = self.dp.get_external_df(pair, self.timeframe, candle_type)
+
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return
@@ -745,7 +776,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             dataframe = strategy_safe_wrapper(
                 self._analyze_ticker_internal, message=""
-            )(dataframe, {'pair': pair})
+            )(dataframe, {'pair': pair}, external_data, finish_callback)
 
             self.assert_df(dataframe, df_len, df_close, df_date)
         except StrategyError as error:
@@ -756,15 +787,43 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.warning('Empty dataframe for pair %s', pair)
             return
 
-    def analyze(self, pairs: List[str]) -> None:
+    def analyze(
+        self,
+        pairs: List[str],
+        finish_callback: Optional[Callable] = None
+    ) -> None:
         """
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
         for pair in pairs:
+            self.analyze_pair(pair, finish_callback=finish_callback)
+
+    def analyze_external(self, pairs: List[str], leader_pairs: List[str]) -> None:
+        """
+        Analyze the pre-populated dataframes from the Leader
+
+        :param pairs: The active pair whitelist
+        :param leader_pairs: The list of pairs from the Leaders
+        """
+
+        # Get the extra pairs not listed in Leader pairs, and process
+        # them normally.
+        # List order is not preserved when doing this!
+        # We use ^ instead of - for symmetric difference
+        # What do we do with these?
+        extra_pairs = list(set(pairs) ^ set(leader_pairs))
+        # These would be the pairs that we have trades in, which means
+        # we would have to analyze them normally
+
+        for pair in leader_pairs:
+            # Analyze the pairs, but get the dataframe from the external data
+            self.analyze_pair(pair, external_data=True)
+
+        for pair in extra_pairs:
             self.analyze_pair(pair)
 
-    @staticmethod
+    @ staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
@@ -1184,6 +1243,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         for inf_data, populate_fn in self._ft_informative:
             dataframe = _create_and_merge_informative_pair(
                 self, dataframe, metadata, inf_data, populate_fn)
+
+        # If in follower mode, get analyzed dataframe from leader df's in dp
+        # otherise run populate_indicators
 
         return self.populate_indicators(dataframe, metadata)
 

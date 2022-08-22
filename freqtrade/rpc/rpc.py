@@ -19,12 +19,12 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
-                             TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, LeaderMessageType,
+                             SignalDirection, State, TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin, shorten_date
+from freqtrade.misc import decimals_per_coin, json_to_dataframe, shorten_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1089,3 +1089,36 @@ class RPC:
             'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
             'last_process_ts': int(last_p.timestamp()),
         }
+
+    def _handle_emitted_data(self, type, data):
+        """
+        Handles the emitted data from the Leaders
+
+        :param type: The data_type of the data
+        :param data: The data
+        """
+        logger.debug(f"Handling emitted data of type ({type})")
+
+        if type == LeaderMessageType.pairlist:
+            pairlist = data
+
+            logger.debug(pairlist)
+
+            # Add the pairlist data to the ExternalPairList object
+            external_pairlist = self._freqtrade.pairlists._pairlist_handlers[0]
+            external_pairlist.add_pairlist_data(pairlist)
+
+        elif type == LeaderMessageType.analyzed_df:
+            # Convert the dataframe back from json
+            key, value = data["key"], data["value"]
+
+            pair, timeframe, candle_type = key
+            dataframe = json_to_dataframe(value)
+
+            dataprovider = self._freqtrade.dataprovider
+
+            logger.debug(f"Received analyzed dataframe for {pair}")
+            logger.debug(dataframe.tail())
+
+            # Add the dataframe to the dataprovider
+            dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)

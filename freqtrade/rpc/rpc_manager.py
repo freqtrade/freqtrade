@@ -20,6 +20,7 @@ class RPCManager:
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
         self.registered_modules: List[RPCHandler] = []
+        self._freqtrade = freqtrade
         self._rpc = RPC(freqtrade)
         config = freqtrade.config
         # Enable telegram
@@ -82,7 +83,8 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        logger.info('Sending rpc message: %s', msg)
+        if msg.get("type") != RPCMessageType.EMIT_DATA:
+            logger.info('Sending rpc message: %s', msg)
         if 'pair' in msg:
             msg.update({
                 'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])
@@ -141,3 +143,12 @@ class RPCManager:
                 'type': RPCMessageType.STARTUP,
                 'status': f'Using Protections: \n{prots}'
             })
+
+    def emit_data(self, data: Dict[str, Any]):
+        """
+        Send a message via RPC with type RPCMessageType.EMIT_DATA
+        """
+        self.send_msg({
+            "type": RPCMessageType.EMIT_DATA,
+            "message": data
+        })

@@ -5,6 +5,7 @@ import asyncio
 import logging
 import secrets
 import socket
+import traceback
 from threading import Event, Thread
 from typing import Any, Coroutine, Dict, Union
 
@@ -17,6 +18,7 @@ from freqtrade.enums import LeaderMessageType, ReplicateModeType, RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
 from freqtrade.rpc.replicate.channel import ChannelManager
 from freqtrade.rpc.replicate.thread_queue import Queue as ThreadedQueue
+from freqtrade.rpc.replicate.types import MessageType
 from freqtrade.rpc.replicate.utils import is_websocket_alive
 
 
@@ -79,11 +81,11 @@ class ReplicateController(RPCHandler):
         self.mode = ReplicateModeType[self.replicate_config.get('mode', 'leader').lower()]
 
         self.leaders_list = self.replicate_config.get('leaders', [])
-        self.push_throttle_secs = self.replicate_config.get('push_throttle_secs', 1)
+        self.push_throttle_secs = self.replicate_config.get('push_throttle_secs', 0.1)
 
         self.reply_timeout = self.replicate_config.get('follower_reply_timeout', 10)
         self.ping_timeout = self.replicate_config.get('follower_ping_timeout', 2)
-        self.sleep_time = self.replicate_config.get('follower_sleep_time', 1)
+        self.sleep_time = self.replicate_config.get('follower_sleep_time', 5)
 
         if self.mode == ReplicateModeType.follower and len(self.leaders_list) == 0:
             raise ValueError("You must specify at least 1 leader in follower mode.")
@@ -143,6 +145,8 @@ class ReplicateController(RPCHandler):
 
         except asyncio.CancelledError:
             pass
+        except Exception:
+            pass
         finally:
             self._loop.stop()
 
@@ -170,22 +174,19 @@ class ReplicateController(RPCHandler):
 
             self._thread.join()
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: MessageType) -> None:
         """
         Support RPC calls
         """
         if msg["type"] == RPCMessageType.EMIT_DATA:
-            self.send_message(
-                {
-                    "data_type": msg.get("data_type"),
-                    "data": msg.get("data")
-                }
-            )
+            message = msg.get("message")
+            if message:
+                self.send_message(message)
+            else:
+                logger.error(f"Message is empty! {msg}")
 
-    def send_message(self, msg: Dict[str, Any]) -> None:
-        """ Push message through """
-
-        # We should probably do some type of schema validation here
+    def send_message(self, msg: MessageType) -> None:
+        """ Broadcast message over all channels if there are any """
 
         if self.channel_manager.has_channels():
             self._send_message(msg)
@@ -193,12 +194,11 @@ class ReplicateController(RPCHandler):
             logger.debug("No listening followers, skipping...")
             pass
 
-    def _send_message(self, msg: Dict[Any, Any]):
+    def _send_message(self, msg: MessageType):
         """
         Add data to the internal queue to be broadcasted. This func will block
         if the queue is full. This is meant to be called in the main thread.
         """
-
         if self._queue:
             queue = self._queue.sync_q
             queue.put(msg)  # This will block if the queue is full
@@ -226,7 +226,6 @@ class ReplicateController(RPCHandler):
         This starts all of the leader coros and registers the endpoint on
         the ApiServer
         """
-
         logger.info("Running rpc.replicate in Leader mode")
         logger.info("-" * 15)
         logger.info(f"API_KEY: {self.secret_api_key}")
@@ -253,16 +252,17 @@ class ReplicateController(RPCHandler):
                 # Get data from queue
                 data = await async_queue.get()
 
-                logger.info(f"Found data - broadcasting: {data}")
-
                 # Broadcast it to everyone
                 await self.channel_manager.broadcast(data)
 
                 # Sleep
                 await asyncio.sleep(self.push_throttle_secs)
+
         except asyncio.CancelledError:
             # Silently stop
             pass
+        except Exception as e:
+            logger.exception(e)
 
     async def get_api_token(
         self,
@@ -285,7 +285,6 @@ class ReplicateController(RPCHandler):
 
         :param path: The endpoint path
         """
-
         if not self.api_server:
             raise RuntimeError("The leader needs the ApiServer to be active")
 
@@ -312,10 +311,13 @@ class ReplicateController(RPCHandler):
                 # we may not have to send initial data at all. Further testing
                 # required.
 
+                await self.send_initial_data(channel)
+
                 # Keep connection open until explicitly closed, and sleep
                 try:
                     while not channel.is_closed():
-                        await channel.recv()
+                        request = await channel.recv()
+                        logger.info(f"Follower request - {request}")
 
                 except WebSocketDisconnect:
                     # Handle client disconnects
@@ -332,6 +334,17 @@ class ReplicateController(RPCHandler):
             logger.error(f"Failed to serve - {websocket.client}")
             await self.channel_manager.on_disconnect(websocket)
 
+    async def send_initial_data(self, channel):
+        logger.info("Sending initial data through channel")
+
+        # We first send pairlist data
+        initial_data = {
+            "data_type": LeaderMessageType.pairlist,
+            "data": self.freqtrade.pairlists.whitelist
+        }
+
+        await channel.send(initial_data)
+
     # -------------------------------FOLLOWER LOGIC----------------------------
 
     async def follower_loop(self):
@@ -340,18 +353,27 @@ class ReplicateController(RPCHandler):
 
         This starts all of the follower connection coros
         """
-
         logger.info("Starting rpc.replicate in Follower mode")
 
-        try:
-            results = await self._connect_to_leaders()
-        except Exception as e:
-            logger.error("Exception occurred in Follower loop: ")
-            logger.exception(e)
-        finally:
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.debug(f"Exception in Follower loop: {result}")
+        responses = await self._connect_to_leaders()
+
+        # Eventually add the ability to send requests to the Leader
+        # await self._send_requests()
+
+        for result in responses:
+            if isinstance(result, Exception):
+                logger.debug(f"Exception in Follower loop: {result}")
+                traceback_message = ''.join(traceback.format_tb(result.__traceback__))
+                logger.error(traceback_message)
+
+    async def _handle_leader_message(self, message: MessageType):
+        """
+        Handle message received from a Leader
+        """
+        type = message.get("data_type")
+        data = message.get("data")
+
+        self._rpc._handle_emitted_data(type, data)
 
     async def _connect_to_leaders(self):
         """
@@ -375,7 +397,6 @@ class ReplicateController(RPCHandler):
         """
         try:
             url, token = leader["url"], leader["token"]
-
             websocket_url = f"{url}?token={token}"
 
             logger.info(f"Attempting to connect to Leader at: {url}")
@@ -384,6 +405,7 @@ class ReplicateController(RPCHandler):
                 try:
                     async with websockets.connect(websocket_url) as ws:
                         channel = await self.channel_manager.on_connect(ws)
+                        logger.info(f"Connection to Leader at {url} successful")
                         while True:
                             try:
                                 data = await asyncio.wait_for(
@@ -420,13 +442,3 @@ class ReplicateController(RPCHandler):
 
         except asyncio.CancelledError:
             pass
-
-    async def _handle_leader_message(self, message: Dict[str, Any]):
-        type = message.get('data_type')
-        data = message.get('data')
-
-        logger.info(f"Received message from Leader: {type} - {data}")
-
-        if type == LeaderMessageType.pairlist:
-            # Add the data to the ExternalPairlist
-            self.freqtrade.pairlists._pairlist_handlers[0].add_pairlist_data(data)

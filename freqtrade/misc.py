@@ -10,6 +10,7 @@ from typing import Any, Iterator, List
 from typing.io import IO
 from urllib.parse import urlparse
 
+import pandas
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
@@ -249,3 +250,24 @@ def parse_db_uri_for_logging(uri: str):
         return uri
     pwd = parsed_db_uri.netloc.split(':')[1].split('@')[0]
     return parsed_db_uri.geturl().replace(f':{pwd}@', ':*****@')
+
+
+def dataframe_to_json(dataframe: pandas.DataFrame) -> str:
+    """
+    Serialize a DataFrame for transmission over the wire using JSON
+    :param dataframe: A pandas DataFrame
+    :returns: A JSON string of the pandas DataFrame
+    """
+    return dataframe.to_json(orient='records')
+
+
+def json_to_dataframe(data: str) -> pandas.DataFrame:
+    """
+    Deserialize JSON into a DataFrame
+    :param data: A JSON string
+    :returns: A pandas DataFrame from the JSON string
+    """
+    dataframe = pandas.read_json(data)
+    dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
+
+    return dataframe

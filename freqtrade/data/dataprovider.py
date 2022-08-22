@@ -7,6 +7,7 @@ Common Interface for bot and strategy to access data.
 import logging
 from collections import deque
 from datetime import datetime, timezone
+from threading import Event
 from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
@@ -28,13 +29,16 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
+    def __init__(self, config: dict, exchange: Optional[Exchange],
+                 pairlists=None, replicate_controller=None) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
+        self.__external_pairs_df: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
+        self.__external_pairs_event: Dict[str, Event] = {}
         self._msg_queue: deque = deque()
 
         self.__msg_cache = PeriodicCache(
@@ -63,8 +67,57 @@ class DataProvider:
         :param dataframe: analyzed dataframe
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
-        self.__cached_pairs[(pair, timeframe, candle_type)] = (
+        pair_key = (pair, timeframe, candle_type)
+        self.__cached_pairs[pair_key] = (
             dataframe, datetime.now(timezone.utc))
+
+    def add_external_df(
+        self,
+        pair: str,
+        timeframe: str,
+        dataframe: DataFrame,
+        candle_type: CandleType
+    ) -> None:
+        """
+        Add the DataFrame to the __external_pairs_df. If a pair event exists,
+        set it to release the main thread from waiting.
+        """
+        pair_key = (pair, timeframe, candle_type)
+
+        # Delete stale data
+        if pair_key in self.__external_pairs_df:
+            del self.__external_pairs_df[pair_key]
+
+        self.__external_pairs_df[pair_key] = (dataframe, datetime.now(timezone.utc))
+
+        pair_event = self.__external_pairs_event.get(pair)
+        if pair_event:
+            logger.debug(f"Leader data for pair {pair_key} has been added")
+            pair_event.set()
+
+    def get_external_df(
+        self,
+        pair: str,
+        timeframe: str,
+        candle_type: CandleType
+    ) -> DataFrame:
+        """
+        If the pair exists in __external_pairs_df, return it. If it doesn't,
+        create a new threading Event in __external_pairs_event and wait on it.
+        """
+        pair_key = (pair, timeframe, candle_type)
+        if pair_key not in self.__external_pairs_df:
+            pair_event = Event()
+            self.__external_pairs_event[pair] = pair_event
+
+            logger.debug(f"Waiting on Leader data for: {pair_key}")
+            self.__external_pairs_event[pair].wait()
+
+        if pair_key in self.__external_pairs_df:
+            return self.__external_pairs_df[pair_key]
+
+        # Because of the waiting mechanism, this should never return
+        return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

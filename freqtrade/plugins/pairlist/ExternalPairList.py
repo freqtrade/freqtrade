@@ -81,11 +81,10 @@ class ExternalPairList(IPairList):
         seen = set(self._leader_pairs)
         for pair in pairlist:
             if pair in seen:
-                logger.debug(f"Encountered already existing pair {pair}")
                 continue
             self._leader_pairs.append(pair)
 
-        if not self._has_data.is_set():
+        if not self._has_data.is_set() and len(self._leader_pairs) > 0:
             self._has_data.set()
 
     def gen_pairlist(self, tickers: Dict) -> List[str]:

@@ -23,7 +23,7 @@ from freqtrade.exceptions import (DependencyException, ExchangeError, Insufficie
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.misc import safe_value_fallback, safe_value_fallback2
+from freqtrade.misc import dataframe_to_json, safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
 from freqtrade.plugins.pairlistmanager import PairListManager
@@ -77,6 +77,8 @@ class FreqtradeBot(LoggingMixin):
 
         self.replicate_controller = None
 
+        self.pairlists = PairListManager(self.exchange, self.config)
+
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
         # so anything in the Freqtradebot instance should be ready (initialized), including
@@ -84,14 +86,15 @@ class FreqtradeBot(LoggingMixin):
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
 
-        self.pairlists = PairListManager(self.exchange, self.config)
-
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
         # Attach Dataprovider to strategy instance
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
+
+        # Attach ReplicateController to the strategy
+        # self.strategy.replicate_controller = self.replicate_controller
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -194,7 +197,28 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        self.strategy.analyze(self.active_pair_whitelist)
+        if self.replicate_controller:
+            if not self.replicate_controller.is_leader():
+                # Run Follower mode analyzing
+                leader_pairs = self.pairlists._whitelist
+                self.strategy.analyze_external(self.active_pair_whitelist, leader_pairs)
+            else:
+                # We are leader, make sure to pass callback func to emit data
+                def emit_on_finish(pair, dataframe, timeframe, candle_type):
+                    logger.debug(f"Emitting dataframe for {pair}")
+                    return self.rpc.emit_data(
+                        {
+                            "data_type": LeaderMessageType.analyzed_df,
+                            "data": {
+                                "key": (pair, timeframe, candle_type),
+                                "value": dataframe_to_json(dataframe)
+                            }
+                        }
+                    )
+
+                self.strategy.analyze(self.active_pair_whitelist, finish_callback=emit_on_finish)
+        else:
+            self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace
@@ -264,14 +288,13 @@ class FreqtradeBot(LoggingMixin):
 
         # Or should this class be made available to the PairListManager and ran
         # when filter_pairlist is called?
+
         if self.replicate_controller:
             if self.replicate_controller.is_leader():
-                self.replicate_controller.send_message(
-                    {
-                        "data_type": LeaderMessageType.pairlist,
-                        "data": _whitelist
-                    }
-                )
+                self.rpc.emit_data({
+                    "data_type": LeaderMessageType.pairlist,
+                    "data": _whitelist
+                })
 
         # Calculating Edge positioning
         if self.edge:

@@ -2,7 +2,7 @@ import logging
 from typing import Type
 
 from freqtrade.rpc.replicate.proxy import WebSocketProxy
-from freqtrade.rpc.replicate.serializer import JSONWebSocketSerializer, WebSocketSerializer
+from freqtrade.rpc.replicate.serializer import MsgPackWebSocketSerializer, WebSocketSerializer
 from freqtrade.rpc.replicate.types import WebSocketType
 
 
@@ -17,7 +17,7 @@ class WebSocketChannel:
     def __init__(
         self,
         websocket: WebSocketType,
-        serializer_cls: Type[WebSocketSerializer] = JSONWebSocketSerializer
+        serializer_cls: Type[WebSocketSerializer] = MsgPackWebSocketSerializer
     ):
         # The WebSocket object
         self._websocket = WebSocketProxy(websocket)
@@ -34,6 +34,7 @@ class WebSocketChannel:
         """
         Send data on the wrapped websocket
         """
+        # logger.info(f"Serialized Send - {self._wrapped_ws._serialize(data)}")
         await self._wrapped_ws.send(data)
 
     async def recv(self):
@@ -115,6 +116,17 @@ class ChannelManager:
             except RuntimeError:
                 # Handle cannot send after close cases
                 await self.on_disconnect(websocket)
+
+    async def send_direct(self, channel, data):
+        """
+        Send data directly through direct_channel only
+
+        :param direct_channel: The WebSocketChannel object to send data through
+        :param data: The data to send
+        """
+        # We iterate over the channels to get reference to the websocket object
+        # so we can disconnect incase of failure
+        await channel.send(data)
 
     def has_channels(self):
         """

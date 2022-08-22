@@ -1,7 +1,14 @@
 import json
+import logging
 from abc import ABC, abstractmethod
 
+import msgpack
+import orjson
+
 from freqtrade.rpc.replicate.proxy import WebSocketProxy
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketSerializer(ABC):
@@ -34,9 +41,25 @@ class WebSocketSerializer(ABC):
 
 class JSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data):
-        # json expects string not bytes
         return json.dumps(data)
 
     def _deserialize(self, data):
-        # The WebSocketSerializer gives bytes not string
         return json.loads(data)
+
+
+class ORJSONWebSocketSerializer(WebSocketSerializer):
+    ORJSON_OPTIONS = orjson.OPT_NAIVE_UTC | orjson.OPT_SERIALIZE_NUMPY
+
+    def _serialize(self, data):
+        return orjson.dumps(data, option=self.ORJSON_OPTIONS)
+
+    def _deserialize(self, data):
+        return orjson.loads(data, option=self.ORJSON_OPTIONS)
+
+
+class MsgPackWebSocketSerializer(WebSocketSerializer):
+    def _serialize(self, data):
+        return msgpack.packb(data, use_bin_type=True)
+
+    def _deserialize(self, data):
+        return msgpack.unpackb(data, raw=False)

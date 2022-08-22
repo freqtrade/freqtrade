@@ -3,3 +3,4 @@
 
 # Required for follower
 websockets
+msgpack
