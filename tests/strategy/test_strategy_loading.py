@@ -48,6 +48,10 @@ def test_search_all_strategies_with_failed():
     assert len([x for x in strategies if x['class'] is not None]) == 9
     assert len([x for x in strategies if x['class'] is None]) == 1
 
+    directory = Path(__file__).parent / "strats_nonexistingdir"
+    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    assert len(strategies) == 0
+
 
 def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy',
