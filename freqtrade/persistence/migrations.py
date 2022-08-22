@@ -133,6 +133,7 @@ def migrate_trades_and_orders_table(
     amount_precision = get_column_def(cols, 'amount_precision', 'null')
     price_precision = get_column_def(cols, 'price_precision', 'null')
     precision_mode = get_column_def(cols, 'precision_mode', 'null')
+    contract_size = get_column_def(cols, 'contract_size', 'null')
 
     # Schema migration necessary
     with engine.begin() as connection:
@@ -161,7 +162,7 @@ def migrate_trades_and_orders_table(
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, liquidation_price, is_short,
             interest_rate, funding_fees, realized_profit,
-            amount_precision, price_precision, precision_mode
+            amount_precision, price_precision, precision_mode, contract_size
             )
         select id, lower(exchange), pair, {base_currency} base_currency,
             {stake_currency} stake_currency,
@@ -189,7 +190,7 @@ def migrate_trades_and_orders_table(
             {is_short} is_short, {interest_rate} interest_rate,
             {funding_fees} funding_fees, {realized_profit} realized_profit,
             {amount_precision} amount_precision, {price_precision} price_precision,
-            {precision_mode} precision_mode
+            {precision_mode} precision_mode, {contract_size} contract_size
             from {trade_back_name}
             """))
 
@@ -308,7 +309,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'stop_price')):
     migrating = False
-    if not has_column(cols_trades, 'precision_mode'):
+    if not has_column(cols_trades, 'contract_size'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")

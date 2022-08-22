@@ -296,6 +296,7 @@ class LocalTrade():
     amount_precision: Optional[float] = None
     price_precision: Optional[float] = None
     precision_mode: Optional[int] = None
+    contract_size: Optional[float] = None
 
     # Leverage trading properties
     liquidation_price: Optional[float] = None
@@ -1142,6 +1143,7 @@ class Trade(_DECL_BASE, LocalTrade):
     amount_precision = Column(Float, nullable=True)
     price_precision = Column(Float, nullable=True)
     precision_mode = Column(Integer, nullable=True)
+    contract_size = Column(Float, nullable=True)
 
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
