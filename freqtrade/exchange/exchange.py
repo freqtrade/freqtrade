@@ -2892,7 +2892,7 @@ def market_is_active(market: Dict) -> bool:
     return market.get('active', True) is not False
 
 
-def amount_to_contracts(amount: float, contract_size: float) -> float:
+def amount_to_contracts(amount: float, contract_size: Optional[float]) -> float:
     """
     Convert amount to contracts.
     :param amount: amount to convert
@@ -2905,7 +2905,7 @@ def amount_to_contracts(amount: float, contract_size: float) -> float:
         return amount
 
 
-def contracts_to_amount(num_contracts: float, contract_size: float) -> float:
+def contracts_to_amount(num_contracts: float, contract_size: Optional[float]) -> float:
     """
     Takes num-contracts and converts it to contract size
     :param num_contracts: number of contracts

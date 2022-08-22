@@ -15,6 +15,7 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPE
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import amount_to_precision, price_to_precision
+from freqtrade.exchange.exchange import amount_to_contracts, contracts_to_amount
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
 from freqtrade.util import FtPrecise
@@ -624,7 +625,11 @@ class LocalTrade():
             else:
                 logger.warning(
                     f'Got different open_order_id {self.open_order_id} != {order.order_id}')
-            amount_tr = amount_to_precision(self.amount, self.amount_precision, self.precision_mode)
+            amount_tr = contracts_to_amount(
+                amount_to_precision(
+                    amount_to_contracts(self.amount, self.contract_size),
+                    self.amount_precision, self.precision_mode),
+                self.contract_size)
             if isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)
             else:

@@ -756,6 +756,7 @@ class FreqtradeBot(LoggingMixin):
                 amount_precision=self.exchange.get_precision_amount(pair),
                 price_precision=self.exchange.get_precision_price(pair),
                 precision_mode=self.exchange.precisionMode,
+                contract_size=self.exchange.get_contract_size(pair),
             )
         else:
             # This is additional buy, we reset fee_open_currency so timeout checking can work
