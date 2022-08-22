@@ -330,13 +330,12 @@ def _download_trades_history(exchange: Exchange,
     try:
 
         until = None
+        since = 0
         if timerange:
             if timerange.starttype == 'date':
                 since = timerange.startts * 1000
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
-        else:
-            since = arrow.utcnow().shift(days=-new_pairs_days).int_timestamp * 1000
 
         trades = data_handler.trades_load(pair)
 
@@ -348,6 +347,9 @@ def _download_trades_history(exchange: Exchange,
             # since is before the first trade
             logger.info(f"Start earlier than available data. Redownloading trades for {pair}...")
             trades = []
+
+        if not since:
+            since = arrow.utcnow().shift(days=-new_pairs_days).int_timestamp * 1000
 
         from_id = trades[-1][1] if trades else None
         if trades and since < trades[-1][0]:
