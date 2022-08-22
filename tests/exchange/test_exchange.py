@@ -181,11 +181,11 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert log_has(asynclogmsg, caplog)
     # Test additional headers case
-    Exchange._headers = {'hello': 'world'}
+    Exchange._ccxt_params = {'hello': 'world'}
     ex = Exchange(conf)
 
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
-    assert ex._api.headers == {'hello': 'world'}
+    assert ex._api.hello == 'world'
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 

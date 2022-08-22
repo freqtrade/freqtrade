@@ -54,8 +54,8 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
-    # Additional headers - added to the ccxt object
-    _headers: Dict = {}
+    # Additional parameters - added to the ccxt object
+    _ccxt_params: Dict = {}
 
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
@@ -242,9 +242,9 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
-        if self._headers:
-            # Inject static headers after the above output to not confuse users.
-            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if self._ccxt_params:
+            # Inject static options after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts(self._ccxt_params, ccxt_kwargs)
         if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
