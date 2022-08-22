@@ -142,7 +142,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         current_profit = 0
         for trade in open_trades:
             if trade.pair == pair:
-                current_value = self.strategy.dp._exchange.get_rate(pair, refresh=False)
+                current_value = self.strategy.dp._exchange.get_rate(pair, refresh=False) #, side="buy", is_short=True)
                 openrate = trade.open_rate
                 if 'long' in trade.enter_tag:
                     market_side = 1

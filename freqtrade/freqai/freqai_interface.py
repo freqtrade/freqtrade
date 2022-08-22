@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -90,6 +90,7 @@ class IFreqaiModel(ABC):
         self.begin_time: float = 0
         self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
+        self.strategy: Optional[IStrategy] = None
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 

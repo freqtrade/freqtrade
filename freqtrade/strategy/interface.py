@@ -152,6 +152,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
             self.freqai_info = self.config["freqai"]
+            self.freqai.strategy = self
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
