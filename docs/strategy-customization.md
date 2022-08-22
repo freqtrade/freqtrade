@@ -166,7 +166,7 @@ Additional technical libraries can be installed as necessary, or custom indicato
 
 Most indicators have an instable startup period, in which they are either not available (NaN), or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
 To account for this, the strategy can be assigned the `startup_candle_count` attribute.
-This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.
+This should be set to the maximum number of candles that the strategy requires to calculate stable indicators. In the case where a user includes higher timeframes with informative pairs, the `startup_candle_count` does not necessarily change. The value is the maximum period (in candles) that any of the informatives timeframes need to compute stable indicators.
 
 In this example strategy, this should be set to 100 (`startup_candle_count = 100`), since the longest needed history is 100 candles.
 

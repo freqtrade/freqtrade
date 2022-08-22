@@ -92,7 +92,7 @@ class DataProvider:
                 'timerange') is None else str(self._config.get('timerange')))
             # Move informative start time respecting startup_candle_count
             timerange.subtract_start(
-                timeframe_to_seconds(str(timeframe)) * self._config.get('startup_candle_count', 0)
+                self.get_required_startup_seconds(str(timeframe))
             )
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
@@ -104,6 +104,17 @@ class DataProvider:
 
             )
         return self.__cached_pairs_backtesting[saved_pair].copy()
+
+    def get_required_startup_seconds(self, timeframe: str) -> int:
+        tf_seconds = timeframe_to_seconds(timeframe)
+        base_seconds = tf_seconds * self._config.get('startup_candle_count', 0)
+        if not self._config['freqai']['enabled']:
+            return base_seconds
+        else:
+            train_seconds = self._config['freqai']['train_period_days'] * 86400
+            # multiplied by safety factor of 2 because FreqAI users
+            # typically do not know the correct window.
+            return base_seconds * 2 + int(train_seconds)
 
     def get_pair_dataframe(
         self,

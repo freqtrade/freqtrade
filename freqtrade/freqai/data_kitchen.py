@@ -20,6 +20,8 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.exchange.exchange import market_is_active
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -834,9 +836,7 @@ class FreqaiDataKitchen:
         # We notice that users like to use exotic indicators where
         # they do not know the required timeperiod. Here we include a factor
         # of safety by multiplying the user considered "max" by 2.
-        max_period = self.freqai_config["feature_parameters"].get(
-            "indicator_max_period_candles", 20
-        ) * 2
+        max_period = self.config.get('startup_candle_count', 20) * 2
         additional_seconds = max_period * max_tf_seconds
 
         if trained_timestamp != 0:
@@ -1015,12 +1015,15 @@ def download_all_data_for_training(timerange: TimeRange,
                                     and training the model.
     :param dp: DataProvider instance attached to the strategy
     """
-    all_pairs = copy.deepcopy(
-        config["freqai"]["feature_parameters"].get("include_corr_pairlist", [])
-    )
-    for pair in config.get("exchange", "").get("pair_whitelist"):
-        if pair not in all_pairs:
-            all_pairs.append(pair)
+
+    if dp._exchange is not None:
+        markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
+                   or config.get('include_inactive')]
+    else:
+        # This should not occur:
+        raise OperationalException('No exchange object found.')
+
+    all_pairs = dynamic_expand_pairlist(config, markets)
 
     new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
     if not dp._exchange:
@@ -1048,7 +1051,6 @@ def get_required_data_timerange(
     user.
     """
     time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-    trained_timerange = TimeRange()
     data_load_timerange = TimeRange()
 
     timeframes = config["freqai"]["feature_parameters"].get("include_timeframes")
@@ -1059,15 +1061,9 @@ def get_required_data_timerange(
         if secs > max_tf_seconds:
             max_tf_seconds = secs
 
-    max_period = config["freqai"]["feature_parameters"].get(
-        "indicator_max_period_candles", 20
-    ) * 2
-    additional_seconds = max_period * max_tf_seconds
+    max_period = config.get('startup_candle_count', 20) * 2
 
-    trained_timerange.startts = int(
-        time - config["freqai"].get("train_period_days", 0) * SECONDS_IN_DAY
-    )
-    trained_timerange.stopts = int(time)
+    additional_seconds = max_period * max_tf_seconds
 
     data_load_timerange.startts = int(
         time

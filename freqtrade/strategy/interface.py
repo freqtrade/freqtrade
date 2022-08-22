@@ -163,6 +163,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 )
                 data_load_timerange = get_required_data_timerange(self.config)
                 download_all_data_for_training(data_load_timerange, self.dp, self.config)
+
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
