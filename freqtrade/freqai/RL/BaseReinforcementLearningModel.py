@@ -142,13 +142,14 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         current_profit = 0
         for trade in open_trades:
             if trade.pair == pair:
-                current_value = trade.open_trade_value
+                current_value = self.strategy.dp._exchange.get_rate(pair, refresh=False)
                 openrate = trade.open_rate
                 if 'long' in trade.enter_tag:
                     market_side = 1
+                    current_profit = (current_value - openrate) / openrate
                 else:
                     market_side = 0
-                current_profit = current_value / openrate - 1
+                    current_profit = (openrate - current_value ) / openrate
 
         total_profit = 0
         closed_trades = Trade.get_trades_proxy(pair=pair, is_open=False)
