@@ -28,7 +28,7 @@ class Configuration:
     Reuse this class for the bot, backtesting, hyperopt and every script that required configuration
     """
 
-    def __init__(self, args: Dict[str, Any], runmode: RunMode = None) -> None:
+    def __init__(self, args: Dict[str, Any], runmode: Optional[RunMode] = None) -> None:
         self.args = args
         self.config: Optional[Dict[str, Any]] = None
         self.runmode = runmode
