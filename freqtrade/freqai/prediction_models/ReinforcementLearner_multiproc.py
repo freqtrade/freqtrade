@@ -60,7 +60,7 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         # environments
         if not self.train_env:
             env_id = "train_env"
-            num_cpu = int(self.freqai_info["data_kitchen_thread_count"] / 2)
+            num_cpu = int(self.freqai_info["rl_config"]["thread_count"] / 2)
             self.train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
                                             self.reward_params, self.CONV_WIDTH,
                                             config=self.config) for i
