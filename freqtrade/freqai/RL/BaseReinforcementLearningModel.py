@@ -16,6 +16,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 import torch as th
 from typing import Callable
+from datetime import datetime, timezone
 from stable_baselines3.common.utils import set_random_seed
 import gym
 logger = logging.getLogger(__name__)
@@ -140,23 +141,27 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         open_trades = Trade.get_trades_proxy(is_open=True)
         market_side = 0.5
         current_profit = 0
+        trade_duration = 0
         for trade in open_trades:
             if trade.pair == pair:
-                current_value = self.strategy.dp._exchange.get_rate(pair, refresh=False) #, side="buy", is_short=True)
+                current_value = self.strategy.dp._exchange.get_rate(
+                    pair, refresh=False, side="exit", is_short=trade.is_short)
                 openrate = trade.open_rate
+                now = datetime.now(timezone.utc).timestamp()
+                trade_duration = (now - trade.open_date.timestamp()) / self.base_tf_seconds
                 if 'long' in trade.enter_tag:
                     market_side = 1
                     current_profit = (current_value - openrate) / openrate
                 else:
                     market_side = 0
-                    current_profit = (openrate - current_value ) / openrate
+                    current_profit = (openrate - current_value) / openrate
 
-        total_profit = 0
-        closed_trades = Trade.get_trades_proxy(pair=pair, is_open=False)
-        for trade in closed_trades:
-            total_profit += trade.close_profit
+        # total_profit = 0
+        # closed_trades = Trade.get_trades_proxy(pair=pair, is_open=False)
+        # for trade in closed_trades:
+        #     total_profit += trade.close_profit
 
-        return market_side, current_profit, total_profit
+        return market_side, current_profit, int(trade_duration)
 
     def predict(
         self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
@@ -192,10 +197,11 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         output = pd.DataFrame(np.zeros(len(dataframe)), columns=dk.label_list)
 
         def _predict(window):
-            market_side, current_profit, total_profit = self.get_state_info(dk.pair)
+            market_side, current_profit, trade_duration = self.get_state_info(dk.pair)
             observations = dataframe.iloc[window.index]
             observations['current_profit'] = current_profit
             observations['position'] = market_side
+            observations['trade_duration'] = trade_duration
             res, _ = model.predict(observations, deterministic=True)
             return res
 

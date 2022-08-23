@@ -62,7 +62,7 @@ class Base5ActionRLEnv(gym.Env):
         self.fee = 0.0015
 
         # # spaces
-        self.shape = (window_size, self.signal_features.shape[1] + 2)
+        self.shape = (window_size, self.signal_features.shape[1] + 3)
         self.action_space = spaces.Discrete(len(Actions))
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
@@ -184,14 +184,21 @@ class Base5ActionRLEnv(gym.Env):
     def _get_observation(self):
         features_window = self.signal_features[(
             self._current_tick - self.window_size):self._current_tick]
-        features_and_state = DataFrame(np.zeros((len(features_window), 2)),
-                                       columns=['current_profit_pct', 'position'],
+        features_and_state = DataFrame(np.zeros((len(features_window), 3)),
+                                       columns=['current_profit_pct', 'position', 'trade_duration'],
                                        index=features_window.index)
 
         features_and_state['current_profit_pct'] = self.get_unrealized_profit()
         features_and_state['position'] = self._position.value
+        features_and_state['trade_duration'] = self.get_trade_duration()
         features_and_state = pd.concat([features_window, features_and_state], axis=1)
         return features_and_state
+
+    def get_trade_duration(self):
+        if self._last_trade_tick is None:
+            return 0
+        else:
+            return self._current_tick - self._last_trade_tick
 
     def get_unrealized_profit(self):
 
