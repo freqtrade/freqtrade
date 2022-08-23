@@ -88,6 +88,7 @@
             "train_cycles": 10,
             "eval_cycles": 3,
             "thread_count": 4,
+            "max_trade_duration_candles": 100,
             "model_type": "PPO",
             "policy_type": "MlpPolicy",
             "model_reward_parameters": {

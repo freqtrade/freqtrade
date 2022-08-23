@@ -8,6 +8,7 @@ from gym import spaces
 from gym.utils import seeding
 from pandas import DataFrame
 import pandas as pd
+from abc import abstractmethod
 logger = logging.getLogger(__name__)
 
 
@@ -265,28 +266,12 @@ class Base5ActionRLEnv(gym.Env):
     def get_sharpe_ratio(self):
         return mean_over_std(self.get_portfolio_log_returns())
 
+    @abstractmethod
     def calculate_reward(self, action):
-
-        if self._last_trade_tick is None:
-            return 0.
-
-        # close long
-        if action == Actions.Long_exit.value and self._position == Positions.Long:
-            last_trade_price = self.add_entry_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_exit_fee(self.prices.iloc[self._current_tick].open)
-            factor = 1
-            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float((np.log(current_price) - np.log(last_trade_price)) * factor)
-
-        # close short
-        if action == Actions.Short_exit.value and self._position == Positions.Short:
-            last_trade_price = self.add_exit_fee(self.prices.iloc[self._last_trade_tick].open)
-            current_price = self.add_entry_fee(self.prices.iloc[self._current_tick].open)
-            factor = 1
-            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
-                factor = self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float(np.log(last_trade_price) - np.log(current_price) * factor)
+        """
+        Reward is created by BaseReinforcementLearningModel and can
+        be inherited/edited by the user made ReinforcementLearner file.
+        """
 
         return 0.
 
