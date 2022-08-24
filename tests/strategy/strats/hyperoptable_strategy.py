@@ -1,13 +1,13 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
 from pandas import DataFrame
-from strategy_test_v2 import StrategyTestV2
+from strategy_test_v3 import StrategyTestV3
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy import BooleanParameter, DecimalParameter, IntParameter, RealParameter
 
 
-class HyperoptableStrategy(StrategyTestV2):
+class HyperoptableStrategy(StrategyTestV3):
     """
     Default Strategy provided by freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
