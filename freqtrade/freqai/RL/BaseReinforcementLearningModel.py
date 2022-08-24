@@ -19,7 +19,6 @@ from typing import Callable
 from datetime import datetime, timezone
 from stable_baselines3.common.utils import set_random_seed
 import gym
-from pathlib import Path
 logger = logging.getLogger(__name__)
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -112,27 +111,14 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         test_df = data_dictionary["test_features"]
         eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
 
-        # environments
-        if not self.train_env:
-            self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
-                                     reward_kwargs=self.reward_params, config=self.config)
-            self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
-                                    window_size=self.CONV_WIDTH,
-                                    reward_kwargs=self.reward_params, config=self.config))
-            self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
-                                              render=False, eval_freq=eval_freq,
-                                              best_model_save_path=str(dk.data_path))
-        else:
-            self.train_env.reset()
-            self.eval_env.reset()
-            self.train_env.reset_env(train_df, prices_train, self.CONV_WIDTH, self.reward_params)
-            self.eval_env.reset_env(test_df, prices_test, self.CONV_WIDTH, self.reward_params)
-            # self.eval_callback.eval_env = self.eval_env
-            # self.eval_callback.best_model_save_path = str(dk.data_path)
-            # self.eval_callback._init_callback()
-            self.eval_callback.__init__(self.eval_env, deterministic=True,
-                                        render=False, eval_freq=eval_freq,
-                                        best_model_save_path=str(dk.data_path))
+        self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
+                                 reward_kwargs=self.reward_params, config=self.config)
+        self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
+                                window_size=self.CONV_WIDTH,
+                                reward_kwargs=self.reward_params, config=self.config))
+        self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
+                                          render=False, eval_freq=eval_freq,
+                                          best_model_save_path=str(dk.data_path))
 
     @abstractmethod
     def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
@@ -284,30 +270,43 @@ class MyRLEnv(Base5ActionRLEnv):
 
     def calculate_reward(self, action):
 
-        if self._last_trade_tick is None:
-            return 0.
+        # first, penalize if the action is not valid
+        if not self._is_valid(action):
+            return -15
 
         pnl = self.get_unrealized_profit()
-        max_trade_duration = self.rl_config.get('max_trade_duration_candles', 100)
+        rew = np.sign(pnl) * (pnl + 1)
+        factor = 100
+
+        # reward agent for entering trades
+        if action in (Actions.Long_enter.value, Actions.Short_enter.value):
+            return 25
+        # discourage agent from not entering trades
+        if action == Actions.Neutral.value and self._position == Positions.Neutral:
+            return -15
+
+        max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
         trade_duration = self._current_tick - self._last_trade_tick
 
-        factor = 1
         if trade_duration <= max_trade_duration:
             factor *= 1.5
         elif trade_duration > max_trade_duration:
             factor *= 0.5
 
+        # discourage sitting in position
+        if self._position in (Positions.Short, Positions.Long):
+            return -50 * trade_duration / max_trade_duration
+
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+            if pnl > self.profit_aim * self.rr:
                 factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float(pnl * factor)
+            return float(rew * factor)
 
         # close short
         if action == Actions.Short_exit.value and self._position == Positions.Short:
-            factor = 1
-            if self.close_trade_profit and self.close_trade_profit[-1] > self.profit_aim * self.rr:
+            if pnl > self.profit_aim * self.rr:
                 factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float(pnl * factor)
+            return float(rew * factor)
 
         return 0.
