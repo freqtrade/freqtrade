@@ -12,7 +12,7 @@ MAX_ACCEPTED_WIN_TRADE_DURATION = 120
 MAX_ACCEPTED_LOST_TRADE_DURATION = 90
 
 
-class WAOHyperOptLoss(IHyperOptLoss):
+class WAOHyperOptLoss4(IHyperOptLoss):
 
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
@@ -23,35 +23,35 @@ class WAOHyperOptLoss(IHyperOptLoss):
 
         """We can put that into a function above"""
         x = 0
-        win_trades_duration = []
+        # win_trades_duration = []
         lost_trades_duration = []
-        win_trades_number = 0
+        # win_trades_number = 0
         for profit_ratio in results['profit_ratio']:
             if profit_ratio > 0:
-                win_trades_number += 1
-                win_trades_duration.append(results['trade_duration'][x])
-
+                pass
+        #         win_trades_number += 1
+        #         win_trades_duration.append(results['trade_duration'][x])
+        #     #
             else:
                 lost_trades_duration.append(results['trade_duration'][x])
-
+        #
             x += 1
-
-        win_trades_percentage = win_trades_number / trade_count
+        # win_trade_percentage = win_trades_number / trade_count
         """We can put that into a function above"""
-        y = 0
-        profit_sell_signal = []
-        for exit_reason in results['exit_reason']:
-            if exit_reason == 'exit_signal':
-                profit_sell_signal.append(results['profit_ratio'][y])
-            y += 1
+        # y = 0
+        # profit_sell_signal = []
+        # for exit_reason in results['exit_reason']:
+        #     if exit_reason == 'exit_signal':
+        #         profit_sell_signal.append(results['profit_ratio'][y])
+        #     y += 1
 
-        av_profit_sell_signal = statistics.mean(profit_sell_signal)
-        win_trades_duration_av = statistics.mean(win_trades_duration)
+        # av_profit_sell_signal = profit_sell_signal.mean()
+        # win_trades_duration_av = win_trades_duration.mean()
         lost_trades_duration_av = statistics.mean(lost_trades_duration)
 
-        win_trades_percentage_loss = min(0, 1 - win_trades_percentage / MIN_ACCEPTED_WIN_PERCENTAGE)
-        av_profit_sell_signal_loss = min(0, 1 - av_profit_sell_signal / MIN_ACCEPTED_AV_PROFIT)
-        win_duration_loss = min(win_trades_duration_av / MAX_ACCEPTED_WIN_TRADE_DURATION, 1)
+        # win_trade_percentage_loss = min(0, 1 - win_trades_percentage / MIN_ACCEPTED_WIN_PERCENTAGE)
+        # av_profit_sell_signal_loss = min(0, 1 - av_profit_sell_signal / MIN_ACCEPTED_AV_PROFIT)
+        # win_duration_loss = min(win_trades_duration_av / MAX_ACCEPTED_WIN_TRADE_DURATION, 1)
         lost_duration_loss = min(lost_trades_duration_av / MAX_ACCEPTED_LOST_TRADE_DURATION, 1)
 
         """
@@ -65,6 +65,6 @@ class WAOHyperOptLoss(IHyperOptLoss):
         We loose money when trades durations are big (noise), specially for the lost ones, so the quicker the lost trades is, the better it is ===> lost teade duration weight is the second most important weight
         Then follow the win trades duration and finally we want, at least, win % > 30% but it's not the most important thing ==> the smallest weight 
         """
-        result = 0.15 * win_trades_percentage_loss + 0.4 * av_profit_sell_signal_loss + 0.2 * win_duration_loss + 0.25 * lost_duration_loss
+        result = 1 * lost_duration_loss
 
         return result

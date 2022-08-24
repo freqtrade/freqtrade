@@ -18,7 +18,7 @@ Note : `forcesell`, `forcebuy`, `emergencysell` are changed to `force_exit`, `fo
   * [`check_buy_timeout()` -> `check_entry_timeout()`](#custom_entry_timeout)
   * [`check_sell_timeout()` -> `check_exit_timeout()`](#custom_entry_timeout)
   * New `side` argument to callbacks without trade object
-    * [`custom_stake_amount`](#custom-stake-amount)
+    * [`custom_stake_amount`](#custom_stake_amount)
     * [`confirm_trade_entry`](#confirm_trade_entry)
     * [`custom_entry_price`](#custom_entry_price)
   * [Changed argument name in `confirm_trade_exit`](#confirm_trade_exit)
@@ -192,7 +192,7 @@ class AwesomeStrategy(IStrategy):
         return False 
 ```
 
-### Custom-stake-amount
+### `custom_stake_amount`
 
 New string argument `side` - which can be either `"long"` or `"short"`.
 

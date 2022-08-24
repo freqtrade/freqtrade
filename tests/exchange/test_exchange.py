@@ -1135,7 +1135,58 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name, leverag
     assert order["symbol"] == "ETH/BTC"
     assert order["amount"] == 1
     assert order["leverage"] == leverage
-    assert order["cost"] == 1 * 200 / leverage
+    assert order["cost"] == 1 * 200
+
+
+@pytest.mark.parametrize('side,is_short,order_reason', [
+    ("buy", False, "entry"),
+    ("sell", False, "exit"),
+    ("buy", True, "exit"),
+    ("sell", True, "entry"),
+])
+@pytest.mark.parametrize("order_type,price_side,fee", [
+    ("limit", "same", 1.0),
+    ("limit", "other", 2.0),
+    ("market", "same", 2.0),
+    ("market", "other", 2.0),
+])
+def test_create_dry_run_order_fees(
+    default_conf,
+    mocker,
+    side,
+    order_type,
+    is_short,
+    order_reason,
+    price_side,
+    fee,
+):
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_fee',
+        side_effect=lambda symbol, taker_or_maker: 2.0 if taker_or_maker == 'taker' else 1.0
+    )
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side == 'other')
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    order = exchange.create_dry_run_order(
+        pair='LTC/USDT',
+        ordertype=order_type,
+        side=side,
+        amount=10,
+        rate=2.0,
+        leverage=1.0
+    )
+    if price_side == 'other' or order_type == 'market':
+        assert order['fee']['rate'] == fee
+        return
+    else:
+        assert order['fee'] is None
+
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled',
+                 return_value=price_side != 'other')
+
+    order1 = exchange.fetch_dry_run_order(order['id'])
+    assert order1['fee']['rate'] == fee
 
 
 @pytest.mark.parametrize("side,startprice,endprice", [
@@ -2859,6 +2910,9 @@ def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, 
     ({'amount': 10.0, 'fee': {}}, False),
     ({'result': 'testest123'}, False),
     ('hello_world', False),
+    ({'status': 'canceled', 'amount': None, 'fee': None}, False),
+    ({'status': 'canceled', 'filled': None, 'amount': None, 'fee': None}, False),
+
 ])
 def test_is_cancel_order_result_suitable(mocker, default_conf, exchange_name, order, result):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -3544,7 +3598,7 @@ def test_order_has_fee(order, expected) -> None:
 def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
     mocker.patch('freqtrade.exchange.Exchange.calculate_fee_rate', MagicMock(return_value=0.01))
     ex = get_patched_exchange(mocker, default_conf)
-    assert ex.extract_cost_curr_rate(order) == expected
+    assert ex.extract_cost_curr_rate(order['fee'], order['symbol'], cost=20, amount=1) == expected
 
 
 @pytest.mark.parametrize("order,unknown_fee_rate,expected", [
@@ -3582,6 +3636,9 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
       'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 1, 4.0),
     ({'symbol': 'POINT/BTC', 'amount': 0.04, 'cost': 0.5,
       'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 2, 8.0),
+    # Missing currency
+    ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
+        'fee': {'currency': None, 'cost': 0.005}}, None, None),
 ])
 def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_rate) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
@@ -3590,7 +3647,8 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_r
 
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert ex.calculate_fee_rate(order) == expected
+    assert ex.calculate_fee_rate(order['fee'], order['symbol'],
+                                 cost=order['cost'], amount=order['amount']) == expected
 
 
 @pytest.mark.parametrize('retrycount,max_retries,expected', [

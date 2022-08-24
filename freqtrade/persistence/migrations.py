@@ -1,9 +1,10 @@
 import logging
 from typing import List
 
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text, tuple_, update
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence.trade_model import Order, Trade
 
 
 logger = logging.getLogger(__name__)
@@ -251,31 +252,31 @@ def set_sqlite_to_wal(engine):
 
 def fix_old_dry_orders(engine):
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                """
-                update orders
-                set ft_is_open = 0
-                where ft_is_open = 1 and (ft_trade_id, order_id) not in (
-                    select id, stoploss_order_id from trades where stoploss_order_id is not null
-                ) and ft_order_side = 'stoploss'
-                and order_id like 'dry_%'
-                """
-            )
-        )
-        connection.execute(
-            text(
-                """
-                update orders
-                set ft_is_open = 0
-                where ft_is_open = 1
-                and (ft_trade_id, order_id) not in (
-                    select id, open_order_id from trades where open_order_id is not null
-                ) and ft_order_side != 'stoploss'
-                and order_id like 'dry_%'
-                """
-            )
-        )
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.stoploss_order_id
+                ).where(Trade.stoploss_order_id.is_not(None))
+                  ),
+            Order.ft_order_side == 'stoploss',
+            Order.order_id.like('dry%'),
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
+
+        stmt = update(Order).where(
+            Order.ft_is_open.is_(True),
+            tuple_(Order.ft_trade_id, Order.order_id).not_in(
+                select(
+                    Trade.id, Trade.open_order_id
+                ).where(Trade.open_order_id.is_not(None))
+                  ),
+            Order.ft_order_side != 'stoploss',
+            Order.order_id.like('dry%')
+
+        ).values(ft_is_open=False)
+        connection.execute(stmt)
 
 
 def check_migrate(engine, decl_base, previous_tables) -> None:

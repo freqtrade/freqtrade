@@ -830,6 +830,8 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 
+    trade = Trade.query.filter(Trade.id == '3').first()
+
     # make an limit-sell open trade
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_order',

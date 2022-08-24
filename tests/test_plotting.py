@@ -72,7 +72,7 @@ def test_add_indicators(default_conf, testdatadir, caplog):
 
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    # Generate buy/sell signals and indicators
+    # Generate entry/exit signals and indicators
     data = strategy.analyze_ticker(data, {'pair': pair})
     fig = generate_empty_figure()
 
@@ -113,7 +113,7 @@ def test_add_areas(default_conf, testdatadir, caplog):
     ind_plain = {"macd": {"fill_to": "macdhist"}}
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    # Generate buy/sell signals and indicators
+    # Generate entry/exit signals and indicators
     data = strategy.analyze_ticker(data, {'pair': pair})
     fig = generate_empty_figure()
 
@@ -165,24 +165,24 @@ def test_plot_trades(testdatadir, caplog):
     fig = plot_trades(fig, trades)
     figure = fig1.layout.figure
 
-    # Check buys - color, should be in first graph, ...
-    trade_buy = find_trace_in_fig_data(figure.data, 'Trade buy')
-    assert isinstance(trade_buy, go.Scatter)
-    assert trade_buy.yaxis == 'y'
-    assert len(trades) == len(trade_buy.x)
-    assert trade_buy.marker.color == 'cyan'
-    assert trade_buy.marker.symbol == 'circle-open'
-    assert trade_buy.text[0] == '3.99%, buy_tag, roi, 15 min'
+    # Check entry - color, should be in first graph, ...
+    trade_entries = find_trace_in_fig_data(figure.data, 'Trade entry')
+    assert isinstance(trade_entries, go.Scatter)
+    assert trade_entries.yaxis == 'y'
+    assert len(trades) == len(trade_entries.x)
+    assert trade_entries.marker.color == 'cyan'
+    assert trade_entries.marker.symbol == 'circle-open'
+    assert trade_entries.text[0] == '3.99%, buy_tag, roi, 15 min'
 
-    trade_sell = find_trace_in_fig_data(figure.data, 'Sell - Profit')
-    assert isinstance(trade_sell, go.Scatter)
-    assert trade_sell.yaxis == 'y'
-    assert len(trades.loc[trades['profit_ratio'] > 0]) == len(trade_sell.x)
-    assert trade_sell.marker.color == 'green'
-    assert trade_sell.marker.symbol == 'square-open'
-    assert trade_sell.text[0] == '3.99%, buy_tag, roi, 15 min'
+    trade_exit = find_trace_in_fig_data(figure.data, 'Exit - Profit')
+    assert isinstance(trade_exit, go.Scatter)
+    assert trade_exit.yaxis == 'y'
+    assert len(trades.loc[trades['profit_ratio'] > 0]) == len(trade_exit.x)
+    assert trade_exit.marker.color == 'green'
+    assert trade_exit.marker.symbol == 'square-open'
+    assert trade_exit.text[0] == '3.99%, buy_tag, roi, 15 min'
 
-    trade_sell_loss = find_trace_in_fig_data(figure.data, 'Sell - Loss')
+    trade_sell_loss = find_trace_in_fig_data(figure.data, 'Exit - Loss')
     assert isinstance(trade_sell_loss, go.Scatter)
     assert trade_sell_loss.yaxis == 'y'
     assert len(trades.loc[trades['profit_ratio'] <= 0]) == len(trade_sell_loss.x)
