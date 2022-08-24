@@ -24,7 +24,8 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.exchange.exchange import amount_to_precision
+from freqtrade.exchange.exchange import (amount_to_contracts, amount_to_precision,
+                                         contracts_to_amount)
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -267,7 +268,7 @@ class Backtesting:
             funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -279,12 +280,12 @@ class Backtesting:
             mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timeframe=self.exchange.get_option('mark_ohlcv_timeframe'),
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
-                candle_type=CandleType.from_string(self.exchange._ft_has["mark_ohlcv_price"])
+                candle_type=CandleType.from_string(self.exchange.get_option("mark_ohlcv_price"))
             )
             # Combine data to avoid combining the data per trade.
             unavailable_pairs = []
@@ -823,11 +824,13 @@ class Backtesting:
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
             amount_p = (stake_amount / propose_rate) * leverage
-            amount = self.exchange._contracts_to_amount(
-                pair, amount_to_precision(
-                    self.exchange._amount_to_contracts(pair, amount_p),
-                    self.exchange.get_precision_amount(pair), self.precision_mode)
-                )
+            contract_size = self.exchange.get_contract_size(pair)
+            precision_amount = self.exchange.get_precision_amount(pair)
+            amount = contracts_to_amount(
+                amount_to_precision(
+                    amount_to_contracts(amount_p, contract_size),
+                    precision_amount, self.precision_mode),
+                contract_size)
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
 
@@ -859,9 +862,10 @@ class Backtesting:
                     trading_mode=self.trading_mode,
                     leverage=leverage,
                     # interest_rate=interest_rate,
-                    amount_precision=self.exchange.get_precision_amount(pair),
+                    amount_precision=precision_amount,
                     price_precision=self.exchange.get_precision_price(pair),
                     precision_mode=self.precision_mode,
+                    contract_size=contract_size,
                     orders=[],
                 )
 

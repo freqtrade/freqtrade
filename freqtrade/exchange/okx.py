@@ -39,6 +39,8 @@ class Okx(Exchange):
 
     net_only = True
 
+    _ccxt_params: Dict = {'options': {'brokerId': 'ffb5405ad327SUDE'}}
+
     def ohlcv_candle_limit(
             self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
         """

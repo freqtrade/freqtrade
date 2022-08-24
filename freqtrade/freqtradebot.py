@@ -271,7 +271,7 @@ class FreqtradeBot(LoggingMixin):
         Return the number of free open trades slots or 0 if
         max number of open trades reached
         """
-        open_trades = len(Trade.get_open_trades())
+        open_trades = Trade.get_open_trade_count()
         return max(0, self.config['max_open_trades'] - open_trades)
 
     def update_funding_fees(self):
@@ -290,13 +290,14 @@ class FreqtradeBot(LoggingMixin):
 
     def startup_backpopulate_precision(self):
 
-        trades = Trade.get_trades([Trade.precision_mode.is_(None)])
+        trades = Trade.get_trades([Trade.contract_size.is_(None)])
         for trade in trades:
             if trade.exchange != self.exchange.id:
                 continue
             trade.precision_mode = self.exchange.precisionMode
             trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
             trade.price_precision = self.exchange.get_precision_price(trade.pair)
+            trade.contract_size = self.exchange.get_contract_size(trade.pair)
         Trade.commit()
 
     def startup_update_open_orders(self):
@@ -755,6 +756,7 @@ class FreqtradeBot(LoggingMixin):
                 amount_precision=self.exchange.get_precision_amount(pair),
                 price_precision=self.exchange.get_precision_price(pair),
                 precision_mode=self.exchange.precisionMode,
+                contract_size=self.exchange.get_contract_size(pair),
             )
         else:
             # This is additional buy, we reset fee_open_currency so timeout checking can work

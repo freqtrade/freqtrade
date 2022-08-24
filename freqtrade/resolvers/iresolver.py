@@ -193,7 +193,10 @@ class IResolver:
         :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
-        objects = []
+        objects: List[Dict[str, Any]] = []
+        if not directory.is_dir():
+            logger.info(f"'{directory}' is not a directory, skipping.")
+            return objects
         for entry in directory.iterdir():
             if (
                 recursive and entry.is_dir()

@@ -409,14 +409,14 @@ class TestCCXTExchange():
                 assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
                 assert futures_leverage >= 1.0
 
-    def test_ccxt__get_contract_size(self, exchange_futures):
+    def test_ccxt_get_contract_size(self, exchange_futures):
         futures, futures_name = exchange_futures
         if futures:
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
                 EXCHANGES[futures_name]['pair']
             )
-            contract_size = futures._get_contract_size(futures_pair)
+            contract_size = futures.get_contract_size(futures_pair)
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
 

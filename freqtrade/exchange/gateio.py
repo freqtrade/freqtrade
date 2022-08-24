@@ -25,7 +25,6 @@ class Gateio(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
-        "ohlcv_volume_currency": "quote",
         "time_in_force_parameter": "timeInForce",
         "order_time_in_force": ['gtc', 'ioc'],
         "stoploss_order_types": {"limit": "limit"},
@@ -34,7 +33,6 @@ class Gateio(Exchange):
 
     _ft_has_futures: Dict = {
         "needs_trading_fees": True,
-        "ohlcv_volume_currency": "base",
         "fee_cost_in_contracts": False,  # Set explicitly to false for clarity
         "order_props_in_contracts": ['amount', 'filled', 'remaining'],
     }

@@ -54,8 +54,8 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
-    # Additional headers - added to the ccxt object
-    _headers: Dict = {}
+    # Additional parameters - added to the ccxt object
+    _ccxt_params: Dict = {}
 
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
@@ -242,9 +242,9 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
-        if self._headers:
-            # Inject static headers after the above output to not confuse users.
-            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if self._ccxt_params:
+            # Inject static options after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts(self._ccxt_params, ccxt_kwargs)
         if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
@@ -408,7 +408,7 @@ class Exchange:
         else:
             return DataFrame()
 
-    def _get_contract_size(self, pair: str) -> float:
+    def get_contract_size(self, pair: str) -> float:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
             contract_size: float = 1.0
@@ -421,7 +421,7 @@ class Exchange:
 
     def _trades_contracts_to_amount(self, trades: List) -> List:
         if len(trades) > 0 and 'symbol' in trades[0]:
-            contract_size = self._get_contract_size(trades[0]['symbol'])
+            contract_size = self.get_contract_size(trades[0]['symbol'])
             if contract_size != 1:
                 for trade in trades:
                     trade['amount'] = trade['amount'] * contract_size
@@ -429,7 +429,7 @@ class Exchange:
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
         if 'symbol' in order and order['symbol'] is not None:
-            contract_size = self._get_contract_size(order['symbol'])
+            contract_size = self.get_contract_size(order['symbol'])
             if contract_size != 1:
                 for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
@@ -438,19 +438,13 @@ class Exchange:
 
     def _amount_to_contracts(self, pair: str, amount: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return amount / contract_size
-        else:
-            return amount
+        contract_size = self.get_contract_size(pair)
+        return amount_to_contracts(amount, contract_size)
 
     def _contracts_to_amount(self, pair: str, num_contracts: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return num_contracts * contract_size
-        else:
-            return num_contracts
+        contract_size = self.get_contract_size(pair)
+        return contracts_to_amount(num_contracts, contract_size)
 
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
@@ -673,6 +667,12 @@ class Exchange:
             raise OperationalException(
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
+
+    def get_option(self, param: str, default: Any = None) -> Any:
+        """
+        Get parameter value from _ft_has
+        """
+        return self._ft_has.get(param, default)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -2890,6 +2890,33 @@ def market_is_active(market: Dict) -> bool:
     # See https://github.com/ccxt/ccxt/issues/4874,
     # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
     return market.get('active', True) is not False
+
+
+def amount_to_contracts(amount: float, contract_size: Optional[float]) -> float:
+    """
+    Convert amount to contracts.
+    :param amount: amount to convert
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: num-contracts
+    """
+    if contract_size and contract_size != 1:
+        return amount / contract_size
+    else:
+        return amount
+
+
+def contracts_to_amount(num_contracts: float, contract_size: Optional[float]) -> float:
+    """
+    Takes num-contracts and converts it to contract size
+    :param num_contracts: number of contracts
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: Amount
+    """
+
+    if contract_size and contract_size != 1:
+        return num_contracts * contract_size
+    else:
+        return num_contracts
 
 
 def amount_to_precision(amount: float, amount_precision: Optional[float],

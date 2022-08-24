@@ -81,7 +81,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 data_format_trades=config['dataformat_trades'],
             )
         else:
-            if not exchange._ft_has.get('ohlcv_has_history', True):
+            if not exchange.get_option('ohlcv_has_history', True):
                 raise OperationalException(
                     f"Historic klines not available for {exchange.name}. "
                     "Please use `--dl-trades` instead for this exchange "

@@ -181,11 +181,11 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert log_has(asynclogmsg, caplog)
     # Test additional headers case
-    Exchange._headers = {'hello': 'world'}
+    Exchange._ccxt_params = {'hello': 'world'}
     ex = Exchange(conf)
 
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
-    assert ex._api.headers == {'hello': 'world'}
+    assert ex._api.hello == 'world'
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 
@@ -2352,10 +2352,11 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
         assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
         # Not all exchanges support all limits for orderbook
-        if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+        if (not exchange.get_option('l2_limit_range')
+                or val in exchange.get_option('l2_limit_range')):
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
         else:
-            next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+            next_limit = exchange.get_next_limit_in_list(val, exchange.get_option('l2_limit_range'))
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
@@ -3311,16 +3312,16 @@ def test_merge_ft_has_dict(default_conf, mocker):
 
     ex = Kraken(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'since'
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'since'
 
     # Binance defines different values
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['stoploss_on_exchange']
-    assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'fromId'
+    assert ex.get_option('stoploss_on_exchange')
+    assert ex.get_option('order_time_in_force') == ['gtc', 'fok', 'ioc']
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'fromId'
 
     conf = copy.deepcopy(default_conf)
     conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
@@ -4287,7 +4288,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 0.01, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures')
 ])
-def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
+def est__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'
@@ -4306,7 +4307,7 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
             'contractSize': '10',
         }
     })
-    size = exchange._get_contract_size(pair)
+    size = exchange.get_contract_size(pair)
     assert expected_size == size
 
 
@@ -5145,7 +5146,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._get_contract_size = MagicMock(return_value=contract_size)
+    exchange.get_contract_size = MagicMock(return_value=contract_size)
 
     api_mock.create_order.reset_mock()
     order = exchange.stoploss(
