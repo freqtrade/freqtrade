@@ -118,8 +118,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                                      reward_kwargs=self.reward_params, config=self.config)
             self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
                                     window_size=self.CONV_WIDTH,
-                                    reward_kwargs=self.reward_params, config=self.config),
-                                    str(Path(dk.data_path / 'monitor')))
+                                    reward_kwargs=self.reward_params, config=self.config))
             self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                               render=False, eval_freq=eval_freq,
                                               best_model_save_path=str(dk.data_path))
