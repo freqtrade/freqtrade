@@ -29,6 +29,11 @@ class WAOStrategyController:
     def on_buy_signal(self, current_time, coin):
         print("WAOStrategyController: on_buy_signal: current_time=" + str(current_time) + ", coin=" + str(coin) +
               ", brain=" + str(self.brain))
+
+        if is_romeo_alive(coin):
+            print("WAOStrategyController: on_buy_signal: warning: alive romeo detected: ignoring buy_signal!")
+            return
+
         if BrainConfig.IS_BACKTEST:
             write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, self.dup, "buy")
         else:
