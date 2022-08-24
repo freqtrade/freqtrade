@@ -2894,8 +2894,8 @@ def test_order_to_ccxt(limit_buy_order_open):
             (('buy', 100, 9), (200.0, 8.5, 1700.0, 0.0, None, None)),
             (('sell', 100, 10), (100.0, 8.5, 850.0, 150.0, 150.0, 0.17647059)),
             (('buy', 150, 11), (250.0, 10, 2500.0, 150.0, 150.0, 0.17647059)),
-            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 350.0, 0.2)),
-            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 950.0, 0.40)),
+            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 200.0, 0.2)),
+            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 600.0, 0.40)),
         ],
         'end_profit': 950.0,
         'end_profit_ratio': 0.283582,
@@ -2960,9 +2960,8 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         assert trade.amount == result[0]
         assert trade.open_rate == result[1]
         assert trade.stake_amount == result[2]
-        # TODO: enable the below.
         assert pytest.approx(trade.realized_profit) == result[3]
-        # assert pytest.approx(trade.close_profit_abs) == result[4]
+        assert pytest.approx(trade.close_profit_abs) == result[4]
         assert pytest.approx(trade.close_profit) == result[5]
 
     trade.close(price)
