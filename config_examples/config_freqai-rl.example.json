@@ -85,12 +85,13 @@
             "verbose": 1
         },
         "rl_config": {
-            "train_cycles": 10,
+            "train_cycles": 3,
             "eval_cycles": 3,
             "thread_count": 4,
             "max_trade_duration_candles": 100,
             "model_type": "PPO",
             "policy_type": "MlpPolicy",
+            "continual_retraining": true,
             "model_reward_parameters": {
                 "rr": 1,
                 "profit_aim": 0.02,

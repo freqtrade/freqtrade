@@ -22,6 +22,12 @@ class ReinforcementLearnerCustomAgent(BaseReinforcementLearningModel):
     """
     User can customize agent by defining the class and using it directly.
     Here the example is "TDQN"
+
+    Warning!
+    This is an advanced example of how a user may create and use a highly
+    customized model class (which can inherit from existing classes,
+    similar to how the example below inherits from DQN).
+    This file is for example purposes only, and should not be run.
     """
 
     def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
@@ -34,7 +40,7 @@ class ReinforcementLearnerCustomAgent(BaseReinforcementLearningModel):
 
         # TDQN is a custom agent defined below
         model = TDQN(self.policy_type, self.train_env,
-                     tensorboard_log=Path(dk.data_path / "tensorboard"),
+                     tensorboard_log=str(Path(dk.data_path / "tensorboard")),
                      policy_kwargs=policy_kwargs,
                      **self.freqai_info['model_training_parameters']
                      )
@@ -217,7 +223,7 @@ class TDQN(DQN):
         exploration_initial_eps: float = 1.0,
         exploration_final_eps: float = 0.05,
         max_grad_norm: float = 10,
-        tensorboard_log: Optional[Path] = None,
+        tensorboard_log: Optional[str] = None,
         create_eval_env: bool = False,
         policy_kwargs: Optional[Dict[str, Any]] = None,
         verbose: int = 1,

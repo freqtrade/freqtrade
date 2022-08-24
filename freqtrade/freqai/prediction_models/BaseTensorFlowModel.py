@@ -53,9 +53,9 @@ class BaseTensorFlowModel(IFreqaiModel):
         self.data_cleaning_train(dk)
 
         logger.info(
-            f'Training model on {len(dk.data_dictionary["train_features"].columns)}' " features"
+            f'Training model on {len(dk.data_dictionary["train_features"].columns)}'
+            f' features and {len(data_dictionary["train_features"])} data points'
         )
-        logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
         model = self.fit(data_dictionary)
 

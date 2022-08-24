@@ -76,7 +76,8 @@ class ReinforcementLearningExample5ac(IStrategy):
         informative[f"%-{coin}pct-change"] = informative["close"].pct_change()
         informative[f"%-{coin}raw_volume"] = informative["volume"]
 
-        # The following features are necessary for RL models
+        # FIXME: add these outside the user strategy?
+        # The following columns are necessary for RL models.
         informative[f"%-{coin}raw_close"] = informative["close"]
         informative[f"%-{coin}raw_open"] = informative["open"]
         informative[f"%-{coin}raw_high"] = informative["high"]
