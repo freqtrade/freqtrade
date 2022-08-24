@@ -25,7 +25,7 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import (amount_to_contracts, amount_to_precision,
-                                         contracts_to_amount)
+                                         contracts_to_amount, price_to_precision)
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -658,7 +658,13 @@ class Backtesting:
         self.order_id_counter += 1
         exit_candle_time = sell_row[DATE_IDX].to_pydatetime()
         order_type = self.strategy.order_types['exit']
-        amount = amount or trade.amount
+        # amount = amount or trade.amount
+        amount = contracts_to_amount(
+                amount_to_precision(
+                    amount_to_contracts(amount or trade.amount, trade.contract_size),
+                    trade.amount_precision, self.precision_mode),
+                trade.contract_size)
+        rate = price_to_precision(close_rate, trade.price_precision, self.precision_mode)
         order = Order(
             id=self.order_id_counter,
             ft_trade_id=trade.id,
@@ -672,12 +678,12 @@ class Backtesting:
             side=trade.exit_side,
             order_type=order_type,
             status="open",
-            price=close_rate,
-            average=close_rate,
+            price=rate,
+            average=rate,
             amount=amount,
             filled=0,
             remaining=amount,
-            cost=amount * close_rate,
+            cost=amount * rate,
         )
         trade.orders.append(order)
         return trade
@@ -823,7 +829,10 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
+            precision_price = self.exchange.get_precision_price(pair)
+            propose_rate = price_to_precision(propose_rate, precision_price, self.precision_mode)
             amount_p = (stake_amount / propose_rate) * leverage
+
             contract_size = self.exchange.get_contract_size(pair)
             precision_amount = self.exchange.get_precision_amount(pair)
             amount = contracts_to_amount(
@@ -863,7 +872,7 @@ class Backtesting:
                     leverage=leverage,
                     # interest_rate=interest_rate,
                     amount_precision=precision_amount,
-                    price_precision=self.exchange.get_precision_price(pair),
+                    price_precision=precision_price,
                     precision_mode=self.precision_mode,
                     contract_size=contract_size,
                     orders=[],

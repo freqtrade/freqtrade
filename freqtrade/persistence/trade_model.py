@@ -847,7 +847,7 @@ class LocalTrade():
         avg_price = FtPrecise(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
-
+        profit = None
         for o in self.orders:
             if o.ft_is_open or not o.filled:
                 continue
@@ -874,8 +874,6 @@ class LocalTrade():
                 close_profit_abs += profit
                 close_profit = self.calc_profit_ratio(
                     exit_rate, amount=exit_amount, open_rate=avg_price)
-                if current_amount <= ZERO:
-                    profit = close_profit_abs
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
 
@@ -900,6 +898,7 @@ class LocalTrade():
             # Close profit abs / maximum owned
             # Fees are considered as they are part of close_profit_abs
             self.close_profit = (close_profit_abs / total_stake) * self.leverage
+            self.close_profit_abs = close_profit_abs
 
     def select_order_by_order_id(self, order_id: str) -> Optional[Order]:
         """
