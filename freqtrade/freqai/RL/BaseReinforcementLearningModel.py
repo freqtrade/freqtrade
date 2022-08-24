@@ -42,7 +42,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.eval_callback: EvalCallback = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
-        self.continual_retraining = self.rl_config['continual_retraining']
+        self.continual_retraining = self.rl_config.get('continual_retraining', False)
         if self.model_type in SB3_MODELS:
             import_str = 'stable_baselines3'
         elif self.model_type in SB3_CONTRIB_MODELS:
@@ -289,7 +289,7 @@ class MyRLEnv(Base5ActionRLEnv):
             return 0.
 
         pnl = self.get_unrealized_profit()
-        max_trade_duration = self.rl_config['max_trade_duration_candles']
+        max_trade_duration = self.rl_config.get('max_trade_duration_candles', 100)
         trade_duration = self._current_tick - self._last_trade_tick
 
         factor = 1

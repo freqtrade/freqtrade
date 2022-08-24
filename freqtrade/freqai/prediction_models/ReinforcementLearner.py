@@ -32,6 +32,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             logger.info('Continual training activated - starting training from previously '
                         'trained agent.')
             model = self.dd.model_dictionary[dk.pair]
+            model.tensorboard_log = Path(dk.data_path / "tensorboard")
             model.set_env(self.train_env)
 
         model.learn(
@@ -61,7 +62,7 @@ class MyRLEnv(Base5ActionRLEnv):
             return 0.
 
         pnl = self.get_unrealized_profit()
-        max_trade_duration = self.rl_config['max_trade_duration_candles']
+        max_trade_duration = self.rl_config.get('max_trade_duration_candles', 100)
         trade_duration = self._current_tick - self._last_trade_tick
 
         factor = 1

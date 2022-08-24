@@ -26,10 +26,10 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
 
         # model arch
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=[512, 512, 512])
+                             net_arch=[512, 512, 256])
 
         model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                tensorboard_log=Path(dk.data_path / "tensorboard"),
+                                tensorboard_log=Path(dk.full_path / "tensorboard"),
                                 **self.freqai_info['model_training_parameters']
                                 )
 
