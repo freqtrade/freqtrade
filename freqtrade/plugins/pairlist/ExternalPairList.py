@@ -4,7 +4,6 @@ External Pair List provider
 Provides pair list from Leader data
 """
 import logging
-from threading import Event
 from typing import Any, Dict, List
 
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -37,7 +36,6 @@ class ExternalPairList(IPairList):
         self._num_assets = self._pairlistconfig.get('number_assets')
 
         self._leader_pairs: List[str] = []
-        self._has_data = Event()
 
     def _clamped_pairlist(self):
         """
@@ -84,20 +82,12 @@ class ExternalPairList(IPairList):
                 continue
             self._leader_pairs.append(pair)
 
-        if not self._has_data.is_set() and len(self._leader_pairs) > 0:
-            self._has_data.set()
-
     def gen_pairlist(self, tickers: Dict) -> List[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
         """
-        if not self._has_data.is_set():
-            logger.info("Waiting on pairlists from Leaders...")
-            self._has_data.wait()
-            logger.info("Pairlist data received...")
-
         return self._clamped_pairlist()
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:

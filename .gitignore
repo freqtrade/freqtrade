@@ -115,3 +115,4 @@ target/
 !config_examples/config_freqai.example.json
 
 *-config.json
+*.db*
