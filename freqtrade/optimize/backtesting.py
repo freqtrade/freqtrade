@@ -534,12 +534,16 @@ class Backtesting:
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
-
-            pos_trade = self._enter_trade(
-                trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade)
-            if pos_trade is not None:
-                self.wallets.update()
-                return pos_trade
+            check_adjust_entry = True
+            if self.strategy.max_entry_position_adjustment > -1:
+                entry_count = trade.nr_of_successful_entries
+                check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
+            if check_adjust_entry:
+                pos_trade = self._enter_trade(
+                    trade.pair, row, 'short' if trade.is_short else 'long', stake_amount, trade)
+                if pos_trade is not None:
+                    self.wallets.update()
+                    return pos_trade
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = abs(stake_amount) / current_rate
@@ -570,12 +574,7 @@ class Backtesting:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
-            check_adjust_entry = True
-            if self.strategy.max_entry_position_adjustment > -1:
-                entry_count = trade.nr_of_successful_entries
-                check_adjust_entry = (entry_count <= self.strategy.max_entry_position_adjustment)
-            if check_adjust_entry:
-                trade = self._get_adjust_trade_entry_for_candle(trade, row)
+            trade = self._get_adjust_trade_entry_for_candle(trade, row)
 
         enter = row[SHORT_IDX] if trade.is_short else row[LONG_IDX]
         exit_sig = row[ESHORT_IDX] if trade.is_short else row[ELONG_IDX]
