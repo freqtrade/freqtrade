@@ -3,12 +3,12 @@ from typing import Any, Dict
 
 import torch as th
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
+from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Positions
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
 from pathlib import Path
-from pandas import DataFrame
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.monitor import Monitor
+# from pandas import DataFrame
+# from stable_baselines3.common.callbacks import EvalCallback
+# from stable_baselines3.common.monitor import Monitor
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -53,71 +53,53 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         return model
 
-    def set_train_and_eval_environments(self, data_dictionary: Dict[str, DataFrame],
-                                        prices_train: DataFrame, prices_test: DataFrame,
-                                        dk: FreqaiDataKitchen):
+    class MyRLEnv(BaseReinforcementLearningModel.MyRLEnv):
         """
-        User can override this if they are using a custom MyRLEnv
+        User can override any function in BaseRLEnv and gym.Env. Here the user
+        sets a custom reward based on profit and trade duration.
         """
-        train_df = data_dictionary["train_features"]
-        test_df = data_dictionary["test_features"]
 
-        self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
-                                 reward_kwargs=self.reward_params, config=self.config)
-        self.eval_env = Monitor(MyRLEnv(df=test_df, prices=prices_test,
-                                window_size=self.CONV_WIDTH,
-                                reward_kwargs=self.reward_params, config=self.config))
-        self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
-                                          render=False, eval_freq=len(train_df),
-                                          best_model_save_path=str(dk.data_path))
+        def calculate_reward(self, action):
 
+            # first, penalize if the action is not valid
+            if not self._is_valid(action):
+                return -2
 
-class MyRLEnv(Base5ActionRLEnv):
-    """
-    User can override any function in BaseRLEnv and gym.Env. Here the user
-    sets a custom reward based on profit and trade duration.
-    """
+            pnl = self.get_unrealized_profit()
+            rew = np.sign(pnl) * (pnl + 1)
+            factor = 100
 
-    def calculate_reward(self, action):
+            # reward agent for entering trades
+            if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                    and self._position == Positions.Neutral:
+                return 25
+            # discourage agent from not entering trades
+            if action == Actions.Neutral.value and self._position == Positions.Neutral:
+                return -1
 
-        # first, penalize if the action is not valid
-        if not self._is_valid(action):
-            return -2
+            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+            trade_duration = self._current_tick - self._last_trade_tick
 
-        pnl = self.get_unrealized_profit()
-        rew = np.sign(pnl) * (pnl + 1)
-        factor = 100
+            if trade_duration <= max_trade_duration:
+                factor *= 1.5
+            elif trade_duration > max_trade_duration:
+                factor *= 0.5
 
-        # reward agent for entering trades
-        if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
-                and self._position == Positions.Neutral:
-            return 25
-        # discourage agent from not entering trades
-        if action == Actions.Neutral.value and self._position == Positions.Neutral:
-            return -1
+            # discourage sitting in position
+            if self._position in (Positions.Short, Positions.Long) and \
+                    action == Actions.Neutral.value:
+                return -1 * trade_duration / max_trade_duration
 
-        max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
-        trade_duration = self._current_tick - self._last_trade_tick
+            # close long
+            if action == Actions.Long_exit.value and self._position == Positions.Long:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
 
-        if trade_duration <= max_trade_duration:
-            factor *= 1.5
-        elif trade_duration > max_trade_duration:
-            factor *= 0.5
+            # close short
+            if action == Actions.Short_exit.value and self._position == Positions.Short:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
 
-        # discourage sitting in position
-        if self._position in (Positions.Short, Positions.Long) and action == Actions.Neutral.value:
-            return -1 * trade_duration / max_trade_duration
-
-        # close long
-        if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if pnl > self.profit_aim * self.rr:
-                factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float(rew * factor)
-
-        # close short
-        if action == Actions.Short_exit.value and self._position == Positions.Short:
-            if pnl > self.profit_aim * self.rr:
-                factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-            return float(rew * factor)
-
-        return 0.
+            return 0.

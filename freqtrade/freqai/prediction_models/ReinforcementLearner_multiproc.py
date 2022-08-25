@@ -34,7 +34,7 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
                                     **self.freqai_info['model_training_parameters']
                                     )
         else:
-            logger.info('Continual training activated - starting training from previously '
+            logger.info('Continual learning activated - starting training from previously '
                         'trained agent.')
             model = self.dd.model_dictionary[dk.pair]
             model.tensorboard_log = Path(dk.data_path / "tensorboard")
@@ -65,13 +65,14 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
 
         env_id = "train_env"
         num_cpu = int(self.freqai_info["rl_config"]["thread_count"] / 2)
-        self.train_env = SubprocVecEnv([make_env(env_id, i, 1, train_df, prices_train,
+        self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1, train_df, prices_train,
                                         self.reward_params, self.CONV_WIDTH,
                                         config=self.config) for i
                                         in range(num_cpu)])
 
         eval_env_id = 'eval_env'
-        self.eval_env = SubprocVecEnv([make_env(eval_env_id, i, 1, test_df, prices_test,
+        self.eval_env = SubprocVecEnv([make_env(self.MyRLEnv, eval_env_id, i, 1,
+                                                test_df, prices_test,
                                                 self.reward_params, self.CONV_WIDTH, monitor=True,
                                                 config=self.config) for i
                                        in range(num_cpu)])

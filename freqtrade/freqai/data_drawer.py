@@ -90,6 +90,7 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "priority": 1, "first": True, "data_path": "", "extras": {}}
+        self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
 
     def load_drawer_from_disk(self):
         """
@@ -423,8 +424,8 @@ class FreqaiDataDrawer:
                 dk.pca, open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "wb")
             )
 
-        # if self.live:
-        self.model_dictionary[coin] = model
+        if not self.limit_ram_use:
+            self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
         self.save_drawer_to_disk()
@@ -464,7 +465,7 @@ class FreqaiDataDrawer:
 
         model_type = self.freqai_info.get('model_save_type', 'joblib')
         # try to access model in memory instead of loading object from disk to save time
-        if dk.live and coin in self.model_dictionary:
+        if dk.live and coin in self.model_dictionary and not self.limit_ram_use:
             model = self.model_dictionary[coin]
         elif model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
@@ -486,7 +487,7 @@ class FreqaiDataDrawer:
             )
 
         # load it into ram if it was loaded from disk
-        if coin not in self.model_dictionary:
+        if coin not in self.model_dictionary and not self.limit_ram_use:
             self.model_dictionary[coin] = model
 
         if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
