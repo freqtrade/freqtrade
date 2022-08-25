@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import msgpack
 import orjson
 
-from freqtrade.rpc.replicate.proxy import WebSocketProxy
+from freqtrade.rpc.external_signal.proxy import WebSocketProxy
 
 
 logger = logging.getLogger(__name__)

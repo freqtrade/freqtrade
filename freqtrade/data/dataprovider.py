@@ -29,8 +29,7 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Optional[Exchange],
-                 pairlists=None, replicate_controller=None) -> None:
+    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
@@ -99,25 +98,33 @@ class DataProvider:
         self,
         pair: str,
         timeframe: str,
-        candle_type: CandleType
+        candle_type: CandleType,
+        wait: bool = True
     ) -> DataFrame:
         """
-        If the pair exists in __external_pairs_df, return it. If it doesn't,
-        create a new threading Event in __external_pairs_event and wait on it.
+        If the pair exists in __external_pairs_df, return it.
+        If it doesn't, and wait is False, then return an empty df with the columns filled.
+        If it doesn't, and wait is True (default) create a new threading Event
+        in __external_pairs_event and wait on it.
         """
         pair_key = (pair, timeframe, candle_type)
+
         if pair_key not in self.__external_pairs_df:
-            pair_event = Event()
-            self.__external_pairs_event[pair] = pair_event
+            if wait:
+                pair_event = Event()
+                self.__external_pairs_event[pair] = pair_event
 
-            logger.debug(f"Waiting on Leader data for: {pair_key}")
-            self.__external_pairs_event[pair].wait()
+                logger.debug(f"Waiting on Leader data for: {pair_key}")
+                self.__external_pairs_event[pair].wait(timeout=5)
 
-        if pair_key in self.__external_pairs_df:
-            return self.__external_pairs_df[pair_key]
+                if pair_key not in self.__external_pairs_df:
+                    # Return empty dataframe but with expected columns merged and filled with NaN
+                    return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+            else:
+                # Return empty dataframe but with expected columns merged and filled with NaN
+                return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
-        # Because of the waiting mechanism, this should never return
-        return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+        return self.__external_pairs_df[pair_key]
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ReplicateModeType(str, Enum):
+class ExternalSignalModeType(str, Enum):
     leader = "leader"
     follower = "follower"
 

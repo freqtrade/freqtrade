@@ -75,7 +75,7 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
-        self.replicate_controller = None
+        self.external_signal_controller = None
 
         self.pairlists = PairListManager(self.exchange, self.config)
 
@@ -92,9 +92,6 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
-
-        # Attach ReplicateController to the strategy
-        # self.strategy.replicate_controller = self.replicate_controller
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -197,8 +194,8 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        if self.replicate_controller:
-            if not self.replicate_controller.is_leader():
+        if self.external_signal_controller:
+            if not self.external_signal_controller.is_leader():
                 # Run Follower mode analyzing
                 leader_pairs = self.pairlists._whitelist
                 self.strategy.analyze_external(self.active_pair_whitelist, leader_pairs)
@@ -281,16 +278,14 @@ class FreqtradeBot(LoggingMixin):
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
 
-        # If replicate leader, broadcast whitelist data
-        # Should we broadcast before trade pairs are added? What if
-        # the follower doesn't have trades with those pairs. They would be added for
-        # no reason.
+        # If external signal leader, broadcast whitelist data
+        # Should we broadcast before trade pairs are added?
 
         # Or should this class be made available to the PairListManager and ran
         # when filter_pairlist is called?
 
-        if self.replicate_controller:
-            if self.replicate_controller.is_leader():
+        if self.external_signal_controller:
+            if self.external_signal_controller.is_leader():
                 self.rpc.emit_data({
                     "data_type": LeaderMessageType.pairlist,
                     "data": _whitelist

@@ -3,7 +3,7 @@ from typing import Union
 from fastapi import WebSocket as FastAPIWebSocket
 from websockets import WebSocketClientProtocol as WebSocket
 
-from freqtrade.rpc.replicate.types import WebSocketType
+from freqtrade.rpc.external_signal.types import WebSocketType
 
 
 class WebSocketProxy:

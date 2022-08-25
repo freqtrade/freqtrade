@@ -245,7 +245,7 @@ CONF_SCHEMA = {
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
         'freqai': {'$ref': '#/definitions/freqai'},
-        'replicate': {'$ref': '#/definitions/replicate'},
+        'external_signal': {'$ref': '#/definitions/external_signal'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -487,7 +487,7 @@ CONF_SCHEMA = {
             },
             'required': ['process_throttle_secs', 'allowed_risk']
         },
-        'replicate': {
+        'external_signal': {
             'type': 'object',
             'properties': {
                 'enabled': {'type': 'boolean', 'default': False},
@@ -495,14 +495,14 @@ CONF_SCHEMA = {
                     'type': 'string',
                     'enum': FOLLOWER_MODE_OPTIONS
                 },
-                'api_key': {'type': 'string', 'default': ''},
+                'api_token': {'type': 'string', 'default': ''},
                 'leaders': {
                     'type': 'array',
                     'items': {
                         'type': 'object',
                         'properties': {
                             'url': {'type': 'string', 'default': ''},
-                            'token': {'type': 'string', 'default': ''},
+                            'api_token': {'type': 'string', 'default': ''},
                         }
                     }
                 },

@@ -18,7 +18,6 @@ from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.persistence import Order, PairLocks, Trade
-from freqtrade.rpc.replicate import ReplicateController
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -111,7 +110,6 @@ class IStrategy(ABC, HyperStrategyMixin):
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
     dp: DataProvider
-    replicate_controller: Optional[ReplicateController]
     wallets: Optional[Wallets] = None
     # Filled from configuration
     stake_currency: str
@@ -764,7 +762,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if not external_data:
             dataframe = self.dp.ohlcv(pair, self.timeframe, candle_type)
         else:
-            dataframe, last_analyzed = self.dp.get_external_df(pair, self.timeframe, candle_type)
+            dataframe, _ = self.dp.get_external_df(pair, self.timeframe, candle_type)
 
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)

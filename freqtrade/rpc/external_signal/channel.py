@@ -1,9 +1,9 @@
 import logging
 from typing import Type
 
-from freqtrade.rpc.replicate.proxy import WebSocketProxy
-from freqtrade.rpc.replicate.serializer import MsgPackWebSocketSerializer, WebSocketSerializer
-from freqtrade.rpc.replicate.types import WebSocketType
+from freqtrade.rpc.external_signal.proxy import WebSocketProxy
+from freqtrade.rpc.external_signal.serializer import MsgPackWebSocketSerializer, WebSocketSerializer
+from freqtrade.rpc.external_signal.types import WebSocketType
 
 
 logger = logging.getLogger(__name__)

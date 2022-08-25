@@ -1109,16 +1109,22 @@ class RPC:
             external_pairlist.add_pairlist_data(pairlist)
 
         elif type == LeaderMessageType.analyzed_df:
+
             # Convert the dataframe back from json
             key, value = data["key"], data["value"]
 
             pair, timeframe, candle_type = key
-            dataframe = json_to_dataframe(value)
 
-            dataprovider = self._freqtrade.dataprovider
+            # Skip any pairs that we don't have in the pairlist?
+            # leader_pairlist = self._freqtrade.pairlists._whitelist
+            # if pair not in leader_pairlist:
+            #     return
+
+            dataframe = json_to_dataframe(value)
 
             logger.debug(f"Received analyzed dataframe for {pair}")
             logger.debug(dataframe.tail())
 
             # Add the dataframe to the dataprovider
+            dataprovider = self._freqtrade.dataprovider
             dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)

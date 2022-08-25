@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ExternalPairList(IPairList):
     """
-    PairList plugin for use with replicate follower mode.
+    PairList plugin for use with external signal follower mode.
     Will use pairs given from leader data.
 
     Usage:
@@ -67,6 +67,8 @@ class ExternalPairList(IPairList):
     def add_pairlist_data(self, pairlist: List[str]):
         """
         Add pairs from Leader
+
+        :param pairlist: List of pairs
         """
 
         # If some pairs were removed on Leader, remove them here

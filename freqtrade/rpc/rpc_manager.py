@@ -54,14 +54,14 @@ class RPCManager:
 
             # Enable Replicate mode
             # For this to be enabled, the API server must also be enabled
-            if config.get('replicate', {}).get('enabled', False):
-                logger.info('Enabling rpc.replicate')
-                from freqtrade.rpc.replicate import ReplicateController
-                replicate_rpc = ReplicateController(self._rpc, config, apiserver)
-                self.registered_modules.append(replicate_rpc)
+            if config.get('external_signal', {}).get('enabled', False):
+                logger.info('Enabling RPC.ExternalSignalController')
+                from freqtrade.rpc.external_signal import ExternalSignalController
+                external_signal_rpc = ExternalSignalController(self._rpc, config, apiserver)
+                self.registered_modules.append(external_signal_rpc)
 
                 # Attach the controller to FreqTrade
-                freqtrade.replicate_controller = replicate_rpc
+                freqtrade.external_signal_controller = external_signal_rpc
 
             apiserver.start_api()
 
