@@ -455,7 +455,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "prepend_data": Arg(
         '--prepend',
-        help='Allow data prepending.',
+        help='Allow data prepending. (Data-appending is disabled)',
         action='store_true',
     ),
     "erase": Arg(
