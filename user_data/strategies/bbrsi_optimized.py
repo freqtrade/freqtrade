@@ -19,22 +19,31 @@ class bbrsi_optimized(WAOStrategy):
 
     timeframe = '5m'
 
-    # ROI table:  # value loaded from strategy
+    # ROI table:
     minimal_roi = {
-        "0": 0.136,
-        "37": 0.082,
-        "97": 0.019,
-        "178": 0
+        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
+        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
+        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
+        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
+        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
+        "45": 0.014,  # Exit immediately if there is at least 2% profit
+        "30": 0.016,  # Exit immediately if there is at least 2% profit
+        "15": 0.018,  # Exit immediately if there is at least 2% profit
+        "0": 0.020,  # Exit immediately if there is at least 2% profit
     }
 
     # Stoploss:
     stoploss = -0.02
 
     # Trailing stop:
-    trailing_stop = True  # value loaded from strategy
-    trailing_stop_positive = 0.237  # value loaded from strategy
-    trailing_stop_positive_offset = 0.245  # value loaded from strategy
-    trailing_only_offset_is_reached = True  # value loaded from strategy
+    trailing_stop = True
+    trailing_stop_positive = 0.281
+    trailing_stop_positive_offset = 0.299
+    trailing_only_offset_is_reached = True
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
