@@ -40,10 +40,10 @@ class bbrsi_optimized(WAOStrategy):
     stoploss = -0.02
 
     # Trailing stop:
-    trailing_stop = True
-    trailing_stop_positive = 0.281
-    trailing_stop_positive_offset = 0.299
-    trailing_only_offset_is_reached = True
+    trailing_stop = True  # value loaded from strategy
+    trailing_stop_positive = 0.237  # value loaded from strategy
+    trailing_stop_positive_offset = 0.245  # value loaded from strategy
+    trailing_only_offset_is_reached = True  # value loaded from strategy
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
