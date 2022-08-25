@@ -23,9 +23,8 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType, RunMode,
                              TradingMode)
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.exchange.exchange import (amount_to_contracts, amount_to_precision,
-                                         contracts_to_amount, price_to_precision)
+from freqtrade.exchange import (amount_to_contract_precision, price_to_precision,
+                                timeframe_to_minutes, timeframe_to_seconds)
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -659,11 +658,8 @@ class Backtesting:
         exit_candle_time = sell_row[DATE_IDX].to_pydatetime()
         order_type = self.strategy.order_types['exit']
         # amount = amount or trade.amount
-        amount = contracts_to_amount(
-                amount_to_precision(
-                    amount_to_contracts(amount or trade.amount, trade.contract_size),
-                    trade.amount_precision, self.precision_mode),
-                trade.contract_size)
+        amount = amount_to_contract_precision(amount or trade.amount, trade.amount_precision,
+                                              self.precision_mode, trade.contract_size)
         rate = price_to_precision(close_rate, trade.price_precision, self.precision_mode)
         order = Order(
             id=self.order_id_counter,
@@ -835,11 +831,8 @@ class Backtesting:
 
             contract_size = self.exchange.get_contract_size(pair)
             precision_amount = self.exchange.get_precision_amount(pair)
-            amount = contracts_to_amount(
-                amount_to_precision(
-                    amount_to_contracts(amount_p, contract_size),
-                    precision_amount, self.precision_mode),
-                contract_size)
+            amount = amount_to_contract_precision(amount_p, precision_amount, self.precision_mode,
+                                                  contract_size)
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
 

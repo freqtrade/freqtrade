@@ -14,8 +14,7 @@ from freqtrade.constants import (DATETIME_PRINT_FORMAT, MATH_CLOSE_PREC, NON_OPE
                                  BuySell, LongShort)
 from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.exchange import amount_to_precision, price_to_precision
-from freqtrade.exchange.exchange import amount_to_contracts, contracts_to_amount
+from freqtrade.exchange import amount_to_contract_precision, price_to_precision
 from freqtrade.leverage import interest
 from freqtrade.persistence.base import _DECL_BASE
 from freqtrade.util import FtPrecise
@@ -625,11 +624,8 @@ class LocalTrade():
             else:
                 logger.warning(
                     f'Got different open_order_id {self.open_order_id} != {order.order_id}')
-            amount_tr = contracts_to_amount(
-                amount_to_precision(
-                    amount_to_contracts(self.amount, self.contract_size),
-                    self.amount_precision, self.precision_mode),
-                self.contract_size)
+            amount_tr = amount_to_contract_precision(self.amount, self.amount_precision,
+                                                     self.precision_mode, self.contract_size)
             if isclose(order.safe_amount_after_fee, amount_tr, abs_tol=MATH_CLOSE_PREC):
                 self.close(order.safe_price)
             else:
@@ -882,8 +878,8 @@ class LocalTrade():
             self.realized_profit = close_profit_abs
             self.close_profit_abs = profit
 
-        current_amount_tr = amount_to_precision(float(current_amount),
-                                                self.amount_precision, self.precision_mode)
+        current_amount_tr = amount_to_contract_precision(
+            float(current_amount), self.amount_precision, self.precision_mode, self.contract_size)
         if current_amount_tr > 0.0:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.

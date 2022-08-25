@@ -2943,6 +2943,29 @@ def amount_to_precision(amount: float, amount_precision: Optional[float],
     return amount
 
 
+def amount_to_contract_precision(
+        amount, amount_precision: Optional[float], precisionMode: Optional[int],
+        contract_size: Optional[float]) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    including calculation to and from contracts.
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: truncated amount
+    """
+    if amount_precision is not None and precisionMode is not None:
+        contracts = amount_to_contracts(amount, contract_size)
+        amount_p = amount_to_precision(contracts, amount_precision, precisionMode)
+        return contracts_to_amount(amount_p, contract_size)
+    return amount
+
+
 def price_to_precision(price: float, price_precision: Optional[float],
                        precisionMode: Optional[int]) -> float:
     """
