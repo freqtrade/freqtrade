@@ -77,8 +77,7 @@ class Base5ActionRLEnv(gym.Env):
         self._position = Positions.Neutral
         self._position_history: list = [None]
         self.total_reward: float = 0
-        self._total_profit: float = 0
-        self._first_rendering: bool = False
+        self._total_profit: float = 1
         self.history: dict = {}
         self.trade_history: list = []
 
@@ -101,7 +100,6 @@ class Base5ActionRLEnv(gym.Env):
 
         self.total_reward = 0.
         self._total_profit = 1.  # unit
-        self._first_rendering = True
         self.history = {}
         self.trade_history = []
         self.portfolio_log_returns = np.zeros(len(self.prices))
@@ -165,7 +163,7 @@ class Base5ActionRLEnv(gym.Env):
                     {'price': self.current_price(), 'index': self._current_tick,
                      'type': trade_type})
 
-        if self._total_profit < 0.5:
+        if self._total_profit < 1 - self.rl_config.get('max_training_drawdown_pct', 0.8):
             self._done = True
 
         self._position_history.append(self._position)
@@ -293,7 +291,6 @@ class Base5ActionRLEnv(gym.Env):
         return 0.
 
     def _update_profit(self, action):
-        # if self._is_trade(action) or self._done:
         if self._is_trade(action) or self._done:
             pnl = self.get_unrealized_profit()
 

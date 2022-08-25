@@ -27,7 +27,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
                              net_arch=[512, 512, 256])
 
-        if dk.pair not in self.dd.model_dictionary or not self.continual_retraining:
+        if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
                                     tensorboard_log=Path(dk.data_path / "tensorboard"),
                                     **self.freqai_info['model_training_parameters']
@@ -61,7 +61,6 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
         """
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
 
         self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
                                  reward_kwargs=self.reward_params, config=self.config)
@@ -69,7 +68,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
                                 window_size=self.CONV_WIDTH,
                                 reward_kwargs=self.reward_params, config=self.config))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
-                                          render=False, eval_freq=eval_freq,
+                                          render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
 
@@ -83,18 +82,19 @@ class MyRLEnv(Base5ActionRLEnv):
 
         # first, penalize if the action is not valid
         if not self._is_valid(action):
-            return -15
+            return -2
 
         pnl = self.get_unrealized_profit()
         rew = np.sign(pnl) * (pnl + 1)
         factor = 100
 
         # reward agent for entering trades
-        if action in (Actions.Long_enter.value, Actions.Short_enter.value):
+        if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                and self._position == Positions.Neutral:
             return 25
         # discourage agent from not entering trades
         if action == Actions.Neutral.value and self._position == Positions.Neutral:
-            return -15
+            return -1
 
         max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
         trade_duration = self._current_tick - self._last_trade_tick
@@ -105,8 +105,8 @@ class MyRLEnv(Base5ActionRLEnv):
             factor *= 0.5
 
         # discourage sitting in position
-        if self._position in (Positions.Short, Positions.Long):
-            return -50 * trade_duration / max_trade_duration
+        if self._position in (Positions.Short, Positions.Long) and action == Actions.Neutral.value:
+            return -1 * trade_duration / max_trade_duration
 
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:

@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-SB3_MODELS = ['PPO', 'A2C', 'DQN', 'TD3', 'SAC']
-SB3_CONTRIB_MODELS = ['TRPO', 'ARS']
+SB3_MODELS = ['PPO', 'A2C', 'DQN']
+SB3_CONTRIB_MODELS = ['TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO']
 
 
 class BaseReinforcementLearningModel(IFreqaiModel):
@@ -41,7 +41,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.eval_callback: EvalCallback = None
         self.model_type = self.freqai_info['rl_config']['model_type']
         self.rl_config = self.freqai_info['rl_config']
-        self.continual_retraining = self.rl_config.get('continual_retraining', False)
+        self.continual_learning = self.rl_config.get('continual_learning', False)
         if self.model_type in SB3_MODELS:
             import_str = 'stable_baselines3'
         elif self.model_type in SB3_CONTRIB_MODELS:
@@ -109,7 +109,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         """
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
 
         self.train_env = MyRLEnv(df=train_df, prices=prices_train, window_size=self.CONV_WIDTH,
                                  reward_kwargs=self.reward_params, config=self.config)
@@ -117,7 +116,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                                 window_size=self.CONV_WIDTH,
                                 reward_kwargs=self.reward_params, config=self.config))
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
-                                          render=False, eval_freq=eval_freq,
+                                          render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
     @abstractmethod
@@ -138,6 +137,8 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         for trade in open_trades:
             if trade.pair == pair:
                 # FIXME: mypy typing doesnt like that strategy may be "None" (it never will be)
+                # FIXME: get_rate and trade_udration shouldn't work with backtesting,
+                # we need to use candle dates and prices to compute that.
                 current_value = self.strategy.dp._exchange.get_rate(
                     pair, refresh=False, side="exit", is_short=trade.is_short)
                 openrate = trade.open_rate
@@ -256,7 +257,7 @@ def make_env(env_id: str, rank: int, seed: int, train_df: DataFrame, price: Data
         env = MyRLEnv(df=train_df, prices=price, window_size=window_size,
                       reward_kwargs=reward_params, id=env_id, seed=seed + rank, config=config)
         if monitor:
-            env = Monitor(env, ".")
+            env = Monitor(env)
         return env
     set_random_seed(seed)
     return _init
@@ -272,18 +273,19 @@ class MyRLEnv(Base5ActionRLEnv):
 
         # first, penalize if the action is not valid
         if not self._is_valid(action):
-            return -15
+            return -2
 
         pnl = self.get_unrealized_profit()
         rew = np.sign(pnl) * (pnl + 1)
         factor = 100
 
         # reward agent for entering trades
-        if action in (Actions.Long_enter.value, Actions.Short_enter.value):
+        if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                and self._position == Positions.Neutral:
             return 25
         # discourage agent from not entering trades
         if action == Actions.Neutral.value and self._position == Positions.Neutral:
-            return -15
+            return -1
 
         max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
         trade_duration = self._current_tick - self._last_trade_tick
@@ -294,8 +296,8 @@ class MyRLEnv(Base5ActionRLEnv):
             factor *= 0.5
 
         # discourage sitting in position
-        if self._position in (Positions.Short, Positions.Long):
-            return -50 * trade_duration / max_trade_duration
+        if self._position in (Positions.Short, Positions.Long) and action == Actions.Neutral.value:
+            return -1 * trade_duration / max_trade_duration
 
         # close long
         if action == Actions.Long_exit.value and self._position == Positions.Long:

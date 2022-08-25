@@ -56,9 +56,9 @@
     "freqai": {
         "enabled": true,
         "model_save_type": "stable_baselines",
-        "conv_width": 10,
+        "conv_width": 4,
         "purge_old_models": true,
-        "train_period_days": 10,
+        "train_period_days": 5,
         "backtest_period_days": 2,
         "identifier": "unique-id",
         "data_kitchen_thread_count": 2,
@@ -72,7 +72,7 @@
                 "30m"
             ],
             "indicator_max_period_candles": 10,
-            "indicator_periods_candles": [5, 10]
+            "indicator_periods_candles": [5]
         },
         "data_split_parameters": {
             "test_size": 0.5,
@@ -85,13 +85,13 @@
             "verbose": 1
         },
         "rl_config": {
-            "train_cycles": 3,
-            "eval_cycles": 3,
+            "train_cycles": 6,
             "thread_count": 4,
-            "max_trade_duration_candles": 100,
+            "max_trade_duration_candles": 300,
             "model_type": "PPO",
             "policy_type": "MlpPolicy",
-            "continual_retraining": true,
+            "continual_learning": false,
+            "max_training_drawdown_pct": 0.5,
             "model_reward_parameters": {
                 "rr": 1,
                 "profit_aim": 0.02,

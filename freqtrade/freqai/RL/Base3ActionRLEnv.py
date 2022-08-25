@@ -1,3 +1,5 @@
+# Example of a 3 action environment.
+
 # import logging
 # from enum import Enum
 
