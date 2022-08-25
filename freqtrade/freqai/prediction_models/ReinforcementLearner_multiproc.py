@@ -62,7 +62,6 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         """
         train_df = data_dictionary["train_features"]
         test_df = data_dictionary["test_features"]
-        eval_freq = self.freqai_info["rl_config"]["eval_cycles"] * len(test_df)
 
         env_id = "train_env"
         num_cpu = int(self.freqai_info["rl_config"]["thread_count"] / 2)
@@ -77,5 +76,5 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
                                                 config=self.config) for i
                                        in range(num_cpu)])
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
-                                          render=False, eval_freq=eval_freq,
+                                          render=False, eval_freq=len(train_df),
                                           best_model_save_path=dk.data_path)
