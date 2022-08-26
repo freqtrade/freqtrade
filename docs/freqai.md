@@ -113,7 +113,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `use_SVM_to_remove_outliers` | Ask FreqAI to train a support vector machine to detect and remove outliers from the training data set as well as from incoming data points. <br> **Datatype:** boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. E.g. `nu` *Very* broadly, is the percentage of data points that should be considered outliers. `shuffle` is by default false to maintain reproducibility. But these and all others can be added/changed in this dictionary. <br> **Datatype:** dictionary.
 | `stratify_training_data` | This value is used to indicate the stratification of the data. e.g. 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. <br> **Datatype:** positive integer.
-| `indicator_max_period_candles` | **Deprecated in favor of** strategy set `startup_candle_count`, however, both configuration parameters provide the same functionality; the maximum *period* used in `populate_any_indicators()` for indicator creation (timeframe independent). FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
+| `indicator_max_period_candles` | **No longer used**. User must use the strategy set `startup_candle_count` which defines the maximum *period* used in `populate_any_indicators()` for indicator creation (timeframe independent). FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
 | `indicator_periods_candles` | A list of integers used to duplicate all indicators according to a set of periods and add them to the feature set. <br> **Datatype:** list of positive integers.
 | `use_DBSCAN_to_remove_outliers` | Inactive by default. If true, FreqAI clusters data using DBSCAN to identify and remove outliers from training and prediction data. <br> **Datatype:** float (fraction of 1).
 |  |  **Data split parameters**
@@ -162,7 +162,6 @@ The user interface is isolated to the typical config file. A typical FreqAI conf
             "label_period_candles": 24,
             "include_shifted_candles": 2,
             "weight_factor":  0,
-            "indicator_max_period_candles": 20,
             "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters" : {
@@ -386,6 +385,10 @@ for each pair, for each backtesting window within the bigger `--timerange`.
 The FreqAI strategy requires the user to include the following lines of code in the strategy:
 
 ```python
+
+    # user should define the maximum startup candle count (the largest number of candles 
+    # passed to any single indicator)
+    startup_candle_count: int = 20
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
