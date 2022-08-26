@@ -2316,10 +2316,10 @@ class Exchange:
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier.get('info', {})
         return {
-            'min': tier['minNotional'],
-            'max': tier['maxNotional'],
-            'mmr': tier['maintenanceMarginRate'],
-            'lev': tier['maxLeverage'],
+            'minNotional': tier['minNotional'],
+            'maxNotional': tier['maxNotional'],
+            'maintenanceMarginRate': tier['maintenanceMarginRate'],
+            'maxLeverage': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }
 
@@ -2348,18 +2348,18 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             if stake_amount == 0:
-                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
+                return self._leverage_tiers[pair][0]['maxLeverage']  # Max lev for lowest amount
 
             for tier_index in range(len(pair_tiers)):
 
                 tier = pair_tiers[tier_index]
-                lev = tier['lev']
+                lev = tier['maxLeverage']
 
                 if tier_index < len(pair_tiers) - 1:
                     next_tier = pair_tiers[tier_index + 1]
-                    next_floor = next_tier['min'] / next_tier['lev']
+                    next_floor = next_tier['minNotional'] / next_tier['maxLeverage']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
-                        return min((tier['max'] / stake_amount), lev)
+                        return min((tier['maxNotional'] / stake_amount), lev)
                         #
                         # With the two leverage tiers below,
                         # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
@@ -2380,10 +2380,11 @@ class Exchange:
                         #
 
                 else:  # if on the last tier
-                    if stake_amount > tier['max']:  # If stake is > than max tradeable amount
+                    if stake_amount > tier['maxNotional']:
+                        # If stake is > than max tradeable amount
                         raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
                     else:
-                        return tier['lev']
+                        return tier['maxLeverage']
 
             raise OperationalException(
                 'Looped through all tiers without finding a max leverage. Should never be reached'
@@ -2749,8 +2750,8 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             for tier in reversed(pair_tiers):
-                if nominal_value >= tier['min']:
-                    return (tier['mmr'], tier['maintAmt'])
+                if nominal_value >= tier['minNotional']:
+                    return (tier['maintenanceMarginRate'], tier['maintAmt'])
 
             raise OperationalException("nominal value can not be lower than 0")
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it

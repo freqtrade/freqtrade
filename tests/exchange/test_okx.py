@@ -414,47 +414,47 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
     assert exchange._leverage_tiers == {
         'ADA/USDT:USDT': [
             {
-                'min': 0,
-                'max': 500,
-                'mmr': 0.02,
-                'lev': 75,
+                'minNotional': 0,
+                'maxNotional': 500,
+                'maintenanceMarginRate': 0.02,
+                'maxLeverage': 75,
                 'maintAmt': None
             },
             {
-                'min': 501,
-                'max': 1000,
-                'mmr': 0.025,
-                'lev': 50,
+                'minNotional': 501,
+                'maxNotional': 1000,
+                'maintenanceMarginRate': 0.025,
+                'maxLeverage': 50,
                 'maintAmt': None
             },
             {
-                'min': 1001,
-                'max': 2000,
-                'mmr': 0.03,
-                'lev': 20,
+                'minNotional': 1001,
+                'maxNotional': 2000,
+                'maintenanceMarginRate': 0.03,
+                'maxLeverage': 20,
                 'maintAmt': None
             },
         ],
         'ETH/USDT:USDT': [
             {
-                'min': 0,
-                'max': 2000,
-                'mmr': 0.01,
-                'lev': 75,
+                'minNotional': 0,
+                'maxNotional': 2000,
+                'maintenanceMarginRate': 0.01,
+                'maxLeverage': 75,
                 'maintAmt': None
             },
             {
-                'min': 2001,
-                'max': 4000,
-                'mmr': 0.015,
-                'lev': 50,
+                'minNotional': 2001,
+                'maxNotional': 4000,
+                'maintenanceMarginRate': 0.015,
+                'maxLeverage': 50,
                 'maintAmt': None
             },
             {
-                'min': 4001,
-                'max': 8000,
-                'mmr': 0.02,
-                'lev': 20,
+                'minNotional': 4001,
+                'maxNotional': 8000,
+                'maintenanceMarginRate': 0.02,
+                'maxLeverage': 20,
                 'maintAmt': None
             },
         ],

@@ -4826,10 +4826,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier) == {
-        "min": 0,
-        "max": 100000,
-        "mmr": 0.025,
-        "lev": 20,
+        "minNotional": 0,
+        "maxNotional": 100000,
+        "maintenanceMarginRate": 0.025,
+        "maxLeverage": 20,
         "maintAmt": 0.0,
     }
 
@@ -4855,10 +4855,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier2) == {
-        'min': 0,
-        'max': 2000,
-        'mmr': 0.01,
-        'lev': 75,
+        'minNotional': 0,
+        'maxNotional': 2000,
+        'maintenanceMarginRate': 0.01,
+        'maxLeverage': 75,
         "maintAmt": None,
     }
 

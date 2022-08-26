@@ -146,4 +146,4 @@ class Okx(Exchange):
             return float('inf')
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]['max'] / leverage
+        return pair_tiers[-1]['maxNotional'] / leverage
