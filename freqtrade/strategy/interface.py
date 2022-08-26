@@ -157,12 +157,10 @@ class IStrategy(ABC, HyperStrategyMixin):
             if self.config.get('runmode') in (RunMode.DRY_RUN, RunMode.LIVE):
                 logger.info(
                     "Downloading all training data for all pairs in whitelist and "
-                    "corr_pairlist, this may take a while if you do not have the "
-                    "data saved"
+                    "corr_pairlist, this may take a while if the data is not "
+                    "already on disk."
                 )
-                # data_load_timerange = get_required_data_timerange(self.config)
                 download_all_data_for_training(self.dp, self.config)
-
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
