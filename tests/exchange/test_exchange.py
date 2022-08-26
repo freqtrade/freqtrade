@@ -4132,7 +4132,8 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
-        position=0.8,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
         wallet_balance=0.8,
     )
     assert liq_price == 17.47
@@ -4143,7 +4144,8 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
-        position=0.8,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
         wallet_balance=0.8,
     )
     assert liq_price == 17.540699999999998
@@ -4543,7 +4545,8 @@ def test_liquidation_price_is_none(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
-        position=71200.81144,
+        amount=71200.81144,
+        stake_amount=open_rate * 71200.81144,
         wallet_balance=-56354.57,
         mm_ex_1=0.10,
         upnl_ex_1=0.0
@@ -4552,7 +4555,7 @@ def test_liquidation_price_is_none(
 
 @pytest.mark.parametrize(
     'exchange_name, is_short, trading_mode, margin_mode, wallet_balance, '
-    'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, '
     'mm_ratio, expected',
     [
         ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
@@ -4566,7 +4569,7 @@ def test_liquidation_price_is_none(
     ])
 def test_liquidation_price(
     mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
-    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, amount, mm_ratio, expected
 ):
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
@@ -4580,7 +4583,8 @@ def test_liquidation_price(
         wallet_balance=wallet_balance,
         mm_ex_1=mm_ex_1,
         upnl_ex_1=upnl_ex_1,
-        position=position,
+        amount=amount,
+        stake_amount=open_rate * amount,
     ), 2), expected)
 
 
@@ -5111,6 +5115,7 @@ def test_get_liquidation_price(
         pair='ETH/USDT:USDT',
         open_rate=open_rate,
         amount=amount,
+        stake_amount=amount * open_rate / leverage,
         leverage=leverage,
         is_short=is_short,
     )

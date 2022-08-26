@@ -1734,6 +1734,7 @@ class FreqtradeBot(LoggingMixin):
                     leverage=trade.leverage,
                     pair=trade.pair,
                     amount=trade.amount,
+                    stake_amount=trade.stake_amount,
                     open_rate=trade.open_rate,
                     is_short=trade.is_short
                 ))
