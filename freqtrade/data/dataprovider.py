@@ -91,9 +91,9 @@ class DataProvider:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
             # Move informative start time respecting startup_candle_count
-            timerange.subtract_start(
-                self.get_required_startup_seconds(str(timeframe))
-            )
+            startup_candles = self.get_required_startup(str(timeframe))
+            tf_seconds = timeframe_to_seconds(str(timeframe))
+            timerange.subtract_start(tf_seconds * startup_candles)
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
                 timeframe=timeframe or self._config['timeframe'],
@@ -105,16 +105,18 @@ class DataProvider:
             )
         return self.__cached_pairs_backtesting[saved_pair].copy()
 
-    def get_required_startup_seconds(self, timeframe: str) -> int:
-        tf_seconds = timeframe_to_seconds(timeframe)
-        base_seconds = tf_seconds * self._config.get('startup_candle_count', 0)
-        if not self._config['freqai']['enabled']:
-            return base_seconds
+    def get_required_startup(self, timeframe: str) -> int:
+        if not self._config.get('freqai', {}).get('enabled', False):
+            return self._config.get('startup_candle_count', 0)
         else:
-            train_seconds = self._config['freqai']['train_period_days'] * 86400
-            # multiplied by safety factor of 2 because FreqAI users
-            # typically do not know the correct window.
-            return base_seconds * 2 + int(train_seconds)
+            if not self._config['startup_candle_count']:
+                raise OperationalException('FreqAI backtesting module requires strategy '
+                                           'set startup_candle_count.')
+            tf_seconds = timeframe_to_seconds(timeframe)
+            train_candles = self._config['freqai']['train_period_days'] * 86400 / tf_seconds
+            total_candles = int(self._config.get('startup_candle_count', 0) + train_candles)
+            logger.info(f'Increasing startup_candle_count for freqai to {total_candles}')
+            return total_candles
 
     def get_pair_dataframe(
         self,

@@ -211,21 +211,12 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        # if self.config.get('freqai', {}).get('enabled', False):
-        #     startup_candles = int(self.config.get('freqai', {}).get('startup_candles', 0))
-        #     if not startup_candles:
-        #         raise OperationalException('FreqAI backtesting module requires user set '
-        #                                    'startup_candles in config.')
-        #     self.required_startup += int(self.config.get('freqai', {}).get('startup_candles', 0))
-        #     logger.info(f'Increasing startup_candle_count for freqai to {self.required_startup}')
-        #     self.config['startup_candle_count'] = self.required_startup
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.get_required_startup(self.timeframe),
+            startup_candles=self.dataprovider.get_required_startup(self.timeframe),
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
@@ -243,21 +234,6 @@ class Backtesting:
 
         self.progress.set_new_value(1)
         return data, self.timerange
-
-    def get_required_startup(self, timeframe: str) -> int:
-        if not self.config['freqai']['enabled']:
-            return self.required_startup
-        else:
-            if not self.config['startup_candle_count']:
-                raise OperationalException('FreqAI backtesting module requires strategy '
-                                           'set startup_candle_count.')
-            tf_seconds = timeframe_to_seconds(timeframe)
-            train_candles = self.config['freqai']['train_period_days'] * 86400 / tf_seconds
-            # multiplied by safety factor of 2 because FreqAI users
-            # typically do not know the correct window.
-            total_candles = self.required_startup * 2 + train_candles
-            logger.info(f'Increasing startup_candle_count for freqai to {total_candles}')
-            return total_candles
 
     def load_bt_data_detail(self) -> None:
         """
