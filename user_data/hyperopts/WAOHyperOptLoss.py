@@ -41,7 +41,7 @@ class WAOHyperOptLoss(IHyperOptLoss):
         y = 0
         profit_sell_signal = []
         for exit_reason in results['exit_reason']:
-            if exit_reason == 'exit_signal':
+            if exit_reason == 'exit_signal' and results['profit_ratio'][y] < 0.009:
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
 
@@ -65,6 +65,6 @@ class WAOHyperOptLoss(IHyperOptLoss):
         We loose money when trades durations are big (noise), specially for the lost ones, so the quicker the lost trades is, the better it is ===> lost teade duration weight is the second most important weight
         Then follow the win trades duration and finally we want, at least, win % > 30% but it's not the most important thing ==> the smallest weight 
         """
-        result = 0.10 * win_trades_percentage_loss + 0.4 * av_profit_sell_signal_loss + 0.2 * win_duration_loss + 0.30 * lost_duration_loss
+        result = 0.10 * win_trades_percentage_loss + 0.5 * av_profit_sell_signal_loss + 0.25 * win_duration_loss + 0.15 * lost_duration_loss
 
         return result
