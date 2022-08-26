@@ -295,7 +295,8 @@ class Base5ActionRLEnv(gym.Env):
             pnl = self.get_unrealized_profit()
 
             if self._position in (Positions.Long, Positions.Short):
-                self._total_profit *= (1 + pnl)
+                #self._total_profit *= (1 + pnl)
+                self._total_profit += pnl
                 self._profits.append((self._current_tick, self._total_profit))
                 self.close_trade_profit.append(pnl)
 
