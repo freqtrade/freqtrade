@@ -12,11 +12,11 @@ import websockets
 from fastapi import Depends
 from fastapi import WebSocket as FastAPIWebSocket
 from fastapi import WebSocketDisconnect, status
+from janus import Queue as ThreadedQueue
 
 from freqtrade.enums import ExternalSignalModeType, LeaderMessageType, RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
 from freqtrade.rpc.external_signal.channel import ChannelManager
-from freqtrade.rpc.external_signal.thread_queue import Queue as ThreadedQueue
 from freqtrade.rpc.external_signal.types import MessageType
 from freqtrade.rpc.external_signal.utils import is_websocket_alive
 
