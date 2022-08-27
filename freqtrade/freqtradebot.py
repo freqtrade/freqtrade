@@ -1552,9 +1552,10 @@ class FreqtradeBot(LoggingMixin):
         trade.close_rate_requested = limit
         trade.exit_reason = exit_reason
 
-        # Lock pair for one candle to prevent immediate re-trading
-        self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
-                                reason='Auto lock')
+        if not sub_trade_amt:
+            # Lock pair for one candle to prevent immediate re-trading
+            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
+                                    reason='Auto lock')
 
         self._notify_exit(trade, order_type, sub_trade=bool(sub_trade_amt), order=order_obj)
         # In case of market sell orders the order can be closed immediately
