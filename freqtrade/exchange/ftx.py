@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class Ftx(Exchange):
 
     _ft_has: Dict = {
+        "order_time_in_force": ['GTC', 'IOC', 'PO'],
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
         "ohlcv_require_since": True,
