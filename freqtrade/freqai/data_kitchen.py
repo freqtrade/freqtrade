@@ -513,7 +513,7 @@ class FreqaiDataKitchen:
 
         return avg_mean_dist
 
-    def get_outlier_percentage(self, dropped_pts: npt.ArrayLike) -> float:
+    def get_outlier_percentage(self, dropped_pts: npt.NDArray) -> float:
         """
         Check if more than X% of points werer dropped during outlier detection.
         """
@@ -568,7 +568,7 @@ class FreqaiDataKitchen:
             outlier_ptc = self.get_outlier_percentage(dropped_points)
             if outlier_ptc:
                 logger.warning(
-                        f"SVM detected >{outlier_ptc}% of the points as outliers."
+                        f"SVM detected > {outlier_ptc}% of the points as outliers."
                         f"Keeping original dataset."
                 )
                 return
@@ -691,7 +691,7 @@ class FreqaiDataKitchen:
             outlier_ptc = self.get_outlier_percentage(dropped_points)
             if outlier_ptc:
                 logger.warning(
-                        f"DBSCAN detected >{outlier_ptc}% of the points as outliers."
+                        f"DBSCAN detected > {outlier_ptc}% of the points as outliers."
                         f"Keeping original dataset."
                 )
                 return
@@ -754,7 +754,7 @@ class FreqaiDataKitchen:
         outlier_ptc = self.get_outlier_percentage(1 - do_predict)
         if outlier_ptc:
             logger.warning(
-                    f"DBSCAN detected >{outlier_ptc}% of the points as outliers."
+                    f"DI detected > {outlier_ptc}% of the points as outliers."
                     f"Keeping original dataset."
             )
             return
