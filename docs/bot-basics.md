@@ -70,7 +70,7 @@ This loop will be repeated again and again until the bot is stopped.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Check position adjustments for open trades if enabled and call `adjust_trade_position()` to determine if an additional order is requested.
   * Call `custom_stoploss()` and `custom_exit()` to find custom exit points.
-  * For exits based on exit-signal and custom-exit: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
+  * For exits based on exit-signal, custom-exit and partial exits: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
 * Generate backtest report output
 
 !!! Note

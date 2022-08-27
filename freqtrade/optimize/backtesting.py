@@ -554,7 +554,8 @@ class Backtesting:
             if remaining < min_stake:
                 # Remaining stake is too low to be sold.
                 return trade
-            pos_trade = self._exit_trade(trade, row, current_rate, amount)
+            exit_ = ExitCheckTuple(ExitType.PARTIAL_EXIT)
+            pos_trade = self._get_exit_for_signal(trade, row, exit_, amount)
             if pos_trade is not None:
                 order = pos_trade.orders[-1]
                 if self._get_order_filled(order.price, row):
@@ -589,14 +590,15 @@ class Backtesting:
                 return t
         return None
 
-    def _get_exit_for_signal(self, trade: LocalTrade, row: Tuple,
-                             exit_: ExitCheckTuple) -> Optional[LocalTrade]:
+    def _get_exit_for_signal(
+            self, trade: LocalTrade, row: Tuple, exit_: ExitCheckTuple,
+            amount: Optional[float] = None) -> Optional[LocalTrade]:
 
         exit_candle_time: datetime = row[DATE_IDX].to_pydatetime()
         if exit_.exit_flag:
             trade.close_date = exit_candle_time
             exit_reason = exit_.exit_reason
-
+            amount_ = amount if amount is not None else trade.amount
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             try:
                 close_rate = self._get_close_rate(row, trade, exit_, trade_dur)
@@ -605,7 +607,8 @@ class Backtesting:
             # call the custom exit price,with default value as previous close_rate
             current_profit = trade.calc_profit_ratio(close_rate)
             order_type = self.strategy.order_types['exit']
-            if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
+            if exit_.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT,
+                                   ExitType.PARTIAL_EXIT):
                 # Checks and adds an exit tag, after checking that the length of the
                 # row has the length for an exit tag column
                 if (
@@ -633,22 +636,23 @@ class Backtesting:
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['exit']
 
-            if (exit_.exit_type != ExitType.LIQUIDATION and not strategy_safe_wrapper(
-                self.strategy.confirm_trade_exit, default_retval=True)(
-                    pair=trade.pair,
-                    trade=trade,  # type: ignore[arg-type]
-                    order_type=order_type,
-                    amount=trade.amount,
-                    rate=close_rate,
-                    time_in_force=time_in_force,
-                    sell_reason=exit_reason,  # deprecated
-                    exit_reason=exit_reason,
-                    current_time=exit_candle_time)):
+            if (exit_.exit_type not in (ExitType.LIQUIDATION, ExitType.PARTIAL_EXIT)
+                    and not strategy_safe_wrapper(
+                    self.strategy.confirm_trade_exit, default_retval=True)(
+                        pair=trade.pair,
+                        trade=trade,  # type: ignore[arg-type]
+                        order_type=order_type,
+                        amount=amount_,
+                        rate=close_rate,
+                        time_in_force=time_in_force,
+                        sell_reason=exit_reason,  # deprecated
+                        exit_reason=exit_reason,
+                        current_time=exit_candle_time)):
                 return None
 
             trade.exit_reason = exit_reason
 
-            return self._exit_trade(trade, row, close_rate, trade.amount)
+            return self._exit_trade(trade, row, close_rate, amount_)
         return None
 
     def _exit_trade(self, trade: LocalTrade, sell_row: Tuple,
