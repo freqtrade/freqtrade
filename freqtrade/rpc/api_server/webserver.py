@@ -74,6 +74,7 @@ class ApiServer(RPCHandler):
                            default_response_class=FTJSONResponse,
                            )
         self.configure_app(self.app, self._config)
+        self.start_api()
 
     def add_rpc_handler(self, rpc: RPC):
         """

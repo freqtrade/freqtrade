@@ -62,6 +62,7 @@ TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 
 FOLLOWER_MODE_OPTIONS = ['follower', 'leader']
+WAIT_DATA_POLICY_OPTIONS = ['none', 'first', 'all']
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
@@ -509,6 +510,11 @@ CONF_SCHEMA = {
                 'follower_reply_timeout': {'type': 'integer'},
                 'follower_sleep_time': {'type': 'integer'},
                 'follower_ping_timeout': {'type': 'integer'},
+                'wait_data_policy': {
+                    'type': 'string',
+                    'enum': WAIT_DATA_POLICY_OPTIONS
+                },
+                'remove_signals_analyzed_df': {'type': 'boolean', 'default': False}
             },
             'required': ['mode']
         },

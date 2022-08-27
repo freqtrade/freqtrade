@@ -7,5 +7,12 @@ class ExternalSignalModeType(str, Enum):
 
 
 class LeaderMessageType(str, Enum):
+    default = "default"
     pairlist = "pairlist"
     analyzed_df = "analyzed_df"
+
+
+class WaitDataPolicy(str, Enum):
+    none = "none"
+    one = "one"
+    all = "all"

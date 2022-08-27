@@ -15,7 +15,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.enums import CandleType, RunMode
+from freqtrade.enums import CandleType, RunMode, WaitDataPolicy
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
 from freqtrade.util import PeriodicCache
@@ -29,7 +29,12 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
+    def __init__(
+        self,
+        config: dict,
+        exchange: Optional[Exchange],
+        pairlists=None
+    ) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
@@ -37,11 +42,17 @@ class DataProvider:
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
         self.__external_pairs_df: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
-        self.__external_pairs_event: Dict[str, Event] = {}
+        self.__external_pairs_event: Dict[PairWithTimeframe, Tuple[int, Event]] = {}
         self._msg_queue: deque = deque()
 
         self.__msg_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config.get('timeframe', '1h')))
+
+        self._num_sources = len(self._config.get('external_signal', {}).get('leader_list', []))
+        self._wait_data_policy = self._config.get('external_signal', {}).get(
+            'wait_data_policy', WaitDataPolicy.all)
+        self._wait_data_timeout = self._config.get(
+            'external_signal', {}).get('wait_data_timeout', 5)
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -75,56 +86,87 @@ class DataProvider:
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-        candle_type: CandleType
+        candle_type: CandleType,
     ) -> None:
         """
-        Add the DataFrame to the __external_pairs_df. If a pair event exists,
-        set it to release the main thread from waiting.
+        Add the pair data to this class from an external source.
+
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         pair_key = (pair, timeframe, candle_type)
 
-        # Delete stale data
-        if pair_key in self.__external_pairs_df:
-            del self.__external_pairs_df[pair_key]
-
+        # For multiple leaders, if the data already exists, we'd merge
         self.__external_pairs_df[pair_key] = (dataframe, datetime.now(timezone.utc))
-
-        pair_event = self.__external_pairs_event.get(pair)
-        if pair_event:
-            logger.debug(f"Leader data for pair {pair_key} has been added")
-            pair_event.set()
+        self._set_data_event(pair_key)
 
     def get_external_df(
         self,
         pair: str,
         timeframe: str,
-        candle_type: CandleType,
-        wait: bool = True
+        candle_type: CandleType
     ) -> DataFrame:
         """
-        If the pair exists in __external_pairs_df, return it.
-        If it doesn't, and wait is False, then return an empty df with the columns filled.
-        If it doesn't, and wait is True (default) create a new threading Event
-        in __external_pairs_event and wait on it.
+        Get the pair data from the external sources. Will wait if the policy is
+        set to, and data is not available.
+
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         pair_key = (pair, timeframe, candle_type)
 
         if pair_key not in self.__external_pairs_df:
-            if wait:
-                pair_event = Event()
-                self.__external_pairs_event[pair] = pair_event
+            self._wait_on_data(pair_key)
 
-                logger.debug(f"Waiting on Leader data for: {pair_key}")
-                self.__external_pairs_event[pair].wait(timeout=5)
-
-                if pair_key not in self.__external_pairs_df:
-                    # Return empty dataframe but with expected columns merged and filled with NaN
-                    return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
-            else:
-                # Return empty dataframe but with expected columns merged and filled with NaN
+            if pair_key not in self.__external_pairs_df:
                 return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
         return self.__external_pairs_df[pair_key]
+
+    def _set_data_event(self, key: PairWithTimeframe):
+        """
+        Depending on the WaitDataPolicy, if an event exists for this PairWithTimeframe
+        then set the event to release main thread from waiting.
+
+        :param key: PairWithTimeframe
+        """
+        pair_event = self.__external_pairs_event.get(key)
+
+        if pair_event:
+            num_concat, event = pair_event
+            self.__external_pairs_event[key] = (num_concat + 1, event)
+
+            if self._wait_data_policy == WaitDataPolicy.one:
+                logger.debug("Setting Data as policy is One")
+                event.set()
+            elif self._wait_data_policy == WaitDataPolicy.all and num_concat == self._num_sources:
+                logger.debug("Setting Data as policy is all, and is complete")
+                event.set()
+
+                del self.__external_pairs_event[key]
+
+    def _wait_on_data(self, key: PairWithTimeframe):
+        """
+        Depending on the WaitDataPolicy, we will create and wait on an event until
+        set that determines the full amount of data is available
+
+        :param key: PairWithTimeframe
+        """
+        if self._wait_data_policy is not WaitDataPolicy.none:
+            pair, timeframe, candle_type = key
+
+            pair_event = Event()
+            self.__external_pairs_event[key] = (0, pair_event)
+
+            timeout = self._wait_data_timeout \
+                if self._wait_data_policy is not WaitDataPolicy.all else 0
+
+            timeout_str = f"for {timeout} seconds" if timeout > 0 else "indefinitely"
+            logger.debug(f"Waiting for external data on {pair} for {timeout_str}")
+
+            pair_event.wait(timeout=timeout)
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

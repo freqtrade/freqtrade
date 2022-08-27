@@ -24,7 +24,8 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, LeaderMessage
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin, json_to_dataframe, shorten_date
+from freqtrade.misc import (decimals_per_coin, json_to_dataframe, remove_entry_exit_signals,
+                            shorten_date)
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1090,41 +1091,64 @@ class RPC:
             'last_process_ts': int(last_p.timestamp()),
         }
 
-    def _handle_emitted_data(self, type, data):
+    # ------------------------------ EXTERNAL SIGNALS -----------------------
+
+    def _initial_leader_data(self):
+        # We create a list of Messages to send to the follower on connect
+        data = []
+
+        # Send Pairlist data
+        data.append({
+            "data_type": LeaderMessageType.pairlist,
+            "data": self._freqtrade.pairlists._whitelist
+        })
+
+        return data
+
+    def _handle_pairlist_message(self, type, data):
         """
-        Handles the emitted data from the Leaders
+        Handles the emitted pairlists from the Leaders
 
         :param type: The data_type of the data
         :param data: The data
         """
-        logger.debug(f"Handling emitted data of type ({type})")
+        pairlist = data
 
-        if type == LeaderMessageType.pairlist:
-            pairlist = data
+        logger.debug(f"Handling Pairlist message: {pairlist}")
 
-            logger.debug(pairlist)
+        external_pairlist = self._freqtrade.pairlists._pairlist_handlers[0]
+        external_pairlist.add_pairlist_data(pairlist)
 
-            # Add the pairlist data to the ExternalPairList object
-            external_pairlist = self._freqtrade.pairlists._pairlist_handlers[0]
-            external_pairlist.add_pairlist_data(pairlist)
+    def _handle_analyzed_df_message(self, type, data):
+        """
+        Handles the analyzed dataframes from the Leaders
 
-        elif type == LeaderMessageType.analyzed_df:
+        :param type: The data_type of the data
+        :param data: The data
+        """
+        key, value = data["key"], data["value"]
+        pair, timeframe, candle_type = key
 
-            # Convert the dataframe back from json
-            key, value = data["key"], data["value"]
+        # Skip any pairs that we don't have in the pairlist?
+        # leader_pairlist = self._freqtrade.pairlists._whitelist
+        # if pair not in leader_pairlist:
+        #     return
 
-            pair, timeframe, candle_type = key
+        dataframe = json_to_dataframe(value)
 
-            # Skip any pairs that we don't have in the pairlist?
-            # leader_pairlist = self._freqtrade.pairlists._whitelist
-            # if pair not in leader_pairlist:
-            #     return
+        if self._config.get('external_signal', {}).get('remove_signals_analyzed_df', False):
+            dataframe = remove_entry_exit_signals(dataframe)
 
-            dataframe = json_to_dataframe(value)
+        logger.debug(f"Handling analyzed dataframe for {pair}")
+        logger.debug(dataframe.tail())
 
-            logger.debug(f"Received analyzed dataframe for {pair}")
-            logger.debug(dataframe.tail())
+        # Add the dataframe to the dataprovider
+        dataprovider = self._freqtrade.dataprovider
+        dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
 
-            # Add the dataframe to the dataprovider
-            dataprovider = self._freqtrade.dataprovider
-            dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
+    def _handle_default_message(self, type, data):
+        """
+        Default leader message handler, just logs it. We should never have to
+        run this unless the leader sends us some weird message.
+        """
+        logger.debug(f"Received message from Leader of type {type}: {data}")

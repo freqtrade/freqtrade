@@ -14,6 +14,7 @@ import pandas
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
+from freqtrade.enums.signaltype import SignalTagType, SignalType
 
 
 logger = logging.getLogger(__name__)
@@ -269,5 +270,21 @@ def json_to_dataframe(data: str) -> pandas.DataFrame:
     """
     dataframe = pandas.read_json(data)
     dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
+
+    return dataframe
+
+
+def remove_entry_exit_signals(dataframe: pandas.DataFrame):
+    """
+    Remove Entry and Exit signals from a DataFrame
+
+    :param dataframe: The DataFrame to remove signals from
+    """
+    dataframe[SignalType.ENTER_LONG.value] = 0
+    dataframe[SignalType.EXIT_LONG.value] = 0
+    dataframe[SignalType.ENTER_SHORT.value] = 0
+    dataframe[SignalType.EXIT_SHORT.value] = 0
+    dataframe[SignalTagType.ENTER_TAG.value] = None
+    dataframe[SignalTagType.EXIT_TAG.value] = None
 
     return dataframe

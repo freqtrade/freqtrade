@@ -281,9 +281,6 @@ class FreqtradeBot(LoggingMixin):
         # If external signal leader, broadcast whitelist data
         # Should we broadcast before trade pairs are added?
 
-        # Or should this class be made available to the PairListManager and ran
-        # when filter_pairlist is called?
-
         if self.external_signal_controller:
             if self.external_signal_controller.is_leader():
                 self.rpc.emit_data({

@@ -4,3 +4,4 @@
 # Required for follower
 websockets
 msgpack
+janus

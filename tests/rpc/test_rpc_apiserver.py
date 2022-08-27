@@ -52,7 +52,6 @@ def botclient(default_conf, mocker):
     try:
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(rpc)
-        apiserver.start_api()
         yield ftbot, TestClient(apiserver.app)
         # Cleanup ... ?
     finally:
@@ -333,7 +332,6 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
-    apiserver.start_api()
     assert server_mock.call_count == 1
     assert apiserver._config == default_conf
     apiserver.start_api()

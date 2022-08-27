@@ -45,25 +45,20 @@ class RPCManager:
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
-
-            # Pass replicate_rpc as param or defer starting api_server
-            # until we register the replicate rpc enpoint?
             apiserver = ApiServer(config)
             apiserver.add_rpc_handler(self._rpc)
             self.registered_modules.append(apiserver)
 
-            # Enable Replicate mode
+            # Enable External Signals mode
             # For this to be enabled, the API server must also be enabled
             if config.get('external_signal', {}).get('enabled', False):
                 logger.info('Enabling RPC.ExternalSignalController')
                 from freqtrade.rpc.external_signal import ExternalSignalController
-                external_signal_rpc = ExternalSignalController(self._rpc, config, apiserver)
-                self.registered_modules.append(external_signal_rpc)
+                external_signals = ExternalSignalController(self._rpc, config, apiserver)
+                self.registered_modules.append(external_signals)
 
                 # Attach the controller to FreqTrade
-                freqtrade.external_signal_controller = external_signal_rpc
-
-            apiserver.start_api()
+                freqtrade.external_signal_controller = external_signals
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """

@@ -1,4 +1,5 @@
 import logging
+from threading import RLock
 from typing import Type
 
 from freqtrade.rpc.external_signal.proxy import WebSocketProxy
@@ -63,6 +64,7 @@ class WebSocketChannel:
 class ChannelManager:
     def __init__(self):
         self.channels = dict()
+        self._lock = RLock()  # Re-entrant Lock
 
     async def on_connect(self, websocket: WebSocketType):
         """
@@ -78,7 +80,9 @@ class ChannelManager:
                 return
 
         ws_channel = WebSocketChannel(websocket)
-        self.channels[websocket] = ws_channel
+
+        with self._lock:
+            self.channels[websocket] = ws_channel
 
         return ws_channel
 
@@ -88,21 +92,26 @@ class ChannelManager:
 
         :param websocket: The WebSocket objet attached to the Channel
         """
-        if websocket in self.channels.keys():
-            channel = self.channels[websocket]
+        with self._lock:
+            channel = self.channels.get(websocket)
+            if channel:
+                logger.debug(f"Disconnecting channel - {channel}")
 
-            logger.debug(f"Disconnecting channel - {channel}")
+                if not channel.is_closed():
+                    await channel.close()
 
-            if not channel.is_closed():
-                await channel.close()
-            del self.channels[websocket]
+                del self.channels[websocket]
 
     async def disconnect_all(self):
         """
         Disconnect all Channels
         """
-        for websocket in self.channels.keys():
-            await self.on_disconnect(websocket)
+        with self._lock:
+            for websocket, channel in self.channels.items():
+                if not channel.is_closed():
+                    await channel.close()
+
+            self.channels = dict()
 
     async def broadcast(self, data):
         """
@@ -110,12 +119,13 @@ class ChannelManager:
 
         :param data: The data to send
         """
-        for websocket, channel in self.channels.items():
-            try:
-                await channel.send(data)
-            except RuntimeError:
-                # Handle cannot send after close cases
-                await self.on_disconnect(websocket)
+        with self._lock:
+            for websocket, channel in self.channels.items():
+                try:
+                    await channel.send(data)
+                except RuntimeError:
+                    # Handle cannot send after close cases
+                    await self.on_disconnect(websocket)
 
     async def send_direct(self, channel, data):
         """
