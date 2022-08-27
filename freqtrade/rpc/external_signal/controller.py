@@ -437,12 +437,12 @@ class ExternalSignalController(RPCHandler):
                                 # as we might call the RPC module in the main thread
                                 await self._handle_leader_message(data)
 
-                except socket.gaierror:
-                    logger.info(f"Socket error - retrying connection in {self.sleep_time}s")
+                except (socket.gaierror, ConnectionRefusedError):
+                    logger.info(f"Connection Refused - retrying connection in {self.sleep_time}s")
                     await asyncio.sleep(self.sleep_time)
                     continue
-                except ConnectionRefusedError:
-                    logger.info(f"Connection Refused - retrying connection in {self.sleep_time}s")
+                except websockets.exceptions.InvalidStatusCode as e:
+                    logger.error(f"Connection Refused - {e}")
                     await asyncio.sleep(self.sleep_time)
                     continue
 
