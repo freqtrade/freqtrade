@@ -525,16 +525,16 @@ It means if the order is not executed immediately AND fully then it is cancelled
 It is the same as FOK (above) except it can be partially fulfilled. The remaining part
 is automatically cancelled by the exchange.
 
-The `order_time_in_force` parameter contains a dict with buy and sell time in force policy values.
+The `order_time_in_force` parameter contains a dict with entry and exit time in force policy values.
 This can be set in the configuration file or in the strategy.
 Values set in the configuration file overwrites values set in the strategy.
 
-The possible values are: `gtc` (default), `fok` or `ioc`.
+The possible values are: `GTC` (default), `FOK` or `IOC`.
 
 ``` python
 "order_time_in_force": {
-    "entry": "gtc",
-    "exit": "gtc"
+    "entry": "GTC",
+    "exit": "GTC"
 },
 ```
 

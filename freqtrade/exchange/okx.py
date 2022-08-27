@@ -98,7 +98,7 @@ class Okx(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = super()._get_params(
             side=side,

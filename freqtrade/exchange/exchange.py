@@ -62,7 +62,7 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
-        "order_time_in_force": ["gtc"],
+        "order_time_in_force": ["GTC"],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
@@ -611,7 +611,7 @@ class Exchange:
         """
         Checks if order time in force configured in strategy/config are supported
         """
-        if any(v not in self._ft_has["order_time_in_force"]
+        if any(v.upper() not in self._ft_has["order_time_in_force"]
                for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
@@ -989,12 +989,12 @@ class Exchange:
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
+        if time_in_force != 'GTC' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: time_in_force})
+            params.update({param: time_in_force.upper()})
         if reduceOnly:
             params.update({'reduceOnly': True})
         return params
@@ -1009,7 +1009,7 @@ class Exchange:
         rate: float,
         leverage: float,
         reduceOnly: bool = False,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(

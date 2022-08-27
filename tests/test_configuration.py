@@ -973,17 +973,17 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
         'buy': 'gtc',
-        'sell': 'gtc',
+        'sell': 'GTC',
     }
     validate_config_consistency(conf)
     assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for time_in_force is.*", caplog)
     assert conf['order_time_in_force']['entry'] == 'gtc'
-    assert conf['order_time_in_force']['exit'] == 'gtc'
+    assert conf['order_time_in_force']['exit'] == 'GTC'
 
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'buy': 'GTC',
+        'sell': 'GTC',
     }
     conf['trading_mode'] = 'futures'
     with pytest.raises(OperationalException,

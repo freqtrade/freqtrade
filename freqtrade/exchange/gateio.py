@@ -25,8 +25,7 @@ class Gateio(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
-        "time_in_force_parameter": "timeInForce",
-        "order_time_in_force": ['gtc', 'ioc'],
+        "order_time_in_force": ['GTC', 'IOC'],
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
     }
@@ -57,7 +56,7 @@ class Gateio(Exchange):
             ordertype: str,
             leverage: float,
             reduceOnly: bool,
-            time_in_force: str = 'gtc',
+            time_in_force: str = 'GTC',
             ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -69,7 +68,7 @@ class Gateio(Exchange):
         if ordertype == 'market' and self.trading_mode == TradingMode.FUTURES:
             params['type'] = 'market'
             param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: 'ioc'})
+            params.update({param: 'IOC'})
         return params
 
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime,

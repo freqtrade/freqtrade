@@ -23,8 +23,7 @@ class Kucoin(Exchange):
         "stoploss_order_types": {"limit": "limit", "market": "market"},
         "l2_limit_range": [20, 100],
         "l2_limit_range_required": False,
-        "order_time_in_force": ['gtc', 'fok', 'ioc'],
-        "time_in_force_parameter": "timeInForce",
+        "order_time_in_force": ['GTC', 'FOK', 'IOC'],
         "ohlcv_candle_limit": 1500,
     }
 
