@@ -18,6 +18,14 @@ class bbrsi_optimal_rsi_hyperopt(WAOStrategy):
         if self.coin == 'BTC' or self.coin == 'ADA':
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
+    # buy hyperspace params
+    buy_params = {
+        "buy_rsi": 19,
+    }
+    # sell hyperspace params
+    sell_params = {
+        "sell_rsi": 78,
+    }
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
