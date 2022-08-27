@@ -40,7 +40,8 @@ pip install -r requirements-hyperopt.txt
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [--recursive-strategy-search] [-i TIMEFRAME]
+                          [--recursive-strategy-search] [--freqaimodel NAME]
+                          [--freqaimodel-path PATH] [-i TIMEFRAME]
                           [--timerange TIMERANGE]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
@@ -53,7 +54,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
                           [--hyperopt-loss NAME] [--disable-param-export]
-                          [--ignore-missing-spaces]
+                          [--ignore-missing-spaces] [--analyze-per-epoch]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -129,6 +130,7 @@ optional arguments:
   --ignore-missing-spaces, --ignore-unparameterized-spaces
                         Suppress errors for any requested Hyperopt spaces that
                         do not contain any parameters.
+  --analyze-per-epoch   Run populate_indicators once per epoch.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -154,6 +156,10 @@ Strategy arguments:
   --recursive-strategy-search
                         Recursively search for a strategy in the strategies
                         folder.
+  --freqaimodel NAME    Specify a custom freqaimodels.
+  --freqaimodel-path PATH
+                        Specify additional lookup path for freqaimodels.
+
 ```
 
 ### Hyperopt checklist
@@ -185,7 +191,7 @@ Rarely you may also need to create a [nested class](advanced-hyperopt.md#overrid
 
 ### Hyperopt execution logic
 
-Hyperopt will first load your data into memory and will then run `populate_indicators()` once per Pair to generate all indicators.
+Hyperopt will first load your data into memory and will then run `populate_indicators()` once per Pair to generate all indicators, unless `--analyze-per-epoch` is specified.
 
 Hyperopt will then spawn into different processes (number of processors, or `-j <n>`), and run backtesting over and over again, changing the parameters that are part of the `--spaces` defined.
 
@@ -426,9 +432,10 @@ While this strategy is most likely too simple to provide consistent profit, it s
     `range` property may also be used with `DecimalParameter` and `CategoricalParameter`. `RealParameter` does not provide this property due to infinite search space.
 
 ??? Hint "Performance tip"
-    By doing the calculation of all possible indicators in `populate_indicators()`, the calculation of the indicator happens only once for every parameter.  
-    While this may slow down the hyperopt startup speed, the overall performance will increase as the Hyperopt execution itself may pick the same value for multiple epochs (changing other values).
-    You should however try to use space ranges as small as possible. Every new column will require more memory, and every possibility hyperopt can try will increase the search space.
+    During normal hyperopting, indicators are calculated once and supplied to each epoch, linearly increasing RAM usage as a factor of increasing cores. As this also has performance implications, hyperopt provides `--analyze-per-epoch` which will move the execution of `populate_indicators()` to the epoch process, calculating a single value per parameter per epoch instead of using the `.range` functionality. In this case, `.range` functionality will only return the actually used value. This will reduce RAM usage, but increase CPU usage. However, your hyperopting run will be less likely to fail due to Out Of Memory (OOM) issues.
+
+    In either case, you should try to use space ranges as small as possible this will improve CPU/RAM usage in both scenarios.
+
 
 ## Optimizing protections
 
@@ -879,6 +886,7 @@ To combat these, you have multiple options:
 * Avoid using `--timeframe-detail` (this loads a lot of additional data into memory).
 * Reduce the number of parallel processes (`-j <n>`).
 * Increase the memory of your machine.
+* Use `--analyze-per-epoch` if you're using a lot of parameters with `.range` functionality.
 
 
 ## The objective has been evaluated at this point before.
