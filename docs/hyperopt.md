@@ -432,10 +432,10 @@ While this strategy is most likely too simple to provide consistent profit, it s
     `range` property may also be used with `DecimalParameter` and `CategoricalParameter`. `RealParameter` does not provide this property due to infinite search space.
 
 ??? Hint "Performance tip"
-    By doing the calculation of all possible indicators in `populate_indicators()`, the calculation of the indicator happens only once for every parameter.  
-    While this may slow down the hyperopt startup speed, the overall performance will increase as the Hyperopt execution itself may pick the same value for multiple epochs (changing other values).
-    As this also has Performance implications, hyperopt provides `--analyze-per-epoch` - which will move the execution of `populate_indicators()` to the epoch process. This will implicitly also change the `.range` functionality to only return the actually used value.
-    You should however try to use space ranges as small as possible. 
+    During normal hyperopting, indicators are calculated once and supplied to each epoch, linearly increasing RAM usage as a factor of increasing cores. As this also has performance implications, hyperopt provides `--analyze-per-epoch` which will move the execution of `populate_indicators()` to the epoch process, calculating a single value per parameter per epoch instead of using the `.range` functionality. In this case, `.range` functionality will only return the actually used value. This will reduce RAM usage, but increase CPU usage. However, your hyperopting run will be less likely to fail due to Out Of Memory (OOM) issues.
+
+    In either case, you should try to use space ranges as small as possible this will improve CPU/RAM usage in both scenarios.
+
 
 ## Optimizing protections
 
