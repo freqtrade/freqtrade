@@ -6,10 +6,11 @@ from pandas import DataFrame
 
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
-MIN_ACCEPTED_WIN_PERCENTAGE = 0.30
+MIN_ACCEPTED_WIN_PERCENTAGE = 0.37
 MIN_ACCEPTED_AV_PROFIT = 0.007
 MAX_ACCEPTED_WIN_TRADE_DURATION = 120
 MAX_ACCEPTED_LOST_TRADE_DURATION = 90
+MIN_TRADE_COUNT = 1210
 
 
 class WAOHyperOptLoss(IHyperOptLoss):
@@ -41,18 +42,19 @@ class WAOHyperOptLoss(IHyperOptLoss):
         y = 0
         profit_sell_signal = []
         for exit_reason in results['exit_reason']:
-            if exit_reason == 'exit_signal' and results['profit_ratio'][y] < 0.009:
+            if exit_reason == 'exit_signal':
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
 
         av_profit_sell_signal = statistics.mean(profit_sell_signal)
         win_trades_duration_av = statistics.mean(win_trades_duration)
-        lost_trades_duration_av = statistics.mean(lost_trades_duration)
+        # lost_trades_duration_av = statistics.mean(lost_trades_duration)
 
         win_trades_percentage_loss = MIN_ACCEPTED_WIN_PERCENTAGE / win_trades_percentage
         av_profit_sell_signal_loss = MIN_ACCEPTED_AV_PROFIT / av_profit_sell_signal
         win_duration_loss = win_trades_duration_av / MAX_ACCEPTED_WIN_TRADE_DURATION
-        lost_duration_loss = lost_trades_duration_av / MAX_ACCEPTED_LOST_TRADE_DURATION
+        # lost_duration_loss = lost_trades_duration_av / MAX_ACCEPTED_LOST_TRADE_DURATION
+        trades_number_loss = MIN_TRADE_COUNT / trade_count
 
         """
         Objective function, returns smaller number for better results
@@ -65,6 +67,6 @@ class WAOHyperOptLoss(IHyperOptLoss):
         We loose money when trades durations are big (noise), specially for the lost ones, so the quicker the lost trades is, the better it is ===> lost teade duration weight is the second most important weight
         Then follow the win trades duration and finally we want, at least, win % > 30% but it's not the most important thing ==> the smallest weight 
         """
-        result = 0.10 * win_trades_percentage_loss + 0.5 * av_profit_sell_signal_loss + 0.25 * win_duration_loss + 0.15 * lost_duration_loss
+        result = 0.15 * win_trades_percentage_loss + 0.4 * av_profit_sell_signal_loss + 0.1 * win_duration_loss + 0.35 * trades_number_loss
 
         return result
