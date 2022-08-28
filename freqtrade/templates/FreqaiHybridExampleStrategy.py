@@ -257,6 +257,3 @@ class FreqaiExampleHybridStrategy(IStrategy):
             'exit_short'] = 1
 
         return df
-
-    def get_ticker_indicator(self):
-        return int(self.config["timeframe"][:-1])
