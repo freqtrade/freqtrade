@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 from freqtrade.exceptions import OperationalException
-from tests.freqai.conftest import get_patched_data_kitchen
+from tests.conftest import log_has_re
+from tests.freqai.conftest import get_patched_data_kitchen, make_data_dictionary
 
 
 @pytest.mark.parametrize(
@@ -66,3 +67,30 @@ def test_check_if_model_expired(mocker, freqai_conf, timestamp, expected):
     dk = get_patched_data_kitchen(mocker, freqai_conf)
     assert dk.check_if_model_expired(timestamp) == expected
     shutil.rmtree(Path(dk.full_path))
+
+
+def test_use_DBSCAN_to_remove_outliers(mocker, freqai_conf, caplog):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    # freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 1})
+    freqai.dk.use_DBSCAN_to_remove_outliers(predict=False)
+    assert log_has_re(
+        "DBSCAN found eps of 2.42.",
+        caplog,
+    )
+
+
+def test_compute_distances(mocker, freqai_conf):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai_conf['freqai']['feature_parameters'].update({"DI_threshold": 1})
+    avg_mean_dist = freqai.dk.compute_distances()
+    assert round(avg_mean_dist, 2) == 2.56
+
+
+def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, caplog):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 0.1})
+    freqai.dk.use_SVM_to_remove_outliers(predict=False)
+    assert log_has_re(
+        "SVM detected 8.46%",
+        caplog,
+    )

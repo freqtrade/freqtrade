@@ -513,6 +513,19 @@ class FreqaiDataKitchen:
 
         return avg_mean_dist
 
+    def get_outlier_percentage(self, dropped_pts: npt.NDArray) -> float:
+        """
+        Check if more than X% of points werer dropped during outlier detection.
+        """
+        outlier_protection_pct = self.freqai_config["feature_parameters"].get(
+            "outlier_protection_percentage", 30)
+        outlier_pct = (dropped_pts.sum() / len(dropped_pts)) * 100
+        if outlier_pct >= outlier_protection_pct:
+            self.svm_model = None
+            return outlier_pct
+        else:
+            return 0.0
+
     def use_SVM_to_remove_outliers(self, predict: bool) -> None:
         """
         Build/inference a Support Vector Machine to detect outliers
@@ -550,8 +563,16 @@ class FreqaiDataKitchen:
                 self.data_dictionary["train_features"]
             )
             y_pred = self.svm_model.predict(self.data_dictionary["train_features"])
-            dropped_points = np.where(y_pred == -1, 0, y_pred)
+            kept_points = np.where(y_pred == -1, 0, y_pred)
             # keep_index = np.where(y_pred == 1)
+            outlier_pct = self.get_outlier_percentage(1 - kept_points)
+            if outlier_pct:
+                logger.warning(
+                        f"SVM detected {outlier_pct:.2f}% of the points as outliers. "
+                        f"Keeping original dataset."
+                )
+                return
+
             self.data_dictionary["train_features"] = self.data_dictionary["train_features"][
                 (y_pred == 1)
             ]
@@ -563,7 +584,7 @@ class FreqaiDataKitchen:
             ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f"SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" train points from {len(y_pred)} total points."
             )
 
@@ -572,7 +593,7 @@ class FreqaiDataKitchen:
             # to reduce code duplication
             if self.freqai_config['data_split_parameters'].get('test_size', 0.1) != 0:
                 y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
-                dropped_points = np.where(y_pred == -1, 0, y_pred)
+                kept_points = np.where(y_pred == -1, 0, y_pred)
                 self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
                     (y_pred == 1)
                 ]
@@ -583,7 +604,7 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f"SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" test points from {len(y_pred)} total points."
             )
 
@@ -635,8 +656,8 @@ class FreqaiDataKitchen:
                     cos(angle) * (point[1] - origin[1])
                 return (x, y)
 
-            MinPts = len(self.data_dictionary['train_features'].columns) * 2
-            # measure pairwise distances to train_features.shape[1]*2 nearest neighbours
+            MinPts = int(len(self.data_dictionary['train_features'].index) * 0.25)
+            # measure pairwise distances to nearest neighbours
             neighbors = NearestNeighbors(
                 n_neighbors=MinPts, n_jobs=self.thread_count)
             neighbors_fit = neighbors.fit(self.data_dictionary['train_features'])
@@ -666,6 +687,14 @@ class FreqaiDataKitchen:
             self.data['DBSCAN_eps'] = epsilon
             self.data['DBSCAN_min_samples'] = MinPts
             dropped_points = np.where(clustering.labels_ == -1, 1, 0)
+
+            outlier_pct = self.get_outlier_percentage(dropped_points)
+            if outlier_pct:
+                logger.warning(
+                        f"DBSCAN detected {outlier_pct:.2f}% of the points as outliers. "
+                        f"Keeping original dataset."
+                )
+                return
 
             self.data_dictionary['train_features'] = self.data_dictionary['train_features'][
                 (clustering.labels_ != -1)
@@ -721,6 +750,14 @@ class FreqaiDataKitchen:
             1,
             0,
         )
+
+        outlier_pct = self.get_outlier_percentage(1 - do_predict)
+        if outlier_pct:
+            logger.warning(
+                    f"DI detected {outlier_pct:.2f}% of the points as outliers. "
+                    f"Keeping original dataset."
+            )
+            return
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(

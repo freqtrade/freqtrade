@@ -566,7 +566,6 @@ class FreqaiDataDrawer:
         for training according to user defined train_period_days
         metadata: dict = strategy furnished pair metadata
         """
-
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
