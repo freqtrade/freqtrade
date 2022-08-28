@@ -657,7 +657,7 @@ class FreqaiDataKitchen:
                 return (x, y)
 
             MinPts = int(len(self.data_dictionary['train_features'].index) * 0.25)
-            # measure pairwise distances to train_features.shape[1]*2 nearest neighbours
+            # measure pairwise distances to nearest neighbours
             neighbors = NearestNeighbors(
                 n_neighbors=MinPts, n_jobs=self.thread_count)
             neighbors_fit = neighbors.fit(self.data_dictionary['train_features'])
