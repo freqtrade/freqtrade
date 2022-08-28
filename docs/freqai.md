@@ -826,7 +826,7 @@ tensorboard --logdir user_data/models/unique-id
 
 where `unique-id` is the `identifier` set in the `freqai` configuration file. 
 
-![tensorboard](assets/tensorboard.png)
+![tensorboard](assets/tensorboard.jpg)
 
 ## Additional information
 
