@@ -216,9 +216,10 @@ def stop(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stop()
 
 
+@router.post('/stopentry', response_model=StatusMsg, tags=['botcontrol'])
 @router.post('/stopbuy', response_model=StatusMsg, tags=['botcontrol'])
 def stop_buy(rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_stopbuy()
+    return rpc._rpc_stopentry()
 
 
 @router.post('/reload_config', response_model=StatusMsg, tags=['botcontrol'])

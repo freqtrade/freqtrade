@@ -422,13 +422,20 @@ def test_api_reloadconf(botclient):
     assert ftbot.state == State.RELOAD_CONFIG
 
 
-def test_api_stopbuy(botclient):
+def test_api_stopentry(botclient):
     ftbot, client = botclient
     assert ftbot.config['max_open_trades'] != 0
 
     rc = client_post(client, f"{BASE_URI}/stopbuy")
     assert_response(rc)
-    assert rc.json() == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
+    assert rc.json() == {
+        'status': 'No more entries will occur from now. Run /reload_config to reset.'}
+    assert ftbot.config['max_open_trades'] == 0
+
+    rc = client_post(client, f"{BASE_URI}/stopentry")
+    assert_response(rc)
+    assert rc.json() == {
+        'status': 'No more entries will occur from now. Run /reload_config to reset.'}
     assert ftbot.config['max_open_trades'] == 0
 
 

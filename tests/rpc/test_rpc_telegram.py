@@ -103,7 +103,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
-                   "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
+                   "['stopbuy', 'stopentry'], ['whitelist'], ['blacklist'], "
+                   "['blacklist_delete', 'bl_delete'], "
                    "['logs'], ['edge'], ['health'], ['help'], ['version']"
                    "]")
 
@@ -896,10 +897,10 @@ def test_stopbuy_handle(default_conf, update, mocker) -> None:
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     assert freqtradebot.config['max_open_trades'] != 0
-    telegram._stopbuy(update=update, context=MagicMock())
+    telegram._stopentry(update=update, context=MagicMock())
     assert freqtradebot.config['max_open_trades'] == 0
     assert msg_mock.call_count == 1
-    assert 'No more buy will occur from now. Run /reload_config to reset.' \
+    assert 'No more entries will occur from now. Run /reload_config to reset.' \
         in msg_mock.call_args_list[0][0][0]
 
 

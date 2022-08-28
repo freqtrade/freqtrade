@@ -239,7 +239,7 @@ class FreqtradeBot(LoggingMixin):
                 'status':
                     f"{len(open_trades)} open trades active.\n\n"
                     f"Handle these trades manually on {self.exchange.name}, "
-                    f"or '/start' the bot again and use '/stopbuy' "
+                    f"or '/start' the bot again and use '/stopentry' "
                     f"to handle open trades gracefully. \n"
                     f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}",
             }
