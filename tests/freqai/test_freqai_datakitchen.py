@@ -8,6 +8,7 @@ from freqtrade.exceptions import OperationalException
 from tests.freqai.conftest import get_patched_data_kitchen, make_data_dictionary
 from tests.conftest import log_has_re
 
+
 @pytest.mark.parametrize(
     "timerange, train_period_days, expected_result",
     [
