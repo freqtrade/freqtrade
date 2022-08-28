@@ -118,10 +118,20 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
 | `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> 
 |  |  **Model training parameters**
-| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.**Datatype:** Boolean.
+| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, such as `PPO` from stable_baselines3, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
+|  |  *Reinforcement Learning Parameters**
+| `rl_config` | A dictionary containing the control parameters for a Reinforcement Learning model. <br> **Datatype:** Dictionary.
+| `train_cycles` | Training time steps will be set based on the `train_cycles * number of training data points. <br> **Datatype:** Integer.
+| `thread_count` | Number of threads to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
+| `max_trade_duration_candles`| Guides the agent training to keep trades below desired length. Example usage shown in `prediction_models/ReinforcementLearner.py` within the user customizable `calculate_reward()` <br> **Datatype:** int.
+| `model_type` | Model string from stable_baselines3 or SBcontrib. Available strings include: `'TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO', 'PPO', 'A2C', 'DQN'`. User should ensure that `model_training_parameters` match those available to the corresponding stable_baselines3 model by visiting their documentaiton. [PPO doc](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html) (external website) <br> **Datatype:** string.
+| `policy_type` | One of the available policy types from stable_baselines3 <br> **Datatype:** string.
+| `continual_learning` | Number of threads to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
+| `thread_count` | If true, the agent will start new trainings from the model selected during the previous training. If false, a new agent is trained from scratch for each training. <br> **Datatype:** Bool.
+| `model_reward_parameters` | Parameters used inside the user customizable `calculate_reward()` function in `ReinforcementLearner.py` <br> **Datatype:** int.
 |  |  **Extraneous parameters**
 | `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
 | `conv_width` | The width of a convolutional neural network input tensor or the `ReinforcementLearningModel` `window_size`. This replaces the need for `shift` by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. Default value, 2 <br> **Datatype:** integer.
@@ -731,6 +741,93 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 
 FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as double the no. of user-defined features, and `eps` ($\varepsilon$) taken as the longest distance in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
 
+## Reinforcement Learning
+
+Setting up and running a Reinforcement Learning model is as quick and simple as running a Regressor. Users can start training and trading live from example files using:
+
+```bash
+freqtrade trade --freqaimodel ReinforcementLearner --strategy ReinforcementLearningExample5ac --strategy-path freqtrade/freqai/example_strats --config config_examples/config_freqai-rl.example.json
+```
+
+As users begin to modify the strategy and the prediction model, they will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, the user sets a `calculate_reward()` function inside their custom `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to give users the necessary building blocks to start their own models. It is inside the `calculate_reward()` where users express their creative theories about the market. For example, the user wants to reward their agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+
+```python
+    class MyRLEnv(Base5ActionRLEnv):
+        """
+        User made custom environment. This class inherits from BaseEnvironment and gym.env.
+        Users can override any functions from those parent classes. Here is an example
+        of a user customized `calculate_reward()` function.
+        """
+
+        def calculate_reward(self, action):
+
+            # first, penalize if the action is not valid
+            if not self._is_valid(action):
+                return -2
+
+            pnl = self.get_unrealized_profit()
+            rew = np.sign(pnl) * (pnl + 1)
+            factor = 100
+
+            # reward agent for entering trades
+            if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                    and self._position == Positions.Neutral:
+                return 25
+            # discourage agent from not entering trades
+            if action == Actions.Neutral.value and self._position == Positions.Neutral:
+                return -1
+
+            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+            trade_duration = self._current_tick - self._last_trade_tick
+
+            if trade_duration <= max_trade_duration:
+                factor *= 1.5
+            elif trade_duration > max_trade_duration:
+                factor *= 0.5
+
+            # discourage sitting in position
+            if self._position in (Positions.Short, Positions.Long) and \
+               action == Actions.Neutral.value:
+                return -1 * trade_duration / max_trade_duration
+
+            # close long
+            if action == Actions.Long_exit.value and self._position == Positions.Long:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
+
+            # close short
+            if action == Actions.Short_exit.value and self._position == Positions.Short:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
+
+            return 0.
+
+```
+
+After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple (as shown in `example_strats/ReinforcementLearningExample5ac.py`). The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy. 
+
+
+### Using Tensorboard
+
+Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
+
+```bash
+pip3 install tensorboard
+```
+
+Next, the user can activate Tensorboard with the following command:
+
+```bash
+cd freqtrade
+tensorboard --logdir user_data/models/unique-id
+```
+
+where `unique-id` is the `identifier` set in the `freqai` configuration file. 
+
+![tensorboard](assets/tensorboard.png)
+
 ## Additional information
 
 ### Common pitfalls
@@ -738,7 +835,7 @@ FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's we
 FreqAI cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
 This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively,
 it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
-new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
+new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShuffleFilter` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
 
 ## Credits
 
