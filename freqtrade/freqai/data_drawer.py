@@ -566,7 +566,6 @@ class FreqaiDataDrawer:
         for training according to user defined train_period_days
         metadata: dict = strategy furnished pair metadata
         """
-        import pytest 
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}
@@ -576,7 +575,6 @@ class FreqaiDataDrawer:
             )
 
             for tf in self.freqai_info["feature_parameters"].get("include_timeframes"):
-                # pytest.set_trace()
                 base_dataframes[tf] = dk.slice_dataframe(timerange, historic_data[pair][tf])
                 if pairs:
                     for p in pairs:
