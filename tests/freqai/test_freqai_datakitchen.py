@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from freqtrade.exceptions import OperationalException
-from tests.freqai.conftest import get_patched_data_kitchen, make_data_dictionary
 from tests.conftest import log_has_re
+from tests.freqai.conftest import get_patched_data_kitchen, make_data_dictionary
 
 
 @pytest.mark.parametrize(
