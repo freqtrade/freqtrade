@@ -46,8 +46,8 @@
     },
     "pairlists": [
         {
-            "method": "ExternalPairList",
-            "number_assets": 5,
+            "method": "ExternalPairList", // ExternalPairList is required in follower mode
+            "number_assets": 5, // We can limit the amount of pairs to use from the leaders
         }
     ],
     "telegram": {
@@ -74,7 +74,9 @@
             "url": "ws://localhost:8080/signals/ws",
             "api_token": "testtoken"
           }
-        ]
+        ],
+        "wait_data_policy": "all", // ['all', 'first', none] defaults to all
+        "remove_signals_analyzed_df": true, // Remove entry/exit signals from Leader df, Defaults to false
     },
     "bot_name": "freqtrade",
     "initial_state": "running",

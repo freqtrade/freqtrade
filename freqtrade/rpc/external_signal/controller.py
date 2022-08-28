@@ -373,7 +373,6 @@ class ExternalSignalController(RPCHandler):
                 # Data is being broadcasted right away as soon as startup,
                 # we may not have to send initial data at all. Further testing
                 # required.
-
                 await self.send_initial_data(channel)
 
                 # Keep connection open until explicitly closed, and sleep
@@ -434,7 +433,7 @@ class ExternalSignalController(RPCHandler):
 
                             async with lock:
                                 # Acquire lock so only 1 coro handling at a time
-                                # as we might call the RPC module in the main thread
+                                # as we call the RPC module in the main thread
                                 await self._handle_leader_message(data)
 
                 except (socket.gaierror, ConnectionRefusedError):
