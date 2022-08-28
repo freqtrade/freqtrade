@@ -1,15 +1,14 @@
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
-import torch as th
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Positions
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
-from pathlib import Path
-# from pandas import DataFrame
-# from stable_baselines3.common.callbacks import EvalCallback
-# from stable_baselines3.common.monitor import Monitor
 import numpy as np
+import torch as th
+
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         return model
 
-    class MyRLEnv(BaseReinforcementLearningModel.MyRLEnv):
+    class MyRLEnv(Base5ActionRLEnv):
         """
         User can override any function in BaseRLEnv and gym.Env. Here the user
         sets a custom reward based on profit and trade duration.

@@ -1,19 +1,20 @@
 import logging
-import torch as th
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
-from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
+
+import gym
+import torch as th
 from stable_baselines3 import DQN
 from stable_baselines3.common.buffers import ReplayBuffer
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from pathlib import Path
-from stable_baselines3.dqn.policies import (CnnPolicy, DQNPolicy, MlpPolicy,
-                                            QNetwork)
-from torch import nn
-import gym
-from stable_baselines3.common.torch_layers import (BaseFeaturesExtractor,
-                                                   FlattenExtractor)
-from stable_baselines3.common.type_aliases import GymEnv, Schedule
 from stable_baselines3.common.policies import BasePolicy
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor, FlattenExtractor
+from stable_baselines3.common.type_aliases import GymEnv, Schedule
+from stable_baselines3.dqn.policies import CnnPolicy, DQNPolicy, MlpPolicy, QNetwork
+from torch import nn
+
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.RL.BaseReinforcementLearningModel import BaseReinforcementLearningModel
+
 
 logger = logging.getLogger(__name__)
 
