@@ -40,7 +40,7 @@ FreqAI trains a model to predict the target values based on the input of custom 
 
 An overview of the algorithm is shown below, explaining the data processing pipeline and the model usage. 
 
-![freqai-algo](assets/freqai_algo.png)
+![freqai-algo](assets/freqai_algo.jpg)
 
 ### Important machine learning vocabulary
 
@@ -469,7 +469,7 @@ Additionally, the example classifier models do not accommodate multiple labels, 
 
 There are two ways to train and deploy an adaptive machine learning model. FreqAI enables live deployment as well as backtesting analyses. In both cases, a model is trained periodically, as shown in the following figure.
 
-![freqai-window](assets/freqai_moving-window.png)
+![freqai-window](assets/freqai_moving-window.jpg)
 
 ### Running the model live
 
@@ -648,7 +648,7 @@ $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
 where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. Below is a figure showing the effect of different weight factors on the data points (candles) in a feature set.
 
-![weight-factor](assets/freqai_weight-factor.png)
+![weight-factor](assets/freqai_weight-factor.jpg)
 
 `train_test_split()` has a parameters called `shuffle` that allows the user to keep the data unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data.
 
@@ -691,7 +691,7 @@ The user can tweak the DI through the `DI_threshold` to increase or decrease the
 
 Below is a figure that describes the DI for a 3D data set.
 
-![DI](assets/freqai_DI.png)
+![DI](assets/freqai_DI.jpg)
 
 #### Removing outliers using a Support Vector Machine (SVM)
 
@@ -728,7 +728,7 @@ DBSCAN is an unsupervised machine learning algorithm that clusters data without 
 
 Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters the data set by setting all data points that have $N-1$ other data points within a distance of $\varepsilon$ as *core points*. A data point that is within a distance of $\varepsilon$ from a *core point* but that does not have $N-1$ other data points within a distance of $\varepsilon$ from itself is considered an *edge point*. A cluster is then the collection of *core points* and *edge points*. Data points that have no other data points at a distance $<\varepsilon$ are considered outliers. The figure below shows a cluster with $N = 3$.
 
-![dbscan](assets/freqai_dbscan.png)
+![dbscan](assets/freqai_dbscan.jpg)
 
 FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as double the no. of user-defined features, and `eps` ($\varepsilon$) taken as the longest distance in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
 
