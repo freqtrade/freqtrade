@@ -168,9 +168,17 @@ class FreqaiDataKitchen:
             train_labels = labels
             train_weights = weights
 
-        return self.build_data_dictionary(
-            train_features, test_features, train_labels, test_labels, train_weights, test_weights
-        )
+        # Simplest way to reverse the order of training and test data:
+        if self.freqai_config['feature_parameters'].get('reverse_train_test_order', False):
+            return self.build_data_dictionary(
+                test_features, train_features, test_labels,
+                train_labels, test_weights, train_weights
+                )
+        else:
+            return self.build_data_dictionary(
+                train_features, test_features, train_labels,
+                test_labels, train_weights, test_weights
+            )
 
     def filter_features(
         self,
