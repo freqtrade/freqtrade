@@ -129,8 +129,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `max_trade_duration_candles`| Guides the agent training to keep trades below desired length. Example usage shown in `prediction_models/ReinforcementLearner.py` within the user customizable `calculate_reward()` <br> **Datatype:** int.
 | `model_type` | Model string from stable_baselines3 or SBcontrib. Available strings include: `'TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO', 'PPO', 'A2C', 'DQN'`. User should ensure that `model_training_parameters` match those available to the corresponding stable_baselines3 model by visiting their documentaiton. [PPO doc](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html) (external website) <br> **Datatype:** string.
 | `policy_type` | One of the available policy types from stable_baselines3 <br> **Datatype:** string.
-| `continual_learning` | Number of threads to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
-| `thread_count` | If true, the agent will start new trainings from the model selected during the previous training. If false, a new agent is trained from scratch for each training. <br> **Datatype:** Bool.
+| `continual_learning` | If true, the agent will start new trainings from the model selected during the previous training. If false, a new agent is trained from scratch for each training. <br> **Datatype:** Bool.
+| `thread_count` | Number of threads to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int. 
 | `model_reward_parameters` | Parameters used inside the user customizable `calculate_reward()` function in `ReinforcementLearner.py` <br> **Datatype:** int.
 |  |  **Extraneous parameters**
 | `keras` | If your model makes use of keras (typical of Tensorflow based prediction models), activate this flag so that the model save/loading follows keras standards. Default value `false`  <br> **Datatype:** boolean.
