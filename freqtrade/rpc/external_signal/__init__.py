@@ -1,5 +1,5 @@
-# flake8: noqa: F401
-from freqtrade.rpc.external_signal.controller import ExternalSignalController
-
-
-__all__ = ('ExternalSignalController')
+# # flake8: noqa: F401
+# from freqtrade.rpc.external_signal.controller import ExternalSignalController
+#
+#
+# __all__ = ('ExternalSignalController')

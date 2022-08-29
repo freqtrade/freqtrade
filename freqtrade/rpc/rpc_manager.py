@@ -51,14 +51,14 @@ class RPCManager:
 
             # Enable External Signals mode
             # For this to be enabled, the API server must also be enabled
-            if config.get('external_signal', {}).get('enabled', False):
-                logger.info('Enabling RPC.ExternalSignalController')
-                from freqtrade.rpc.external_signal import ExternalSignalController
-                external_signals = ExternalSignalController(self._rpc, config, apiserver)
-                self.registered_modules.append(external_signals)
-
-                # Attach the controller to FreqTrade
-                freqtrade.external_signal_controller = external_signals
+            # if config.get('external_signal', {}).get('enabled', False):
+            #     logger.info('Enabling RPC.ExternalSignalController')
+            #     from freqtrade.rpc.external_signal import ExternalSignalController
+            #     external_signals = ExternalSignalController(self._rpc, config, apiserver)
+            #     self.registered_modules.append(external_signals)
+            #
+            #     # Attach the controller to FreqTrade
+            #     freqtrade.external_signal_controller = external_signals
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
@@ -78,8 +78,7 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        if msg.get("type") != RPCMessageType.EMIT_DATA:
-            logger.info('Sending rpc message: %s', msg)
+        logger.info('Sending rpc message: %s', msg)
         if 'pair' in msg:
             msg.update({
                 'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])
@@ -138,12 +137,3 @@ class RPCManager:
                 'type': RPCMessageType.STARTUP,
                 'status': f'Using Protections: \n{prots}'
             })
-
-    def emit_data(self, data: Dict[str, Any]):
-        """
-        Send a message via RPC with type RPCMessageType.EMIT_DATA
-        """
-        self.send_msg({
-            "type": RPCMessageType.EMIT_DATA,
-            "message": data
-        })

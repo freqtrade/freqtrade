@@ -17,13 +17,13 @@ from freqtrade.constants import BuySell, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, LeaderMessageType, RPCMessageType, RunMode,
-                             SignalDirection, State, TradingMode)
+from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, SignalDirection,
+                             State, TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
-from freqtrade.misc import dataframe_to_json, safe_value_fallback, safe_value_fallback2
+from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
 from freqtrade.plugins.pairlistmanager import PairListManager
@@ -74,8 +74,6 @@ class FreqtradeBot(LoggingMixin):
         self.wallets = Wallets(self.config, self.exchange)
 
         PairLocks.timeframe = self.config['timeframe']
-
-        self.external_signal_controller = None
 
         self.pairlists = PairListManager(self.exchange, self.config)
 
@@ -194,28 +192,7 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        if self.external_signal_controller:
-            if not self.external_signal_controller.is_leader():
-                # Run Follower mode analyzing
-                leader_pairs = self.pairlists._whitelist
-                self.strategy.analyze_external(self.active_pair_whitelist, leader_pairs)
-            else:
-                # We are leader, make sure to pass callback func to emit data
-                def emit_on_finish(pair, dataframe, timeframe, candle_type):
-                    logger.debug(f"Emitting dataframe for {pair}")
-                    return self.rpc.emit_data(
-                        {
-                            "data_type": LeaderMessageType.analyzed_df,
-                            "data": {
-                                "key": (pair, timeframe, candle_type),
-                                "value": dataframe_to_json(dataframe)
-                            }
-                        }
-                    )
-
-                self.strategy.analyze(self.active_pair_whitelist, finish_callback=emit_on_finish)
-        else:
-            self.strategy.analyze(self.active_pair_whitelist)
+        self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace
@@ -278,15 +255,7 @@ class FreqtradeBot(LoggingMixin):
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
 
-        # If external signal leader, broadcast whitelist data
-        # Should we broadcast before trade pairs are added?
-
-        if self.external_signal_controller:
-            if self.external_signal_controller.is_leader():
-                self.rpc.emit_data({
-                    "data_type": LeaderMessageType.pairlist,
-                    "data": _whitelist
-                })
+        self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'msg': _whitelist})
 
         # Calculating Edge positioning
         if self.edge:

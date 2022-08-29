@@ -1,14 +1,18 @@
+import logging
 import secrets
 from datetime import datetime, timedelta
+from typing import Any, Dict, Union
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
 from freqtrade.rpc.api_server.api_schemas import AccessAndRefreshToken, AccessToken
 from freqtrade.rpc.api_server.deps import get_api_config
 
+
+logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 
@@ -42,6 +46,24 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
     except jwt.PyJWTError:
         raise credentials_exception
     return username
+
+
+# This should be reimplemented to better realign with the existing tools provided
+# by FastAPI regarding API Tokens
+async def get_ws_token(
+    ws: WebSocket,
+    token: Union[str, None] = None,
+    api_config: Dict[str, Any] = Depends(get_api_config)
+):
+    secret_ws_token = api_config['ws_token']
+
+    if token == secret_ws_token:
+        # Just return the token if it matches
+        return token
+    else:
+        logger.debug("Denying websocket request")
+        # If it doesn't match, close the websocket connection
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 
 
 def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:

@@ -19,13 +19,12 @@ from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, LeaderMessageType,
-                             SignalDirection, State, TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
+                             TradingMode)
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import (decimals_per_coin, json_to_dataframe, remove_entry_exit_signals,
-                            shorten_date)
+from freqtrade.misc import decimals_per_coin, shorten_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1090,65 +1089,65 @@ class RPC:
             'last_process_loc': last_p.astimezone(tzlocal()).strftime(DATETIME_PRINT_FORMAT),
             'last_process_ts': int(last_p.timestamp()),
         }
-
-    # ------------------------------ EXTERNAL SIGNALS -----------------------
-
-    def _initial_leader_data(self):
-        # We create a list of Messages to send to the follower on connect
-        data = []
-
-        # Send Pairlist data
-        data.append({
-            "data_type": LeaderMessageType.pairlist,
-            "data": self._freqtrade.pairlists._whitelist
-        })
-
-        return data
-
-    def _handle_pairlist_message(self, type, data):
-        """
-        Handles the emitted pairlists from the Leaders
-
-        :param type: The data_type of the data
-        :param data: The data
-        """
-        pairlist = data
-
-        logger.debug(f"Handling Pairlist message: {pairlist}")
-
-        external_pairlist = self._freqtrade.pairlists._pairlist_handlers[0]
-        external_pairlist.add_pairlist_data(pairlist)
-
-    def _handle_analyzed_df_message(self, type, data):
-        """
-        Handles the analyzed dataframes from the Leaders
-
-        :param type: The data_type of the data
-        :param data: The data
-        """
-        key, value = data["key"], data["value"]
-        pair, timeframe, candle_type = key
-
-        # Skip any pairs that we don't have in the pairlist?
-        # leader_pairlist = self._freqtrade.pairlists._whitelist
-        # if pair not in leader_pairlist:
-        #     return
-
-        dataframe = json_to_dataframe(value)
-
-        if self._config.get('external_signal', {}).get('remove_signals_analyzed_df', False):
-            dataframe = remove_entry_exit_signals(dataframe)
-
-        logger.debug(f"Handling analyzed dataframe for {pair}")
-        logger.debug(dataframe.tail())
-
-        # Add the dataframe to the dataprovider
-        dataprovider = self._freqtrade.dataprovider
-        dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
-
-    def _handle_default_message(self, type, data):
-        """
-        Default leader message handler, just logs it. We should never have to
-        run this unless the leader sends us some weird message.
-        """
-        logger.debug(f"Received message from Leader of type {type}: {data}")
+    #
+    # # ------------------------------ EXTERNAL SIGNALS -----------------------
+    #
+    # def _initial_leader_data(self):
+    #     # We create a list of Messages to send to the follower on connect
+    #     data = []
+    #
+    #     # Send Pairlist data
+    #     data.append({
+    #         "data_type": LeaderMessageType.pairlist,
+    #         "data": self._freqtrade.pairlists._whitelist
+    #     })
+    #
+    #     return data
+    #
+    # def _handle_pairlist_message(self, type, data):
+    #     """
+    #     Handles the emitted pairlists from the Leaders
+    #
+    #     :param type: The data_type of the data
+    #     :param data: The data
+    #     """
+    #     pairlist = data
+    #
+    #     logger.debug(f"Handling Pairlist message: {pairlist}")
+    #
+    #     external_pairlist = self._freqtrade.pairlists._pairlist_handlers[0]
+    #     external_pairlist.add_pairlist_data(pairlist)
+    #
+    # def _handle_analyzed_df_message(self, type, data):
+    #     """
+    #     Handles the analyzed dataframes from the Leaders
+    #
+    #     :param type: The data_type of the data
+    #     :param data: The data
+    #     """
+    #     key, value = data["key"], data["value"]
+    #     pair, timeframe, candle_type = key
+    #
+    #     # Skip any pairs that we don't have in the pairlist?
+    #     # leader_pairlist = self._freqtrade.pairlists._whitelist
+    #     # if pair not in leader_pairlist:
+    #     #     return
+    #
+    #     dataframe = json_to_dataframe(value)
+    #
+    #     if self._config.get('external_signal', {}).get('remove_signals_analyzed_df', False):
+    #         dataframe = remove_entry_exit_signals(dataframe)
+    #
+    #     logger.debug(f"Handling analyzed dataframe for {pair}")
+    #     logger.debug(dataframe.tail())
+    #
+    #     # Add the dataframe to the dataprovider
+    #     dataprovider = self._freqtrade.dataprovider
+    #     dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
+    #
+    # def _handle_default_message(self, type, data):
+    #     """
+    #     Default leader message handler, just logs it. We should never have to
+    #     run this unless the leader sends us some weird message.
+    #     """
+    #     logger.debug(f"Received message from Leader of type {type}: {data}")

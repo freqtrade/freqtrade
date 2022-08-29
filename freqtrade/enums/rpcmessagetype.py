@@ -1,7 +1,8 @@
 from enum import Enum
 
 
-class RPCMessageType(Enum):
+# We need to inherit from str so we can use as a str
+class RPCMessageType(str, Enum):
     STATUS = 'status'
     WARNING = 'warning'
     STARTUP = 'startup'
@@ -19,7 +20,7 @@ class RPCMessageType(Enum):
 
     STRATEGY_MSG = 'strategy_msg'
 
-    EMIT_DATA = 'emit_data'
+    WHITELIST = 'whitelist'
 
     def __repr__(self):
         return self.value

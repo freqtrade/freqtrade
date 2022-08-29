@@ -115,6 +115,3 @@ target/
 !config_examples/config_freqai.example.json
 !config_examples/config_leader.example.json
 !config_examples/config_follower.example.json
-
-*-config.json
-*.db*
