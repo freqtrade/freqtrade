@@ -57,10 +57,21 @@ You can specify additional configuration files in `add_config_files`. Files spec
 This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
-    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.  
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
+
+    ``` bash
+    freqtrade trade --config user_data/config1.json --config user_data/config-private.json <...>
+    ```
+
+    The below is equivalent to the example above - but having 2 configuration files in the configuration, for easier reuse.
 
     ``` json title="user_data/config.json"
     "add_config_files": [
+        "config1.json",
         "config-private.json"
     ]
     ```
@@ -68,17 +79,6 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
-
-    The 2nd file should only specify what you intend to override.
-    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
-
-    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
-
-    ``` bash
-    freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
-    ```
-
-    This is equivalent to the example above - but `config-private.json` is specified as cli argument.
 
 ??? Note "config collision handling"
     If the same configuration setting takes place in both `config.json` and `config-import.json`, then the parent configuration wins.
@@ -110,6 +110,8 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited"
     }
     ```
+    
+    If multiple files are in the `add_config_files` section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).
 
 ## Configuration parameters
 
