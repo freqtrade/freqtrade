@@ -42,7 +42,7 @@ class WAOHyperOptLoss(IHyperOptLoss):
         y = 0
         profit_sell_signal = []
         for exit_reason in results['exit_reason']:
-            if exit_reason == 'exit_signal':
+            if exit_reason == 'exit_signal' and results['profit_ratio'][y] < 0.009:
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
         if len(profit_sell_signal) > 0:
