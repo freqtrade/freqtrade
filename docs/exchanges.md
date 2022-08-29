@@ -278,7 +278,7 @@ For example, to test the order type `FOK` with Kraken, and modify candle limit t
 "exchange": {
     "name": "kraken",
     "_ft_has_params": {
-        "order_time_in_force": ["gtc", "fok"],
+        "order_time_in_force": ["GTC", "FOK"],
         "ohlcv_candle_limit": 200
         }
     //...

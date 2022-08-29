@@ -23,8 +23,7 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "order_time_in_force": ['gtc', 'fok', 'ioc'],
-        "time_in_force_parameter": "timeInForce",
+        "order_time_in_force": ['GTC', 'FOK', 'IOC'],
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",

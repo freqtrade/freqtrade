@@ -275,7 +275,7 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
         ex.validate_order_time_in_force(tif2)
 
     # Patch to see if this will pass if the values are in the ft dict
-    ex._ft_has.update({"order_time_in_force": ["gtc", "fok", "ioc"]})
+    ex._ft_has.update({"order_time_in_force": ["GTC", "FOK", "IOC"]})
     ex.validate_order_time_in_force(tif2)
 
 
@@ -1503,7 +1503,7 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] == 200
     assert "timeInForce" in api_mock.create_order.call_args[0][5]
-    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force
+    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force.upper()
 
     order_type = 'market'
     time_in_force = 'ioc'
@@ -1642,10 +1642,10 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] == 200
     assert "timeInForce" in api_mock.create_order.call_args[0][5]
-    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force
+    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force.upper()
 
     order_type = 'market'
-    time_in_force = 'ioc'
+    time_in_force = 'IOC'
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell",
                                   amount=1, rate=200, leverage=1.0,
                                   time_in_force=time_in_force)
@@ -3319,7 +3319,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex.get_option('stoploss_on_exchange')
-    assert ex.get_option('order_time_in_force') == ['gtc', 'fok', 'ioc']
+    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC']
     assert ex.get_option('trades_pagination') == 'id'
     assert ex.get_option('trades_pagination_arg') == 'fromId'
 
@@ -4954,7 +4954,7 @@ def test__get_params(mocker, default_conf, exchange_name):
     params1 = {'test': True}
     params2 = {
         'test': True,
-        'timeInForce': 'ioc',
+        'timeInForce': 'IOC',
         'reduceOnly': True,
     }
 
@@ -4969,7 +4969,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='market',
         reduceOnly=False,
-        time_in_force='gtc',
+        time_in_force='GTC',
         leverage=1.0,
     ) == params1
 
@@ -4977,7 +4977,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='market',
         reduceOnly=False,
-        time_in_force='ioc',
+        time_in_force='IOC',
         leverage=1.0,
     ) == params1
 
@@ -4985,7 +4985,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='limit',
         reduceOnly=False,
-        time_in_force='gtc',
+        time_in_force='GTC',
         leverage=1.0,
     ) == params1
 
@@ -4998,7 +4998,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='limit',
         reduceOnly=True,
-        time_in_force='ioc',
+        time_in_force='IOC',
         leverage=3.0,
     ) == params2
 

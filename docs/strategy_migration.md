@@ -332,8 +332,8 @@ After:
 
 ``` python hl_lines="2 3"
     order_time_in_force: Dict = {
-        "entry": "gtc",
-        "exit": "gtc",
+        "entry": "GTC",
+        "exit": "GTC",
     }
 ```
 
