@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
+from freqtrade.enums import RPCMessageType
 from freqtrade.rpc.api_server.deps import get_channel_manager
 from freqtrade.rpc.api_server.ws.utils import is_websocket_alive
 
@@ -34,7 +35,15 @@ async def message_endpoint(
                     # be a list of topics to subscribe too. List[str]
                     # Maybe allow the consumer to update the topics subscribed
                     # during runtime?
-                    logger.info(f"Consumer request - {request}")
+
+                    # If the request isn't a list then skip it
+                    if not isinstance(request, list):
+                        continue
+
+                    # Check if all topics listed are an RPCMessageType
+                    if all([any(x.value == topic for x in RPCMessageType) for topic in request]):
+                        logger.debug(f"{ws.client} subscribed to topics: {request}")
+                        channel.set_subscriptions(request)
 
             except WebSocketDisconnect:
                 # Handle client disconnects

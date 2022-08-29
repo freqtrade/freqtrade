@@ -1,6 +1,6 @@
 import logging
 from threading import RLock
-from typing import Type
+from typing import List, Type
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import ORJSONWebSocketSerializer, WebSocketSerializer
@@ -24,6 +24,8 @@ class WebSocketChannel:
         self._websocket = WebSocketProxy(websocket)
         # The Serializing class for the WebSocket object
         self._serializer_cls = serializer_cls
+
+        self._subscriptions: List[str] = []
 
         # Internal event to signify a closed websocket
         self._closed = False
@@ -57,8 +59,27 @@ class WebSocketChannel:
 
         self._closed = True
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
+        """
+        Closed flag
+        """
         return self._closed
+
+    def set_subscriptions(self, subscriptions: List[str] = []) -> None:
+        """
+        Set which subscriptions this channel is subscribed to
+
+        :param subscriptions: List of subscriptions, List[str]
+        """
+        self._subscriptions = subscriptions
+
+    def subscribed_to(self, message_type: str) -> bool:
+        """
+        Check if this channel is subscribed to the message_type
+
+        :param message_type: The message type to check
+        """
+        return message_type in self._subscriptions
 
 
 class ChannelManager:
@@ -120,10 +141,12 @@ class ChannelManager:
         :param data: The data to send
         """
         with self._lock:
-            logger.debug(f"Broadcasting data: {data}")
+            message_type = data.get('type')
+            logger.debug(f"Broadcasting data: {message_type} - {data}")
             for websocket, channel in self.channels.items():
                 try:
-                    await channel.send(data)
+                    if channel.subscribed_to(message_type):
+                        await channel.send(data)
                 except RuntimeError:
                     # Handle cannot send after close cases
                     await self.on_disconnect(websocket)

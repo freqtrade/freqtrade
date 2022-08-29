@@ -54,7 +54,7 @@ class ORJSONWebSocketSerializer(WebSocketSerializer):
         return orjson.dumps(data, option=self.ORJSON_OPTIONS)
 
     def _deserialize(self, data):
-        return orjson.loads(data, option=self.ORJSON_OPTIONS)
+        return orjson.loads(data)
 
 
 class MsgPackWebSocketSerializer(WebSocketSerializer):
