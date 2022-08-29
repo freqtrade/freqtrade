@@ -42,10 +42,10 @@ class WAOHyperOptLoss(IHyperOptLoss):
         y = 0
         profit_sell_signal = []
         for exit_reason in results['exit_reason']:
-            if exit_reason == 'exit_signal' and results['profit_ratio'][y] < 0.009:
+            if exit_reason == 'exit_signal':
                 profit_sell_signal.append(results['profit_ratio'][y])
             y += 1
-        if len(profit_sell_signal) > 0:
+        if len(profit_sell_signal) > 0 and statistics.mean(profit_sell_signal) > 0:
             av_profit_sell_signal = statistics.mean(profit_sell_signal)
             win_trades_duration_av = statistics.mean(win_trades_duration)
         else:

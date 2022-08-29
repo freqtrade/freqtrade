@@ -65,8 +65,8 @@ class bbrsi_optimal_rsi_hyperopt(WAOStrategy):
     sell_profit_only = True
     ignore_roi_if_buy_signal = False
 
-    buy_rsi = IntParameter(0, 100, default=50, space="buy")
-    sell_rsi = IntParameter(0, 100, default=60, space="sell")
+    buy_rsi = IntParameter(0, 60, default=50, space="buy")
+    sell_rsi = IntParameter(50, 100, default=60, space="sell")
 
     def informative_pairs(self):
         """
