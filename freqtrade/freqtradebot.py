@@ -1732,12 +1732,12 @@ class FreqtradeBot(LoggingMixin):
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
                 trade.set_liquidation_price(self.exchange.get_liquidation_price(
-                    leverage=trade.leverage,
                     pair=trade.pair,
+                    open_rate=trade.open_rate,
+                    is_short=trade.is_short,
                     amount=trade.amount,
                     stake_amount=trade.stake_amount,
-                    open_rate=trade.open_rate,
-                    is_short=trade.is_short
+                    wallet_balance=trade.stake_amount,
                 ))
 
             # Updating wallets when order is closed

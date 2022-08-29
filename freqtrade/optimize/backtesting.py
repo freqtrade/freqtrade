@@ -881,7 +881,7 @@ class Backtesting:
                 open_rate=propose_rate,
                 amount=amount,
                 stake_amount=trade.stake_amount,
-                leverage=leverage,
+                wallet_balance=trade.stake_amount,
                 is_short=is_short,
             ))
 

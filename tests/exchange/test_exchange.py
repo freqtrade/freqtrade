@@ -4089,68 +4089,6 @@ def test_combine_funding_and_mark(
         assert len(df) == 0
 
 
-def test_get_or_calculate_liquidation_price(mocker, default_conf):
-
-    api_mock = MagicMock()
-    positions = [
-        {
-            'info': {},
-            'symbol': 'NEAR/USDT:USDT',
-            'timestamp': 1642164737148,
-            'datetime': '2022-01-14T12:52:17.148Z',
-            'initialMargin': 1.51072,
-            'initialMarginPercentage': 0.1,
-            'maintenanceMargin': 0.38916147,
-            'maintenanceMarginPercentage': 0.025,
-            'entryPrice': 18.884,
-            'notional': 15.1072,
-            'leverage': 9.97,
-            'unrealizedPnl': 0.0048,
-            'contracts': 8,
-            'contractSize': 0.1,
-            'marginRatio': None,
-            'liquidationPrice': 17.47,
-            'markPrice': 18.89,
-            'margin_mode': 1.52549075,
-            'marginType': 'isolated',
-            'side': 'buy',
-            'percentage': 0.003177292946409658
-        }
-    ]
-    api_mock.fetch_positions = MagicMock(return_value=positions)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        exchange_has=MagicMock(return_value=True),
-    )
-    default_conf['dry_run'] = False
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    default_conf['liquidation_buffer'] = 0.0
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_or_calculate_liquidation_price(
-        pair='NEAR/USDT:USDT',
-        open_rate=18.884,
-        is_short=False,
-        amount=0.8,
-        stake_amount=18.884 * 0.8,
-        wallet_balance=0.8,
-    )
-    assert liq_price == 17.47
-
-    default_conf['liquidation_buffer'] = 0.05
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_or_calculate_liquidation_price(
-        pair='NEAR/USDT:USDT',
-        open_rate=18.884,
-        is_short=False,
-        amount=0.8,
-        stake_amount=18.884 * 0.8,
-        wallet_balance=0.8,
-    )
-    assert liq_price == 17.540699999999998
-
-
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
     ('binance', 0, 2, "2021-09-01 01:00:00", "2021-09-01 04:00:00",  30.0, 0.0),
     ('binance', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.00091409999),
@@ -4541,7 +4479,7 @@ def test_liquidation_price_is_none(
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_or_calculate_liquidation_price(
+    assert exchange.get_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -4576,7 +4514,7 @@ def test_liquidation_price(
     default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert isclose(round(exchange.get_or_calculate_liquidation_price(
+    assert isclose(round(exchange.get_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -5003,6 +4941,66 @@ def test__get_params(mocker, default_conf, exchange_name):
     ) == params2
 
 
+def test_get_liquidation_price1(mocker, default_conf):
+
+    api_mock = MagicMock()
+    positions = [
+        {
+            'info': {},
+            'symbol': 'NEAR/USDT:USDT',
+            'timestamp': 1642164737148,
+            'datetime': '2022-01-14T12:52:17.148Z',
+            'initialMargin': 1.51072,
+            'initialMarginPercentage': 0.1,
+            'maintenanceMargin': 0.38916147,
+            'maintenanceMarginPercentage': 0.025,
+            'entryPrice': 18.884,
+            'notional': 15.1072,
+            'leverage': 9.97,
+            'unrealizedPnl': 0.0048,
+            'contracts': 8,
+            'contractSize': 0.1,
+            'marginRatio': None,
+            'liquidationPrice': 17.47,
+            'markPrice': 18.89,
+            'margin_mode': 1.52549075,
+            'marginType': 'isolated',
+            'side': 'buy',
+            'percentage': 0.003177292946409658
+        }
+    ]
+    api_mock.fetch_positions = MagicMock(return_value=positions)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+    )
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    default_conf['liquidation_buffer'] = 0.0
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+    )
+    assert liq_price == 17.47
+
+    default_conf['liquidation_buffer'] = 0.05
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+    )
+    assert liq_price == 17.540699999999998
+
+
 @pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
 @pytest.mark.parametrize(
     "is_short,trading_mode,exchange_name,margin_mode,leverage,open_rate,amount,expected_liq", [
@@ -5116,7 +5114,7 @@ def test_get_liquidation_price(
         open_rate=open_rate,
         amount=amount,
         stake_amount=amount * open_rate / leverage,
-        leverage=leverage,
+        # leverage=leverage,
         is_short=is_short,
     )
     if expected_liq is None:

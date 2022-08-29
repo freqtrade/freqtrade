@@ -2432,36 +2432,6 @@ class Exchange:
         """
         return 0.0
 
-    def get_liquidation_price(
-            self,
-            pair: str,
-            open_rate: float,
-            amount: float,  # quote currency, includes leverage
-            stake_amount: float,
-            leverage: float,
-            is_short: bool
-    ) -> Optional[float]:
-
-        if self.trading_mode in TradingMode.SPOT:
-            return None
-        elif (
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            isolated_liq = self.get_or_calculate_liquidation_price(
-                pair=pair,
-                open_rate=open_rate,
-                is_short=is_short,
-                amount=amount,
-                stake_amount=stake_amount,
-                wallet_balance=stake_amount,  # In isolated mode, stake-amount = wallet size
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-            )
-            return isolated_liq
-        else:
-            raise OperationalException(
-                "Freqtrade currently only supports futures for leverage trading.")
-
     def funding_fee_cutoff(self, open_date: datetime):
         """
         :param open_date: The open date for a trade
@@ -2622,7 +2592,7 @@ class Exchange:
         else:
             return 0.0
 
-    def get_or_calculate_liquidation_price(
+    def get_liquidation_price(
         self,
         pair: str,
         # Dry-run
@@ -2630,7 +2600,7 @@ class Exchange:
         is_short: bool,
         amount: float,  # Absolute value of position size
         stake_amount: float,
-        wallet_balance: float,  # Or margin balance
+        wallet_balance: float = 0.0,
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
