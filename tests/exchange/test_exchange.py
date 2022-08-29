@@ -5000,6 +5000,28 @@ def test_get_liquidation_price1(mocker, default_conf):
     )
     assert liq_price == 17.540699999999998
 
+    api_mock.fetch_positions = MagicMock(return_value=[])
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+    )
+    assert liq_price is None
+    default_conf['trading_mode'] = 'margin'
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(OperationalException, match=r'.*does not support .* margin'):
+        exchange.get_liquidation_price(
+            pair='NEAR/USDT:USDT',
+            open_rate=18.884,
+            is_short=False,
+            amount=0.8,
+            stake_amount=18.884 * 0.8,
+        )
+
 
 @pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
 @pytest.mark.parametrize(

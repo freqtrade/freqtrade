@@ -2611,8 +2611,9 @@ class Exchange:
             return None
         elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
-                f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
+                f"{self.name} does not support {self.margin_mode} {self.trading_mode}")
 
+        isolated_liq = None
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
             isolated_liq = self.dry_run_liquidation_price(
@@ -2630,8 +2631,6 @@ class Exchange:
             if len(positions) > 0:
                 pos = positions[0]
                 isolated_liq = pos['liquidationPrice']
-            else:
-                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
