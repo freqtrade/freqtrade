@@ -20,11 +20,12 @@ class bbrsi_optimal_rsi_hyperopt(WAOStrategy):
         super().__init__(config, self.brain, 8, 0.15)
     # buy hyperspace params
     buy_params = {
-        "buy_rsi": 19,
+        "buy_rsi": 50,
     }
-    # sell hyperspace params
+
+    # Sell hyperspace params:
     sell_params = {
-        "sell_rsi": 78,
+        "sell_rsi": 60,
     }
 
     # Minimal ROI designed for the strategy.
