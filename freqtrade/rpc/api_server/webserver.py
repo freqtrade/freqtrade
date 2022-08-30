@@ -63,11 +63,7 @@ class ApiServer(RPCHandler):
             ApiServer.__initialized = False
         return ApiServer.__instance
 
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        standalone: bool = False,
-    ) -> None:
+    def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
         ApiServer._config = config
         if self.__initialized and (standalone or self._standalone):
             return

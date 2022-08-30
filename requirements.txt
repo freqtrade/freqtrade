@@ -50,3 +50,8 @@ python-dateutil==2.8.2
 
 #Futures
 schedule==1.1.0
+
+#WS Messages
+websockets~=10.3
+msgpack~=1.0.4
+janus==1.0.0

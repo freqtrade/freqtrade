@@ -64,7 +64,7 @@ class RPCManager:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
         while self.registered_modules:
-            mod = self.registered_modules.pop()
+            mod = self.registered_modules.pop()  # popleft to cleanup API server last?
             logger.info('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
             del mod

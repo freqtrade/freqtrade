@@ -79,7 +79,10 @@ setup(
         'psutil',
         'pyjwt',
         'aiofiles',
-        'schedule'
+        'schedule',
+        'websockets',
+        'msgpack',
+        'janus'
     ],
     extras_require={
         'dev': all_extra,

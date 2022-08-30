@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import socket
+from typing import Any
 
 import websockets
 
@@ -12,8 +13,14 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+def compose_consumer_request(type_: str, data: Any):
+    return {"type": type_, "data": data}
+
+
 async def _client():
-    subscribe_topics = [RPCMessageType.WHITELIST]
+    # Trying to recreate multiple topic issue. Wait until first whitelist message,
+    # then CTRL-C to get the status message.
+    topics = [RPCMessageType.WHITELIST, RPCMessageType.STATUS]
     try:
         while True:
             try:
@@ -23,7 +30,7 @@ async def _client():
 
                     logger.info("Connection successful")
                     # Tell the producer we only want these topics
-                    await channel.send(subscribe_topics)
+                    await channel.send(compose_consumer_request("subscribe", topics))
 
                     while True:
                         try:

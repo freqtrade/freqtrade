@@ -21,9 +21,15 @@ class RPCMessageType(str, Enum):
     STRATEGY_MSG = 'strategy_msg'
 
     WHITELIST = 'whitelist'
+    ANALYZED_DF = 'analyzed_df'
 
     def __repr__(self):
         return self.value
 
     def __str__(self):
         return self.value
+
+
+# Enum for parsing requests from ws consumers
+class RPCRequestType(str, Enum):
+    SUBSCRIBE = 'subscribe'

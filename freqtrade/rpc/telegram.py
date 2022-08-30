@@ -436,9 +436,13 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(msg, msg_type)
-
-        self._send_msg(message, disable_notification=(noti == 'silent'))
+        # Would this be better than adding un-needed if statements to compose_message?
+        try:
+            message = self.compose_message(msg, msg_type)
+            self._send_msg(message, disable_notification=(noti == 'silent'))
+        except NotImplementedError:
+            # just skip it
+            return
 
     def _get_sell_emoji(self, msg):
         """
