@@ -33,7 +33,7 @@ def string_to_list(string):
 
 
 def get_tail_cmd_result(file_name):
-    tail_command = "tail " + file_name
+    tail_command = "tail -n 100 " + file_name
     result = subprocess.Popen([tail_command],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
