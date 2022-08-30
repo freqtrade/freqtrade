@@ -80,7 +80,6 @@ class bb(WAOStrategy):
     #     "0": 0.030,  # Exit immediately if there is at least 2% profit
     # }
 
-    # ROI table:
     minimal_roi = {
         "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
         "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -98,7 +97,7 @@ class bb(WAOStrategy):
     }
 
     # Stoploss:
-    stoploss = -0.02
+    stoploss = -0.01
 
     # Trailing stop:
     trailing_stop = True
