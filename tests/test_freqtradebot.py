@@ -1051,8 +1051,6 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-                 return_value=order['amount'])
 
     stoploss = MagicMock(return_value={'id': 13434334})
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
@@ -1875,8 +1873,6 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
                  return_value=limit_order[entry_side(is_short)])
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-                 return_value=limit_order[entry_side(is_short)]['amount'])
 
     trade = MagicMock()
     trade.is_short = is_short
@@ -1886,14 +1882,13 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     n = freqtrade.exit_positions(trades)
     assert n == 0
     # Test amount not modified by fee-logic
-    assert not log_has(
-        'Applying fee to amount for Trade {} from 30.0 to 90.81'.format(trade), caplog
-    )
+    assert not log_has_re(r'Applying fee to amount for Trade .*', caplog)
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
+    gra = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=0.0)
     # test amount modified by fee-logic
     n = freqtrade.exit_positions(trades)
     assert n == 0
+    assert gra.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
