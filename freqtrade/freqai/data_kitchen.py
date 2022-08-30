@@ -735,7 +735,6 @@ class FreqaiDataKitchen:
         import scipy.stats as ss
 
         no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
-        weib_pct = self.freqai_config["feature_parameters"]["inlier_metric_weibull_cutoff"]
 
         if set_ == 'train':
             compute_df = copy.deepcopy(self.data_dictionary['train_features'])
@@ -780,12 +779,10 @@ class FreqaiDataKitchen:
         for key in distances.keys():
             current_distances = distances[key].dropna()
             fit_params = ss.weibull_min.fit(current_distances)
-            cutoff = ss.weibull_min.ppf(weib_pct, *fit_params)
-            is_inlier = np.where(
-                current_distances <= cutoff, 1, 0
-            )
+            quantiles = ss.weibull_min.cdf(current_distances, *fit_params)
+
             df_inlier = pd.DataFrame(
-                {key + '_IsInlier': is_inlier}, index=distances.index
+                {key: quantiles}, index=distances.index
             )
             inliers = pd.concat(
                 [inliers, df_inlier], axis=1
