@@ -23,13 +23,14 @@ class StoplossGuard(IProtection):
         self._trade_limit = protection_config.get('trade_limit', 10)
         self._disable_global_stop = protection_config.get('only_per_pair', False)
         self._only_per_side = protection_config.get('only_per_side', False)
+        self._profit_limit = protection_config.get('required_profit', 0.0)
 
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
         """
         return (f"{self.name} - Frequent Stoploss Guard, {self._trade_limit} stoplosses "
-                f"within {self.lookback_period_str}.")
+                f"with profit < {self._profit_limit:.2%} within {self.lookback_period_str}.")
 
     def _reason(self) -> str:
         """
@@ -49,7 +50,7 @@ class StoplossGuard(IProtection):
         trades = [trade for trade in trades1 if (str(trade.exit_reason) in (
             ExitType.TRAILING_STOP_LOSS.value, ExitType.STOP_LOSS.value,
             ExitType.STOPLOSS_ON_EXCHANGE.value)
-            and trade.close_profit and trade.close_profit < 0)]
+            and trade.close_profit and trade.close_profit < self._profit_limit)]
 
         if self._only_per_side:
             # Long or short trades only

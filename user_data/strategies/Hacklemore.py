@@ -37,9 +37,9 @@ class Hacklemore(WAOStrategy):
     # Stoploss:
     stoploss = -0.085
 
-    use_sell_signal = True
-    sell_profit_only = False
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = False
+    ignore_roi_if_entry_signal = True
 
     startup_candle_count: int = 24
 
@@ -63,7 +63,8 @@ class Hacklemore(WAOStrategy):
 
             if active_trade:
                 current_rate = self.get_current_price(metadata['pair'])
-                active_trade[0].adjust_min_max_rates(current_rate)
+                current_price_low = self.get_current_price_low(metadata['pair'])
+                active_trade[0].adjust_min_max_rates(current_rate, current_price_low)
                 trade_data['active_trade'] = True
                 trade_data['current_profit'] = active_trade[0].calc_profit_ratio(current_rate)
                 trade_data['peak_profit'] = active_trade[0].calc_profit_ratio(active_trade[0].max_rate)
@@ -117,7 +118,7 @@ class Hacklemore(WAOStrategy):
         # Persist a buy signal for existing trades to make use of ignore_roi_if_buy_signal = True
         # when this buy signal is not present a sell can happen according to ROI table
         if trade_data['active_trade']:
-            if (trade_data['peak_profit'] > 0):
+            if trade_data['peak_profit'] > 0:
                 conditions.append(trade_data['current_profit'] > (trade_data['peak_profit'] * 0.8))
             conditions.append(dataframe['rmi-slow'] >= 60)
 
@@ -205,6 +206,22 @@ class Hacklemore(WAOStrategy):
 
         return current_price
 
+    def get_current_price_low(self, pair: str) -> float:
+        """
+        # Using ticker seems significantly faster than orderbook.
+        side = "asks"
+        if (self.config['ask_strategy']['price_side'] == "bid"):
+            side = "bids"
+
+        ob = self.dp.orderbook(pair, 1)
+        current_price = ob[side][0][0]
+        """
+
+        ticker = self.dp.ticker(pair)
+        current_price = ticker['last']
+
+        return current_price
+
     """
     Price protection on trade entry and timeouts, built-in Freqtrade functionality
     https://www.freqtrade.io/en/latest/strategy-advanced/
@@ -214,7 +231,7 @@ class Hacklemore(WAOStrategy):
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['bids'][0][0]
         # Cancel buy order if price is more than 1% above the order.
-        if current_price > order['price'] * 1.01:
+        if current_price > order.price * 1.01:
             return True
         return False
 
@@ -222,7 +239,7 @@ class Hacklemore(WAOStrategy):
         ob = self.dp.orderbook(pair, 1)
         current_price = ob['asks'][0][0]
         # Cancel sell order if price is more than 1% below the order.
-        if current_price < order['price'] * 0.99:
+        if current_price < order.price * 0.99:
             return True
         return False
 

@@ -821,7 +821,7 @@ class LocalTrade():
             self.open_rate = total_stake / total_amount
             self.stake_amount = total_stake / (self.leverage or 1.0)
             self.amount = total_amount
-            self.fee_open_cost = self.fee_open * self.stake_amount
+            self.fee_open_cost = self.fee_open * total_stake
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)

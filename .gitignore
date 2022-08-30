@@ -12,6 +12,7 @@ freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
 ScreenLog*
+_wao_logs/*
 
 # Macos related
 .DS_Store
@@ -81,6 +82,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+# Mkdocs documentation
+site/
 
 # PyBuilder
 target/
