@@ -2,6 +2,7 @@
 This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
+from collections import deque
 from typing import Any, Dict, List
 
 from freqtrade.enums import RPCMessageType
@@ -76,6 +77,17 @@ class RPCManager:
                 mod.send_msg(msg)
             except NotImplementedError:
                 logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
+
+    def process_msg_queue(self, queue: deque) -> None:
+        """
+        Process all messages in the queue.
+        """
+        while queue:
+            msg = queue.popleft()
+            self.send_msg({
+                'type': RPCMessageType.STRATEGY_MSG,
+                'msg': msg,
+            })
 
     def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
         if config['dry_run']:

@@ -12,6 +12,7 @@
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "{{ fiat_display_currency }}",{{ ('\n    "timeframe": "' + timeframe + '",') if timeframe else '' }}
     "dry_run": {{ dry_run | lower }},
+    "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": false,
     "trading_mode": "{{ trading_mode }}",
     "margin_mode": "{{ margin_mode }}",

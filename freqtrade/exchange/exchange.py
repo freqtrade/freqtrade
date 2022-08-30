@@ -16,7 +16,8 @@ import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
-from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, Precise, decimal_to_precision
+from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
+from dateutil import parser
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
@@ -30,8 +31,10 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGE
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        SUPPORTED_EXCHANGES, remove_credentials, retrier,
                                        retrier_async)
-from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
+from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
+                            safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.util import FtPrecise
 
 
 CcxtModuleType = Any
@@ -51,8 +54,8 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
-    # Additional headers - added to the ccxt object
-    _headers: Dict = {}
+    # Additional parameters - added to the ccxt object
+    _ccxt_params: Dict = {}
 
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
@@ -115,6 +118,7 @@ class Exchange:
         self._last_markets_refresh: int = 0
 
         # Cache for 10 minutes ...
+        self._cache_lock = Lock()
         self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=2, ttl=60 * 10)
         # Cache values for 1800 to avoid frequent polling of the exchange for prices
         # Caching only applies to RPC methods, so prices for open trades are still
@@ -238,9 +242,9 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
-        if self._headers:
-            # Inject static headers after the above output to not confuse users.
-            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if self._ccxt_params:
+            # Inject static options after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts(self._ccxt_params, ccxt_kwargs)
         if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
@@ -404,7 +408,7 @@ class Exchange:
         else:
             return DataFrame()
 
-    def _get_contract_size(self, pair: str) -> float:
+    def get_contract_size(self, pair: str) -> float:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
             contract_size: float = 1.0
@@ -417,7 +421,7 @@ class Exchange:
 
     def _trades_contracts_to_amount(self, trades: List) -> List:
         if len(trades) > 0 and 'symbol' in trades[0]:
-            contract_size = self._get_contract_size(trades[0]['symbol'])
+            contract_size = self.get_contract_size(trades[0]['symbol'])
             if contract_size != 1:
                 for trade in trades:
                     trade['amount'] = trade['amount'] * contract_size
@@ -425,7 +429,7 @@ class Exchange:
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
         if 'symbol' in order and order['symbol'] is not None:
-            contract_size = self._get_contract_size(order['symbol'])
+            contract_size = self.get_contract_size(order['symbol'])
             if contract_size != 1:
                 for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
@@ -434,19 +438,13 @@ class Exchange:
 
     def _amount_to_contracts(self, pair: str, amount: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return amount / contract_size
-        else:
-            return amount
+        contract_size = self.get_contract_size(pair)
+        return amount_to_contracts(amount, contract_size)
 
     def _contracts_to_amount(self, pair: str, num_contracts: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return num_contracts * contract_size
-        else:
-            return num_contracts
+        contract_size = self.get_contract_size(pair)
+        return contracts_to_amount(num_contracts, contract_size)
 
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
@@ -670,6 +668,12 @@ class Exchange:
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
 
+    def get_option(self, param: str, default: Any = None) -> Any:
+        """
+        Get parameter value from _ft_has
+        """
+        return self._ft_has.get(param, default)
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.
@@ -679,45 +683,35 @@ class Exchange:
         """
         return endpoint in self._api.has and self._api.has[endpoint]
 
+    def get_precision_amount(self, pair: str) -> Optional[float]:
+        """
+        Returns the amount precision of the exchange.
+        :param pair: Pair to get precision for
+        :return: precision for amount or None. Must be used in combination with precisionMode
+        """
+        return self.markets.get(pair, {}).get('precision', {}).get('amount', None)
+
+    def get_precision_price(self, pair: str) -> Optional[float]:
+        """
+        Returns the price precision of the exchange.
+        :param pair: Pair to get precision for
+        :return: precision for price or None. Must be used in combination with precisionMode
+        """
+        return self.markets.get(pair, {}).get('precision', {}).get('price', None)
+
     def amount_to_precision(self, pair: str, amount: float) -> float:
         """
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Re-implementation of ccxt internal methods - ensuring we can test the result is correct
-        based on our definitions.
-        """
-        if self.markets[pair]['precision']['amount'] is not None:
-            amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
-                                                precision=self.markets[pair]['precision']['amount'],
-                                                counting_mode=self.precisionMode,
-                                                ))
 
-        return amount
+        """
+        return amount_to_precision(amount, self.get_precision_amount(pair), self.precisionMode)
 
     def price_to_precision(self, pair: str, price: float) -> float:
         """
         Returns the price rounded up to the precision the Exchange accepts.
-        Partial Re-implementation of ccxt internal method decimal_to_precision(),
-        which does not support rounding up
-        TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
-        align with amount_to_precision().
         Rounds up
         """
-        if self.markets[pair]['precision']['price']:
-            # price = float(decimal_to_precision(price, rounding_mode=ROUND,
-            #                                    precision=self.markets[pair]['precision']['price'],
-            #                                    counting_mode=self.precisionMode,
-            #                                    ))
-            if self.precisionMode == TICK_SIZE:
-                precision = Precise(str(self.markets[pair]['precision']['price']))
-                price_str = Precise(str(price))
-                missing = price_str % precision
-                if not missing == Precise("0"):
-                    price = round(float(str(price_str - missing + precision)), 14)
-            else:
-                symbol_prec = self.markets[pair]['precision']['price']
-                big_price = price * pow(10, symbol_prec)
-                price = ceil(big_price) / pow(10, symbol_prec)
-        return price
+        return price_to_precision(price, self.get_precision_price(pair), self.precisionMode)
 
     def price_get_one_pip(self, pair: str, price: float) -> float:
         """
@@ -849,6 +843,7 @@ class Exchange:
             dry_order.update({
                 'average': average,
                 'filled': _amount,
+                'remaining': 0.0,
                 'cost': (dry_order['amount'] * average) / leverage
             })
             # market orders will always incurr taker fees
@@ -1017,7 +1012,8 @@ class Exchange:
         time_in_force: str = 'gtc',
     ) -> Dict:
         if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
+            dry_order = self.create_dry_run_order(
+                pair, ordertype, side, amount, self.price_to_precision(pair, rate), leverage)
             return dry_order
 
         params = self._get_params(side, ordertype, leverage, reduceOnly, time_in_force)
@@ -1332,11 +1328,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def fetch_positions(self) -> List[Dict]:
+    def fetch_positions(self, pair: str = None) -> List[Dict]:
+        """
+        Fetch positions from the exchange.
+        If no pair is given, all positions are returned.
+        :param pair: Pair for the query
+        """
         if self._config['dry_run'] or self.trading_mode != TradingMode.FUTURES:
             return []
         try:
-            positions: List[Dict] = self._api.fetch_positions()
+            symbols = []
+            if pair:
+                symbols.append(pair)
+            positions: List[Dict] = self._api.fetch_positions(symbols)
             self._log_exchange_response('fetch_positions', positions)
             return positions
         except ccxt.DDoSProtection as e:
@@ -1377,12 +1381,14 @@ class Exchange:
         if not self.exchange_has('fetchBidsAsks'):
             return {}
         if cached:
-            tickers = self._fetch_tickers_cache.get('fetch_bids_asks')
+            with self._cache_lock:
+                tickers = self._fetch_tickers_cache.get('fetch_bids_asks')
             if tickers:
                 return tickers
         try:
             tickers = self._api.fetch_bids_asks(symbols)
-            self._fetch_tickers_cache['fetch_bids_asks'] = tickers
+            with self._cache_lock:
+                self._fetch_tickers_cache['fetch_bids_asks'] = tickers
             return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1403,12 +1409,14 @@ class Exchange:
         :return: fetch_tickers result
         """
         if cached:
-            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            with self._cache_lock:
+                tickers = self._fetch_tickers_cache.get('fetch_tickers')
             if tickers:
                 return tickers
         try:
             tickers = self._api.fetch_tickers(symbols)
-            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            with self._cache_lock:
+                self._fetch_tickers_cache['fetch_tickers'] = tickers
             return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1499,7 +1507,8 @@ class Exchange:
         return price_side
 
     def get_rate(self, pair: str, refresh: bool,
-                 side: EntryExit, is_short: bool) -> float:
+                 side: EntryExit, is_short: bool,
+                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1516,7 +1525,8 @@ class Exchange:
 
         cache_rate: TTLCache = self._entry_rate_cache if side == "entry" else self._exit_rate_cache
         if not refresh:
-            rate = cache_rate.get(pair)
+            with self._cache_lock:
+                rate = cache_rate.get(pair)
             # Check if cache has been invalidated
             if rate:
                 logger.debug(f"Using cached {side} rate for {pair}.")
@@ -1531,22 +1541,24 @@ class Exchange:
         if conf_strategy.get('use_order_book', False):
 
             order_book_top = conf_strategy.get('order_book_top', 1)
-            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            if order_book is None:
+                order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
                 rate = order_book[f"{price_side}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    f"{name} Price at location {order_book_top} from orderbook could not be "
-                    f"determined. Orderbook: {order_book}"
+                    f"{pair} - {name} Price at location {order_book_top} from orderbook "
+                    f"could not be determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
-            logger.debug(f"{name} price from orderbook {price_side_word}"
+            logger.debug(f"{pair} - {name} price from orderbook {price_side_word}"
                          f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
             logger.debug(f"Using Last {price_side_word} / Last Price")
-            ticker = self.fetch_ticker(pair)
+            if ticker is None:
+                ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[price_side]
             if ticker['last'] and ticker_rate:
                 if side == 'entry' and ticker_rate > ticker['last']:
@@ -1559,9 +1571,38 @@ class Exchange:
 
         if rate is None:
             raise PricingError(f"{name}-Rate for {pair} was empty.")
-        cache_rate[pair] = rate
+        with self._cache_lock:
+            cache_rate[pair] = rate
 
         return rate
+
+    def get_rates(self, pair: str, refresh: bool, is_short: bool) -> Tuple[float, float]:
+        entry_rate = None
+        exit_rate = None
+        if not refresh:
+            with self._cache_lock:
+                entry_rate = self._entry_rate_cache.get(pair)
+                exit_rate = self._exit_rate_cache.get(pair)
+            if entry_rate:
+                logger.debug(f"Using cached buy rate for {pair}.")
+            if exit_rate:
+                logger.debug(f"Using cached sell rate for {pair}.")
+
+        entry_pricing = self._config.get('entry_pricing', {})
+        exit_pricing = self._config.get('exit_pricing', {})
+        order_book = ticker = None
+        if not entry_rate and entry_pricing.get('use_order_book', False):
+            order_book_top = max(entry_pricing.get('order_book_top', 1),
+                                 exit_pricing.get('order_book_top', 1))
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, order_book=order_book)
+        elif not entry_rate:
+            ticker = self.fetch_ticker(pair)
+            entry_rate = self.get_rate(pair, refresh, 'entry', is_short, ticker=ticker)
+        if not exit_rate:
+            exit_rate = self.get_rate(pair, refresh, 'exit',
+                                      is_short, order_book=order_book, ticker=ticker)
+        return entry_rate, exit_rate
 
     # Fee handling
 
@@ -1981,7 +2022,7 @@ class Exchange:
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
-                    pair,  since,
+                    pair, since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
@@ -2168,6 +2209,7 @@ class Exchange:
 
     @retrier_async
     async def get_market_leverage_tiers(self, symbol: str) -> Tuple[str, List[Dict]]:
+        """ Leverage tiers per symbol """
         try:
             tier = await self._api_async.fetch_market_leverage_tiers(symbol)
             return symbol, tier
@@ -2199,20 +2241,34 @@ class Exchange:
 
                 tiers: Dict[str, List[Dict]] = {}
 
-                # Be verbose here, as this delays startup by ~1 minute.
-                logger.info(
-                    f"Initializing leverage_tiers for {len(symbols)} markets. "
-                    "This will take about a minute.")
+                tiers_cached = self.load_cached_leverage_tiers(self._config['stake_currency'])
+                if tiers_cached:
+                    tiers = tiers_cached
 
-                coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
+                coros = [
+                    self.get_market_leverage_tiers(symbol)
+                    for symbol in sorted(symbols) if symbol not in tiers]
+
+                # Be verbose here, as this delays startup by ~1 minute.
+                if coros:
+                    logger.info(
+                        f"Initializing leverage_tiers for {len(symbols)} markets. "
+                        "This will take about a minute.")
+                else:
+                    logger.info("Using cached leverage_tiers.")
+
+                async def gather_results():
+                    return await asyncio.gather(*input_coro, return_exceptions=True)
 
                 for input_coro in chunks(coros, 100):
 
-                    results = self.loop.run_until_complete(
-                        asyncio.gather(*input_coro, return_exceptions=True))
+                    with self._loop_lock:
+                        results = self.loop.run_until_complete(gather_results())
+
                     for symbol, res in results:
                         tiers[symbol] = res
-
+                if len(coros) > 0:
+                    self.cache_leverage_tiers(tiers, self._config['stake_currency'])
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
@@ -2220,6 +2276,30 @@ class Exchange:
                 return {}
         else:
             return {}
+
+    def cache_leverage_tiers(self, tiers: Dict[str, List[Dict]], stake_currency: str) -> None:
+
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if not filename.parent.is_dir():
+            filename.parent.mkdir(parents=True)
+        data = {
+            "updated": datetime.now(timezone.utc),
+            "data": tiers,
+        }
+        file_dump_json(filename, data)
+
+    def load_cached_leverage_tiers(self, stake_currency: str) -> Optional[Dict[str, List[Dict]]]:
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if filename.is_file():
+            tiers = file_load_json(filename)
+            updated = tiers.get('updated')
+            if updated:
+                updated_dt = parser.parse(updated)
+                if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
+                    logger.info("Cached leverage tiers are outdated. Will update.")
+                    return None
+            return tiers['data']
+        return None
 
     def fill_leverage_tiers(self) -> None:
         """
@@ -2236,10 +2316,10 @@ class Exchange:
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier.get('info', {})
         return {
-            'min': tier['minNotional'],
-            'max': tier['maxNotional'],
-            'mmr': tier['maintenanceMarginRate'],
-            'lev': tier['maxLeverage'],
+            'minNotional': tier['minNotional'],
+            'maxNotional': tier['maxNotional'],
+            'maintenanceMarginRate': tier['maintenanceMarginRate'],
+            'maxLeverage': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }
 
@@ -2268,18 +2348,18 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             if stake_amount == 0:
-                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
+                return self._leverage_tiers[pair][0]['maxLeverage']  # Max lev for lowest amount
 
             for tier_index in range(len(pair_tiers)):
 
                 tier = pair_tiers[tier_index]
-                lev = tier['lev']
+                lev = tier['maxLeverage']
 
                 if tier_index < len(pair_tiers) - 1:
                     next_tier = pair_tiers[tier_index + 1]
-                    next_floor = next_tier['min'] / next_tier['lev']
+                    next_floor = next_tier['minNotional'] / next_tier['maxLeverage']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
-                        return min((tier['max'] / stake_amount), lev)
+                        return min((tier['maxNotional'] / stake_amount), lev)
                         #
                         # With the two leverage tiers below,
                         # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
@@ -2300,10 +2380,11 @@ class Exchange:
                         #
 
                 else:  # if on the last tier
-                    if stake_amount > tier['max']:  # If stake is > than max tradeable amount
+                    if stake_amount > tier['maxNotional']:
+                        # If stake is > than max tradeable amount
                         raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
                     else:
-                        return tier['lev']
+                        return tier['maxLeverage']
 
             raise OperationalException(
                 'Looped through all tiers without finding a max leverage. Should never be reached'
@@ -2334,7 +2415,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            res = self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2355,6 +2437,7 @@ class Exchange:
             pair: str,
             open_rate: float,
             amount: float,  # quote currency, includes leverage
+            stake_amount: float,
             leverage: float,
             is_short: bool
     ) -> Optional[float]:
@@ -2362,23 +2445,22 @@ class Exchange:
         if self.trading_mode in TradingMode.SPOT:
             return None
         elif (
-            self.margin_mode == MarginMode.ISOLATED and
             self.trading_mode == TradingMode.FUTURES
         ):
-            wallet_balance = (amount * open_rate) / leverage
             isolated_liq = self.get_or_calculate_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
-                position=amount,
-                wallet_balance=wallet_balance,
+                amount=amount,
+                stake_amount=stake_amount,
+                wallet_balance=stake_amount,  # In isolated mode, stake-amount = wallet size
                 mm_ex_1=0.0,
                 upnl_ex_1=0.0,
             )
             return isolated_liq
         else:
             raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
+                "Freqtrade currently only supports futures for leverage trading.")
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
@@ -2398,7 +2480,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(margin_mode.value, pair, params)
+            res = self._api.set_margin_mode(margin_mode.value, pair, params)
+            self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2539,25 +2622,24 @@ class Exchange:
         else:
             return 0.0
 
-    @retrier
     def get_or_calculate_liquidation_price(
         self,
         pair: str,
         # Dry-run
         open_rate: float,   # Entry price of position
         is_short: bool,
-        position: float,  # Absolute value of position size
+        amount: float,  # Absolute value of position size
+        stake_amount: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
-        :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
+        elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
                 f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
 
@@ -2567,26 +2649,19 @@ class Exchange:
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
-                position=position,
+                amount=amount,
+                stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
                 mm_ex_1=mm_ex_1,
                 upnl_ex_1=upnl_ex_1
             )
         else:
-            try:
-                positions = self._api.fetch_positions([pair])
-                if len(positions) > 0:
-                    pos = positions[0]
-                    isolated_liq = pos['liquidationPrice']
-                else:
-                    return None
-            except ccxt.DDoSProtection as e:
-                raise DDosProtection(e) from e
-            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-                raise TemporaryError(
-                    f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-            except ccxt.BaseError as e:
-                raise OperationalException(e) from e
+            positions = self.fetch_positions(pair)
+            if len(positions) > 0:
+                pos = positions[0]
+                isolated_liq = pos['liquidationPrice']
+            else:
+                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
@@ -2604,22 +2679,24 @@ class Exchange:
         pair: str,
         open_rate: float,   # Entry price of position
         is_short: bool,
-        position: float,  # Absolute value of position size
+        amount: float,
+        stake_amount: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
+        Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
          gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
-        Important: Must be fetching data from cached values as this is used by backtesting!
 
         :param exchange_name:
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param position: Absolute value of position size incl. leverage (in base currency)
+        :param amount: Absolute value of position size incl. leverage (in base currency)
+        :param stake_amount: Stake amount - Collateral in settle currency.
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param margin_mode: Either ISOLATED or CROSS
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
@@ -2633,7 +2710,7 @@ class Exchange:
 
         market = self.markets[pair]
         taker_fee_rate = market['taker']
-        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, position)
+        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
 
@@ -2641,7 +2718,7 @@ class Exchange:
                 raise OperationalException(
                     "Freqtrade does not yet support inverse contracts")
 
-            value = wallet_balance / position
+            value = wallet_balance / amount
 
             mm_ratio_taker = (mm_ratio + taker_fee_rate)
             if is_short:
@@ -2677,8 +2754,8 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             for tier in reversed(pair_tiers):
-                if nominal_value >= tier['min']:
-                    return (tier['mmr'], tier['maintAmt'])
+                if nominal_value >= tier['minNotional']:
+                    return (tier['maintenanceMarginRate'], tier['maintAmt'])
 
             raise OperationalException("nominal value can not be lower than 0")
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
@@ -2818,3 +2895,111 @@ def market_is_active(market: Dict) -> bool:
     # See https://github.com/ccxt/ccxt/issues/4874,
     # https://github.com/ccxt/ccxt/issues/4075#issuecomment-434760520
     return market.get('active', True) is not False
+
+
+def amount_to_contracts(amount: float, contract_size: Optional[float]) -> float:
+    """
+    Convert amount to contracts.
+    :param amount: amount to convert
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: num-contracts
+    """
+    if contract_size and contract_size != 1:
+        return amount / contract_size
+    else:
+        return amount
+
+
+def contracts_to_amount(num_contracts: float, contract_size: Optional[float]) -> float:
+    """
+    Takes num-contracts and converts it to contract size
+    :param num_contracts: number of contracts
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: Amount
+    """
+
+    if contract_size and contract_size != 1:
+        return num_contracts * contract_size
+    else:
+        return num_contracts
+
+
+def amount_to_precision(amount: float, amount_precision: Optional[float],
+                        precisionMode: Optional[int]) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: truncated amount
+    """
+    if amount_precision is not None and precisionMode is not None:
+        precision = int(amount_precision) if precisionMode != TICK_SIZE else amount_precision
+        # precision must be an int for non-ticksize inputs.
+        amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
+                                            precision=precision,
+                                            counting_mode=precisionMode,
+                                            ))
+
+    return amount
+
+
+def amount_to_contract_precision(
+        amount, amount_precision: Optional[float], precisionMode: Optional[int],
+        contract_size: Optional[float]) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    including calculation to and from contracts.
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: truncated amount
+    """
+    if amount_precision is not None and precisionMode is not None:
+        contracts = amount_to_contracts(amount, contract_size)
+        amount_p = amount_to_precision(contracts, amount_precision, precisionMode)
+        return contracts_to_amount(amount_p, contract_size)
+    return amount
+
+
+def price_to_precision(price: float, price_precision: Optional[float],
+                       precisionMode: Optional[int]) -> float:
+    """
+    Returns the price rounded up to the precision the Exchange accepts.
+    Partial Re-implementation of ccxt internal method decimal_to_precision(),
+    which does not support rounding up
+    TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
+    align with amount_to_precision().
+    !!! Rounds up
+    :param price: price to convert
+    :param price_precision: price precision to use. Used from markets[pair]['precision']['price']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :return: price rounded up to the precision the Exchange accepts
+
+    """
+    if price_precision is not None and precisionMode is not None:
+        # price = float(decimal_to_precision(price, rounding_mode=ROUND,
+        #                                    precision=price_precision,
+        #                                    counting_mode=self.precisionMode,
+        #                                    ))
+        if precisionMode == TICK_SIZE:
+            precision = FtPrecise(price_precision)
+            price_str = FtPrecise(price)
+            missing = price_str % precision
+            if not missing == FtPrecise("0"):
+                price = round(float(str(price_str - missing + precision)), 14)
+        else:
+            symbol_prec = price_precision
+            big_price = price * pow(10, symbol_prec)
+            price = ceil(big_price) / pow(10, symbol_prec)
+    return price

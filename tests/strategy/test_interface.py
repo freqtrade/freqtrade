@@ -12,7 +12,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
+from freqtrade.enums.hyperoptstate import HyperoptState
 from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
@@ -290,6 +292,25 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
     assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
 
 
+def test_populate_any_indicators(default_conf, testdatadir) -> None:
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    timerange = TimeRange.parse_timerange('1510694220-1510700340')
+    data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
+                     fill_up_missing=True)
+    processed = strategy.populate_any_indicators('UNITTEST/BTC', data, '5m')
+    assert processed == data
+    assert id(processed) == id(data)
+    assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
+
+
+def test_freqai_not_initialized(default_conf) -> None:
+    strategy = StrategyResolver.load_strategy(default_conf)
+    strategy.ft_bot_start()
+    with pytest.raises(OperationalException, match=r'freqAI is not enabled\.'):
+        strategy.freqai.start()
+
+
 def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
     aimock = mocker.patch('freqtrade.strategy.interface.IStrategy.advise_indicators')
@@ -408,28 +429,31 @@ def test_min_roi_reached3(default_conf, fee) -> None:
 
 
 @pytest.mark.parametrize(
-    'profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
+    'profit,adjusted,expected,liq,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
         # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
-        (0.2, 0.9, ExitType.NONE, False, False, 0.3, 0.9, ExitType.NONE, None),
-        (0.2, 0.9, ExitType.NONE, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
-        (0.2, 1.14, ExitType.NONE, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS, None),
-        (0.01, 0.96, ExitType.NONE, True, False, 0.05, 1, ExitType.NONE, None),
-        (0.05, 1, ExitType.NONE, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
+        (0.2, 0.9, ExitType.NONE, None, False, False, 0.3, 0.9, ExitType.NONE, None),
+        (0.2, 0.9, ExitType.NONE, None, False, False, -0.2, 0.9, ExitType.STOP_LOSS, None),
+        (0.2, 0.9, ExitType.NONE, 0.8, False, False, -0.2, 0.9, ExitType.LIQUIDATION, None),
+        (0.2, 1.14, ExitType.NONE, None, True, False, 0.05, 1.14, ExitType.TRAILING_STOP_LOSS,
+         None),
+        (0.01, 0.96, ExitType.NONE, None, True, False, 0.05, 1, ExitType.NONE, None),
+        (0.05, 1, ExitType.NONE, None, True, False, -0.01, 1, ExitType.TRAILING_STOP_LOSS, None),
         # Default custom case - trails with 10%
-        (0.05, 0.95, ExitType.NONE, False, True, -0.02, 0.95, ExitType.NONE, None),
-        (0.05, 0.95, ExitType.NONE, False, True, -0.06, 0.95, ExitType.TRAILING_STOP_LOSS, None),
-        (0.05, 1, ExitType.NONE, False, True, -0.06, 1, ExitType.TRAILING_STOP_LOSS,
+        (0.05, 0.95, ExitType.NONE, None, False, True, -0.02, 0.95, ExitType.NONE, None),
+        (0.05, 0.95, ExitType.NONE, None, False, True, -0.06, 0.95, ExitType.TRAILING_STOP_LOSS,
+         None),
+        (0.05, 1, ExitType.NONE, None, False, True, -0.06, 1, ExitType.TRAILING_STOP_LOSS,
          lambda **kwargs: -0.05),
-        (0.05, 1, ExitType.NONE, False, True, 0.09, 1.04, ExitType.NONE,
+        (0.05, 1, ExitType.NONE, None, False, True, 0.09, 1.04, ExitType.NONE,
          lambda **kwargs: -0.05),
-        (0.05, 0.95, ExitType.NONE, False, True, 0.09, 0.98, ExitType.NONE,
+        (0.05, 0.95, ExitType.NONE, None, False, True, 0.09, 0.98, ExitType.NONE,
          lambda current_profit, **kwargs: -0.1 if current_profit < 0.6 else -(current_profit * 2)),
         # Error case - static stoploss in place
-        (0.05, 0.9, ExitType.NONE, False, True, 0.09, 0.9, ExitType.NONE,
+        (0.05, 0.9, ExitType.NONE, None, False, True, 0.09, 0.9, ExitType.NONE,
          lambda **kwargs: None),
     ])
-def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
+def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, liq, trailing, custom,
                            profit2, adjusted2, expected2, custom_stop) -> None:
 
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -442,6 +466,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
+        liquidation_price=liq,
     )
     trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing
@@ -836,7 +861,9 @@ def test_strategy_safe_wrapper_trade_copy(fee):
 
 
 def test_hyperopt_parameters():
+    HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
     from skopt.space import Categorical, Integer, Real
+
     with pytest.raises(OperationalException, match=r"Name is determined.*"):
         IntParameter(low=0, high=5, default=1, name='hello')
 
@@ -913,6 +940,12 @@ def test_hyperopt_parameters():
     assert len(list(boolpar.range)) == 2
 
     assert list(boolpar.range) == [True, False]
+
+    HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
+    assert len(list(intpar.range)) == 1
+    assert len(list(fltpar.range)) == 1
+    assert len(list(catpar.range)) == 1
+    assert len(list(boolpar.range)) == 1
 
 
 def test_auto_hyperopt_interface(default_conf):

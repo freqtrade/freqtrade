@@ -5,6 +5,7 @@
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "amount_reserve_percent": 0.05,
+    "available_capital": 1000,
     "amend_last_stake_amount": false,
     "last_stake_amount_min_ratio": 0.5,
     "dry_run": true,
@@ -92,6 +93,7 @@
         "secret": "your_exchange_secret",
         "password": "",
         "log_responses": false,
+        // "unknown_fee_rate": 1,
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [

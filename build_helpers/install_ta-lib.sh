@@ -4,7 +4,7 @@ else
   INSTALL_LOC=${1}
 fi
 echo "Installing to ${INSTALL_LOC}"
-if [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
+if [ -n "$2" ] || [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
   tar zxvf ta-lib-0.4.0-src.tar.gz
   cd ta-lib \
   && sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h \
@@ -17,11 +17,17 @@ if [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
     cd .. && rm -rf ./ta-lib/
     exit 1
   fi
-  which sudo && sudo make install || make install
-  if [ -x "$(command -v apt-get)" ]; then
-    echo "Updating library path using ldconfig"
-    sudo ldconfig
+  if [ -z "$2" ]; then
+    which sudo && sudo make install || make install
+    if [ -x "$(command -v apt-get)" ]; then
+      echo "Updating library path using ldconfig"
+      sudo ldconfig
+    fi
+  else
+    # Don't install with sudo
+    make install
   fi
+
   cd .. && rm -rf ./ta-lib/
 else
   echo "TA-lib already installed, skipping installation"

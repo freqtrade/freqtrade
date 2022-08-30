@@ -1,6 +1,7 @@
 site_name: Freqtrade
 site_url: https://www.freqtrade.io/
 repo_url: https://github.com/freqtrade/freqtrade
+edit_uri: edit/develop/docs/
 use_directory_urls: True
 nav:
     - Home: index.md
@@ -32,9 +33,10 @@ nav:
         - Backtest analysis: advanced-backtesting.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
-        - Edge Positioning: edge.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
+        - FreqAI: freqai.md
+        - Edge Positioning: edge.md
         - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
     - SQL Cheat-sheet: sql_cheatsheet.md

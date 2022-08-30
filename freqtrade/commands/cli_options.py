@@ -255,6 +255,13 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         default='default',
     ),
+    "analyze_per_epoch": Arg(
+        '--analyze-per-epoch',
+        help='Run populate_indicators once per epoch.',
+        action='store_true',
+        default=False,
+    ),
+
     "print_all": Arg(
         '--print-all',
         help='Print all results, not only the best ones.',
@@ -367,7 +374,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='BASE_CURRENCY',
     ),
     "trading_mode": Arg(
-        '--trading-mode',
+        '--trading-mode', '--tradingmode',
         help='Select Trading mode',
         choices=constants.TRADING_MODES,
     ),
@@ -434,6 +441,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
+    "show_timerange": Arg(
+        '--show-timerange',
+        help='Show timerange available for available data. (May take a while to calculate).',
+        action='store_true',
+    ),
     "exchange": Arg(
         '--exchange',
         help=f'Exchange name (default: `{constants.DEFAULT_EXCHANGE}`). '
@@ -450,7 +462,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "prepend_data": Arg(
         '--prepend',
-        help='Allow data prepending.',
+        help='Allow data prepending. (Data-appending is disabled)',
         action='store_true',
     ),
     "erase": Arg(
@@ -646,5 +658,15 @@ AVAILABLE_CLI_OPTIONS = {
               "e.g. 'close,rsi,bb_lowerband,profit_abs'"),
         nargs='+',
         default=[],
+    ),
+    "freqaimodel": Arg(
+        '--freqaimodel',
+        help='Specify a custom freqaimodels.',
+        metavar='NAME',
+    ),
+    "freqaimodel_path": Arg(
+        '--freqaimodel-path',
+        help='Specify additional lookup path for freqaimodels.',
+        metavar='PATH',
     ),
 }

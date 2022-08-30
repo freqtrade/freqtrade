@@ -8,11 +8,11 @@ from typing import Any, Dict, List, Optional
 import arrow
 from pandas import DataFrame
 
-from freqtrade.configuration import PeriodicCache
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.util import PeriodicCache
 
 
 logger = logging.getLogger(__name__)

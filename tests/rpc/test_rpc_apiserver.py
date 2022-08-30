@@ -109,6 +109,9 @@ def test_api_ui_fallback(botclient, mocker):
     rc = client_get(client, "/something")
     assert rc.status_code == 200
 
+    rc = client_get(client, "/something.js")
+    assert rc.status_code == 200
+
     # Test directory traversal without mock
     rc = client_get(client, '%2F%2F%2Fetc/passwd')
     assert rc.status_code == 200
@@ -419,13 +422,20 @@ def test_api_reloadconf(botclient):
     assert ftbot.state == State.RELOAD_CONFIG
 
 
-def test_api_stopbuy(botclient):
+def test_api_stopentry(botclient):
     ftbot, client = botclient
     assert ftbot.config['max_open_trades'] != 0
 
     rc = client_post(client, f"{BASE_URI}/stopbuy")
     assert_response(rc)
-    assert rc.json() == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
+    assert rc.json() == {
+        'status': 'No more entries will occur from now. Run /reload_config to reset.'}
+    assert ftbot.config['max_open_trades'] == 0
+
+    rc = client_post(client, f"{BASE_URI}/stopentry")
+    assert_response(rc)
+    assert rc.json() == {
+        'status': 'No more entries will occur from now. Run /reload_config to reset.'}
     assert ftbot.config['max_open_trades'] == 0
 
 
@@ -717,11 +727,11 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     (
         True,
         {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'best_pair_profit_ratio': -0.005,
-         'profit_all_coin': 43.61269123,
-         'profit_all_fiat': 538398.67323435, 'profit_all_percent_mean': 66.41,
+         'profit_all_coin': 45.561959,
+         'profit_all_fiat': 562462.39126200, 'profit_all_percent_mean': 66.41,
          'profit_all_ratio_mean': 0.664109545, 'profit_all_percent_sum': 398.47,
-         'profit_all_ratio_sum': 3.98465727, 'profit_all_percent': 4.36,
-         'profit_all_ratio': 0.043612222872799825, 'profit_closed_coin': -0.00673913,
+         'profit_all_ratio_sum': 3.98465727, 'profit_all_percent': 4.56,
+         'profit_all_ratio': 0.04556147, 'profit_closed_coin': -0.00673913,
          'profit_closed_fiat': -83.19455985, 'profit_closed_ratio_mean': -0.0075,
          'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
@@ -732,11 +742,11 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     (
         False,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
-         'profit_all_coin': -44.0631579,
-         'profit_all_fiat': -543959.6842755, 'profit_all_percent_mean': -66.41,
+         'profit_all_coin': -45.79641127,
+         'profit_all_fiat': -565356.69712815, 'profit_all_percent_mean': -66.41,
          'profit_all_ratio_mean': -0.6641100666666667, 'profit_all_percent_sum': -398.47,
-         'profit_all_ratio_sum': -3.9846604, 'profit_all_percent': -4.41,
-         'profit_all_ratio': -0.044063014216106644, 'profit_closed_coin': 0.00073913,
+         'profit_all_ratio_sum': -3.9846604, 'profit_all_percent': -4.58,
+         'profit_all_ratio': -0.045796261934205953, 'profit_closed_coin': 0.00073913,
          'profit_closed_fiat': 9.124559849999999, 'profit_closed_ratio_mean': 0.0075,
          'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
@@ -747,11 +757,11 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     (
         None,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
-         'profit_all_coin': -14.43790415,
-         'profit_all_fiat': -178235.92673175, 'profit_all_percent_mean': 0.08,
+         'profit_all_coin': -14.94732578,
+         'profit_all_fiat': -184524.7367541, 'profit_all_percent_mean': 0.08,
          'profit_all_ratio_mean': 0.000835751666666662, 'profit_all_percent_sum': 0.5,
-         'profit_all_ratio_sum': 0.005014509999999972, 'profit_all_percent': -1.44,
-         'profit_all_ratio': -0.014437768014451796, 'profit_closed_coin': -0.00542913,
+         'profit_all_ratio_sum': 0.005014509999999972, 'profit_all_percent': -1.49,
+         'profit_all_ratio': -0.014947184841095841, 'profit_closed_coin': -0.00542913,
          'profit_closed_fiat': -67.02260985, 'profit_closed_ratio_mean': 0.0025,
          'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
          'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
@@ -790,22 +800,22 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
         'first_trade_timestamp': ANY,
         'latest_trade_date': '5 minutes ago',
         'latest_trade_timestamp': ANY,
-        'profit_all_coin': expected['profit_all_coin'],
-        'profit_all_fiat': expected['profit_all_fiat'],
-        'profit_all_percent_mean': expected['profit_all_percent_mean'],
-        'profit_all_ratio_mean': expected['profit_all_ratio_mean'],
-        'profit_all_percent_sum': expected['profit_all_percent_sum'],
-        'profit_all_ratio_sum': expected['profit_all_ratio_sum'],
-        'profit_all_percent': expected['profit_all_percent'],
-        'profit_all_ratio': expected['profit_all_ratio'],
-        'profit_closed_coin': expected['profit_closed_coin'],
-        'profit_closed_fiat': expected['profit_closed_fiat'],
-        'profit_closed_ratio_mean': expected['profit_closed_ratio_mean'],
-        'profit_closed_percent_mean': expected['profit_closed_percent_mean'],
-        'profit_closed_ratio_sum': expected['profit_closed_ratio_sum'],
-        'profit_closed_percent_sum': expected['profit_closed_percent_sum'],
-        'profit_closed_ratio': expected['profit_closed_ratio'],
-        'profit_closed_percent': expected['profit_closed_percent'],
+        'profit_all_coin': pytest.approx(expected['profit_all_coin']),
+        'profit_all_fiat': pytest.approx(expected['profit_all_fiat']),
+        'profit_all_percent_mean': pytest.approx(expected['profit_all_percent_mean']),
+        'profit_all_ratio_mean': pytest.approx(expected['profit_all_ratio_mean']),
+        'profit_all_percent_sum': pytest.approx(expected['profit_all_percent_sum']),
+        'profit_all_ratio_sum': pytest.approx(expected['profit_all_ratio_sum']),
+        'profit_all_percent': pytest.approx(expected['profit_all_percent']),
+        'profit_all_ratio': pytest.approx(expected['profit_all_ratio']),
+        'profit_closed_coin': pytest.approx(expected['profit_closed_coin']),
+        'profit_closed_fiat': pytest.approx(expected['profit_closed_fiat']),
+        'profit_closed_ratio_mean': pytest.approx(expected['profit_closed_ratio_mean']),
+        'profit_closed_percent_mean': pytest.approx(expected['profit_closed_percent_mean']),
+        'profit_closed_ratio_sum': pytest.approx(expected['profit_closed_ratio_sum']),
+        'profit_closed_percent_sum': pytest.approx(expected['profit_closed_percent_sum']),
+        'profit_closed_ratio': pytest.approx(expected['profit_closed_ratio']),
+        'profit_closed_percent': pytest.approx(expected['profit_closed_percent']),
         'trade_count': 6,
         'closed_trade_count': 2,
         'winning_trades': expected['winning_trades'],
@@ -889,7 +899,7 @@ def test_api_performance(botclient, fee):
     assert_response(rc)
     assert len(rc.json()) == 2
     assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_pct': 7.61,
-                          'profit_ratio': 0.07609203, 'profit_abs': 0.01872279},
+                          'profit_ratio': 0.07609203, 'profit_abs': 0.0187228},
                          {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_pct': -5.57,
                           'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
@@ -1202,7 +1212,7 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
         fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets),
-        _is_dry_limit_order_filled=MagicMock(return_value=False),
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
     patch_get_signal(ftbot)
 
@@ -1212,12 +1222,27 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
     Trade.query.session.rollback()
 
-    ftbot.enter_positions()
+    create_mock_trades(fee)
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert pytest.approx(trade.amount) == 123
+    rc = client_post(client, f"{BASE_URI}/forceexit",
+                     data='{"tradeid": "5", "ordertype": "market", "amount": 23}')
+    assert_response(rc)
+    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    Trade.query.session.rollback()
+
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert pytest.approx(trade.amount) == 100
+    assert trade.is_open is True
 
     rc = client_post(client, f"{BASE_URI}/forceexit",
-                     data='{"tradeid": "1"}')
+                     data='{"tradeid": "5"}')
     assert_response(rc)
-    assert rc.json() == {'result': 'Created sell order for trade 1.'}
+    assert rc.json() == {'result': 'Created sell order for trade 5.'}
+    Trade.query.session.rollback()
+
+    trade = Trade.get_trades([Trade.id == 5]).first()
+    assert trade.is_open is False
 
 
 def test_api_pair_candles(botclient, ohlcv_history):
@@ -1402,7 +1427,10 @@ def test_api_strategies(botclient):
         'InformativeDecoratorTest',
         'StrategyTestV2',
         'StrategyTestV3',
-        'StrategyTestV3Futures'
+        'StrategyTestV3Futures',
+        'freqai_test_classifier',
+        'freqai_test_multimodel_strat',
+        'freqai_test_strat'
     ]}
 
 

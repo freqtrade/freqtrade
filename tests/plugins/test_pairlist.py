@@ -12,7 +12,7 @@ from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import (create_mock_trades_usdt, get_patched_exchange, get_patched_freqtradebot,
@@ -366,6 +366,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']),
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "PrecisionFilter"}],
+     "USDT", ['ETH/USDT', 'NANO/USDT']),
     # PriceFilter and VolumePairList
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.03}],
@@ -735,7 +738,7 @@ def test_PerformanceFilter_lookback(mocker, default_conf_usdt, fee, caplog) -> N
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/USDT']
+        assert pm.whitelist == ['XRP/USDT', 'NEO/USDT']
         assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
@@ -762,8 +765,8 @@ def test_PerformanceFilter_keep_mid_order(mocker, default_conf_usdt, fee, caplog
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades_usdt(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/USDT', 'ETC/USDT', 'ETH/USDT', 'LTC/USDT',
-                                'NEO/USDT', 'TKN/USDT', 'ADA/USDT', ]
+        assert pm.whitelist == ['XRP/USDT', 'NEO/USDT', 'ETH/USDT', 'LTC/USDT',
+                                'TKN/USDT', 'ADA/USDT', 'ETC/USDT', ]
         # assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
@@ -1282,6 +1285,22 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
             expand_pairlist(wildcardlist, pairs)
     else:
         assert sorted(expand_pairlist(wildcardlist, pairs)) == sorted(expected)
+        conf = {
+            'pairs': wildcardlist,
+            'freqai': {
+                "enabled": True,
+                "feature_parameters": {
+                    "include_corr_pairlist": [
+                        "BTC/USDT:USDT",
+                        "XRP/BUSD",
+                    ]
+                }
+            }
+        }
+        assert sorted(dynamic_expand_pairlist(conf, pairs)) == sorted(expected + [
+            "BTC/USDT:USDT",
+            "XRP/BUSD",
+        ])
 
 
 @pytest.mark.parametrize('wildcardlist,pairs,expected', [

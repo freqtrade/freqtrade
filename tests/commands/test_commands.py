@@ -638,7 +638,7 @@ def test_get_ui_download_url_direct(mocker):
         x, last_version = get_ui_download_url('0.0.3')
 
 
-def test_download_data_keyboardInterrupt(mocker, caplog, markets):
+def test_download_data_keyboardInterrupt(mocker, markets):
     dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(side_effect=KeyboardInterrupt))
     patch_exchange(mocker)
@@ -651,12 +651,15 @@ def test_download_data_keyboardInterrupt(mocker, caplog, markets):
         "--pairs", "ETH/BTC", "XRP/BTC",
     ]
     with pytest.raises(SystemExit):
-        start_download_data(get_args(args))
+        pargs = get_args(args)
+        pargs['config'] = None
+
+        start_download_data(pargs)
 
     assert dl_mock.call_count == 1
 
 
-def test_download_data_timerange(mocker, caplog, markets):
+def test_download_data_timerange(mocker, markets):
     dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
                            MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
     patch_exchange(mocker)
@@ -672,7 +675,9 @@ def test_download_data_timerange(mocker, caplog, markets):
     ]
     with pytest.raises(OperationalException,
                        match=r"--days and --timerange are mutually.*"):
-        start_download_data(get_args(args))
+        pargs = get_args(args)
+        pargs['config'] = None
+        start_download_data(pargs)
     assert dl_mock.call_count == 0
 
     args = [
@@ -681,7 +686,9 @@ def test_download_data_timerange(mocker, caplog, markets):
         "--pairs", "ETH/BTC", "XRP/BTC",
         "--days", "20",
     ]
-    start_download_data(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_download_data(pargs)
     assert dl_mock.call_count == 1
     # 20days ago
     days_ago = arrow.get(arrow.now().shift(days=-20).date()).int_timestamp
@@ -694,7 +701,9 @@ def test_download_data_timerange(mocker, caplog, markets):
         "--pairs", "ETH/BTC", "XRP/BTC",
         "--timerange", "20200101-"
     ]
-    start_download_data(get_args(args))
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_download_data(pargs)
     assert dl_mock.call_count == 1
 
     assert dl_mock.call_args_list[0][1]['timerange'].startts == arrow.Arrow(
@@ -1420,6 +1429,27 @@ def test_start_list_data(testdatadir, capsys):
     assert "\n|          Pair |   Timeframe |         Type |\n" in captured.out
     assert "\n|      XRP/USDT |          1h |      futures |\n" in captured.out
     assert "\n|      XRP/USDT |      1h, 8h |         mark |\n" in captured.out
+
+    args = [
+        "list-data",
+        "--data-format-ohlcv",
+        "json",
+        "--pairs", "XRP/ETH",
+        "--datadir",
+        str(testdatadir),
+        "--show-timerange",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found 2 pair / timeframe combinations." in captured.out
+    assert ("\n|    Pair |   Timeframe |   Type |                From |                  To |\n"
+            in captured.out)
+    assert "UNITTEST/BTC" not in captured.out
+    assert (
+            "\n| XRP/ETH |          1m |   spot | 2019-10-11 00:00:00 | 2019-10-13 11:19:00 |\n"
+            in captured.out)
 
 
 @pytest.mark.usefixtures("init_persistence")

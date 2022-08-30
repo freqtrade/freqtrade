@@ -6,7 +6,7 @@ from freqtrade.enums import ExitCheckTuple, ExitType
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
-from tests.conftest import get_patched_freqtradebot, patch_get_signal
+from tests.conftest import get_patched_freqtradebot, log_has_re, patch_get_signal
 
 
 def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
@@ -189,7 +189,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     assert len(trades) == 5
 
     for trade in trades:
-        assert trade.stake_amount == result1
+        assert pytest.approx(trade.stake_amount) == result1
         # Reset trade open order id's
         trade.open_order_id = None
     trades = Trade.get_open_trades()
@@ -220,8 +220,6 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        amount_to_precision=lambda s, x, y: y,
-        price_to_precision=lambda s, x, y: y,
     )
 
     patch_get_signal(freqtrade)
@@ -249,7 +247,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(trade.orders) == 2
     for o in trade.orders:
         assert o.status == "closed"
-    assert trade.stake_amount == 120
+    assert pytest.approx(trade.stake_amount) == 120
 
     # Open-rate averaged between 2.0 and 2.0 * 0.995
     assert trade.open_rate < 2.0
@@ -259,11 +257,11 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
-    assert trade.stake_amount == 120
+    assert pytest.approx(trade.stake_amount) == 120
     assert trade.orders[0].amount == 30
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
+    assert pytest.approx(trade.orders[1].amount) == 60 / ticker_usdt_modif['bid']
 
-    assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
+    assert pytest.approx(trade.amount) == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_buys == 2
     assert trade.nr_of_successful_entries == 2
 
@@ -274,7 +272,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.is_open is False
     assert trade.orders[0].amount == 30
     assert trade.orders[0].side == 'buy'
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['bid']
+    assert pytest.approx(trade.orders[1].amount) == 60 / ticker_usdt_modif['bid']
     # Sold everything
     assert trade.orders[-1].side == 'sell'
     assert trade.orders[2].amount == trade.amount
@@ -291,7 +289,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        amount_to_precision=lambda s, x, y: y,
+        amount_to_precision=lambda s, x, y: round(y, 4),
         price_to_precision=lambda s, x, y: y,
     )
 
@@ -303,6 +301,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(trade.orders) == 1
     assert pytest.approx(trade.stake_amount) == 60
     assert trade.open_rate == 2.02
+    assert trade.orders[0].amount == trade.amount
     # No adjustment
     freqtrade.process()
     trade = Trade.get_trades().first()
@@ -331,8 +330,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 2
     assert pytest.approx(trade.stake_amount) == 120
-    # assert trade.orders[0].amount == 30
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+    assert trade.orders[1].amount == round(60 / ticker_usdt_modif['ask'], 4)
 
     assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
     assert trade.nr_of_successful_entries == 2
@@ -344,7 +342,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.is_open is False
     # assert trade.orders[0].amount == 30
     assert trade.orders[0].side == 'sell'
-    assert trade.orders[1].amount == 60 / ticker_usdt_modif['ask']
+    assert trade.orders[1].amount == round(60 / ticker_usdt_modif['ask'], 4)
     # Sold everything
     assert trade.orders[-1].side == 'buy'
     assert trade.orders[2].amount == trade.amount
@@ -455,3 +453,60 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     # Check the 2 filled orders equal the above amount
     assert pytest.approx(trade.orders[1].amount) == 30.150753768
     assert pytest.approx(trade.orders[-1].amount) == 61.538461232
+
+
+def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> None:
+    default_conf_usdt['position_adjustment_enable'] = True
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_usdt,
+        get_fee=fee,
+        amount_to_precision=lambda s, x, y: y,
+        price_to_precision=lambda s, x, y: y,
+        get_min_pair_stake_amount=MagicMock(return_value=10),
+    )
+
+    patch_get_signal(freqtrade)
+    freqtrade.enter_positions()
+
+    assert len(Trade.get_trades().all()) == 1
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 1
+    assert pytest.approx(trade.stake_amount) == 60
+    assert pytest.approx(trade.amount) == 30.0
+    assert trade.open_rate == 2.0
+
+    # Too small size
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-59)
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 1
+    assert pytest.approx(trade.stake_amount) == 60
+    assert pytest.approx(trade.amount) == 30.0
+    assert log_has_re("Remaining amount of 1.6.* would be too small.", caplog)
+
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-20)
+
+    freqtrade.process()
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+    assert trade.orders[-1].ft_order_side == 'sell'
+    assert pytest.approx(trade.stake_amount) == 40.198
+    assert pytest.approx(trade.amount) == 20.099
+    assert trade.open_rate == 2.0
+    assert trade.is_open
+    caplog.clear()
+
+    # Sell more than what we got (we got ~20 coins left)
+    # First adjusts the amount to 20 - then rejects.
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-50)
+    freqtrade.process()
+    assert log_has_re("Adjusting amount to trade.amount as it is higher.*", caplog)
+    assert log_has_re("Remaining amount of 0.0 would be too small.", caplog)
+    trade = Trade.get_trades().first()
+    assert len(trade.orders) == 2
+    assert trade.orders[-1].ft_order_side == 'sell'
+    assert pytest.approx(trade.stake_amount) == 40.198
+    assert trade.is_open

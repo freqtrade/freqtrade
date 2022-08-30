@@ -12,6 +12,13 @@ hyperopt = [
     'progressbar2',
 ]
 
+freqai = [
+    'scikit-learn',
+    'joblib',
+    'catboost; platform_machine != "aarch64"',
+    'lightgbm',
+]
+
 develop = [
     'coveralls',
     'flake8',
@@ -31,7 +38,7 @@ jupyter = [
     'nbconvert',
 ]
 
-all_extra = plot + develop + jupyter + hyperopt
+all_extra = plot + develop + jupyter + hyperopt + freqai
 
 setup(
     tests_require=[
@@ -42,7 +49,7 @@ setup(
     ],
     install_requires=[
         # from requirements.txt
-        'ccxt>=1.83.12',
+        'ccxt>=1.92.9',
         'SQLAlchemy',
         'python-telegram-bot>=13.4',
         'arrow>=0.17.0',
@@ -79,6 +86,7 @@ setup(
         'plot': plot,
         'jupyter': jupyter,
         'hyperopt': hyperopt,
+        'freqai': freqai,
         'all': all_extra,
     },
 )

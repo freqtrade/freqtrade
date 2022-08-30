@@ -63,7 +63,7 @@ optional arguments:
                         `jsongz`).
   --trading-mode {spot,margin,futures}
                         Select Trading mode
-  --prepend             Allow data prepending.
+  --prepend             Allow data prepending. (Data-appending is disabled)
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -186,7 +186,7 @@ Freqtrade currently supports 3 data-formats for both OHLCV and trades data:
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 
 This can be changed via the `--data-format-ohlcv` and `--data-format-trades` command line arguments respectively.
-To persist this change, you can should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:
+To persist this change, you should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:
 
 ``` jsonc
     // ...
@@ -374,6 +374,7 @@ usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--data-format-ohlcv {json,jsongz,hdf5}]
                            [-p PAIRS [PAIRS ...]]
                            [--trading-mode {spot,margin,futures}]
+                           [--show-timerange]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -387,6 +388,8 @@ optional arguments:
                         separated.
   --trading-mode {spot,margin,futures}
                         Select Trading mode
+  --show-timerange      Show timerange available for available data. (May take
+                        a while to calculate).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

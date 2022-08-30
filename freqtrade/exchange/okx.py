@@ -7,9 +7,8 @@ from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange import date_minus_candles
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +38,8 @@ class Okx(Exchange):
     ]
 
     net_only = True
+
+    _ccxt_params: Dict = {'options': {'brokerId': 'ffb5405ad327SUDE'}}
 
     def ohlcv_candle_limit(
             self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
@@ -145,4 +146,4 @@ class Okx(Exchange):
             return float('inf')
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]['max'] / leverage
+        return pair_tiers[-1]['maxNotional'] / leverage

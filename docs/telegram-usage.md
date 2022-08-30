@@ -98,6 +98,7 @@ Example configuration showing the different settings:
         "exit_fill": "off",
         "protection_trigger": "off",
         "protection_trigger_global": "on",
+        "strategy_msg": "off",
         "show_candle": "off"
     },
     "reload": true,
@@ -109,7 +110,8 @@ Example configuration showing the different settings:
 `exit` notifications are sent when the order is placed, while `exit_fill` notifications are sent when the order is filled on the exchange.
 `*_fill` notifications are off by default and must be explicitly enabled.
 `protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.
-`show_candle` - show candle values as part of entry/exit messages. Only possible value is "ohlc".
+`strategy_msg` - Receive notifications from the strategy, sent via `self.dp.send_msg()` from the strategy [more details](strategy-customization.md#send-notification).
+`show_candle` - show candle values as part of entry/exit messages. Only possible values are `"ohlc"` or `"off"`.
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 `reload` allows you to disable reload-buttons on selected messages.
@@ -147,7 +149,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopbuy`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
 
 ## Telegram commands
 
@@ -159,7 +161,7 @@ official commands. You can ask at any moment for help with `/help`.
 |----------|-------------|
 | `/start` | Starts the trader
 | `/stop` | Stops the trader
-| `/stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `/stopbuy | /stopentry` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_config` | Reloads the configuration file
 | `/show_config` | Shows part of the current configuration with relevant settings to operation
 | `/logs [limit]` | Show last log messages.
@@ -185,7 +187,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/stats` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
 | `/exits` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
 | `/entries` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
-| `/whitelist` | Show the current whitelist
+| `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
 | `/help` | Show help message

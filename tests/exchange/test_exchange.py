@@ -14,18 +14,69 @@ from pandas import DataFrame
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
-from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
+from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_precision,
+                                date_minus_candles, market_is_active, price_to_precision,
+                                timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
+                                timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff, remove_credentials)
-from freqtrade.exchange.exchange import (date_minus_candles, market_is_active, timeframe_to_minutes,
-                                         timeframe_to_msecs, timeframe_to_next_date,
-                                         timeframe_to_prev_date, timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'gateio']
+
+get_entry_rate_data = [
+    ('other', 20, 19, 10, 0.0, 20),  # Full ask side
+    ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
+    ('ask', 20, 19, 10, 1.0, 10),  # Full last side
+    ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
+    ('ask', 20, 19, 10, 0.7, 13),  # Between ask and last
+    ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
+    ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
+    ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 20, 19, 10, None, 20),  # price_last_balance missing
+    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
+    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
+    ('same', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
+    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
+    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
+    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
+    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 21, 20, 10, None, 20),  # price_last_balance missing
+    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
+]
+
+get_sell_rate_data = [
+    ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
+    ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
+    ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
+    ('bid', 12.0, 11.2, 10.5, 0.0, 11.2),  # Last smaller than bid
+    ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
+    ('bid', 0.003, 0.002, 0.005, None, 0.002),
+    ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
+    ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
+    ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
+    ('ask', 12.2, 11.2, 10.5, 0.0, 12.2),  # Last smaller than ask
+    ('ask', 12.0, 11.0, 10.5, 1.0, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 12.0, 11.2, 10.5, 0.5, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 10.0, 11.0, 11.0, 0.0, 10.0),
+    ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
+    ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
+    ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
+    ('ask', 0.006, 1.0, 11.0, None, 0.006),
+]
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
@@ -130,11 +181,11 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert log_has(asynclogmsg, caplog)
     # Test additional headers case
-    Exchange._headers = {'hello': 'world'}
+    Exchange._ccxt_params = {'hello': 'world'}
     ex = Exchange(conf)
 
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
-    assert ex._api.headers == {'hello': 'world'}
+    assert ex._api.hello == 'world'
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 
@@ -228,62 +279,35 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
-@pytest.mark.parametrize("amount,precision_mode,precision,contract_size,expected,trading_mode", [
-    (2.34559, 2, 4, 1, 2.3455, 'spot'),
-    (2.34559, 2, 5, 1, 2.34559, 'spot'),
-    (2.34559, 2, 3, 1, 2.345, 'spot'),
-    (2.9999, 2, 3, 1, 2.999, 'spot'),
-    (2.9909, 2, 3, 1, 2.990, 'spot'),
-    (2.9909, 2, 0, 1, 2, 'spot'),
-    (29991.5555, 2, 0, 1, 29991, 'spot'),
-    (29991.5555, 2, -1, 1, 29990, 'spot'),
-    (29991.5555, 2, -2, 1, 29900, 'spot'),
+@pytest.mark.parametrize("amount,precision_mode,precision,expected", [
+    (2.34559, 2, 4, 2.3455),
+    (2.34559, 2, 5, 2.34559),
+    (2.34559, 2, 3, 2.345),
+    (2.9999, 2, 3, 2.999),
+    (2.9909, 2, 3, 2.990),
+    (2.9909, 2, 0, 2),
+    (29991.5555, 2, 0, 29991),
+    (29991.5555, 2, -1, 29990),
+    (29991.5555, 2, -2, 29900),
     # Tests for Tick-size
-    (2.34559, 4, 0.0001, 1, 2.3455, 'spot'),
-    (2.34559, 4, 0.00001, 1, 2.34559, 'spot'),
-    (2.34559, 4, 0.001, 1, 2.345, 'spot'),
-    (2.9999, 4, 0.001, 1, 2.999, 'spot'),
-    (2.9909, 4, 0.001, 1, 2.990, 'spot'),
-    (2.9909, 4, 0.005, 0.01, 2.99, 'futures'),
-    (2.9999, 4, 0.005, 10, 2.995, 'futures'),
+    (2.34559, 4, 0.0001, 2.3455),
+    (2.34559, 4, 0.00001, 2.34559),
+    (2.34559, 4, 0.001, 2.345),
+    (2.9999, 4, 0.001, 2.999),
+    (2.9909, 4, 0.001, 2.990),
+    (2.9909, 4, 0.005, 2.99),
+    (2.9999, 4, 0.005, 2.995),
 ])
-def test_amount_to_precision(
-    default_conf,
-    mocker,
-    amount,
-    precision_mode,
-    precision,
-    contract_size,
-    expected,
-    trading_mode
-):
+def test_amount_to_precision(amount, precision_mode, precision, expected,):
     """
     Test rounds down
     """
-
-    markets = PropertyMock(return_value={
-        'ETH/BTC': {
-            'contractSize': contract_size,
-            'precision': {
-                'amount': precision
-            }
-        }
-    })
-
-    default_conf['trading_mode'] = trading_mode
-    default_conf['margin_mode'] = 'isolated'
-
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
     # digits counting mode
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
-                 PropertyMock(return_value=precision_mode))
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
 
-    pair = 'ETH/BTC'
-    assert exchange.amount_to_precision(pair, amount) == expected
+    assert amount_to_precision(amount, precision, precision_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -308,21 +332,13 @@ def test_amount_to_precision(
     (0.000000003483, 4, 1e-12, 0.000000003483),
 
 ])
-def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
-    """Test price to precision"""
-    markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
-
-    exchange = get_patched_exchange(mocker, default_conf, id="binance")
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+def test_price_to_precision(price, precision_mode, precision, expected):
     # digits counting mode
     # DECIMAL_PLACES = 2
     # SIGNIFICANT_DIGITS = 3
     # TICK_SIZE = 4
-    mocker.patch('freqtrade.exchange.Exchange.precisionMode',
-                 PropertyMock(return_value=precision_mode))
 
-    pair = 'ETH/BTC'
-    assert exchange.price_to_precision(pair, price) == expected
+    assert price_to_precision(price, precision, precision_mode) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -2336,10 +2352,11 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         order_book = exchange.fetch_l2_order_book(pair='ETH/BTC', limit=val)
         assert api_mock.fetch_l2_order_book.call_args_list[0][0][0] == 'ETH/BTC'
         # Not all exchanges support all limits for orderbook
-        if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+        if (not exchange.get_option('l2_limit_range')
+                or val in exchange.get_option('l2_limit_range')):
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == val
         else:
-            next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+            next_limit = exchange.get_next_limit_in_list(val, exchange.get_option('l2_limit_range'))
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
@@ -2360,34 +2377,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
         exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
 
 
-@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
-    ('other', 20, 19, 10, 0.0, 20),  # Full ask side
-    ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
-    ('ask', 20, 19, 10, 1.0, 10),  # Full last side
-    ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
-    ('ask', 20, 19, 10, 0.7, 13),  # Between ask and last
-    ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
-    ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
-    ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
-    ('ask', 20, 19, 10, None, 20),  # price_last_balance missing
-    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
-    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
-    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
-    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
-    ('same', 21, 20, 10, 0.0, 20),  # Full bid side
-    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
-    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
-    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
-    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
-    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
-    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 21, 20, 10, None, 20),  # price_last_balance missing
-    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
-    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
-    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
-    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
-    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
-])
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_entry_rate_data)
 def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
                         last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -2411,27 +2401,7 @@ def test_get_entry_rate(mocker, default_conf, caplog, side, ask, bid,
     assert not log_has("Using cached entry rate for ETH/BTC.", caplog)
 
 
-@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', [
-    ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
-    ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
-    ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
-    ('bid', 12.0, 11.2, 10.5, 0.0, 11.2),  # Last smaller than bid
-    ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
-    ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
-    ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
-    ('bid', 0.003, 0.002, 0.005, None, 0.002),
-    ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
-    ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
-    ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
-    ('ask', 12.2, 11.2, 10.5, 0.0, 12.2),  # Last smaller than ask
-    ('ask', 12.0, 11.0, 10.5, 1.0, 12.0),  # Last smaller than ask - uses ask
-    ('ask', 12.0, 11.2, 10.5, 0.5, 12.0),  # Last smaller than ask - uses ask
-    ('ask', 10.0, 11.0, 11.0, 0.0, 10.0),
-    ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
-    ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
-    ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
-    ('ask', 0.006, 1.0, 11.0, None, 0.006),
-])
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
 def test_get_exit_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
@@ -2481,14 +2451,14 @@ def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, is_sho
 
 
 @pytest.mark.parametrize('is_short,side,expected', [
-    (False, 'bid', 0.043936),  # Value from order_book_l2 fitxure - bids side
-    (False, 'ask', 0.043949),  # Value from order_book_l2 fitxure - asks side
-    (False, 'other', 0.043936),  # Value from order_book_l2 fitxure - bids side
-    (False, 'same', 0.043949),  # Value from order_book_l2 fitxure - asks side
-    (True, 'bid', 0.043936),  # Value from order_book_l2 fitxure - bids side
-    (True, 'ask', 0.043949),  # Value from order_book_l2 fitxure - asks side
-    (True, 'other', 0.043949),  # Value from order_book_l2 fitxure - asks side
-    (True, 'same', 0.043936),  # Value from order_book_l2 fitxure - bids side
+    (False, 'bid', 0.043936),  # Value from order_book_l2 fixture - bids side
+    (False, 'ask', 0.043949),  # Value from order_book_l2 fixture - asks side
+    (False, 'other', 0.043936),  # Value from order_book_l2 fixture - bids side
+    (False, 'same', 0.043949),  # Value from order_book_l2 fixture - asks side
+    (True, 'bid', 0.043936),  # Value from order_book_l2 fixture - bids side
+    (True, 'ask', 0.043949),  # Value from order_book_l2 fixture - asks side
+    (True, 'other', 0.043949),  # Value from order_book_l2 fixture - asks side
+    (True, 'same', 0.043936),  # Value from order_book_l2 fixture - bids side
 ])
 def test_get_exit_rate_orderbook(
         default_conf, mocker, caplog, is_short, side, expected, order_book_l2):
@@ -2521,7 +2491,8 @@ def test_get_exit_rate_orderbook_exception(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError):
         exchange.get_rate(pair, refresh=True, side="exit", is_short=False)
-    assert log_has_re(r"Exit Price at location 1 from orderbook could not be determined\..*",
+    assert log_has_re(rf"{pair} - Exit Price at location 1 from orderbook "
+                      rf"could not be determined\..*",
                       caplog)
 
 
@@ -2546,6 +2517,84 @@ def test_get_exit_rate_exception(default_conf, mocker, is_short):
 
     exchange._config['exit_pricing']['price_side'] = 'ask'
     assert exchange.get_rate(pair, refresh=True, side="exit", is_short=is_short) == 0.13
+
+
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", get_entry_rate_data)
+@pytest.mark.parametrize("side2", ['bid', 'ask'])
+@pytest.mark.parametrize("use_order_book", [True, False])
+def test_get_rates_testing_buy(mocker, default_conf, caplog, side, ask, bid,
+                               last, last_ab, expected,
+                               side2, use_order_book, order_book_l2) -> None:
+    caplog.set_level(logging.DEBUG)
+    if last_ab is None:
+        del default_conf['entry_pricing']['price_last_balance']
+    else:
+        default_conf['entry_pricing']['price_last_balance'] = last_ab
+    default_conf['entry_pricing']['price_side'] = side
+    default_conf['exit_pricing']['price_side'] = side2
+    default_conf['exit_pricing']['use_order_book'] = use_order_book
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    api_mock.fetch_ticker = MagicMock(
+        return_value={'ask': ask, 'last': last, 'bid': bid})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    api_mock.fetch_l2_order_book.reset_mock()
+    api_mock.fetch_ticker.reset_mock()
+    assert exchange.get_rates('ETH/BTC', refresh=False, is_short=False)[0] == expected
+    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+    assert api_mock.fetch_ticker.call_count == 0
+    # Running a 2nd time with Refresh on!
+    caplog.clear()
+
+    assert exchange.get_rates('ETH/BTC', refresh=True, is_short=False)[0] == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    assert api_mock.fetch_l2_order_book.call_count == int(use_order_book)
+    assert api_mock.fetch_ticker.call_count == 1
+
+
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', get_sell_rate_data)
+@pytest.mark.parametrize("side2", ['bid', 'ask'])
+@pytest.mark.parametrize("use_order_book", [True, False])
+def test_get_rates_testing_sell(default_conf, mocker, caplog, side, bid, ask,
+                                last, last_ab, expected,
+                                side2, use_order_book, order_book_l2) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    default_conf['exit_pricing']['price_side'] = side
+    if last_ab is not None:
+        default_conf['exit_pricing']['price_last_balance'] = last_ab
+
+    default_conf['entry_pricing']['price_side'] = side2
+    default_conf['entry_pricing']['use_order_book'] = use_order_book
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    api_mock.fetch_ticker = MagicMock(
+                return_value={'ask': ask, 'last': last, 'bid': bid})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    pair = "ETH/BTC"
+
+    # Test regular mode
+    rate = exchange.get_rates(pair, refresh=True, is_short=False)[1]
+    assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
+    assert isinstance(rate, float)
+    assert rate == expected
+    # Use caching
+    api_mock.fetch_l2_order_book.reset_mock()
+    api_mock.fetch_ticker.reset_mock()
+
+    rate = exchange.get_rates(pair, refresh=False, is_short=False)[1]
+    assert rate == expected
+    assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+    assert api_mock.fetch_l2_order_book.call_count == 0
+    assert api_mock.fetch_ticker.call_count == 0
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -3263,16 +3312,16 @@ def test_merge_ft_has_dict(default_conf, mocker):
 
     ex = Kraken(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'since'
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'since'
 
     # Binance defines different values
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
-    assert ex._ft_has['stoploss_on_exchange']
-    assert ex._ft_has['order_time_in_force'] == ['gtc', 'fok', 'ioc']
-    assert ex._ft_has['trades_pagination'] == 'id'
-    assert ex._ft_has['trades_pagination_arg'] == 'fromId'
+    assert ex.get_option('stoploss_on_exchange')
+    assert ex.get_option('order_time_in_force') == ['gtc', 'fok', 'ioc']
+    assert ex.get_option('trades_pagination') == 'id'
+    assert ex.get_option('trades_pagination_arg') == 'fromId'
 
     conf = copy.deepcopy(default_conf)
     conf['exchange']['_ft_has_params'] = {"DeadBeef": 20,
@@ -3727,8 +3776,8 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         since=unix_time
     )
 
-    assert(isclose(expected_fees, fees_from_datetime))
-    assert(isclose(expected_fees, fees_from_unix_time))
+    assert (isclose(expected_fees, fees_from_datetime))
+    assert (isclose(expected_fees, fees_from_unix_time))
 
     ccxt_exceptionhandlers(
         mocker,
@@ -4083,7 +4132,8 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
-        position=0.8,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
         wallet_balance=0.8,
     )
     assert liq_price == 17.47
@@ -4094,24 +4144,11 @@ def test_get_or_calculate_liquidation_price(mocker, default_conf):
         pair='NEAR/USDT:USDT',
         open_rate=18.884,
         is_short=False,
-        position=0.8,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
         wallet_balance=0.8,
     )
     assert liq_price == 17.540699999999998
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "get_or_calculate_liquidation_price",
-        "fetch_positions",
-        pair="XRP/USDT",
-        open_rate=0.0,
-        is_short=False,
-        position=0.0,
-        wallet_balance=0.0,
-    )
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
@@ -4253,7 +4290,7 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 0.01, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures')
 ])
-def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
+def est__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'
@@ -4272,7 +4309,7 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
             'contractSize': '10',
         }
     })
-    size = exchange._get_contract_size(pair)
+    size = exchange.get_contract_size(pair)
     assert expected_size == size
 
 
@@ -4508,7 +4545,8 @@ def test_liquidation_price_is_none(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
-        position=71200.81144,
+        amount=71200.81144,
+        stake_amount=open_rate * 71200.81144,
         wallet_balance=-56354.57,
         mm_ex_1=0.10,
         upnl_ex_1=0.0
@@ -4517,7 +4555,7 @@ def test_liquidation_price_is_none(
 
 @pytest.mark.parametrize(
     'exchange_name, is_short, trading_mode, margin_mode, wallet_balance, '
-    'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, '
     'mm_ratio, expected',
     [
         ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
@@ -4531,7 +4569,7 @@ def test_liquidation_price_is_none(
     ])
 def test_liquidation_price(
     mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
-    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, amount, mm_ratio, expected
 ):
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
@@ -4545,7 +4583,8 @@ def test_liquidation_price(
         wallet_balance=wallet_balance,
         mm_ex_1=mm_ex_1,
         upnl_ex_1=upnl_ex_1,
-        position=position,
+        amount=amount,
+        stake_amount=open_rate * amount,
     ), 2), expected)
 
 
@@ -4757,6 +4796,20 @@ def test_load_leverage_tiers(mocker, default_conf, leverage_tiers, exchange_name
     )
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('exchange_name', EXCHANGES)
+async def test_get_market_leverage_tiers(mocker, default_conf, exchange_name):
+    default_conf['exchange']['name'] = exchange_name
+    await async_ccxt_exception(
+        mocker,
+        default_conf,
+        MagicMock(),
+        "get_market_leverage_tiers",
+        "fetch_market_leverage_tiers",
+        symbol='BTC/USDT:USDT'
+    )
+
+
 def test_parse_leverage_tier(mocker, default_conf):
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -4777,10 +4830,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier) == {
-        "min": 0,
-        "max": 100000,
-        "mmr": 0.025,
-        "lev": 20,
+        "minNotional": 0,
+        "maxNotional": 100000,
+        "maintenanceMarginRate": 0.025,
+        "maxLeverage": 20,
         "maintAmt": 0.0,
     }
 
@@ -4806,10 +4859,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier2) == {
-        'min': 0,
-        'max': 2000,
-        'mmr': 0.01,
-        'lev': 75,
+        'minNotional': 0,
+        'maxNotional': 2000,
+        'maintenanceMarginRate': 0.01,
+        'maxLeverage': 75,
         "maintAmt": None,
     }
 
@@ -5062,6 +5115,7 @@ def test_get_liquidation_price(
         pair='ETH/USDT:USDT',
         open_rate=open_rate,
         amount=amount,
+        stake_amount=amount * open_rate / leverage,
         leverage=leverage,
         is_short=is_short,
     )
@@ -5097,7 +5151,7 @@ def test_stoploss_contract_size(mocker, default_conf, contract_size, order_amoun
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange._get_contract_size = MagicMock(return_value=contract_size)
+    exchange.get_contract_size = MagicMock(return_value=contract_size)
 
     api_mock.create_order.reset_mock()
     order = exchange.stoploss(

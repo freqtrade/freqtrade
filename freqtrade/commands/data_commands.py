@@ -5,14 +5,14 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
 from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.exchange.exchange import market_is_active
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
+from freqtrade.exchange import market_is_active, timeframe_to_minutes
+from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 
 
@@ -50,7 +50,8 @@ def start_download_data(args: Dict[str, Any]) -> None:
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
     markets = [p for p, m in exchange.markets.items() if market_is_active(m)
                or config.get('include_inactive')]
-    expanded_pairs = expand_pairlist(config['pairs'], markets)
+
+    expanded_pairs = dynamic_expand_pairlist(config, markets)
 
     # Manual validations of relevant settings
     if not config['exchange'].get('skip_pair_validation', False):
@@ -79,7 +80,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 data_format_trades=config['dataformat_trades'],
             )
         else:
-            if not exchange._ft_has.get('ohlcv_has_history', True):
+            if not exchange.get_option('ohlcv_has_history', True):
                 raise OperationalException(
                     f"Historic klines not available for {exchange.name}. "
                     "Please use `--dl-trades` instead for this exchange "
@@ -176,17 +177,31 @@ def start_list_data(args: Dict[str, Any]) -> None:
         paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]
 
     print(f"Found {len(paircombs)} pair / timeframe combinations.")
-    groupedpair = defaultdict(list)
-    for pair, timeframe, candle_type in sorted(
-        paircombs,
-        key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
-    ):
-        groupedpair[(pair, candle_type)].append(timeframe)
+    if not config.get('show_timerange'):
+        groupedpair = defaultdict(list)
+        for pair, timeframe, candle_type in sorted(
+            paircombs,
+            key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
+        ):
+            groupedpair[(pair, candle_type)].append(timeframe)
 
-    if groupedpair:
+        if groupedpair:
+            print(tabulate([
+                (pair, ', '.join(timeframes), candle_type)
+                for (pair, candle_type), timeframes in groupedpair.items()
+            ],
+                headers=("Pair", "Timeframe", "Type"),
+                tablefmt='psql', stralign='right'))
+    else:
+        paircombs1 = [(
+            pair, timeframe, candle_type,
+            *dhc.ohlcv_data_min_max(pair, timeframe, candle_type)
+        ) for pair, timeframe, candle_type in paircombs]
         print(tabulate([
-            (pair, ', '.join(timeframes), candle_type)
-            for (pair, candle_type), timeframes in groupedpair.items()
-        ],
-            headers=("Pair", "Timeframe", "Type"),
+            (pair, timeframe, candle_type,
+                start.strftime(DATETIME_PRINT_FORMAT),
+                end.strftime(DATETIME_PRINT_FORMAT))
+            for pair, timeframe, candle_type, start, end in paircombs1
+            ],
+            headers=("Pair", "Timeframe", "Type", 'From', 'To'),
             tablefmt='psql', stralign='right'))

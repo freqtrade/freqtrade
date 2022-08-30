@@ -97,6 +97,8 @@ class Configuration:
 
         self._process_analyze_options(config)
 
+        self._process_freqai_options(config)
+
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
@@ -300,6 +302,9 @@ class Configuration:
         self._args_to_config(config, argname='spaces',
                              logstring='Parameter -s/--spaces detected: {}')
 
+        self._args_to_config(config, argname='analyze_per_epoch',
+                             logstring='Parameter --analyze-per-epoch detected.')
+
         self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
@@ -424,6 +429,9 @@ class Configuration:
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
 
+        self._args_to_config(config, argname='show_timerange',
+                             logstring='Detected --show-timerange')
+
     def _process_data_options(self, config: Dict[str, Any]) -> None:
         self._args_to_config(config, argname='new_pairs_days',
                              logstring='Detected --new-pairs-days: {}')
@@ -460,6 +468,16 @@ class Configuration:
             logger.info(f"Runmode set to {self.runmode.value}.")
 
         config.update({'runmode': self.runmode})
+
+    def _process_freqai_options(self, config: Dict[str, Any]) -> None:
+
+        self._args_to_config(config, argname='freqaimodel',
+                             logstring='Using freqaimodel class name: {}')
+
+        self._args_to_config(config, argname='freqaimodel_path',
+                             logstring='Using freqaimodel path: {}')
+
+        return
 
     def _args_to_config(self, config: Dict[str, Any], argname: str,
                         logstring: str, logfun: Optional[Callable] = None,
