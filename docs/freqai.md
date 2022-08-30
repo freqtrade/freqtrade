@@ -115,6 +115,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
 | `outlier_protection_percentage` | If more than `outlier_protection_percentage` fraction of points are removed as outliers, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. <br> **Datatype:** float. Default: `30`
 | `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** bool. Default: False
+| `inlier_metric_window` | If set, FreqAI will add the `inlier_metric` to the training feature set and set the lookback to be the `inlier_metric_window`. Details of how the `inlier_metric` is computed can be found [here](#using-the-inliermetric) <br> **Datatype:** int. Default: 0
+| `inlier_metric_weibull_cutoff` | If the `inlier_metric_window` is set, this value is used to determine the tail cutoff in the weibull distribution fit. Details of how the `inlier_metric` is computed can be found [here](#using-the-inliermetric) <br> **Datatype:** float. Default: 0.95
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
@@ -635,6 +637,20 @@ example above, the user is asking for every third data point in the dataframe to
 testing; the other points are used for training. 
 
 The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used. 
+
+### Using the `inlier_metric`
+
+The `inlier_metric` is a metric aimed at quantifying how different a prediction data point is from the most recent historic data points. 
+
+User can set `inlier_metric_window` to set the look back window. FreqAI will compute the distance between the present prediction point and each of the previous data points (total of `inlier_metric_window` points). 
+
+This function goes one step further - during training, it computes the `inlier_metric` for all training data points and builds weibull distributions for each each lookback point. If one of the distances falls in the tail of the respective weibull distribution, it is considered an "outlier." If the distance to the lookback point is not in the tail, it is considered an "inlier." Inliers receive a value of 1, and outliers receive a value of 0. 
+
+FreqAI adds this `inlier_metric` score to the training features! Thus, your model is trained to recognize how this temporal inlier metric is evolving. 
+
+Users can control the weibull threshold using the `inlier_metric_weibull_cutoff`
+
+This function does not currently remove outliers from the data set.
 
 ### Controlling the model learning process
 
