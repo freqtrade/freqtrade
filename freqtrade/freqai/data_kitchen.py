@@ -529,7 +529,6 @@ class FreqaiDataKitchen:
             "outlier_protection_percentage", 30)
         outlier_pct = (dropped_pts.sum() / len(dropped_pts)) * 100
         if outlier_pct >= outlier_protection_pct:
-            self.svm_model = None
             return outlier_pct
         else:
             return 0.0
@@ -579,6 +578,7 @@ class FreqaiDataKitchen:
                         f"SVM detected {outlier_pct:.2f}% of the points as outliers. "
                         f"Keeping original dataset."
                 )
+                self.svm_model = None
                 return
 
             self.data_dictionary["train_features"] = self.data_dictionary["train_features"][
@@ -633,6 +633,8 @@ class FreqaiDataKitchen:
         from math import cos, sin
 
         if predict:
+            if not self.data['DBSCAN_eps']:
+                return
             train_ft_df = self.data_dictionary['train_features']
             pred_ft_df = self.data_dictionary['prediction_features']
             num_preds = len(pred_ft_df)
@@ -702,6 +704,7 @@ class FreqaiDataKitchen:
                         f"DBSCAN detected {outlier_pct:.2f}% of the points as outliers. "
                         f"Keeping original dataset."
                 )
+                self.data['DBSCAN_eps'] = 0
                 return
 
             self.data_dictionary['train_features'] = self.data_dictionary['train_features'][
@@ -759,18 +762,10 @@ class FreqaiDataKitchen:
             0,
         )
 
-        outlier_pct = self.get_outlier_percentage(1 - do_predict)
-        if outlier_pct:
-            logger.warning(
-                    f"DI detected {outlier_pct:.2f}% of the points as outliers. "
-                    f"Keeping original dataset."
-            )
-            return
-
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
                 f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
-                "being too far from training data"
+                "being too far from training data."
             )
 
         self.do_predict += do_predict
