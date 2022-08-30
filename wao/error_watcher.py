@@ -1,4 +1,6 @@
 import subprocess
+import threading
+
 import watchdog.events
 import watchdog.observers
 import sys
@@ -31,13 +33,23 @@ def string_to_list(string):
 
 
 def get_tail_cmd_result(file_name):
-    tail_command = "tail " + file_name
+    tail_command = "tail -n 100 " + file_name
     result = subprocess.Popen([tail_command],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE, shell=True, executable='/bin/bash')
     out, err = result.communicate()
     out_put_string = out.decode('latin-1')
     return string_to_list(out_put_string)
+
+
+def check_condition(file_name):
+    threading.Thread(target=__check_condition, args=(file_name,)).start()
+
+
+def __check_condition(file_name):
+    error_line = get_error_line(file_name)
+    if error_line is not None and not is_freqtrade_error(error_line):
+        stop_bot(error_line)
 
 
 def get_error_line(file_name):
@@ -59,12 +71,8 @@ class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
     def on_created(self, event):
         file_name = str(event.src_path)
-        error_line = get_error_line(file_name)
-        if error_line is not None and not is_freqtrade_error(error_line):
-            stop_bot(error_line)
+        check_condition(file_name)
 
     def on_modified(self, event):
         file_name = str(event.src_path)
-        error_line = get_error_line(file_name)
-        if error_line is not None and not is_freqtrade_error(error_line):
-            stop_bot(error_line)
+        check_condition(file_name)
