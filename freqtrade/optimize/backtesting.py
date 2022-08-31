@@ -212,21 +212,12 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        if self.config.get('freqai', {}).get('enabled', False):
-            startup_candles = int(self.config.get('freqai', {}).get('startup_candles', 0))
-            if not startup_candles:
-                raise OperationalException('FreqAI backtesting module requires user set '
-                                           'startup_candles in config.')
-            self.required_startup += int(self.config.get('freqai', {}).get('startup_candles', 0))
-            logger.info(f'Increasing startup_candle_count for freqai to {self.required_startup}')
-            self.config['startup_candle_count'] = self.required_startup
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.required_startup,
+            startup_candles=self.dataprovider.get_required_startup(self.timeframe),
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)

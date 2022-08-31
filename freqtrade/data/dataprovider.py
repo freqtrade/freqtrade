@@ -91,9 +91,9 @@ class DataProvider:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
             # Move informative start time respecting startup_candle_count
-            timerange.subtract_start(
-                timeframe_to_seconds(str(timeframe)) * self._config.get('startup_candle_count', 0)
-            )
+            startup_candles = self.get_required_startup(str(timeframe))
+            tf_seconds = timeframe_to_seconds(str(timeframe))
+            timerange.subtract_start(tf_seconds * startup_candles)
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
                 timeframe=timeframe or self._config['timeframe'],
@@ -104,6 +104,21 @@ class DataProvider:
 
             )
         return self.__cached_pairs_backtesting[saved_pair].copy()
+
+    def get_required_startup(self, timeframe: str) -> int:
+        freqai_config = self._config.get('freqai', {})
+        if not freqai_config.get('enabled', False):
+            return self._config.get('startup_candle_count', 0)
+        else:
+            startup_candles = self._config.get('startup_candle_count', 0)
+            indicator_periods = freqai_config['feature_parameters']['indicator_periods_candles']
+            # make sure the startupcandles is at least the set maximum indicator periods
+            self._config['startup_candle_count'] = max(startup_candles, max(indicator_periods))
+            tf_seconds = timeframe_to_seconds(timeframe)
+            train_candles = freqai_config['train_period_days'] * 86400 / tf_seconds
+            total_candles = int(self._config['startup_candle_count'] + train_candles)
+            logger.info(f'Increasing startup_candle_count for freqai to {total_candles}')
+            return total_candles
 
     def get_pair_dataframe(
         self,
