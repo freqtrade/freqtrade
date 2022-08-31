@@ -22,21 +22,17 @@ def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
     :param dp: DataProvider instance attached to the strategy
     """
 
-    if dp._exchange is not None:
-        markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
-                   or config.get('include_inactive')]
-    else:
-        # This should not occur:
+    if dp._exchange is None:
         raise OperationalException('No exchange object found.')
+    markets = [p for p, m in dp._exchange.markets.items() if market_is_active(m)
+               or config.get('include_inactive')]
 
     all_pairs = dynamic_expand_pairlist(config, markets)
 
     timerange = get_required_data_timerange(config)
 
     new_pairs_days = int((timerange.stopts - timerange.startts) / 86400)
-    if not dp._exchange:
-        # Not realistic - this is only called in live mode.
-        raise OperationalException("Dataprovider did not have an exchange attached.")
+
     refresh_backtest_ohlcv_data(
         dp._exchange,
         pairs=all_pairs,
