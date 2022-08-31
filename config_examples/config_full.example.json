@@ -180,10 +180,15 @@
         "enabled": false,
         "producers": [
           {
+            "name": "default",
             "url": "ws://some.freqtrade.bot/api/v1/message/ws",
             "ws_token": "a_secret_ws_token"
           }
-        ]
+        ],
+        "reply_timeout": 10,
+        "ping_timeout": 5,
+        "sleep_time": 5,
+        "remove_entry_exit_signals": false
     },
     "bot_name": "freqtrade",
     "db_url": "sqlite:///tradesv3.sqlite",
