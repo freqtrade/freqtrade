@@ -3,7 +3,6 @@ from freqtrade.enums.backteststate import BacktestState
 from freqtrade.enums.candletype import CandleType
 from freqtrade.enums.exitchecktuple import ExitCheckTuple
 from freqtrade.enums.exittype import ExitType
-from freqtrade.enums.externalmessages import WaitDataPolicy
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.ordertypevalue import OrderTypeValues
 from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType

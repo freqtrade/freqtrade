@@ -85,21 +85,19 @@ class FreqtradeBot(LoggingMixin):
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
 
-        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
+        self.dataprovider = DataProvider(self.config, self.exchange, self.rpc, self.pairlists)
 
         # Attach Dataprovider to strategy instance
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
-        # Attach rpc to strategy instance
-        self.strategy.rpc = self.rpc
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
 
         # Init ExternalMessageConsumer if enabled
-        self.emc = ExternalMessageConsumer(self.rpc._rpc, self.config) if \
+        self.emc = ExternalMessageConsumer(self.config, self.dataprovider) if \
             self.config.get('external_message_consumer', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_active_whitelist()
@@ -201,11 +199,11 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        if self.emc:
-            leader_pairs = self.pairlists._whitelist
-            self.strategy.analyze_external(self.active_pair_whitelist, leader_pairs)
-        else:
-            self.strategy.analyze(self.active_pair_whitelist)
+        # This just means we won't broadcast dataframes if we're listening to a producer
+        # Doesn't necessarily NEED to be this way, as maybe we'd like to broadcast
+        # even if we are using external dataframes in the future.
+        self.strategy.analyze(self.active_pair_whitelist,
+                              external_data=self.dataprovider.external_data_enabled)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace

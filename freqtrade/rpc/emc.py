@@ -12,9 +12,9 @@ from typing import Any, Dict
 
 import websockets
 
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.misc import json_to_dataframe, remove_entry_exit_signals
-from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 
 
@@ -29,11 +29,11 @@ class ExternalMessageConsumer:
 
     def __init__(
         self,
-        rpc: RPC,
         config: Dict[str, Any],
+        dataprovider: DataProvider
     ):
-        self._rpc = rpc
         self._config = config
+        self._dp = dataprovider
 
         self._running = False
         self._thread = None
@@ -99,12 +99,12 @@ class ExternalMessageConsumer:
         """
         The main task coroutine
         """
-        rpc_lock = asyncio.Lock()
+        lock = asyncio.Lock()
 
         try:
             # Create a connection to each producer
             self._sub_tasks = [
-                self._loop.create_task(self._handle_producer_connection(producer, rpc_lock))
+                self._loop.create_task(self._handle_producer_connection(producer, lock))
                 for producer in self.producers
             ]
 
@@ -115,73 +115,90 @@ class ExternalMessageConsumer:
             # Stop the loop once we are done
             self._loop.stop()
 
-    async def _handle_producer_connection(self, producer, lock):
+    async def _handle_producer_connection(self, producer: Dict[str, Any], lock: asyncio.Lock):
         """
         Main connection loop for the consumer
+
+        :param producer: Dictionary containing producer info: {'url': '', 'ws_token': ''}
+        :param lock: An asyncio Lock
         """
         try:
-            while True:
-                try:
-                    url, token = producer['url'], producer['ws_token']
-                    ws_url = f"{url}?token={token}"
-
-                    async with websockets.connect(ws_url) as ws:
-                        logger.info("Connection successful")
-                        channel = WebSocketChannel(ws)
-
-                        # Tell the producer we only want these topics
-                        # Should always be the first thing we send
-                        await channel.send(
-                            self.compose_consumer_request(RPCRequestType.SUBSCRIBE, self.topics)
-                        )
-
-                        # Now receive data, if none is within the time limit, ping
-                        while True:
-                            try:
-                                message = await asyncio.wait_for(
-                                    channel.recv(),
-                                    timeout=5
-                                )
-
-                                async with lock:
-                                    # Handle the data here
-                                    # We use a lock because it will call RPC methods
-                                    self.handle_producer_message(message)
-
-                            except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
-                                # We haven't received data yet. Check the connection and continue.
-                                try:
-                                    # ping
-                                    ping = await channel.ping()
-
-                                    await asyncio.wait_for(ping, timeout=self.ping_timeout)
-                                    logger.debug(f"Connection to {url} still alive...")
-
-                                    continue
-                                except Exception:
-                                    logger.info(
-                                        f"Ping error {url} - retrying in {self.sleep_time}s")
-                                    await asyncio.sleep(self.sleep_time)
-
-                                    break
-                            except Exception as e:
-                                logger.exception(e)
-                                continue
-                except (
-                    socket.gaierror,
-                    ConnectionRefusedError,
-                    websockets.exceptions.InvalidStatusCode
-                ) as e:
-                    logger.error(f"Connection Refused - {e} retrying in {self.sleep_time}s")
-                    await asyncio.sleep(self.sleep_time)
-
-                    continue
-
+            await self._create_connection(producer, lock)
         except asyncio.CancelledError:
             # Exit silently
             pass
 
-    def compose_consumer_request(self, type_: str, data: Any) -> Dict[str, Any]:
+    async def _create_connection(self, producer: Dict[str, Any], lock: asyncio.Lock):
+        """
+        Actually creates and handles the websocket connection, pinging on timeout
+        and handling connection errors.
+
+        :param producer: Dictionary containing producer info: {'url': '', 'ws_token': ''}
+        :param lock: An asyncio Lock
+        """
+        while self._running:
+            try:
+                url, token = producer['url'], producer['ws_token']
+                ws_url = f"{url}?token={token}"
+
+                # This will raise InvalidURI if the url is bad
+                async with websockets.connect(ws_url) as ws:
+                    logger.info("Connection successful")
+                    channel = WebSocketChannel(ws)
+
+                    # Tell the producer we only want these topics
+                    # Should always be the first thing we send
+                    await channel.send(
+                        self.compose_consumer_request(RPCRequestType.SUBSCRIBE, self.topics)
+                    )
+
+                    # Now receive data, if none is within the time limit, ping
+                    while True:
+                        try:
+                            message = await asyncio.wait_for(
+                                channel.recv(),
+                                timeout=self.reply_timeout
+                            )
+
+                            async with lock:
+                                # Handle the message
+                                self.handle_producer_message(message)
+
+                        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
+                            # We haven't received data yet. Check the connection and continue.
+                            try:
+                                # ping
+                                ping = await channel.ping()
+
+                                await asyncio.wait_for(ping, timeout=self.ping_timeout)
+                                logger.debug(f"Connection to {url} still alive...")
+
+                                continue
+                            except Exception:
+                                logger.info(
+                                    f"Ping error {url} - retrying in {self.sleep_time}s")
+                                await asyncio.sleep(self.sleep_time)
+
+                                break
+                        except Exception as e:
+                            logger.exception(e)
+                            continue
+            except (
+                socket.gaierror,
+                ConnectionRefusedError,
+                websockets.exceptions.InvalidStatusCode
+            ) as e:
+                logger.error(f"Connection Refused - {e} retrying in {self.sleep_time}s")
+                await asyncio.sleep(self.sleep_time)
+
+                continue
+
+            # Catch invalid ws_url, and break the loop
+            except websockets.exceptions.InvalidURI as e:
+                logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
+                break
+
+    def compose_consumer_request(self, type_: RPCRequestType, data: Any) -> Dict[str, Any]:
         """
         Create a request for sending to a producer
 
@@ -211,9 +228,8 @@ class ExternalMessageConsumer:
         if message_type == RPCMessageType.WHITELIST:
             pairlist = message_data
 
-            # Add the pairlist data to the ExternalPairlist plugin
-            external_pairlist = self._rpc._freqtrade.pairlists._pairlist_handlers[0]
-            external_pairlist.add_pairlist_data(pairlist)
+            # Add the pairlist data to the DataProvider
+            self._dp.set_producer_pairs(pairlist)
 
         # Handle analyzed dataframes
         elif message_type == RPCMessageType.ANALYZED_DF:
@@ -230,5 +246,4 @@ class ExternalMessageConsumer:
                     dataframe = remove_entry_exit_signals(dataframe)
 
                 # Add the dataframe to the dataprovider
-                dataprovider = self._rpc._freqtrade.dataprovider
-                dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
+                self._dp.add_external_df(pair, timeframe, dataframe, candle_type)

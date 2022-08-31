@@ -7,7 +7,6 @@ Common Interface for bot and strategy to access data.
 import logging
 from collections import deque
 from datetime import datetime, timezone
-from threading import Event
 from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
@@ -15,9 +14,11 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.enums import CandleType, RunMode, WaitDataPolicy
+from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.misc import dataframe_to_json
+from freqtrade.rpc import RPCManager
 from freqtrade.util import PeriodicCache
 
 
@@ -33,16 +34,18 @@ class DataProvider:
         self,
         config: dict,
         exchange: Optional[Exchange],
+        rpc: Optional[RPCManager] = None,
         pairlists=None
     ) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
+        self.__rpc = rpc
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
         self.__external_pairs_df: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
-        self.__external_pairs_event: Dict[PairWithTimeframe, Tuple[int, Event]] = {}
+        self.__producer_pairs: List[str] = []
         self._msg_queue: deque = deque()
 
         self.__msg_cache = PeriodicCache(
@@ -51,10 +54,7 @@ class DataProvider:
         self._num_sources = len(
             self._config.get('external_message_consumer', {}).get('producers', [])
         )
-        self._wait_data_policy = self._config.get('external_message_consumer', {}).get(
-            'wait_data_policy', WaitDataPolicy.all)
-        self._wait_data_timeout = self._config.get('external_message_consumer', {}).get(
-            'wait_data_timeout', 5)
+        self.external_data_enabled = self._num_sources > 0
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -83,6 +83,46 @@ class DataProvider:
         self.__cached_pairs[pair_key] = (
             dataframe, datetime.now(timezone.utc))
 
+    # For multiple producers we will want to merge the pairlists instead of overwriting
+    def set_producer_pairs(self, pairlist: List[str]):
+        """
+        Set the pairs received to later be used.
+        This only supports 1 Producer right now.
+
+        :param pairlist: List of pairs
+        """
+        self.__producer_pairs = pairlist.copy()
+
+    def get_producer_pairs(self) -> List[str]:
+        """
+        Get the pairs cached from the producer
+
+        :returns: List of pairs
+        """
+        return self.__producer_pairs
+
+    def emit_df(
+        self,
+        pair_key: PairWithTimeframe,
+        dataframe: DataFrame
+    ) -> None:
+        """
+        Send this dataframe as an ANALYZED_DF message to RPC
+
+        :param pair_key: PairWithTimeframe tuple
+        :param data: Tuple containing the DataFrame and the datetime it was cached
+        """
+        if self.__rpc:
+            self.__rpc.send_msg(
+                {
+                    'type': RPCMessageType.ANALYZED_DF,
+                    'data': {
+                        'key': pair_key,
+                        'value': dataframe_to_json(dataframe)
+                    }
+                }
+            )
+
     def add_external_df(
         self,
         pair: str,
@@ -101,7 +141,6 @@ class DataProvider:
 
         # For multiple leaders, if the data already exists, we'd merge
         self.__external_pairs_df[pair_key] = (dataframe, datetime.now(timezone.utc))
-        self._set_data_event(pair_key)
 
     def get_external_df(
         self,
@@ -120,58 +159,10 @@ class DataProvider:
         pair_key = (pair, timeframe, candle_type)
 
         if pair_key not in self.__external_pairs_df:
-            self._wait_on_data(pair_key)
-
-            if pair_key not in self.__external_pairs_df:
-                return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+            # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
         return self.__external_pairs_df[pair_key]
-
-    def _set_data_event(self, key: PairWithTimeframe):
-        """
-        Depending on the WaitDataPolicy, if an event exists for this PairWithTimeframe
-        then set the event to release main thread from waiting.
-
-        :param key: PairWithTimeframe
-        """
-        pair_event = self.__external_pairs_event.get(key)
-
-        if pair_event:
-            num_concat, event = pair_event
-            self.__external_pairs_event[key] = (num_concat + 1, event)
-
-            if self._wait_data_policy == WaitDataPolicy.one:
-                logger.debug("Setting Data as policy is One")
-                event.set()
-            elif self._wait_data_policy == WaitDataPolicy.all and num_concat == self._num_sources:
-                logger.debug("Setting Data as policy is all, and is complete")
-                event.set()
-
-                del self.__external_pairs_event[key]
-
-    def _wait_on_data(self, key: PairWithTimeframe):
-        """
-        Depending on the WaitDataPolicy, we will create and wait on an event until
-        set that determines the full amount of data is available
-
-        :param key: PairWithTimeframe
-        """
-        if self._wait_data_policy is not WaitDataPolicy.none:
-            pair, timeframe, candle_type = key
-
-            pair_event = Event()
-            self.__external_pairs_event[key] = (0, pair_event)
-
-            timeout = self._wait_data_timeout \
-                if self._wait_data_policy is not WaitDataPolicy.all else 0
-
-            timeout_str = f"for {timeout} seconds" if timeout > 0 else "indefinitely"
-            logger.debug(f"Waiting for external data on {pair} for {timeout_str}")
-
-            if timeout > 0:
-                pair_event.wait(timeout=timeout)
-            else:
-                pair_event.wait()
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

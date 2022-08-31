@@ -1,9 +1,15 @@
 import logging
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc_optional
+from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.rpc.api_server.deps import get_channel_manager
+from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.rpc.api_server.ws.utils import is_websocket_alive
+
+
+# from typing import Any, Dict
 
 
 logger = logging.getLogger(__name__)
@@ -12,11 +18,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# We are passed a Channel object, we can only do sync functions on that channel object
+def _process_consumer_request(request: Dict[str, Any], channel: WebSocketChannel):
+    type, data = request.get('type'), request.get('data')
+
+    # If the request is empty, do nothing
+    if not data:
+        return
+
+    # If we have a request of type SUBSCRIBE, set the topics in this channel
+    if type == RPCRequestType.SUBSCRIBE:
+        if isinstance(data, list):
+            logger.error(f"Improper request from channel: {channel} - {request}")
+            return
+
+        # If all topics passed are a valid RPCMessageType, set subscriptions on channel
+        if all([any(x.value == topic for x in RPCMessageType) for topic in data]):
+
+            logger.debug(f"{channel} subscribed to topics: {data}")
+            channel.set_subscriptions(data)
+
+
 @router.websocket("/message/ws")
 async def message_endpoint(
     ws: WebSocket,
-    channel_manager=Depends(get_channel_manager),
-    rpc=Depends(get_rpc_optional)
+    channel_manager=Depends(get_channel_manager)
 ):
     try:
         if is_websocket_alive(ws):
@@ -32,9 +58,8 @@ async def message_endpoint(
                     request = await channel.recv()
 
                     # Process the request here. Should this be a method of RPC?
-                    if rpc:
-                        logger.info(f"Request: {request}")
-                        rpc._process_consumer_request(request, channel)
+                    logger.info(f"Request: {request}")
+                    _process_consumer_request(request, channel)
 
             except WebSocketDisconnect:
                 # Handle client disconnects
