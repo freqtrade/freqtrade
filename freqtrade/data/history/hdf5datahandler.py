@@ -7,9 +7,8 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
-                                 ListPairsWithTimeframes, TradeList)
-from freqtrade.enums import CandleType, TradingMode
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 
@@ -20,29 +19,6 @@ logger = logging.getLogger(__name__)
 class HDF5DataHandler(IDataHandler):
 
     _columns = DEFAULT_DATAFRAME_COLUMNS
-
-    @classmethod
-    def ohlcv_get_available_data(
-            cls, datadir: Path, trading_mode: TradingMode) -> ListPairsWithTimeframes:
-        """
-        Returns a list of all pairs with ohlcv data available in this datadir
-        :param datadir: Directory to search for ohlcv files
-        :param trading_mode: trading-mode to be used
-        :return: List of Tuples of (pair, timeframe)
-        """
-        if trading_mode == TradingMode.FUTURES:
-            datadir = datadir.joinpath('futures')
-        _tmp = [
-            re.search(
-                cls._OHLCV_REGEX, p.name
-            ) for p in datadir.glob("*.h5")
-        ]
-        return [
-            (
-                cls.rebuild_pair_from_filename(match[1]),
-                cls.rebuild_timeframe_from_filename(match[2]),
-                CandleType.from_string(match[3])
-            ) for match in _tmp if match and len(match.groups()) > 1]
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:

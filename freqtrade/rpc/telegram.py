@@ -114,18 +114,20 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
-                                 r'/trades$', r'/performance$', r'/buys', r'/entries',
-                                 r'/sells', r'/exits', r'/mix_tags',
-                                 r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
-                                 r'/stats$', r'/count$', r'/locks$', r'/balance$',
-                                 r'/stopbuy$', r'/reload_config$', r'/show_config$',
-                                 r'/logs$', r'/whitelist$', r'/whitelist(\ssorted|\sbaseonly)+$',
-                                 r'/blacklist$', r'/bl_delete$',
-                                 r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
-                                 r'/forcesell$', r'/forceexit$',
-                                 r'/edge$', r'/health$', r'/help$', r'/version$']
+        valid_keys: List[str] = [
+            r'/start$', r'/stop$', r'/status$', r'/status table$',
+            r'/trades$', r'/performance$', r'/buys', r'/entries',
+            r'/sells', r'/exits', r'/mix_tags',
+            r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
+            r'/stats$', r'/count$', r'/locks$', r'/balance$',
+            r'/stopbuy$', r'/stopentry$', r'/reload_config$', r'/show_config$',
+            r'/logs$', r'/whitelist$', r'/whitelist(\ssorted|\sbaseonly)+$',
+            r'/blacklist$', r'/bl_delete$',
+            r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
+            r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+            r'/forcesell$', r'/forceexit$',
+            r'/edge$', r'/health$', r'/help$', r'/version$'
+        ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -182,7 +184,7 @@ class Telegram(RPCHandler):
             CommandHandler(['unlock', 'delete_locks'], self._delete_locks),
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
-            CommandHandler('stopbuy', self._stopbuy),
+            CommandHandler(['stopbuy', 'stopentry'], self._stopentry),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
             CommandHandler(['blacklist_delete', 'bl_delete'], self._blacklist_delete),
@@ -984,7 +986,7 @@ class Telegram(RPCHandler):
         self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
-    def _stopbuy(self, update: Update, context: CallbackContext) -> None:
+    def _stopentry(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /stop_buy.
         Sets max_open_trades to 0 and gracefully sells all open trades
@@ -992,7 +994,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        msg = self._rpc._rpc_stopbuy()
+        msg = self._rpc._rpc_stopentry()
         self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
@@ -1488,7 +1490,7 @@ class Telegram(RPCHandler):
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
-            "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
+            "*/stopentry:* `Stops entering, but handles open trades gracefully` \n"
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"

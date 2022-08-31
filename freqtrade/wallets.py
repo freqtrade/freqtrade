@@ -148,7 +148,7 @@ class Wallets:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position['contracts'])
-            collateral = position['collateral']
+            collateral = position['collateral'] or 0.0
             leverage = position['leverage']
             self._positions[symbol] = PositionWallet(
                 symbol, position=size,

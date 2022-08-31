@@ -421,7 +421,7 @@ class FreqaiDataDrawer:
             )
 
         # if self.live:
-        self.model_dictionary[dk.model_filename] = model
+        self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
         self.save_drawer_to_disk()
@@ -460,8 +460,8 @@ class FreqaiDataDrawer:
         )
 
         # try to access model in memory instead of loading object from disk to save time
-        if dk.live and dk.model_filename in self.model_dictionary:
-            model = self.model_dictionary[dk.model_filename]
+        if dk.live and coin in self.model_dictionary:
+            model = self.model_dictionary[coin]
         elif not dk.keras:
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
         else:
@@ -566,7 +566,6 @@ class FreqaiDataDrawer:
         for training according to user defined train_period_days
         metadata: dict = strategy furnished pair metadata
         """
-
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}

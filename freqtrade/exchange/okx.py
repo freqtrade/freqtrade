@@ -39,6 +39,8 @@ class Okx(Exchange):
 
     net_only = True
 
+    _ccxt_params: Dict = {'options': {'brokerId': 'ffb5405ad327SUDE'}}
+
     def ohlcv_candle_limit(
             self, timeframe: str, candle_type: CandleType, since_ms: Optional[int] = None) -> int:
         """
@@ -96,7 +98,7 @@ class Okx(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -144,4 +146,4 @@ class Okx(Exchange):
             return float('inf')
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]['max'] / leverage
+        return pair_tiers[-1]['maxNotional'] / leverage

@@ -13,6 +13,7 @@ from colorama import Fore, Style
 from pandas import isna, json_normalize
 
 from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
+from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
 from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
@@ -30,6 +31,15 @@ def hyperopt_serializer(x):
         return bool(x)
 
     return str(x)
+
+
+class HyperoptStateContainer():
+    """ Singleton class to track state of hyperopt"""
+    state: HyperoptState = HyperoptState.OPTIMIZE
+
+    @classmethod
+    def set_state(cls, value: HyperoptState):
+        cls.state = value
 
 
 class HyperoptTools():

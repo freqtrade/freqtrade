@@ -50,7 +50,7 @@ def test_buy_kraken_trading_agreement(default_conf, mocker):
     assert api_mock.create_order.call_args[0][2] == 'buy'
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] == 200
-    assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'ioc',
+    assert api_mock.create_order.call_args[0][5] == {'timeInForce': 'IOC',
                                                      'trading_agreement': 'agree'}
 
 

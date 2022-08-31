@@ -166,9 +166,17 @@ class FreqaiDataKitchen:
             train_labels = labels
             train_weights = weights
 
-        return self.build_data_dictionary(
-            train_features, test_features, train_labels, test_labels, train_weights, test_weights
-        )
+        # Simplest way to reverse the order of training and test data:
+        if self.freqai_config['feature_parameters'].get('reverse_train_test_order', False):
+            return self.build_data_dictionary(
+                test_features, train_features, test_labels,
+                train_labels, test_weights, train_weights
+                )
+        else:
+            return self.build_data_dictionary(
+                train_features, test_features, train_labels,
+                test_labels, train_weights, test_weights
+            )
 
     def filter_features(
         self,
@@ -452,7 +460,6 @@ class FreqaiDataKitchen:
         logger.info("reduced feature dimension by %s", n_components - n_keep_components)
         logger.info("explained variance %f", np.sum(pca2.explained_variance_ratio_))
         train_components = pca2.transform(self.data_dictionary["train_features"])
-        test_components = pca2.transform(self.data_dictionary["test_features"])
 
         self.data_dictionary["train_features"] = pd.DataFrame(
             data=train_components,
@@ -466,6 +473,7 @@ class FreqaiDataKitchen:
         self.training_features_list = self.data_dictionary["train_features"].columns
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
+            test_components = pca2.transform(self.data_dictionary["test_features"])
             self.data_dictionary["test_features"] = pd.DataFrame(
                 data=test_components,
                 columns=["PC" + str(i) for i in range(0, n_keep_components)],
@@ -504,9 +512,24 @@ class FreqaiDataKitchen:
         # logger.info("computing average mean distance for all training points")
         pairwise = pairwise_distances(
             self.data_dictionary["train_features"], n_jobs=self.thread_count)
-        avg_mean_dist = pairwise.mean(axis=1).mean()
+        # remove the diagonal distances which are itself distances ~0
+        np.fill_diagonal(pairwise, np.NaN)
+        pairwise = pairwise.reshape(-1, 1)
+        avg_mean_dist = pairwise[~np.isnan(pairwise)].mean()
 
         return avg_mean_dist
+
+    def get_outlier_percentage(self, dropped_pts: npt.NDArray) -> float:
+        """
+        Check if more than X% of points werer dropped during outlier detection.
+        """
+        outlier_protection_pct = self.freqai_config["feature_parameters"].get(
+            "outlier_protection_percentage", 30)
+        outlier_pct = (dropped_pts.sum() / len(dropped_pts)) * 100
+        if outlier_pct >= outlier_protection_pct:
+            return outlier_pct
+        else:
+            return 0.0
 
     def use_SVM_to_remove_outliers(self, predict: bool) -> None:
         """
@@ -545,8 +568,17 @@ class FreqaiDataKitchen:
                 self.data_dictionary["train_features"]
             )
             y_pred = self.svm_model.predict(self.data_dictionary["train_features"])
-            dropped_points = np.where(y_pred == -1, 0, y_pred)
+            kept_points = np.where(y_pred == -1, 0, y_pred)
             # keep_index = np.where(y_pred == 1)
+            outlier_pct = self.get_outlier_percentage(1 - kept_points)
+            if outlier_pct:
+                logger.warning(
+                        f"SVM detected {outlier_pct:.2f}% of the points as outliers. "
+                        f"Keeping original dataset."
+                )
+                self.svm_model = None
+                return
+
             self.data_dictionary["train_features"] = self.data_dictionary["train_features"][
                 (y_pred == 1)
             ]
@@ -558,7 +590,7 @@ class FreqaiDataKitchen:
             ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f"SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" train points from {len(y_pred)} total points."
             )
 
@@ -567,7 +599,7 @@ class FreqaiDataKitchen:
             # to reduce code duplication
             if self.freqai_config['data_split_parameters'].get('test_size', 0.1) != 0:
                 y_pred = self.svm_model.predict(self.data_dictionary["test_features"])
-                dropped_points = np.where(y_pred == -1, 0, y_pred)
+                kept_points = np.where(y_pred == -1, 0, y_pred)
                 self.data_dictionary["test_features"] = self.data_dictionary["test_features"][
                     (y_pred == 1)
                 ]
@@ -578,7 +610,7 @@ class FreqaiDataKitchen:
                 ]
 
             logger.info(
-                f"SVM tossed {len(y_pred) - dropped_points.sum()}"
+                f"SVM tossed {len(y_pred) - kept_points.sum()}"
                 f" test points from {len(y_pred)} total points."
             )
 
@@ -596,7 +628,11 @@ class FreqaiDataKitchen:
         is an outlier.
         """
 
+        from math import cos, sin
+
         if predict:
+            if not self.data['DBSCAN_eps']:
+                return
             train_ft_df = self.data_dictionary['train_features']
             pred_ft_df = self.data_dictionary['prediction_features']
             num_preds = len(pred_ft_df)
@@ -614,27 +650,60 @@ class FreqaiDataKitchen:
 
         else:
 
-            MinPts = len(self.data_dictionary['train_features'].columns) * 2
-            # measure pairwise distances to train_features.shape[1]*2 nearest neighbours
+            def normalise_distances(distances):
+                normalised_distances = (distances - distances.min()) / \
+                                        (distances.max() - distances.min())
+                return normalised_distances
+
+            def rotate_point(origin, point, angle):
+                # rotate a point counterclockwise by a given angle (in radians)
+                # around a given origin
+                x = origin[0] + cos(angle) * (point[0] - origin[0]) - \
+                                    sin(angle) * (point[1] - origin[1])
+                y = origin[1] + sin(angle) * (point[0] - origin[0]) + \
+                    cos(angle) * (point[1] - origin[1])
+                return (x, y)
+
+            MinPts = int(len(self.data_dictionary['train_features'].index) * 0.25)
+            # measure pairwise distances to nearest neighbours
             neighbors = NearestNeighbors(
                 n_neighbors=MinPts, n_jobs=self.thread_count)
             neighbors_fit = neighbors.fit(self.data_dictionary['train_features'])
             distances, _ = neighbors_fit.kneighbors(self.data_dictionary['train_features'])
-            distances = np.sort(distances, axis=0)
-            index_ten_pct = int(len(distances[:, 1]) * 0.1)
-            distances = distances[index_ten_pct:, 1]
-            epsilon = distances[-1]
+            distances = np.sort(distances, axis=0).mean(axis=1)
+
+            normalised_distances = normalise_distances(distances)
+            x_range = np.linspace(0, 1, len(distances))
+            line = np.linspace(normalised_distances[0],
+                               normalised_distances[-1], len(normalised_distances))
+            deflection = np.abs(normalised_distances - line)
+            max_deflection_loc = np.where(deflection == deflection.max())[0][0]
+            origin = x_range[max_deflection_loc], line[max_deflection_loc]
+            point = x_range[max_deflection_loc], normalised_distances[max_deflection_loc]
+            rot_angle = np.pi / 4
+            elbow_loc = rotate_point(origin, point, rot_angle)
+
+            epsilon = elbow_loc[1] * (distances[-1] - distances[0]) + distances[0]
 
             clustering = DBSCAN(eps=epsilon, min_samples=MinPts,
                                 n_jobs=int(self.thread_count)).fit(
                                                     self.data_dictionary['train_features']
                                                 )
 
-            logger.info(f'DBSCAN found eps of {epsilon}.')
+            logger.info(f'DBSCAN found eps of {epsilon:.2f}.')
 
             self.data['DBSCAN_eps'] = epsilon
             self.data['DBSCAN_min_samples'] = MinPts
             dropped_points = np.where(clustering.labels_ == -1, 1, 0)
+
+            outlier_pct = self.get_outlier_percentage(dropped_points)
+            if outlier_pct:
+                logger.warning(
+                        f"DBSCAN detected {outlier_pct:.2f}% of the points as outliers. "
+                        f"Keeping original dataset."
+                )
+                self.data['DBSCAN_eps'] = 0
+                return
 
             self.data_dictionary['train_features'] = self.data_dictionary['train_features'][
                 (clustering.labels_ != -1)
@@ -693,8 +762,8 @@ class FreqaiDataKitchen:
 
         if (len(do_predict) - do_predict.sum()) > 0:
             logger.info(
-                f"DI tossed {len(do_predict) - do_predict.sum():.2f} predictions for "
-                "being too far from training data"
+                f"DI tossed {len(do_predict) - do_predict.sum()} predictions for "
+                "being too far from training data."
             )
 
         self.do_predict += do_predict
@@ -865,13 +934,6 @@ class FreqaiDataKitchen:
             )
             data_load_timerange.stopts = int(time)
             retrain = True
-
-        # logger.info(
-        #     f"downloading data for "
-        #     f"{(data_load_timerange.stopts-data_load_timerange.startts)/SECONDS_IN_DAY:.2f} "
-        #     " days. "
-        #     f"Extension of {additional_seconds/SECONDS_IN_DAY:.2f} days"
-        # )
 
         return retrain, trained_timerange, data_load_timerange
 

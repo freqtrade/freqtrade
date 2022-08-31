@@ -1,5 +1,3 @@
-from math import isclose
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -165,7 +163,7 @@ def test_stoploss_from_open():
                                 or (side == 'short' and expected_stop_price < current_price)):
                             assert stoploss == 0
                         else:
-                            assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)
+                            assert pytest.approx(stop_price) == expected_stop_price
 
 
 def test_stoploss_from_absolute():

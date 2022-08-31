@@ -17,6 +17,7 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
 from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
+from dateutil import parser
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
@@ -30,7 +31,8 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGE
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        SUPPORTED_EXCHANGES, remove_credentials, retrier,
                                        retrier_async)
-from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
+from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
+                            safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import FtPrecise
 
@@ -52,15 +54,15 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
-    # Additional headers - added to the ccxt object
-    _headers: Dict = {}
+    # Additional parameters - added to the ccxt object
+    _ccxt_params: Dict = {}
 
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
-        "order_time_in_force": ["gtc"],
+        "order_time_in_force": ["GTC"],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
@@ -240,9 +242,9 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
-        if self._headers:
-            # Inject static headers after the above output to not confuse users.
-            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if self._ccxt_params:
+            # Inject static options after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts(self._ccxt_params, ccxt_kwargs)
         if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
@@ -406,7 +408,7 @@ class Exchange:
         else:
             return DataFrame()
 
-    def _get_contract_size(self, pair: str) -> float:
+    def get_contract_size(self, pair: str) -> float:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
             contract_size: float = 1.0
@@ -419,7 +421,7 @@ class Exchange:
 
     def _trades_contracts_to_amount(self, trades: List) -> List:
         if len(trades) > 0 and 'symbol' in trades[0]:
-            contract_size = self._get_contract_size(trades[0]['symbol'])
+            contract_size = self.get_contract_size(trades[0]['symbol'])
             if contract_size != 1:
                 for trade in trades:
                     trade['amount'] = trade['amount'] * contract_size
@@ -427,7 +429,7 @@ class Exchange:
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
         if 'symbol' in order and order['symbol'] is not None:
-            contract_size = self._get_contract_size(order['symbol'])
+            contract_size = self.get_contract_size(order['symbol'])
             if contract_size != 1:
                 for prop in self._ft_has.get('order_props_in_contracts', []):
                     if prop in order and order[prop] is not None:
@@ -436,19 +438,13 @@ class Exchange:
 
     def _amount_to_contracts(self, pair: str, amount: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return amount / contract_size
-        else:
-            return amount
+        contract_size = self.get_contract_size(pair)
+        return amount_to_contracts(amount, contract_size)
 
     def _contracts_to_amount(self, pair: str, num_contracts: float) -> float:
 
-        contract_size = self._get_contract_size(pair)
-        if contract_size and contract_size != 1:
-            return num_contracts * contract_size
-        else:
-            return num_contracts
+        contract_size = self.get_contract_size(pair)
+        return contracts_to_amount(num_contracts, contract_size)
 
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
@@ -615,7 +611,7 @@ class Exchange:
         """
         Checks if order time in force configured in strategy/config are supported
         """
-        if any(v not in self._ft_has["order_time_in_force"]
+        if any(v.upper() not in self._ft_has["order_time_in_force"]
                for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
@@ -671,6 +667,12 @@ class Exchange:
             raise OperationalException(
                 f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
             )
+
+    def get_option(self, param: str, default: Any = None) -> Any:
+        """
+        Get parameter value from _ft_has
+        """
+        return self._ft_has.get(param, default)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -987,12 +989,12 @@ class Exchange:
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
+        if time_in_force != 'GTC' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: time_in_force})
+            params.update({param: time_in_force.upper()})
         if reduceOnly:
             params.update({'reduceOnly': True})
         return params
@@ -1007,7 +1009,7 @@ class Exchange:
         rate: float,
         leverage: float,
         reduceOnly: bool = False,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
@@ -2207,6 +2209,7 @@ class Exchange:
 
     @retrier_async
     async def get_market_leverage_tiers(self, symbol: str) -> Tuple[str, List[Dict]]:
+        """ Leverage tiers per symbol """
         try:
             tier = await self._api_async.fetch_market_leverage_tiers(symbol)
             return symbol, tier
@@ -2238,12 +2241,21 @@ class Exchange:
 
                 tiers: Dict[str, List[Dict]] = {}
 
-                # Be verbose here, as this delays startup by ~1 minute.
-                logger.info(
-                    f"Initializing leverage_tiers for {len(symbols)} markets. "
-                    "This will take about a minute.")
+                tiers_cached = self.load_cached_leverage_tiers(self._config['stake_currency'])
+                if tiers_cached:
+                    tiers = tiers_cached
 
-                coros = [self.get_market_leverage_tiers(symbol) for symbol in sorted(symbols)]
+                coros = [
+                    self.get_market_leverage_tiers(symbol)
+                    for symbol in sorted(symbols) if symbol not in tiers]
+
+                # Be verbose here, as this delays startup by ~1 minute.
+                if coros:
+                    logger.info(
+                        f"Initializing leverage_tiers for {len(symbols)} markets. "
+                        "This will take about a minute.")
+                else:
+                    logger.info("Using cached leverage_tiers.")
 
                 async def gather_results():
                     return await asyncio.gather(*input_coro, return_exceptions=True)
@@ -2255,7 +2267,8 @@ class Exchange:
 
                     for symbol, res in results:
                         tiers[symbol] = res
-
+                if len(coros) > 0:
+                    self.cache_leverage_tiers(tiers, self._config['stake_currency'])
                 logger.info(f"Done initializing {len(symbols)} markets.")
 
                 return tiers
@@ -2263,6 +2276,30 @@ class Exchange:
                 return {}
         else:
             return {}
+
+    def cache_leverage_tiers(self, tiers: Dict[str, List[Dict]], stake_currency: str) -> None:
+
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if not filename.parent.is_dir():
+            filename.parent.mkdir(parents=True)
+        data = {
+            "updated": datetime.now(timezone.utc),
+            "data": tiers,
+        }
+        file_dump_json(filename, data)
+
+    def load_cached_leverage_tiers(self, stake_currency: str) -> Optional[Dict[str, List[Dict]]]:
+        filename = self._config['datadir'] / "futures" / f"leverage_tiers_{stake_currency}.json"
+        if filename.is_file():
+            tiers = file_load_json(filename)
+            updated = tiers.get('updated')
+            if updated:
+                updated_dt = parser.parse(updated)
+                if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
+                    logger.info("Cached leverage tiers are outdated. Will update.")
+                    return None
+            return tiers['data']
+        return None
 
     def fill_leverage_tiers(self) -> None:
         """
@@ -2279,10 +2316,10 @@ class Exchange:
     def parse_leverage_tier(self, tier) -> Dict:
         info = tier.get('info', {})
         return {
-            'min': tier['minNotional'],
-            'max': tier['maxNotional'],
-            'mmr': tier['maintenanceMarginRate'],
-            'lev': tier['maxLeverage'],
+            'minNotional': tier['minNotional'],
+            'maxNotional': tier['maxNotional'],
+            'maintenanceMarginRate': tier['maintenanceMarginRate'],
+            'maxLeverage': tier['maxLeverage'],
             'maintAmt': float(info['cum']) if 'cum' in info else None,
         }
 
@@ -2311,18 +2348,18 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             if stake_amount == 0:
-                return self._leverage_tiers[pair][0]['lev']  # Max lev for lowest amount
+                return self._leverage_tiers[pair][0]['maxLeverage']  # Max lev for lowest amount
 
             for tier_index in range(len(pair_tiers)):
 
                 tier = pair_tiers[tier_index]
-                lev = tier['lev']
+                lev = tier['maxLeverage']
 
                 if tier_index < len(pair_tiers) - 1:
                     next_tier = pair_tiers[tier_index + 1]
-                    next_floor = next_tier['min'] / next_tier['lev']
+                    next_floor = next_tier['minNotional'] / next_tier['maxLeverage']
                     if next_floor > stake_amount:  # Next tier min too high for stake amount
-                        return min((tier['max'] / stake_amount), lev)
+                        return min((tier['maxNotional'] / stake_amount), lev)
                         #
                         # With the two leverage tiers below,
                         # - a stake amount of 150 would mean a max leverage of (10000 / 150) = 66.66
@@ -2343,10 +2380,11 @@ class Exchange:
                         #
 
                 else:  # if on the last tier
-                    if stake_amount > tier['max']:  # If stake is > than max tradeable amount
+                    if stake_amount > tier['maxNotional']:
+                        # If stake is > than max tradeable amount
                         raise InvalidOrderException(f'Amount {stake_amount} too high for {pair}')
                     else:
-                        return tier['lev']
+                        return tier['maxLeverage']
 
             raise OperationalException(
                 'Looped through all tiers without finding a max leverage. Should never be reached'
@@ -2377,7 +2415,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
+            res = self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._log_exchange_response('set_leverage', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2392,36 +2431,6 @@ class Exchange:
         Should not call the exchange directly when used from backtesting.
         """
         return 0.0
-
-    def get_liquidation_price(
-            self,
-            pair: str,
-            open_rate: float,
-            amount: float,  # quote currency, includes leverage
-            leverage: float,
-            is_short: bool
-    ) -> Optional[float]:
-
-        if self.trading_mode in TradingMode.SPOT:
-            return None
-        elif (
-            self.margin_mode == MarginMode.ISOLATED and
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            wallet_balance = (amount * open_rate) / leverage
-            isolated_liq = self.get_or_calculate_liquidation_price(
-                pair=pair,
-                open_rate=open_rate,
-                is_short=is_short,
-                position=amount,
-                wallet_balance=wallet_balance,
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-            )
-            return isolated_liq
-        else:
-            raise OperationalException(
-                "Freqtrade only supports isolated futures for leverage trading")
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
@@ -2441,7 +2450,8 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(margin_mode.value, pair, params)
+            res = self._api.set_margin_mode(margin_mode.value, pair, params)
+            self._log_exchange_response('set_margin_mode', res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
@@ -2582,34 +2592,36 @@ class Exchange:
         else:
             return 0.0
 
-    def get_or_calculate_liquidation_price(
+    def get_liquidation_price(
         self,
         pair: str,
         # Dry-run
         open_rate: float,   # Entry price of position
         is_short: bool,
-        position: float,  # Absolute value of position size
-        wallet_balance: float,  # Or margin balance
+        amount: float,  # Absolute value of position size
+        stake_amount: float,
+        wallet_balance: float = 0.0,
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
-        :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
         if self.trading_mode == TradingMode.SPOT:
             return None
-        elif (self.trading_mode != TradingMode.FUTURES and self.margin_mode != MarginMode.ISOLATED):
+        elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
-                f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
+                f"{self.name} does not support {self.margin_mode} {self.trading_mode}")
 
+        isolated_liq = None
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
             isolated_liq = self.dry_run_liquidation_price(
                 pair=pair,
                 open_rate=open_rate,
                 is_short=is_short,
-                position=position,
+                amount=amount,
+                stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
                 mm_ex_1=mm_ex_1,
                 upnl_ex_1=upnl_ex_1
@@ -2619,8 +2631,6 @@ class Exchange:
             if len(positions) > 0:
                 pos = positions[0]
                 isolated_liq = pos['liquidationPrice']
-            else:
-                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
@@ -2638,22 +2648,24 @@ class Exchange:
         pair: str,
         open_rate: float,   # Entry price of position
         is_short: bool,
-        position: float,  # Absolute value of position size
+        amount: float,
+        stake_amount: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
+        Important: Must be fetching data from cached values as this is used by backtesting!
         PERPETUAL:
          gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
          okex: https://www.okex.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
-        Important: Must be fetching data from cached values as this is used by backtesting!
 
         :param exchange_name:
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param position: Absolute value of position size incl. leverage (in base currency)
+        :param amount: Absolute value of position size incl. leverage (in base currency)
+        :param stake_amount: Stake amount - Collateral in settle currency.
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param margin_mode: Either ISOLATED or CROSS
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
@@ -2667,7 +2679,7 @@ class Exchange:
 
         market = self.markets[pair]
         taker_fee_rate = market['taker']
-        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, position)
+        mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
 
@@ -2675,7 +2687,7 @@ class Exchange:
                 raise OperationalException(
                     "Freqtrade does not yet support inverse contracts")
 
-            value = wallet_balance / position
+            value = wallet_balance / amount
 
             mm_ratio_taker = (mm_ratio + taker_fee_rate)
             if is_short:
@@ -2711,8 +2723,8 @@ class Exchange:
             pair_tiers = self._leverage_tiers[pair]
 
             for tier in reversed(pair_tiers):
-                if nominal_value >= tier['min']:
-                    return (tier['mmr'], tier['maintAmt'])
+                if nominal_value >= tier['minNotional']:
+                    return (tier['maintenanceMarginRate'], tier['maintAmt'])
 
             raise OperationalException("nominal value can not be lower than 0")
             # The lowest notional_floor for any pair in fetch_leverage_tiers is always 0 because it
@@ -2854,6 +2866,33 @@ def market_is_active(market: Dict) -> bool:
     return market.get('active', True) is not False
 
 
+def amount_to_contracts(amount: float, contract_size: Optional[float]) -> float:
+    """
+    Convert amount to contracts.
+    :param amount: amount to convert
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: num-contracts
+    """
+    if contract_size and contract_size != 1:
+        return amount / contract_size
+    else:
+        return amount
+
+
+def contracts_to_amount(num_contracts: float, contract_size: Optional[float]) -> float:
+    """
+    Takes num-contracts and converts it to contract size
+    :param num_contracts: number of contracts
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: Amount
+    """
+
+    if contract_size and contract_size != 1:
+        return num_contracts * contract_size
+    else:
+        return num_contracts
+
+
 def amount_to_precision(amount: float, amount_precision: Optional[float],
                         precisionMode: Optional[int]) -> float:
     """
@@ -2875,6 +2914,29 @@ def amount_to_precision(amount: float, amount_precision: Optional[float],
                                             counting_mode=precisionMode,
                                             ))
 
+    return amount
+
+
+def amount_to_contract_precision(
+        amount, amount_precision: Optional[float], precisionMode: Optional[int],
+        contract_size: Optional[float]) -> float:
+    """
+    Returns the amount to buy or sell to a precision the Exchange accepts
+    including calculation to and from contracts.
+    Re-implementation of ccxt internal methods - ensuring we can test the result is correct
+    based on our definitions.
+    :param amount: amount to truncate
+    :param amount_precision: amount precision to use.
+                             should be retrieved from markets[pair]['precision']['amount']
+    :param precisionMode: precision mode to use. Should be used from precisionMode
+                          one of ccxt's DECIMAL_PLACES, SIGNIFICANT_DIGITS, or TICK_SIZE
+    :param contract_size: contract size - taken from exchange.get_contract_size(pair)
+    :return: truncated amount
+    """
+    if amount_precision is not None and precisionMode is not None:
+        contracts = amount_to_contracts(amount, contract_size)
+        amount_p = amount_to_precision(contracts, amount_precision, precisionMode)
+        return contracts_to_amount(amount_p, contract_size)
     return amount
 
 

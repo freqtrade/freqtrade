@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
-from math import isclose
 from pathlib import Path
 from types import FunctionType
 from unittest.mock import MagicMock
@@ -630,9 +629,9 @@ def test_calc_open_close_trade_price(
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
-    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
-    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
+    assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
+    assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
+    assert pytest.approx(trade.calc_profit(trade.close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
@@ -1387,6 +1386,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert log_has("trying trades_bak2", caplog)
     assert log_has("Running database migration for trades - backup: trades_bak2, orders_bak0",
                    caplog)
+    assert log_has("Database migration finished.", caplog)
     assert pytest.approx(trade.open_trade_value) == trade._calc_open_trade_value(
         trade.amount, trade.open_rate)
     assert trade.close_profit_abs is None
@@ -1688,6 +1688,7 @@ def test_get_open(fee, is_short, use_db):
 
     create_mock_trades(fee, is_short, use_db)
     assert len(Trade.get_open_trades()) == 4
+    assert Trade.get_open_trade_count() == 4
 
     Trade.use_db = True
 
@@ -1700,6 +1701,7 @@ def test_get_open_lev(fee, use_db):
 
     create_mock_trades_with_leverage(fee, use_db)
     assert len(Trade.get_open_trades()) == 5
+    assert Trade.get_open_trade_count() == 5
 
     Trade.use_db = True
 
@@ -1885,6 +1887,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
     Trade.query.session.add(trade)
+    Trade.commit()
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.06)
@@ -1946,6 +1949,7 @@ def test_stoploss_reinitialization_leverage(default_conf, fee):
     assert trade.initial_stop_loss == 0.98
     assert trade.initial_stop_loss_pct == -0.1
     Trade.query.session.add(trade)
+    Trade.commit()
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.15)
@@ -2007,6 +2011,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade.initial_stop_loss == 1.02
     assert trade.initial_stop_loss_pct == -0.1
     Trade.query.session.add(trade)
+    Trade.commit()
     # Lower stoploss
     Trade.stoploss_reinitialization(-0.15)
     trades = Trade.get_open_trades()
@@ -2888,8 +2893,8 @@ def test_order_to_ccxt(limit_buy_order_open):
             (('buy', 100, 9), (200.0, 8.5, 1700.0, 0.0, None, None)),
             (('sell', 100, 10), (100.0, 8.5, 850.0, 150.0, 150.0, 0.17647059)),
             (('buy', 150, 11), (250.0, 10, 2500.0, 150.0, 150.0, 0.17647059)),
-            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 350.0, 0.2)),
-            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 950.0, 0.40)),
+            (('sell', 100, 12), (150.0, 10.0, 1500.0, 350.0, 200.0, 0.2)),
+            (('sell', 150, 14), (150.0, 10.0, 1500.0, 950.0, 600.0, 0.40)),
         ],
         'end_profit': 950.0,
         'end_profit_ratio': 0.283582,
@@ -2954,9 +2959,8 @@ def test_recalc_trade_from_orders_dca(data) -> None:
         assert trade.amount == result[0]
         assert trade.open_rate == result[1]
         assert trade.stake_amount == result[2]
-        # TODO: enable the below.
         assert pytest.approx(trade.realized_profit) == result[3]
-        # assert pytest.approx(trade.close_profit_abs) == result[4]
+        assert pytest.approx(trade.close_profit_abs) == result[4]
         assert pytest.approx(trade.close_profit) == result[5]
 
     trade.close(price)
