@@ -116,8 +116,6 @@ class ChannelManager:
         with self._lock:
             channel = self.channels.get(websocket)
             if channel:
-                logger.debug(f"Disconnecting channel - {channel}")
-
                 if not channel.is_closed():
                     await channel.close()
 
@@ -142,7 +140,6 @@ class ChannelManager:
         """
         with self._lock:
             message_type = data.get('type')
-            logger.debug(f"Broadcasting data: {message_type} - {data}")
             for websocket, channel in self.channels.items():
                 try:
                     if channel.subscribed_to(message_type):

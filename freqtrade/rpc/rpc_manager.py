@@ -78,7 +78,9 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        logger.info('Sending rpc message: %s', msg)
+        # Removed actually showing the message because the logs would be
+        # completely spammed of the json dataframe
+        logger.info('Sending rpc message of type: %s', msg.get('type'))
         if 'pair' in msg:
             msg.update({
                 'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])

@@ -172,7 +172,18 @@
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
         "username": "freqtrader",
-        "password": "SuperSecurePassword"
+        "password": "SuperSecurePassword",
+        "ws_token": "a_secret_ws_token",
+        "enable_message_ws": false
+    },
+    "external_message_consumer": {
+        "enabled": false,
+        "producers": [
+          {
+            "url": "ws://some.freqtrade.bot/api/v1/message/ws",
+            "ws_token": "a_secret_ws_token"
+          }
+        ]
     },
     "bot_name": "freqtrade",
     "db_url": "sqlite:///tradesv3.sqlite",

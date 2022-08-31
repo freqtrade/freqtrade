@@ -61,7 +61,6 @@ USERPATH_FREQAIMODELS = 'freqaimodels'
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 
-FOLLOWER_MODE_OPTIONS = ['follower', 'leader']
 WAIT_DATA_POLICY_OPTIONS = ['none', 'first', 'all']
 
 ENV_VAR_PREFIX = 'FREQTRADE__'
@@ -246,7 +245,7 @@ CONF_SCHEMA = {
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
         'freqai': {'$ref': '#/definitions/freqai'},
-        'external_signal': {'$ref': '#/definitions/external_signal'},
+        'external_message_consumer': {'$ref': '#/definitions/external_message_consumer'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -404,7 +403,8 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
-                'api_token': {'type': 'string'},
+                'ws_token': {'type': 'string'},
+                'enable_message_ws': {'type': 'boolean', 'default': False},
                 'jwt_secret_key': {'type': 'string'},
                 'CORS_origins': {'type': 'array', 'items': {'type': 'string'}},
                 'verbosity': {'type': 'string', 'enum': ['error', 'info']},
@@ -489,35 +489,31 @@ CONF_SCHEMA = {
             },
             'required': ['process_throttle_secs', 'allowed_risk']
         },
-        'external_signal': {
+        'external_message_consumer': {
             'type': 'object',
             'properties': {
                 'enabled': {'type': 'boolean', 'default': False},
-                'mode': {
-                    'type': 'string',
-                    'enum': FOLLOWER_MODE_OPTIONS
-                },
-                'api_token': {'type': 'string', 'default': ''},
-                'leaders': {
+                'producers': {
                     'type': 'array',
                     'items': {
                         'type': 'object',
                         'properties': {
                             'url': {'type': 'string', 'default': ''},
-                            'api_token': {'type': 'string', 'default': ''},
+                            'ws_token': {'type': 'string', 'default': ''},
                         }
                     }
                 },
-                'follower_reply_timeout': {'type': 'integer'},
-                'follower_sleep_time': {'type': 'integer'},
-                'follower_ping_timeout': {'type': 'integer'},
+                'reply_timeout': {'type': 'integer'},
+                'sleep_time': {'type': 'integer'},
+                'ping_timeout': {'type': 'integer'},
                 'wait_data_policy': {
                     'type': 'string',
                     'enum': WAIT_DATA_POLICY_OPTIONS
                 },
+                'wait_data_timeout': {'type': 'integer', 'default': 5},
                 'remove_signals_analyzed_df': {'type': 'boolean', 'default': False}
             },
-            'required': ['mode']
+            'required': ['producers']
         },
         "freqai": {
             "type": "object",

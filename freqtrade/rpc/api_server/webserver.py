@@ -112,9 +112,6 @@ class ApiServer(RPCHandler):
                 # Cancel the queue task
                 self._background_task.cancel()
 
-            # Finally stop the loop
-            self._loop.call_soon_threadsafe(self._loop.stop)
-
             self._thread.join()
 
     @classmethod
@@ -127,7 +124,6 @@ class ApiServer(RPCHandler):
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         if self._queue:
-            logger.info(f"Adding message to queue: {msg}")
             sync_q = self._queue.sync_q
             sync_q.put(msg)
 
@@ -155,9 +151,11 @@ class ApiServer(RPCHandler):
         app.include_router(api_backtest, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
-        app.include_router(ws_router, prefix="/api/v1",
-                           dependencies=[Depends(get_ws_token)]
-                           )
+        if self._config.get('api_server', {}).get('enable_message_ws', False):
+            logger.info("Enabling Message WebSocket")
+            app.include_router(ws_router, prefix="/api/v1",
+                               dependencies=[Depends(get_ws_token)]
+                               )
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
         # UI Router MUST be last!
         app.include_router(router_ui, prefix='')
@@ -194,17 +192,19 @@ class ApiServer(RPCHandler):
 
         try:
             while True:
-                logger.debug("Getting queue data...")
+                logger.debug("Getting queue messages...")
                 # Get data from queue
-                data = await async_queue.get()
-                logger.debug(f"Found data: {data}")
+                message = await async_queue.get()
+                logger.debug(f"Found message of type: {message.get('type')}")
                 # Broadcast it
-                await self._channel_manager.broadcast(data)
+                await self._channel_manager.broadcast(message)
                 # Sleep, make this configurable?
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
-            # Silently stop
-            pass
+            # Disconnect channels and stop the loop on cancel
+            await self._channel_manager.disconnect_all()
+            self._loop.stop()
+
         # For testing, shouldn't happen when stable
         except Exception as e:
             logger.info(f"Exception happened in background task: {e}")
@@ -246,7 +246,8 @@ class ApiServer(RPCHandler):
             if self._standalone:
                 self._server.run()
             else:
-                self.start_message_queue()
+                if self._config.get('api_server', {}).get('enable_message_ws', False):
+                    self.start_message_queue()
                 self._server.run_in_thread()
         except Exception:
             logger.exception("Api server failed to start.")

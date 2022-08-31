@@ -30,6 +30,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
+from freqtrade.rpc.emc import ExternalMessageConsumer
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -90,10 +91,16 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
+        # Attach rpc to strategy instance
+        self.strategy.rpc = self.rpc
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
+
+        # Init ExternalMessageConsumer if enabled
+        self.emc = ExternalMessageConsumer(self.rpc._rpc, self.config) if \
+            self.config.get('external_message_consumer', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_active_whitelist()
 
@@ -150,6 +157,8 @@ class FreqtradeBot(LoggingMixin):
         self.check_for_open_trades()
 
         self.rpc.cleanup()
+        if self.emc:
+            self.emc.shutdown()
         Trade.commit()
         self.exchange.close()
 
@@ -192,7 +201,11 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        self.strategy.analyze(self.active_pair_whitelist)
+        if self.emc:
+            leader_pairs = self.pairlists._whitelist
+            self.strategy.analyze_external(self.active_pair_whitelist, leader_pairs)
+        else:
+            self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace
@@ -255,7 +268,7 @@ class FreqtradeBot(LoggingMixin):
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
 
-        self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'msg': _whitelist})
+        self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'data': _whitelist})
 
         # Calculating Edge positioning
         if self.edge:

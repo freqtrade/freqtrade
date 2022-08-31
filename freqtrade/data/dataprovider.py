@@ -48,11 +48,13 @@ class DataProvider:
         self.__msg_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config.get('timeframe', '1h')))
 
-        self._num_sources = len(self._config.get('external_signal', {}).get('leader_list', []))
-        self._wait_data_policy = self._config.get('external_signal', {}).get(
+        self._num_sources = len(
+            self._config.get('external_message_consumer', {}).get('producers', [])
+        )
+        self._wait_data_policy = self._config.get('external_message_consumer', {}).get(
             'wait_data_policy', WaitDataPolicy.all)
-        self._wait_data_timeout = self._config.get(
-            'external_signal', {}).get('wait_data_timeout', 5)
+        self._wait_data_timeout = self._config.get('external_message_consumer', {}).get(
+            'wait_data_timeout', 5)
 
     def _set_dataframe_max_index(self, limit_index: int):
         """

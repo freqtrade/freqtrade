@@ -26,7 +26,7 @@ async def message_endpoint(
             # Return a channel ID, pass that instead of ws to the rest of the methods
             channel = await channel_manager.on_connect(ws)
 
-            # Keep connection open until explicitly closed, and sleep
+            # Keep connection open until explicitly closed, and process requests
             try:
                 while not channel.is_closed():
                     request = await channel.recv()

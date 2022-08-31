@@ -5,19 +5,21 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, SignalTagType,
-                             SignalType, TradingMode)
+from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RPCMessageType, SignalDirection,
+                             SignalTagType, SignalType, TradingMode)
 from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
+from freqtrade.misc import dataframe_to_json, remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.rpc import RPCManager
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
                                                       _create_and_merge_informative_pair,
@@ -111,6 +113,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # and wallets - access to the current balance.
     dp: DataProvider
     wallets: Optional[Wallets] = None
+    rpc: RPCManager
     # Filled from configuration
     stake_currency: str
     # container variable for strategy source code
@@ -702,8 +705,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self,
         dataframe: DataFrame,
         metadata: dict,
-        external_data: bool = False,
-        finish_callback: Optional[Callable] = None,
+        external_data: bool = False
     ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
@@ -729,17 +731,20 @@ class IStrategy(ABC, HyperStrategyMixin):
             candle_type = self.config.get('candle_type_def', CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
 
-            if finish_callback:
-                finish_callback(pair, dataframe, self.timeframe, candle_type)
+            if not external_data:
+                self.rpc.send_msg(
+                    {
+                        'type': RPCMessageType.ANALYZED_DF,
+                        'data': {
+                            'key': (pair, self.timeframe, candle_type),
+                            'value': dataframe_to_json(dataframe)
+                        }
+                    }
+                )
 
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
-            dataframe[SignalType.ENTER_LONG.value] = 0
-            dataframe[SignalType.EXIT_LONG.value] = 0
-            dataframe[SignalType.ENTER_SHORT.value] = 0
-            dataframe[SignalType.EXIT_SHORT.value] = 0
-            dataframe[SignalTagType.ENTER_TAG.value] = None
-            dataframe[SignalTagType.EXIT_TAG.value] = None
+            dataframe = remove_entry_exit_signals(dataframe)
 
         logger.debug("Loop Analysis Launched")
 
@@ -748,8 +753,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze_pair(
         self,
         pair: str,
-        external_data: bool = False,
-        finish_callback: Optional[Callable] = None,
+        external_data: bool = False
     ) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
@@ -773,7 +777,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             dataframe = strategy_safe_wrapper(
                 self._analyze_ticker_internal, message=""
-            )(dataframe, {'pair': pair}, external_data, finish_callback)
+            )(dataframe, {'pair': pair}, external_data)
 
             self.assert_df(dataframe, df_len, df_close, df_date)
         except StrategyError as error:
@@ -786,15 +790,14 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def analyze(
         self,
-        pairs: List[str],
-        finish_callback: Optional[Callable] = None
+        pairs: List[str]
     ) -> None:
         """
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
         for pair in pairs:
-            self.analyze_pair(pair, finish_callback=finish_callback)
+            self.analyze_pair(pair)
 
     def analyze_external(self, pairs: List[str], leader_pairs: List[str]) -> None:
         """
@@ -808,10 +811,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         # them normally.
         # List order is not preserved when doing this!
         # We use ^ instead of - for symmetric difference
-        # What do we do with these?
         extra_pairs = list(set(pairs) ^ set(leader_pairs))
         # These would be the pairs that we have trades in, which means
         # we would have to analyze them normally
+        # Eventually maybe request data from the Leader if we don't have it?
 
         for pair in leader_pairs:
             # Analyze the pairs, but get the dataframe from the external data
