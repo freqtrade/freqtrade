@@ -34,8 +34,8 @@ class DataProvider:
         self,
         config: dict,
         exchange: Optional[Exchange],
-        rpc: Optional[RPCManager] = None,
-        pairlists=None
+        pairlists=None,
+        rpc: Optional[RPCManager] = None
     ) -> None:
         self._config = config
         self._exchange = exchange
@@ -44,8 +44,9 @@ class DataProvider:
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
-        self.__external_pairs_df: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
-        self.__producer_pairs: List[str] = []
+        self.__producer_pairs_df: Dict[str,
+                                       Dict[PairWithTimeframe, Tuple[DataFrame, datetime]]] = {}
+        self.__producer_pairs: Dict[str, List[str]] = {}
         self._msg_queue: deque = deque()
 
         self.__msg_cache = PeriodicCache(
@@ -84,22 +85,22 @@ class DataProvider:
             dataframe, datetime.now(timezone.utc))
 
     # For multiple producers we will want to merge the pairlists instead of overwriting
-    def set_producer_pairs(self, pairlist: List[str]):
+    def set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
         """
         Set the pairs received to later be used.
         This only supports 1 Producer right now.
 
         :param pairlist: List of pairs
         """
-        self.__producer_pairs = pairlist.copy()
+        self.__producer_pairs[producer_name] = pairlist.copy()
 
-    def get_producer_pairs(self) -> List[str]:
+    def get_producer_pairs(self, producer_name: str = "default") -> List[str]:
         """
         Get the pairs cached from the producer
 
         :returns: List of pairs
         """
-        return self.__producer_pairs
+        return self.__producer_pairs.get(producer_name, [])
 
     def emit_df(
         self,
@@ -129,6 +130,7 @@ class DataProvider:
         timeframe: str,
         dataframe: DataFrame,
         candle_type: CandleType,
+        producer_name: str = "default"
     ) -> None:
         """
         Add the pair data to this class from an external source.
@@ -139,15 +141,19 @@ class DataProvider:
         """
         pair_key = (pair, timeframe, candle_type)
 
+        if producer_name not in self.__producer_pairs_df:
+            self.__producer_pairs_df[producer_name] = {}
+
         # For multiple leaders, if the data already exists, we'd merge
-        self.__external_pairs_df[pair_key] = (dataframe, datetime.now(timezone.utc))
+        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, datetime.now(timezone.utc))
 
     def get_external_df(
         self,
         pair: str,
         timeframe: str,
-        candle_type: CandleType
-    ) -> DataFrame:
+        candle_type: CandleType,
+        producer_name: str = "default"
+    ) -> Tuple[DataFrame, datetime]:
         """
         Get the pair data from the external sources. Will wait if the policy is
         set to, and data is not available.
@@ -158,11 +164,15 @@ class DataProvider:
         """
         pair_key = (pair, timeframe, candle_type)
 
-        if pair_key not in self.__external_pairs_df:
+        if producer_name not in self.__producer_pairs_df:
             # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
-        return self.__external_pairs_df[pair_key]
+        if pair_key not in self.__producer_pairs_df:
+            # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+
+        return self.__producer_pairs_df[producer_name][pair_key]
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

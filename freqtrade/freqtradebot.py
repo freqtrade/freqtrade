@@ -30,7 +30,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
-from freqtrade.rpc.emc import ExternalMessageConsumer
+from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -85,7 +85,7 @@ class FreqtradeBot(LoggingMixin):
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
 
-        self.dataprovider = DataProvider(self.config, self.exchange, self.rpc, self.pairlists)
+        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists, self.rpc)
 
         # Attach Dataprovider to strategy instance
         self.strategy.dp = self.dataprovider
@@ -202,8 +202,9 @@ class FreqtradeBot(LoggingMixin):
         # This just means we won't broadcast dataframes if we're listening to a producer
         # Doesn't necessarily NEED to be this way, as maybe we'd like to broadcast
         # even if we are using external dataframes in the future.
+
         self.strategy.analyze(self.active_pair_whitelist,
-                              external_data=self.dataprovider.external_data_enabled)
+                              emit_df=self.dataprovider.external_data_enabled)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace

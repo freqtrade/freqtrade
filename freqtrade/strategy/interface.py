@@ -682,8 +682,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze_ticker(
         self,
         dataframe: DataFrame,
-        metadata: dict,
-        populate_indicators: bool = True
+        metadata: dict
     ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
@@ -693,8 +692,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         logger.debug("TA Analysis Launched")
-        if populate_indicators:
-            dataframe = self.advise_indicators(dataframe, metadata)
+        dataframe = self.advise_indicators(dataframe, metadata)
         dataframe = self.advise_entry(dataframe, metadata)
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
@@ -703,7 +701,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self,
         dataframe: DataFrame,
         metadata: dict,
-        external_data: bool = False
+        emit_df: bool = False
     ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
@@ -720,16 +718,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (not self.process_only_new_candles or
                 self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
 
-            populate_indicators = not external_data
             # Defs that only make change on new candle data.
-            dataframe = self.analyze_ticker(dataframe, metadata, populate_indicators)
+            dataframe = self.analyze_ticker(dataframe, metadata)
 
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
 
             candle_type = self.config.get('candle_type_def', CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
 
-            if populate_indicators:
+            if emit_df:
                 self.dp.emit_df((pair, self.timeframe, candle_type), dataframe)
 
         else:
@@ -743,7 +740,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze_pair(
         self,
         pair: str,
-        external_data: bool = False
+        emit_df: bool = False
     ) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
@@ -764,7 +761,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             dataframe = strategy_safe_wrapper(
                 self._analyze_ticker_internal, message=""
-            )(dataframe, {'pair': pair}, external_data)
+            )(dataframe, {'pair': pair}, emit_df)
 
             self.assert_df(dataframe, df_len, df_close, df_date)
         except StrategyError as error:
@@ -778,14 +775,14 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze(
         self,
         pairs: List[str],
-        external_data: bool = False
+        emit_df: bool = False
     ) -> None:
         """
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
         for pair in pairs:
-            self.analyze_pair(pair, external_data)
+            self.analyze_pair(pair, emit_df)
 
     @ staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:

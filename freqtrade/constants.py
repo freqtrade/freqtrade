@@ -498,6 +498,7 @@ CONF_SCHEMA = {
                     'items': {
                         'type': 'object',
                         'properties': {
+                            'name': {'type': 'string'},
                             'url': {'type': 'string', 'default': ''},
                             'ws_token': {'type': 'string', 'default': ''},
                         }

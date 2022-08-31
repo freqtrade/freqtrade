@@ -2138,10 +2138,9 @@ def test_send_msg_strategy_msg_notification(default_conf, mocker) -> None:
 
 def test_send_msg_unknown_type(default_conf, mocker) -> None:
     telegram, _, _ = get_telegram_testobject(mocker, default_conf)
-    with pytest.raises(NotImplementedError, match=r'Unknown message type: None'):
-        telegram.send_msg({
-            'type': None,
-        })
+    telegram.send_msg({
+        'type': None,
+    })
 
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [

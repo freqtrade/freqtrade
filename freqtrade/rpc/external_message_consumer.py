@@ -162,7 +162,7 @@ class ExternalMessageConsumer:
 
                             async with lock:
                                 # Handle the message
-                                self.handle_producer_message(message)
+                                self.handle_producer_message(producer, message)
 
                         except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                             # We haven't received data yet. Check the connection and continue.
@@ -210,10 +210,11 @@ class ExternalMessageConsumer:
 
     # How we do things here isn't set in stone. There seems to be some interest
     # in figuring out a better way, but we shall do this for now.
-    def handle_producer_message(self, message: Dict[str, Any]):
+    def handle_producer_message(self, producer: Dict[str, Any], message: Dict[str, Any]):
         """
         Handles external messages from a Producer
         """
+        producer_name = producer.get('name', 'default')
         # Should we have a default message type?
         message_type = message.get('type', RPCMessageType.STATUS)
         message_data = message.get('data')
@@ -229,7 +230,7 @@ class ExternalMessageConsumer:
             pairlist = message_data
 
             # Add the pairlist data to the DataProvider
-            self._dp.set_producer_pairs(pairlist)
+            self._dp.set_producer_pairs(pairlist, producer_name=producer_name)
 
         # Handle analyzed dataframes
         elif message_type == RPCMessageType.ANALYZED_DF:
@@ -246,4 +247,5 @@ class ExternalMessageConsumer:
                     dataframe = remove_entry_exit_signals(dataframe)
 
                 # Add the dataframe to the dataprovider
-                self._dp.add_external_df(pair, timeframe, dataframe, candle_type)
+                self._dp.add_external_df(pair, timeframe, dataframe,
+                                         candle_type, producer_name=producer_name)
