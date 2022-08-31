@@ -17,8 +17,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.dataprovider import DataProvider
-from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -912,9 +910,7 @@ class FreqaiDataKitchen:
         # We notice that users like to use exotic indicators where
         # they do not know the required timeperiod. Here we include a factor
         # of safety by multiplying the user considered "max" by 2.
-        max_period = self.freqai_config["feature_parameters"].get(
-            "indicator_max_period_candles", 20
-        ) * 2
+        max_period = self.config.get('startup_candle_count', 20) * 2
         additional_seconds = max_period * max_tf_seconds
 
         if trained_timestamp != 0:
@@ -959,31 +955,6 @@ class FreqaiDataKitchen:
         )
 
         self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
-
-    def download_all_data_for_training(self, timerange: TimeRange, dp: DataProvider) -> None:
-        """
-        Called only once upon start of bot to download the necessary data for
-        populating indicators and training the model.
-        :param timerange: TimeRange = The full data timerange for populating the indicators
-                                      and training the model.
-        :param dp: DataProvider instance attached to the strategy
-        """
-        new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
-        if not dp._exchange:
-            # Not realistic - this is only called in live mode.
-            raise OperationalException("Dataprovider did not have an exchange attached.")
-        refresh_backtest_ohlcv_data(
-            dp._exchange,
-            pairs=self.all_pairs,
-            timeframes=self.freqai_config["feature_parameters"].get("include_timeframes"),
-            datadir=self.config["datadir"],
-            timerange=timerange,
-            new_pairs_days=new_pairs_days,
-            erase=False,
-            data_format=self.config.get("dataformat_ohlcv", "json"),
-            trading_mode=self.config.get("trading_mode", "spot"),
-            prepend=self.config.get("prepend_data", False),
-        )
 
     def set_all_pairs(self) -> None:
 

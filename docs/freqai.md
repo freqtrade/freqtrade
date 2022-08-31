@@ -38,14 +38,14 @@ The example strategy, example prediction model, and example config can be found 
 The user provides FreqAI with a set of custom *base* indicators (the same way as in a typical Freqtrade strategy) as well as target values (*labels*).
 FreqAI trains a model to predict the target values based on the input of custom indicators, for each pair in the whitelist. These models are consistently retrained to adapt to market conditions. FreqAI offers the ability to both backtest strategies (emulating reality with periodic retraining) and deploy dry/live runs. In dry/live conditions, FreqAI can be set to constant retraining in a background thread in an effort to keep models as up to date as possible.
 
-An overview of the algorithm is shown below, explaining the data processing pipeline and the model usage. 
+An overview of the algorithm is shown below, explaining the data processing pipeline and the model usage.
 
 ![freqai-algo](assets/freqai_algo.jpg)
 
 ### Important machine learning vocabulary
 
 **Features** - the quantities with which a model is trained. All features for a single candle is stored as a vector. In FreqAI, the user
-builds the feature sets from anything they can construct in the strategy. 
+builds the feature sets from anything they can construct in the strategy.
 
 **Labels** - the target values that a model is trained
 toward. Each set of features is associated with a single label that is
@@ -53,12 +53,12 @@ defined by the user within the strategy. These labels intentionally look into th
 future, and are not available to the model during dry/live/backtesting.
 
 **Training** - the process of feeding individual feature sets, composed of historic data, with associated labels into the
-model with the goal of matching input feature sets to associated labels. 
+model with the goal of matching input feature sets to associated labels.
 
 **Train data** - a subset of the historic data that is fed to the model during
 training. This data directly influences weight connections in the model.
 
-**Test data** - a subset of the historic data that is used to evaluate the performance of the model after training. This data does not influence nodal weights within the model. 
+**Test data** - a subset of the historic data that is used to evaluate the performance of the model after training. This data does not influence nodal weights within the model.
 
 ## Install prerequisites
 
@@ -104,21 +104,21 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `include_corr_pairlist` | A list of correlated coins that FreqAI will add as additional features to all `pair_whitelist` coins. All indicators set in `populate_any_indicators` during feature engineering (see details [here](#feature-engineering)) will be created for each coin in this list, and that set of features is added to the base asset feature set. <br> **Datatype:** List of assets (strings).
 | `label_period_candles` | Number of candles into the future that the labels are created for. This is used in `populate_any_indicators` (see `templates/FreqaiExampleStrategy.py` for detailed usage). The user can create custom labels, making use of this parameter or not. <br> **Datatype:** Positive integer.
 | `include_shifted_candles` | Add features from previous candles to subsequent candles to add historical information. FreqAI takes all features from the `include_shifted_candles` previous candles, duplicates and shifts them so that the information is available for the subsequent candle. <br> **Datatype:** Positive integer.
-| `weight_factor` | Used to set weights for training data points according to their recency. See details about how it works [here](#controlling-the-model-learning-process). <br> **Datatype:** Positive float (typically < 1). 
-| `indicator_max_period_candles` | The maximum period used in `populate_any_indicators()` for indicator creation. FreqAI uses this information in combination with the maximum timeframe to calculate how many data points that should be downloaded so that the first data point does not have a NaN. <br> **Datatype:** Positive integer.
+| `weight_factor` | Used to set weights for training data points according to their recency. See details about how it works [here](#controlling-the-model-learning-process). <br> **Datatype:** Positive float (typically < 1).
+| `indicator_max_period_candles` | **No longer used**. User must use the strategy set `startup_candle_count` which defines the maximum *period* used in `populate_any_indicators()` for indicator creation (timeframe independent). FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
 | `indicator_periods_candles` | Calculate indicators for `indicator_periods_candles` time periods and add them to the feature set. <br> **Datatype:** List of positive integers.
 | `stratify_training_data` | This value is used to indicate the grouping of the data. For example, 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. See details about how it works [here](#stratifying-the-data-for-training-and-testing-the-model) <br> **Datatype:** Positive integer.
-| `principal_component_analysis` | Automatically reduce the dimensionality of the data set using Principal Component Analysis. See details about how it works [here](#reducing-data-dimensionality-with-principal-component-analysis) <br> **Datatype:** Boolean. 
+| `principal_component_analysis` | Automatically reduce the dimensionality of the data set using Principal Component Analysis. See details about how it works [here](#reducing-data-dimensionality-with-principal-component-analysis) <br> **Datatype:** Boolean.
 | `DI_threshold` | Activates the Dissimilarity Index for outlier detection when > 0. See details about how it works [here](#removing-outliers-with-the-dissimilarity-index). <br> **Datatype:** Positive float (typically < 1).
 | `use_SVM_to_remove_outliers` | Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. See details about some select parameters [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Dictionary.
-| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
+| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean.
 | `outlier_protection_percentage` | If more than `outlier_protection_percentage` fraction of points are removed as outliers, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. <br> **Datatype:** float. Default: `30`
 | `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** bool. Default: False
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
-| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> 
+| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br>
 |  |  **Model training parameters**
 | `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.**Datatype:** Boolean.
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
@@ -167,7 +167,6 @@ The user interface is isolated to the typical Freqtrade config file. A FreqAI co
             ],
             "label_period_candles": 24,
             "include_shifted_candles": 2,
-            "indicator_max_period_candles": 20,
             "indicator_periods_candles": [10, 20]
         },
         "data_split_parameters" : {
@@ -184,6 +183,9 @@ The user interface is isolated to the typical Freqtrade config file. A FreqAI co
 The FreqAI strategy requires the user to include the following lines of code in the standard Freqtrade strategy:
 
 ```python
+    # user should define the maximum startup candle count (the largest number of candles
+    # passed to any single indicator)
+    startup_candle_count: int = 20
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
@@ -200,9 +202,9 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        # the model will return all labels created by user in `populate_any_indicators` 
-        # (& appended targets), an indication of whether or not the prediction should be accepted, 
-        # the target mean/std values for each of the labels created by user in 
+        # the model will return all labels created by user in `populate_any_indicators`
+        # (& appended targets), an indication of whether or not the prediction should be accepted,
+        # the target mean/std values for each of the labels created by user in
         # `populate_any_indicators()` for each training period.
 
         dataframe = self.freqai.start(dataframe, metadata, self)
@@ -310,7 +312,7 @@ The user is encouraged to inherit `train()` and `predict()` to let them customiz
 ## Feature engineering
 
 Features are added by the user inside the `populate_any_indicators()` method of the strategy
-by prepending indicators with `%`, and labels with `&`.  
+by prepending indicators with `%`, and labels with `&`.
 
 There are some important components/structures that the user *must* include when building their feature set; the use of these is shown below:
 
@@ -419,13 +421,13 @@ In total, the number of features the user of the presented example strat has cre
 length of `include_timeframes` * no. features in `populate_any_indicators()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
  $= 3 * 3 * 3 * 2 * 2 = 108$.
 
-Another structure to consider is the location of the labels at the bottom of the example function (below `if set_generalized_indicators:`). 
+Another structure to consider is the location of the labels at the bottom of the example function (below `if set_generalized_indicators:`).
 This is where the user will add single features and labels to their feature set to avoid duplication of them from
 various configuration parameters that multiply the feature set, such as `include_timeframes`.
 
 !!! Note
     Features **must** be defined in `populate_any_indicators()`. Definining FreqAI features in `populate_indicators()`
-    will cause the algorithm to fail in live/dry mode. If the user wishes to add generalized features that are not associated with 
+    will cause the algorithm to fail in live/dry mode. If the user wishes to add generalized features that are not associated with
     a specific pair or timeframe, they should use the following structure inside `populate_any_indicators()`
     (as exemplified in `freqtrade/templates/FreqaiExampleStrategy.py`):
 
@@ -434,7 +436,7 @@ various configuration parameters that multiply the feature set, such as `include
 
             ...
 
-            # Add generalized indicators here (because in live, it will call only this function to populate 
+            # Add generalized indicators here (because in live, it will call only this function to populate
             # indicators for retraining). Notice how we ensure not to add them multiple times by associating
             # these generalized indicators to the basepair/timeframe
             if set_generalized_indicators:
@@ -545,7 +547,7 @@ and adding this to the `train_period_days`. The units need to be in the base can
 
 ### Defining model expirations
 
-During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main Freqtrade bot). This means that there is always an age discrepancy between models. If a user is training on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. This may be undesirable if the characteristic time scale (the trade duration target) for a strategy is less than 4 hours. The user can decide to only make trade entries if the model is less than 
+During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main Freqtrade bot). This means that there is always an age discrepancy between models. If a user is training on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. This may be undesirable if the characteristic time scale (the trade duration target) for a strategy is less than 4 hours. The user can decide to only make trade entries if the model is less than
 a certain number of hours old by setting the `expiration_hours` in the config file:
 
 ```json
@@ -632,15 +634,15 @@ The user can stratify (group) the training/testing data using:
 
 This will split the data chronologically so that every Xth data point is used to test the model after training. In the
 example above, the user is asking for every third data point in the dataframe to be used for
-testing; the other points are used for training. 
+testing; the other points are used for training.
 
-The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used. 
+The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used.
 
 ### Controlling the model learning process
 
 Model training parameters are unique to the machine learning library selected by the user. FreqAI allows the user to set any parameter for any library using the `model_training_parameters` dictionary in the user configuration file. The example configuration file (found in `config_examples/config_freqai.example.json`) show some of the example parameters associated with `Catboost` and `LightGBM`, but the user can add any parameters available in those libraries.
 
-Data split parameters are defined in `data_split_parameters` which can be any parameters associated with `Sklearn`'s `train_test_split()` function. 
+Data split parameters are defined in `data_split_parameters` which can be any parameters associated with `Sklearn`'s `train_test_split()` function.
 
 FreqAI includes some additional parameters such as `weight_factor`, which allows the user to weight more recent data more strongly
 than past data via an exponential function:
@@ -670,7 +672,7 @@ The user can tell FreqAI to remove outlier data points from the training/test da
     }
 ```
 
-Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. 
+Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty.
 
 To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
 
@@ -688,7 +690,7 @@ which enables the estimation of the Dissimilarity Index as:
 
 $$ DI_k = d_k/\overline{d} $$
 
-The user can tweak the DI through the `DI_threshold` to increase or decrease the extrapolation of the trained model. 
+The user can tweak the DI through the `DI_threshold` to increase or decrease the extrapolation of the trained model.
 
 Below is a figure that describes the DI for a 3D data set.
 
@@ -707,11 +709,11 @@ The user can tell FreqAI to remove outlier data points from the training/test da
 ```
 
 FreqAI will train an SVM on the training data (or components of it if the user activated
-`principal_component_analysis`) and remove any data point that the SVM deems to be beyond the feature space. 
+`principal_component_analysis`) and remove any data point that the SVM deems to be beyond the feature space.
 
-The parameter `shuffle` is by default set to `False` to ensure consistent results. If it is set to `True`, running the SVM multiple times on the same data set might result in different outcomes due to `max_iter` being to low for the algorithm to reach the demanded `tol`. Increasing `max_iter` solves this issue but causes the procedure to take longer time. 
+The parameter `shuffle` is by default set to `False` to ensure consistent results. If it is set to `True`, running the SVM multiple times on the same data set might result in different outcomes due to `max_iter` being to low for the algorithm to reach the demanded `tol`. Increasing `max_iter` solves this issue but causes the procedure to take longer time.
 
-The parameter `nu`, *very* broadly, is the amount of data points that should be considered outliers. 
+The parameter `nu`, *very* broadly, is the amount of data points that should be considered outliers.
 
 #### Removing outliers with DBSCAN
 
