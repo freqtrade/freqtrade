@@ -164,6 +164,9 @@ class ExternalMessageConsumer:
                                     await asyncio.sleep(self.sleep_time)
 
                                     break
+                            except Exception as e:
+                                logger.exception(e)
+                                continue
                 except (
                     socket.gaierror,
                     ConnectionRefusedError,
@@ -214,16 +217,18 @@ class ExternalMessageConsumer:
             if message_data is None:
                 return
 
-            key, value = message_data.get('key'), message_data.get('data')
-            pair, timeframe, candle_type = key
+            key, value = message_data.get('key'), message_data.get('value')
 
-            # Convert the JSON to a pandas DataFrame
-            dataframe = json_to_dataframe(value)
+            if key and value:
+                pair, timeframe, candle_type = key
 
-            # If set, remove the Entry and Exit signals from the Producer
-            if self._emc_config.get('remove_entry_exit_signals', False):
-                dataframe = remove_entry_exit_signals(dataframe)
+                # Convert the JSON to a pandas DataFrame
+                dataframe = json_to_dataframe(value)
 
-            # Add the dataframe to the dataprovider
-            dataprovider = self._rpc._freqtrade.dataprovider
-            dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)
+                # If set, remove the Entry and Exit signals from the Producer
+                if self._emc_config.get('remove_entry_exit_signals', False):
+                    dataframe = remove_entry_exit_signals(dataframe)
+
+                # Add the dataframe to the dataprovider
+                dataprovider = self._rpc._freqtrade.dataprovider
+                dataprovider.add_external_df(pair, timeframe, dataframe, candle_type)

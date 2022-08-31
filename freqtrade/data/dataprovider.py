@@ -168,7 +168,10 @@ class DataProvider:
             timeout_str = f"for {timeout} seconds" if timeout > 0 else "indefinitely"
             logger.debug(f"Waiting for external data on {pair} for {timeout_str}")
 
-            pair_event.wait(timeout=timeout)
+            if timeout > 0:
+                pair_event.wait(timeout=timeout)
+            else:
+                pair_event.wait()
 
     def add_pairlisthandler(self, pairlists) -> None:
         """
