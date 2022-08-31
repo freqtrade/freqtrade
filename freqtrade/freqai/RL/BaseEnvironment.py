@@ -57,7 +57,7 @@ class BaseEnvironment(gym.Env):
         self.shape = (window_size, self.signal_features.shape[1] + 3)
         self.set_action_space()
         self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
+            low=-1, high=1, shape=self.shape, dtype=np.float32)
 
         # episode
         self._start_tick: int = self.window_size
