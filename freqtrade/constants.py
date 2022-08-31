@@ -501,17 +501,13 @@ CONF_SCHEMA = {
                             'name': {'type': 'string'},
                             'url': {'type': 'string', 'default': ''},
                             'ws_token': {'type': 'string', 'default': ''},
-                        }
+                        },
+                        'required': ['name', 'url', 'ws_token']
                     }
                 },
                 'reply_timeout': {'type': 'integer'},
                 'sleep_time': {'type': 'integer'},
                 'ping_timeout': {'type': 'integer'},
-                'wait_data_policy': {
-                    'type': 'string',
-                    'enum': WAIT_DATA_POLICY_OPTIONS
-                },
-                'wait_data_timeout': {'type': 'integer', 'default': 5},
                 'remove_signals_analyzed_df': {'type': 'boolean', 'default': False}
             },
             'required': ['producers']
