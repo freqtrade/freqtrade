@@ -224,28 +224,50 @@ class IFreqaiModel(ABC):
                 "trains"
             )
 
+            trained_timestamp_int = int(trained_timestamp.stopts)
             dk.data_path = Path(
                 dk.full_path
                 /
-                f"sub-train-{metadata['pair'].split('/')[0]}_{int(trained_timestamp.stopts)}"
+                f"sub-train-{metadata['pair'].split('/')[0]}_{trained_timestamp_int}"
                 )
-            if not self.model_exists(
-                metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
+
+            if self.backtest_prediction_exists(
+                metadata["pair"], dk, trained_timestamp=trained_timestamp_int
             ):
-                dk.find_features(dataframe_train)
-                self.model = self.train(dataframe_train, metadata["pair"], dk)
-                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
-                    trained_timestamp.stopts)
-                dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                self.dd.save_data(self.model, metadata["pair"], dk)
+                prediction_filename, _ = self.get_backtesting_prediction_file_name(
+                    metadata["pair"],
+                    dk,
+                    trained_timestamp=int(trained_timestamp.stopts))
+
+                append_df = dk.get_backtesting_prediction(prediction_filename)
+                dk.append_predictions(append_df)
             else:
-                self.model = self.dd.load_data(metadata["pair"], dk)
+                if not self.model_exists(
+                    metadata["pair"], dk, trained_timestamp=trained_timestamp_int
+                ):
+                    dk.find_features(dataframe_train)
+                    self.model = self.train(dataframe_train, metadata["pair"], dk)
+                    self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
+                        trained_timestamp.stopts)
+                    dk.set_new_model_names(metadata["pair"], trained_timestamp)
+                    self.dd.save_data(self.model, metadata["pair"], dk)
+                else:
+                    self.model = self.dd.load_data(metadata["pair"], dk)
 
-            self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
-            pred_df, do_preds = self.predict(dataframe_backtest, dk)
+                pred_df, do_preds = self.predict(dataframe_backtest, dk)
+                append_df = dk.get_predictions_to_append(pred_df, do_preds)
+                dk.append_predictions(append_df)
 
-            dk.append_predictions(pred_df, do_preds)
+                prediction_file_name, root_prediction = self.get_backtesting_prediction_file_name(
+                    metadata["pair"],
+                    dk,
+                    trained_timestamp_int)
+
+                dk.save_backtesting_prediction(prediction_file_name,
+                                               root_prediction,
+                                               append_df)
 
         dk.fill_predictions(dataframe)
 
@@ -642,6 +664,56 @@ class IFreqaiModel(ABC):
                 self.pair_it_train = 0
                 self.train_time = 0
         return
+
+    def backtest_prediction_exists(
+        self,
+        pair: str,
+        dk: FreqaiDataKitchen,
+        trained_timestamp: int,
+        scanning: bool = False,
+    ) -> bool:
+        """
+        Given a pair and path, check if a backtesting prediction already exists
+        :param pair: pair e.g. BTC/USD
+        :param path: path to prediction
+        :return:
+        :boolean: whether the prediction file exists or not.
+        """
+        if not self.live:
+            prediction_file_name, _ = self.get_backtesting_prediction_file_name(
+                pair, dk, trained_timestamp
+            )
+            path_to_predictionfile = Path(prediction_file_name)
+
+            file_exists = path_to_predictionfile.is_file()
+            if file_exists and not scanning:
+                logger.info("Found backtesting prediction file at %s", prediction_file_name)
+            elif not scanning:
+                logger.info(
+                    "Could not find backtesting prediction file at %s", prediction_file_name
+                )
+            return file_exists
+        else:
+            return False
+
+    def get_backtesting_prediction_file_name(
+        self, pair: str, dk: FreqaiDataKitchen, trained_timestamp: int
+    ):
+        """
+        Given a pair, path and a trained timestamp,
+        returns the path and name of the predictions file
+        :param pair: pair e.g. BTC/USD
+        :param dk: FreqaiDataKitchen
+        :trained_timestamp: current backtesting timestamp period
+        :return:
+        :str: prediction file name
+        :str: prediction root path
+        """
+        coin, _ = pair.split("/")
+        prediction_base_filename = f"{coin.lower()}_{trained_timestamp}"
+        root_prediction = f'{dk.full_path}/backtesting_predictions'
+        prediction_file_name = f"{root_prediction}/{prediction_base_filename}_predictions.h5"
+        return prediction_file_name, root_prediction
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

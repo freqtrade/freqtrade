@@ -1,6 +1,7 @@
 import copy
 import datetime
 import logging
+import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -780,9 +781,10 @@ class FreqaiDataKitchen:
         weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
-    def append_predictions(self, predictions: DataFrame, do_predict: npt.ArrayLike) -> None:
+    def get_predictions_to_append(self, predictions: DataFrame,
+                                  do_predict: npt.ArrayLike) -> DataFrame:
         """
-        Append backtest prediction from current backtest period to all previous periods
+        Get backtest prediction from current backtest period
         """
 
         append_df = DataFrame()
@@ -797,12 +799,19 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
+        return append_df
+
+    def append_predictions(self, append_df: DataFrame) -> None:
+        """
+        Append backtest prediction from current backtest period to all previous periods
+        """
+
         if self.full_df.empty:
             self.full_df = append_df
         else:
             self.full_df = pd.concat([self.full_df, append_df], axis=0)
 
-        return
+        return append_df
 
     def fill_predictions(self, dataframe):
         """
@@ -1089,3 +1098,25 @@ class FreqaiDataKitchen:
         if self.unique_classes:
             for label in self.unique_classes:
                 self.unique_class_list += list(self.unique_classes[label])
+
+    def save_backtesting_prediction(
+        self, file_name: str, root_folder: str, append_df: DataFrame
+    ) -> None:
+
+        """
+        Save prediction dataframe from backtesting to h5 file format
+        :param file_name: h5 file name
+        :param root_folder: folder to save h5 file
+        """
+        os.makedirs(root_folder, exist_ok=True)
+        append_df.to_hdf(file_name, key='append_df', mode='w')
+
+    def get_backtesting_prediction(self, prediction_file_name: str) -> DataFrame:
+        """
+        Retrive from disk the prediction dataframe
+        :param prediction_file_name: prediction file full path
+        :return:
+        :Dataframe: Backtesting prediction from current backtesting period
+        """
+        append_df = pd.read_hdf(prediction_file_name)
+        return append_df
