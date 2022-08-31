@@ -72,8 +72,8 @@
                 "5m",
                 "30m"
             ],
-            "indicator_max_period_candles": 10,
-            "indicator_periods_candles": [5]
+            "indicator_max_period_candles": 20,
+            "indicator_periods_candles": [14]
         },
         "data_split_parameters": {
             "test_size": 0.5,

@@ -31,14 +31,14 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
 
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
-                                    tensorboard_log=Path(dk.full_path / "tensorboard"),
+                                    tensorboard_log=Path(
+                                        dk.full_path / "tensorboard" / dk.pair.split('/')[0]),
                                     **self.freqai_info['model_training_parameters']
                                     )
         else:
             logger.info('Continual learning activated - starting training from previously '
                         'trained agent.')
             model = self.dd.model_dictionary[dk.pair]
-            model.tensorboard_log = Path(dk.data_path / "tensorboard")
             model.set_env(self.train_env)
 
         model.learn(
