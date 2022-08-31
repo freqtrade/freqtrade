@@ -234,12 +234,12 @@ class IFreqaiModel(ABC):
             if self.backtest_prediction_exists(
                 metadata["pair"], dk, trained_timestamp=trained_timestamp_int
             ):
-                prediction_filename, _ = self.get_backtesting_prediction_file_name(
+                prediction_filename, root_prediction = self.get_backtesting_prediction_file_name(
                     metadata["pair"],
                     dk,
                     trained_timestamp=int(trained_timestamp.stopts))
 
-                append_df = dk.get_backtesting_prediction(prediction_filename)
+                append_df = dk.get_backtesting_prediction(root_prediction, prediction_filename)
                 dk.append_predictions(append_df)
             else:
                 if not self.model_exists(
@@ -680,10 +680,10 @@ class IFreqaiModel(ABC):
         :boolean: whether the prediction file exists or not.
         """
         if not self.live:
-            prediction_file_name, _ = self.get_backtesting_prediction_file_name(
+            prediction_file_name, root_prediction = self.get_backtesting_prediction_file_name(
                 pair, dk, trained_timestamp
             )
-            path_to_predictionfile = Path(prediction_file_name)
+            path_to_predictionfile = Path(dk.full_path / root_prediction / prediction_file_name)
 
             file_exists = path_to_predictionfile.is_file()
             if file_exists and not scanning:
@@ -711,8 +711,8 @@ class IFreqaiModel(ABC):
         """
         coin, _ = pair.split("/")
         prediction_base_filename = f"{coin.lower()}_{trained_timestamp}"
-        root_prediction = f'{dk.full_path}/backtesting_predictions'
-        prediction_file_name = f"{root_prediction}/{prediction_base_filename}_predictions.h5"
+        root_prediction = 'backtesting_predictions'
+        prediction_file_name = f"{prediction_base_filename}_predictions.h5"
         return prediction_file_name, root_prediction
 
     # Following methods which are overridden by user made prediction models.

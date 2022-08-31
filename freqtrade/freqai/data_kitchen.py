@@ -1,7 +1,6 @@
 import copy
 import datetime
 import logging
-import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -1108,15 +1107,25 @@ class FreqaiDataKitchen:
         :param file_name: h5 file name
         :param root_folder: folder to save h5 file
         """
-        os.makedirs(root_folder, exist_ok=True)
-        append_df.to_hdf(file_name, key='append_df', mode='w')
+        backtesting_root = Path(
+            self.full_path
+            / root_folder
+        )
+        if not backtesting_root.is_dir():
+            backtesting_root.mkdir(parents=True, exist_ok=True)
 
-    def get_backtesting_prediction(self, prediction_file_name: str) -> DataFrame:
+        full_file_path = Path(self.full_path / root_folder / file_name)
+        append_df.to_hdf(full_file_path, key='append_df', mode='w')
+
+    def get_backtesting_prediction(
+        self, root_prediction: str, prediction_file_name: str
+    ) -> DataFrame:
         """
         Retrive from disk the prediction dataframe
         :param prediction_file_name: prediction file full path
         :return:
         :Dataframe: Backtesting prediction from current backtesting period
         """
-        append_df = pd.read_hdf(prediction_file_name)
+        prediction_path = Path(self.full_path / root_prediction / prediction_file_name)
+        append_df = pd.read_hdf(prediction_path)
         return append_df
