@@ -66,10 +66,6 @@ class Base4ActionRLEnv(BaseEnvironment):
                 self._position = Positions.Neutral
                 trade_type = "neutral"
                 self._last_trade_tick = None
-            elif action == Actions.Exit.value:
-                self._position = Positions.Neutral
-                trade_type = "neutral"
-                self._last_trade_tick = None
             else:
                 print("case not defined")
 
