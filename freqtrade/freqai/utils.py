@@ -55,7 +55,6 @@ def get_required_data_timerange(
     for auto data-download in FreqAI
     """
     time = datetime.now(tz=timezone.utc).timestamp()
-    data_load_timerange = TimeRange()
 
     timeframes = config["freqai"]["feature_parameters"].get("include_timeframes")
 
@@ -75,12 +74,13 @@ def get_required_data_timerange(
 
     additional_seconds = max_period * max_tf_seconds
 
-    data_load_timerange.startts = int(
+    startts = int(
         time
         - config["freqai"].get("train_period_days", 0) * 86400
         - additional_seconds
     )
-    data_load_timerange.stopts = int(time)
+    stopts = int(time)
+    data_load_timerange = TimeRange('date', 'date', startts, stopts)
 
     return data_load_timerange
 
