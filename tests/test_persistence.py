@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
-from math import isclose
 from pathlib import Path
 from types import FunctionType
 from unittest.mock import MagicMock
@@ -630,9 +629,9 @@ def test_calc_open_close_trade_price(
     trade.open_rate = 2.0
     trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
-    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
-    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
+    assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
+    assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
+    assert pytest.approx(trade.calc_profit(trade.close_rate)) == round(profit, 8)
     assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
 
 
