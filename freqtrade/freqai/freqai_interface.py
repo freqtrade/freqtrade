@@ -290,14 +290,8 @@ class IFreqaiModel(ABC):
             )
             dk.set_paths(metadata["pair"], new_trained_timerange.stopts)
 
-            # download candle history if it is not already in memory
+            # load candle history into memory if it is not yet.
             if not self.dd.historic_data:
-                logger.info(
-                    "Downloading all training data for all pairs in whitelist and "
-                    "corr_pairlist, this may take a while if you do not have the "
-                    "data saved"
-                )
-                dk.download_all_data_for_training(data_load_timerange, strategy.dp)
                 self.dd.load_all_pair_histories(data_load_timerange, dk)
 
             if not self.scanning:
