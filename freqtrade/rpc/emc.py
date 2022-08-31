@@ -201,6 +201,10 @@ class ExternalMessageConsumer:
         message_type = message.get('type', RPCMessageType.STATUS)
         message_data = message.get('data')
 
+        # We shouldn't get empty messages
+        if message_data is None:
+            return
+
         logger.debug(f"Received message of type {message_type}")
 
         # Handle Whitelists
@@ -213,10 +217,6 @@ class ExternalMessageConsumer:
 
         # Handle analyzed dataframes
         elif message_type == RPCMessageType.ANALYZED_DF:
-            # This shouldn't happen
-            if message_data is None:
-                return
-
             key, value = message_data.get('key'), message_data.get('value')
 
             if key and value:
