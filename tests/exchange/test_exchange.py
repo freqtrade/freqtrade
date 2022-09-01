@@ -4985,6 +4985,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.47
 
@@ -4996,6 +4997,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.540699999999998
 
@@ -5007,6 +5009,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price is None
     default_conf['trading_mode'] = 'margin'
@@ -5019,6 +5022,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             is_short=False,
             amount=0.8,
             stake_amount=18.884 * 0.8,
+            wallet_balance=18.884 * 0.8,
         )
 
 
