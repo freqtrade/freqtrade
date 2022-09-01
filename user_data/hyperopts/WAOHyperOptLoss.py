@@ -37,7 +37,10 @@ class WAOHyperOptLoss(IHyperOptLoss):
 
             x += 1
 
-        win_trades_percentage = win_trades_number / trade_count
+        if trade_count == 0:
+            win_trades_percentage = 0.0000001
+        else:
+            win_trades_percentage = win_trades_number / trade_count
         """We can put that into a function above"""
         y = 0
         profit_sell_signal = []
