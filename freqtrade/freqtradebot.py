@@ -1778,7 +1778,7 @@ class FreqtradeBot(LoggingMixin):
             self.rpc.send_msg(msg)
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
-                              amount: float, fee_abs: float) -> Optional[float]:
+                              amount: float, fee_abs: float, order_obj: Order) -> Optional[float]:
         """
         Applies the fee to amount (either from Order or from Trades).
         Can eat into dust if more than the required asset is available.
@@ -1786,7 +1786,12 @@ class FreqtradeBot(LoggingMixin):
         never in base currency.
         """
         self.wallets.update()
-        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
+        amount_ = amount
+        if order_obj.ft_order_side == trade.exit_side or order_obj.ft_order_side == 'stoploss':
+            # check against remaining amount!
+            amount_ = trade.amount - amount
+
+        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount_:
             # Eat into dust if we own more than base currency
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
@@ -1833,7 +1838,8 @@ class FreqtradeBot(LoggingMixin):
                 if trade_base_currency == fee_currency:
                     # Apply fee to amount
                     return self.apply_fee_conditional(trade, trade_base_currency,
-                                                      amount=order_amount, fee_abs=fee_cost)
+                                                      amount=order_amount, fee_abs=fee_cost,
+                                                      order_obj=order_obj)
                 return None
         return self.fee_detection_from_trades(
             trade, order, order_obj, order_amount, order.get('trades', []))
@@ -1892,8 +1898,8 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException("Half bought? Amounts don't match")
 
         if fee_abs != 0:
-            return self.apply_fee_conditional(trade, trade_base_currency,
-                                              amount=amount, fee_abs=fee_abs)
+            return self.apply_fee_conditional(
+                trade, trade_base_currency, amount=amount, fee_abs=fee_abs, order_obj=order_obj)
         return None
 
     def get_valid_price(self, custom_price: float, proposed_price: float) -> float:
