@@ -300,7 +300,7 @@ class FreqaiDataKitchen:
         )
 
         for item in train_max.keys():
-            if not [col for col in df_train_features.columns if col.startwith('PC')]:
+            if not [col for col in df_train_features.columns if col.startswith('PC')]:
                 self.data[item + "_max"] = train_max[item]
                 self.data[item + "_min"] = train_min[item]
             else:
@@ -327,7 +327,7 @@ class FreqaiDataKitchen:
                     - 1
                 )
 
-            if not [col for col in df_train_features.columns if col.startwith('PC')]:
+            if not [col for col in df_train_features.columns if col.startswith('PC')]:
                 self.data[f"{item}_max"] = train_labels_max  # .to_dict()
                 self.data[f"{item}_min"] = train_labels_min  # .to_dict()
             else:
@@ -344,7 +344,7 @@ class FreqaiDataKitchen:
         :param df: Dataframe to be standardized
         """
 
-        if not [col for col in df.columns if col.startwith('PC')]:
+        if not [col for col in df.columns if col.startswith('PC')]:
             id_str = ''
         else:
             # if PCA is enabled
