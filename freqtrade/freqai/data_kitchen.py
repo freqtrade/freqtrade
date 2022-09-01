@@ -287,19 +287,26 @@ class FreqaiDataKitchen:
         :returns:
         :data_dictionary: updated dictionary with standardized values.
         """
+
+        df_train_features = data_dictionary["train_features"]
         # standardize the data by training stats
-        train_max = data_dictionary["train_features"].max()
-        train_min = data_dictionary["train_features"].min()
-        data_dictionary["train_features"] = (
-            2 * (data_dictionary["train_features"] - train_min) / (train_max - train_min) - 1
+        train_max = df_train_features.max()
+        train_min = df_train_features.min()
+        df_train_features = (
+            2 * (df_train_features - train_min) / (train_max - train_min) - 1
         )
         data_dictionary["test_features"] = (
             2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
         )
 
         for item in train_max.keys():
-            self.data[item + "_max"] = train_max[item]
-            self.data[item + "_min"] = train_min[item]
+            if not [col for col in df_train_features.columns if col.startwith('PC')]:
+                self.data[item + "_max"] = train_max[item]
+                self.data[item + "_min"] = train_min[item]
+            else:
+                # if PCA is enabled and has transformed the training features
+                self.data[item + "_pca_max"] = train_max[item]
+                self.data[item + "_pca_min"] = train_min[item]
 
         for item in data_dictionary["train_labels"].keys():
             if data_dictionary["train_labels"][item].dtype == object:
@@ -320,8 +327,14 @@ class FreqaiDataKitchen:
                     - 1
                 )
 
-            self.data[f"{item}_max"] = train_labels_max  # .to_dict()
-            self.data[f"{item}_min"] = train_labels_min  # .to_dict()
+            if not [col for col in df_train_features.columns if col.startwith('PC')]:
+                self.data[f"{item}_max"] = train_labels_max  # .to_dict()
+                self.data[f"{item}_min"] = train_labels_min  # .to_dict()
+            else:
+                # if PCA is enabled and has transformed the training features
+                self.data[f"{item}_pca_max"] = train_labels_max  # .to_dict()
+                self.data[f"{item}_pca_min"] = train_labels_min  # .to_dict()
+
         return data_dictionary
 
     def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
@@ -331,11 +344,17 @@ class FreqaiDataKitchen:
         :param df: Dataframe to be standardized
         """
 
+        if not [col for col in df.columns if col.startwith('PC')]:
+            id_str = ''
+        else:
+            # if PCA is enabled
+            id_str = '_pca'
+
         for item in df.keys():
             df[item] = (
                 2
-                * (df[item] - self.data[f"{item}_min"])
-                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
+                * (df[item] - self.data[f"{item}{id_str}_min"])
+                / (self.data[f"{item}{id_str}_max"] - self.data[f"{item}{id_str}_min"])
                 - 1
             )
 
@@ -450,22 +469,23 @@ class FreqaiDataKitchen:
 
         from sklearn.decomposition import PCA  # avoid importing if we dont need it
 
-        n_components = self.data_dictionary["train_features"].shape[1]
-        pca = PCA(n_components=n_components)
+        pca = PCA(0.999)
         pca = pca.fit(self.data_dictionary["train_features"])
-        n_keep_components = np.argmin(pca.explained_variance_ratio_.cumsum() < 0.999)
-        pca2 = PCA(n_components=n_keep_components)
+        n_keep_components = pca.n_components_
         self.data["n_kept_components"] = n_keep_components
-        pca2 = pca2.fit(self.data_dictionary["train_features"])
+        n_components = self.data_dictionary["train_features"].shape[1]
         logger.info("reduced feature dimension by %s", n_components - n_keep_components)
-        logger.info("explained variance %f", np.sum(pca2.explained_variance_ratio_))
-        train_components = pca2.transform(self.data_dictionary["train_features"])
+        logger.info("explained variance %f", np.sum(pca.explained_variance_ratio_))
 
+        train_components = pca.transform(self.data_dictionary["train_features"])
         self.data_dictionary["train_features"] = pd.DataFrame(
             data=train_components,
             columns=["PC" + str(i) for i in range(0, n_keep_components)],
             index=self.data_dictionary["train_features"].index,
         )
+        # normalsing transformed training features
+        self.data_dictionary["train_features"] = self.normalize_data(
+            self.data_dictionary["train_features"])
 
         # keeping a copy of the non-transformed features so we can check for errors during
         # model load from disk
@@ -473,15 +493,18 @@ class FreqaiDataKitchen:
         self.training_features_list = self.data_dictionary["train_features"].columns
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
-            test_components = pca2.transform(self.data_dictionary["test_features"])
+            test_components = pca.transform(self.data_dictionary["test_features"])
             self.data_dictionary["test_features"] = pd.DataFrame(
                 data=test_components,
                 columns=["PC" + str(i) for i in range(0, n_keep_components)],
                 index=self.data_dictionary["test_features"].index,
             )
+            # normalise transformed test feature to transformed training features
+            self.data_dictionary["test_features"] = self.normalize_data_from_metadata(
+                self.data_dictionary["test_features"])
 
         self.data["n_kept_components"] = n_keep_components
-        self.pca = pca2
+        self.pca = pca
 
         logger.info(f"PCA reduced total features from  {n_components} to {n_keep_components}")
 
@@ -502,6 +525,9 @@ class FreqaiDataKitchen:
             columns=["PC" + str(i) for i in range(0, self.data["n_kept_components"])],
             index=filtered_dataframe.index,
         )
+        # normalise transformed predictions to transformed training features
+        self.data_dictionary["prediction_features"] = self.normalize_data_from_metadata(
+            self.data_dictionary["prediction_features"])
 
     def compute_distances(self) -> float:
         """
