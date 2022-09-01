@@ -69,6 +69,8 @@ class FreqaiDataKitchen:
         self.label_list: List = []
         self.training_features_list: List = []
         self.model_filename: str = ""
+        self.backtesting_results_path = Path()
+        self.backtesting_prediction_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
 
@@ -808,8 +810,6 @@ class FreqaiDataKitchen:
         else:
             self.full_df = pd.concat([self.full_df, append_df], axis=0)
 
-        return append_df
-
     def fill_predictions(self, dataframe):
         """
         Back fill values to before the backtesting range so that the dataframe matches size
@@ -1070,33 +1070,25 @@ class FreqaiDataKitchen:
                 self.unique_class_list += list(self.unique_classes[label])
 
     def save_backtesting_prediction(
-        self, file_name: str, root_folder: str, append_df: DataFrame
+        self, append_df: DataFrame
     ) -> None:
 
         """
         Save prediction dataframe from backtesting to h5 file format
-        :param file_name: h5 file name
-        :param root_folder: folder to save h5 file
+        :param append_df: dataframe for backtesting period
         """
-        backtesting_root = Path(
-            self.full_path
-            / root_folder
-        )
-        if not backtesting_root.is_dir():
-            backtesting_root.mkdir(parents=True, exist_ok=True)
+        full_predictions_folder = Path(self.full_path / self.backtesting_prediction_folder)
+        if not full_predictions_folder.is_dir():
+            full_predictions_folder.mkdir(parents=True, exist_ok=True)
 
-        full_file_path = Path(self.full_path / root_folder / file_name)
-        append_df.to_hdf(full_file_path, key='append_df', mode='w')
+        append_df.to_hdf(self.backtesting_results_path, key='append_df', mode='w')
 
     def get_backtesting_prediction(
-        self, root_prediction: str, prediction_file_name: str
+        self
     ) -> DataFrame:
+
         """
-        Retrive from disk the prediction dataframe
-        :param prediction_file_name: prediction file full path
-        :return:
-        :Dataframe: Backtesting prediction from current backtesting period
+        Get prediction dataframe from h5 file format
         """
-        prediction_path = Path(self.full_path / root_prediction / prediction_file_name)
-        append_df = pd.read_hdf(prediction_path)
+        append_df = pd.read_hdf(self.backtesting_results_path)
         return append_df

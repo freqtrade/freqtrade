@@ -231,15 +231,11 @@ class IFreqaiModel(ABC):
                 f"sub-train-{metadata['pair'].split('/')[0]}_{trained_timestamp_int}"
                 )
 
-            if self.backtest_prediction_exists(
-                metadata["pair"], dk, trained_timestamp=trained_timestamp_int
-            ):
-                prediction_filename, root_prediction = self.get_backtesting_prediction_file_name(
-                    metadata["pair"],
-                    dk,
-                    trained_timestamp=int(trained_timestamp.stopts))
+            coin, _ = metadata["pair"].split("/")
+            dk.model_filename = f"cb_{coin.lower()}_{trained_timestamp_int}"
 
-                append_df = dk.get_backtesting_prediction(root_prediction, prediction_filename)
+            if self.backtest_prediction_exists(dk):
+                append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
                 if not self.model_exists(
@@ -259,15 +255,7 @@ class IFreqaiModel(ABC):
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds)
                 dk.append_predictions(append_df)
-
-                prediction_file_name, root_prediction = self.get_backtesting_prediction_file_name(
-                    metadata["pair"],
-                    dk,
-                    trained_timestamp_int)
-
-                dk.save_backtesting_prediction(prediction_file_name,
-                                               root_prediction,
-                                               append_df)
+                dk.save_backtesting_prediction(append_df)
 
         dk.fill_predictions(dataframe)
 
@@ -478,11 +466,6 @@ class IFreqaiModel(ABC):
         :return:
         :boolean: whether the model file exists or not.
         """
-        coin, _ = pair.split("/")
-
-        if not self.live:
-            dk.model_filename = model_filename = f"cb_{coin.lower()}_{trained_timestamp}"
-
         path_to_modelfile = Path(dk.data_path / f"{model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
         if file_exists and not scanning:
@@ -661,23 +644,21 @@ class IFreqaiModel(ABC):
 
     def backtest_prediction_exists(
         self,
-        pair: str,
         dk: FreqaiDataKitchen,
-        trained_timestamp: int,
         scanning: bool = False,
     ) -> bool:
         """
-        Given a pair and path, check if a backtesting prediction already exists
-        :param pair: pair e.g. BTC/USD
-        :param path: path to prediction
+        Check if a backtesting prediction already exists
+        :param dk: FreqaiDataKitchen
         :return:
         :boolean: whether the prediction file exists or not.
         """
         if not self.live:
-            prediction_file_name, root_prediction = self.get_backtesting_prediction_file_name(
-                pair, dk, trained_timestamp
-            )
-            path_to_predictionfile = Path(dk.full_path / root_prediction / prediction_file_name)
+            prediction_file_name = dk.model_filename
+            path_to_predictionfile = Path(dk.full_path /
+                                          dk.backtesting_prediction_folder /
+                                          f"{prediction_file_name}_prediction.h5")
+            dk.backtesting_results_path = path_to_predictionfile
 
             file_exists = path_to_predictionfile.is_file()
             if file_exists and not scanning:
@@ -689,25 +670,6 @@ class IFreqaiModel(ABC):
             return file_exists
         else:
             return False
-
-    def get_backtesting_prediction_file_name(
-        self, pair: str, dk: FreqaiDataKitchen, trained_timestamp: int
-    ):
-        """
-        Given a pair, path and a trained timestamp,
-        returns the path and name of the predictions file
-        :param pair: pair e.g. BTC/USD
-        :param dk: FreqaiDataKitchen
-        :trained_timestamp: current backtesting timestamp period
-        :return:
-        :str: prediction file name
-        :str: prediction root path
-        """
-        coin, _ = pair.split("/")
-        prediction_base_filename = f"{coin.lower()}_{trained_timestamp}"
-        root_prediction = 'backtesting_predictions'
-        prediction_file_name = f"{prediction_base_filename}_predictions.h5"
-        return prediction_file_name, root_prediction
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
