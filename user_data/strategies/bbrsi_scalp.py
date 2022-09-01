@@ -17,6 +17,8 @@ class bbrsi_scalp(WAOStrategy):
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 8, 0.15)
 
+    timeframe = '5m'
+
     minimal_roi = {
         "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
         "220": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
