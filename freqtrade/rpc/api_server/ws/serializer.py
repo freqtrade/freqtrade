@@ -3,6 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 
 import msgpack
+import orjson
 import rapidjson
 from pandas import DataFrame
 
@@ -50,6 +51,14 @@ class JSONWebSocketSerializer(WebSocketSerializer):
 class RapidJSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data):
         return rapidjson.dumps(data, default=_json_default)
+
+    def _deserialize(self, data):
+        return rapidjson.loads(data, object_hook=_json_object_hook)
+
+
+class HybridJSONWebSocketSerializer(WebSocketSerializer):
+    def _serialize(self, data):
+        return orjson.dumps(data, default=_json_default)
 
     def _deserialize(self, data):
         return rapidjson.loads(data, object_hook=_json_object_hook)
