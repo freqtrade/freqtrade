@@ -54,6 +54,7 @@ class ExternalMessageConsumer:
         self.ping_timeout = self._emc_config.get('ping_timeout', 2)
         self.sleep_time = self._emc_config.get('sleep_time', 5)
 
+        # The amount of candles per dataframe on the initial request
         self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 500)
 
         # Setting these explicitly as they probably shouldn't be changed by a user
@@ -73,6 +74,7 @@ class ExternalMessageConsumer:
             }
         ]
 
+        # Specify which function to use for which RPCMessageType
         self._message_handlers = {
             RPCMessageType.WHITELIST: self._consume_whitelist_message,
             RPCMessageType.ANALYZED_DF: self._consume_analyzed_df_message,
@@ -139,7 +141,7 @@ class ExternalMessageConsumer:
         """
         Main connection loop for the consumer
 
-        :param producer: Dictionary containing producer info: {'url': '', 'ws_token': ''}
+        :param producer: Dictionary containing producer info
         :param lock: An asyncio Lock
         """
         try:
@@ -153,7 +155,7 @@ class ExternalMessageConsumer:
         Actually creates and handles the websocket connection, pinging on timeout
         and handling connection errors.
 
-        :param producer: Dictionary containing producer info: {'url': '', 'ws_token': ''}
+        :param producer: Dictionary containing producer info
         :param lock: An asyncio Lock
         """
         while self._running:
@@ -176,10 +178,8 @@ class ExternalMessageConsumer:
 
                     # Now request the initial data from this Producer
                     for request in self._initial_requests:
-                        request_type = request.get('type', 'none')  # Default to string
-                        request_data = request.get('data')
                         await channel.send(
-                            self.compose_consumer_request(request_type, request_data)
+                            self.compose_consumer_request(request['type'], request['data'])
                         )
 
                     # Now receive data, if none is within the time limit, ping
@@ -218,7 +218,7 @@ class ExternalMessageConsumer:
         :param producer: Dictionary containing producer info
         :param lock: An asyncio Lock
         """
-        while True:
+        while self._running:
             try:
                 message = await asyncio.wait_for(
                     channel.recv(),
@@ -273,7 +273,7 @@ class ExternalMessageConsumer:
         if message_data is None:
             return
 
-        logger.debug(f"Received message of type {message_type} from `{producer_name}`")
+        logger.info(f"Received message of type {message_type} from `{producer_name}`")
 
         message_handler = self._message_handlers.get(message_type)
 
