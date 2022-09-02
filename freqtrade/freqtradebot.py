@@ -726,10 +726,11 @@ class FreqtradeBot(LoggingMixin):
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
-        funding_fees = self.exchange.get_funding_fees(
-            pair=pair, amount=amount, is_short=is_short, open_date=open_date)
+
         # This is a new trade
         if trade is None:
+            funding_fees = self.exchange.get_funding_fees(
+                pair=pair, amount=amount, is_short=is_short, open_date=open_date)
             trade = Trade(
                 pair=pair,
                 base_currency=base_currency,
