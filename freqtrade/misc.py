@@ -269,7 +269,8 @@ def json_to_dataframe(data: str) -> pandas.DataFrame:
     :returns: A pandas DataFrame from the JSON string
     """
     dataframe = pandas.read_json(data)
-    dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
+    if 'date' in dataframe.columns:
+        dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
 
     return dataframe
 

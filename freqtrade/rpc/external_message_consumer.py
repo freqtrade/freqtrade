@@ -10,11 +10,12 @@ import socket
 from threading import Thread
 from typing import Any, Dict, Optional
 
+import pandas
 import websockets
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType, RPCRequestType
-from freqtrade.misc import json_to_dataframe, remove_entry_exit_signals
+from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 
 
@@ -262,11 +263,9 @@ class ExternalMessageConsumer:
 
         key, value = message_data.get('key'), message_data.get('value')
 
-        if key and value:
+        if key and isinstance(value, pandas.DataFrame):
             pair, timeframe, candle_type = key
-
-            # Convert the JSON to a pandas DataFrame
-            dataframe = json_to_dataframe(value)
+            dataframe = value
 
             # If set, remove the Entry and Exit signals from the Producer
             if self._emc_config.get('remove_entry_exit_signals', False):

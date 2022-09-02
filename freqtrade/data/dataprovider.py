@@ -17,7 +17,6 @@ from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
-from freqtrade.misc import dataframe_to_json
 from freqtrade.rpc import RPCManager
 from freqtrade.util import PeriodicCache
 
@@ -119,7 +118,7 @@ class DataProvider:
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
-                        'value': dataframe_to_json(dataframe)
+                        'value': dataframe
                     }
                 }
             )

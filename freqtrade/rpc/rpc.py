@@ -24,7 +24,7 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirecti
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import dataframe_to_json, decimals_per_coin, shorten_date
+from freqtrade.misc import decimals_per_coin, shorten_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1064,10 +1064,7 @@ class RPC:
 
         for pair in pairlist:
             dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-            _data[pair] = {
-                "key": (pair, timeframe, candle_type),
-                "value": dataframe_to_json(dataframe)
-            }
+            _data[pair] = {"key": (pair, timeframe, candle_type), "value": dataframe}
 
         return _data
 

@@ -3,8 +3,10 @@ import logging
 from abc import ABC, abstractmethod
 
 import msgpack
-import orjson
+import rapidjson
+from pandas import DataFrame
 
+from freqtrade.misc import dataframe_to_json, json_to_dataframe
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 
 
@@ -34,27 +36,23 @@ class WebSocketSerializer(ABC):
     async def close(self, code: int = 1000):
         await self._websocket.close(code)
 
-# Going to explore using MsgPack as the serialization,
-# as that might be the best method for sending pandas
-# dataframes over the wire
-
 
 class JSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data):
-        return json.dumps(data)
+        return json.dumps(data, default=_json_default)
 
     def _deserialize(self, data):
-        return json.loads(data)
+        return json.loads(data, object_hook=_json_object_hook)
 
 
-class ORJSONWebSocketSerializer(WebSocketSerializer):
-    ORJSON_OPTIONS = orjson.OPT_NAIVE_UTC | orjson.OPT_SERIALIZE_NUMPY
+# ORJSON does not support .loads(object_hook=x) parameter, so we must use RapidJSON
 
+class RapidJSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data):
-        return orjson.dumps(data, option=self.ORJSON_OPTIONS)
+        return rapidjson.dumps(data, default=_json_default)
 
     def _deserialize(self, data):
-        return orjson.loads(data)
+        return rapidjson.loads(data, object_hook=_json_object_hook)
 
 
 class MsgPackWebSocketSerializer(WebSocketSerializer):
@@ -63,3 +61,20 @@ class MsgPackWebSocketSerializer(WebSocketSerializer):
 
     def _deserialize(self, data):
         return msgpack.unpackb(data, raw=False)
+
+
+# Support serializing pandas DataFrames
+def _json_default(z):
+    if isinstance(z, DataFrame):
+        return {
+            '__type__': 'dataframe',
+            '__value__': dataframe_to_json(z)
+        }
+    raise TypeError
+
+
+# Support deserializing JSON to pandas DataFrames
+def _json_object_hook(z):
+    if z.get('__type__') == 'dataframe':
+        return json_to_dataframe(z.get('__value__'))
+    return z

@@ -3,7 +3,7 @@ from threading import RLock
 from typing import List, Type
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
-from freqtrade.rpc.api_server.ws.serializer import ORJSONWebSocketSerializer, WebSocketSerializer
+from freqtrade.rpc.api_server.ws.serializer import RapidJSONWebSocketSerializer, WebSocketSerializer
 from freqtrade.rpc.api_server.ws.types import WebSocketType
 
 
@@ -18,7 +18,7 @@ class WebSocketChannel:
     def __init__(
         self,
         websocket: WebSocketType,
-        serializer_cls: Type[WebSocketSerializer] = ORJSONWebSocketSerializer
+        serializer_cls: Type[WebSocketSerializer] = RapidJSONWebSocketSerializer
     ):
         # The WebSocket object
         self._websocket = WebSocketProxy(websocket)
