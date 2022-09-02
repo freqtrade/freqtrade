@@ -505,7 +505,13 @@ CONF_SCHEMA = {
                 'reply_timeout': {'type': 'integer'},
                 'sleep_time': {'type': 'integer'},
                 'ping_timeout': {'type': 'integer'},
-                'remove_signals_analyzed_df': {'type': 'boolean', 'default': False}
+                'remove_signals_analyzed_df': {'type': 'boolean', 'default': False},
+                'initial_candle_limit': {
+                    'type': 'integer',
+                    'minimum': 100,
+                    'maximum': 1500,
+                    'default': 500
+                }
             },
             'required': ['producers']
         },

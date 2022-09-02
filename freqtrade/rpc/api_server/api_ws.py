@@ -26,6 +26,8 @@ async def _process_consumer_request(
 ):
     type, data = request.get('type'), request.get('data')
 
+    logger.debug(f"Request of type {type} from {channel}")
+
     # If we have a request of type SUBSCRIBE, set the topics in this channel
     if type == RPCRequestType.SUBSCRIBE:
         # If the request is empty, do nothing
@@ -49,8 +51,16 @@ async def _process_consumer_request(
         await channel.send({"type": RPCMessageType.WHITELIST, "data": whitelist})
 
     elif type == RPCRequestType.ANALYZED_DF:
+        limit = None
+
+        if data:
+            # Limit the amount of candles per dataframe to 'limit' or 1500
+            limit = max(data.get('limit', 500), 1500)
+
         # They requested the full historical analyzed dataframes
-        analyzed_df = rpc._ws_request_analyzed_df()
+        analyzed_df = rpc._ws_request_analyzed_df(limit)
+
+        logger.debug(f"ANALYZED_DF RESULT: {analyzed_df}")
 
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
@@ -65,32 +75,33 @@ async def message_endpoint(
 ):
     try:
         if is_websocket_alive(ws):
-            logger.info(f"Consumer connected - {ws.client}")
-
             # TODO:
             # Return a channel ID, pass that instead of ws to the rest of the methods
             channel = await channel_manager.on_connect(ws)
+
+            logger.info(f"Consumer connected - {channel}")
 
             # Keep connection open until explicitly closed, and process requests
             try:
                 while not channel.is_closed():
                     request = await channel.recv()
 
-                    # Process the request here. Should this be a method of RPC?
-                    logger.info(f"Request: {request}")
+                    # Process the request here
                     await _process_consumer_request(request, channel, rpc)
 
             except WebSocketDisconnect:
                 # Handle client disconnects
-                logger.info(f"Consumer disconnected - {ws.client}")
+                logger.info(f"Consumer disconnected - {channel}")
                 await channel_manager.on_disconnect(ws)
             except Exception as e:
-                logger.info(f"Consumer connection failed - {ws.client}")
+                logger.info(f"Consumer connection failed - {channel}")
                 logger.exception(e)
                 # Handle cases like -
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
                 await channel_manager.on_disconnect(ws)
 
-    except Exception:
+    except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")
+        # Log tracebacks to keep track of what errors are happening
+        logger.exception(e)
         await channel_manager.on_disconnect(ws)

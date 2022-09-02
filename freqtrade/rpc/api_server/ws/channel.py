@@ -1,6 +1,7 @@
 import logging
 from threading import RLock
-from typing import List, Type
+from typing import List, Optional, Type
+from uuid import uuid4
 
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
@@ -19,8 +20,12 @@ class WebSocketChannel:
     def __init__(
         self,
         websocket: WebSocketType,
+        channel_id: Optional[str] = None,
         serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer
     ):
+
+        self.channel_id = channel_id if channel_id else uuid4().hex[:8]
+
         # The WebSocket object
         self._websocket = WebSocketProxy(websocket)
         # The Serializing class for the WebSocket object
@@ -33,6 +38,13 @@ class WebSocketChannel:
 
         # Wrap the WebSocket in the Serializing class
         self._wrapped_ws = self._serializer_cls(self._websocket)
+
+    def __repr__(self):
+        return f"WebSocketChannel({self.channel_id}, {self.remote_addr})"
+
+    @property
+    def remote_addr(self):
+        return self._websocket.remote_addr
 
     async def send(self, data):
         """

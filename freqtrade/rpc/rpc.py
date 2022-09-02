@@ -1068,10 +1068,10 @@ class RPC:
 
         return _data
 
-    def _ws_request_analyzed_df(self):
+    def _ws_request_analyzed_df(self, limit: Optional[int]):
         """ Historical Analyzed Dataframes for WebSocket """
         whitelist = self._freqtrade.active_pair_whitelist
-        return self._ws_all_analysed_dataframes(whitelist, 500)
+        return self._ws_all_analysed_dataframes(whitelist, limit)
 
     def _ws_request_whitelist(self):
         """ Whitelist data for WebSocket """
