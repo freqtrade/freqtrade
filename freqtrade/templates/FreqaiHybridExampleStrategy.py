@@ -174,30 +174,28 @@ class FreqaiExampleHybridStrategy(IStrategy):
     # flake8: noqa: C901
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        # User creates their own custom strat here. Present example is a supertrend
-        # based strategy.
-
         dataframe = self.freqai.start(dataframe, metadata, self)
 
-        # TA indicators to combine with the Freqai targets
-        # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
+        with self.freqai.analysis_lock:
+            # TA indicators to combine with the Freqai targets
+            # RSI
+            dataframe['rsi'] = ta.RSI(dataframe)
 
-        # Bollinger Bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
-        dataframe['bb_upperband'] = bollinger['upper']
-        dataframe["bb_percent"] = (
-            (dataframe["close"] - dataframe["bb_lowerband"]) /
-            (dataframe["bb_upperband"] - dataframe["bb_lowerband"])
-        )
-        dataframe["bb_width"] = (
-            (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe["bb_middleband"]
-        )
+            # Bollinger Bands
+            bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+            dataframe['bb_lowerband'] = bollinger['lower']
+            dataframe['bb_middleband'] = bollinger['mid']
+            dataframe['bb_upperband'] = bollinger['upper']
+            dataframe["bb_percent"] = (
+                (dataframe["close"] - dataframe["bb_lowerband"]) /
+                (dataframe["bb_upperband"] - dataframe["bb_lowerband"])
+            )
+            dataframe["bb_width"] = (
+                (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe["bb_middleband"]
+            )
 
-        # TEMA - Triple Exponential Moving Average
-        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
+            # TEMA - Triple Exponential Moving Average
+            dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
 
         return dataframe
 
