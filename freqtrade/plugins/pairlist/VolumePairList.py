@@ -186,6 +186,7 @@ class VolumePairList(IPairList):
                     needed_pairs, since_ms=since_ms, cache=False
                 )
             for i, p in enumerate(filtered_tickers):
+                contract_size = self._exchange.markets[p['symbol']].get('contractSize', 1.0) or 1.0
                 pair_candles = candles[
                     (p['symbol'], self._lookback_timeframe, self._def_candletype)
                 ] if (
@@ -199,6 +200,7 @@ class VolumePairList(IPairList):
 
                         pair_candles['quoteVolume'] = (
                             pair_candles['volume'] * pair_candles['typical_price']
+                            * contract_size
                         )
                     else:
                         # Exchange ohlcv data is in quote volume already.
