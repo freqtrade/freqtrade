@@ -33,7 +33,7 @@ async def _process_consumer_request(
             return
 
         if not isinstance(data, list):
-            logger.error(f"Improper request from channel: {channel} - {request}")
+            logger.error(f"Improper subscribe request from channel: {channel} - {request}")
             return
 
         # If all topics passed are a valid RPCMessageType, set subscriptions on channel
@@ -42,19 +42,19 @@ async def _process_consumer_request(
             logger.debug(f"{channel} subscribed to topics: {data}")
             channel.set_subscriptions(data)
 
-    elif type == RPCRequestType.INITIAL_DATA:
-        # Acquire the data
-        initial_data = rpc._ws_initial_data()
+    elif type == RPCRequestType.WHITELIST:
+        # They requested the whitelist
+        whitelist = rpc._ws_request_whitelist()
 
-        # We now loop over it sending it in pieces
-        whitelist_data, analyzed_df = initial_data.get('whitelist'), initial_data.get('analyzed_df')
+        await channel.send({"type": RPCMessageType.WHITELIST, "data": whitelist})
 
-        if whitelist_data:
-            await channel.send({"type": RPCMessageType.WHITELIST, "data": whitelist_data})
+    elif type == RPCRequestType.ANALYZED_DF:
+        # They requested the full historical analyzed dataframes
+        analyzed_df = rpc._ws_request_analyzed_df()
 
-        if analyzed_df:
-            for pair, message in analyzed_df.items():
-                await channel.send({"type": RPCMessageType.ANALYZED_DF, "data": message})
+        # For every dataframe, send as a separate message
+        for _, message in analyzed_df.items():
+            await channel.send({"type": RPCMessageType.ANALYZED_DF, "data": message})
 
 
 @router.websocket("/message/ws")

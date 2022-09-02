@@ -1068,13 +1068,14 @@ class RPC:
 
         return _data
 
-    def _ws_initial_data(self):
-        """ Websocket friendly initial data, whitelists and all analyzed dataframes """
+    def _ws_request_analyzed_df(self):
+        """ Historical Analyzed Dataframes for WebSocket """
         whitelist = self._freqtrade.active_pair_whitelist
-        # We only get the last 500 candles, should we remove the limit?
-        analyzed_df = self._ws_all_analysed_dataframes(whitelist, 500)
+        return self._ws_all_analysed_dataframes(whitelist, 500)
 
-        return {"whitelist": whitelist, "analyzed_df": analyzed_df}
+    def _ws_request_whitelist(self):
+        """ Whitelist data for WebSocket """
+        return self._freqtrade.active_pair_whitelist
 
     @ staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,

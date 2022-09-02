@@ -158,10 +158,12 @@ class ExternalMessageConsumer:
                         self.compose_consumer_request(RPCRequestType.SUBSCRIBE, self.topics)
                     )
 
-                    # Now request the initial data from this Producer
-                    await channel.send(
-                        self.compose_consumer_request(RPCRequestType.INITIAL_DATA)
-                    )
+                    # Now request the initial data from this Producer for every topic
+                    # we've subscribed to
+                    for topic in self.topics:
+                        # without .upper() we get KeyError
+                        request_type = RPCRequestType[topic.upper()]
+                        await channel.send(self.compose_consumer_request(request_type))
 
                     # Now receive data, if none is within the time limit, ping
                     while True:
@@ -191,9 +193,12 @@ class ExternalMessageConsumer:
                                 await asyncio.sleep(self.sleep_time)
 
                                 break
-                        except Exception as e:
-                            logger.exception(e)
-                            continue
+
+            # Catch invalid ws_url, and break the loop
+            except websockets.exceptions.InvalidURI as e:
+                logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
+                break
+
             except (
                 socket.gaierror,
                 ConnectionRefusedError,
@@ -204,9 +209,9 @@ class ExternalMessageConsumer:
 
                 continue
 
-            # Catch invalid ws_url, and break the loop
-            except websockets.exceptions.InvalidURI as e:
-                logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
+            except Exception as e:
+                # An unforseen error has occurred, log and stop
+                logger.exception(e)
                 break
 
     def compose_consumer_request(
