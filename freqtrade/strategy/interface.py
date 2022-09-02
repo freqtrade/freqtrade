@@ -725,9 +725,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             candle_type = self.config.get('candle_type_def', CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
-
-            if emit_df:
-                self.dp.emit_df((pair, self.timeframe, candle_type), dataframe)
+            self.dp.emit_df((pair, self.timeframe, candle_type), dataframe)
 
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")

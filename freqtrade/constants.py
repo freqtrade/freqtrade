@@ -61,8 +61,6 @@ USERPATH_FREQAIMODELS = 'freqaimodels'
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
 
-WAIT_DATA_POLICY_OPTIONS = ['none', 'first', 'all']
-
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
 NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
@@ -404,7 +402,6 @@ CONF_SCHEMA = {
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
                 'ws_token': {'type': 'string'},
-                'enable_message_ws': {'type': 'boolean', 'default': False},
                 'jwt_secret_key': {'type': 'string'},
                 'CORS_origins': {'type': 'array', 'items': {'type': 'string'}},
                 'verbosity': {'type': 'string', 'enum': ['error', 'info']},

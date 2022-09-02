@@ -203,8 +203,7 @@ class FreqtradeBot(LoggingMixin):
         # Doesn't necessarily NEED to be this way, as maybe we'd like to broadcast
         # even if we are using external dataframes in the future.
 
-        self.strategy.analyze(self.active_pair_whitelist,
-                              emit_df=self.dataprovider.external_data_enabled)
+        self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:
             # Check for exchange cancelations, timeouts and user requested replace
@@ -264,10 +263,9 @@ class FreqtradeBot(LoggingMixin):
         pairs that have open trades.
         """
         # Refresh whitelist
+        _prev_whitelist = self.pairlists.whitelist
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
-
-        self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'data': _whitelist})
 
         # Calculating Edge positioning
         if self.edge:
@@ -278,6 +276,10 @@ class FreqtradeBot(LoggingMixin):
             # Extend active-pair whitelist with pairs of open trades
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+
+        # Called last to include the included pairs
+        if _prev_whitelist != _whitelist:
+            self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'data': _whitelist})
 
         return _whitelist
 

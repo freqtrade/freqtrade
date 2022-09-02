@@ -4,9 +4,10 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
-from freqtrade.rpc.api_server.deps import get_channel_manager
+from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.rpc.api_server.ws.utils import is_websocket_alive
+from freqtrade.rpc.rpc import RPC
 
 
 # from typing import Any, Dict
@@ -18,17 +19,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# We are passed a Channel object, we can only do sync functions on that channel object
-def _process_consumer_request(request: Dict[str, Any], channel: WebSocketChannel):
+async def _process_consumer_request(
+    request: Dict[str, Any],
+    channel: WebSocketChannel,
+    rpc: RPC
+):
     type, data = request.get('type'), request.get('data')
-
-    # If the request is empty, do nothing
-    if not data:
-        return
 
     # If we have a request of type SUBSCRIBE, set the topics in this channel
     if type == RPCRequestType.SUBSCRIBE:
-        if isinstance(data, list):
+        # If the request is empty, do nothing
+        if not data:
+            return
+
+        if not isinstance(data, list):
             logger.error(f"Improper request from channel: {channel} - {request}")
             return
 
@@ -38,11 +42,26 @@ def _process_consumer_request(request: Dict[str, Any], channel: WebSocketChannel
             logger.debug(f"{channel} subscribed to topics: {data}")
             channel.set_subscriptions(data)
 
+    elif type == RPCRequestType.INITIAL_DATA:
+        # Acquire the data
+        initial_data = rpc._ws_initial_data()
+
+        # We now loop over it sending it in pieces
+        whitelist_data, analyzed_df = initial_data.get('whitelist'), initial_data.get('analyzed_df')
+
+        if whitelist_data:
+            await channel.send({"type": RPCMessageType.WHITELIST, "data": whitelist_data})
+
+        if analyzed_df:
+            for pair, message in analyzed_df.items():
+                await channel.send({"type": RPCMessageType.ANALYZED_DF, "data": message})
+
 
 @router.websocket("/message/ws")
 async def message_endpoint(
     ws: WebSocket,
-    channel_manager=Depends(get_channel_manager)
+    rpc: RPC = Depends(get_rpc),
+    channel_manager=Depends(get_channel_manager),
 ):
     try:
         if is_websocket_alive(ws):
@@ -59,7 +78,7 @@ async def message_endpoint(
 
                     # Process the request here. Should this be a method of RPC?
                     logger.info(f"Request: {request}")
-                    _process_consumer_request(request, channel)
+                    await _process_consumer_request(request, channel, rpc)
 
             except WebSocketDisconnect:
                 # Handle client disconnects

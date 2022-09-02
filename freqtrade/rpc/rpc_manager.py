@@ -81,6 +81,8 @@ class RPCManager:
         # Removed actually showing the message because the logs would be
         # completely spammed of the json dataframe
         logger.info('Sending rpc message of type: %s', msg.get('type'))
+        # Log actual message in debug?
+        # logger.debug(msg)
         if 'pair' in msg:
             msg.update({
                 'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])

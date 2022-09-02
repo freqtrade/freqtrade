@@ -33,3 +33,4 @@ class RPCMessageType(str, Enum):
 # Enum for parsing requests from ws consumers
 class RPCRequestType(str, Enum):
     SUBSCRIBE = 'subscribe'
+    INITIAL_DATA = 'initial_data'

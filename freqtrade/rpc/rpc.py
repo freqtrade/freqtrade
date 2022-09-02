@@ -24,7 +24,7 @@ from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirecti
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
-from freqtrade.misc import decimals_per_coin, shorten_date
+from freqtrade.misc import dataframe_to_json, decimals_per_coin, shorten_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1035,16 +1035,51 @@ class RPC:
 
     def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
                                 limit: Optional[int]) -> Dict[str, Any]:
+        """ Analyzed dataframe in Dict form """
 
-        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
-            pair, timeframe)
-        _data = _data.copy()
-        if limit:
-            _data = _data.iloc[-limit:]
+        _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
         return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
                                                pair, timeframe, _data, last_analyzed)
 
-    @staticmethod
+    def __rpc_analysed_dataframe_raw(self, pair: str, timeframe: str,
+                                     limit: Optional[int]) -> Tuple[DataFrame, datetime]:
+        """ Get the dataframe and last analyze from the dataprovider """
+        _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
+            pair, timeframe)
+        _data = _data.copy()
+
+        if limit:
+            _data = _data.iloc[-limit:]
+        return _data, last_analyzed
+
+    def _ws_all_analysed_dataframes(
+        self,
+        pairlist: List[str],
+        limit: Optional[int]
+    ) -> Dict[str, Any]:
+        """ Get the analysed dataframes of each pair in the pairlist """
+        timeframe = self._freqtrade.config['timeframe']
+        candle_type = self._freqtrade.config.get('candle_type_def', CandleType.SPOT)
+        _data = {}
+
+        for pair in pairlist:
+            dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
+            _data[pair] = {
+                "key": (pair, timeframe, candle_type),
+                "value": dataframe_to_json(dataframe)
+            }
+
+        return _data
+
+    def _ws_initial_data(self):
+        """ Websocket friendly initial data, whitelists and all analyzed dataframes """
+        whitelist = self._freqtrade.active_pair_whitelist
+        # We only get the last 500 candles, should we remove the limit?
+        analyzed_df = self._ws_all_analysed_dataframes(whitelist, 500)
+
+        return {"whitelist": whitelist, "analyzed_df": analyzed_df}
+
+    @ staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
                                    timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
@@ -1075,7 +1110,7 @@ class RPC:
             self._freqtrade.strategy.plot_config['subplots'] = {}
         return self._freqtrade.strategy.plot_config
 
-    @staticmethod
+    @ staticmethod
     def _rpc_sysinfo() -> Dict[str, Any]:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),

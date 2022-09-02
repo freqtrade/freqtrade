@@ -144,7 +144,6 @@ class DataProvider:
         if producer_name not in self.__producer_pairs_df:
             self.__producer_pairs_df[producer_name] = {}
 
-        # For multiple leaders, if the data already exists, we'd merge
         self.__producer_pairs_df[producer_name][pair_key] = (dataframe, datetime.now(timezone.utc))
 
     def get_external_df(

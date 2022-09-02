@@ -151,11 +151,9 @@ class ApiServer(RPCHandler):
         app.include_router(api_backtest, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
-        if self._config.get('api_server', {}).get('enable_message_ws', False):
-            logger.info("Enabling Message WebSocket")
-            app.include_router(ws_router, prefix="/api/v1",
-                               dependencies=[Depends(get_ws_token)]
-                               )
+        app.include_router(ws_router, prefix="/api/v1",
+                           dependencies=[Depends(get_ws_token)]
+                           )
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
         # UI Router MUST be last!
         app.include_router(router_ui, prefix='')

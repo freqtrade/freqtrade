@@ -8,7 +8,7 @@ import asyncio
 import logging
 import socket
 from threading import Thread
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import websockets
 
@@ -57,6 +57,11 @@ class ExternalMessageConsumer:
         # Unless we somehow integrate this with the strategy to allow creating
         # callbacks for the messages
         self.topics = [RPCMessageType.WHITELIST, RPCMessageType.ANALYZED_DF]
+
+        self._message_handlers = {
+            RPCMessageType.WHITELIST: self._consume_whitelist_message,
+            RPCMessageType.ANALYZED_DF: self._consume_analyzed_df_message,
+        }
 
         self.start()
 
@@ -152,6 +157,11 @@ class ExternalMessageConsumer:
                         self.compose_consumer_request(RPCRequestType.SUBSCRIBE, self.topics)
                     )
 
+                    # Now request the initial data from this Producer
+                    await channel.send(
+                        self.compose_consumer_request(RPCRequestType.INITIAL_DATA)
+                    )
+
                     # Now receive data, if none is within the time limit, ping
                     while True:
                         try:
@@ -198,7 +208,11 @@ class ExternalMessageConsumer:
                 logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
                 break
 
-    def compose_consumer_request(self, type_: RPCRequestType, data: Any) -> Dict[str, Any]:
+    def compose_consumer_request(
+        self,
+        type_: RPCRequestType,
+        data: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """
         Create a request for sending to a producer
 
@@ -208,8 +222,6 @@ class ExternalMessageConsumer:
         """
         return {'type': type_, 'data': data}
 
-    # How we do things here isn't set in stone. There seems to be some interest
-    # in figuring out a better way, but we shall do this for now.
     def handle_producer_message(self, producer: Dict[str, Any], message: Dict[str, Any]):
         """
         Handles external messages from a Producer
@@ -225,27 +237,44 @@ class ExternalMessageConsumer:
 
         logger.debug(f"Received message of type {message_type}")
 
-        # Handle Whitelists
-        if message_type == RPCMessageType.WHITELIST:
-            pairlist = message_data
+        message_handler = self._message_handlers.get(message_type)
 
-            # Add the pairlist data to the DataProvider
-            self._dp.set_producer_pairs(pairlist, producer_name=producer_name)
+        if not message_handler:
+            logger.info(f"Received unhandled message: {message_data}, ignoring...")
+            return
 
-        # Handle analyzed dataframes
-        elif message_type == RPCMessageType.ANALYZED_DF:
-            key, value = message_data.get('key'), message_data.get('value')
+        message_handler(producer_name, message_data)
 
-            if key and value:
-                pair, timeframe, candle_type = key
+    def _consume_whitelist_message(self, producer_name: str, message_data: Any):
+        # We expect List[str]
+        if not isinstance(message_data, list):
+            return
 
-                # Convert the JSON to a pandas DataFrame
-                dataframe = json_to_dataframe(value)
+        # Add the pairlist data to the DataProvider
+        self._dp.set_producer_pairs(message_data, producer_name=producer_name)
 
-                # If set, remove the Entry and Exit signals from the Producer
-                if self._emc_config.get('remove_entry_exit_signals', False):
-                    dataframe = remove_entry_exit_signals(dataframe)
+        logger.debug(f"Consumed message from {producer_name} of type RPCMessageType.WHITELIST")
 
-                # Add the dataframe to the dataprovider
-                self._dp.add_external_df(pair, timeframe, dataframe,
-                                         candle_type, producer_name=producer_name)
+    def _consume_analyzed_df_message(self, producer_name: str, message_data: Any):
+        # We expect a Dict[str, Any]
+        if not isinstance(message_data, dict):
+            return
+
+        key, value = message_data.get('key'), message_data.get('value')
+
+        if key and value:
+            pair, timeframe, candle_type = key
+
+            # Convert the JSON to a pandas DataFrame
+            dataframe = json_to_dataframe(value)
+
+            # If set, remove the Entry and Exit signals from the Producer
+            if self._emc_config.get('remove_entry_exit_signals', False):
+                dataframe = remove_entry_exit_signals(dataframe)
+
+            # Add the dataframe to the dataprovider
+            self._dp.add_external_df(pair, timeframe, dataframe,
+                                     candle_type, producer_name=producer_name)
+
+            logger.debug(
+                f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")
