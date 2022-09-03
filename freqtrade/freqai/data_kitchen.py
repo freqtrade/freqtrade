@@ -288,12 +288,11 @@ class FreqaiDataKitchen:
         :data_dictionary: updated dictionary with standardized values.
         """
 
-        df = data_dictionary["train_features"]
         # standardize the data by training stats
-        train_max = df.max()
-        train_min = df.min()
-        df = (
-            2 * (df - train_min) / (train_max - train_min) - 1
+        train_max = data_dictionary["train_features"].max()
+        train_min = data_dictionary["train_features"].min()
+        data_dictionary["train_features"] = (
+            2 * (data_dictionary["train_features"] - train_min) / (train_max - train_min) - 1
         )
         data_dictionary["test_features"] = (
             2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
@@ -322,8 +321,8 @@ class FreqaiDataKitchen:
                     - 1
                 )
 
-                self.data[f"{item}_max"] = train_labels_max
-                self.data[f"{item}_min"] = train_labels_min
+            self.data[f"{item}_max"] = train_labels_max
+            self.data[f"{item}_min"] = train_labels_min
         return data_dictionary
 
     def normalize_single_dataframe(self, df: DataFrame) -> DataFrame:
