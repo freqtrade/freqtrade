@@ -369,7 +369,8 @@ class LocalTrade():
         orders = self.select_filled_orders()
         if not orders:
             return self.open_date_utc
-        return max([self.open_date_utc, max(o.order_filled_utc for o in orders)])
+        return max([self.open_date_utc,
+                    max(o.order_filled_utc for o in orders if o.order_filled_utc)])
 
     @property
     def open_date_utc(self):

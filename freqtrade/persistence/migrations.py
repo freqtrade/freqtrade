@@ -223,7 +223,7 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
             cost, {stop_price} stop_price, order_date, order_filled_date,
-            order_update_date, {ft_fee_base} ft_fee_base {funding_fee} funding_fee
+            order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee
             from {table_back_name}
             """))
 
@@ -310,8 +310,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # if ('orders' not in previous_tables
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
-    if not has_column(cols_orders, 'funding_fee'):
     # if not has_column(cols_trades, 'contract_size'):
+    if not has_column(cols_orders, 'funding_fee'):
         migrating = True
         logger.info(f"Running database migration for trades - "
                     f"backup: {table_back_name}, {order_table_bak_name}")
