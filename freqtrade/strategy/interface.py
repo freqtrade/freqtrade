@@ -168,6 +168,10 @@ class IStrategy(ABC, HyperStrategyMixin):
                     raise OperationalException(
                         'freqAI is not enabled. '
                         'Please enable it in your config to use this strategy.')
+
+                def cleanup(self, *args, **kwargs):
+                    pass
+
             self.freqai = DummyClass()  # type: ignore
 
     def ft_bot_start(self, **kwargs) -> None:
@@ -180,6 +184,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         strategy_safe_wrapper(self.bot_start)()
 
         self.ft_load_hyper_params(self.config.get('runmode') == RunMode.HYPEROPT)
+
+    def ft_bot_cleanup(self) -> None:
+        """
+        Clean up FreqAI and child threads
+        """
+        self.freqai.shutdown()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
