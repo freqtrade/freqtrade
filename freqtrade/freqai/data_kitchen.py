@@ -70,7 +70,7 @@ class FreqaiDataKitchen:
         self.training_features_list: List = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
-        self.backtesting_prediction_folder: str = "backtesting_predictions"
+        self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
 
@@ -1077,7 +1077,7 @@ class FreqaiDataKitchen:
         Save prediction dataframe from backtesting to h5 file format
         :param append_df: dataframe for backtesting period
         """
-        full_predictions_folder = Path(self.full_path / self.backtesting_prediction_folder)
+        full_predictions_folder = Path(self.full_path / self.backtest_predictions_folder)
         if not full_predictions_folder.is_dir():
             full_predictions_folder.mkdir(parents=True, exist_ok=True)
 
@@ -1092,3 +1092,26 @@ class FreqaiDataKitchen:
         """
         append_df = pd.read_hdf(self.backtesting_results_path)
         return append_df
+
+    def check_if_backtest_prediction_exists(
+        self
+    ) -> bool:
+        """
+        Check if a backtesting prediction already exists
+        :param dk: FreqaiDataKitchen
+        :return:
+        :boolean: whether the prediction file exists or not.
+        """
+        path_to_predictionfile = Path(self.full_path /
+                                      self.backtest_predictions_folder /
+                                      f"{self.model_filename}_prediction.h5")
+        self.backtesting_results_path = path_to_predictionfile
+
+        file_exists = path_to_predictionfile.is_file()
+        if file_exists:
+            logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+        else:
+            logger.info(
+                f"Could not find backtesting prediction file at {path_to_predictionfile}"
+            )
+        return file_exists

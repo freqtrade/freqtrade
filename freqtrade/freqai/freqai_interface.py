@@ -71,7 +71,9 @@ class IFreqaiModel(ABC):
         self.first = True
         self.set_full_path()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
-        self.backtest_save_model: bool = self.freqai_info.get("backtest_save_model", True)
+        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", False)
+        if self.save_backtest_models:
+            logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
@@ -125,10 +127,9 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
-            with self.analysis_lock:
-                dataframe = self.dk.use_strategy_to_populate_indicators(
-                    strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-                )
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
@@ -232,10 +233,9 @@ class IFreqaiModel(ABC):
                 f"sub-train-{metadata['pair'].split('/')[0]}_{trained_timestamp_int}"
                 )
 
-            coin, _ = metadata["pair"].split("/")
-            dk.model_filename = f"cb_{coin.lower()}_{trained_timestamp_int}"
+            dk.set_new_model_names(metadata["pair"], trained_timestamp)
 
-            if self.backtest_prediction_exists(dk):
+            if dk.check_if_backtest_prediction_exists():
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -246,8 +246,9 @@ class IFreqaiModel(ABC):
                     self.model = self.train(dataframe_train, metadata["pair"], dk)
                     self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
                         trained_timestamp.stopts)
-                    dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                    if self.backtest_save_model:
+
+                    if self.save_backtest_models:
+                        logger.info('Saving backtest model to disk.')
                         self.dd.save_data(self.model, metadata["pair"], dk)
                 else:
                     self.model = self.dd.load_data(metadata["pair"], dk)
@@ -643,35 +644,6 @@ class IFreqaiModel(ABC):
                 self.pair_it_train = 0
                 self.train_time = 0
         return
-
-    def backtest_prediction_exists(
-        self,
-        dk: FreqaiDataKitchen,
-        scanning: bool = False,
-    ) -> bool:
-        """
-        Check if a backtesting prediction already exists
-        :param dk: FreqaiDataKitchen
-        :return:
-        :boolean: whether the prediction file exists or not.
-        """
-        if not self.live:
-            prediction_file_name = dk.model_filename
-            path_to_predictionfile = Path(dk.full_path /
-                                          dk.backtesting_prediction_folder /
-                                          f"{prediction_file_name}_prediction.h5")
-            dk.backtesting_results_path = path_to_predictionfile
-
-            file_exists = path_to_predictionfile.is_file()
-            if file_exists and not scanning:
-                logger.info("Found backtesting prediction file at %s", prediction_file_name)
-            elif not scanning:
-                logger.info(
-                    "Could not find backtesting prediction file at %s", prediction_file_name
-                )
-            return file_exists
-        else:
-            return False
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
