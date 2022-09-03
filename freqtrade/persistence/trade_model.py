@@ -128,6 +128,10 @@ class Order(_DECL_BASE):
         self.ft_is_open = True
         if self.status in NON_OPEN_EXCHANGE_STATES:
             self.ft_is_open = False
+            if self.trade:
+                # Assign funding fee up to this point
+                # (represents the funding fee since the last order)
+                self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
@@ -360,10 +364,12 @@ class LocalTrade():
             return self.amount
 
     @property
-    def date_last_filled_utc(self):
+    def date_last_filled_utc(self) -> datetime:
         """ Date of the last filled order"""
-        return max([self.open_date_utc,
-                   max(o.order_filled_utc for o in self.orders if o.filled and not o.ft_is_open)])
+        orders = self.select_filled_orders()
+        if not orders:
+            return self.open_date_utc
+        return max([self.open_date_utc, max(o.order_filled_utc for o in orders)])
 
     @property
     def open_date_utc(self):

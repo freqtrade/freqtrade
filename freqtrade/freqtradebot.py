@@ -281,7 +281,7 @@ class FreqtradeBot(LoggingMixin):
                     pair=trade.pair,
                     amount=trade.amount,
                     is_short=trade.is_short,
-                    open_date=trade.open_date_utc
+                    open_date=trade.date_last_filled_utc
                 )
                 trade.funding_fees = funding_fees
         else:
@@ -1485,7 +1485,7 @@ class FreqtradeBot(LoggingMixin):
             pair=trade.pair,
             amount=trade.amount,
             is_short=trade.is_short,
-            open_date=trade.open_date_utc,
+            open_date=trade.date_last_filled_utc,
         )
         exit_type = 'exit'
         exit_reason = exit_tag or exit_check.exit_reason
