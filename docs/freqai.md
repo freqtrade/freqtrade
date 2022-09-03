@@ -89,10 +89,10 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 |------------|-------------|
 |  |  **General configuration parameters**
 | `freqai` | **Required.** <br> The parent dictionary containing all the parameters for controlling FreqAI. <br> **Datatype:** Dictionary.
-| `startup_candles` | Number of candles needed for *backtesting only* to ensure all indicators are non NaNs at the start of the first train period. <br> **Datatype:** Positive integer.
 | `purge_old_models` | Delete obsolete models (otherwise, all historic models will remain on disk). <br> **Datatype:** Boolean. Default: `False`.
 | `train_period_days` | **Required.** <br> Number of days to use for the training data (width of the sliding window). <br> **Datatype:** Positive integer.
 | `backtest_period_days` | **Required.** <br> Number of days to inference from the trained model before sliding the window defined above, and retraining the model. This can be fractional days, but beware that the user-provided `timerange` will be divided by this number to yield the number of trainings necessary to complete the backtest. <br> **Datatype:** Float.
+| `save_backtest_models` | Backtesting operates most efficiently by saving the prediction data and reusing them directly for subsequent runs (when users wish to tune entry/exit parameters). If a user wishes to save models to disk when running backtesting, they should activate `save_backtest_models`. A user may wish to do this if they plan to use the same model files for starting a dry/live instance with the same `identifier`. <br> **Datatype:** Boolean. Default: `False`.
 | `identifier` | **Required.** <br> A unique name for the current model. This can be reused to reload pre-trained models/data. <br> **Datatype:** String.
 | `live_retrain_hours` | Frequency of retraining during dry/live runs. <br> Default set to 0, which means the model will retrain as often as possible. <br> **Datatype:** Float > 0.
 | `expiration_hours` | Avoid making predictions if a model is more than `expiration_hours` old. <br> Defaults set to 0, which means models never expire. <br> **Datatype:** Positive integer.
@@ -278,6 +278,17 @@ The FreqAI strategy requires the user to include the following lines of code in 
 ```
 
 Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](#feature-engineering)) and labels ([more information](#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`.
+
+### Setting the `startup_candle_count`
+Users need to take care to set the `startup_candle_count` in their strategy the same way they would for any normal Freqtrade strategy (see details [here](strategy-customization.md/#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling on the `dataprovider` to avoid any NaNs at the beginning of the first training. Users can easily set this value by identifying the longest period (in candle units) that they pass to their indicator creation functions (e.g. talib functions). In the present example, the user would pass 20 to as this value (since it is the maximum value in their `indicators_periods_candles`).
+
+!!! Note
+    Typically it is best for users to be safe and multiply their expected `startup_candle_count` by 2. There are instances where the talib functions actually require more data than just the passed `period`. Anecdotally, multiplying the `startup_candle_count` by 2 always leads to a fully NaN free training dataset. Look out for this log message to confirm that your data is clean:
+
+    ```
+    2022-08-31 15:14:04 - freqtrade.freqai.data_kitchen - INFO - dropped 0 training points due to NaNs in populated dataset 4319.
+    ```
+
 
 ## Creating a dynamic target
 
@@ -504,7 +515,7 @@ and if a full `live_retrain_hours` has elapsed since the end of the loaded model
 The FreqAI backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
 ```
 
 Backtesting mode requires the user to have the data pre-downloaded (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-sliding-training-window-and-backtesting-duration).
@@ -531,19 +542,13 @@ the user is asking FreqAI to use a training period of 30 days and backtest on th
 This means that if the user sets `--timerange 20210501-20210701`,
 FreqAI will train have trained 8 separate models at the end of `--timerange` (because the full range comprises 8 weeks). After the training of the model, FreqAI will backtest the subsequent 7 days. The "sliding window" then moves one week forward (emulating FreqAI retraining once per week in live mode) and the new model uses the previous 30 days (including the 7 days used for backtesting by the previous model) to train. This is repeated until the end of `--timerange`.
 
-In live mode, the required training data is automatically computed and downloaded. However, in backtesting mode,
-the user must manually enter the required number of `startup_candles` in the config. This value
-is used to increase the data to FreqAI, which should be sufficient to enable all indicators
-to be NaN free at the beginning of the first training. This is done by identifying the
-longest timeframe (`4h` in presented example config) and the longest indicator period (`20` days in presented example config)
-and adding this to the `train_period_days`. The units need to be in the base candle time frame:
-`startup_candles` = ( 4 hours * 20 max period * 60 minutes/hour + 30 day train_period_days * 1440 minutes per day ) / 5 min (base time frame) = 9360.
-
-!!! Note
-    In dry/live mode, this is all precomputed and handled automatically. Thus, `startup_candle` has no influence on dry/live mode.
-
 !!! Note
     Although fractional `backtest_period_days` is allowed, the user should be aware that the `--timerange` is divided by this value to determine the number of models that FreqAI will need to train in order to backtest the full range. For example, if the user wants to set a `--timerange` of 10 days, and asks for a `backtest_period_days` of 0.1, FreqAI will need to train 100 models per pair to complete the full backtest. Because of this, a true backtest of FreqAI adaptive training would take a *very* long time. The best way to fully test a model is to run it dry and let it constantly train. In this case, backtesting would take the exact same amount of time as a dry run.
+
+### Downloading data for backtesting
+Live/dry instances will download the data automatically for the user, but users who wish to use backtesting functionality still need to download the necessary data using `download-data` (details [here](data-download/#data-downloading)). FreqAI users need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that they have a sufficient amount of training data *before* the start of their backtesting timerange. The amount of additional data can be roughly estimated by taking subtracting `train_period_days` and the `startup_candle_count` ([details](#setting-the-startupcandlecount)) from the beginning of the desired backtesting timerange. 
+
+As an example, if we wish to backtest the `--timerange` above of `20210501-20210701`, and we use the example config which sets `train_period_days` to 15. The startup candle count is 40 on a maximum `include_timeframes` of 1h. We would need 20210501 - 15 days - 40 * 1h / 24 hours = 20210414 (16.7 days earlier than the start of the desired training timerange).
 
 ### Defining model expirations
 

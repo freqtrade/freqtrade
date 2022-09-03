@@ -44,7 +44,7 @@ class FreqaiExampleStrategy(IStrategy):
     stoploss = -0.05
     use_exit_signal = True
     # this is the maximum period fed to talib (timeframe independent)
-    startup_candle_count: int = 20
+    startup_candle_count: int = 40
     can_short = False
 
     linear_roi_offset = DecimalParameter(

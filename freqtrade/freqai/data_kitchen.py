@@ -69,6 +69,8 @@ class FreqaiDataKitchen:
         self.label_list: List = []
         self.training_features_list: List = []
         self.model_filename: str = ""
+        self.backtesting_results_path = Path()
+        self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
 
@@ -778,9 +780,10 @@ class FreqaiDataKitchen:
         weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
-    def append_predictions(self, predictions: DataFrame, do_predict: npt.ArrayLike) -> None:
+    def get_predictions_to_append(self, predictions: DataFrame,
+                                  do_predict: npt.ArrayLike) -> DataFrame:
         """
-        Append backtest prediction from current backtest period to all previous periods
+        Get backtest prediction from current backtest period
         """
 
         append_df = DataFrame()
@@ -795,12 +798,17 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
+        return append_df
+
+    def append_predictions(self, append_df: DataFrame) -> None:
+        """
+        Append backtest prediction from current backtest period to all previous periods
+        """
+
         if self.full_df.empty:
             self.full_df = append_df
         else:
             self.full_df = pd.concat([self.full_df, append_df], axis=0)
-
-        return
 
     def fill_predictions(self, dataframe):
         """
@@ -1060,3 +1068,50 @@ class FreqaiDataKitchen:
         if self.unique_classes:
             for label in self.unique_classes:
                 self.unique_class_list += list(self.unique_classes[label])
+
+    def save_backtesting_prediction(
+        self, append_df: DataFrame
+    ) -> None:
+
+        """
+        Save prediction dataframe from backtesting to h5 file format
+        :param append_df: dataframe for backtesting period
+        """
+        full_predictions_folder = Path(self.full_path / self.backtest_predictions_folder)
+        if not full_predictions_folder.is_dir():
+            full_predictions_folder.mkdir(parents=True, exist_ok=True)
+
+        append_df.to_hdf(self.backtesting_results_path, key='append_df', mode='w')
+
+    def get_backtesting_prediction(
+        self
+    ) -> DataFrame:
+
+        """
+        Get prediction dataframe from h5 file format
+        """
+        append_df = pd.read_hdf(self.backtesting_results_path)
+        return append_df
+
+    def check_if_backtest_prediction_exists(
+        self
+    ) -> bool:
+        """
+        Check if a backtesting prediction already exists
+        :param dk: FreqaiDataKitchen
+        :return:
+        :boolean: whether the prediction file exists or not.
+        """
+        path_to_predictionfile = Path(self.full_path /
+                                      self.backtest_predictions_folder /
+                                      f"{self.model_filename}_prediction.h5")
+        self.backtesting_results_path = path_to_predictionfile
+
+        file_exists = path_to_predictionfile.is_file()
+        if file_exists:
+            logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+        else:
+            logger.info(
+                f"Could not find backtesting prediction file at {path_to_predictionfile}"
+            )
+        return file_exists

@@ -74,7 +74,6 @@
             "weight_factor": 0.9,
             "principal_component_analysis": false,
             "use_SVM_to_remove_outliers": true,
-            "indicator_max_period_candles": 20,
             "indicator_periods_candles": [
                 10,
                 20
