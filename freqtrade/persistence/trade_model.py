@@ -892,7 +892,7 @@ class LocalTrade():
             if is_exit:
                 # Process exits
                 if i == ordercount and is_closing:
-                    # Apply funding fees only to the last order
+                    # Apply funding fees only to the last closing order
                     self.funding_fees = funding_fees
 
                 exit_rate = o.safe_price
