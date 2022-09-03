@@ -45,7 +45,6 @@ def freqai_conf(default_conf, tmpdir):
                     "principal_component_analysis": False,
                     "use_SVM_to_remove_outliers": True,
                     "stratify_training_data": 0,
-                    "indicator_max_period_candles": 10,
                     "indicator_periods_candles": [10],
                 },
                 "data_split_parameters": {"test_size": 0.33, "random_state": 1},

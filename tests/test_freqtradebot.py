@@ -4650,11 +4650,17 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
         fee_close=fee.return_value,
         open_order_id="123456"
     )
+    order = Order(
+        ft_order_side='buy',
+        order_id='100',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+    )
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
     walletmock.reset_mock()
     # Amount is kept as is
-    assert freqtrade.apply_fee_conditional(trade, 'LTC', amount, fee_abs) == amount_exp
+    assert freqtrade.apply_fee_conditional(trade, 'LTC', amount, fee_abs, order) == amount_exp
     assert walletmock.call_count == 1
 
 

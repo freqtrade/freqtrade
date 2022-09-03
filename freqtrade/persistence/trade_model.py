@@ -648,7 +648,6 @@ class LocalTrade():
         """
         self.close_rate = rate
         self.close_date = self.close_date or datetime.utcnow()
-        self.close_profit_abs = self.calc_profit(rate) + self.realized_profit
         self.is_open = False
         self.exit_order_status = 'closed'
         self.open_order_id = None

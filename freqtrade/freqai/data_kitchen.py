@@ -16,8 +16,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
-from freqtrade.data.dataprovider import DataProvider
-from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -71,6 +69,8 @@ class FreqaiDataKitchen:
         self.label_list: List = []
         self.training_features_list: List = []
         self.model_filename: str = ""
+        self.backtesting_results_path = Path()
+        self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
 
@@ -780,9 +780,10 @@ class FreqaiDataKitchen:
         weights = np.exp(-np.arange(num_weights) / (wfactor * num_weights))[::-1]
         return weights
 
-    def append_predictions(self, predictions: DataFrame, do_predict: npt.ArrayLike) -> None:
+    def get_predictions_to_append(self, predictions: DataFrame,
+                                  do_predict: npt.ArrayLike) -> DataFrame:
         """
-        Append backtest prediction from current backtest period to all previous periods
+        Get backtest prediction from current backtest period
         """
 
         append_df = DataFrame()
@@ -797,12 +798,17 @@ class FreqaiDataKitchen:
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
 
+        return append_df
+
+    def append_predictions(self, append_df: DataFrame) -> None:
+        """
+        Append backtest prediction from current backtest period to all previous periods
+        """
+
         if self.full_df.empty:
             self.full_df = append_df
         else:
             self.full_df = pd.concat([self.full_df, append_df], axis=0)
-
-        return
 
     def fill_predictions(self, dataframe):
         """
@@ -903,9 +909,7 @@ class FreqaiDataKitchen:
         # We notice that users like to use exotic indicators where
         # they do not know the required timeperiod. Here we include a factor
         # of safety by multiplying the user considered "max" by 2.
-        max_period = self.freqai_config["feature_parameters"].get(
-            "indicator_max_period_candles", 20
-        ) * 2
+        max_period = self.config.get('startup_candle_count', 20) * 2
         additional_seconds = max_period * max_tf_seconds
 
         if trained_timestamp != 0:
@@ -950,31 +954,6 @@ class FreqaiDataKitchen:
         )
 
         self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
-
-    def download_all_data_for_training(self, timerange: TimeRange, dp: DataProvider) -> None:
-        """
-        Called only once upon start of bot to download the necessary data for
-        populating indicators and training the model.
-        :param timerange: TimeRange = The full data timerange for populating the indicators
-                                      and training the model.
-        :param dp: DataProvider instance attached to the strategy
-        """
-        new_pairs_days = int((timerange.stopts - timerange.startts) / SECONDS_IN_DAY)
-        if not dp._exchange:
-            # Not realistic - this is only called in live mode.
-            raise OperationalException("Dataprovider did not have an exchange attached.")
-        refresh_backtest_ohlcv_data(
-            dp._exchange,
-            pairs=self.all_pairs,
-            timeframes=self.freqai_config["feature_parameters"].get("include_timeframes"),
-            datadir=self.config["datadir"],
-            timerange=timerange,
-            new_pairs_days=new_pairs_days,
-            erase=False,
-            data_format=self.config.get("dataformat_ohlcv", "json"),
-            trading_mode=self.config.get("trading_mode", "spot"),
-            prepend=self.config.get("prepend_data", False),
-        )
 
     def set_all_pairs(self) -> None:
 
@@ -1089,3 +1068,50 @@ class FreqaiDataKitchen:
         if self.unique_classes:
             for label in self.unique_classes:
                 self.unique_class_list += list(self.unique_classes[label])
+
+    def save_backtesting_prediction(
+        self, append_df: DataFrame
+    ) -> None:
+
+        """
+        Save prediction dataframe from backtesting to h5 file format
+        :param append_df: dataframe for backtesting period
+        """
+        full_predictions_folder = Path(self.full_path / self.backtest_predictions_folder)
+        if not full_predictions_folder.is_dir():
+            full_predictions_folder.mkdir(parents=True, exist_ok=True)
+
+        append_df.to_hdf(self.backtesting_results_path, key='append_df', mode='w')
+
+    def get_backtesting_prediction(
+        self
+    ) -> DataFrame:
+
+        """
+        Get prediction dataframe from h5 file format
+        """
+        append_df = pd.read_hdf(self.backtesting_results_path)
+        return append_df
+
+    def check_if_backtest_prediction_exists(
+        self
+    ) -> bool:
+        """
+        Check if a backtesting prediction already exists
+        :param dk: FreqaiDataKitchen
+        :return:
+        :boolean: whether the prediction file exists or not.
+        """
+        path_to_predictionfile = Path(self.full_path /
+                                      self.backtest_predictions_folder /
+                                      f"{self.model_filename}_prediction.h5")
+        self.backtesting_results_path = path_to_predictionfile
+
+        file_exists = path_to_predictionfile.is_file()
+        if file_exists:
+            logger.info(f"Found backtesting prediction file at {path_to_predictionfile}")
+        else:
+            logger.info(
+                f"Could not find backtesting prediction file at {path_to_predictionfile}"
+            )
+        return file_exists
