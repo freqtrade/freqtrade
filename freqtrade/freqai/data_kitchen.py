@@ -288,25 +288,20 @@ class FreqaiDataKitchen:
         :data_dictionary: updated dictionary with standardized values.
         """
 
-        df_train_features = data_dictionary["train_features"]
+        df = data_dictionary["train_features"]
         # standardize the data by training stats
-        train_max = df_train_features.max()
-        train_min = df_train_features.min()
-        df_train_features = (
-            2 * (df_train_features - train_min) / (train_max - train_min) - 1
+        train_max = df.max()
+        train_min = df.min()
+        df = (
+            2 * (df - train_min) / (train_max - train_min) - 1
         )
         data_dictionary["test_features"] = (
             2 * (data_dictionary["test_features"] - train_min) / (train_max - train_min) - 1
         )
 
         for item in train_max.keys():
-            if not [col for col in df_train_features.columns if col.startswith('PC')]:
-                self.data[item + "_max"] = train_max[item]
-                self.data[item + "_min"] = train_min[item]
-            else:
-                # if PCA is enabled and has transformed the training features
-                self.data[item + "_pca_max"] = train_max[item]
-                self.data[item + "_pca_min"] = train_min[item]
+            self.data[item + "_max"] = train_max[item]
+            self.data[item + "_min"] = train_min[item]
 
         for item in data_dictionary["train_labels"].keys():
             if data_dictionary["train_labels"][item].dtype == object:
@@ -327,15 +322,23 @@ class FreqaiDataKitchen:
                     - 1
                 )
 
-            if not [col for col in df_train_features.columns if col.startswith('PC')]:
-                self.data[f"{item}_max"] = train_labels_max  # .to_dict()
-                self.data[f"{item}_min"] = train_labels_min  # .to_dict()
-            else:
-                # if PCA is enabled and has transformed the training features
-                self.data[f"{item}_pca_max"] = train_labels_max  # .to_dict()
-                self.data[f"{item}_pca_min"] = train_labels_min  # .to_dict()
-
+                self.data[f"{item}_max"] = train_labels_max
+                self.data[f"{item}_min"] = train_labels_min
         return data_dictionary
+
+    def normalize_single_dataframe(self, df: DataFrame) -> DataFrame:
+
+        train_max = df.max()
+        train_min = df.min()
+        df = (
+            2 * (df - train_min) / (train_max - train_min) - 1
+        )
+
+        for item in train_max.keys():
+            self.data[item + "_max"] = train_max[item]
+            self.data[item + "_min"] = train_min[item]
+
+        return df
 
     def normalize_data_from_metadata(self, df: DataFrame) -> DataFrame:
         """
@@ -344,17 +347,11 @@ class FreqaiDataKitchen:
         :param df: Dataframe to be standardized
         """
 
-        if not [col for col in df.columns if col.startswith('PC')]:
-            id_str = ''
-        else:
-            # if PCA is enabled
-            id_str = '_pca'
-
         for item in df.keys():
             df[item] = (
                 2
-                * (df[item] - self.data[f"{item}{id_str}_min"])
-                / (self.data[f"{item}{id_str}_max"] - self.data[f"{item}{id_str}_min"])
+                * (df[item] - self.data[f"{item}_min"])
+                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
                 - 1
             )
 
@@ -484,7 +481,7 @@ class FreqaiDataKitchen:
             index=self.data_dictionary["train_features"].index,
         )
         # normalsing transformed training features
-        self.data_dictionary["train_features"] = self.normalize_data(
+        self.data_dictionary["train_features"] = self.normalize_single_dataframe(
             self.data_dictionary["train_features"])
 
         # keeping a copy of the non-transformed features so we can check for errors during
