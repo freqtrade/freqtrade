@@ -6,7 +6,8 @@ import pytest
 
 from freqtrade.exceptions import OperationalException
 from tests.conftest import log_has_re
-from tests.freqai.conftest import get_patched_data_kitchen, make_data_dictionary
+from tests.freqai.conftest import (get_patched_data_kitchen, make_data_dictionary,
+                                   make_unfiltered_dataframe)
 
 
 @pytest.mark.parametrize(
@@ -94,3 +95,72 @@ def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, 
         "SVM detected 8.46%",
         caplog,
     )
+
+
+def test_compute_inlier_metric(mocker, freqai_conf, caplog):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai_conf['freqai']['feature_parameters'].update({"inlier_metric_window": 10})
+    freqai.dk.compute_inlier_metric(set_='train')
+    assert log_has_re(
+        "Inlier metric computed and added to features.",
+        caplog,
+    )
+
+
+def test_add_noise_to_training_features(mocker, freqai_conf):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai_conf['freqai']['feature_parameters'].update({"noise_standard_deviation": 0.1})
+    freqai.dk.add_noise_to_training_features()
+
+
+def test_remove_beginning_points_from_data_dict(mocker, freqai_conf):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai.dk.remove_beginning_points_from_data_dict(set_='train')
+
+
+def test_principal_component_analysis(mocker, freqai_conf, caplog):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    freqai.dk.principal_component_analysis()
+    assert log_has_re(
+        "reduced feature dimension by",
+        caplog,
+    )
+
+
+def test_normalize_data(mocker, freqai_conf):
+    freqai = make_data_dictionary(mocker, freqai_conf)
+    data_dict = freqai.dk.data_dictionary
+    freqai.dk.normalize_data(data_dict)
+    assert len(freqai.dk.data) == 56
+
+
+def test_filter_features(mocker, freqai_conf):
+    freqai, unfiltered_dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
+    freqai.dk.find_features(unfiltered_dataframe)
+
+    filtered_df, labels = freqai.dk.filter_features(
+            unfiltered_dataframe,
+            freqai.dk.training_features_list,
+            freqai.dk.label_list,
+            training_filter=True,
+    )
+
+    assert len(filtered_df.columns) == 26
+
+
+def test_make_train_test_datasets(mocker, freqai_conf):
+    freqai, unfiltered_dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
+    freqai.dk.find_features(unfiltered_dataframe)
+
+    features_filtered, labels_filtered = freqai.dk.filter_features(
+            unfiltered_dataframe,
+            freqai.dk.training_features_list,
+            freqai.dk.label_list,
+            training_filter=True,
+        )
+
+    data_dictionary = freqai.dk.make_train_test_datasets(features_filtered, labels_filtered)
+
+    assert data_dictionary
+    assert len(data_dictionary) == 7
+    assert len(data_dictionary['train_features'].index) == 1916

@@ -1,10 +1,10 @@
 # import contextlib
-import datetime
 import logging
 import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Tuple
@@ -174,7 +174,7 @@ class IFreqaiModel(ABC):
 
                 if retrain:
                     self.train_timer('start')
-                    self.train_model_in_series(
+                    self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                     self.train_timer('stop')
@@ -214,10 +214,10 @@ class IFreqaiModel(ABC):
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
             trained_timestamp = tr_train
-            tr_train_startts_str = datetime.datetime.utcfromtimestamp(tr_train.startts).strftime(
+            tr_train_startts_str = datetime.utcfromtimestamp(tr_train.startts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
-            tr_train_stopts_str = datetime.datetime.utcfromtimestamp(tr_train.stopts).strftime(
+            tr_train_stopts_str = datetime.utcfromtimestamp(tr_train.stopts).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             logger.info(
@@ -495,7 +495,7 @@ class IFreqaiModel(ABC):
             Path(self.full_path, Path(self.config["config_files"][0]).name),
         )
 
-    def train_model_in_series(
+    def extract_data_and_train_model(
         self,
         new_trained_timerange: TimeRange,
         pair: str,

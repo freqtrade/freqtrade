@@ -1,7 +1,7 @@
 import copy
-import datetime
 import logging
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -345,7 +345,7 @@ class FreqaiDataKitchen:
 
     def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
         """
-        Normalize a set of data using the mean and standard deviation from
+        Denormalize a set of data using the mean and standard deviation from
         the associated training data.
         :param df: Dataframe of predictions to be denormalized
         """
@@ -384,7 +384,7 @@ class FreqaiDataKitchen:
         config_timerange = TimeRange.parse_timerange(self.config["timerange"])
         if config_timerange.stopts == 0:
             config_timerange.stopts = int(
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+                datetime.now(tz=timezone.utc).timestamp()
             )
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
@@ -401,8 +401,8 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
-            stop = datetime.datetime.utcfromtimestamp(timerange_train.stopts)
+            start = datetime.utcfromtimestamp(timerange_train.startts)
+            stop = datetime.utcfromtimestamp(timerange_train.stopts)
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
@@ -415,8 +415,8 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
-            stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
+            start = datetime.utcfromtimestamp(timerange_backtest.startts)
+            stop = datetime.utcfromtimestamp(timerange_backtest.stopts)
             tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
@@ -436,8 +436,8 @@ class FreqaiDataKitchen:
                    it is sliced down to just the present training period.
         """
 
-        start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
-        stop = datetime.datetime.fromtimestamp(timerange.stopts, tz=datetime.timezone.utc)
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df["date"] >= start, :]
         df = df.loc[df["date"] <= stop, :]
 
@@ -808,6 +808,8 @@ class FreqaiDataKitchen:
                 [compute_df, inlier_metric], axis=1)
             self.data_dictionary['prediction_features'].fillna(0, inplace=True)
 
+        logger.info('Inlier metric computed and added to features.')
+
         return None
 
     def remove_beginning_points_from_data_dict(self, set_='train', no_prev_pts: int = 10):
@@ -948,14 +950,14 @@ class FreqaiDataKitchen:
                                        "Please indicate the end date of your desired backtesting. "
                                        "timerange.")
             # backtest_timerange.stopts = int(
-            #     datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+            #     datetime.now(tz=timezone.utc).timestamp()
             # )
 
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
         )
-        start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
-        stop = datetime.datetime.utcfromtimestamp(backtest_timerange.stopts)
+        start = datetime.utcfromtimestamp(backtest_timerange.startts)
+        stop = datetime.utcfromtimestamp(backtest_timerange.stopts)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         self.full_path = Path(
@@ -981,7 +983,7 @@ class FreqaiDataKitchen:
         :return:
             bool = If the model is expired or not.
         """
-        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        time = datetime.now(tz=timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
         max_time = self.freqai_config.get("expiration_hours", 0)
         if max_time > 0:
@@ -993,7 +995,7 @@ class FreqaiDataKitchen:
         self, trained_timestamp: int
     ) -> Tuple[bool, TimeRange, TimeRange]:
 
-        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        time = datetime.now(tz=timezone.utc).timestamp()
         trained_timerange = TimeRange()
         data_load_timerange = TimeRange()
 
