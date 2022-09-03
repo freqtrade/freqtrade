@@ -71,6 +71,7 @@ class IFreqaiModel(ABC):
         self.first = True
         self.set_full_path()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
+        self.backtest_save_model: bool = self.freqai_info.get("backtest_save_model", True)
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
@@ -246,7 +247,8 @@ class IFreqaiModel(ABC):
                     self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
                         trained_timestamp.stopts)
                     dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                    self.dd.save_data(self.model, metadata["pair"], dk)
+                    if self.backtest_save_model:
+                        self.dd.save_data(self.model, metadata["pair"], dk)
                 else:
                     self.model = self.dd.load_data(metadata["pair"], dk)
 

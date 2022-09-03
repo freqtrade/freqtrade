@@ -93,6 +93,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `purge_old_models` | Delete obsolete models (otherwise, all historic models will remain on disk). <br> **Datatype:** Boolean. Default: `False`.
 | `train_period_days` | **Required.** <br> Number of days to use for the training data (width of the sliding window). <br> **Datatype:** Positive integer.
 | `backtest_period_days` | **Required.** <br> Number of days to inference from the trained model before sliding the window defined above, and retraining the model. This can be fractional days, but beware that the user-provided `timerange` will be divided by this number to yield the number of trainings necessary to complete the backtest. <br> **Datatype:** Float.
+| `backtest_save_model` | Saves models to disk when running backtesting. <br> **Datatype:** Boolean. Default: `True`.
 | `identifier` | **Required.** <br> A unique name for the current model. This can be reused to reload pre-trained models/data. <br> **Datatype:** String.
 | `live_retrain_hours` | Frequency of retraining during dry/live runs. <br> Default set to 0, which means the model will retrain as often as possible. <br> **Datatype:** Float > 0.
 | `expiration_hours` | Avoid making predictions if a model is more than `expiration_hours` old. <br> Defaults set to 0, which means models never expire. <br> **Datatype:** Positive integer.
