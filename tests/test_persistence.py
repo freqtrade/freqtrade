@@ -654,6 +654,7 @@ def test_trade_close(fee):
     trade.orders.append(Order(
         ft_order_side=trade.entry_side,
         order_id=f'{trade.pair}-{trade.entry_side}-{trade.open_date}',
+        ft_is_open=False,
         ft_pair=trade.pair,
         amount=trade.amount,
         filled=trade.amount,
@@ -667,6 +668,7 @@ def test_trade_close(fee):
     trade.orders.append(Order(
         ft_order_side=trade.exit_side,
         order_id=f'{trade.pair}-{trade.exit_side}-{trade.open_date}',
+        ft_is_open=False,
         ft_pair=trade.pair,
         amount=trade.amount,
         filled=trade.amount,
