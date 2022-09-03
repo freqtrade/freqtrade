@@ -169,7 +169,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                         'freqAI is not enabled. '
                         'Please enable it in your config to use this strategy.')
 
-                def cleanup(self, *args, **kwargs):
+                def shutdown(self, *args, **kwargs):
                     pass
 
             self.freqai = DummyClass()  # type: ignore
