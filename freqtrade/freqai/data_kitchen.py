@@ -458,6 +458,21 @@ class FreqaiDataKitchen:
 
         return df
 
+    def slice_dataframe_backtesting(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
+        """
+        Given a full dataframe, extract the user desired window
+        :param tr: timerange string that we wish to extract from df
+        :param df: Dataframe containing all candles to run the entire backtest. Here
+                   it is sliced down to just the present training period.
+        """
+
+        start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
+        stop = datetime.datetime.fromtimestamp(timerange.stopts, tz=datetime.timezone.utc)
+        df = df.loc[df["date"] >= start, :]
+        df = df.loc[df["date"] < stop, :]
+
+        return df
+
     def principal_component_analysis(self) -> None:
         """
         Performs Principal Component Analysis on the data for dimensionality reduction
