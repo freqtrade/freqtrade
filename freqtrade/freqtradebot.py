@@ -148,6 +148,8 @@ class FreqtradeBot(LoggingMixin):
 
         self.check_for_open_trades()
 
+        self.strategy.ft_bot_cleanup()
+
         self.rpc.cleanup()
         Trade.commit()
         self.exchange.close()
