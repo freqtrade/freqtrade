@@ -49,17 +49,6 @@ class RPCManager:
             apiserver.add_rpc_handler(self._rpc)
             self.registered_modules.append(apiserver)
 
-            # Enable External Signals mode
-            # For this to be enabled, the API server must also be enabled
-            # if config.get('external_signal', {}).get('enabled', False):
-            #     logger.info('Enabling RPC.ExternalSignalController')
-            #     from freqtrade.rpc.external_signal import ExternalSignalController
-            #     external_signals = ExternalSignalController(self._rpc, config, apiserver)
-            #     self.registered_modules.append(external_signals)
-            #
-            #     # Attach the controller to FreqTrade
-            #     freqtrade.external_signal_controller = external_signals
-
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
@@ -78,11 +67,8 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        # Removed actually showing the message because the logs would be
-        # completely spammed of the json dataframe
-        logger.info('Sending rpc message of type: %s', msg.get('type'))
-        # Log actual message in debug?
-        # logger.debug(msg)
+        if msg.get('type') is not RPCMessageType.ANALYZED_DF:
+            logger.info('Sending rpc message: %s', msg)
         if 'pair' in msg:
             msg.update({
                 'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])
