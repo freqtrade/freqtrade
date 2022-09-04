@@ -107,7 +107,7 @@ class ReinforcementLearningExample5ac(IStrategy):
 
             # For RL, there are no direct targets to set. This is filler (neutral)
             # until the agent sends an action.
-            df["&-action"] = 2
+            df["&-action"] = 0
 
         return df
 

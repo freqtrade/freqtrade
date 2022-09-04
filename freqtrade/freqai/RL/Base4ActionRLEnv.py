@@ -31,7 +31,7 @@ class Base4ActionRLEnv(BaseEnvironment):
         if self._current_tick == self._end_tick:
             self._done = True
 
-        self.update_portfolio_log_returns(action)
+        self._update_unrealized_total_profit()
 
         self._update_profit(action)
         step_reward = self.calculate_reward(action)

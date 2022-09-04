@@ -11,7 +11,7 @@ from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_
 logger = logging.getLogger(__name__)
 
 
-class ReinforcementLearningExample3ac(IStrategy):
+class ReinforcementLearningExample4ac(IStrategy):
     """
     Test strategy - used for testing freqAI functionalities.
     DO not use in production.
@@ -106,8 +106,8 @@ class ReinforcementLearningExample3ac(IStrategy):
 
             # For RL, this is not a target, it is simply a filler until actions come out
             # of the model.
-            # for Base3ActionEnv, 2 is netural (hold)
-            df["&-action"] = 2
+            # for Base4ActionEnv, 0 is netural (hold)
+            df["&-action"] = 0
 
         return df
 
@@ -119,14 +119,14 @@ class ReinforcementLearningExample3ac(IStrategy):
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        enter_long_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
+        enter_long_conditions = [df["do_predict"] == 1, df["&-action"] == 2]
 
         if enter_long_conditions:
             df.loc[
                 reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
             ] = (1, "long")
 
-        enter_short_conditions = [df["do_predict"] == 1, df["&-action"] == 2]
+        enter_short_conditions = [df["do_predict"] == 1, df["&-action"] == 3]
 
         if enter_short_conditions:
             df.loc[
@@ -136,12 +136,8 @@ class ReinforcementLearningExample3ac(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [df["do_predict"] == 1, df["&-action"] == 2]
+        exit_long_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
         if exit_long_conditions:
-            df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
-
-        exit_short_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
-        if exit_short_conditions:
-            df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
+            df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit"] = 1
 
         return df
