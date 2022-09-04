@@ -23,8 +23,7 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "stop_loss_limit"},
-        "order_time_in_force": ['gtc', 'fok', 'ioc'],
-        "time_in_force_parameter": "timeInForce",
+        "order_time_in_force": ['GTC', 'FOK', 'IOC'],
         "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
@@ -137,23 +136,27 @@ class Binance(Exchange):
         pair: str,
         open_rate: float,   # Entry price of position
         is_short: bool,
-        position: float,  # Absolute value of position size
+        amount: float,
+        stake_amount: float,
         wallet_balance: float,  # Or margin balance
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
+        Important: Must be fetching data from cached values as this is used by backtesting!
         MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
         PERPETUAL: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
 
         :param exchange_name:
-        :param open_rate: (EP1) Entry price of position
+        :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param position: Absolute value of position size (in base currency)
-        :param wallet_balance: (WB)
+        :param amount: Absolute value of position size incl. leverage (in base currency)
+        :param stake_amount: Stake amount - Collateral in settle currency.
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param margin_mode: Either ISOLATED or CROSS
+        :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param maintenance_amt:
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)
@@ -165,12 +168,11 @@ class Binance(Exchange):
         """
 
         side_1 = -1 if is_short else 1
-        position = abs(position)
         cross_vars = upnl_ex_1 - mm_ex_1 if self.margin_mode == MarginMode.CROSS else 0.0
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         # maintenance_amt: (CUM) Maintenance Amount of position
-        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, position)
+        mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
         if (maintenance_amt is None):
             raise OperationalException(
@@ -182,9 +184,9 @@ class Binance(Exchange):
             return (
                 (
                     (wallet_balance + cross_vars + maintenance_amt) -
-                    (side_1 * position * open_rate)
+                    (side_1 * amount * open_rate)
                 ) / (
-                    (position * mm_ratio) - (side_1 * position)
+                    (amount * mm_ratio) - (side_1 * amount)
                 )
             )
         else:

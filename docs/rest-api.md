@@ -163,6 +163,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `strategy <strategy>` | Get specific Strategy content. **Alpha**
 | `available_pairs` | List available backtest data. **Alpha**
 | `version` | Show version.
+| `sysinfo` | Show informations about the system load.
+| `health` | Show bot health (last bot loop).
 
 !!! Warning "Alpha status"
     Endpoints labeled with *Alpha status* above may change at any time without notice.
@@ -227,6 +229,11 @@ forceexit
 	Force-exit a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
+        :param ordertype: Order type to use (must be market or limit)
+        :param amount: Amount to sell. Full sell if not given
+
+health
+	Provides a quick health check of the running bot.
 
 locks
 	Return current locks
@@ -312,6 +319,7 @@ version
 
 whitelist
 	Show the current whitelist.
+
 ```
 
 ### OpenAPI interface

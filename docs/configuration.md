@@ -57,10 +57,21 @@ You can specify additional configuration files in `add_config_files`. Files spec
 This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
-    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.  
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
+
+    ``` bash
+    freqtrade trade --config user_data/config1.json --config user_data/config-private.json <...>
+    ```
+
+    The below is equivalent to the example above - but having 2 configuration files in the configuration, for easier reuse.
 
     ``` json title="user_data/config.json"
     "add_config_files": [
+        "config1.json",
         "config-private.json"
     ]
     ```
@@ -68,17 +79,6 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
-
-    The 2nd file should only specify what you intend to override.
-    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
-
-    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
-
-    ``` bash
-    freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
-    ```
-
-    This is equivalent to the example above - but `config-private.json` is specified as cli argument.
 
 ??? Note "config collision handling"
     If the same configuration setting takes place in both `config.json` and `config-import.json`, then the parent configuration wins.
@@ -110,6 +110,8 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited"
     }
     ```
+    
+    If multiple files are in the `add_config_files` section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).
 
 ## Configuration parameters
 
@@ -525,21 +527,28 @@ It means if the order is not executed immediately AND fully then it is cancelled
 It is the same as FOK (above) except it can be partially fulfilled. The remaining part
 is automatically cancelled by the exchange.
 
-The `order_time_in_force` parameter contains a dict with buy and sell time in force policy values.
+**PO (Post only):**
+
+Post only order. The order is either placed as a maker order, or it is canceled.
+This means the order must be placed on orderbook for at at least time in an unfilled state.
+
+#### time_in_force config
+
+The `order_time_in_force` parameter contains a dict with entry and exit time in force policy values.
 This can be set in the configuration file or in the strategy.
 Values set in the configuration file overwrites values set in the strategy.
 
-The possible values are: `gtc` (default), `fok` or `ioc`.
+The possible values are: `GTC` (default), `FOK` or `IOC`.
 
 ``` python
 "order_time_in_force": {
-    "entry": "gtc",
-    "exit": "gtc"
+    "entry": "GTC",
+    "exit": "GTC"
 },
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance and kucoin.
+    This is ongoing work. For now, it is supported only for binance, gate, ftx and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### What values can be used for fiat_display_currency?

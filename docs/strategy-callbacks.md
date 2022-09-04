@@ -423,7 +423,7 @@ class AwesomeStrategy(IStrategy):
 !!! Warning "Backtesting"
     Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
     Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
-    `custom_exit_price()` is only called for sells of type exit_signal and Custom exit. All other exit-types will use regular backtesting prices.
+    `custom_exit_price()` is only called for sells of type exit_signal, Custom exit and partial exits. All other exit-types will use regular backtesting prices.
 
 ## Custom order timeout rules
 
@@ -654,7 +654,7 @@ Position adjustments will always be applied in the direction of the trade, so a 
     Stoploss is still calculated from the initial opening price, not averaged price.
     Regular stoploss rules still apply (cannot move down).
 
-    While `/stopbuy` command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.
+    While `/stopentry` command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.
 
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so run-time performance will be affected.

@@ -71,6 +71,9 @@ class IFreqaiModel(ABC):
         self.first = True
         self.set_full_path()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
+        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", False)
+        if self.save_backtest_models:
+            logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
@@ -125,10 +128,9 @@ class IFreqaiModel(ABC):
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
             logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
-            with self.analysis_lock:
-                dataframe = self.dk.use_strategy_to_populate_indicators(
-                    strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-                )
+            dataframe = self.dk.use_strategy_to_populate_indicators(
+                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
+            )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
@@ -225,28 +227,39 @@ class IFreqaiModel(ABC):
                 "trains"
             )
 
+            trained_timestamp_int = int(trained_timestamp.stopts)
             dk.data_path = Path(
                 dk.full_path
                 /
-                f"sub-train-{metadata['pair'].split('/')[0]}_{int(trained_timestamp.stopts)}"
+                f"sub-train-{metadata['pair'].split('/')[0]}_{trained_timestamp_int}"
                 )
-            if not self.model_exists(
-                metadata["pair"], dk, trained_timestamp=int(trained_timestamp.stopts)
-            ):
-                dk.find_features(dataframe_train)
-                self.model = self.train(dataframe_train, metadata["pair"], dk)
-                self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
-                    trained_timestamp.stopts)
-                dk.set_new_model_names(metadata["pair"], trained_timestamp)
-                self.dd.save_data(self.model, metadata["pair"], dk)
+
+            dk.set_new_model_names(metadata["pair"], trained_timestamp)
+
+            if dk.check_if_backtest_prediction_exists():
+                append_df = dk.get_backtesting_prediction()
+                dk.append_predictions(append_df)
             else:
-                self.model = self.dd.load_data(metadata["pair"], dk)
+                if not self.model_exists(
+                    metadata["pair"], dk, trained_timestamp=trained_timestamp_int
+                ):
+                    dk.find_features(dataframe_train)
+                    self.model = self.train(dataframe_train, metadata["pair"], dk)
+                    self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
+                        trained_timestamp.stopts)
 
-            self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                    if self.save_backtest_models:
+                        logger.info('Saving backtest model to disk.')
+                        self.dd.save_data(self.model, metadata["pair"], dk)
+                else:
+                    self.model = self.dd.load_data(metadata["pair"], dk)
 
-            pred_df, do_preds = self.predict(dataframe_backtest, dk)
+                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
-            dk.append_predictions(pred_df, do_preds)
+                pred_df, do_preds = self.predict(dataframe_backtest, dk)
+                append_df = dk.get_predictions_to_append(pred_df, do_preds)
+                dk.append_predictions(append_df)
+                dk.save_backtesting_prediction(append_df)
 
         dk.fill_predictions(dataframe)
 
@@ -291,14 +304,8 @@ class IFreqaiModel(ABC):
             )
             dk.set_paths(metadata["pair"], new_trained_timerange.stopts)
 
-            # download candle history if it is not already in memory
+            # load candle history into memory if it is not yet.
             if not self.dd.historic_data:
-                logger.info(
-                    "Downloading all training data for all pairs in whitelist and "
-                    "corr_pairlist, this may take a while if you do not have the "
-                    "data saved"
-                )
-                dk.download_all_data_for_training(data_load_timerange, strategy.dp)
                 self.dd.load_all_pair_histories(data_load_timerange, dk)
 
             if not self.scanning:
@@ -463,11 +470,6 @@ class IFreqaiModel(ABC):
         :return:
         :boolean: whether the model file exists or not.
         """
-        coin, _ = pair.split("/")
-
-        if not self.live:
-            dk.model_filename = model_filename = f"cb_{coin.lower()}_{trained_timestamp}"
-
         path_to_modelfile = Path(dk.data_path / f"{model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
         if file_exists and not scanning:
@@ -620,8 +622,8 @@ class IFreqaiModel(ABC):
                 logger.info(
                     f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
                 if self.inference_time > 0.25 * self.base_tf_seconds:
-                    logger.warning('Inference took over 25/% of the candle time. Reduce pairlist to'
-                                   ' avoid blinding open trades and degrading performance.')
+                    logger.warning("Inference took over 25% of the candle time. Reduce pairlist to"
+                                   " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
         return

@@ -77,9 +77,9 @@ Freqtrade will not provide incomplete candles to strategies. Using incomplete ca
 
 You can use "current" market data by using the [dataprovider](strategy-customization.md#orderbookpair-maximum)'s orderbook or ticker methods - which however cannot be used during backtesting.
 
-### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
+### Is there a setting to only Exit the trades being held and not perform any new Entries?
 
-You can use the `/stopbuy` command in Telegram to prevent future buys, followed by `/forceexit all` (sell all open trades).
+You can use the `/stopentry` command in Telegram to prevent future trade entry, followed by `/forceexit all` (sell all open trades).
 
 ### I want to run multiple bots on the same machine
 

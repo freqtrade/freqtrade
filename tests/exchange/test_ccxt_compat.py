@@ -468,6 +468,7 @@ class TestCCXTExchange():
                 False,
                 100,
                 100,
+                100,
             )
             assert (isinstance(liquidation_price, float))
             assert liquidation_price >= 0.0
@@ -476,6 +477,7 @@ class TestCCXTExchange():
                 futures_pair,
                 40000,
                 False,
+                100,
                 100,
                 100,
             )

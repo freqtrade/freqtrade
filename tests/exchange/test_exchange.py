@@ -2,7 +2,6 @@ import copy
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from math import isclose
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -275,7 +274,7 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
         ex.validate_order_time_in_force(tif2)
 
     # Patch to see if this will pass if the values are in the ft dict
-    ex._ft_has.update({"order_time_in_force": ["gtc", "fok", "ioc"]})
+    ex._ft_has.update({"order_time_in_force": ["GTC", "FOK", "IOC"]})
     ex.validate_order_time_in_force(tif2)
 
 
@@ -407,10 +406,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # min
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     expected_result = 2 * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
-    assert isclose(result, expected_result / 3)
+    assert pytest.approx(result) == expected_result / 3
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -426,10 +425,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = 2 * 2 * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
-    assert isclose(result, expected_result / 5)
+    assert pytest.approx(result) == expected_result / 5
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
@@ -445,10 +444,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(2, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
-    assert isclose(result, expected_result / 10)
+    assert pytest.approx(result) == expected_result / 10
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -461,20 +460,20 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(8, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
-    assert isclose(result, expected_result / 7.0)
+    assert pytest.approx(result) == expected_result / 7.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
     expected_result = max(8, 2 * 2) * 1.5
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
-    assert isclose(result, expected_result / 8.0)
+    assert pytest.approx(result) == expected_result / 8.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -482,10 +481,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     expected_result = max(8, 2 * 2) * 1.5
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, expected_result / 12)
+    assert pytest.approx(result) == expected_result / 12
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -501,7 +500,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
 
     # Contract size 0.01
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
-    assert isclose(result, expected_result * 0.01)
+    assert pytest.approx(result) == expected_result * 0.01
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10
@@ -513,7 +512,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     # With Leverage, Contract size 10
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, (expected_result / 12) * 10.0)
+    assert pytest.approx(result) == (expected_result / 12) * 10.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -1503,7 +1502,7 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] == 200
     assert "timeInForce" in api_mock.create_order.call_args[0][5]
-    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force
+    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force.upper()
 
     order_type = 'market'
     time_in_force = 'ioc'
@@ -1642,10 +1641,10 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] == 200
     assert "timeInForce" in api_mock.create_order.call_args[0][5]
-    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force
+    assert api_mock.create_order.call_args[0][5]["timeInForce"] == time_in_force.upper()
 
     order_type = 'market'
-    time_in_force = 'ioc'
+    time_in_force = 'IOC'
     order = exchange.create_order(pair='ETH/BTC', ordertype=order_type, side="sell",
                                   amount=1, rate=200, leverage=1.0,
                                   time_in_force=time_in_force)
@@ -3239,7 +3238,7 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode,
     orders = exchange.get_trades_for_order(order_id, 'ETH/USDT:USDT', since)
     assert len(orders) == 1
     assert orders[0]['price'] == 165
-    assert isclose(orders[0]['amount'], amount)
+    assert pytest.approx(orders[0]['amount']) == amount
     assert api_mock.fetch_my_trades.call_count == 1
     # since argument should be
     assert isinstance(api_mock.fetch_my_trades.call_args[0][1], int)
@@ -3319,7 +3318,7 @@ def test_merge_ft_has_dict(default_conf, mocker):
     ex = Binance(default_conf)
     assert ex._ft_has != Exchange._ft_has_default
     assert ex.get_option('stoploss_on_exchange')
-    assert ex.get_option('order_time_in_force') == ['gtc', 'fok', 'ioc']
+    assert ex.get_option('order_time_in_force') == ['GTC', 'FOK', 'IOC']
     assert ex.get_option('trades_pagination') == 'id'
     assert ex.get_option('trades_pagination_arg') == 'fromId'
 
@@ -3776,8 +3775,8 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         since=unix_time
     )
 
-    assert (isclose(expected_fees, fees_from_datetime))
-    assert (isclose(expected_fees, fees_from_unix_time))
+    assert pytest.approx(expected_fees) == fees_from_datetime
+    assert pytest.approx(expected_fees) == fees_from_unix_time
 
     ccxt_exceptionhandlers(
         mocker,
@@ -4087,66 +4086,6 @@ def test_combine_funding_and_mark(
         assert df.iloc[2]['open_fund'] == futures_funding_rate
     else:
         assert len(df) == 0
-
-
-def test_get_or_calculate_liquidation_price(mocker, default_conf):
-
-    api_mock = MagicMock()
-    positions = [
-        {
-            'info': {},
-            'symbol': 'NEAR/USDT:USDT',
-            'timestamp': 1642164737148,
-            'datetime': '2022-01-14T12:52:17.148Z',
-            'initialMargin': 1.51072,
-            'initialMarginPercentage': 0.1,
-            'maintenanceMargin': 0.38916147,
-            'maintenanceMarginPercentage': 0.025,
-            'entryPrice': 18.884,
-            'notional': 15.1072,
-            'leverage': 9.97,
-            'unrealizedPnl': 0.0048,
-            'contracts': 8,
-            'contractSize': 0.1,
-            'marginRatio': None,
-            'liquidationPrice': 17.47,
-            'markPrice': 18.89,
-            'margin_mode': 1.52549075,
-            'marginType': 'isolated',
-            'side': 'buy',
-            'percentage': 0.003177292946409658
-        }
-    ]
-    api_mock.fetch_positions = MagicMock(return_value=positions)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        exchange_has=MagicMock(return_value=True),
-    )
-    default_conf['dry_run'] = False
-    default_conf['trading_mode'] = 'futures'
-    default_conf['margin_mode'] = 'isolated'
-    default_conf['liquidation_buffer'] = 0.0
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_or_calculate_liquidation_price(
-        pair='NEAR/USDT:USDT',
-        open_rate=18.884,
-        is_short=False,
-        position=0.8,
-        wallet_balance=0.8,
-    )
-    assert liq_price == 17.47
-
-    default_conf['liquidation_buffer'] = 0.05
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    liq_price = exchange.get_or_calculate_liquidation_price(
-        pair='NEAR/USDT:USDT',
-        open_rate=18.884,
-        is_short=False,
-        position=0.8,
-        wallet_balance=0.8,
-    )
-    assert liq_price == 17.540699999999998
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
@@ -4539,11 +4478,12 @@ def test_liquidation_price_is_none(
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_or_calculate_liquidation_price(
+    assert exchange.get_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
-        position=71200.81144,
+        amount=71200.81144,
+        stake_amount=open_rate * 71200.81144,
         wallet_balance=-56354.57,
         mm_ex_1=0.10,
         upnl_ex_1=0.0
@@ -4552,7 +4492,7 @@ def test_liquidation_price_is_none(
 
 @pytest.mark.parametrize(
     'exchange_name, is_short, trading_mode, margin_mode, wallet_balance, '
-    'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, '
     'mm_ratio, expected',
     [
         ("binance", False, 'futures', 'isolated', 1535443.01, 0.0,
@@ -4566,22 +4506,23 @@ def test_liquidation_price_is_none(
     ])
 def test_liquidation_price(
     mocker, default_conf, exchange_name, open_rate, is_short, trading_mode,
-    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+    margin_mode, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, amount, mm_ratio, expected
 ):
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = margin_mode
     default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert isclose(round(exchange.get_or_calculate_liquidation_price(
+    assert pytest.approx(round(exchange.get_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
         wallet_balance=wallet_balance,
         mm_ex_1=mm_ex_1,
         upnl_ex_1=upnl_ex_1,
-        position=position,
-    ), 2), expected)
+        amount=amount,
+        stake_amount=open_rate * amount,
+    ), 2)) == expected
 
 
 def test_get_max_pair_stake_amount(
@@ -4826,10 +4767,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier) == {
-        "min": 0,
-        "max": 100000,
-        "mmr": 0.025,
-        "lev": 20,
+        "minNotional": 0,
+        "maxNotional": 100000,
+        "maintenanceMarginRate": 0.025,
+        "maxLeverage": 20,
         "maintAmt": 0.0,
     }
 
@@ -4855,10 +4796,10 @@ def test_parse_leverage_tier(mocker, default_conf):
     }
 
     assert exchange.parse_leverage_tier(tier2) == {
-        'min': 0,
-        'max': 2000,
-        'mmr': 0.01,
-        'lev': 75,
+        'minNotional': 0,
+        'maxNotional': 2000,
+        'maintenanceMarginRate': 0.01,
+        'maxLeverage': 75,
         "maintAmt": None,
     }
 
@@ -4926,8 +4867,8 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
     assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
     assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
     assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
-    assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
-    assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
+    assert pytest.approx(exchange.get_max_leverage("BNB/BUSD", 99999.9)) == 5.000005
+    assert pytest.approx(exchange.get_max_leverage("BNB/USDT", 1500)) == 33.333333333333333
     assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
     assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
 
@@ -4950,7 +4891,7 @@ def test__get_params(mocker, default_conf, exchange_name):
     params1 = {'test': True}
     params2 = {
         'test': True,
-        'timeInForce': 'ioc',
+        'timeInForce': 'IOC',
         'reduceOnly': True,
     }
 
@@ -4965,7 +4906,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='market',
         reduceOnly=False,
-        time_in_force='gtc',
+        time_in_force='GTC',
         leverage=1.0,
     ) == params1
 
@@ -4973,7 +4914,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='market',
         reduceOnly=False,
-        time_in_force='ioc',
+        time_in_force='IOC',
         leverage=1.0,
     ) == params1
 
@@ -4981,7 +4922,7 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='limit',
         reduceOnly=False,
-        time_in_force='gtc',
+        time_in_force='GTC',
         leverage=1.0,
     ) == params1
 
@@ -4994,9 +4935,95 @@ def test__get_params(mocker, default_conf, exchange_name):
         side="buy",
         ordertype='limit',
         reduceOnly=True,
-        time_in_force='ioc',
+        time_in_force='IOC',
         leverage=3.0,
     ) == params2
+
+
+def test_get_liquidation_price1(mocker, default_conf):
+
+    api_mock = MagicMock()
+    positions = [
+        {
+            'info': {},
+            'symbol': 'NEAR/USDT:USDT',
+            'timestamp': 1642164737148,
+            'datetime': '2022-01-14T12:52:17.148Z',
+            'initialMargin': 1.51072,
+            'initialMarginPercentage': 0.1,
+            'maintenanceMargin': 0.38916147,
+            'maintenanceMarginPercentage': 0.025,
+            'entryPrice': 18.884,
+            'notional': 15.1072,
+            'leverage': 9.97,
+            'unrealizedPnl': 0.0048,
+            'contracts': 8,
+            'contractSize': 0.1,
+            'marginRatio': None,
+            'liquidationPrice': 17.47,
+            'markPrice': 18.89,
+            'margin_mode': 1.52549075,
+            'marginType': 'isolated',
+            'side': 'buy',
+            'percentage': 0.003177292946409658
+        }
+    ]
+    api_mock.fetch_positions = MagicMock(return_value=positions)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+    )
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    default_conf['liquidation_buffer'] = 0.0
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
+    )
+    assert liq_price == 17.47
+
+    default_conf['liquidation_buffer'] = 0.05
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
+    )
+    assert liq_price == 17.540699999999998
+
+    api_mock.fetch_positions = MagicMock(return_value=[])
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liq_price = exchange.get_liquidation_price(
+        pair='NEAR/USDT:USDT',
+        open_rate=18.884,
+        is_short=False,
+        amount=0.8,
+        stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
+    )
+    assert liq_price is None
+    default_conf['trading_mode'] = 'margin'
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    with pytest.raises(OperationalException, match=r'.*does not support .* margin'):
+        exchange.get_liquidation_price(
+            pair='NEAR/USDT:USDT',
+            open_rate=18.884,
+            is_short=False,
+            amount=0.8,
+            stake_amount=18.884 * 0.8,
+            wallet_balance=18.884 * 0.8,
+        )
 
 
 @pytest.mark.parametrize('liquidation_buffer', [0.0, 0.05])
@@ -5012,22 +5039,22 @@ def test__get_params(mocker, default_conf, exchange_name):
         (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 1.0, 11.89108910891089),
         (True, 'futures', 'binance', 'isolated', 3.0, 10.0, 1.0, 13.211221122079207),
         (True, 'futures', 'binance', 'isolated', 5.0, 8.0, 1.0, 9.514851485148514),
-        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 0.6, 12.557755775577558),
+        (True, 'futures', 'binance', 'isolated', 5.0, 10.0, 0.6, 11.897689768976898),
         # Binance, long
         (False, 'futures', 'binance', 'isolated', 5, 10, 1.0, 8.070707070707071),
         (False, 'futures', 'binance', 'isolated', 5, 8, 1.0, 6.454545454545454),
-        (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.717171717171718),
-        (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 7.39057239057239),
+        (False, 'futures', 'binance', 'isolated', 3, 10, 1.0, 6.723905723905723),
+        (False, 'futures', 'binance', 'isolated', 5, 10, 0.6, 8.063973063973064),
         # Gateio/okx, short
         (True, 'futures', 'gateio', 'isolated', 5, 10, 1.0, 11.87413417771621),
         (True, 'futures', 'gateio', 'isolated', 5, 10, 2.0, 11.87413417771621),
-        (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.476180850346978),
+        (True, 'futures', 'gateio', 'isolated', 3, 10, 1.0, 13.193482419684678),
         (True, 'futures', 'gateio', 'isolated', 5, 8, 1.0, 9.499307342172967),
+        (True, 'futures', 'okx', 'isolated', 3, 10, 1.0, 13.193482419684678),
         # Gateio/okx, long
         (False, 'futures', 'gateio', 'isolated', 5.0, 10.0, 1.0, 8.085708510208207),
         (False, 'futures', 'gateio', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
-        # (True, 'futures', 'okx', 'isolated', 11.87413417771621),
-        # (False, 'futures', 'okx', 'isolated', 8.085708510208207),
+        (False, 'futures', 'okx', 'isolated', 3.0, 10.0, 1.0, 6.738090425173506),
     ]
 )
 def test_get_liquidation_price(
@@ -5100,7 +5127,7 @@ def test_get_liquidation_price(
     default_conf_usdt['exchange']['name'] = exchange_name
     default_conf_usdt['margin_mode'] = margin_mode
     mocker.patch('freqtrade.exchange.Gateio.validate_ordertypes')
-    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange = get_patched_exchange(mocker, default_conf_usdt, id=exchange_name)
 
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
     exchange.name = exchange_name
@@ -5111,7 +5138,9 @@ def test_get_liquidation_price(
         pair='ETH/USDT:USDT',
         open_rate=open_rate,
         amount=amount,
-        leverage=leverage,
+        stake_amount=amount * open_rate / leverage,
+        wallet_balance=amount * open_rate / leverage,
+        # leverage=leverage,
         is_short=is_short,
     )
     if expected_liq is None:
@@ -5119,7 +5148,7 @@ def test_get_liquidation_price(
     else:
         buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
         expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
-        isclose(expected_liq, liq)
+        assert pytest.approx(expected_liq) == liq
 
 
 @pytest.mark.parametrize('contract_size,order_amount', [

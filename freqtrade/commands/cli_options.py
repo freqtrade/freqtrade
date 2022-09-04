@@ -255,6 +255,13 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         default='default',
     ),
+    "analyze_per_epoch": Arg(
+        '--analyze-per-epoch',
+        help='Run populate_indicators once per epoch.',
+        action='store_true',
+        default=False,
+    ),
+
     "print_all": Arg(
         '--print-all',
         help='Print all results, not only the best ones.',
@@ -455,7 +462,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "prepend_data": Arg(
         '--prepend',
-        help='Allow data prepending.',
+        help='Allow data prepending. (Data-appending is disabled)',
         action='store_true',
     ),
     "erase": Arg(

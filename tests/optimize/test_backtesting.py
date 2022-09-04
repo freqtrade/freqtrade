@@ -550,6 +550,7 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
     mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=100)
+    mocker.patch("freqtrade.optimize.backtesting.price_to_precision", lambda p, *args: p)
     patch_exchange(mocker)
     default_conf_usdt['stake_amount'] = 300
     default_conf_usdt['max_open_trades'] = 2
@@ -562,10 +563,10 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     pair = 'ETH/USDT:USDT'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
-        0.001,  # Open
-        0.0012,  # High
-        0.00099,  # Low
-        0.0011,  # Close
+        0.1,  # Open
+        0.12,  # High
+        0.099,  # Low
+        0.11,  # Close
         1,  # enter_long
         0,  # exit_long
         1,  # enter_short
@@ -580,8 +581,8 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
                  return_value=(0.01, 0.01))
 
     # leverage = 5
-    # ep1(trade.open_rate) = 0.001
-    # position(trade.amount) = 1500000
+    # ep1(trade.open_rate) = 0.1
+    # position(trade.amount) = 15000
     # stake_amount = 300 -> wb = 300 / 5 = 60
     # mmr = 0.01
     # cum_b = 0.01
@@ -591,26 +592,26 @@ def test_backtest__enter_trade_futures(default_conf_usdt, fee, mocker) -> None:
     # Binance, Long
     # liquidation_price
     #   = ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    #   = ((300 + 0.01) - (1 * 1500000 * 0.001)) / ((1500000 * 0.01) - (1 * 1500000))
+    #   = ((300 + 0.01) - (1 * 15000 * 0.1)) / ((15000 * 0.01) - (1 * 15000))
     #   = 0.0008080740740740741
     # freqtrade_liquidation_price = liq + (abs(open_rate - liq) * liq_buffer * side_1)
-    #   = 0.0008080740740740741 + ((0.001 - 0.0008080740740740741) * 0.05 * 1)
-    #   = 0.0008176703703703704
+    #   = 0.08080740740740741 + ((0.1 - 0.08080740740740741) * 0.05 * 1)
+    #   = 0.08176703703703704
 
     trade = backtesting._enter_trade(pair, row=row, direction='long')
-    assert pytest.approx(trade.liquidation_price) == 0.00081767037
+    assert pytest.approx(trade.liquidation_price) == 0.081767037
 
     # Binance, Short
     # liquidation_price
     #   = ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
-    #   = ((300 + 0.01) - ((-1) * 1500000 * 0.001)) / ((1500000 * 0.01) - ((-1) * 1500000))
+    #   = ((300 + 0.01) - ((-1) * 15000 * 0.1)) / ((15000 * 0.01) - ((-1) * 15000))
     #   = 0.0011881254125412541
     # freqtrade_liquidation_price = liq + (abs(open_rate - liq) * liq_buffer * side_1)
-    #   = 0.0011881254125412541 + (abs(0.001 - 0.0011881254125412541) * 0.05 * -1)
-    #   = 0.0011787191419141915
+    #   = 0.11881254125412541 + (abs(0.1 - 0.11881254125412541) * 0.05 * -1)
+    #   = 0.11787191419141915
 
     trade = backtesting._enter_trade(pair, row=row, direction='short')
-    assert pytest.approx(trade.liquidation_price) == 0.0011787191
+    assert pytest.approx(trade.liquidation_price) == 0.11787191
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)

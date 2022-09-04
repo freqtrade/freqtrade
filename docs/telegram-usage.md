@@ -149,7 +149,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopbuy`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
 
 ## Telegram commands
 
@@ -161,7 +161,7 @@ official commands. You can ask at any moment for help with `/help`.
 |----------|-------------|
 | `/start` | Starts the trader
 | `/stop` | Stops the trader
-| `/stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `/stopbuy | /stopentry` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `/reload_config` | Reloads the configuration file
 | `/show_config` | Shows part of the current configuration with relevant settings to operation
 | `/logs [limit]` | Show last log messages.

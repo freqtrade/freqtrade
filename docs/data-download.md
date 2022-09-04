@@ -63,7 +63,7 @@ optional arguments:
                         `jsongz`).
   --trading-mode {spot,margin,futures}
                         Select Trading mode
-  --prepend             Allow data prepending.
+  --prepend             Allow data prepending. (Data-appending is disabled)
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

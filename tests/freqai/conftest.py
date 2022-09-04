@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -44,7 +45,6 @@ def freqai_conf(default_conf, tmpdir):
                     "principal_component_analysis": False,
                     "use_SVM_to_remove_outliers": True,
                     "stratify_training_data": 0,
-                    "indicator_max_period_candles": 10,
                     "indicator_periods_candles": [10],
                 },
                 "data_split_parameters": {"test_size": 0.33, "random_state": 1},
@@ -79,6 +79,51 @@ def get_patched_freqaimodel(mocker, freqaiconf):
     freqaimodel = FreqaiModelResolver.load_freqaimodel(freqaiconf)
 
     return freqaimodel
+
+
+def make_data_dictionary(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180110-20180130"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.pair = "ADA/BTC"
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    freqai.dd.pair_dict = MagicMock()
+
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(
+            data_load_timerange, freqai.dk.pair, freqai.dk
+        )
+
+    unfiltered_dataframe = freqai.dk.use_strategy_to_populate_indicators(
+                strategy, corr_dataframes, base_dataframes, freqai.dk.pair
+            )
+
+    unfiltered_dataframe = freqai.dk.slice_dataframe(new_timerange, unfiltered_dataframe)
+
+    freqai.dk.find_features(unfiltered_dataframe)
+
+    features_filtered, labels_filtered = freqai.dk.filter_features(
+            unfiltered_dataframe,
+            freqai.dk.training_features_list,
+            freqai.dk.label_list,
+            training_filter=True,
+        )
+
+    data_dictionary = freqai.dk.make_train_test_datasets(features_filtered, labels_filtered)
+
+    data_dictionary = freqai.dk.normalize_data(data_dictionary)
+
+    return freqai
 
 
 def get_freqai_live_analyzed_dataframe(mocker, freqaiconf):
