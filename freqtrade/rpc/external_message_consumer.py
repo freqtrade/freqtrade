@@ -289,7 +289,7 @@ class ExternalMessageConsumer:
             return
 
         # Add the pairlist data to the DataProvider
-        self._dp.set_producer_pairs(message_data, producer_name=producer_name)
+        self._dp._set_producer_pairs(message_data, producer_name=producer_name)
 
         logger.debug(f"Consumed message from {producer_name} of type RPCMessageType.WHITELIST")
 
@@ -309,8 +309,8 @@ class ExternalMessageConsumer:
                 dataframe = remove_entry_exit_signals(dataframe)
 
             # Add the dataframe to the dataprovider
-            self._dp.add_external_df(pair, timeframe, dataframe,
-                                     candle_type, producer_name=producer_name)
+            self._dp._add_external_df(pair, dataframe, timeframe,
+                                      candle_type, producer_name=producer_name)
 
             logger.debug(
                 f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")

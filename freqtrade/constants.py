@@ -33,8 +33,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
-                       'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter',
-                       'ExternalPairList']
+                       'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']

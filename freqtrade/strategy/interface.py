@@ -700,8 +700,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def _analyze_ticker_internal(
         self,
         dataframe: DataFrame,
-        metadata: dict,
-        emit_df: bool = False
+        metadata: dict
     ) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
@@ -725,7 +724,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             candle_type = self.config.get('candle_type_def', CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
-            self.dp.emit_df((pair, self.timeframe, candle_type), dataframe)
+            self.dp._emit_df((pair, self.timeframe, candle_type), dataframe)
 
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
@@ -737,8 +736,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def analyze_pair(
         self,
-        pair: str,
-        emit_df: bool = False
+        pair: str
     ) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
@@ -759,7 +757,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             dataframe = strategy_safe_wrapper(
                 self._analyze_ticker_internal, message=""
-            )(dataframe, {'pair': pair}, emit_df)
+            )(dataframe, {'pair': pair})
 
             self.assert_df(dataframe, df_len, df_close, df_date)
         except StrategyError as error:
@@ -772,15 +770,14 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def analyze(
         self,
-        pairs: List[str],
-        emit_df: bool = False
+        pairs: List[str]
     ) -> None:
         """
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
         for pair in pairs:
-            self.analyze_pair(pair, emit_df)
+            self.analyze_pair(pair)
 
     @ staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:

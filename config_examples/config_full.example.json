@@ -175,12 +175,15 @@
         "password": "SuperSecurePassword",
         "ws_token": "a_secret_ws_token"
     },
+    // The ExternalMessageConsumer config should only be enabled on an instance
+    // that listens to outside data from another instance. This should not be enabled
+    // in your producer of data.
     "external_message_consumer": {
         "enabled": false,
         "producers": [
           {
             "name": "default",
-            "url": "ws://some.freqtrade.bot/api/v1/message/ws",
+            "url": "ws://localhost:8081/api/v1/message/ws",
             "ws_token": "a_secret_ws_token"
           }
         ],

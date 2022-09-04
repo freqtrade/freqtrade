@@ -50,6 +50,7 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
 
 # This should be reimplemented to better realign with the existing tools provided
 # by FastAPI regarding API Tokens
+# https://github.com/tiangolo/fastapi/blob/master/fastapi/security/api_key.py
 async def get_ws_token(
     ws: WebSocket,
     token: Union[str, None] = None,

@@ -199,10 +199,6 @@ class FreqtradeBot(LoggingMixin):
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
-        # This just means we won't broadcast dataframes if we're listening to a producer
-        # Doesn't necessarily NEED to be this way, as maybe we'd like to broadcast
-        # even if we are using external dataframes in the future.
-
         self.strategy.analyze(self.active_pair_whitelist)
 
         with self._exit_lock:

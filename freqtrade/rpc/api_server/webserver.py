@@ -205,7 +205,7 @@ class ApiServer(RPCHandler):
 
         # For testing, shouldn't happen when stable
         except Exception as e:
-            logger.info(f"Exception happened in background task: {e}")
+            logger.exception(f"Exception happened in background task: {e}")
 
     def start_api(self):
         """
@@ -244,8 +244,7 @@ class ApiServer(RPCHandler):
             if self._standalone:
                 self._server.run()
             else:
-                if self._config.get('api_server', {}).get('enable_message_ws', False):
-                    self.start_message_queue()
+                self.start_message_queue()
                 self._server.run_in_thread()
         except Exception:
             logger.exception("Api server failed to start.")

@@ -2,21 +2,28 @@ import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+# fastapi does not make this available through it, so import directly from starlette
+from starlette.websockets import WebSocketState
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
-from freqtrade.rpc.api_server.ws.utils import is_websocket_alive
 from freqtrade.rpc.rpc import RPC
-
-
-# from typing import Any, Dict
 
 
 logger = logging.getLogger(__name__)
 
 # Private router, protected by API Key authentication
 router = APIRouter()
+
+
+async def is_websocket_alive(ws: WebSocket) -> bool:
+    if (
+        ws.application_state == WebSocketState.CONNECTED and
+        ws.client_state == WebSocketState.CONNECTED
+    ):
+        return True
+    return False
 
 
 async def _process_consumer_request(

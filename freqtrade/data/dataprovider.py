@@ -48,8 +48,11 @@ class DataProvider:
         self.__producer_pairs: Dict[str, List[str]] = {}
         self._msg_queue: deque = deque()
 
+        self._default_candle_type = self._config.get('candle_type_def', CandleType.SPOT)
+        self._default_timeframe = self._config.get('timeframe', '1h')
+
         self.__msg_cache = PeriodicCache(
-            maxsize=1000, ttl=timeframe_to_seconds(self._config.get('timeframe', '1h')))
+            maxsize=1000, ttl=timeframe_to_seconds(self._default_timeframe))
 
         self._num_sources = len(
             self._config.get('external_message_consumer', {}).get('producers', [])
@@ -84,7 +87,7 @@ class DataProvider:
             dataframe, datetime.now(timezone.utc))
 
     # For multiple producers we will want to merge the pairlists instead of overwriting
-    def set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
+    def _set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
         """
         Set the pairs received to later be used.
         This only supports 1 Producer right now.
@@ -101,7 +104,7 @@ class DataProvider:
         """
         return self.__producer_pairs.get(producer_name, [])
 
-    def emit_df(
+    def _emit_df(
         self,
         pair_key: PairWithTimeframe,
         dataframe: DataFrame
@@ -123,12 +126,12 @@ class DataProvider:
                 }
             )
 
-    def add_external_df(
+    def _add_external_df(
         self,
         pair: str,
-        timeframe: str,
         dataframe: DataFrame,
-        candle_type: CandleType,
+        timeframe: Optional[str] = None,
+        candle_type: Optional[CandleType] = None,
         producer_name: str = "default"
     ) -> None:
         """
@@ -138,18 +141,22 @@ class DataProvider:
         :param timeframe: Timeframe to get data for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
-        pair_key = (pair, timeframe, candle_type)
+        _timeframe = self._default_timeframe if not timeframe else timeframe
+        _candle_type = self._default_candle_type if not candle_type else candle_type
+
+        pair_key = (pair, _timeframe, _candle_type)
 
         if producer_name not in self.__producer_pairs_df:
             self.__producer_pairs_df[producer_name] = {}
 
         self.__producer_pairs_df[producer_name][pair_key] = (dataframe, datetime.now(timezone.utc))
+        logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
     def get_external_df(
         self,
         pair: str,
-        timeframe: str,
-        candle_type: CandleType,
+        timeframe: Optional[str] = None,
+        candle_type: Optional[CandleType] = None,
         producer_name: str = "default"
     ) -> Tuple[DataFrame, datetime]:
         """
@@ -160,16 +167,22 @@ class DataProvider:
         :param timeframe: Timeframe to get data for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
-        pair_key = (pair, timeframe, candle_type)
+        _timeframe = self._default_timeframe if not timeframe else timeframe
+        _candle_type = self._default_candle_type if not candle_type else candle_type
 
+        pair_key = (pair, _timeframe, _candle_type)
+
+        # If we have no data from this Producer yet
         if producer_name not in self.__producer_pairs_df:
             # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
+        # If we do have data from that Producer, but no data on this pair_key
         if pair_key not in self.__producer_pairs_df[producer_name]:
             # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
+        # We have it, return this data
         return self.__producer_pairs_df[producer_name][pair_key]
 
     def add_pairlisthandler(self, pairlists) -> None:
