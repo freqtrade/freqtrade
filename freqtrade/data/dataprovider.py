@@ -166,7 +166,7 @@ class DataProvider:
             # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
-        if pair_key not in self.__producer_pairs_df:
+        if pair_key not in self.__producer_pairs_df[producer_name]:
             # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 

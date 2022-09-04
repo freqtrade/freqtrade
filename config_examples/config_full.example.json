@@ -173,8 +173,7 @@
         "CORS_origins": [],
         "username": "freqtrader",
         "password": "SuperSecurePassword",
-        "ws_token": "a_secret_ws_token",
-        "enable_message_ws": false
+        "ws_token": "a_secret_ws_token"
     },
     "external_message_consumer": {
         "enabled": false,
