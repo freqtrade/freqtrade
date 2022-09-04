@@ -225,8 +225,8 @@ class IFreqaiModel(ABC):
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             self.training_timerange = tr_train
-            dataframe_train = dk.slice_dataframe_backtesting(tr_train, dataframe)
-            dataframe_backtest = dk.slice_dataframe_backtesting(tr_backtest, dataframe)
+            dataframe_train = dk.slice_dataframe(tr_train, dataframe)
+            dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
             trained_timestamp = tr_train
             tr_train_startts_str = datetime.datetime.utcfromtimestamp(tr_train.startts).strftime(
