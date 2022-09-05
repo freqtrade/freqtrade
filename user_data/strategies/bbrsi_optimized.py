@@ -19,7 +19,6 @@ class bbrsi_optimized(WAOStrategy):
 
     timeframe = '15m'
 
-    # ROI table:
     minimal_roi = {
         "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
         "220": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -40,10 +39,10 @@ class bbrsi_optimized(WAOStrategy):
     stoploss = -0.01
 
     # Trailing stop:
-    trailing_stop = True
-    trailing_stop_positive = 0.281
-    trailing_stop_positive_offset = 0.299
-    trailing_only_offset_is_reached = True
+    trailing_stop = False
+    trailing_stop_positive = 0.089
+    trailing_stop_positive_offset = 0.11
+    trailing_only_offset_is_reached = False
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
@@ -78,6 +77,7 @@ class bbrsi_optimized(WAOStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Adds several different TA indicators to the given DataFrame
+
         Performance Note: For the best performance be frugal on the number of indicators
         you are using. Let uncomment only the indicator you are using in your refined-strategies
         or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
@@ -126,8 +126,10 @@ class bbrsi_optimized(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])) &
-                    (dataframe['rsi'] < 50)
+                qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
+                # & (dataframe['rsi'] < 50)
+                # & (dataframe['ema_9'] > dataframe['sma_200'])
+                # & (dataframe['macdhist'] > -0.08)
             ),
             'buy'] = 1
 
