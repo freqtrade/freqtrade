@@ -88,7 +88,7 @@ class bbrsi_optimized(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        # dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe['rsi'] = ta.RSI(dataframe)
         # SMA
         # dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
         # EMA
