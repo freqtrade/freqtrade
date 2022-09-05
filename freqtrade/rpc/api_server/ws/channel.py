@@ -50,7 +50,6 @@ class WebSocketChannel:
         """
         Send data on the wrapped websocket
         """
-        # logger.info(f"Serialized Send - {self._wrapped_ws._serialize(data)}")
         await self._wrapped_ws.send(data)
 
     async def recv(self):
@@ -168,8 +167,6 @@ class ChannelManager:
         :param direct_channel: The WebSocketChannel object to send data through
         :param data: The data to send
         """
-        # We iterate over the channels to get reference to the websocket object
-        # so we can disconnect incase of failure
         await channel.send(data)
 
     def has_channels(self):

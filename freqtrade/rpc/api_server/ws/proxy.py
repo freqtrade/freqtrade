@@ -27,11 +27,14 @@ class WebSocketProxy:
         """
         Send data on the wrapped websocket
         """
-        if isinstance(data, str):
-            data = data.encode()
 
-        if hasattr(self._websocket, "send_bytes"):
-            await self._websocket.send_bytes(data)
+        if not isinstance(data, str):
+            # We use HybridJSONWebSocketSerializer, which when serialized returns
+            # bytes because of ORJSON, so we explicitly decode into a string
+            data = str(data, "utf-8")
+
+        if hasattr(self._websocket, "send_text"):
+            await self._websocket.send_text(data)
         else:
             await self._websocket.send(data)
 
@@ -39,8 +42,8 @@ class WebSocketProxy:
         """
         Receive data on the wrapped websocket
         """
-        if hasattr(self._websocket, "receive_bytes"):
-            return await self._websocket.receive_bytes()
+        if hasattr(self._websocket, "receive_text"):
+            return await self._websocket.receive_text()
         else:
             return await self._websocket.recv()
 

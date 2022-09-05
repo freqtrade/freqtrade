@@ -58,9 +58,11 @@ class RapidJSONWebSocketSerializer(WebSocketSerializer):
 
 class HybridJSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data):
+        # ORJSON returns bytes
         return orjson.dumps(data, default=_json_default)
 
     def _deserialize(self, data):
+        # RapidJSON expects strings
         return rapidjson.loads(data, object_hook=_json_object_hook)
 
 

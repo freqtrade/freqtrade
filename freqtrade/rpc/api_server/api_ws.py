@@ -67,8 +67,6 @@ async def _process_consumer_request(
         # They requested the full historical analyzed dataframes
         analyzed_df = rpc._ws_request_analyzed_df(limit)
 
-        logger.debug(f"ANALYZED_DF RESULT: {analyzed_df}")
-
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
             await channel.send({"type": RPCMessageType.ANALYZED_DF, "data": message})
