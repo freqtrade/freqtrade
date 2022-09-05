@@ -76,6 +76,8 @@ class FreqaiDataDrawer:
             self.full_path / f"follower_dictionary-{self.follower_name}.json"
         )
         self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
+        self.historic_predictions_bkp_path = Path(
+            self.full_path / "historic_predictions.backup.pkl")
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
         self.follow_mode = follow_mode
         if follow_mode:
@@ -118,13 +120,21 @@ class FreqaiDataDrawer:
         """
         exists = self.historic_predictions_path.is_file()
         if exists:
-            with open(self.historic_predictions_path, "rb") as fp:
-                self.historic_predictions = cloudpickle.load(fp)
-            logger.info(
-                f"Found existing historic predictions at {self.full_path}, but beware "
-                "that statistics may be inaccurate if the bot has been offline for "
-                "an extended period of time."
-            )
+            try:
+                with open(self.historic_predictions_path, "rb") as fp:
+                    self.historic_predictions = cloudpickle.load(fp)
+                logger.info(
+                    f"Found existing historic predictions at {self.full_path}, but beware "
+                    "that statistics may be inaccurate if the bot has been offline for "
+                    "an extended period of time."
+                )
+            except EOFError:
+                logger.warning(
+                    'Historical prediction file was corrupted. Trying to load backup file.')
+                with open(self.historic_predictions_bkp_path, "rb") as fp:
+                    self.historic_predictions = cloudpickle.load(fp)
+                logger.warning('FreqAI successfully loaded the backup historical predictions file.')
+
         elif not self.follow_mode:
             logger.info("Could not find existing historic_predictions, starting from scratch")
         else:
@@ -141,6 +151,9 @@ class FreqaiDataDrawer:
         """
         with open(self.historic_predictions_path, "wb") as fp:
             cloudpickle.dump(self.historic_predictions, fp, protocol=cloudpickle.DEFAULT_PROTOCOL)
+
+        # create a backup
+        shutil.copy(self.historic_predictions_path, self.historic_predictions_bkp_path)
 
     def save_drawer_to_disk(self):
         """
@@ -421,7 +434,7 @@ class FreqaiDataDrawer:
             )
 
         # if self.live:
-        self.model_dictionary[dk.model_filename] = model
+        self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
         self.save_drawer_to_disk()
@@ -460,8 +473,8 @@ class FreqaiDataDrawer:
         )
 
         # try to access model in memory instead of loading object from disk to save time
-        if dk.live and dk.model_filename in self.model_dictionary:
-            model = self.model_dictionary[dk.model_filename]
+        if dk.live and coin in self.model_dictionary:
+            model = self.model_dictionary[coin]
         elif not dk.keras:
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
         else:
@@ -566,7 +579,6 @@ class FreqaiDataDrawer:
         for training according to user defined train_period_days
         metadata: dict = strategy furnished pair metadata
         """
-
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
             base_dataframes: Dict[Any, Any] = {}

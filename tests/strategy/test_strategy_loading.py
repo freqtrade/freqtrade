@@ -48,6 +48,10 @@ def test_search_all_strategies_with_failed():
     assert len([x for x in strategies if x['class'] is not None]) == 9
     assert len([x for x in strategies if x['class'] is None]) == 1
 
+    directory = Path(__file__).parent / "strats_nonexistingdir"
+    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    assert len(strategies) == 0
+
 
 def test_load_strategy(default_conf, result):
     default_conf.update({'strategy': 'SampleStrategy',
@@ -271,8 +275,8 @@ def test_strategy_override_order_tif(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     order_time_in_force = {
-        'entry': 'fok',
-        'exit': 'gtc',
+        'entry': 'FOK',
+        'exit': 'GTC',
     }
 
     default_conf.update({
@@ -286,11 +290,11 @@ def test_strategy_override_order_tif(caplog, default_conf):
         assert strategy.order_time_in_force[method] == order_time_in_force[method]
 
     assert log_has("Override strategy 'order_time_in_force' with value in config file:"
-                   " {'entry': 'fok', 'exit': 'gtc'}.", caplog)
+                   " {'entry': 'FOK', 'exit': 'GTC'}.", caplog)
 
     default_conf.update({
         'strategy': CURRENT_TEST_STRATEGY,
-        'order_time_in_force': {'entry': 'fok'}
+        'order_time_in_force': {'entry': 'FOK'}
     })
     # Raise error for invalid configuration
     with pytest.raises(ImportError,

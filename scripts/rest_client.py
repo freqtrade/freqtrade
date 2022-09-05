@@ -361,6 +361,13 @@ class FtRestClient():
         """
         return self._get("sysinfo")
 
+    def health(self):
+        """Provides a quick health check of the running bot.
+
+        :return: json object
+        """
+        return self._get("health")
+
 
 def add_arguments():
     parser = argparse.ArgumentParser()

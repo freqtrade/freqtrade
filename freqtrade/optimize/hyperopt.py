@@ -24,13 +24,15 @@ from pandas import DataFrame
 from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
+from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
-from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
+from freqtrade.optimize.hyperopt_tools import (HyperoptStateContainer, HyperoptTools,
+                                               hyperopt_serializer)
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
@@ -74,10 +76,14 @@ class Hyperopt:
         self.dimensions: List[Dimension] = []
 
         self.config = config
+        self.min_date: datetime
+        self.max_date: datetime
 
         self.backtesting = Backtesting(self.config)
         self.pairlist = self.backtesting.pairlists.whitelist
         self.custom_hyperopt: HyperOptAuto
+        self.analyze_per_epoch = self.config.get('analyze_per_epoch', False)
+        HyperoptStateContainer.set_state(HyperoptState.STARTUP)
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
@@ -290,6 +296,7 @@ class Hyperopt:
         Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
+        HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
@@ -321,6 +328,10 @@ class Hyperopt:
 
         with self.data_pickle_file.open('rb') as f:
             processed = load(f, mmap_mode='r')
+            if self.analyze_per_epoch:
+                # Data is not yet analyzed, rerun populate_indicators.
+                processed = self.advise_and_trim(processed)
+
         bt_results = self.backtesting.backtest(
             processed=processed,
             start_date=self.min_date,
@@ -406,22 +417,33 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
-    def prepare_hyperopt_data(self) -> None:
-        data, timerange = self.backtesting.load_bt_data()
-        self.backtesting.load_bt_data_detail()
-        logger.info("Dataload complete. Calculating indicators")
-
+    def advise_and_trim(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe to get correct dates for output.
-        processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
+        processed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
         self.min_date, self.max_date = get_timerange(processed)
+        return processed
 
-        logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'({(self.max_date - self.min_date).days} days)..')
-        # Store non-trimmed data - will be trimmed after signal generation.
-        dump(preprocessed, self.data_pickle_file)
+    def prepare_hyperopt_data(self) -> None:
+        HyperoptStateContainer.set_state(HyperoptState.DATALOAD)
+        data, self.timerange = self.backtesting.load_bt_data()
+        self.backtesting.load_bt_data_detail()
+        logger.info("Dataload complete. Calculating indicators")
+
+        if not self.analyze_per_epoch:
+            HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
+
+            preprocessed = self.advise_and_trim(data)
+
+            logger.info(f'Hyperopting with data from '
+                        f'{self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                        f'({(self.max_date - self.min_date).days} days)..')
+            # Store non-trimmed data - will be trimmed after signal generation.
+            dump(preprocessed, self.data_pickle_file)
+        else:
+            dump(data, self.data_pickle_file)
 
     def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
         """

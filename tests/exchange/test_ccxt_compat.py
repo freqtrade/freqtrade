@@ -137,6 +137,10 @@ def exchange_futures(request, exchange_conf, class_mocker):
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
         class_mocker.patch('freqtrade.exchange.okx.Okx.additional_exchange_init')
+        class_mocker.patch('freqtrade.exchange.exchange.Exchange.load_cached_leverage_tiers',
+                           return_value=None)
+        class_mocker.patch('freqtrade.exchange.exchange.Exchange.cache_leverage_tiers')
+
         exchange = ExchangeResolver.load_exchange(
             request.param, exchange_conf, validate=True, load_leverage_tiers=True)
 
@@ -405,14 +409,14 @@ class TestCCXTExchange():
                 assert (isinstance(futures_leverage, float) or isinstance(futures_leverage, int))
                 assert futures_leverage >= 1.0
 
-    def test_ccxt__get_contract_size(self, exchange_futures):
+    def test_ccxt_get_contract_size(self, exchange_futures):
         futures, futures_name = exchange_futures
         if futures:
             futures_pair = EXCHANGES[futures_name].get(
                 'futures_pair',
                 EXCHANGES[futures_name]['pair']
             )
-            contract_size = futures._get_contract_size(futures_pair)
+            contract_size = futures.get_contract_size(futures_pair)
             assert (isinstance(contract_size, float) or isinstance(contract_size, int))
             assert contract_size >= 0.0
 
@@ -464,6 +468,7 @@ class TestCCXTExchange():
                 False,
                 100,
                 100,
+                100,
             )
             assert (isinstance(liquidation_price, float))
             assert liquidation_price >= 0.0
@@ -472,6 +477,7 @@ class TestCCXTExchange():
                 futures_pair,
                 40000,
                 False,
+                100,
                 100,
                 100,
             )

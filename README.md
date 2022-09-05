@@ -130,7 +130,7 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 
 - `/start`: Starts the trader.
 - `/stop`: Stops the trader.
-- `/stopbuy`: Stop entering new trades.
+- `/stopentry`: Stop entering new trades.
 - `/status <trade_id>|[table]`: Lists all or specific open trades.
 - `/profit [<n>]`: Lists cumulative profit from all finished trades, over the last n days.
 - `/forceexit <trade_id>|all`: Instantly exits the given trade (Ignoring `minimum_roi`).

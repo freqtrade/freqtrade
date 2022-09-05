@@ -73,7 +73,7 @@ class VolumePairList(IPairList):
 
         if (not self._use_range and not (
                 self._exchange.exchange_has('fetchTickers')
-                and self._exchange._ft_has["tickers_have_quoteVolume"])):
+                and self._exchange.get_option("tickers_have_quoteVolume"))):
             raise OperationalException(
                 "Exchange does not support dynamic whitelist in this configuration. "
                 "Please edit your config and either remove Volumepairlist, "
@@ -186,6 +186,7 @@ class VolumePairList(IPairList):
                     needed_pairs, since_ms=since_ms, cache=False
                 )
             for i, p in enumerate(filtered_tickers):
+                contract_size = self._exchange.markets[p['symbol']].get('contractSize', 1.0) or 1.0
                 pair_candles = candles[
                     (p['symbol'], self._lookback_timeframe, self._def_candletype)
                 ] if (
@@ -193,12 +194,13 @@ class VolumePairList(IPairList):
                     ) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if pair_candles is not None and not pair_candles.empty:
-                    if self._exchange._ft_has["ohlcv_volume_currency"] == "base":
+                    if self._exchange.get_option("ohlcv_volume_currency") == "base":
                         pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']
                                                          + pair_candles['close']) / 3
 
                         pair_candles['quoteVolume'] = (
                             pair_candles['volume'] * pair_candles['typical_price']
+                            * contract_size
                         )
                     else:
                         # Exchange ohlcv data is in quote volume already.

@@ -1,5 +1,3 @@
-from math import isclose
-
 import pytest
 
 from freqtrade.leverage import interest
@@ -30,9 +28,9 @@ twentyfive_hours = FtPrecise(25.0)
 def test_interest(exchange, interest_rate, hours, expected):
     borrowed = FtPrecise(60.0)
 
-    assert isclose(interest(
+    assert pytest.approx(float(interest(
         exchange_name=exchange,
         borrowed=borrowed,
         rate=FtPrecise(interest_rate),
         hours=hours
-    ), expected)
+    ))) == expected

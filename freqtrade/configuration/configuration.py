@@ -302,6 +302,9 @@ class Configuration:
         self._args_to_config(config, argname='spaces',
                              logstring='Parameter -s/--spaces detected: {}')
 
+        self._args_to_config(config, argname='analyze_per_epoch',
+                             logstring='Parameter --analyze-per-epoch detected.')
+
         self._args_to_config(config, argname='print_all',
                              logstring='Parameter --print-all detected ...')
 
@@ -425,6 +428,9 @@ class Configuration:
 
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
+
+        self._args_to_config(config, argname='show_timerange',
+                             logstring='Detected --show-timerange')
 
     def _process_data_options(self, config: Dict[str, Any]) -> None:
         self._args_to_config(config, argname='new_pairs_days',

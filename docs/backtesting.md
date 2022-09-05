@@ -561,6 +561,14 @@ BTC trades at 22.000\$ today (0.001 BTC is related to this) - but the backtestin
 Today's minimum would be `0.001 * 22_000` - or 22\$.  
 However the limit could also be 50$ - based on `0.001 * 50_000` in some historic setting.
 
+#### Trading precision limits
+
+Most exchanges pose precision limits on both price and amounts, so you cannot buy 1.0020401 of a pair, or at a price of 1.24567123123.  
+Instead, these prices and amounts will be rounded or truncated (based on the exchange definition) to the defined trading precision.
+The above values may for example be rounded to an amount of 1.002, and a price of 1.24567.
+
+These precision values are based on current exchange limits (as described in the [above section](#trading-limits-in-backtesting)), as historic precision limits are not available.
+
 ## Improved backtest accuracy
 
 One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).

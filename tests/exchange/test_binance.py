@@ -376,96 +376,96 @@ def test_fill_leverage_tiers_binance(default_conf, mocker):
     assert exchange._leverage_tiers == {
         'ADA/BUSD': [
             {
-                "min": 0,
-                "max": 100000,
-                "mmr": 0.025,
-                "lev": 20,
+                "minNotional": 0,
+                "maxNotional": 100000,
+                "maintenanceMarginRate": 0.025,
+                "maxLeverage": 20,
                 "maintAmt": 0.0
             },
             {
-                "min": 100000,
-                "max": 500000,
-                "mmr": 0.05,
-                "lev": 10,
+                "minNotional": 100000,
+                "maxNotional": 500000,
+                "maintenanceMarginRate": 0.05,
+                "maxLeverage": 10,
                 "maintAmt": 2500.0
             },
             {
-                "min": 500000,
-                "max": 1000000,
-                "mmr": 0.1,
-                "lev": 5,
+                "minNotional": 500000,
+                "maxNotional": 1000000,
+                "maintenanceMarginRate": 0.1,
+                "maxLeverage": 5,
                 "maintAmt": 27500.0
             },
             {
-                "min": 1000000,
-                "max": 2000000,
-                "mmr": 0.15,
-                "lev": 3,
+                "minNotional": 1000000,
+                "maxNotional": 2000000,
+                "maintenanceMarginRate": 0.15,
+                "maxLeverage": 3,
                 "maintAmt": 77500.0
             },
             {
-                "min": 2000000,
-                "max": 5000000,
-                "mmr": 0.25,
-                "lev": 2,
+                "minNotional": 2000000,
+                "maxNotional": 5000000,
+                "maintenanceMarginRate": 0.25,
+                "maxLeverage": 2,
                 "maintAmt": 277500.0
             },
             {
-                "min": 5000000,
-                "max": 30000000,
-                "mmr": 0.5,
-                "lev": 1,
+                "minNotional": 5000000,
+                "maxNotional": 30000000,
+                "maintenanceMarginRate": 0.5,
+                "maxLeverage": 1,
                 "maintAmt": 1527500.0
             }
         ],
         "ZEC/USDT": [
             {
-                'min': 0,
-                'max': 50000,
-                'mmr': 0.01,
-                'lev': 50,
+                'minNotional': 0,
+                'maxNotional': 50000,
+                'maintenanceMarginRate': 0.01,
+                'maxLeverage': 50,
                 'maintAmt': 0.0
             },
             {
-                'min': 50000,
-                'max': 150000,
-                'mmr': 0.025,
-                'lev': 20,
+                'minNotional': 50000,
+                'maxNotional': 150000,
+                'maintenanceMarginRate': 0.025,
+                'maxLeverage': 20,
                 'maintAmt': 750.0
             },
             {
-                'min': 150000,
-                'max': 250000,
-                'mmr': 0.05,
-                'lev': 10,
+                'minNotional': 150000,
+                'maxNotional': 250000,
+                'maintenanceMarginRate': 0.05,
+                'maxLeverage': 10,
                 'maintAmt': 4500.0
             },
             {
-                'min': 250000,
-                'max': 500000,
-                'mmr': 0.1,
-                'lev': 5,
+                'minNotional': 250000,
+                'maxNotional': 500000,
+                'maintenanceMarginRate': 0.1,
+                'maxLeverage': 5,
                 'maintAmt': 17000.0
             },
             {
-                'min': 500000,
-                'max': 1000000,
-                'mmr': 0.125,
-                'lev': 4,
+                'minNotional': 500000,
+                'maxNotional': 1000000,
+                'maintenanceMarginRate': 0.125,
+                'maxLeverage': 4,
                 'maintAmt': 29500.0
             },
             {
-                'min': 1000000,
-                'max': 2000000,
-                'mmr': 0.25,
-                'lev': 2,
+                'minNotional': 1000000,
+                'maxNotional': 2000000,
+                'maintenanceMarginRate': 0.25,
+                'maxLeverage': 2,
                 'maintAmt': 154500.0
             },
             {
-                'min': 2000000,
-                'max': 30000000,
-                'mmr': 0.5,
-                'lev': 1,
+                'minNotional': 2000000,
+                'maxNotional': 30000000,
+                'maintenanceMarginRate': 0.5,
+                'maxLeverage': 1,
                 'maintAmt': 654500.0
             },
         ]
