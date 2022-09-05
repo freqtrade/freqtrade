@@ -515,7 +515,6 @@ and if a full `live_retrain_hours` has elapsed since the end of the loaded model
 The FreqAI backtesting module can be executed with the following command:
 
 ```bash
-freqtrade download-data --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates -t 3m 15m 1h --timerange 20210315-20210701 
 freqtrade backtesting --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
 ```
 
