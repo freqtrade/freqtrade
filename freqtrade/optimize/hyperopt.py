@@ -423,7 +423,7 @@ class Hyperopt:
         # Trim startup period from analyzed dataframe to get correct dates for output.
         processed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
         self.min_date, self.max_date = get_timerange(processed)
-        return processed
+        return preprocessed
 
     def prepare_hyperopt_data(self) -> None:
         HyperoptStateContainer.set_state(HyperoptState.DATALOAD)
