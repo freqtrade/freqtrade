@@ -17,9 +17,7 @@ class bbrsi_optimized(WAOStrategy):
             self.brain = "Freq_bbrsi_scalp_ada_btc"
         super().__init__(config, self.brain, 2, 0.15)
 
-    timeframe = '5m'
-
-    timeframe = '5m'
+    timeframe = '15m'
 
     # ROI table:
     minimal_roi = {
@@ -39,7 +37,7 @@ class bbrsi_optimized(WAOStrategy):
     }
 
     # Stoploss:
-    stoploss = -0.02
+    stoploss = -0.01
 
     # Trailing stop:
     trailing_stop = True

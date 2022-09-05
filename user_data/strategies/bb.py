@@ -14,7 +14,7 @@ class bb(WAOStrategy):
     def __init__(self, config: dict):
         super().__init__(config, self.brain, 8, 0.15)
     # Optimal timeframe for the strategy
-    timeframe = '5m'
+    timeframe = '15m'
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
