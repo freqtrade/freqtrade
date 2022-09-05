@@ -40,7 +40,7 @@ class bbrsi_optimized(WAOStrategy):
     stoploss = -0.01
 
     # Optimal timeframe for the strategy
-    timeframe = '15m'
+    timeframe = '30m'
 
     # trailing stoploss
     trailing_stop = False
