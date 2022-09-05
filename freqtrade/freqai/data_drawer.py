@@ -93,6 +93,16 @@ class FreqaiDataDrawer:
                 "model_filename": "", "trained_timestamp": 0,
                 "priority": 1, "first": True, "data_path": "", "extras": {}}
 
+    def __getstate__(self):
+        """
+        Return state values to be pickled.
+        It's necessary to allow serialization in hyperopt
+        """
+        return ({
+                    "pair_dict": self.pair_dict,
+                    "pair_dictionary_path": self.pair_dictionary_path
+                })
+
     def load_drawer_from_disk(self):
         """
         Locate and load a previously saved data drawer full of all pair model metadata in
@@ -155,14 +165,23 @@ class FreqaiDataDrawer:
         # create a backup
         shutil.copy(self.historic_predictions_path, self.historic_predictions_bkp_path)
 
-    def save_drawer_to_disk(self):
+    def save_drawer_to_disk(self, live=False):
         """
         Save data drawer full of all pair model metadata in present model folder.
         """
-        with self.save_lock:
+        if live:
+            with self.save_lock:
+                with open(self.pair_dictionary_path, 'w') as fp:
+                    rapidjson.dump(
+                                    self.pair_dict, fp, default=self.np_encoder,
+                                    number_mode=rapidjson.NM_NATIVE
+                                    )
+        else:
+            # save_lock it's not working with hyperopt
             with open(self.pair_dictionary_path, 'w') as fp:
-                rapidjson.dump(self.pair_dict, fp, default=self.np_encoder,
-                               number_mode=rapidjson.NM_NATIVE)
+                rapidjson.dump(
+                                self.pair_dict, fp, default=self.np_encoder,
+                                number_mode=rapidjson.NM_NATIVE)
 
     def save_follower_dict_to_disk(self):
         """
@@ -437,7 +456,7 @@ class FreqaiDataDrawer:
         self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
-        self.save_drawer_to_disk()
+        self.save_drawer_to_disk(dk.live)
 
         return
 
