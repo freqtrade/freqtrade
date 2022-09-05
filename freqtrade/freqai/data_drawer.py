@@ -174,8 +174,7 @@ class FreqaiDataDrawer:
                 with open(self.pair_dictionary_path, 'w') as fp:
                     rapidjson.dump(
                                     self.pair_dict, fp, default=self.np_encoder,
-                                    number_mode=rapidjson.NM_NATIVE
-                                    )
+                                    number_mode=rapidjson.NM_NATIVE)
         else:
             # save_lock it's not working with hyperopt
             with open(self.pair_dictionary_path, 'w') as fp:
