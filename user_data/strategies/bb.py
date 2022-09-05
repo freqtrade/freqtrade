@@ -32,21 +32,21 @@ class bb(WAOStrategy):
     #     "0": 0.030,  # Exit immediately if there is at least 2% profit
     # }
 
-    # minimal_roi = {
-    #     "190": 0.005, # Exit after 500 minutes there is at least 0.5% profit
-    #     "175": 0.006, # Exit after 500 minutes there is at least 0.5% profit
-    #     "160": 0.007, # Exit after 40 minutes if there is at least 1% profit
-    #     "145": 0.008, # Exit after 40 minutes if there is at least 1% profit
-    #     "130": 0.009, # Exit after 40 minutes if there is at least 1% profit
-    #     "115": 0.010, # Exit after 20 minutes if there is at least 1.5% profit
-    #     "100": 0.011, # Exit after 20 minutes if there is at least 1.5% profit
-    #     "85": 0.012, # Exit after 20 minutes if there is at least 1.5% profit
-    #     "60": 0.013, # Exit after 20 minutes if there is at least 1.5% profit
-    #     "45": 0.014, # Exit immediately if there is at least 2% profit
-    #     "30": 0.016, # Exit immediately if there is at least 2% profit
-    #     "15": 0.018, # Exit immediately if there is at least 2% profit
-    #     "0": 0.020, # Exit immediately if there is at least 2% profit
-    # }
+    minimal_roi = {
+        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
+        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
+        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
+        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
+        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
+        "45": 0.014,  # Exit immediately if there is at least 2% profit
+        "30": 0.016,  # Exit immediately if there is at least 2% profit
+        "15": 0.018,  # Exit immediately if there is at least 2% profit
+        "0": 0.020,  # Exit immediately if there is at least 2% profit
+    }
 
     # minimal_roi = {
     #     "180": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -80,30 +80,14 @@ class bb(WAOStrategy):
     #     "0": 0.030,  # Exit immediately if there is at least 2% profit
     # }
 
-    minimal_roi = {
-        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
-        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
-        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
-        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
-        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
-        "45": 0.014,  # Exit immediately if there is at least 2% profit
-        "30": 0.016,  # Exit immediately if there is at least 2% profit
-        "15": 0.018,  # Exit immediately if there is at least 2% profit
-        "0": 0.020,  # Exit immediately if there is at least 2% profit
-    }
-
     # Stoploss:
     stoploss = -0.01
 
     # Trailing stop:
-    trailing_stop = True
-    trailing_stop_positive = 0.281
-    trailing_stop_positive_offset = 0.299
-    trailing_only_offset_is_reached = True
+    trailing_stop = False
+    trailing_stop_positive = 0.089
+    trailing_stop_positive_offset = 0.11
+    trailing_only_offset_is_reached = False
 
     # run "populate_indicators" only for new candle
     process_only_new_candles = False
@@ -186,10 +170,10 @@ class bb(WAOStrategy):
         """
         dataframe.loc[
             (
-                   qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
-                    # & (dataframe['rsi'] < 50)
-                    # & (dataframe['ema_9'] > dataframe['sma_200'])
-                    # & (dataframe['macdhist'] > -0.08)
+                qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
+                # & (dataframe['rsi'] < 50)
+                # & (dataframe['ema_9'] > dataframe['sma_200'])
+                # & (dataframe['macdhist'] > -0.08)
             ),
             'buy'] = 1
 
@@ -203,9 +187,9 @@ class bb(WAOStrategy):
         """
         dataframe.loc[
             (
-                    (dataframe['close'] > dataframe['bb_upperband'])
-                    # | (dataframe['rsi'] > 60)
-                    # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
+                (dataframe['close'] > dataframe['bb_upperband'])
+                # | (dataframe['rsi'] > 60)
+                # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
             'sell'] = 1
