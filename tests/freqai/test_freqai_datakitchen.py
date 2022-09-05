@@ -1,5 +1,5 @@
-import datetime
 import shutil
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -56,16 +56,13 @@ def test_split_timerange(
     shutil.rmtree(Path(dk.full_path))
 
 
-@pytest.mark.parametrize(
-    "timestamp, expected",
-    [
-        (datetime.datetime.now(tz=datetime.timezone.utc).timestamp() - 7200, True),
-        (datetime.datetime.now(tz=datetime.timezone.utc).timestamp(), False),
-    ],
-)
-def test_check_if_model_expired(mocker, freqai_conf, timestamp, expected):
+def test_check_if_model_expired(mocker, freqai_conf):
+
     dk = get_patched_data_kitchen(mocker, freqai_conf)
-    assert dk.check_if_model_expired(timestamp) == expected
+    now = datetime.now(tz=timezone.utc).timestamp()
+    assert dk.check_if_model_expired(now) is False
+    now = (datetime.now(tz=timezone.utc) - timedelta(hours=2)).timestamp()
+    assert dk.check_if_model_expired(now) is True
     shutil.rmtree(Path(dk.full_path))
 
 
