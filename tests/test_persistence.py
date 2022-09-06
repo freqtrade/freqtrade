@@ -615,21 +615,25 @@ def test_calc_open_close_trade_price(
         is_short=is_short,
         leverage=lev,
         trading_mode=trading_mode,
-        funding_fees=funding_fees
     )
     entry_order = limit_order[trade.entry_side]
     exit_order = limit_order[trade.exit_side]
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
 
     oobj = Order.parse_from_ccxt_object(entry_order, 'ADA/USDT', trade.entry_side)
-    trade.orders.append(oobj)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(entry_order)
     trade.update_trade(oobj)
 
+    trade.funding_fees = funding_fees
+
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', trade.exit_side)
-    trade.orders.append(oobj)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(exit_order)
     trade.update_trade(oobj)
 
     assert trade.is_open is False
+    assert trade.funding_fees == funding_fees
 
     assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
     assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
