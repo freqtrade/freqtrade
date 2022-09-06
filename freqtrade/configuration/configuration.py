@@ -285,6 +285,7 @@ class Configuration:
             logger.info('Parameter --stoplosses detected: %s ...', self.args["stoploss_range"])
 
         # Hyperopt section
+        self._check_hyperopt_analyze_per_epoch_freqai()
         self._args_to_config(config, argname='hyperopt',
                              logstring='Using Hyperopt class name: {}')
 
@@ -537,3 +538,12 @@ class Configuration:
                 config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config and isinstance(config['pairs'], list):
                     config['pairs'].sort()
+
+    def _check_hyperopt_analyze_per_epoch_freqai(self) -> None:
+        """
+        Helper for block hyperopt with analyze-per-epoch param.
+        """
+        if ("analyze_per_epoch" in self.args and
+                self.args["analyze_per_epoch"] and "freqaimodel" in self.args):
+            raise OperationalException('analyze-per-epoch parameter is \
+                                       not allowed with a Freqai strategy.')

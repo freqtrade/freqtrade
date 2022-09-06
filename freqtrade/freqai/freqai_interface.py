@@ -92,10 +92,9 @@ class IFreqaiModel(ABC):
 
     def __getstate__(self):
         """
-        Return state values to be pickled.
-        It's necessary to allow serialization in hyperopt
+        Return an empty state to be pickled in hyperopt
         """
-        return ({"dd": self.dd})
+        return ({})
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 

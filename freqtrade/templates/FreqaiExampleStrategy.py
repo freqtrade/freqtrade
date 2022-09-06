@@ -6,9 +6,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.exchange import timeframe_to_prev_date
-from freqtrade.persistence import Trade
-from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_informative_pair
+from freqtrade.strategy import IStrategy, merge_informative_pair
 
 
 logger = logging.getLogger(__name__)
@@ -46,11 +44,6 @@ class FreqaiExampleStrategy(IStrategy):
     # this is the maximum period fed to talib (timeframe independent)
     startup_candle_count: int = 40
     can_short = False
-
-    linear_roi_offset = DecimalParameter(
-        0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
-    )
-    max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
@@ -225,83 +218,6 @@ class FreqaiExampleStrategy(IStrategy):
 
     def get_ticker_indicator(self):
         return int(self.config["timeframe"][:-1])
-
-    def custom_exit(
-        self, pair: str, trade: Trade, current_time, current_rate, current_profit, **kwargs
-    ):
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-
-        trade_date = timeframe_to_prev_date(self.config["timeframe"], trade.open_date_utc)
-        trade_candle = dataframe.loc[(dataframe["date"] == trade_date)]
-
-        if trade_candle.empty:
-            return None
-        trade_candle = trade_candle.squeeze()
-
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
-
-        if not follow_mode:
-            pair_dict = self.freqai.dd.pair_dict
-        else:
-            pair_dict = self.freqai.dd.follower_dict
-
-        entry_tag = trade.enter_tag
-
-        if (
-            "prediction" + entry_tag not in pair_dict[pair]
-            or pair_dict[pair]['extras']["prediction" + entry_tag] == 0
-        ):
-            pair_dict[pair]['extras']["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
-            if not follow_mode:
-                self.freqai.dd.save_drawer_to_disk()
-            else:
-                self.freqai.dd.save_follower_dict_to_disk()
-
-        roi_price = pair_dict[pair]['extras']["prediction" + entry_tag]
-        roi_time = self.max_roi_time_long.value
-
-        roi_decay = roi_price * (
-            1 - ((current_time - trade.open_date_utc).seconds) / (roi_time * 60)
-        )
-        if roi_decay < 0:
-            roi_decay = self.linear_roi_offset.value
-        else:
-            roi_decay += self.linear_roi_offset.value
-
-        if current_profit > roi_decay:
-            return "roi_custom_win"
-
-        if current_profit < -roi_decay:
-            return "roi_custom_loss"
-
-    def confirm_trade_exit(
-        self,
-        pair: str,
-        trade: Trade,
-        order_type: str,
-        amount: float,
-        rate: float,
-        time_in_force: str,
-        exit_reason: str,
-        current_time,
-        **kwargs,
-    ) -> bool:
-
-        entry_tag = trade.enter_tag
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
-        if not follow_mode:
-            pair_dict = self.freqai.dd.pair_dict
-        else:
-            pair_dict = self.freqai.dd.follower_dict
-
-        pair_dict[pair]['extras']["prediction" + entry_tag] = 0
-        if not follow_mode:
-            self.freqai.dd.save_drawer_to_disk()
-        else:
-            self.freqai.dd.save_follower_dict_to_disk()
-
-        return True
 
     def confirm_trade_entry(
         self,

@@ -279,6 +279,8 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
 Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](#feature-engineering)) and labels ([more information](#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`.
 
+*Important*: The `self.freqai.start()` function cannot be called outside the `populate_indicators()`.
+
 ### Setting the `startup_candle_count`
 Users need to take care to set the `startup_candle_count` in their strategy the same way they would for any normal Freqtrade strategy (see details [here](strategy-customization.md#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling on the `dataprovider` to avoid any NaNs at the beginning of the first training. Users can easily set this value by identifying the longest period (in candle units) that they pass to their indicator creation functions (e.g. talib functions). In the present example, the user would pass 20 to as this value (since it is the maximum value in their `indicators_periods_candles`).
 
@@ -531,6 +533,15 @@ for each pair, for each backtesting window within the expanded `--timerange`.
     This way, the user can return to using any model they wish by simply specifying the `identifier`.
 
 ---
+
+### Hyperopt
+
+The [Hyperopt](hyperopt.md) module can be executed with some restrictions:
+
+- The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
+- It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md###runninghyperoptwithsmallersearchspace).
+- The [Backtesting](#backtesting) instructions also apply apply to Hyperopt.
+  
 
 ### Deciding the size of the sliding training window and backtesting duration
 
