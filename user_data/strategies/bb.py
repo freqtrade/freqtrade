@@ -9,12 +9,7 @@ from wao.wao_strategy import WAOStrategy
 
 
 class bb(WAOStrategy):
-    brain = "Freq_bb"
-
-    def __init__(self, config: dict):
-        super().__init__(config, self.brain, 8, 0.15)
-    # Optimal timeframe for the strategy
-    timeframe = '30m'
+    timeframe = '15m'
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -33,35 +28,36 @@ class bb(WAOStrategy):
     # }
 
     minimal_roi = {
-        "190": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
-        "175": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "160": 0.007,  # Exit after 40 minutes if there is at least 1% profit
-        "145": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-        "130": 0.009,  # Exit after 40 minutes if there is at least 1% profit
-        "115": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
-        "85": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
-        "45": 0.014,  # Exit immediately if there is at least 2% profit
-        "30": 0.016,  # Exit immediately if there is at least 2% profit
-        "15": 0.018,  # Exit immediately if there is at least 2% profit
+        "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
+        "220": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+        "200": 0.007,  # Exit after 40 minutes if there is at least 1% profit
+        "180": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+        "160": 0.009,  # Exit after 40 minutes if there is at least 1% profit
+        "140": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
+        "120": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+        "80": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.014,  # Exit immediately if there is at least 2% profit
+        "40": 0.016,  # Exit immediately if there is at least 2% profit
+        "20": 0.018,  # Exit immediately if there is at least 2% profit
         "0": 0.020,  # Exit immediately if there is at least 2% profit
     }
 
+    # Experiment minimal roi:
     # minimal_roi = {
-    #     "180": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-    #     "165": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
-    #     "150": 0.010,  # Exit after 40 minutes if there is at least 1% profit
-    #     "135": 0.012,  # Exit after 40 minutes if there is at least 1% profit
-    #     "120": 0.014,  # Exit after 40 minutes if there is at least 1% profit
-    #     "105": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "90": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "75": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "60": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "45": 0.024,  # Exit immediately if there is at least 2% profit
-    #     "30": 0.026,  # Exit immediately if there is at least 2% profit
-    #     "15": 0.028,  # Exit immediately if there is at least 2% profit
-    #     "0": 0.030,  # Exit immediately if there is at least 2% profit
+    #     "180": 0.004,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "165": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "150": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+    #     "135": 0.008,  # Exit after 40 minutes if there is at least 1% profit
+    #     "120": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+    #     "105": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "90": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "75": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "60": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "45": 0.022,  # Exit immediately if there is at least 2% profit
+    #     "30": 0.024,  # Exit immediately if there is at least 2% profit
+    #     "15": 0.026,  # Exit immediately if there is at least 2% profit
+    #     "0": 0.028,  # Exit immediately if there is at least 2% profit
     # }
     #
     # minimal_roi = {
