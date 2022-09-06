@@ -97,7 +97,7 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
 
     freqai.dd.pair_dict = MagicMock()
- 
+
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
     corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(

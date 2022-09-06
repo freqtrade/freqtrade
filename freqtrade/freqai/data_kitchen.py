@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import scipy.stats as stats
+from scipy import stats
 from pandas import DataFrame
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
