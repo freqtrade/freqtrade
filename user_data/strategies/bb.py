@@ -10,10 +10,12 @@ from wao.wao_strategy import WAOStrategy
 
 class bb(WAOStrategy):
     timeframe = '15m'
-    self.coin = str(config.get('pairs')[0]).split('/')[0]
-    if self.coin == 'BTC' or self.coin == 'ADA':
-        self.brain = "Freq_bbrsi_scalp_ada_btc"
-    super().__init__(config, self.brain, 8, 0.15)
+
+    def __init__(self, config: dict):
+        self.coin = str(config.get('pairs')[0]).split('/')[0]
+        if self.coin == 'BTC' or self.coin == 'ADA':
+            self.brain = "Freq_bbrsi_scalp_ada_btc"
+        super().__init__(config, self.brain, 8, 0.15)
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
