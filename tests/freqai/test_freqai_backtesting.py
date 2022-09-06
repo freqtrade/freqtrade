@@ -48,10 +48,4 @@ def test_freqai_backtest_load_data(freqai_conf, mocker, caplog):
 
     assert log_has_re('Increasing startup_candle_count for freqai to.*', caplog)
 
-    del freqai_conf['freqai']['startup_candles']
-    backtesting = Backtesting(freqai_conf)
-    with pytest.raises(OperationalException,
-                       match=r'FreqAI backtesting module.*startup_candles in config.'):
-        backtesting.load_bt_data()
-
     Backtesting.cleanup()

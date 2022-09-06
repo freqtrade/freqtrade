@@ -176,6 +176,7 @@ def test_extract_data_and_train_model_LightGBMClassifier(mocker, freqai_conf):
 
 def test_start_backtesting(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -194,7 +195,7 @@ def test_start_backtesting(mocker, freqai_conf):
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    assert len(model_folders) == 5
+    assert len(model_folders) == 6
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -202,6 +203,7 @@ def test_start_backtesting(mocker, freqai_conf):
 def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180124"})
     freqai_conf.get("freqai", {}).update({"backtest_period_days": 0.5})
+    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -219,13 +221,14 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
-    assert len(model_folders) == 8
+    assert len(model_folders) == 9
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
 def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -244,7 +247,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    assert len(model_folders) == 5
+    assert len(model_folders) == 6
 
     # without deleting the exiting folder structure, re-run
 
@@ -265,9 +268,13 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
-        "Found model at ",
+        "Found backtesting prediction file ",
         caplog,
     )
+
+    path = (freqai.dd.full_path / freqai.dk.backtest_predictions_folder)
+    prediction_files = [x for x in path.iterdir() if x.is_file()]
+    assert len(prediction_files) == 5
 
     shutil.rmtree(Path(freqai.dk.full_path))
 

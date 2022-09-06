@@ -2,7 +2,6 @@ import copy
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from math import isclose
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -407,10 +406,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # min
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     expected_result = 2 * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
-    assert isclose(result, expected_result / 3)
+    assert pytest.approx(result) == expected_result / 3
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -426,10 +425,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = 2 * 2 * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
-    assert isclose(result, expected_result / 5)
+    assert pytest.approx(result) == expected_result / 5
     # max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 20000
@@ -445,10 +444,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(2, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
-    assert isclose(result, expected_result / 10)
+    assert pytest.approx(result) == expected_result / 10
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -461,20 +460,20 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(8, 2 * 2) * (1 + 0.05) / (1 - abs(stoploss))
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
-    assert isclose(result, expected_result / 7.0)
+    assert pytest.approx(result) == expected_result / 7.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
     expected_result = max(8, 2 * 2) * 1.5
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
-    assert isclose(result, expected_result / 8.0)
+    assert pytest.approx(result) == expected_result / 8.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -482,10 +481,10 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     expected_result = max(8, 2 * 2) * 1.5
-    assert isclose(result, expected_result)
+    assert pytest.approx(result) == expected_result
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, expected_result / 12)
+    assert pytest.approx(result) == expected_result / 12
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 1000
@@ -501,7 +500,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
 
     # Contract size 0.01
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
-    assert isclose(result, expected_result * 0.01)
+    assert pytest.approx(result) == expected_result * 0.01
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10
@@ -513,7 +512,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     )
     # With Leverage, Contract size 10
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, (expected_result / 12) * 10.0)
+    assert pytest.approx(result) == (expected_result / 12) * 10.0
     # Max
     result = exchange.get_max_pair_stake_amount('ETH/BTC', 2)
     assert result == 10000
@@ -3239,7 +3238,7 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode,
     orders = exchange.get_trades_for_order(order_id, 'ETH/USDT:USDT', since)
     assert len(orders) == 1
     assert orders[0]['price'] == 165
-    assert isclose(orders[0]['amount'], amount)
+    assert pytest.approx(orders[0]['amount']) == amount
     assert api_mock.fetch_my_trades.call_count == 1
     # since argument should be
     assert isinstance(api_mock.fetch_my_trades.call_args[0][1], int)
@@ -3776,8 +3775,8 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         since=unix_time
     )
 
-    assert (isclose(expected_fees, fees_from_datetime))
-    assert (isclose(expected_fees, fees_from_unix_time))
+    assert pytest.approx(expected_fees) == fees_from_datetime
+    assert pytest.approx(expected_fees) == fees_from_unix_time
 
     ccxt_exceptionhandlers(
         mocker,
@@ -4514,7 +4513,7 @@ def test_liquidation_price(
     default_conf['liquidation_buffer'] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert isclose(round(exchange.get_liquidation_price(
+    assert pytest.approx(round(exchange.get_liquidation_price(
         pair='DOGE/USDT',
         open_rate=open_rate,
         is_short=is_short,
@@ -4523,7 +4522,7 @@ def test_liquidation_price(
         upnl_ex_1=upnl_ex_1,
         amount=amount,
         stake_amount=open_rate * amount,
-    ), 2), expected)
+    ), 2)) == expected
 
 
 def test_get_max_pair_stake_amount(
@@ -4868,8 +4867,8 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
     assert exchange.get_max_leverage("BNB/BUSD", 1.0) == 20.0
     assert exchange.get_max_leverage("BNB/USDT", 100.0) == 75.0
     assert exchange.get_max_leverage("BTC/USDT", 170.30) == 125.0
-    assert isclose(exchange.get_max_leverage("BNB/BUSD", 99999.9), 5.000005)
-    assert isclose(exchange.get_max_leverage("BNB/USDT", 1500), 33.333333333333333)
+    assert pytest.approx(exchange.get_max_leverage("BNB/BUSD", 99999.9)) == 5.000005
+    assert pytest.approx(exchange.get_max_leverage("BNB/USDT", 1500)) == 33.333333333333333
     assert exchange.get_max_leverage("BTC/USDT", 300000000) == 2.0
     assert exchange.get_max_leverage("BTC/USDT", 600000000) == 1.0  # Last tier
 
@@ -4986,6 +4985,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.47
 
@@ -4997,6 +4997,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price == 17.540699999999998
 
@@ -5008,6 +5009,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         is_short=False,
         amount=0.8,
         stake_amount=18.884 * 0.8,
+        wallet_balance=18.884 * 0.8,
     )
     assert liq_price is None
     default_conf['trading_mode'] = 'margin'
@@ -5020,6 +5022,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             is_short=False,
             amount=0.8,
             stake_amount=18.884 * 0.8,
+            wallet_balance=18.884 * 0.8,
         )
 
 
@@ -5145,7 +5148,7 @@ def test_get_liquidation_price(
     else:
         buffer_amount = liquidation_buffer * abs(open_rate - expected_liq)
         expected_liq = expected_liq - buffer_amount if is_short else expected_liq + buffer_amount
-        assert isclose(expected_liq, liq)
+        assert pytest.approx(expected_liq) == liq
 
 
 @pytest.mark.parametrize('contract_size,order_amount', [

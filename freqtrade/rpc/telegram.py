@@ -6,6 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import partial
@@ -374,7 +375,7 @@ class Telegram(RPCHandler):
             message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
         return message
 
-    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
+    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
         if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
             message = self._format_entry_msg(msg)
 
@@ -411,7 +412,8 @@ class Telegram(RPCHandler):
         elif msg_type == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
         else:
-            raise NotImplementedError(f"Unknown message type: {msg_type}")
+            logger.debug("Unknown message type: %s", msg_type)
+            return None
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
@@ -438,9 +440,9 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(msg, msg_type)
-
-        self._send_msg(message, disable_notification=(noti == 'silent'))
+        message = self.compose_message(deepcopy(msg), msg_type)
+        if message:
+            self._send_msg(message, disable_notification=(noti == 'silent'))
 
     def _get_sell_emoji(self, msg):
         """

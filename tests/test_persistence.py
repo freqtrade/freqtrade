@@ -1,7 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
-from math import isclose
 from pathlib import Path
 from types import FunctionType
 from unittest.mock import MagicMock
@@ -582,25 +581,25 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 @pytest.mark.parametrize(
     'exchange,is_short,lev,open_value,close_value,profit,profit_ratio,trading_mode,funding_fees', [
         ("binance", False, 1, 60.15, 65.835, 5.685, 0.09451371, spot, 0.0),
-        ("binance", True, 1, 59.850, 66.1663784375, -6.3163784375, -0.1055368, margin, 0.0),
+        ("binance", True, 1, 65.835, 60.151253125, 5.68374687, 0.08633321, margin, 0.0),
         ("binance", False, 3, 60.15, 65.83416667, 5.68416667, 0.28349958, margin, 0.0),
-        ("binance", True, 3, 59.85, 66.1663784375, -6.3163784375, -0.31661044, margin, 0.0),
+        ("binance", True, 3, 65.835, 60.151253125, 5.68374687, 0.25899963, margin, 0.0),
 
         ("kraken", False, 1, 60.15, 65.835, 5.685, 0.09451371, spot, 0.0),
-        ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.1066192, margin, 0.0),
+        ("kraken", True, 1, 65.835, 60.21015, 5.62485, 0.0854386, margin, 0.0),
         ("kraken", False, 3, 60.15, 65.795, 5.645, 0.28154613, margin, 0.0),
-        ("kraken", True, 3, 59.850, 66.231165, -6.381165, -0.3198578, margin, 0.0),
+        ("kraken", True, 3, 65.835, 60.21015, 5.62485, 0.25631579, margin, 0.0),
 
         ("binance", False, 1, 60.15, 65.835,  5.685, 0.09451371, futures, 0.0),
         ("binance", False, 1, 60.15, 66.835,  6.685, 0.11113881, futures, 1.0),
-        ("binance", True, 1, 59.85,  66.165, -6.315, -0.10551378, futures, 0.0),
-        ("binance", True, 1, 59.85,  67.165, -7.315, -0.12222222, futures, -1.0),
+        ("binance", True, 1, 65.835,  60.15, 5.685, 0.08635224, futures, 0.0),
+        ("binance", True, 1, 65.835,  61.15, 4.685, 0.07116276, futures, -1.0),
+        ("binance", True, 3, 65.835,  59.15, 6.685, 0.3046252, futures, 1.0),
         ("binance", False, 3, 60.15, 64.835,  4.685, 0.23366583, futures, -1.0),
-        ("binance", True, 3, 59.85,  65.165, -5.315, -0.26641604, futures, 1.0),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(
-    limit_buy_order_usdt, limit_sell_order_usdt, fee, exchange, is_short, lev,
+    limit_order, fee, exchange, is_short, lev,
     open_value, close_value, profit, profit_ratio, trading_mode, funding_fees
 ):
     trade: Trade = Trade(
@@ -616,24 +615,30 @@ def test_calc_open_close_trade_price(
         is_short=is_short,
         leverage=lev,
         trading_mode=trading_mode,
-        funding_fees=funding_fees
     )
-
+    entry_order = limit_order[trade.entry_side]
+    exit_order = limit_order[trade.exit_side]
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
 
-    oobj = Order.parse_from_ccxt_object(limit_buy_order_usdt, 'ADA/USDT', 'buy')
+    oobj = Order.parse_from_ccxt_object(entry_order, 'ADA/USDT', trade.entry_side)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(entry_order)
     trade.update_trade(oobj)
 
-    oobj = Order.parse_from_ccxt_object(limit_sell_order_usdt, 'ADA/USDT', 'sell')
+    trade.funding_fees = funding_fees
+
+    oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', trade.exit_side)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(exit_order)
     trade.update_trade(oobj)
 
-    trade.open_rate = 2.0
-    trade.close_rate = 2.2
-    trade.recalc_open_trade_value()
-    assert isclose(trade._calc_open_trade_value(trade.amount, trade.open_rate), open_value)
-    assert isclose(trade.calc_close_trade_value(trade.close_rate), close_value)
-    assert isclose(trade.calc_profit(trade.close_rate), round(profit, 8))
-    assert pytest.approx(trade.calc_profit_ratio(trade.close_rate)) == profit_ratio
+    assert trade.is_open is False
+    assert trade.funding_fees == funding_fees
+
+    assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
+    assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
+    assert pytest.approx(trade.close_profit_abs) == profit
+    assert pytest.approx(trade.close_profit) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -655,6 +660,7 @@ def test_trade_close(fee):
     trade.orders.append(Order(
         ft_order_side=trade.entry_side,
         order_id=f'{trade.pair}-{trade.entry_side}-{trade.open_date}',
+        ft_is_open=False,
         ft_pair=trade.pair,
         amount=trade.amount,
         filled=trade.amount,
@@ -668,6 +674,7 @@ def test_trade_close(fee):
     trade.orders.append(Order(
         ft_order_side=trade.exit_side,
         order_id=f'{trade.pair}-{trade.exit_side}-{trade.open_date}',
+        ft_is_open=False,
         ft_pair=trade.pair,
         amount=trade.amount,
         filled=trade.amount,

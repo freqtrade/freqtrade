@@ -2600,7 +2600,7 @@ class Exchange:
         is_short: bool,
         amount: float,  # Absolute value of position size
         stake_amount: float,
-        wallet_balance: float = 0.0,
+        wallet_balance: float,
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:

@@ -148,10 +148,19 @@ class IStrategy(ABC, HyperStrategyMixin):
     def load_freqAI_model(self) -> None:
         if self.config.get('freqai', {}).get('enabled', False):
             # Import here to avoid importing this if freqAI is disabled
+            from freqtrade.freqai.utils import download_all_data_for_training
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
-
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
             self.freqai_info = self.config["freqai"]
+
+            # download the desired data in dry/live
+            if self.config.get('runmode') in (RunMode.DRY_RUN, RunMode.LIVE):
+                logger.info(
+                    "Downloading all training data for all pairs in whitelist and "
+                    "corr_pairlist, this may take a while if the data is not "
+                    "already on disk."
+                )
+                download_all_data_for_training(self.dp, self.config)
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
@@ -159,6 +168,10 @@ class IStrategy(ABC, HyperStrategyMixin):
                     raise OperationalException(
                         'freqAI is not enabled. '
                         'Please enable it in your config to use this strategy.')
+
+                def shutdown(self, *args, **kwargs):
+                    pass
+
             self.freqai = DummyClass()  # type: ignore
 
     def ft_bot_start(self, **kwargs) -> None:
@@ -171,6 +184,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         strategy_safe_wrapper(self.bot_start)()
 
         self.ft_load_hyper_params(self.config.get('runmode') == RunMode.HYPEROPT)
+
+    def ft_bot_cleanup(self) -> None:
+        """
+        Clean up FreqAI and child threads
+        """
+        self.freqai.shutdown()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
