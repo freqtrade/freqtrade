@@ -112,15 +112,15 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `DI_threshold` | Activates the Dissimilarity Index for outlier detection when > 0. See details about how it works [here](#removing-outliers-with-the-dissimilarity-index). <br> **Datatype:** Positive float (typically < 1).
 | `use_SVM_to_remove_outliers` | Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. See details about some select parameters [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Dictionary.
-| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean.
-| `outlier_protection_percentage` | If more than `outlier_protection_percentage` fraction of points are removed as outliers, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. <br> **Datatype:** float. Default: `30`
-| `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** bool. Default: False
+| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
+| `outlier_protection_percentage` | If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. If the outlier protection is triggered, no predictions will be made based on the training data. <br> **Datatype:** Float. Default: `30`
+| `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** Boolean. Default: False
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
-| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br>
+| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean.
 |  |  **Model training parameters**
-| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.**Datatype:** Boolean.
+| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
@@ -749,7 +749,7 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 
 ![dbscan](assets/freqai_dbscan.jpg)
 
-FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as double the no. of user-defined features, and `eps` ($\varepsilon$) taken as the longest distance in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
+FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as 1/4 of the no. of time points in the feature set, and `eps` ($\varepsilon$) taken as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
 
 ## Additional information
 
@@ -774,5 +774,5 @@ Code review, software architecture brainstorming:
 @xmatthias
 
 Beta testing and bug reporting:
-@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm,
 Juha Nykänen @suikula, Wagner Costa @wagnercosta
