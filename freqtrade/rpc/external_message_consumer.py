@@ -8,7 +8,7 @@ import asyncio
 import logging
 import socket
 from threading import Thread
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import websockets
 
@@ -16,6 +16,11 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
+
+
+if TYPE_CHECKING:
+    import websockets.connect
+    import websockets.exceptions
 
 
 logger = logging.getLogger(__name__)

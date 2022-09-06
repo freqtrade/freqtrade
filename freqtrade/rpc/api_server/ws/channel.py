@@ -3,6 +3,8 @@ from threading import RLock
 from typing import List, Optional, Type
 from uuid import uuid4
 
+from fastapi import WebSocket as FastAPIWebSocket
+
 from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
                                                     WebSocketSerializer)
@@ -105,7 +107,7 @@ class ChannelManager:
 
         :param websocket: The WebSocket object to attach to the Channel
         """
-        if hasattr(websocket, "accept"):
+        if isinstance(websocket, FastAPIWebSocket):
             try:
                 await websocket.accept()
             except RuntimeError:

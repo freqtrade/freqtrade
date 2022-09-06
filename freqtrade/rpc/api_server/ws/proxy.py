@@ -1,7 +1,7 @@
 from typing import Any, Tuple, Union
 
 from fastapi import WebSocket as FastAPIWebSocket
-from websockets import WebSocketClientProtocol as WebSocket
+from websockets.client import WebSocketClientProtocol as WebSocket
 
 from freqtrade.rpc.api_server.ws.types import WebSocketType
 
@@ -17,10 +17,12 @@ class WebSocketProxy:
 
     @property
     def remote_addr(self) -> Tuple[Any, ...]:
-        if hasattr(self._websocket, "remote_address"):
+        if isinstance(self._websocket, WebSocket):
             return self._websocket.remote_address
-        elif hasattr(self._websocket, "client"):
-            return tuple(self._websocket.client)
+        elif isinstance(self._websocket, FastAPIWebSocket):
+            if self._websocket.client:
+                client, port = self._websocket.client.host, self._websocket.client.port
+                return (client, port)
         return ("unknown", 0)
 
     async def send(self, data):
