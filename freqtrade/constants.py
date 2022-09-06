@@ -508,9 +508,8 @@ CONF_SCHEMA = {
                 'remove_signals_analyzed_df': {'type': 'boolean', 'default': False},
                 'initial_candle_limit': {
                     'type': 'integer',
-                    'minimum': 100,
                     'maximum': 1500,
-                    'default': 500
+                    'default': 1500
                 }
             },
             'required': ['producers']

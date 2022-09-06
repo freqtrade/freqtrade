@@ -55,7 +55,7 @@ class ExternalMessageConsumer:
         self.sleep_time = self._emc_config.get('sleep_time', 5)
 
         # The amount of candles per dataframe on the initial request
-        self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 500)
+        self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 1500)
 
         # Setting these explicitly as they probably shouldn't be changed by a user
         # Unless we somehow integrate this with the strategy to allow creating
