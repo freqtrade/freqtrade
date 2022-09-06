@@ -27,12 +27,6 @@ class WebSocketProxy:
         """
         Send data on the wrapped websocket
         """
-
-        if not isinstance(data, str):
-            # We use HybridJSONWebSocketSerializer, which when serialized returns
-            # bytes because of ORJSON, so we explicitly decode into a string
-            data = str(data, "utf-8")
-
         if hasattr(self._websocket, "send_text"):
             await self._websocket.send_text(data)
         else:
