@@ -114,6 +114,10 @@ class ApiServer(RPCHandler):
 
             self._thread.join()
 
+        self._thread = None
+        self._loop = None
+        self._background_task = None
+
     @classmethod
     def shutdown(cls):
         cls.__initialized = False
@@ -169,15 +173,15 @@ class ApiServer(RPCHandler):
         app.add_exception_handler(RPCException, self.handle_rpc_exception)
 
     def start_message_queue(self):
+        if self._thread:
+            return
+
         # Create a new loop, as it'll be just for the background thread
         self._loop = asyncio.new_event_loop()
 
         # Start the thread
-        if not self._thread:
-            self._thread = Thread(target=self._loop.run_forever)
-            self._thread.start()
-        else:
-            raise RuntimeError("Threaded loop is already running")
+        self._thread = Thread(target=self._loop.run_forever)
+        self._thread.start()
 
         # Finally, submit the coro to the thread
         self._background_task = asyncio.run_coroutine_threadsafe(
