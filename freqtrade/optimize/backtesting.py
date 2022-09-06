@@ -686,7 +686,7 @@ class Backtesting:
                 self.futures_data[trade.pair],
                 amount=trade.amount,
                 is_short=trade.is_short,
-                open_date=trade.open_date_utc,
+                open_date=trade.date_last_filled_utc,
                 close_date=exit_candle_time,
             )
 

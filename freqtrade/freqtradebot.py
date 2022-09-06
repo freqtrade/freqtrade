@@ -147,13 +147,16 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         logger.info('Cleaning up modules ...')
+        try:
+            # Wrap db activities in shutdown to avoid problems if database is gone,
+            # and raises further exceptions.
+            if self.config['cancel_open_orders_on_exit']:
+                self.cancel_all_open_orders()
 
-        if self.config['cancel_open_orders_on_exit']:
-            self.cancel_all_open_orders()
+            self.check_for_open_trades()
 
-        self.check_for_open_trades()
-
-        self.strategy.ft_bot_cleanup()
+        finally:
+            self.strategy.ft_bot_cleanup()
 
         self.rpc.cleanup()
         if self.emc:
@@ -296,7 +299,7 @@ class FreqtradeBot(LoggingMixin):
                     pair=trade.pair,
                     amount=trade.amount,
                     is_short=trade.is_short,
-                    open_date=trade.open_date_utc
+                    open_date=trade.date_last_filled_utc
                 )
                 trade.funding_fees = funding_fees
         else:
@@ -741,10 +744,11 @@ class FreqtradeBot(LoggingMixin):
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         base_currency = self.exchange.get_pair_base_currency(pair)
         open_date = datetime.now(timezone.utc)
-        funding_fees = self.exchange.get_funding_fees(
-            pair=pair, amount=amount, is_short=is_short, open_date=open_date)
+
         # This is a new trade
         if trade is None:
+            funding_fees = self.exchange.get_funding_fees(
+                pair=pair, amount=amount, is_short=is_short, open_date=open_date)
             trade = Trade(
                 pair=pair,
                 base_currency=base_currency,
@@ -1499,7 +1503,7 @@ class FreqtradeBot(LoggingMixin):
             pair=trade.pair,
             amount=trade.amount,
             is_short=trade.is_short,
-            open_date=trade.open_date_utc,
+            open_date=trade.date_last_filled_utc,
         )
         exit_type = 'exit'
         exit_reason = exit_tag or exit_check.exit_reason
