@@ -57,7 +57,7 @@ class BaseTensorFlowModel(IFreqaiModel):
         )
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
-        model = self.fit(data_dictionary)
+        model = self.fit(data_dictionary, dk)
 
         logger.info(f"--------------------done training {pair}--------------------")
 

@@ -86,6 +86,7 @@ class IFreqaiModel(ABC):
         self.begin_time: float = 0
         self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
+        self.continual_learning = self.freqai_info.get('continual_learning', False)
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
@@ -674,7 +675,7 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, Any]) -> Any:
+    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
