@@ -9,7 +9,7 @@ from wao.wao_strategy import WAOStrategy
 
 
 class bb(WAOStrategy):
-    timeframe = '15m'
+    timeframe = '30m'
     brain = "Freq_bb"
 
     def __init__(self, config: dict):
