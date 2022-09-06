@@ -128,7 +128,7 @@ class bb(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        # dataframe['rsi'] = ta.RSI(dataframe)
+        dataframe['rsi'] = ta.RSI(dataframe)
         # SMA
         # dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
         # EMA
@@ -167,7 +167,7 @@ class bb(WAOStrategy):
         dataframe.loc[
             (
                 qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
-                # & (dataframe['rsi'] < 50)
+                & (dataframe['rsi'] < 50)
                 # & (dataframe['ema_9'] > dataframe['sma_200'])
                 # & (dataframe['macdhist'] > -0.08)
             ),
@@ -184,7 +184,7 @@ class bb(WAOStrategy):
         dataframe.loc[
             (
                 (dataframe['close'] > dataframe['bb_upperband'])
-                # | (dataframe['rsi'] > 60)
+                | (dataframe['rsi'] > 60)
                 # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
