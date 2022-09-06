@@ -1,10 +1,9 @@
-# import contextlib
 import logging
 import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Tuple
@@ -214,12 +213,12 @@ class IFreqaiModel(ABC):
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
             trained_timestamp = tr_train
-            tr_train_startts_str = datetime.utcfromtimestamp(tr_train.startts).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            tr_train_stopts_str = datetime.utcfromtimestamp(tr_train.stopts).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            tr_train_startts_str = datetime.fromtimestamp(
+                                                tr_train.startts,
+                                                tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            tr_train_stopts_str = datetime.fromtimestamp(
+                                                tr_train.stopts,
+                                                tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             logger.info(
                 f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
                 f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "

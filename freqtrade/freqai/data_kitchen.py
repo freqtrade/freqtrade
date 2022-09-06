@@ -2,12 +2,14 @@ import copy
 import logging
 import shutil
 from datetime import datetime, timezone
+from math import cos, sin
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import scipy.stats as stats
 from pandas import DataFrame
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
@@ -401,8 +403,8 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            start = datetime.utcfromtimestamp(timerange_train.startts)
-            stop = datetime.utcfromtimestamp(timerange_train.stopts)
+            start = datetime.fromtimestamp(timerange_train.startts, tz=timezone.utc)
+            stop = datetime.fromtimestamp(timerange_train.stopts, tz=timezone.utc)
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
@@ -415,8 +417,8 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            start = datetime.utcfromtimestamp(timerange_backtest.startts)
-            stop = datetime.utcfromtimestamp(timerange_backtest.stopts)
+            start = datetime.fromtimestamp(timerange_backtest.startts, tz=timezone.utc)
+            stop = datetime.fromtimestamp(timerange_backtest.stopts, tz=timezone.utc)
             tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
@@ -630,8 +632,6 @@ class FreqaiDataKitchen:
         is an outlier.
         """
 
-        from math import cos, sin
-
         if predict:
             if not self.data['DBSCAN_eps']:
                 return
@@ -732,8 +732,6 @@ class FreqaiDataKitchen:
         into previous timepoints.
         """
 
-        import scipy.stats as ss
-
         no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
 
         if set_ == 'train':
@@ -778,8 +776,8 @@ class FreqaiDataKitchen:
         inliers = pd.DataFrame(index=distances.index)
         for key in distances.keys():
             current_distances = distances[key].dropna()
-            fit_params = ss.weibull_min.fit(current_distances)
-            quantiles = ss.weibull_min.cdf(current_distances, *fit_params)
+            fit_params = stats.weibull_min.fit(current_distances)
+            quantiles = stats.weibull_min.cdf(current_distances, *fit_params)
 
             df_inlier = pd.DataFrame(
                 {key: quantiles}, index=distances.index
@@ -794,8 +792,8 @@ class FreqaiDataKitchen:
             index=compute_df.index
         )
 
-        inlier_metric = 2 * (inlier_metric - inlier_metric.min()) / \
-            (inlier_metric.max() - inlier_metric.min()) - 1
+        inlier_metric = (2 * (inlier_metric - inlier_metric.min()) /
+                         (inlier_metric.max() - inlier_metric.min()) - 1)
 
         if set_ in ('train', 'test'):
             inlier_metric = inlier_metric.iloc[no_prev_pts:]
@@ -956,8 +954,8 @@ class FreqaiDataKitchen:
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
         )
-        start = datetime.utcfromtimestamp(backtest_timerange.startts)
-        stop = datetime.utcfromtimestamp(backtest_timerange.stopts)
+        start = datetime.fromtimestamp(backtest_timerange.startts, tz=timezone.utc)
+        stop = datetime.fromtimestamp(backtest_timerange.stopts, tz=timezone.utc)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         self.full_path = Path(
