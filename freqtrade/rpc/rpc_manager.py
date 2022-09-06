@@ -20,7 +20,6 @@ class RPCManager:
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
         self.registered_modules: List[RPCHandler] = []
-        self._freqtrade = freqtrade
         self._rpc = RPC(freqtrade)
         config = freqtrade.config
         # Enable telegram
@@ -53,7 +52,7 @@ class RPCManager:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
         while self.registered_modules:
-            mod = self.registered_modules.pop()  # popleft to cleanup API server last?
+            mod = self.registered_modules.pop()
             logger.info('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
             del mod
