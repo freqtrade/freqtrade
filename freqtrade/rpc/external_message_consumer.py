@@ -10,7 +10,6 @@ import socket
 from threading import Thread
 from typing import Any, Dict, List, Optional
 
-import pandas
 import websockets
 
 from freqtrade.data.dataprovider import DataProvider
@@ -225,9 +224,12 @@ class ExternalMessageConsumer:
                     timeout=self.reply_timeout
                 )
 
-                async with lock:
-                    # Handle the message
-                    self.handle_producer_message(producer, message)
+                try:
+                    async with lock:
+                        # Handle the message
+                        self.handle_producer_message(producer, message)
+                except Exception as e:
+                    logger.exception(f"Error handling producer message: {e}")
 
             except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed):
                 # We haven't received data yet. Check the connection and continue.
@@ -300,17 +302,20 @@ class ExternalMessageConsumer:
 
         key, value = message_data.get('key'), message_data.get('value')
 
-        if key and isinstance(value, pandas.DataFrame):
+        if key and value:
             pair, timeframe, candle_type = key
-            dataframe = value
+            dataframe, last_analyzed = value
 
             # If set, remove the Entry and Exit signals from the Producer
             if self._emc_config.get('remove_entry_exit_signals', False):
                 dataframe = remove_entry_exit_signals(dataframe)
 
             # Add the dataframe to the dataprovider
-            self._dp._add_external_df(pair, dataframe, timeframe,
-                                      candle_type, producer_name=producer_name)
+            self._dp._add_external_df(pair, dataframe,
+                                      last_analyzed=last_analyzed,
+                                      timeframe=timeframe,
+                                      candle_type=candle_type,
+                                      producer_name=producer_name)
 
             logger.debug(
                 f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")

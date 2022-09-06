@@ -121,7 +121,7 @@ class DataProvider:
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
-                        'value': dataframe
+                        'value': (dataframe, datetime.now(timezone.utc))
                     }
                 }
             )
@@ -130,6 +130,7 @@ class DataProvider:
         self,
         pair: str,
         dataframe: DataFrame,
+        last_analyzed: Optional[str] = None,
         timeframe: Optional[str] = None,
         candle_type: Optional[CandleType] = None,
         producer_name: str = "default"
@@ -149,7 +150,12 @@ class DataProvider:
         if producer_name not in self.__producer_pairs_df:
             self.__producer_pairs_df[producer_name] = {}
 
-        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, datetime.now(timezone.utc))
+        if not last_analyzed:
+            _last_analyzed = datetime.now(timezone.utc)
+        else:
+            _last_analyzed = datetime.fromisoformat(last_analyzed)
+
+        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
         logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
     def get_external_df(
