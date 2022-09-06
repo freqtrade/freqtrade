@@ -142,17 +142,20 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         logger.info('Cleaning up modules ...')
+        try:
+            # Wrap db activities in shutdown to avoid problems if database is gone,
+            # and raises further exceptions.
+            if self.config['cancel_open_orders_on_exit']:
+                self.cancel_all_open_orders()
 
-        if self.config['cancel_open_orders_on_exit']:
-            self.cancel_all_open_orders()
+            self.check_for_open_trades()
 
-        self.check_for_open_trades()
+        finally:
+            self.strategy.ft_bot_cleanup()
 
-        self.strategy.ft_bot_cleanup()
-
-        self.rpc.cleanup()
-        Trade.commit()
-        self.exchange.close()
+            self.rpc.cleanup()
+            Trade.commit()
+            self.exchange.close()
 
     def startup(self) -> None:
         """
