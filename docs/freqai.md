@@ -539,7 +539,7 @@ for each pair, for each backtesting window within the expanded `--timerange`.
 The [Hyperopt](hyperopt.md) module can be executed with some restrictions:
 
 - The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
-- It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md###runninghyperoptwithsmallersearchspace).
+- It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
 - The [Backtesting](#backtesting) instructions also apply apply to Hyperopt.
   
 
