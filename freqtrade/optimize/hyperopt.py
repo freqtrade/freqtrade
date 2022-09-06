@@ -421,9 +421,10 @@ class Hyperopt:
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe to get correct dates for output.
-        processed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
-        self.min_date, self.max_date = get_timerange(processed)
-        return processed
+        trimmed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
+        self.min_date, self.max_date = get_timerange(trimmed)
+        # Real trimming will happen as part of backtesting.
+        return preprocessed
 
     def prepare_hyperopt_data(self) -> None:
         HyperoptStateContainer.set_state(HyperoptState.DATALOAD)
