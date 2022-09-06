@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from scipy import stats
 from pandas import DataFrame
+from scipy import stats
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import pairwise_distances
