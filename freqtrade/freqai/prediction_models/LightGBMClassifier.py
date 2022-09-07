@@ -3,8 +3,9 @@ from typing import Any, Dict
 
 from lightgbm import LGBMClassifier
 
-from freqtrade.freqai.prediction_models.BaseClassifierModel import BaseClassifierModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.prediction_models.BaseClassifierModel import BaseClassifierModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class LightGBMClassifier(BaseClassifierModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen) -> Any:
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :params:
@@ -35,10 +36,7 @@ class LightGBMClassifier(BaseClassifierModel):
         y = data_dictionary["train_labels"].to_numpy()[:, 0]
         train_weights = data_dictionary["train_weights"]
 
-        if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
-            init_model = None
-        else:
-            init_model = self.dd.model_dictionary[dk.pair]
+        init_model = self.get_init_model(dk.pair)
 
         model = LGBMClassifier(**self.model_training_parameters)
 

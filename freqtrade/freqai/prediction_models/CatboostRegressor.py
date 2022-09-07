@@ -1,10 +1,9 @@
-import gc
 import logging
 from typing import Any, Dict
 
 from catboost import CatBoostRegressor, Pool
-from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
 
 
@@ -18,7 +17,7 @@ class CatboostRegressor(BaseRegressionModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen) -> Any:
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary constructed by DataHandler to hold
@@ -39,10 +38,7 @@ class CatboostRegressor(BaseRegressionModel):
                 weight=data_dictionary["test_weights"],
             )
 
-        if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
-            init_model = None
-        else:
-            init_model = self.dd.model_dictionary[dk.pair]
+        init_model = self.get_init_model(dk.pair)
 
         model = CatBoostRegressor(
             allow_writing_files=False,

@@ -4,8 +4,9 @@ from typing import Any, Dict
 from lightgbm import LGBMRegressor
 from sklearn.multioutput import MultiOutputRegressor
 
-from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class LightGBMRegressorMultiTarget(BaseRegressionModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen) -> Any:
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary constructed by DataHandler to hold
