@@ -205,7 +205,7 @@ class Exchange:
         logger.debug("Exchange object destroyed, closing async loop")
         if (self._api_async and inspect.iscoroutinefunction(self._api_async.close)
                 and self._api_async.session):
-            logger.info("Closing async ccxt session.")
+            logger.debug("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
 
     def validate_config(self, config):
