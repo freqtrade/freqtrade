@@ -427,6 +427,11 @@ class IFreqaiModel(ABC):
 
         ft_params = self.freqai_info["feature_parameters"]
 
+        if ft_params.get('inlier_metric_window', 0):
+            dk.compute_inlier_metric(set_='train')
+            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
+                dk.compute_inlier_metric(set_='test')
+
         if ft_params.get(
             "principal_component_analysis", False
         ):
@@ -445,11 +450,6 @@ class IFreqaiModel(ABC):
                 eps = None
             dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
             self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
-
-        if ft_params.get('inlier_metric_window', 0):
-            dk.compute_inlier_metric(set_='train')
-            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
-                dk.compute_inlier_metric(set_='test')
 
         if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
             dk.add_noise_to_training_features()
