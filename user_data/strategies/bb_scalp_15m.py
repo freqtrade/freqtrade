@@ -8,7 +8,7 @@ import numpy  # noqa
 from wao.wao_strategy import WAOStrategy
 
 
-class bb_15m(WAOStrategy):
+class bb_scalp_15m(WAOStrategy):
     timeframe = '15m'
     brain = "Freq_bb_15m"
 
