@@ -461,6 +461,20 @@ class FreqaiDataKitchen:
 
         return df
 
+    def remove_training_from_backtesting(
+        self
+    ) -> DataFrame:
+        """
+        Function which takes the backtesting time range and
+        remove training data from dataframe
+        """
+        tr = self.config["timerange"]
+        backtesting_timerange = TimeRange.parse_timerange(tr)
+        start = datetime.fromtimestamp(backtesting_timerange.startts, tz=timezone.utc)
+        df = self.return_dataframe
+        df = df.loc[df["date"] >= start, :]
+        return df
+
     def principal_component_analysis(self) -> None:
         """
         Performs Principal Component Analysis on the data for dimensionality reduction
@@ -954,6 +968,7 @@ class FreqaiDataKitchen:
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
 
+        self.return_dataframe = self.remove_training_from_backtesting()
         self.full_df = DataFrame()
 
         return
