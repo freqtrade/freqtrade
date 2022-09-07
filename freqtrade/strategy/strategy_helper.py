@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pandas as pd
 
 from freqtrade.exchange import timeframe_to_minutes
@@ -6,7 +8,8 @@ from freqtrade.exchange import timeframe_to_minutes
 def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
                            timeframe: str, timeframe_inf: str, ffill: bool = True,
                            append_timeframe: bool = True,
-                           date_column: str = 'date') -> pd.DataFrame:
+                           date_column: str = 'date',
+                           suffix: Optional[str] = None) -> pd.DataFrame:
     """
     Correctly merge informative samples to the original dataframe, avoiding lookahead bias.
 
@@ -50,9 +53,16 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 
     # Rename columns to be unique
     date_merge = 'date_merge'
-    if append_timeframe:
+    if append_timeframe and not suffix:
         date_merge = f'date_merge_{timeframe_inf}'
         informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
+
+    elif suffix:
+        date_merge = f'date_merge_{suffix}'
+        informative.columns = [f"{col}_{suffix}" for col in informative.columns]
+
+    elif suffix and append_timeframe:
+        raise ValueError("You can not specify `append_timeframe` as True and a `suffix`.")
 
     # Combine the 2 dataframes
     # all indicators on the informative sample MUST be calculated before this point
