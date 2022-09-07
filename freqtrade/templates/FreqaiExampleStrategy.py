@@ -92,11 +92,9 @@ class FreqaiExampleStrategy(IStrategy):
             t = int(t)
             informative[f"%-{coin}rsi-period_{t}"] = ta.RSI(informative, timeperiod=t)
             informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
-            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, window=t)
+            informative[f"%-{coin}adx-period_{t}"] = ta.ADX(informative, timeperiod=t)
             informative[f"%-{coin}sma-period_{t}"] = ta.SMA(informative, timeperiod=t)
             informative[f"%-{coin}ema-period_{t}"] = ta.EMA(informative, timeperiod=t)
-
-            informative[f"%-{coin}mfi-period_{t}"] = ta.MFI(informative, timeperiod=t)
 
             bollinger = qtpylib.bollinger_bands(
                 qtpylib.typical_price(informative), window=t, stds=2.2
