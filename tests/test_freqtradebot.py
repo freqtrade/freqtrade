@@ -3655,6 +3655,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
     assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.ENTRY
+    assert rpc_mock.call_args_list[0][0][0]['amount'] > 20
     assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.ENTRY_FILL
     assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT_FILL
 
