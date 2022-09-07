@@ -4456,6 +4456,39 @@ def test__amount_to_contracts(
     assert result_amount == param_amount
 
 
+@pytest.mark.parametrize('pair,amount,expected_spot,expected_fut', [
+    # Contract size of 0.01
+    ('ADA/USDT:USDT', 40, 40, 40),
+    ('ADA/USDT:USDT', 10.4445555, 10.4, 10.444),
+    ('LTC/ETH', 30, 30, 30),
+    ('LTC/USD', 30, 30, 30),
+    # contract size of 10
+    ('ETH/USDT:USDT', 10.111, 10.1, 10),
+    ('ETH/USDT:USDT', 10.188, 10.1, 10),
+    ('ETH/USDT:USDT', 10.988, 10.9, 10),
+])
+def test_amount_to_contract_precision(
+    mocker,
+    default_conf,
+    pair,
+    amount,
+    expected_spot,
+    expected_fut,
+):
+    api_mock = MagicMock()
+    default_conf['trading_mode'] = 'spot'
+    default_conf['margin_mode'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    result_size = exchange.amount_to_contract_precision(pair, amount)
+    assert result_size == expected_spot
+
+    default_conf['trading_mode'] = 'futures'
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    result_size = exchange.amount_to_contract_precision(pair, amount)
+    assert result_size == expected_fut
+
+
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,margin_mode', [
     # Bittrex
     ('bittrex', 2.0, False, 'spot', None),
