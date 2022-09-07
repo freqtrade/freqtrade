@@ -1068,8 +1068,12 @@ class RPC:
 
         for pair in pairlist:
             dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
-            _data[pair] = {"key": (pair, timeframe, candle_type),
-                           "value": (dataframe, last_analyzed)}
+
+            _data[pair] = {
+                "key": (pair, timeframe, candle_type),
+                "df": dataframe,
+                "la": last_analyzed
+            }
 
         return _data
 

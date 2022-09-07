@@ -8,14 +8,18 @@ import asyncio
 import logging
 import socket
 from threading import Thread
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import websockets
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.enums import RPCMessageType
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
+from freqtrade.rpc.api_server.ws.schema import (ValidationError, WSAnalyzedDFMessage,
+                                                WSAnalyzedDFRequest, WSMessageSchema,
+                                                WSRequestSchema, WSSubscribeRequest,
+                                                WSWhitelistMessage, WSWhitelistRequest)
 
 
 if TYPE_CHECKING:
@@ -67,15 +71,10 @@ class ExternalMessageConsumer:
         self.topics = [RPCMessageType.WHITELIST, RPCMessageType.ANALYZED_DF]
 
         # Allow setting data for each initial request
-        self._initial_requests: List[Dict[str, Any]] = [
-            {
-                "type": RPCRequestType.WHITELIST,
-                "data": None
-            },
-            {
-                "type": RPCRequestType.ANALYZED_DF,
-                "data": {"limit": self.initial_candle_limit}
-            }
+        self._initial_requests: List[WSRequestSchema] = [
+            WSSubscribeRequest(data=self.topics),
+            WSWhitelistRequest(),
+            WSAnalyzedDFRequest()
         ]
 
         # Specify which function to use for which RPCMessageType
@@ -174,16 +173,10 @@ class ExternalMessageConsumer:
 
                     logger.info(f"Producer connection success - {channel}")
 
-                    # Tell the producer we only want these topics
-                    # Should always be the first thing we send
-                    await channel.send(
-                        self.compose_consumer_request(RPCRequestType.SUBSCRIBE, self.topics)
-                    )
-
                     # Now request the initial data from this Producer
                     for request in self._initial_requests:
                         await channel.send(
-                            self.compose_consumer_request(request['type'], request['data'])
+                            request.dict(exclude_none=True)
                         )
 
                     # Now receive data, if none is within the time limit, ping
@@ -253,74 +246,66 @@ class ExternalMessageConsumer:
 
                     break
 
-    def compose_consumer_request(
-        self,
-        type_: RPCRequestType,
-        data: Optional[Any] = None
-    ) -> Dict[str, Any]:
-        """
-        Create a request for sending to a producer
-
-        :param type_: The RPCRequestType
-        :param data: The data to send
-        :returns: Dict[str, Any]
-        """
-        return {'type': type_, 'data': data}
-
     def handle_producer_message(self, producer: Dict[str, Any], message: Dict[str, Any]):
         """
         Handles external messages from a Producer
         """
         producer_name = producer.get('name', 'default')
-        # Should we have a default message type?
-        message_type = message.get('type', RPCMessageType.STATUS)
-        message_data = message.get('data')
+
+        try:
+            producer_message = WSMessageSchema.parse_obj(message)
+        except ValidationError as e:
+            logger.error(f"Invalid message from {producer_name}: {e}")
+            return
 
         # We shouldn't get empty messages
-        if message_data is None:
+        if producer_message.data is None:
             return
 
-        logger.info(f"Received message of type {message_type} from `{producer_name}`")
+        logger.info(f"Received message of type {producer_message.type} from `{producer_name}`")
 
-        message_handler = self._message_handlers.get(message_type)
+        message_handler = self._message_handlers.get(producer_message.type)
 
         if not message_handler:
-            logger.info(f"Received unhandled message: {message_data}, ignoring...")
+            logger.info(f"Received unhandled message: {producer_message.data}, ignoring...")
             return
 
-        message_handler(producer_name, message_data)
+        message_handler(producer_name, producer_message)
 
-    def _consume_whitelist_message(self, producer_name: str, message_data: Any):
-        # We expect List[str]
-        if not isinstance(message_data, list):
+    def _consume_whitelist_message(self, producer_name: str, message: Any):
+        try:
+            # Validate the message
+            message = WSWhitelistMessage.parse_obj(message)
+        except ValidationError:
             return
 
         # Add the pairlist data to the DataProvider
-        self._dp._set_producer_pairs(message_data, producer_name=producer_name)
+        self._dp._set_producer_pairs(message.data, producer_name=producer_name)
 
-        logger.debug(f"Consumed message from {producer_name} of type RPCMessageType.WHITELIST")
+        logger.debug(f"Consumed message from {producer_name} of type `RPCMessageType.WHITELIST`")
 
-    def _consume_analyzed_df_message(self, producer_name: str, message_data: Any):
-        # We expect a Dict[str, Any]
-        if not isinstance(message_data, dict):
+    def _consume_analyzed_df_message(self, producer_name: str, message: Any):
+        try:
+            message = WSAnalyzedDFMessage.parse_obj(message)
+        except ValidationError:
             return
 
-        key, value = message_data.get('key'), message_data.get('value')
+        key = message.data.key
+        df = message.data.df
+        la = message.data.la
 
-        if key and value:
-            pair, timeframe, candle_type = key
-            dataframe, last_analyzed = value
+        pair, timeframe, candle_type = key
 
-            # If set, remove the Entry and Exit signals from the Producer
-            if self._emc_config.get('remove_entry_exit_signals', False):
-                dataframe = remove_entry_exit_signals(dataframe)
+        # If set, remove the Entry and Exit signals from the Producer
+        if self._emc_config.get('remove_entry_exit_signals', False):
+            df = remove_entry_exit_signals(df)
 
-            # Add the dataframe to the dataprovider
-            self._dp._add_external_df(pair, dataframe,
-                                      last_analyzed=last_analyzed,
-                                      timeframe=timeframe,
-                                      candle_type=candle_type,
-                                      producer_name=producer_name)
+        # Add the dataframe to the dataprovider
+        self._dp._add_external_df(pair, df,
+                                  last_analyzed=la,
+                                  timeframe=timeframe,
+                                  candle_type=candle_type,
+                                  producer_name=producer_name)
 
-            logger.debug(
-                f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")
+        logger.debug(
+            f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")
