@@ -467,7 +467,7 @@ class IFreqaiModel(ABC):
         if ft_params.get(
             "principal_component_analysis", False
         ):
-            dk.pca_transform(dataframe)
+            dk.pca_transform(self.dk.data_dictionary['prediction_features'])
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
