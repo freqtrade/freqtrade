@@ -209,7 +209,7 @@ class FreqaiDataKitchen:
         filtered_df = unfiltered_df.filter(training_feature_list, axis=1)
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
-        const_cols = filtered_df[:, filtered_df.nunique(axis=0) == len(filtered_df.index)].columns
+        const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
         if const_cols:
             filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
             logger.warning(f"Removed features {const_cols} with constant values.")
@@ -1205,7 +1205,6 @@ class FreqaiDataKitchen:
     def save_backtesting_prediction(
         self, append_df: DataFrame
     ) -> None:
-
         """
         Save prediction dataframe from backtesting to h5 file format
         :param append_df: dataframe for backtesting period
@@ -1219,7 +1218,6 @@ class FreqaiDataKitchen:
     def get_backtesting_prediction(
         self
     ) -> DataFrame:
-
         """
         Get prediction dataframe from h5 file format
         """
