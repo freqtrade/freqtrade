@@ -1,7 +1,8 @@
 import copy
-import datetime
 import logging
 import shutil
+from datetime import datetime, timezone
+from math import cos, sin
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -9,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from pandas import DataFrame
+from scipy import stats
 from sklearn import linear_model
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import pairwise_distances
@@ -360,7 +362,7 @@ class FreqaiDataKitchen:
 
     def denormalize_labels_from_metadata(self, df: DataFrame) -> DataFrame:
         """
-        Normalize a set of data using the mean and standard deviation from
+        Denormalize a set of data using the mean and standard deviation from
         the associated training data.
         :param df: Dataframe of predictions to be denormalized
         """
@@ -399,7 +401,7 @@ class FreqaiDataKitchen:
         config_timerange = TimeRange.parse_timerange(self.config["timerange"])
         if config_timerange.stopts == 0:
             config_timerange.stopts = int(
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+                datetime.now(tz=timezone.utc).timestamp()
             )
         timerange_train = copy.deepcopy(full_timerange)
         timerange_backtest = copy.deepcopy(full_timerange)
@@ -416,8 +418,8 @@ class FreqaiDataKitchen:
             timerange_train.stopts = timerange_train.startts + train_period_days
 
             first = False
-            start = datetime.datetime.utcfromtimestamp(timerange_train.startts)
-            stop = datetime.datetime.utcfromtimestamp(timerange_train.stopts)
+            start = datetime.fromtimestamp(timerange_train.startts, tz=timezone.utc)
+            stop = datetime.fromtimestamp(timerange_train.stopts, tz=timezone.utc)
             tr_training_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_training_list_timerange.append(copy.deepcopy(timerange_train))
 
@@ -430,8 +432,8 @@ class FreqaiDataKitchen:
             if timerange_backtest.stopts > config_timerange.stopts:
                 timerange_backtest.stopts = config_timerange.stopts
 
-            start = datetime.datetime.utcfromtimestamp(timerange_backtest.startts)
-            stop = datetime.datetime.utcfromtimestamp(timerange_backtest.stopts)
+            start = datetime.fromtimestamp(timerange_backtest.startts, tz=timezone.utc)
+            stop = datetime.fromtimestamp(timerange_backtest.stopts, tz=timezone.utc)
             tr_backtesting_list.append(start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d"))
             tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
 
@@ -451,8 +453,8 @@ class FreqaiDataKitchen:
                    it is sliced down to just the present training period.
         """
 
-        start = datetime.datetime.fromtimestamp(timerange.startts, tz=datetime.timezone.utc)
-        stop = datetime.datetime.fromtimestamp(timerange.stopts, tz=datetime.timezone.utc)
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df["date"] >= start, :]
         if not self.live:
             df = df.loc[df["date"] < stop, :]
@@ -653,8 +655,6 @@ class FreqaiDataKitchen:
         is an outlier.
         """
 
-        from math import cos, sin
-
         if predict:
             if not self.data['DBSCAN_eps']:
                 return
@@ -745,6 +745,111 @@ class FreqaiDataKitchen:
                 f" train points from {len(clustering.labels_)}"
             )
 
+        return
+
+    def compute_inlier_metric(self, set_='train') -> None:
+        """
+
+        Compute inlier metric from backwards distance distributions.
+        This metric defines how well features from a timepoint fit
+        into previous timepoints.
+        """
+
+        no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
+
+        if set_ == 'train':
+            compute_df = copy.deepcopy(self.data_dictionary['train_features'])
+        elif set_ == 'test':
+            compute_df = copy.deepcopy(self.data_dictionary['test_features'])
+        else:
+            compute_df = copy.deepcopy(self.data_dictionary['prediction_features'])
+
+        compute_df_reindexed = compute_df.reindex(
+            index=np.flip(compute_df.index)
+        )
+
+        pairwise = pd.DataFrame(
+            np.triu(
+                pairwise_distances(compute_df_reindexed, n_jobs=self.thread_count)
+            ),
+            columns=compute_df_reindexed.index,
+            index=compute_df_reindexed.index
+        )
+        pairwise = pairwise.round(5)
+
+        column_labels = [
+            '{}{}'.format('d', i) for i in range(1, no_prev_pts + 1)
+        ]
+        distances = pd.DataFrame(
+            columns=column_labels, index=compute_df.index
+        )
+
+        for index in compute_df.index[no_prev_pts:]:
+            current_row = pairwise.loc[[index]]
+            current_row_no_zeros = current_row.loc[
+                :, (current_row != 0).any(axis=0)
+            ]
+            distances.loc[[index]] = current_row_no_zeros.iloc[
+                :, :no_prev_pts
+            ]
+        distances = distances.replace([np.inf, -np.inf], np.nan)
+        drop_index = pd.isnull(distances).any(1)
+        distances = distances[drop_index == 0]
+
+        inliers = pd.DataFrame(index=distances.index)
+        for key in distances.keys():
+            current_distances = distances[key].dropna()
+            fit_params = stats.weibull_min.fit(current_distances)
+            quantiles = stats.weibull_min.cdf(current_distances, *fit_params)
+
+            df_inlier = pd.DataFrame(
+                {key: quantiles}, index=distances.index
+            )
+            inliers = pd.concat(
+                [inliers, df_inlier], axis=1
+            )
+
+        inlier_metric = pd.DataFrame(
+            data=inliers.sum(axis=1) / no_prev_pts,
+            columns=['inlier_metric'],
+            index=compute_df.index
+        )
+
+        inlier_metric = (2 * (inlier_metric - inlier_metric.min()) /
+                         (inlier_metric.max() - inlier_metric.min()) - 1)
+
+        if set_ in ('train', 'test'):
+            inlier_metric = inlier_metric.iloc[no_prev_pts:]
+            compute_df = compute_df.iloc[no_prev_pts:]
+            self.remove_beginning_points_from_data_dict(set_, no_prev_pts)
+            self.data_dictionary[f'{set_}_features'] = pd.concat(
+                [compute_df, inlier_metric], axis=1)
+        else:
+            self.data_dictionary['prediction_features'] = pd.concat(
+                [compute_df, inlier_metric], axis=1)
+            self.data_dictionary['prediction_features'].fillna(0, inplace=True)
+
+        logger.info('Inlier metric computed and added to features.')
+
+        return None
+
+    def remove_beginning_points_from_data_dict(self, set_='train', no_prev_pts: int = 10):
+        features = self.data_dictionary[f'{set_}_features']
+        weights = self.data_dictionary[f'{set_}_weights']
+        labels = self.data_dictionary[f'{set_}_labels']
+        self.data_dictionary[f'{set_}_weights'] = weights[no_prev_pts:]
+        self.data_dictionary[f'{set_}_features'] = features.iloc[no_prev_pts:]
+        self.data_dictionary[f'{set_}_labels'] = labels.iloc[no_prev_pts:]
+
+    def add_noise_to_training_features(self) -> None:
+        """
+        Add noise to train features to reduce the risk of overfitting.
+        """
+        mu = 0  # no shift
+        sigma = self.freqai_config["feature_parameters"]["noise_standard_deviation"]
+        compute_df = self.data_dictionary['train_features']
+        noise = np.random.normal(mu, sigma, [compute_df.shape[0], compute_df.shape[1]])
+        self.data_dictionary['train_features'] += noise
         return
 
     def find_features(self, dataframe: DataFrame) -> None:
@@ -872,14 +977,14 @@ class FreqaiDataKitchen:
                                        "Please indicate the end date of your desired backtesting. "
                                        "timerange.")
             # backtest_timerange.stopts = int(
-            #     datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+            #     datetime.now(tz=timezone.utc).timestamp()
             # )
 
         backtest_timerange.startts = (
             backtest_timerange.startts - backtest_period_days * SECONDS_IN_DAY
         )
-        start = datetime.datetime.utcfromtimestamp(backtest_timerange.startts)
-        stop = datetime.datetime.utcfromtimestamp(backtest_timerange.stopts)
+        start = datetime.fromtimestamp(backtest_timerange.startts, tz=timezone.utc)
+        stop = datetime.fromtimestamp(backtest_timerange.stopts, tz=timezone.utc)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
 
         self.full_path = Path(
@@ -905,7 +1010,7 @@ class FreqaiDataKitchen:
         :return:
             bool = If the model is expired or not.
         """
-        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        time = datetime.now(tz=timezone.utc).timestamp()
         elapsed_time = (time - trained_timestamp) / 3600  # hours
         max_time = self.freqai_config.get("expiration_hours", 0)
         if max_time > 0:
@@ -917,7 +1022,7 @@ class FreqaiDataKitchen:
         self, trained_timestamp: int
     ) -> Tuple[bool, TimeRange, TimeRange]:
 
-        time = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        time = datetime.now(tz=timezone.utc).timestamp()
         trained_timerange = TimeRange()
         data_load_timerange = TimeRange()
 
