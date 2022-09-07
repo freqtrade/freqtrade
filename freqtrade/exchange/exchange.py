@@ -446,6 +446,15 @@ class Exchange:
         contract_size = self.get_contract_size(pair)
         return contracts_to_amount(num_contracts, contract_size)
 
+    def amount_to_contract_precision(self, pair: str, amount: float) -> float:
+        """
+        Helper wrapper around amount_to_contract_precision
+        """
+        contract_size = self.get_contract_size(pair)
+
+        return amount_to_contract_precision(amount, self.get_precision_amount(pair),
+                                            self.precisionMode, contract_size)
+
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
