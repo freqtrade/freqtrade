@@ -31,6 +31,8 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     :param ffill: Forwardfill missing values - optional but usually required
     :param append_timeframe: Rename columns by appending timeframe.
     :param date_column: A custom date column name.
+    :param suffix: A string suffix to add at the end of the informative columns. If specified,
+                   append_timeframe must be false.
     :return: Merged dataframe
     :raise: ValueError if the secondary timeframe is shorter than the dataframe timeframe
     """
@@ -57,7 +59,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
         date_merge = f'date_merge_{timeframe_inf}'
         informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
 
-    elif suffix:
+    elif suffix and not append_timeframe:
         date_merge = f'date_merge_{suffix}'
         informative.columns = [f"{col}_{suffix}" for col in informative.columns]
 
