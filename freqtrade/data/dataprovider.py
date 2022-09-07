@@ -54,10 +54,8 @@ class DataProvider:
         self.__msg_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._default_timeframe))
 
-        self._num_sources = len(
-            self._config.get('external_message_consumer', {}).get('producers', [])
-        )
-        self.external_data_enabled = self._num_sources > 0
+        self.producers = self._config.get('external_message_consumer', {}).get('producers', [])
+        self.external_data_enabled = len(self.producers) > 0
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
