@@ -325,9 +325,9 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
 
 
 def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
-    freqaimodel = conf.get('freqaimodel')
+    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
     analyze_per_epoch = conf.get('analyze_per_epoch', False)
-    if analyze_per_epoch and freqaimodel is not None:
+    if analyze_per_epoch and freqai_enabled:
         raise OperationalException(
             'Using analyze-per-epoch parameter is not supported with a FreqAI strategy.')
 
