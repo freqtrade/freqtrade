@@ -2,13 +2,10 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums.rpcmessagetype import RPCMessageType, RPCRequestType
-
-
-__all__ = ('WSRequestSchema', 'WSMessageSchema', 'ValidationError')
 
 
 class BaseArbitraryModel(BaseModel):

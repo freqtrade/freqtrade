@@ -11,15 +11,16 @@ from threading import Thread
 from typing import TYPE_CHECKING, Any, Dict, List
 
 import websockets
+from pydantic import ValidationError
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
-from freqtrade.rpc.api_server.ws.schema import (ValidationError, WSAnalyzedDFMessage,
-                                                WSAnalyzedDFRequest, WSMessageSchema,
-                                                WSRequestSchema, WSSubscribeRequest,
-                                                WSWhitelistMessage, WSWhitelistRequest)
+from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzedDFRequest,
+                                                 WSMessageSchema, WSRequestSchema,
+                                                 WSSubscribeRequest, WSWhitelistMessage,
+                                                 WSWhitelistRequest)
 
 
 if TYPE_CHECKING:

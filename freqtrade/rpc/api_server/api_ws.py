@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from pydantic import ValidationError
 # fastapi does not make this available through it, so import directly from starlette
 from starlette.websockets import WebSocketState
 
@@ -9,9 +10,8 @@ from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import get_ws_token
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
-from freqtrade.rpc.api_server.ws.schema import (ValidationError, WSAnalyzedDFMessage,
-                                                WSMessageSchema, WSRequestSchema,
-                                                WSWhitelistMessage)
+from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
+                                                 WSRequestSchema, WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC
 
 
@@ -102,13 +102,11 @@ async def message_endpoint(
     Message WebSocket endpoint, facilitates sending RPC messages
     """
     try:
-        if is_websocket_alive(ws):
-            # TODO:
-            # Return a channel ID, pass that instead of ws to the rest of the methods
-            channel = await channel_manager.on_connect(ws)
+        # TODO:
+        # Return a channel ID, pass that instead of ws to the rest of the methods
+        channel = await channel_manager.on_connect(ws)
 
-            if not channel:
-                return
+        if await is_websocket_alive(ws):
 
             logger.info(f"Consumer connected - {channel}")
 
@@ -130,6 +128,9 @@ async def message_endpoint(
                 # Handle cases like -
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
                 await channel_manager.on_disconnect(ws)
+
+        else:
+            ws.close()
 
     except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")

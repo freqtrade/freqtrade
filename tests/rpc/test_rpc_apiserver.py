@@ -56,8 +56,8 @@ def botclient(default_conf, mocker):
         apiserver.add_rpc_handler(rpc)
         yield ftbot, TestClient(apiserver.app)
         # Cleanup ... ?
-        apiserver.cleanup()
     finally:
+        apiserver.cleanup()
         ApiServer.shutdown()
 
 
@@ -171,7 +171,7 @@ def test_api_ws_auth(botclient):
     url = f"/api/v1/message/ws?token={good_token}"
 
     with client.websocket_connect(url) as websocket:
-        websocket.send(1)
+        pass
 
 
 def test_api_unauthorized(botclient):
@@ -1685,3 +1685,23 @@ def test_health(botclient):
     ret = rc.json()
     assert ret['last_process_ts'] == 0
     assert ret['last_process'] == '1970-01-01T00:00:00+00:00'
+
+
+def test_api_ws_subscribe(botclient, mocker):
+    ftbot, client = botclient
+    ws_url = f"/api/v1/message/ws?token={_TEST_WS_TOKEN}"
+
+    sub_mock = mocker.patch(
+        'freqtrade.rpc.api_server.ws.channel.WebSocketChannel.set_subscriptions', MagicMock())
+
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({'type': 'subscribe', 'data': ['whitelist']})
+
+    # Check call count is now 1 as we sent a valid subscribe request
+    assert sub_mock.call_count == 1
+
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({'type': 'subscribe', 'data': 'whitelist'})
+
+    # Call count hasn't changed as the subscribe request was invalid
+    assert sub_mock.call_count == 1
