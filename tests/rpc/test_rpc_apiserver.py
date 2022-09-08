@@ -54,6 +54,7 @@ def botclient(default_conf, mocker):
         apiserver.add_rpc_handler(rpc)
         yield ftbot, TestClient(apiserver.app)
         # Cleanup ... ?
+        apiserver.cleanup()
     finally:
         ApiServer.shutdown()
 
@@ -261,6 +262,7 @@ def test_api__init__(default_conf, mocker):
     with pytest.raises(OperationalException, match="RPC Handler already attached."):
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
+    apiserver.cleanup()
     ApiServer.shutdown()
 
 
@@ -388,6 +390,7 @@ def test_api_run(default_conf, mocker, caplog):
                  MagicMock(side_effect=Exception))
     apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
+    apiserver.cleanup()
     ApiServer.shutdown()
 
 
