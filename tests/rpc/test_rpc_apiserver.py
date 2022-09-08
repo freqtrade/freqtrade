@@ -51,13 +51,15 @@ def botclient(default_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
+    apiserver = None
     try:
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(rpc)
         yield ftbot, TestClient(apiserver.app)
         # Cleanup ... ?
     finally:
-        apiserver.cleanup()
+        if apiserver:
+            apiserver.cleanup()
         ApiServer.shutdown()
 
 
