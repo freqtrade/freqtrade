@@ -10,7 +10,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import pandas as pd
 import pytest
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
@@ -31,6 +31,7 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_mock_
 BASE_URI = "/api/v1"
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
+_TEST_WS_TOKEN = "secret_Ws_t0ken"
 
 
 @pytest.fixture
@@ -44,6 +45,7 @@ def botclient(default_conf, mocker):
                                         "CORS_origins": ['http://example.com'],
                                         "username": _TEST_USER,
                                         "password": _TEST_PASS,
+                                        "ws_token": _TEST_WS_TOKEN
                                         }})
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
@@ -153,6 +155,23 @@ def test_api_auth():
 
     with pytest.raises(HTTPException):
         get_user_from_token(b'not_a_token', 'secret1234')
+
+
+def test_api_ws_auth(botclient):
+    ftbot, client = botclient
+
+    bad_token = "bad-ws_token"
+    url = f"/api/v1/message/ws?token={bad_token}"
+
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(url) as websocket:
+            websocket.receive()
+
+    good_token = _TEST_WS_TOKEN
+    url = f"/api/v1/message/ws?token={good_token}"
+
+    with client.websocket_connect(url) as websocket:
+        websocket.send(1)
 
 
 def test_api_unauthorized(botclient):

@@ -62,7 +62,7 @@ async def get_ws_token(
         # Just return the token if it matches
         return token
     else:
-        logger.debug("Denying websocket request")
+        logger.info("Denying websocket request")
         # If it doesn't match, close the websocket connection
         await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 

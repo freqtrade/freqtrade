@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
+from freqtrade.rpc.api_server.api_auth import get_ws_token
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.rpc.api_server.ws.schema import (ValidationError, WSAnalyzedDFMessage,
@@ -95,6 +96,7 @@ async def message_endpoint(
     ws: WebSocket,
     rpc: RPC = Depends(get_rpc),
     channel_manager=Depends(get_channel_manager),
+    token: str = Depends(get_ws_token)
 ):
     """
     Message WebSocket endpoint, facilitates sending RPC messages
@@ -104,6 +106,9 @@ async def message_endpoint(
             # TODO:
             # Return a channel ID, pass that instead of ws to the rest of the methods
             channel = await channel_manager.on_connect(ws)
+
+            if not channel:
+                return
 
             logger.info(f"Consumer connected - {channel}")
 
