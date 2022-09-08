@@ -187,9 +187,9 @@
             "ws_token": "a_secret_ws_token"
           }
         ],
-        "reply_timeout": 10,
+        "reply_timeout": 30,
         "ping_timeout": 5,
-        "sleep_time": 5,
+        "sleep_time": 10,
         "remove_entry_exit_signals": false
     },
     "bot_name": "freqtrade",

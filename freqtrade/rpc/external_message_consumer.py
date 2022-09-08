@@ -58,9 +58,9 @@ class ExternalMessageConsumer:
         if self.enabled and len(self.producers) < 1:
             raise ValueError("You must specify at least 1 Producer to connect to.")
 
-        self.reply_timeout = self._emc_config.get('reply_timeout', 10)
-        self.ping_timeout = self._emc_config.get('ping_timeout', 2)
-        self.sleep_time = self._emc_config.get('sleep_time', 5)
+        self.reply_timeout = self._emc_config.get('reply_timeout', 30)
+        self.ping_timeout = self._emc_config.get('ping_timeout', 5)
+        self.sleep_time = self._emc_config.get('sleep_time', 10)
 
         # The amount of candles per dataframe on the initial request
         self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 1500)
