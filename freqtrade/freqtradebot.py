@@ -281,14 +281,17 @@ class FreqtradeBot(LoggingMixin):
     def update_funding_fees(self):
         if self.trading_mode == TradingMode.FUTURES:
             trades = Trade.get_open_trades()
-            for trade in trades:
-                funding_fees = self.exchange.get_funding_fees(
-                    pair=trade.pair,
-                    amount=trade.amount,
-                    is_short=trade.is_short,
-                    open_date=trade.date_last_filled_utc
-                )
-                trade.funding_fees = funding_fees
+            try:
+                for trade in trades:
+                    funding_fees = self.exchange.get_funding_fees(
+                        pair=trade.pair,
+                        amount=trade.amount,
+                        is_short=trade.is_short,
+                        open_date=trade.date_last_filled_utc
+                    )
+                    trade.funding_fees = funding_fees
+            except ExchangeError:
+                logger.warning("Could not update funding fees for open trades.")
         else:
             return 0.0
 
@@ -671,14 +674,12 @@ class FreqtradeBot(LoggingMixin):
         if not stake_amount:
             return False
 
-        if pos_adjust:
-            logger.info(f"Position adjust: about to create a new order for {pair} with stake: "
-                        f"{stake_amount} for {trade}")
-        else:
-            logger.info(
-                f"{name} signal found: about create a new trade for {pair} with stake_amount: "
-                f"{stake_amount} ...")
-
+        msg = (f"Position adjust: about to create a new order for {pair} with stake: "
+               f"{stake_amount} for {trade}" if pos_adjust
+               else
+               f"{name} signal found: about create a new trade for {pair} with stake_amount: "
+               f"{stake_amount} ...")
+        logger.info(msg)
         amount = (stake_amount / enter_limit_requested) * leverage
         order_type = ordertype or self.strategy.order_types['entry']
 
@@ -741,8 +742,12 @@ class FreqtradeBot(LoggingMixin):
 
         # This is a new trade
         if trade is None:
-            funding_fees = self.exchange.get_funding_fees(
-                pair=pair, amount=amount, is_short=is_short, open_date=open_date)
+            try:
+                funding_fees = self.exchange.get_funding_fees(
+                    pair=pair, amount=amount, is_short=is_short, open_date=open_date)
+            except ExchangeError:
+                logger.warning("Could not update funding fee.")
+
             trade = Trade(
                 pair=pair,
                 base_currency=base_currency,
@@ -1493,12 +1498,16 @@ class FreqtradeBot(LoggingMixin):
         :param exit_check: CheckTuple with signal and reason
         :return: True if it succeeds False
         """
-        trade.funding_fees = self.exchange.get_funding_fees(
-            pair=trade.pair,
-            amount=trade.amount,
-            is_short=trade.is_short,
-            open_date=trade.date_last_filled_utc,
-        )
+        try:
+            trade.funding_fees = self.exchange.get_funding_fees(
+                pair=trade.pair,
+                amount=trade.amount,
+                is_short=trade.is_short,
+                open_date=trade.date_last_filled_utc,
+            )
+        except ExchangeError:
+            logger.warning("Could not update funding fee.")
+
         exit_type = 'exit'
         exit_reason = exit_tag or exit_check.exit_reason
         if exit_check.exit_type in (
