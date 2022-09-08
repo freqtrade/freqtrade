@@ -2514,7 +2514,7 @@ class Exchange:
             funding_rates = candle_histories[funding_comb]
             mark_rates = candle_histories[mark_comb]
         except KeyError:
-            raise ExchangeError("Could not find funding rates") from None
+            raise ExchangeError("Could not find funding rates.") from None
 
         funding_mark_rates = self.combine_funding_and_mark(
             funding_rates=funding_rates, mark_rates=mark_rates)

@@ -11,8 +11,9 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
-from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
-                                  OperationalException, PricingError, TemporaryError)
+from freqtrade.exceptions import (DDosProtection, DependencyException, ExchangeError,
+                                  InvalidOrderException, OperationalException, PricingError,
+                                  TemporaryError)
 from freqtrade.exchange import (Binance, Bittrex, Exchange, Kraken, amount_to_precision,
                                 date_minus_candles, market_is_active, price_to_precision,
                                 timeframe_to_minutes, timeframe_to_msecs, timeframe_to_next_date,
@@ -4179,16 +4180,23 @@ def test__fetch_and_calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
+    ex = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     mocker.patch('freqtrade.exchange.Exchange.timeframes', PropertyMock(
         return_value=['1h', '4h', '8h']))
-    funding_fees = exchange._fetch_and_calculate_funding_fees(
+    funding_fees = ex._fetch_and_calculate_funding_fees(
         pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
     # Fees for Longs are inverted
-    funding_fees = exchange._fetch_and_calculate_funding_fees(
+    funding_fees = ex._fetch_and_calculate_funding_fees(
         pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == -expected_fees
+
+    # Return empty "refresh_latest"
+    mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", return_value={})
+    ex = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
+    with pytest.raises(ExchangeError, match="Could not find funding rates."):
+        ex._fetch_and_calculate_funding_fees(
+            pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
 
 
 @pytest.mark.parametrize('exchange,expected_fees', [
