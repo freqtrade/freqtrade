@@ -20,7 +20,7 @@ class BaseRegressionModel(IFreqaiModel):
     """
 
     def train(
-        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
+        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
     ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
@@ -67,7 +67,7 @@ class BaseRegressionModel(IFreqaiModel):
         return model
 
     def predict(
-        self, unfiltered_dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False
+        self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = False, **kwargs
     ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
@@ -78,9 +78,9 @@ class BaseRegressionModel(IFreqaiModel):
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
-        dk.find_features(unfiltered_dataframe)
+        dk.find_features(dataframe)
         filtered_dataframe, _ = dk.filter_features(
-            unfiltered_dataframe, dk.training_features_list, training_filter=False
+            dataframe, dk.training_features_list, training_filter=False
         )
         filtered_dataframe = dk.normalize_data_from_metadata(filtered_dataframe)
         dk.data_dictionary["prediction_features"] = filtered_dataframe

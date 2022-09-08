@@ -6,3 +6,4 @@ scikit-learn==1.1.2
 joblib==1.1.0
 catboost==1.0.6; platform_machine != 'aarch64'
 lightgbm==3.3.2
+xgboost==1.6.2
