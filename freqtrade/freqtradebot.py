@@ -740,11 +740,12 @@ class FreqtradeBot(LoggingMixin):
 
         # This is a new trade
         if trade is None:
+            funding_fees = 0.0
             try:
                 funding_fees = self.exchange.get_funding_fees(
                     pair=pair, amount=amount, is_short=is_short, open_date=open_date)
             except ExchangeError:
-                logger.warning("Could not update funding fee.")
+                logger.warning("Could not find funding fee.")
 
             trade = Trade(
                 pair=pair,
