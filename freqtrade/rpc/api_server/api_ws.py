@@ -9,7 +9,8 @@ from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.rpc.api_server.ws.schema import (ValidationError, WSAnalyzedDFMessage,
-                                                WSRequestSchema, WSWhitelistMessage)
+                                                WSMessageSchema, WSRequestSchema,
+                                                WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC
 
 
@@ -47,6 +48,7 @@ async def _process_consumer_request(
         return
 
     type, data = websocket_request.type, websocket_request.data
+    response: WSMessageSchema
 
     logger.debug(f"Request of type {type} from {channel}")
 
@@ -61,6 +63,7 @@ async def _process_consumer_request(
             channel.set_subscriptions(data)
 
         # We don't send a response for subscriptions
+        return
 
     elif type == RPCRequestType.WHITELIST:
         # Get whitelist
@@ -70,6 +73,7 @@ async def _process_consumer_request(
         response = WSWhitelistMessage(data=whitelist)
         # Send it back
         await channel.send(response.dict(exclude_none=True))
+        return
 
     elif type == RPCRequestType.ANALYZED_DF:
         limit = None
@@ -85,6 +89,8 @@ async def _process_consumer_request(
         for _, message in analyzed_df.items():
             response = WSAnalyzedDFMessage(data=message)
             await channel.send(response.dict(exclude_none=True))
+
+        return
 
 
 @router.websocket("/message/ws")
