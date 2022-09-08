@@ -17,7 +17,7 @@ class BaseTensorFlowModel(IFreqaiModel):
     """
 
     def train(
-        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
+        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
     ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
