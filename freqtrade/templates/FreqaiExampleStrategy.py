@@ -6,7 +6,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.strategy import IStrategy, merge_informative_pair, CategoricalParameter
+from freqtrade.strategy import CategoricalParameter, IStrategy, merge_informative_pair
 
 
 logger = logging.getLogger(__name__)
