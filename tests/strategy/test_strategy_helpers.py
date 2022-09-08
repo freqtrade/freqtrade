@@ -117,6 +117,29 @@ def test_merge_informative_pair_lower():
         merge_informative_pair(data, informative, '1h', '15m', ffill=True)
 
 
+def test_merge_informative_pair_suffix():
+    data = generate_test_data('15m', 20)
+    informative = generate_test_data('1h', 20)
+
+    result = merge_informative_pair(data, informative, '15m', '1h',
+                                    append_timeframe=False, suffix="suf")
+
+    assert 'date' in result.columns
+    assert result['date'].equals(data['date'])
+    assert 'date_suf' in result.columns
+
+    assert 'open_suf' in result.columns
+    assert 'open_1h' not in result.columns
+
+
+def test_merge_informative_pair_suffix_append_timeframe():
+    data = generate_test_data('15m', 20)
+    informative = generate_test_data('1h', 20)
+
+    with pytest.raises(ValueError, match=r"You can not specify `append_timeframe` .*"):
+        merge_informative_pair(data, informative, '15m', '1h', suffix="suf")
+
+
 def test_stoploss_from_open():
     open_price_ranges = [
         [0.01, 1.00, 30],
