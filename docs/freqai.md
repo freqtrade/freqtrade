@@ -538,12 +538,28 @@ for each pair, for each backtesting window within the expanded `--timerange`.
 
 ### Hyperopt
 
-The [Hyperopt](hyperopt.md) module can be executed with some restrictions:
+Users can hyperopt using the same command as typical [hyperopt](hyperopt.md):
+
+```bash
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --timerange 20220428-20220507
+```
+
+Users need to have the data pre-downloaded in the same fashion as if they were doing a FreqAI [backtest](#backtesting). In addition, users must consider some restrictions when trying to [Hyperopt](hyperopt.md)  FreqAI strategies:
 
 - The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
 - It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
-- The [Backtesting](#backtesting) instructions also apply apply to Hyperopt.
-  
+- The [Backtesting](#backtesting) instructions also apply to Hyperopt.
+
+The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. Users need to focus on hyperopting parameters that are not used in their FreqAI features. For example, users should not try to hyperopt rolling window lengths in their feature creation, or any of their FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only. 
+
+A good example of a hyperoptable parameter in FreqAI is a value for `DI_values` beyond which we consider outliers and below which we consider inliers:
+
+```python
+di_max = IntParameter(low=1, high=20, default=10, space='buy', optimize=True, load=True)
+dataframe['outlier'] = np.where(dataframe['DI_values'] > self.di_max.value/10, 1, 0)
+```
+
+Which would help the user understand the appropriate Dissimilarity Index values for their particular parameter space.
 
 ### Deciding the size of the sliding training window and backtesting duration
 
