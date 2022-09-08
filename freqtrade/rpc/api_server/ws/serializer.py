@@ -46,16 +46,6 @@ class JSONWebSocketSerializer(WebSocketSerializer):
         return json.loads(data, object_hook=_json_object_hook)
 
 
-# ORJSON does not support .loads(object_hook=x) parameter, so we must use RapidJSON
-
-class RapidJSONWebSocketSerializer(WebSocketSerializer):
-    def _serialize(self, data):
-        return rapidjson.dumps(data, default=_json_default)
-
-    def _deserialize(self, data):
-        return rapidjson.loads(data, object_hook=_json_object_hook)
-
-
 class HybridJSONWebSocketSerializer(WebSocketSerializer):
     def _serialize(self, data) -> str:
         return str(orjson.dumps(data, default=_json_default), "utf-8")

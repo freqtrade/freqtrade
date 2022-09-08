@@ -64,15 +64,3 @@ class WSAnalyzedDFMessage(WSMessageSchema):
     data: AnalyzedDFData
 
 # --------------------------------------------------------------------------
-
-
-if __name__ == "__main__":
-    message = WSAnalyzedDFMessage(
-        data={
-            "key": ("1", "5m", "spot"),
-            "df": DataFrame(),
-            "la": datetime.now()
-        }
-    )
-
-    print(message)
