@@ -347,7 +347,7 @@ You could then connect to the endpoint at `http://localhost:8080/api/v1/message/
 
 #### Using the WebSocket
 
-Once connected to the WebSocket, the bot will broadcast RPC messages to anyone who is subscribed to them. To subscribe to a message, you must first subscribe to the message types. This can be done by sending a JSON request through the WebSocket:
+Once connected to the WebSocket, the bot will broadcast RPC messages to anyone who is subscribed to them. To subscribe to a list of messages, you must send a JSON request through the WebSocket like the one below. The `data` key must be a list of message type strings.
 
 ``` json
 {
