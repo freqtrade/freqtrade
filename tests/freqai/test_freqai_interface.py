@@ -203,6 +203,37 @@ def test_train_model_in_series_XGBoostRegressor(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
+def test_train_model_in_series_XGBoostRegressorMultiModel(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.update({"freqaimodel": "XGBoostRegressorMultiTarget"})
+    freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    freqai.dd.pair_dict = MagicMock()
+
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+
+    assert len(freqai.dk.label_list) == 2
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
+    assert len(freqai.dk.data['training_features_list']) == 26
+
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
 def test_start_backtesting(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180120-20180130"})
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
