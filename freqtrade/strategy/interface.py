@@ -698,11 +698,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             lock_time = timeframe_to_next_date(self.timeframe, candle_date)
             return PairLocks.is_pair_locked(pair, lock_time, side=side)
 
-    def analyze_ticker(
-        self,
-        dataframe: DataFrame,
-        metadata: dict
-    ) -> DataFrame:
+    def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and entry order signal to it
@@ -716,11 +712,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
-    def _analyze_ticker_internal(
-        self,
-        dataframe: DataFrame,
-        metadata: dict
-    ) -> DataFrame:
+    def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
         add several TA indicators and buy signal to it
@@ -753,20 +745,16 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return dataframe
 
-    def analyze_pair(
-        self,
-        pair: str
-    ) -> None:
+    def analyze_pair(self, pair: str) -> None:
         """
         Fetch data for this pair from dataprovider and analyze.
         Stores the dataframe into the dataprovider.
         The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
         :param pair: Pair to analyze.
         """
-        candle_type = self.config.get('candle_type_def', CandleType.SPOT)
-
-        dataframe = self.dp.ohlcv(pair, self.timeframe, candle_type)
-
+        dataframe = self.dp.ohlcv(
+            pair, self.timeframe, candle_type=self.config.get('candle_type_def', CandleType.SPOT)
+        )
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return
@@ -787,10 +775,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.warning('Empty dataframe for pair %s', pair)
             return
 
-    def analyze(
-        self,
-        pairs: List[str]
-    ) -> None:
+    def analyze(self, pairs: List[str]) -> None:
         """
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
@@ -798,7 +783,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         for pair in pairs:
             self.analyze_pair(pair)
 
-    @ staticmethod
+    @staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
@@ -1218,9 +1203,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         for inf_data, populate_fn in self._ft_informative:
             dataframe = _create_and_merge_informative_pair(
                 self, dataframe, metadata, inf_data, populate_fn)
-
-        # If in follower mode, get analyzed dataframe from leader df's in dp
-        # otherise run populate_indicators
 
         return self.populate_indicators(dataframe, metadata)
 

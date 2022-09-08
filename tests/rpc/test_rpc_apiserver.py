@@ -406,7 +406,6 @@ def test_api_cleanup(default_conf, mocker, caplog):
 
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
-    apiserver.start_api()
 
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1

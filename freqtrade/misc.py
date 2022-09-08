@@ -14,7 +14,7 @@ import pandas
 import rapidjson
 
 from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
-from freqtrade.enums.signaltype import SignalTagType, SignalType
+from freqtrade.enums import SignalTagType, SignalType
 
 
 logger = logging.getLogger(__name__)
