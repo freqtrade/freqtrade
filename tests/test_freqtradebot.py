@@ -1317,9 +1317,9 @@ def test_create_stoploss_order_invalid_order(
     assert create_order_mock.call_args[1]['amount'] == trade.amount
 
     # Rpc is sending first buy, then sell
-    assert rpc_mock.call_count == 2
-    assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
-    assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
+    assert rpc_mock.call_count == 3
+    assert rpc_mock.call_args_list[2][0][0]['sell_reason'] == ExitType.EMERGENCY_EXIT.value
+    assert rpc_mock.call_args_list[2][0][0]['order_type'] == 'market'
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2434,7 +2434,7 @@ def test_manage_open_orders_entry_usercustom(
     # Trade should be closed since the function returns true
     freqtrade.manage_open_orders()
     assert cancel_order_wr_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
@@ -2473,7 +2473,7 @@ def test_manage_open_orders_entry(
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
@@ -2603,7 +2603,7 @@ def test_check_handle_cancelled_buy(
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 0
     assert log_has_re(
@@ -2634,7 +2634,7 @@ def test_manage_open_orders_buy_exception(
     # check it does cancel buy orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
-    assert rpc_mock.call_count == 0
+    assert rpc_mock.call_count == 1
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 1
@@ -2681,7 +2681,7 @@ def test_manage_open_orders_exit_usercustom(
     # Return false - No impact
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
-    assert rpc_mock.call_count == 0
+    assert rpc_mock.call_count == 1
     assert open_trade_usdt.is_open is False
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
@@ -2691,7 +2691,7 @@ def test_manage_open_orders_exit_usercustom(
     # Return Error - No impact
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
-    assert rpc_mock.call_count == 0
+    assert rpc_mock.call_count == 1
     assert open_trade_usdt.is_open is False
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
@@ -2701,7 +2701,7 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.strategy.check_entry_timeout = MagicMock(return_value=True)
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     assert open_trade_usdt.is_open is True
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
@@ -2761,7 +2761,7 @@ def test_manage_open_orders_exit(
     # check it does cancel sell orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     assert open_trade_usdt.is_open is True
     # Custom user sell-timeout is never called
     assert freqtrade.strategy.check_exit_timeout.call_count == 0
@@ -2800,7 +2800,7 @@ def test_check_handle_cancelled_exit(
     # check it does cancel sell orders over the time limit
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     assert open_trade_usdt.is_open is True
     exit_name = 'Buy' if is_short else 'Sell'
     assert log_has_re(f"{exit_name} order cancelled on exchange for Trade.*", caplog)
@@ -2838,7 +2838,7 @@ def test_manage_open_orders_partial(
     # note this is for a partially-complete buy order
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
@@ -2885,7 +2885,7 @@ def test_manage_open_orders_partial_fee(
     assert log_has_re(r"Applying fee on amount for Trade.*", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that trade has been updated
@@ -2935,7 +2935,7 @@ def test_manage_open_orders_partial_except(
     assert log_has_re(r"Could not update trade amount: .*", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that trade has been updated
@@ -3150,7 +3150,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     reason = CANCEL_REASON['TIMEOUT']
     assert freqtrade.handle_cancel_exit(trade, order, reason)
     assert cancel_order_mock.call_count == 1
-    assert send_msg_mock.call_count == 1
+    assert send_msg_mock.call_count == 2
     assert trade.close_rate is None
     assert trade.exit_reason is None
 
@@ -3583,7 +3583,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     trade.is_short = is_short
     assert trade
     assert cancel_order.call_count == 1
-    assert rpc_mock.call_count == 3
+    assert rpc_mock.call_count == 4
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -3653,10 +3653,10 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
     assert trade.exit_reason == ExitType.STOPLOSS_ON_EXCHANGE.value
-    assert rpc_mock.call_count == 3
-    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.ENTRY
-    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.ENTRY_FILL
-    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.EXIT_FILL
+    assert rpc_mock.call_count == 4
+    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.ENTRY
+    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.ENTRY_FILL
+    assert rpc_mock.call_args_list[3][0][0]['type'] == RPCMessageType.EXIT_FILL
 
 
 @pytest.mark.parametrize(
