@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-import xgboost as xgb
+from xgboost import XGBRegressor
 
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
@@ -24,9 +24,6 @@ class XGBoostRegressor(BaseRegressionModel):
                                 all the training and test data/labels.
         """
 
-        xgb.set_config(verbosity=2)
-        xgb.config_context(verbosity=2)
-
         X = data_dictionary["train_features"]
         y = data_dictionary["train_labels"]
 
@@ -39,7 +36,7 @@ class XGBoostRegressor(BaseRegressionModel):
 
         xgb_model = self.get_init_model(dk.pair)
 
-        model = xgb.XGBRegressor(**self.model_training_parameters)
+        model = XGBRegressor(**self.model_training_parameters)
 
         model.fit(X=X, y=y, sample_weight=sample_weight, eval_set=eval_set, xgb_model=xgb_model)
 
