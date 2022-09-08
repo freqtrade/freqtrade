@@ -292,8 +292,6 @@ class FreqtradeBot(LoggingMixin):
                     trade.funding_fees = funding_fees
             except ExchangeError:
                 logger.warning("Could not update funding fees for open trades.")
-        else:
-            return 0.0
 
     def startup_backpopulate_precision(self):
 

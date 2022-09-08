@@ -5430,6 +5430,16 @@ def test_update_funding_fees(
         ))
 
 
+def test_update_funding_fees_error(mocker, default_conf, caplog):
+    mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', side_effect=ExchangeError())
+    default_conf['trading_mode'] = 'futures'
+    default_conf['margin_mode'] = 'isolated'
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.update_funding_fees()
+
+    log_has("Could not update funding fees for open trades.", caplog)
+
+
 def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
