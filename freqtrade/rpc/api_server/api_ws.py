@@ -130,7 +130,7 @@ async def message_endpoint(
                 await channel_manager.on_disconnect(ws)
 
         else:
-            ws.close()
+            await ws.close()
 
     except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")
