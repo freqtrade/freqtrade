@@ -5,18 +5,12 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
-from wao.wao_strategy import WAOStrategy
+from freqtrade.strategy import IStrategy
 
 
-class bb(WAOStrategy):
-    timeframe = '30m'
-    brain = "Freq_bb"
-
-    def __init__(self, config: dict):
-        self.coin = str(config.get('pairs')[0]).split('/')[0]
-        if self.coin == 'BTC' or self.coin == 'ADA':
-            self.brain = "Freq_bb_ada_btc"
-        super().__init__(config, self.brain, 8, 0.15)
+class bb(IStrategy):
+    # Optimal timeframe for the strategy
+    timeframe = '5m'
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -35,36 +29,31 @@ class bb(WAOStrategy):
     # }
 
     minimal_roi = {
-        "240": 0.005,  # Exit after 500 minutes there is at least 0.5% profit
-        "220": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-        "200": 0.007,  # Exit after 40 minutes if there is at least 1% profit
-        "180": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-        "160": 0.009,  # Exit after 40 minutes if there is at least 1% profit
-        "140": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
-        "120": 0.011,  # Exit after 20 minutes if there is at least 1.5% profit
-        "100": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-        "80": 0.013,  # Exit after 20 minutes if there is at least 1.5% profit
-        "60": 0.014,  # Exit immediately if there is at least 2% profit
-        "40": 0.016,  # Exit immediately if there is at least 2% profit
-        "20": 0.018,  # Exit immediately if there is at least 2% profit
-        "0": 0.020,  # Exit immediately if there is at least 2% profit
+        "120": 0.006,  # Exit after 40 minutes if there is at least 1% profit
+        "115": 0.007,  # Exit after 20 minutes if there is at least 1.5% profit
+        "100": 0.008,  # Exit after 20 minutes if there is at least 1.5% profit
+        "85": 0.009,  # Exit after 20 minutes if there is at least 1.5% profit
+        "60": 0.010,  # Exit after 20 minutes if there is at least 1.5% profit
+        "45": 0.011,  # Exit immediately if there is at least 2% profit
+        "30": 0.014,  # Exit immediately if there is at least 2% profit
+        "15": 0.016,  # Exit immediately if there is at least 2% profit
+        "0": 0.018,  # Exit immediately if there is at least 2% profit
     }
 
-    # Experiment minimal roi:
     # minimal_roi = {
-    #     "180": 0.004,  # Exit after 500 minutes there is at least 0.5% profit
-    #     "165": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
-    #     "150": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-    #     "135": 0.008,  # Exit after 40 minutes if there is at least 1% profit
-    #     "120": 0.010,  # Exit after 40 minutes if there is at least 1% profit
-    #     "105": 0.012,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "90": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "75": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "60": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
-    #     "45": 0.022,  # Exit immediately if there is at least 2% profit
-    #     "30": 0.024,  # Exit immediately if there is at least 2% profit
-    #     "15": 0.026,  # Exit immediately if there is at least 2% profit
-    #     "0": 0.028,  # Exit immediately if there is at least 2% profit
+    #     "180": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "165": 0.008,  # Exit after 500 minutes there is at least 0.5% profit
+    #     "150": 0.010,  # Exit after 40 minutes if there is at least 1% profit
+    #     "135": 0.012,  # Exit after 40 minutes if there is at least 1% profit
+    #     "120": 0.014,  # Exit after 40 minutes if there is at least 1% profit
+    #     "105": 0.016,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "90": 0.018,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "75": 0.020,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "60": 0.022,  # Exit after 20 minutes if there is at least 1.5% profit
+    #     "45": 0.024,  # Exit immediately if there is at least 2% profit
+    #     "30": 0.026,  # Exit immediately if there is at least 2% profit
+    #     "15": 0.028,  # Exit immediately if there is at least 2% profit
+    #     "0": 0.030,  # Exit immediately if there is at least 2% profit
     # }
     #
     # minimal_roi = {
@@ -135,7 +124,7 @@ class bb(WAOStrategy):
         # dataframe['slowk'] = stoch['slowk']
 
         # RSI
-        dataframe['rsi'] = ta.RSI(dataframe)
+        # dataframe['rsi'] = ta.RSI(dataframe)
         # SMA
         # dataframe['sma_200'] = ta.SMA(dataframe, timeperiod=200)
         # EMA
@@ -173,10 +162,10 @@ class bb(WAOStrategy):
         """
         dataframe.loc[
             (
-                qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
-                & (dataframe['rsi'] < 50)
-                # & (dataframe['ema_9'] > dataframe['sma_200'])
-                # & (dataframe['macdhist'] > -0.08)
+                   qtpylib.crossed_above(dataframe['close'], dataframe['bb_lowerband'])
+                    # & (dataframe['rsi'] < 50)
+                    # & (dataframe['ema_9'] > dataframe['sma_200'])
+                    # & (dataframe['macdhist'] > -0.08)
             ),
             'buy'] = 1
 
@@ -190,9 +179,9 @@ class bb(WAOStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['close'] > dataframe['bb_upperband'])
-                | (dataframe['rsi'] > 60)
-                # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
+                    (dataframe['close'] > dataframe['bb_upperband'])
+                    # | (dataframe['rsi'] > 60)
+                    # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
             'sell'] = 1
