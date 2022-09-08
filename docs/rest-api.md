@@ -31,7 +31,8 @@ Sample configuration:
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
         "username": "Freqtrader",
-        "password": "SuperSecret1!"
+        "password": "SuperSecret1!",
+        "ws_token": "sercet_Ws_t0ken"
     },
 ```
 
@@ -66,7 +67,7 @@ secrets.token_hex()
 
 !!! Danger "Password selection"
     Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
-    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!). 
+    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!).
 
 ### Configuration with docker
 
@@ -274,7 +275,7 @@ reload_config
 	Reload configuration.
 
 show_config
-	
+
         Returns part of the configuration, relevant for trading operations.
 
 start
@@ -320,6 +321,70 @@ version
 whitelist
 	Show the current whitelist.
 
+```
+
+### Message WebSocket
+
+The API Server makes available a websocket endpoint for subscribing to RPC messages
+from the FreqTrade Bot. This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
+
+Assuming your rest API is set to `127.0.0.1` on port `8080`, the endpoint is available at `http://localhost:8080/api/v1/message/ws`.
+
+To access the websocket endpoint, the `ws_token` is required as a query parameter in the endpoint URL. This is set in your rest API config section. To generate a safe `ws_token` you can run the following code:
+
+``` python
+>>> import secrets
+>>> secrets.token_urlsafe(16)
+'zs9XYCbTPKvux46UJckflw'
+```
+
+You could then connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=zs9XYCbTPKvux46UJckflw`.
+
+!!! warning "Warning"
+
+    Please do not use the above example token. To make sure you are secure, generate a completely new token.
+
+
+#### Using the WebSocket
+
+Once connected to the WebSocket, the bot will broadcast RPC messages to anyone who is subscribed to them. To subscribe to a message, you must first subscribe to the message types. This can be done by sending a JSON request through the WebSocket:
+
+``` json
+{
+  "type": "subscribe",
+  "data": ["whitelist", "analyzed_df"] // A list of string message types
+}
+```
+
+#### Message types
+
+| Message Type | Description |
+|--------------|-------------|
+| whitelist | The list of pairs in the bot's whitelist.
+| analyzed_df | The dataframe and last_analyzed datetime for a pair.
+| entry | Trade has signaled an entry
+| entry_fill | Trade enter has filled
+| entry_cancel | Trade enter has been canceled
+| exit | Trade has signaled an exit
+| exit_fill | Trade exit has filled
+| exit_cancel | Trade exit has been canceled
+| protection_trigger | A protection has triggered for a pair
+| protection_trigger_global | A protection has triggered for a pair
+| status | A bot's status change
+| startup | Startup messages
+| warning | Any warnings
+
+Now anytime those types of RPC messages are sent in the bot, you will receive them through the WebSocket as long as the connection is active. They typically take the same form as the request:
+
+``` json
+{
+  "type": "analyzed_df",
+  "data": {
+      "key": ["NEO/BTC", "5m", "spot"],
+      "df": {}, // The dataframe
+      "la": "2022-09-08 22:14:41.457786+00:00"
+  }
+}
 ```
 
 ### OpenAPI interface
