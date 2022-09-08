@@ -55,16 +55,15 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
 
     # Rename columns to be unique
     date_merge = 'date_merge'
-    if append_timeframe and not suffix:
+    if suffix and append_timeframe:
+        raise ValueError("You can not specify `append_timeframe` as True and a `suffix`.")
+    elif append_timeframe:
         date_merge = f'date_merge_{timeframe_inf}'
         informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
 
-    elif suffix and not append_timeframe:
+    elif suffix:
         date_merge = f'date_merge_{suffix}'
         informative.columns = [f"{col}_{suffix}" for col in informative.columns]
-
-    elif suffix and append_timeframe:
-        raise ValueError("You can not specify `append_timeframe` as True and a `suffix`.")
 
     # Combine the 2 dataframes
     # all indicators on the informative sample MUST be calculated before this point
