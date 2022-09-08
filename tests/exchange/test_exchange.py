@@ -907,12 +907,7 @@ def test_validate_timeframes_failed(default_conf, mocker):
     with pytest.raises(OperationalException,
                        match=r"Invalid timeframe '3m'. This exchange supports.*"):
         Exchange(default_conf)
-    default_conf["timeframe"] = "15s"
-
-    with pytest.raises(OperationalException,
-                       match=r"Timeframes < 1m are currently not supported by Freqtrade."):
-        Exchange(default_conf)
-
+    
 
 def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
     default_conf["timeframe"] = "3m"
