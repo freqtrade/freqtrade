@@ -173,7 +173,7 @@
         "CORS_origins": [],
         "username": "freqtrader",
         "password": "SuperSecurePassword",
-        "ws_token": "a_secret_ws_token"
+        "ws_token": "secret_ws_t0ken."
     },
     // The ExternalMessageConsumer config should only be enabled on an instance
     // that listens to outside data from another instance. This should not be enabled
@@ -184,11 +184,11 @@
           {
             "name": "default",
             "url": "ws://localhost:8081/api/v1/message/ws",
-            "ws_token": "a_secret_ws_token"
+            "ws_token": "secret_ws_t0ken."
           }
         ],
-        "reply_timeout": 30,
-        "ping_timeout": 5,
+        "poll_timeout": 300,
+        "ping_timeout": 10,
         "sleep_time": 10,
         "remove_entry_exit_signals": false
     },
