@@ -541,7 +541,7 @@ for each pair, for each backtesting window within the expanded `--timerange`.
 Users can hyperopt using the same command as typical [hyperopt](hyperopt.md):
 
 ```bash
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --timerange 20220428-20220507
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --timerange 20220428-20220507
 ```
 
 Users need to have the data pre-downloaded in the same fashion as if they were doing a FreqAI [backtest](#backtesting). In addition, users must consider some restrictions when trying to [Hyperopt](hyperopt.md)  FreqAI strategies:
