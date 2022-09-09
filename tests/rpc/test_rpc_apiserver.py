@@ -161,18 +161,20 @@ def test_api_auth():
 
 def test_api_ws_auth(botclient):
     ftbot, client = botclient
+    def url(token): return f"/api/v1/message/ws?token={token}"
 
     bad_token = "bad-ws_token"
-    url = f"/api/v1/message/ws?token={bad_token}"
-
     with pytest.raises(WebSocketDisconnect):
-        with client.websocket_connect(url) as websocket:
+        with client.websocket_connect(url(bad_token)) as websocket:
             websocket.receive()
 
     good_token = _TEST_WS_TOKEN
-    url = f"/api/v1/message/ws?token={good_token}"
+    with client.websocket_connect(url(good_token)) as websocket:
+        pass
 
-    with client.websocket_connect(url) as websocket:
+    jwt_secret = ftbot.config['api_server'].get('jwt_secret_key', 'super-secret')
+    jwt_token = create_token({'identity': {'u': 'Freqtrade'}}, jwt_secret)
+    with client.websocket_connect(url(jwt_token)) as websocket:
         pass
 
 

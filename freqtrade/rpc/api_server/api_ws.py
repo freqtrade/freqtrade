@@ -132,6 +132,10 @@ async def message_endpoint(
         else:
             await ws.close()
 
+    except RuntimeError:
+        # WebSocket was closed
+        await channel_manager.on_disconnect(ws)
+
     except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")
         # Log tracebacks to keep track of what errors are happening

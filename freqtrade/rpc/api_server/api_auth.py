@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Union
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
@@ -29,7 +29,8 @@ httpbasic = HTTPBasic(auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
-def get_user_from_token(token, secret_key: str, token_type: str = "access"):
+def get_user_from_token(token, secret_key: str, token_type: str = "access",
+                        raise_on_error: bool = True) -> Union[bool, str]:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -39,12 +40,21 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         username: str = payload.get("identity", {}).get('u')
         if username is None:
-            raise credentials_exception
+            if raise_on_error:
+                raise credentials_exception
+            else:
+                return False
         if payload.get("type") != token_type:
-            raise credentials_exception
+            if raise_on_error:
+                raise credentials_exception
+            else:
+                return False
 
     except jwt.PyJWTError:
-        raise credentials_exception
+        if raise_on_error:
+            raise credentials_exception
+        else:
+            return False
     return username
 
 
@@ -53,14 +63,18 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
 # https://github.com/tiangolo/fastapi/blob/master/fastapi/security/api_key.py
 async def get_ws_token(
     ws: WebSocket,
-    token: Union[str, None] = None,
+    ws_token: Union[str, None] = Query(..., alias="token"),
     api_config: Dict[str, Any] = Depends(get_api_config)
 ):
-    secret_ws_token = api_config['ws_token']
+    secret_ws_token = api_config.get('ws_token', 'secret_ws_t0ken.')
+    secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
 
-    if token == secret_ws_token:
+    if secrets.compare_digest(secret_ws_token, ws_token):
         # Just return the token if it matches
-        return token
+        return ws_token
+    elif user := get_user_from_token(ws_token, secret_jwt_key, raise_on_error=False):
+        # If the token is a jwt, and it's valid return the user
+        return user
     else:
         logger.info("Denying websocket request")
         # If it doesn't match, close the websocket connection
