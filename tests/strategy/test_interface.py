@@ -11,8 +11,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
-from freqtrade.enums.hyperoptstate import HyperoptState
+from freqtrade.enums import ExitCheckTuple, ExitType, HyperoptState, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 from freqtrade.optimize.space import SKDecimal

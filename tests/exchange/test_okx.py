@@ -4,8 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exchange.exchange import timeframe_to_minutes
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers

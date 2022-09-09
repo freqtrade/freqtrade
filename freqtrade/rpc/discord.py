@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from freqtrade.enums.rpcmessagetype import RPCMessageType
+from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC
 from freqtrade.rpc.webhook import Webhook
 
