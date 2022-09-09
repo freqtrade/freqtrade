@@ -158,6 +158,12 @@ def test_api_auth():
     with pytest.raises(HTTPException):
         get_user_from_token(b'not_a_token', 'secret1234')
 
+    # Check returning false instead of error on bad token
+    assert not get_user_from_token(b'not_a_token', 'secret1234', raise_on_error=False)
+
+    # Check returning false instead of error on bad token type
+    assert not get_user_from_token(token, 'secret1234', token_type='refresh', raise_on_error=False)
+
 
 def test_api_ws_auth(botclient):
     ftbot, client = botclient
