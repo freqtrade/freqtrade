@@ -1,7 +1,6 @@
 from enum import Enum
 
 
-# We need to inherit from str so we can use as a str
 class RPCMessageType(str, Enum):
     STATUS = 'status'
     WARNING = 'warning'

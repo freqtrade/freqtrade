@@ -1086,7 +1086,7 @@ class RPC:
         """ Whitelist data for WebSocket """
         return self._freqtrade.active_pair_whitelist
 
-    @ staticmethod
+    @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
                                    timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
@@ -1117,7 +1117,7 @@ class RPC:
             self._freqtrade.strategy.plot_config['subplots'] = {}
         return self._freqtrade.strategy.plot_config
 
-    @ staticmethod
+    @staticmethod
     def _rpc_sysinfo() -> Dict[str, Any]:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
