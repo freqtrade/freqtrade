@@ -13,7 +13,7 @@ class bb_scalp_15m(WAOStrategy):
     brain = "Freq_bb_15m"
 
     def __init__(self, config: dict):
-        super().__init__(config, self.brain, 4, 0.15)
+        super().__init__(config, self.brain, 4, 0.14)
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
