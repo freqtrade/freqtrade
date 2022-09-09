@@ -673,12 +673,12 @@ class IFreqaiModel(ABC):
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 
     @abstractmethod
-    def train(self, unfiltered_dataframe: DataFrame, pair: str,
+    def train(self, unfiltered_df: DataFrame, pair: str,
               dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahandler
         for storing, saving, loading, and analyzing the data.
-        :param unfiltered_dataframe: Full dataframe for the current training period
+        :param unfiltered_df: Full dataframe for the current training period
         :param metadata: pair metadata from strategy.
         :return: Trained model which can be used to inference (self.predict)
         """
@@ -697,11 +697,11 @@ class IFreqaiModel(ABC):
 
     @abstractmethod
     def predict(
-        self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = True, **kwargs
+        self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
     ) -> Tuple[DataFrame, NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param unfiltered_dataframe: Full dataframe for the current backtest period.
+        :param unfiltered_df: Full dataframe for the current backtest period.
         :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         :param first: boolean = whether this is the first prediction or not.
         :return:
