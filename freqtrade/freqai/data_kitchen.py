@@ -209,14 +209,13 @@ class FreqaiDataKitchen:
         filtered_df = unfiltered_df.filter(training_feature_list, axis=1)
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
-        const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
-        if const_cols:
-            filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
-            logger.warning(f"Removed features {const_cols} with constant values.")
-
         drop_index = pd.isnull(filtered_df).any(1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (training_filter):
+            const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
+            if const_cols:
+                filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
+                logger.warning(f"Removed features {const_cols} with constant values.")
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
