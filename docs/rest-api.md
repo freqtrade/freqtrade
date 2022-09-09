@@ -359,7 +359,7 @@ You would then add that token under `ws_token` in your `api_server` config. Like
 },
 ```
 
-You could then connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q`.
+You can now connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q`.
 
 !!! warning "Warning"
 
