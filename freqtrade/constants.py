@@ -502,7 +502,7 @@ CONF_SCHEMA = {
                         'required': ['name', 'url', 'ws_token']
                     }
                 },
-                'reply_timeout': {'type': 'integer'},
+                'wait_timeout': {'type': 'integer'},
                 'sleep_time': {'type': 'integer'},
                 'ping_timeout': {'type': 'integer'},
                 'remove_signals_analyzed_df': {'type': 'boolean', 'default': False},

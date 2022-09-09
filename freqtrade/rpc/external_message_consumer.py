@@ -59,9 +59,9 @@ class ExternalMessageConsumer:
         if self.enabled and len(self.producers) < 1:
             raise ValueError("You must specify at least 1 Producer to connect to.")
 
-        self.reply_timeout = self._emc_config.get('reply_timeout', 30)
-        self.ping_timeout = self._emc_config.get('ping_timeout', 5)
-        self.sleep_time = self._emc_config.get('sleep_time', 10)
+        self.wait_timeout = self._emc_config.get('wait_timeout', 300)  # in seconds
+        self.ping_timeout = self._emc_config.get('ping_timeout', 10)  # in seconds
+        self.sleep_time = self._emc_config.get('sleep_time', 10)  # in seconds
 
         # The amount of candles per dataframe on the initial request
         self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 1500)
@@ -220,7 +220,7 @@ class ExternalMessageConsumer:
             try:
                 message = await asyncio.wait_for(
                     channel.recv(),
-                    timeout=self.reply_timeout
+                    timeout=self.wait_timeout
                 )
 
                 try:
