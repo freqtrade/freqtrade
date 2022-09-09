@@ -330,15 +330,36 @@ from the FreqTrade Bot. This can be used to consume real-time data from your bot
 
 Assuming your rest API is set to `127.0.0.1` on port `8080`, the endpoint is available at `http://localhost:8080/api/v1/message/ws`.
 
-To access the websocket endpoint, the `ws_token` is required as a query parameter in the endpoint URL. This is set in your rest API config section. To generate a safe `ws_token` you can run the following code:
+To access the websocket endpoint, the `ws_token` is required as a query parameter in the endpoint URL.
+
+
+ To generate a safe `ws_token` you can run the following code:
 
 ``` python
 >>> import secrets
->>> secrets.token_urlsafe(16)
-'zs9XYCbTPKvux46UJckflw'
+>>> secrets.token_urlsafe(25)
+'hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q'
 ```
 
-You could then connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=zs9XYCbTPKvux46UJckflw`.
+
+You would then add that token under `ws_token` in your `api_server` config. Like so:
+
+``` json
+"api_server": {
+    "enabled": true,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": [],
+    "username": "Freqtrader",
+    "password": "SuperSecret1!",
+    "ws_token": "hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q" // <-----
+},
+```
+
+You could then connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q`.
 
 !!! warning "Warning"
 
@@ -355,24 +376,7 @@ Once connected to the WebSocket, the bot will broadcast RPC messages to anyone w
   "data": ["whitelist", "analyzed_df"] // A list of string message types
 }
 ```
-
-#### Message types
-
-| Message Type | Description |
-|--------------|-------------|
-| whitelist | The list of pairs in the bot's whitelist.
-| analyzed_df | The dataframe and last_analyzed datetime for a pair.
-| entry | Trade has signaled an entry
-| entry_fill | Trade enter has filled
-| entry_cancel | Trade enter has been canceled
-| exit | Trade has signaled an exit
-| exit_fill | Trade exit has filled
-| exit_cancel | Trade exit has been canceled
-| protection_trigger | A protection has triggered for a pair
-| protection_trigger_global | A protection has triggered for a pair
-| status | A bot's status change
-| startup | Startup messages
-| warning | Any warnings
+For a list of message types, please refer to the RPCMessageType enum in `freqtrade/enums/rpcmessagetype.py`
 
 Now anytime those types of RPC messages are sent in the bot, you will receive them through the WebSocket as long as the connection is active. They typically take the same form as the request:
 
