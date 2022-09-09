@@ -42,7 +42,7 @@ def get_exchange(config=Depends(get_config)):
 
 
 def get_channel_manager():
-    return ApiServer._channel_manager
+    return ApiServer._ws_channel_manager
 
 
 def is_webserver_mode(config=Depends(get_config)):
