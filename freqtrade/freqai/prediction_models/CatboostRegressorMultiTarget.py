@@ -60,6 +60,9 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
                 {'eval_set': eval_sets[i],  'init_model': init_models[i]})
 
         model = FreqaiMultiOutputRegressor(estimator=cbr)
+        thread_training = self.freqai_info.get('multitarget_parallel_training', False)
+        if thread_training:
+            model.n_jobs = y.shape[1]
         model.fit(X=X, y=y, sample_weight=sample_weight, fit_params=fit_params)
 
         return model

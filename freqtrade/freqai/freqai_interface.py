@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -91,6 +92,12 @@ class IFreqaiModel(ABC):
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+
+    def __getstate__(self):
+        """
+        Return an empty state to be pickled in hyperopt
+        """
+        return ({})
 
     def assert_config(self, config: Dict[str, Any]) -> None:
 
@@ -233,10 +240,10 @@ class IFreqaiModel(ABC):
             trained_timestamp = tr_train
             tr_train_startts_str = datetime.fromtimestamp(
                                                 tr_train.startts,
-                                                tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
             tr_train_stopts_str = datetime.fromtimestamp(
                                                 tr_train.stopts,
-                                                tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
             logger.info(
                 f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
                 f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "

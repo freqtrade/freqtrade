@@ -184,7 +184,7 @@ class FreqaiDataKitchen:
 
     def filter_features(
         self,
-        unfiltered_dataframe: DataFrame,
+        unfiltered_df: DataFrame,
         training_feature_list: List,
         label_list: List = list(),
         training_filter: bool = True,
@@ -195,31 +195,35 @@ class FreqaiDataKitchen:
         0s in the prediction dataset. However, prediction dataset do_predict will reflect any
         row that had a NaN and will shield user from that prediction.
         :params:
-        :unfiltered_dataframe: the full dataframe for the present training period
+        :unfiltered_df: the full dataframe for the present training period
         :training_feature_list: list, the training feature list constructed by
         self.build_feature_list() according to user specified parameters in the configuration file.
         :labels: the labels for the dataset
         :training_filter: boolean which lets the function know if it is training data or
         prediction data to be filtered.
         :returns:
-        :filtered_dataframe: dataframe cleaned of NaNs and only containing the user
+        :filtered_df: dataframe cleaned of NaNs and only containing the user
         requested feature set.
         :labels: labels cleaned of NaNs.
         """
-        filtered_dataframe = unfiltered_dataframe.filter(training_feature_list, axis=1)
-        filtered_dataframe = filtered_dataframe.replace([np.inf, -np.inf], np.nan)
+        filtered_df = unfiltered_df.filter(training_feature_list, axis=1)
+        filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
-        drop_index = pd.isnull(filtered_dataframe).any(1)  # get the rows that have NaNs,
+        drop_index = pd.isnull(filtered_df).any(1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (training_filter):
+            const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
+            if const_cols:
+                filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
+                logger.warning(f"Removed features {const_cols} with constant values.")
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
-            labels = unfiltered_dataframe.filter(label_list, axis=1)
+            labels = unfiltered_df.filter(label_list, axis=1)
             drop_index_labels = pd.isnull(labels).any(1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
-            dates = unfiltered_dataframe['date']
-            filtered_dataframe = filtered_dataframe[
+            dates = unfiltered_df['date']
+            filtered_df = filtered_df[
                 (drop_index == 0) & (drop_index_labels == 0)
             ]  # dropping values
             labels = labels[
@@ -229,13 +233,13 @@ class FreqaiDataKitchen:
                 (drop_index == 0) & (drop_index_labels == 0)
             ]
             logger.info(
-                f"dropped {len(unfiltered_dataframe) - len(filtered_dataframe)} training points"
-                f" due to NaNs in populated dataset {len(unfiltered_dataframe)}."
+                f"dropped {len(unfiltered_df) - len(filtered_df)} training points"
+                f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
-            if (1 - len(filtered_dataframe) / len(unfiltered_dataframe)) > 0.1 and self.live:
-                worst_indicator = str(unfiltered_dataframe.count().idxmin())
+            if (1 - len(filtered_df) / len(unfiltered_df)) > 0.1 and self.live:
+                worst_indicator = str(unfiltered_df.count().idxmin())
                 logger.warning(
-                    f" {(1 - len(filtered_dataframe)/len(unfiltered_dataframe)) * 100:.0f} percent "
+                    f" {(1 - len(filtered_df)/len(unfiltered_df)) * 100:.0f} percent "
                     " of training data dropped due to NaNs, model may perform inconsistent "
                     f"with expectations. Verify {worst_indicator}"
                 )
@@ -244,9 +248,9 @@ class FreqaiDataKitchen:
         else:
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
-            drop_index = pd.isnull(filtered_dataframe).any(1)
+            drop_index = pd.isnull(filtered_df).any(1)
             self.data["filter_drop_index_prediction"] = drop_index
-            filtered_dataframe.fillna(0, inplace=True)
+            filtered_df.fillna(0, inplace=True)
             # replacing all NaNs with zeros to avoid issues in 'prediction', but any prediction
             # that was based on a single NaN is ultimately protected from buys with do_predict
             drop_index = ~drop_index
@@ -255,11 +259,11 @@ class FreqaiDataKitchen:
                 logger.info(
                     "dropped %s of %s prediction data points due to NaNs.",
                     len(self.do_predict) - self.do_predict.sum(),
-                    len(filtered_dataframe),
+                    len(filtered_df),
                 )
             labels = []
 
-        return filtered_dataframe, labels
+        return filtered_df, labels
 
     def build_data_dictionary(
         self,
@@ -466,10 +470,17 @@ class FreqaiDataKitchen:
     ) -> DataFrame:
         """
         Function which takes the backtesting time range and
-        remove training data from dataframe
+        remove training data from dataframe, keeping only the
+        startup_candle_count candles
         """
+        startup_candle_count = self.config.get('startup_candle_count', 0)
+        tf = self.config['timeframe']
         tr = self.config["timerange"]
+
         backtesting_timerange = TimeRange.parse_timerange(tr)
+        if startup_candle_count > 0 and backtesting_timerange:
+            backtesting_timerange.subtract_start(timeframe_to_seconds(tf) * startup_candle_count)
+
         start = datetime.fromtimestamp(backtesting_timerange.startts, tz=timezone.utc)
         df = self.return_dataframe
         df = df.loc[df["date"] >= start, :]
@@ -1215,7 +1226,6 @@ class FreqaiDataKitchen:
     def save_backtesting_prediction(
         self, append_df: DataFrame
     ) -> None:
-
         """
         Save prediction dataframe from backtesting to h5 file format
         :param append_df: dataframe for backtesting period
@@ -1229,7 +1239,6 @@ class FreqaiDataKitchen:
     def get_backtesting_prediction(
         self
     ) -> DataFrame:
-
         """
         Get prediction dataframe from h5 file format
         """

@@ -13,7 +13,7 @@ from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import AVAILABLE_DATAHANDLERS
+from freqtrade.constants import AVAILABLE_DATAHANDLERS, DATETIME_PRINT_FORMAT
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.history_utils import (_download_pair_history, _download_trades_history,
@@ -386,7 +386,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     assert td != len(data['UNITTEST/BTC'])
     start_real = data['UNITTEST/BTC'].iloc[0, 0]
     assert log_has(f'UNITTEST/BTC, spot, 5m, '
-                   f'data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
+                   f'data starts at {start_real.strftime(DATETIME_PRINT_FORMAT)}',
                    caplog)
     # Make sure we start fresh - test missing data at end
     caplog.clear()
@@ -401,7 +401,7 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     # Shift endtime with +5 - as last candle is dropped (partial candle)
     end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
     assert log_has(f'UNITTEST/BTC, spot, 5m, '
-                   f'data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
+                   f'data ends at {end_real.strftime(DATETIME_PRINT_FORMAT)}',
                    caplog)
 
 

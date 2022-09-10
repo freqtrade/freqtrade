@@ -36,9 +36,6 @@ class FreqaiMultiOutputRegressor(MultiOutputRegressor):
 
         y = self._validate_data(X="no_validation", y=y, multi_output=True)
 
-        # if is_classifier(self):
-        #     check_classification_targets(y)
-
         if y.ndim == 1:
             raise ValueError(
                 "y must have at least two dimensions for "
@@ -50,19 +47,12 @@ class FreqaiMultiOutputRegressor(MultiOutputRegressor):
         ):
             raise ValueError("Underlying estimator does not support sample weights.")
 
-        # fit_params_validated = _check_fit_params(X, fit_params)
-
         if not fit_params:
             fit_params = [None] * y.shape[1]
-
-        # if not init_models:
-        #     init_models = [None] * y.shape[1]
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
                 self.estimator, X, y[:, i], sample_weight, **fit_params[i]
-                # init_model=init_models[i], eval_set=eval_sets[i],
-                # **fit_params_validated
             )
             for i in range(y.shape[1])
         )
