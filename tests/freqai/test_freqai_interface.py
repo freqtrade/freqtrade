@@ -174,7 +174,7 @@ def test_extract_data_and_train_model_LightGBMClassifier(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_train_model_in_series_XGBoostRegressor(mocker, freqai_conf):
+def test_extract_data_and_train_model_XGBoostRegressor(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "XGBoostRegressor"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
@@ -194,8 +194,8 @@ def test_train_model_in_series_XGBoostRegressor(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC",
-                                 strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
@@ -205,7 +205,7 @@ def test_train_model_in_series_XGBoostRegressor(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_train_model_in_series_XGBoostRegressorMultiModel(mocker, freqai_conf):
+def test_extract_data_and_train_model_XGBoostRegressorMultiModel(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "XGBoostRegressorMultiTarget"})
     freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
@@ -224,7 +224,8 @@ def test_train_model_in_series_XGBoostRegressorMultiModel(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert len(freqai.dk.label_list) == 2
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
