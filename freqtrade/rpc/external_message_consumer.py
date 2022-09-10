@@ -264,10 +264,6 @@ class ExternalMessageConsumer:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
-        # We shouldn't get empty messages
-        if producer_message.data is None:
-            return
-
         logger.info(f"Received message of type `{producer_message.type}` from `{producer_name}`")
 
         message_handler = self._message_handlers.get(producer_message.type)
@@ -282,7 +278,8 @@ class ExternalMessageConsumer:
         try:
             # Validate the message
             message = WSWhitelistMessage.parse_obj(message)
-        except ValidationError:
+        except ValidationError as e:
+            logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
         # Add the pairlist data to the DataProvider
@@ -293,7 +290,8 @@ class ExternalMessageConsumer:
     def _consume_analyzed_df_message(self, producer_name: str, message: Any):
         try:
             message = WSAnalyzedDFMessage.parse_obj(message)
-        except ValidationError:
+        except ValidationError as e:
+            logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
         key = message.data.key
