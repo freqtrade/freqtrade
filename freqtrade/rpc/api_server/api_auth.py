@@ -53,13 +53,13 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access") -> s
 # https://github.com/tiangolo/fastapi/blob/master/fastapi/security/api_key.py
 async def validate_ws_token(
     ws: WebSocket,
-    ws_token: Union[str, None] = Query(..., alias="token"),
+    ws_token: Union[str, None] = Query(default=None, alias="token"),
     api_config: Dict[str, Any] = Depends(get_api_config)
 ):
     secret_ws_token = api_config.get('ws_token', 'secret_ws_t0ken.')
     secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
 
-    if secrets.compare_digest(secret_ws_token, ws_token):
+    if ws_token and secrets.compare_digest(secret_ws_token, ws_token):
         # Just return the token if it matches
         return ws_token
     else:
