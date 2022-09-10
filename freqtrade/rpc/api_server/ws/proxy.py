@@ -56,8 +56,10 @@ class WebSocketProxy:
         Close the websocket connection, only supported by FastAPI WebSockets
         """
         if hasattr(self._websocket, "close"):
-            return await self._websocket.close(code)
-        pass
+            try:
+                return await self._websocket.close(code)
+            except RuntimeError:
+                pass
 
     async def accept(self):
         """
@@ -65,4 +67,3 @@ class WebSocketProxy:
         """
         if hasattr(self._websocket, "accept"):
             return await self._websocket.accept()
-        pass
