@@ -466,7 +466,8 @@ class FreqaiDataKitchen:
     ) -> DataFrame:
         """
         Function which takes the backtesting time range and
-        remove training data from dataframe
+        remove training data from dataframe, keeping only the
+        startup_candle_count candles
         """
         startup_candle_count = self.config.get('startup_candle_count', 0)
         tf = self.config['timeframe']
