@@ -90,7 +90,8 @@ Example configuration showing the different settings:
             "trailing_stop_loss": "on",
             "stop_loss": "on",
             "stoploss_on_exchange": "on",
-            "custom_exit": "silent"
+            "custom_exit": "silent",
+            "partial_exit": "on"
         },
         "entry_cancel": "silent",
         "exit_cancel": "on",
@@ -138,7 +139,7 @@ You can create your own keyboard in `config.json`:
       "enabled": true,
       "token": "your_telegram_token",
       "chat_id": "your_telegram_chat_id",
-      "keyboard": [   
+      "keyboard": [
           ["/daily", "/stats", "/balance", "/profit"],
           ["/status table", "/performance"],
           ["/reload_config", "/count", "/logs"]
@@ -225,16 +226,16 @@ Once all positions are sold, run `/stop` to completely stop the bot.
 For each open trade, the bot will send you the following message.
 Enter Tag is configurable via Strategy.
 
-> **Trade ID:** `123` `(since 1 days ago)`  
-> **Current Pair:** CVC/BTC  
+> **Trade ID:** `123` `(since 1 days ago)`
+> **Current Pair:** CVC/BTC
 > **Direction:** Long
 > **Leverage:** 1.0
-> **Amount:** `26.64180098`  
+> **Amount:** `26.64180098`
 > **Enter Tag:** Awesome Long Signal
-> **Open Rate:** `0.00007489`  
-> **Current Rate:** `0.00007489`  
-> **Current Profit:** `12.95%`  
-> **Stoploss:** `0.00007389 (-0.02%)`  
+> **Open Rate:** `0.00007489`
+> **Current Rate:** `0.00007489`
+> **Current Profit:** `12.95%`
+> **Stoploss:** `0.00007389 (-0.02%)`
 
 ### /status table
 
@@ -261,26 +262,26 @@ current    max
 
 Return a summary of your profit/loss and performance.
 
-> **ROI:** Close trades  
->   ∙ `0.00485701 BTC (2.2%) (15.2 Σ%)`  
->   ∙ `62.968 USD`  
-> **ROI:** All trades  
->   ∙ `0.00255280 BTC (1.5%) (6.43 Σ%)`  
->   ∙ `33.095 EUR`  
->  
-> **Total Trade Count:** `138`  
-> **First Trade opened:** `3 days ago`  
-> **Latest Trade opened:** `2 minutes ago`  
-> **Avg. Duration:** `2:33:45`  
-> **Best Performing:** `PAY/BTC: 50.23%`  
-> **Trading volume:** `0.5 BTC`  
-> **Profit factor:** `1.04`  
-> **Max Drawdown:** `9.23% (0.01255 BTC)`  
+> **ROI:** Close trades
+>   ∙ `0.00485701 BTC (2.2%) (15.2 Σ%)`
+>   ∙ `62.968 USD`
+> **ROI:** All trades
+>   ∙ `0.00255280 BTC (1.5%) (6.43 Σ%)`
+>   ∙ `33.095 EUR`
+>
+> **Total Trade Count:** `138`
+> **First Trade opened:** `3 days ago`
+> **Latest Trade opened:** `2 minutes ago`
+> **Avg. Duration:** `2:33:45`
+> **Best Performing:** `PAY/BTC: 50.23%`
+> **Trading volume:** `0.5 BTC`
+> **Profit factor:** `1.04`
+> **Max Drawdown:** `9.23% (0.01255 BTC)`
 
-The relative profit of `1.2%` is the average profit per trade.  
-The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.  
-Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.  
-Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.  
+The relative profit of `1.2%` is the average profit per trade.
+The relative profit of `15.2 Σ%` is be based on the starting capital - so in this case, the starting capital was `0.00485701 * 1.152 = 0.00738 BTC`.
+Starting capital is either taken from the `available_capital` setting, or calculated by using current wallet size - profits.
+Profit Factor is calculated as gross profits / gross losses - and should serve as an overall metric for the strategy.
 Max drawdown corresponds to the backtesting metric `Absolute Drawdown (Account)` - calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 
 ### /forceexit <trade_id>
@@ -309,27 +310,27 @@ Note that for this to work, `force_entry_enable` needs to be set to true.
 ### /performance
 
 Return the performance of each crypto-currency the bot has sold.
-> Performance:  
-> 1. `RCN/BTC 0.003 BTC (57.77%) (1)`  
-> 2. `PAY/BTC 0.0012 BTC (56.91%) (1)`  
-> 3. `VIB/BTC 0.0011 BTC (47.07%) (1)`  
-> 4. `SALT/BTC 0.0010 BTC (30.24%) (1)`  
-> 5. `STORJ/BTC 0.0009 BTC (27.24%) (1)`  
-> ...  
+> Performance:
+> 1. `RCN/BTC 0.003 BTC (57.77%) (1)`
+> 2. `PAY/BTC 0.0012 BTC (56.91%) (1)`
+> 3. `VIB/BTC 0.0011 BTC (47.07%) (1)`
+> 4. `SALT/BTC 0.0010 BTC (30.24%) (1)`
+> 5. `STORJ/BTC 0.0009 BTC (27.24%) (1)`
+> ...
 
 ### /balance
 
 Return the balance of all crypto-currency your have on the exchange.
 
-> **Currency:** BTC  
-> **Available:** 3.05890234  
-> **Balance:** 3.05890234  
-> **Pending:** 0.0  
+> **Currency:** BTC
+> **Available:** 3.05890234
+> **Balance:** 3.05890234
+> **Pending:** 0.0
 
-> **Currency:** CVC  
-> **Available:** 86.64180098  
-> **Balance:** 86.64180098  
-> **Pending:** 0.0  
+> **Currency:** CVC
+> **Available:** 86.64180098
+> **Balance:** 86.64180098
+> **Pending:** 0.0
 
 ### /daily <n>
 
@@ -376,7 +377,7 @@ Month (count)  Profit BTC      Profit USD    Profit %
 
 Shows the current whitelist
 
-> Using whitelist `StaticPairList` with 22 pairs  
+> Using whitelist `StaticPairList` with 22 pairs
 > `IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC`
 
 ### /blacklist [pair]
@@ -386,7 +387,7 @@ If Pair is set, then this pair will be added to the pairlist.
 Also supports multiple pairs, separated by a space.
 Use `/reload_config` to reset the blacklist.
 
-> Using blacklist `StaticPairList` with 2 pairs  
+> Using blacklist `StaticPairList` with 2 pairs
 >`DODGE/BTC`, `HOT/BTC`.
 
 ### /edge

@@ -17,7 +17,7 @@ def is_arm() -> bool:
     return "arm" in machine or "aarch64" in machine
 
 
-def test_train_model_in_series_LightGBM(mocker, freqai_conf):
+def test_extract_data_and_train_model_LightGBM(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -35,7 +35,8 @@ def test_train_model_in_series_LightGBM(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
@@ -45,7 +46,7 @@ def test_train_model_in_series_LightGBM(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
+def test_extract_data_and_train_model_LightGBMMultiModel(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
     freqai_conf.update({"freqaimodel": "LightGBMRegressorMultiTarget"})
@@ -64,7 +65,8 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert len(freqai.dk.label_list) == 2
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
@@ -77,7 +79,7 @@ def test_train_model_in_series_LightGBMMultiModel(mocker, freqai_conf):
 
 
 @pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
-def test_train_model_in_series_Catboost(mocker, freqai_conf):
+def test_extract_data_and_train_model_Catboost(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "CatboostRegressor"})
     # freqai_conf.get('freqai', {}).update(
@@ -98,8 +100,8 @@ def test_train_model_in_series_Catboost(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC",
-                                 strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
+                                        strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
@@ -110,7 +112,7 @@ def test_train_model_in_series_Catboost(mocker, freqai_conf):
 
 
 @pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
-def test_train_model_in_series_CatboostClassifier(mocker, freqai_conf):
+def test_extract_data_and_train_model_CatboostClassifier(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "CatboostClassifier"})
     freqai_conf.update({"strategy": "freqai_test_classifier"})
@@ -130,8 +132,8 @@ def test_train_model_in_series_CatboostClassifier(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC",
-                                 strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
+                                        strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
@@ -141,7 +143,7 @@ def test_train_model_in_series_CatboostClassifier(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_train_model_in_series_LightGBMClassifier(mocker, freqai_conf):
+def test_extract_data_and_train_model_LightGBMClassifier(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"freqaimodel": "LightGBMClassifier"})
     freqai_conf.update({"strategy": "freqai_test_classifier"})
@@ -161,8 +163,8 @@ def test_train_model_in_series_LightGBMClassifier(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC",
-                                 strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
+                                        strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
@@ -358,7 +360,8 @@ def test_follow_mode(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
@@ -407,7 +410,8 @@ def test_principal_component_analysis(mocker, freqai_conf):
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
-    freqai.train_model_in_series(new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_pca_object.pkl")
 

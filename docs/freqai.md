@@ -114,6 +114,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `use_SVM_to_remove_outliers` | Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. See details about some select parameters [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Dictionary.
 | `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
+| `inlier_metric_window` | If set, FreqAI will add the `inlier_metric` to the training feature set and set the lookback to be the `inlier_metric_window`. Details of how the `inlier_metric` is computed can be found [here](#using-the-inliermetric) <br> **Datatype:** int. Default: 0
+| `noise_standard_deviation` | If > 0, FreqAI adds noise to the training features. FreqAI generates random deviates from a gaussian distribution with a standard deviation of `noise_standard_deviation` and adds them to all data points. Value should be kept relative to the normalized space between -1 and 1). In other words, since data is always normalized between -1 and 1 in FreqAI, the user can expect a `noise_standard_deviation: 0.05` to see 32% of data randomly increased/decreased by more than 2.5% (i.e. the percent of data falling within the first standard deviation). Good for preventing overfitting. <br> **Datatype:** int. Default: 0
 | `outlier_protection_percentage` | If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. If the outlier protection is triggered, no predictions will be made based on the training data. <br> **Datatype:** Float. Default: `30`
 | `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** Boolean. Default: False
 |  |  **Data split parameters**
@@ -643,6 +645,18 @@ example above, the user is asking for every third data point in the dataframe to
 testing; the other points are used for training.
 
 The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used.
+
+### Using the `inlier_metric`
+
+The `inlier_metric` is a metric aimed at quantifying how different a prediction data point is from the most recent historic data points. 
+
+User can set `inlier_metric_window` to set the look back window. FreqAI will compute the distance between the present prediction point and each of the previous data points (total of `inlier_metric_window` points). 
+
+This function goes one step further - during training, it computes the `inlier_metric` for all training data points and builds weibull distributions for each each lookback point. The cumulative distribution function for the weibull distribution is used to produce a quantile for each of the data points. The quantiles for each lookback point are averaged to create the `inlier_metric`. 
+
+FreqAI adds this `inlier_metric` score to the training features! In other words, your model is trained to recognize how this temporal inlier metric is related to the user set labels. 
+
+This function does **not** remove outliers from the data set.
 
 ### Controlling the model learning process
 
