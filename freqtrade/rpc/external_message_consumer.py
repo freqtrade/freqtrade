@@ -261,19 +261,19 @@ class ExternalMessageConsumer:
         try:
             producer_message = WSMessageSchema.parse_obj(message)
         except ValidationError as e:
-            logger.error(f"Invalid message from {producer_name}: {e}")
+            logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
         # We shouldn't get empty messages
         if producer_message.data is None:
             return
 
-        logger.info(f"Received message of type {producer_message.type} from `{producer_name}`")
+        logger.info(f"Received message of type `{producer_message.type}` from `{producer_name}`")
 
         message_handler = self._message_handlers.get(producer_message.type)
 
         if not message_handler:
-            logger.info(f"Received unhandled message: {producer_message.data}, ignoring...")
+            logger.info(f"Received unhandled message: `{producer_message.data}`, ignoring...")
             return
 
         message_handler(producer_name, producer_message)
@@ -288,7 +288,7 @@ class ExternalMessageConsumer:
         # Add the pairlist data to the DataProvider
         self._dp._set_producer_pairs(message.data, producer_name=producer_name)
 
-        logger.debug(f"Consumed message from {producer_name} of type `RPCMessageType.WHITELIST`")
+        logger.debug(f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`")
 
     def _consume_analyzed_df_message(self, producer_name: str, message: Any):
         try:
@@ -314,4 +314,4 @@ class ExternalMessageConsumer:
                                   producer_name=producer_name)
 
         logger.debug(
-            f"Consumed message from {producer_name} of type RPCMessageType.ANALYZED_DF")
+            f"Consumed message from `{producer_name}` of type `RPCMessageType.ANALYZED_DF`")
