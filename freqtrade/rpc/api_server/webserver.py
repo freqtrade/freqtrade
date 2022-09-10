@@ -200,13 +200,16 @@ class ApiServer(RPCHandler):
                 # Sleep, make this configurable?
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
-            # Disconnect channels and stop the loop on cancel
-            await self._ws_channel_manager.disconnect_all()
-            self._ws_loop.stop()
+            pass
 
         # For testing, shouldn't happen when stable
         except Exception as e:
             logger.exception(f"Exception happened in background task: {e}")
+
+        finally:
+            # Disconnect channels and stop the loop on cancel
+            await self._ws_channel_manager.disconnect_all()
+            self._ws_loop.stop()
 
     def start_api(self):
         """

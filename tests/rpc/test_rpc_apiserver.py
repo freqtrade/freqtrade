@@ -3,6 +3,8 @@ Unit test file for rpc/api_server.py
 """
 
 import json
+import logging
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -436,6 +438,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
+    assert log_has("Stopping API Server background tasks", caplog)
     ApiServer.shutdown()
 
 
@@ -1709,3 +1712,36 @@ def test_api_ws_subscribe(botclient, mocker):
 
     # Call count hasn't changed as the subscribe request was invalid
     assert sub_mock.call_count == 1
+
+
+def test_api_ws_send_msg(default_conf, mocker, caplog):
+    try:
+        caplog.set_level(logging.DEBUG)
+
+        default_conf.update({"api_server": {"enabled": True,
+                                            "listen_ip_address": "127.0.0.1",
+                                            "listen_port": 8080,
+                                            "username": "TestUser",
+                                            "password": "testPass",
+                                            }})
+        mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+        apiserver = ApiServer(default_conf)
+        apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
+
+        # Test message_queue coro receives the message
+        test_message = {"type": "status", "data": "test"}
+        apiserver.send_msg(test_message)
+        time.sleep(1)  # Not sure how else to wait for the coro to receive the data
+        assert log_has("Found message of type: status", caplog)
+
+        # Test if exception logged when error occurs in sending
+        mocker.patch('freqtrade.rpc.api_server.ws.channel.ChannelManager.broadcast',
+                     side_effect=Exception)
+
+        apiserver.send_msg(test_message)
+        time.sleep(2)  # Not sure how else to wait for the coro to receive the data
+        assert log_has_re(r"Exception happened in background task.*", caplog)
+
+    finally:
+        apiserver.cleanup()
+        ApiServer.shutdown()
