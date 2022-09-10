@@ -3,8 +3,8 @@ from typing import Any, Dict
 
 from catboost import CatBoostRegressor, Pool
 
+from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
 
 
 logger = logging.getLogger(__name__)
