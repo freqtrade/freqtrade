@@ -92,6 +92,12 @@ class IFreqaiModel(ABC):
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
 
+    def __getstate__(self):
+        """
+        Return an empty state to be pickled in hyperopt
+        """
+        return ({})
+
     def assert_config(self, config: Dict[str, Any]) -> None:
 
         if not config.get("freqai", {}):
