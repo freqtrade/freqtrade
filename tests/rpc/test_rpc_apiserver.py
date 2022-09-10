@@ -1714,6 +1714,38 @@ def test_api_ws_subscribe(botclient, mocker):
     assert sub_mock.call_count == 1
 
 
+def test_api_ws_requests(botclient, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    ftbot, client = botclient
+    ws_url = f"/api/v1/message/ws?token={_TEST_WS_TOKEN}"
+
+    # Test whitelist request
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "whitelist", "data": None})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type whitelist from.+", caplog)
+    assert response['type'] == "whitelist"
+
+    # Test analyzed_df request
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "analyzed_df", "data": {}})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type analyzed_df from.+", caplog)
+    assert response['type'] == "analyzed_df"
+
+    caplog.clear()
+    # Test analyzed_df request with data
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "analyzed_df", "data": {"limit": 100}})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type analyzed_df from.+", caplog)
+    assert response['type'] == "analyzed_df"
+
+
 def test_api_ws_send_msg(default_conf, mocker, caplog):
     try:
         caplog.set_level(logging.DEBUG)
