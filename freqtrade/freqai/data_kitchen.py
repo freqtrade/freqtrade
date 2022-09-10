@@ -468,8 +468,14 @@ class FreqaiDataKitchen:
         Function which takes the backtesting time range and
         remove training data from dataframe
         """
+        startup_candle_count = self.config.get('startup_candle_count', 0)
+        tf = self.config['timeframe']
         tr = self.config["timerange"]
+
         backtesting_timerange = TimeRange.parse_timerange(tr)
+        if startup_candle_count > 0 and backtesting_timerange:
+            backtesting_timerange.subtract_start(timeframe_to_seconds(tf) * startup_candle_count)
+
         start = datetime.fromtimestamp(backtesting_timerange.startts, tz=timezone.utc)
         df = self.return_dataframe
         df = df.loc[df["date"] >= start, :]
