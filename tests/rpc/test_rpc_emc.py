@@ -11,7 +11,7 @@ from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from tests.conftest import log_has, log_has_re, log_has_when
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def patched_emc(default_conf, mocker):
     default_conf.update({
         "external_message_consumer": {
