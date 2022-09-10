@@ -5,6 +5,7 @@ import watchdog.events
 import watchdog.observers
 import sys
 
+from wao.notifier import post_request
 from wao.brain_config import BrainConfig
 
 sys.path.append(BrainConfig.EXECUTION_PATH)
@@ -28,6 +29,16 @@ def stop_bot(error_line):
     out_put = out.decode('latin-1')
 
 
+def smooth_romeo_restart(error_line):
+    romeo = BrainConfig.ROMEO_POOL.get(coin)
+    is_romeo_alive = romeo is not None
+    error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
+    post_request(error_line)
+
+    if is_romeo_alive:
+        romeo.perform_sell_signal(RomeoExitPriceType.SS)
+
+
 def string_to_list(string):
     return list(string.split("\n"))
 
@@ -49,7 +60,10 @@ def check_condition(file_name):
 def __check_condition(file_name):
     error_line = get_error_line(file_name)
     if error_line is not None and not is_freqtrade_error(error_line):
-        stop_bot(error_line)
+        if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED:
+            smooth_romeo_restart(error_line)
+        else:
+            stop_bot(error_line)
 
 
 def get_error_line(file_name):
