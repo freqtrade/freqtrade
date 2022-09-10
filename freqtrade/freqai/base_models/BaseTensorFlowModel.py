@@ -17,12 +17,12 @@ class BaseTensorFlowModel(IFreqaiModel):
     """
 
     def train(
-        self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen
+        self, unfiltered_df: DataFrame, pair: str, dk: FreqaiDataKitchen, **kwargs
     ) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datakitchen
         for storing, saving, loading, and analyzing the data.
-        :param unfiltered_dataframe: Full dataframe for the current training period
+        :param unfiltered_df: Full dataframe for the current training period
         :param metadata: pair metadata from strategy.
         :return:
         :model: Trained model which can be used to inference (self.predict)
@@ -32,14 +32,14 @@ class BaseTensorFlowModel(IFreqaiModel):
 
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
-            unfiltered_dataframe,
+            unfiltered_df,
             dk.training_features_list,
             dk.label_list,
             training_filter=True,
         )
 
-        start_date = unfiltered_dataframe["date"].iloc[0].strftime("%Y-%m-%d")
-        end_date = unfiltered_dataframe["date"].iloc[-1].strftime("%Y-%m-%d")
+        start_date = unfiltered_df["date"].iloc[0].strftime("%Y-%m-%d")
+        end_date = unfiltered_df["date"].iloc[-1].strftime("%Y-%m-%d")
         logger.info(f"-------------------- Training on data from {start_date} to "
                     f"{end_date}--------------------")
         # split data into train/test data.
@@ -57,7 +57,7 @@ class BaseTensorFlowModel(IFreqaiModel):
         )
         logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
 
-        model = self.fit(data_dictionary)
+        model = self.fit(data_dictionary, dk)
 
         logger.info(f"--------------------done training {pair}--------------------")
 

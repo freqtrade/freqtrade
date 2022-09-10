@@ -9,7 +9,7 @@ import arrow
 import pytest
 from sqlalchemy import create_engine, text
 
-from freqtrade import constants
+from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DB_PROD_URL
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
@@ -52,7 +52,7 @@ def test_init_invalid_db_url():
 
 def test_init_prod_db(default_conf, mocker):
     default_conf.update({'dry_run': False})
-    default_conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
+    default_conf.update({'db_url': DEFAULT_DB_PROD_URL})
 
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
@@ -1739,7 +1739,7 @@ def test_to_json(fee):
                       'base_currency': 'ADA',
                       'quote_currency': 'USDT',
                       'is_open': None,
-                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
                       'open_order_id': 'dry_run_buy_12345',
                       'close_date': None,
@@ -1817,9 +1817,9 @@ def test_to_json(fee):
                       'pair': 'XRP/BTC',
                       'base_currency': 'XRP',
                       'quote_currency': 'BTC',
-                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
-                      'close_date': trade.close_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                       'close_timestamp': int(trade.close_date.timestamp() * 1000),
                       'open_rate': 0.123,
                       'close_rate': 0.125,

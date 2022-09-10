@@ -17,8 +17,18 @@ def is_arm() -> bool:
     return "arm" in machine or "aarch64" in machine
 
 
-def test_extract_data_and_train_model_LightGBM(mocker, freqai_conf):
+@pytest.mark.parametrize('model', [
+    'LightGBMRegressor',
+    'XGBoostRegressor',
+    'CatboostRegressor',
+    ])
+def test_extract_data_and_train_model_Regressors(mocker, freqai_conf, model):
+    if is_arm() and model == 'CatboostRegressor':
+        pytest.skip("CatBoost is not supported on ARM")
+
+    freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.update({"strategy": "freqai_test_strat"})
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -46,10 +56,18 @@ def test_extract_data_and_train_model_LightGBM(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_extract_data_and_train_model_LightGBMMultiModel(mocker, freqai_conf):
+@pytest.mark.parametrize('model', [
+    'LightGBMRegressorMultiTarget',
+    'XGBoostRegressorMultiTarget',
+    'CatboostRegressorMultiTarget',
+    ])
+def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
+    if is_arm() and model == 'CatboostRegressorMultiTarget':
+        pytest.skip("CatBoost is not supported on ARM")
+
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_multimodel_strat"})
-    freqai_conf.update({"freqaimodel": "LightGBMRegressorMultiTarget"})
+    freqai_conf.update({"freqaimodel": model})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -78,75 +96,17 @@ def test_extract_data_and_train_model_LightGBMMultiModel(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-@pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
-def test_extract_data_and_train_model_Catboost(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"freqaimodel": "CatboostRegressor"})
-    # freqai_conf.get('freqai', {}).update(
-    #     {'model_training_parameters': {"n_estimators": 100, "verbose": 0}})
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
+@pytest.mark.parametrize('model', [
+    'LightGBMClassifier',
+    'CatboostClassifier',
+    ])
+def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
+    if is_arm() and model == 'CatboostClassifier':
+        pytest.skip("CatBoost is not supported on ARM")
 
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-
-    freqai.dd.pair_dict = MagicMock()
-
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
-
-    freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
-                                        strategy, freqai.dk, data_load_timerange)
-
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").exists()
-
-    shutil.rmtree(Path(freqai.dk.full_path))
-
-
-@pytest.mark.skipif(is_arm(), reason="no ARM for Catboost ...")
-def test_extract_data_and_train_model_CatboostClassifier(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"freqaimodel": "CatboostClassifier"})
+    freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"strategy": "freqai_test_classifier"})
-    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
-    exchange = get_patched_exchange(mocker, freqai_conf)
-    strategy.dp = DataProvider(freqai_conf, exchange)
-
-    strategy.freqai_info = freqai_conf.get("freqai", {})
-    freqai = strategy.freqai
-    freqai.live = True
-    freqai.dk = FreqaiDataKitchen(freqai_conf)
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
-
-    freqai.dd.pair_dict = MagicMock()
-
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
-
-    freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
-                                        strategy, freqai.dk, data_load_timerange)
-
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").exists()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").exists()
-
-    shutil.rmtree(Path(freqai.dk.full_path))
-
-
-def test_extract_data_and_train_model_LightGBMClassifier(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
-    freqai_conf.update({"freqaimodel": "LightGBMClassifier"})
-    freqai_conf.update({"strategy": "freqai_test_classifier"})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)

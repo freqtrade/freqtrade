@@ -75,7 +75,8 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
             '.2f', 'd', 's', 's']
 
 
-def _get_line_header(first_column: str, stake_currency: str, direction: str = 'Buys') -> List[str]:
+def _get_line_header(first_column: str, stake_currency: str,
+                     direction: str = 'Entries') -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
     """
@@ -642,7 +643,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     if (tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
-        headers = _get_line_header("TAG", stake_currency, 'Sells')
+        headers = _get_line_header("TAG", stake_currency, 'Exits')
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [

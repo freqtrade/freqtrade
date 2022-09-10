@@ -84,6 +84,7 @@ def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False)
     _validate_protections(conf)
     _validate_unlimited_amount(conf)
     _validate_ask_orderbook(conf)
+    _validate_freqai_hyperopt(conf)
     validate_migrated_strategy_settings(conf)
 
     # validate configuration before returning
@@ -321,6 +322,14 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
                 else:
                     process_deprecated_setting(conf, 'ask_strategy', obj, 'exit_pricing', obj)
             del conf['ask_strategy']
+
+
+def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
+    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
+    analyze_per_epoch = conf.get('analyze_per_epoch', False)
+    if analyze_per_epoch and freqai_enabled:
+        raise OperationalException(
+            'Using analyze-per-epoch parameter is not supported with a FreqAI strategy.')
 
 
 def _strategy_settings(conf: Dict[str, Any]) -> None:
