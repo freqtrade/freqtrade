@@ -98,6 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `expiration_hours` | Avoid making predictions if a model is more than `expiration_hours` old. <br> Defaults set to 0, which means models never expire. <br> **Datatype:** Positive integer.
 | `fit_live_predictions_candles` | Number of historical candles to use for computing target (label) statistics from prediction data, instead of from the training data set. <br> **Datatype:** Positive integer.
 | `follow_mode` | If true, this instance of FreqAI will look for models associated with `identifier` and load those for inferencing. A `follower` will **not** train new models. <br> **Datatype:** Boolean. Default: `False`.
+| `continual_learning` | If true, FreqAI will start training new models from the final state of the most recently trained model. <br> **Datatype:** Boolean. Default: `False`.
 |  |  **Feature parameters**
 | `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples are shown [here](#feature-engineering). <br> **Datatype:** Dictionary.
 | `include_timeframes` | A list of timeframes that all indicators in `populate_any_indicators` will be created for. The list is added as features to the base asset feature set. <br> **Datatype:** List of timeframes (strings).
