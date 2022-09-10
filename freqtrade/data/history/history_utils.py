@@ -228,9 +228,9 @@ def _download_pair_history(pair: str, *,
                     )
 
         logger.debug("Current Start: %s",
-                     f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+                     f"{data.iloc[0]['date']:DATETIME_PRINT_FORMAT}" if not data.empty else 'None')
         logger.debug("Current End: %s",
-                     f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+                     f"{data.iloc[-1]['date']:DATETIME_PRINT_FORMAT}" if not data.empty else 'None')
 
         # Default since_ms to 30 days if nothing is given
         new_data = exchange.get_historic_ohlcv(pair=pair,
@@ -254,9 +254,9 @@ def _download_pair_history(pair: str, *,
                                          fill_missing=False, drop_incomplete=False)
 
         logger.debug("New  Start: %s",
-                     f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+                     f"{data.iloc[0]['date']:DATETIME_PRINT_FORMAT}" if not data.empty else 'None')
         logger.debug("New End: %s",
-                     f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+                     f"{data.iloc[-1]['date']:DATETIME_PRINT_FORMAT}" if not data.empty else 'None')
 
         data_handler.ohlcv_store(pair, timeframe, data=data, candle_type=candle_type)
         return True

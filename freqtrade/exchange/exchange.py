@@ -2509,8 +2509,13 @@ class Exchange:
             cache=False,
             drop_incomplete=False,
         )
-        funding_rates = candle_histories[funding_comb]
-        mark_rates = candle_histories[mark_comb]
+        try:
+            # we can't assume we always get histories - for example during exchange downtimes
+            funding_rates = candle_histories[funding_comb]
+            mark_rates = candle_histories[mark_comb]
+        except KeyError:
+            raise ExchangeError("Could not find funding rates.") from None
+
         funding_mark_rates = self.combine_funding_and_mark(
             funding_rates=funding_rates, mark_rates=mark_rates)
 
@@ -2590,6 +2595,8 @@ class Exchange:
         :param is_short: trade direction
         :param amount: Trade amount
         :param open_date: Open date of the trade
+        :return: funding fee since open_date
+        :raies: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:
