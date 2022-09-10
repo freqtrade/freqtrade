@@ -90,16 +90,16 @@ class ExternalMessageConsumer:
         """
         Start the main internal loop in another thread to run coroutines
         """
+        if self._thread and self._loop:
+            return
+
+        logger.info("Starting ExternalMessageConsumer")
+
         self._loop = asyncio.new_event_loop()
+        self._thread = Thread(target=self._loop.run_forever)
+        self._thread.start()
 
-        if not self._thread:
-            logger.info("Starting ExternalMessageConsumer")
-
-            self._thread = Thread(target=self._loop.run_forever)
-            self._thread.start()
-            self._running = True
-        else:
-            raise RuntimeError("A loop is already running")
+        self._running = True
 
         self._main_task = asyncio.run_coroutine_threadsafe(self._main(), loop=self._loop)
 
@@ -120,6 +120,11 @@ class ExternalMessageConsumer:
                 self._main_task.cancel()
 
             self._thread.join()
+
+            self._thread = None
+            self._loop = None
+            self._sub_tasks = None
+            self._main_task = None
 
     async def _main(self):
         """
