@@ -410,7 +410,7 @@ class Hyperopt:
             model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
 
-    def run_optimizer_parallel(self, parallel, asked, i) -> List:
+    def run_optimizer_parallel(self, parallel: Parallel, asked: List[List], i: int) -> List:
         return parallel(delayed(
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
@@ -491,6 +491,29 @@ class Hyperopt:
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
 
+    def get_progressbar_widgets(self):
+        if self.print_colorized:
+            widgets = [
+                ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                ' (', progressbar.Percentage(), ')] ',
+                progressbar.Bar(marker=progressbar.AnimatedMarker(
+                    fill='\N{FULL BLOCK}',
+                    fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
+                    marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
+                )),
+                ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+            ]
+        else:
+            widgets = [
+                ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                ' (', progressbar.Percentage(), ')] ',
+                progressbar.Bar(marker=progressbar.AnimatedMarker(
+                    fill='\N{FULL BLOCK}',
+                )),
+                ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+            ]
+        return widgets
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state'))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -526,26 +549,7 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
 
                 # Define progressbar
-                if self.print_colorized:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                            fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
-                            marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
-                else:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
+                widgets = self.get_progressbar_widgets()
                 with progressbar.ProgressBar(
                     max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
                     widgets=widgets
