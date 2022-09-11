@@ -502,12 +502,13 @@ CONF_SCHEMA = {
                         'required': ['name', 'url', 'ws_token']
                     }
                 },
-                'wait_timeout': {'type': 'integer'},
-                'sleep_time': {'type': 'integer'},
-                'ping_timeout': {'type': 'integer'},
+                'wait_timeout': {'type': 'integer', 'minimum': 0},
+                'sleep_time': {'type': 'integer', 'minimum': 0},
+                'ping_timeout': {'type': 'integer', 'minimum': 0},
                 'remove_signals_analyzed_df': {'type': 'boolean', 'default': False},
                 'initial_candle_limit': {
                     'type': 'integer',
+                    'minimum': 0,
                     'maximum': 1500,
                     'default': 1500
                 }
