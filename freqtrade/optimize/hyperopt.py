@@ -290,7 +290,7 @@ class Hyperopt:
                 # noinspection PyProtectedMember
                 attr.value = params_dict[attr_name]
 
-    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
+    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict[str, Any]:
         """
         Used Optimize function.
         Called once per epoch to optimize whatever is configured.
@@ -410,7 +410,9 @@ class Hyperopt:
             model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
 
-    def run_optimizer_parallel(self, parallel: Parallel, asked: List[List], i: int) -> List:
+    def run_optimizer_parallel(
+            self, parallel: Parallel, asked: List[List], i: int) -> List[Dict[str, Any]]:
+        """ Start optimizer in a parallel way """
         return parallel(delayed(
                         wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
 
@@ -514,6 +516,30 @@ class Hyperopt:
             ]
         return widgets
 
+    def evaluate_result(self, val: Dict[str, Any], current: int, is_random: bool):
+        """
+        Evaluate results returned from generate_optimizer
+        """
+        val['current_epoch'] = current
+        val['is_initial_point'] = current <= INITIAL_POINTS
+
+        logger.debug("Optimizer epoch evaluated: %s", val)
+
+        is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
+        # This value is assigned here and not in the optimization method
+        # to keep proper order in the list of results. That's because
+        # evaluations can take different time. Here they are aligned in the
+        # order they will be shown to the user.
+        val['is_best'] = is_best
+        val['is_random'] = is_random
+        self.print_results(val)
+
+        if is_best:
+            self.current_best_loss = val['loss']
+            self.current_best_epoch = val
+
+        self._save_result(val)
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state'))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -569,25 +595,8 @@ class Hyperopt:
                         for j, val in enumerate(f_val):
                             # Use human-friendly indexes here (starting from 1)
                             current = i * jobs + j + 1
-                            val['current_epoch'] = current
-                            val['is_initial_point'] = current <= INITIAL_POINTS
 
-                            logger.debug(f"Optimizer epoch evaluated: {val}")
-
-                            is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
-                            # This value is assigned here and not in the optimization method
-                            # to keep proper order in the list of results. That's because
-                            # evaluations can take different time. Here they are aligned in the
-                            # order they will be shown to the user.
-                            val['is_best'] = is_best
-                            val['is_random'] = is_random[j]
-                            self.print_results(val)
-
-                            if is_best:
-                                self.current_best_loss = val['loss']
-                                self.current_best_epoch = val
-
-                            self._save_result(val)
+                            self.evaluate_result(val, current, is_random[j])
 
                             pbar.update(current)
 
