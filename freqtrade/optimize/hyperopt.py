@@ -290,7 +290,7 @@ class Hyperopt:
                 # noinspection PyProtectedMember
                 attr.value = params_dict[attr_name]
 
-    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict[str, Any]:
+    def generate_optimizer(self, raw_params: List[Any]) -> Dict[str, Any]:
         """
         Used Optimize function.
         Called once per epoch to optimize whatever is configured.
@@ -411,10 +411,10 @@ class Hyperopt:
         )
 
     def run_optimizer_parallel(
-            self, parallel: Parallel, asked: List[List], i: int) -> List[Dict[str, Any]]:
+            self, parallel: Parallel, asked: List[List]) -> List[Dict[str, Any]]:
         """ Start optimizer in a parallel way """
         return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
+                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
@@ -588,7 +588,7 @@ class Hyperopt:
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
                         asked, is_random = self.get_asked_points(n_points=current_jobs)
-                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        f_val = self.run_optimizer_parallel(parallel, asked)
                         self.opt.tell(asked, [v['loss'] for v in f_val])
 
                         # Calculate progressbar outputs
