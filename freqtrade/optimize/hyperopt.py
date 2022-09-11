@@ -586,10 +586,9 @@ class Hyperopt:
                         # First analysis not in parallel mode when using --analyze-per-epoch.
                         # This allows dataprovider to load it's informative cache.
                         asked, is_random = self.get_asked_points(n_points=1)
-                        # print(asked)
-                        f_val = self.generate_optimizer(asked[0])
-                        self.opt.tell(asked, [f_val['loss']])
-                        self.evaluate_result(f_val, 1, is_random[0])
+                        f_val0 = self.generate_optimizer(asked[0])
+                        self.opt.tell(asked, [f_val0['loss']])
+                        self.evaluate_result(f_val0, 1, is_random[0])
                         pbar.update(1)
                         start += 1
 
