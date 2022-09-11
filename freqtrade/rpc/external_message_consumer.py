@@ -203,8 +203,13 @@ class ExternalMessageConsumer:
 
                 continue
 
+            except websockets.exceptions.ConnectionClosedOK:
+                # Successfully closed, just end
+                return
+
             except Exception as e:
                 # An unforseen error has occurred, log and stop
+                logger.error("Unexpected error has occurred:")
                 logger.exception(e)
                 break
 
