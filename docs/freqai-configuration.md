@@ -130,7 +130,7 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
 ```
 
-Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](freqai-feature_engineering.md#feature-engineering)) and labels ([more information](freqai-running.md#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`. 
+Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](freqai-feature-engineering.md#feature-engineering)) and labels ([more information](freqai-running.md#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`. 
 
 Another structure to consider is the location of the labels at the bottom of the example function (below `if set_generalized_indicators:`). This is where the user will add single features and labels to their feature set to avoid duplication of them from various configuration parameters that multiply the feature set, such as `include_timeframes`.
 

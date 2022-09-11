@@ -29,6 +29,7 @@ nav:
         - Feature engineering: freqai-feature-engineering.md
         - Running: freqai-running.md
         - Data handling: freqai-data-handling.md
+        - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
