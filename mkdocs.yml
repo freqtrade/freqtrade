@@ -49,6 +49,8 @@ theme:
   logo: "images/logo.png"
   favicon: "images/logo.png"
   custom_dir: "docs/overrides"
+  features:
+    - search.share
   palette:
     - scheme: default
       primary: "blue grey"
