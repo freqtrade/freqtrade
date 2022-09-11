@@ -393,7 +393,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Download data
     "pairs_file": Arg(
         '--pairs-file',
-        help='File containing a list of pairs to download.',
+        help='File containing a list of pairs. '
+             'Takes precedence over --pairs or pairs configured in the configuration.',
         metavar='FILE',
     ),
     "days": Arg(
