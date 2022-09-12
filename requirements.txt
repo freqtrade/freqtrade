@@ -37,7 +37,7 @@ sdnotify==0.3.2
 fastapi==0.83.0
 uvicorn==0.18.3
 pyjwt==2.4.0
-aiofiles==0.8.0
+aiofiles==22.1.0
 psutil==5.9.2
 
 # Support for colorized terminal output
