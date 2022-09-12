@@ -269,6 +269,10 @@ class ExternalMessageConsumer:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
+        if not producer_message.data:
+            logger.error(f"Empty message received from `{producer_name}`")
+            return
+
         logger.info(f"Received message of type `{producer_message.type}` from `{producer_name}`")
 
         message_handler = self._message_handlers.get(producer_message.type)
@@ -282,31 +286,28 @@ class ExternalMessageConsumer:
     def _consume_whitelist_message(self, producer_name: str, message: WSMessageSchema):
         try:
             # Validate the message
-            message = WSWhitelistMessage.parse_obj(message)
+            whitelist_message = WSWhitelistMessage.parse_obj(message)
         except ValidationError as e:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
         # Add the pairlist data to the DataProvider
-        self._dp._set_producer_pairs(message.data, producer_name=producer_name)
+        self._dp._set_producer_pairs(whitelist_message.data.copy(), producer_name=producer_name)
 
         logger.debug(f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`")
 
     def _consume_analyzed_df_message(self, producer_name: str, message: WSMessageSchema):
         try:
-            message = WSAnalyzedDFMessage.parse_obj(message)
+            df_message = WSAnalyzedDFMessage.parse_obj(message)
         except ValidationError as e:
             logger.error(f"Invalid message from `{producer_name}`: {e}")
             return
 
-        key = message.data.key
-        df = message.data.df
-        la = message.data.la
+        key = df_message.data.key
+        df = df_message.data.df
+        la = df_message.data.la
 
         pair, timeframe, candle_type = key
-
-        logger.debug(message.data.key)
-        logger.debug(message.data)
 
         # If set, remove the Entry and Exit signals from the Producer
         if self._emc_config.get('remove_entry_exit_signals', False):

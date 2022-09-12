@@ -184,7 +184,8 @@ class DataProvider:
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
         # We have it, return this data
-        return self.__producer_pairs_df[producer_name][pair_key]
+        df, la = self.__producer_pairs_df[producer_name][pair_key]
+        return (df.copy(), la)
 
     def add_pairlisthandler(self, pairlists) -> None:
         """
