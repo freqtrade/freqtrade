@@ -88,11 +88,10 @@ class DataProvider:
     def _set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
         """
         Set the pairs received to later be used.
-        This only supports 1 Producer right now.
 
         :param pairlist: List of pairs
         """
-        self.__producer_pairs[producer_name] = pairlist.copy()
+        self.__producer_pairs[producer_name] = pairlist
 
     def get_producer_pairs(self, producer_name: str = "default") -> List[str]:
         """
@@ -100,7 +99,7 @@ class DataProvider:
 
         :returns: List of pairs
         """
-        return self.__producer_pairs.get(producer_name, [])
+        return self.__producer_pairs.get(producer_name, []).copy()
 
     def _emit_df(
         self,

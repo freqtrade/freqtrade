@@ -59,7 +59,7 @@ async def validate_ws_token(
     secret_ws_token = api_config.get('ws_token', None)
     secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
 
-    if ws_token and secrets.compare_digest(secret_ws_token, ws_token):
+    if ws_token and secret_ws_token and secrets.compare_digest(secret_ws_token, ws_token):
         # Just return the token if it matches
         return ws_token
     else:
@@ -69,7 +69,7 @@ async def validate_ws_token(
         # If the token is a jwt, and it's valid return the user
         except HTTPException:
             pass
-    logger.info("Denying websocket request")
+    logger.debug("Denying websocket request.")
     # If it doesn't match, close the websocket connection
     await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 
