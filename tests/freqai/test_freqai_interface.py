@@ -99,6 +99,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
 @pytest.mark.parametrize('model', [
     'LightGBMClassifier',
     'CatboostClassifier',
+    'XGBoostClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostClassifier':
