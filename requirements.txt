@@ -6,7 +6,7 @@ ccxt==1.93.3
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==37.0.4
 aiohttp==3.8.1
-SQLAlchemy==1.4.40
+SQLAlchemy==1.4.41
 python-telegram-bot==13.14
 arrow==1.2.3
 cachetools==4.2.2
