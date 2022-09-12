@@ -305,6 +305,9 @@ class ExternalMessageConsumer:
 
         pair, timeframe, candle_type = key
 
+        logger.debug(message.data.key)
+        logger.debug(message.data)
+
         # If set, remove the Entry and Exit signals from the Producer
         if self._emc_config.get('remove_entry_exit_signals', False):
             df = remove_entry_exit_signals(df)
