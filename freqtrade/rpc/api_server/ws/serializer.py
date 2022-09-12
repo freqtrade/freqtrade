@@ -1,4 +1,3 @@
-import json
 import logging
 from abc import ABC, abstractmethod
 
@@ -36,14 +35,6 @@ class WebSocketSerializer(ABC):
 
     async def close(self, code: int = 1000):
         await self._websocket.close(code)
-
-
-class JSONWebSocketSerializer(WebSocketSerializer):
-    def _serialize(self, data):
-        return json.dumps(data, default=_json_default)
-
-    def _deserialize(self, data):
-        return json.loads(data, object_hook=_json_object_hook)
 
 
 class HybridJSONWebSocketSerializer(WebSocketSerializer):
