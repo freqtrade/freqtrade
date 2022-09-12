@@ -292,7 +292,7 @@ class ExternalMessageConsumer:
             return
 
         # Add the pairlist data to the DataProvider
-        self._dp._set_producer_pairs(whitelist_message.data.copy(), producer_name=producer_name)
+        self._dp._set_producer_pairs(whitelist_message.data, producer_name=producer_name)
 
         logger.debug(f"Consumed message from `{producer_name}` of type `RPCMessageType.WHITELIST`")
 
