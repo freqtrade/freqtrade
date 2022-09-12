@@ -28,7 +28,7 @@ def patched_emc(default_conf, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": "ws://127.0.0.1:8080/api/v1/message/ws",
+                    "url": "ws://something:port/api/v1/message/ws",
                     "ws_token": _TEST_WS_TOKEN
                 }
             ]
