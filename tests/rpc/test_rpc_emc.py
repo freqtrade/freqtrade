@@ -29,7 +29,7 @@ def patched_emc(default_conf, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": "ws://something:port/api/v1/message/ws",
+                    "url": "ws://null:9891/api/v1/message/ws",
                     "ws_token": _TEST_WS_TOKEN
                 }
             ]
@@ -156,7 +156,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     malformed_message = {"type": "whitelist", "data": None}
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
-    assert log_has_re(r"Invalid message .+", caplog)
+    assert log_has_re(r"Empty message .+", caplog)
 
 
 async def test_emc_create_connection_success(default_conf, caplog, mocker):
