@@ -113,6 +113,7 @@ class DataProvider:
         :param data: Tuple containing the DataFrame and the datetime it was cached
         """
         if self.__rpc:
+            logger.debug(f"Sending df {dataframe}")
             self.__rpc.send_msg(
                 {
                     'type': RPCMessageType.ANALYZED_DF,
