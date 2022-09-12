@@ -169,6 +169,7 @@ def test_external_df(mocker, default_conf, ohlcv_history):
     candle_type = CandleType.SPOT
 
     empty_la = datetime.fromtimestamp(0, tz=timezone.utc)
+    now = datetime.now(timezone.utc)
 
     # no data has been added, any request should return an empty dataframe
     dataframe, la = dataprovider.get_external_df(pair, timeframe, candle_type)
@@ -176,7 +177,7 @@ def test_external_df(mocker, default_conf, ohlcv_history):
     assert la == empty_la
 
     # the data is added, should return that added dataframe
-    dataprovider._add_external_df(pair, ohlcv_history, timeframe=timeframe, candle_type=candle_type)
+    dataprovider._add_external_df(pair, ohlcv_history, now, timeframe, candle_type)
     dataframe, la = dataprovider.get_external_df(pair, timeframe, candle_type)
     assert len(dataframe) > 0
     assert la > empty_la
