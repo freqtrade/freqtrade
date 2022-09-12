@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
+from freqtrade.exceptions import OperationalException
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzedDFRequest,
@@ -57,7 +58,7 @@ class ExternalMessageConsumer:
         self.producers = self._emc_config.get('producers', [])
 
         if self.enabled and len(self.producers) < 1:
-            raise ValueError("You must specify at least 1 Producer to connect to.")
+            raise OperationalException("You must specify at least 1 Producer to connect to.")
 
         self.wait_timeout = self._emc_config.get('wait_timeout', 300)  # in seconds
         self.ping_timeout = self._emc_config.get('ping_timeout', 10)  # in seconds
@@ -97,9 +98,8 @@ class ExternalMessageConsumer:
 
         self._loop = asyncio.new_event_loop()
         self._thread = Thread(target=self._loop.run_forever)
-        self._thread.start()
-
         self._running = True
+        self._thread.start()
 
         self._main_task = asyncio.run_coroutine_threadsafe(self._main(), loop=self._loop)
 

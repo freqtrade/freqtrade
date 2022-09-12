@@ -11,6 +11,7 @@ import pytest
 import websockets
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from tests.conftest import log_has, log_has_re, log_has_when
 
@@ -71,7 +72,7 @@ def test_emc_shutdown(patched_emc, caplog):
     assert not log_has("Stopping ExternalMessageConsumer", caplog)
 
 
-def test_emc_init(patched_emc, default_conf, mocker, caplog):
+def test_emc_init(patched_emc, default_conf):
     # Test the settings were set correctly
     assert patched_emc.initial_candle_limit <= 1500
     assert patched_emc.wait_timeout > 0
@@ -84,11 +85,9 @@ def test_emc_init(patched_emc, default_conf, mocker, caplog):
         }
     })
     dataprovider = DataProvider(default_conf, None, None, None)
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(OperationalException,
+                       match="You must specify at least 1 Producer to connect to."):
         ExternalMessageConsumer(default_conf, dataprovider)
-
-    # Make sure we failed because of no producers
-    assert str(exc.value) == "You must specify at least 1 Producer to connect to."
 
 
 # Parametrize this?
