@@ -109,6 +109,7 @@ class ExternalMessageConsumer:
         """
         if self._thread and self._loop:
             logger.info("Stopping ExternalMessageConsumer")
+            self._running = False
 
             if self._sub_tasks:
                 # Cancel sub tasks

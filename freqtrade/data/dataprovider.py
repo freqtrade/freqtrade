@@ -128,9 +128,9 @@ class DataProvider:
         self,
         pair: str,
         dataframe: DataFrame,
-        last_analyzed: Optional[datetime] = None,
-        timeframe: Optional[str] = None,
-        candle_type: Optional[CandleType] = None,
+        last_analyzed: datetime,
+        timeframe: str,
+        candle_type: CandleType,
         producer_name: str = "default"
     ) -> None:
         """
@@ -140,10 +140,7 @@ class DataProvider:
         :param timeframe: Timeframe to get data for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
-        _timeframe = self._default_timeframe if not timeframe else timeframe
-        _candle_type = self._default_candle_type if not candle_type else candle_type
-
-        pair_key = (pair, _timeframe, _candle_type)
+        pair_key = (pair, timeframe, candle_type)
 
         if producer_name not in self.__producer_pairs_df:
             self.__producer_pairs_df[producer_name] = {}
@@ -161,8 +158,7 @@ class DataProvider:
         producer_name: str = "default"
     ) -> Tuple[DataFrame, datetime]:
         """
-        Get the pair data from the external sources. Will wait if the policy is
-        set to, and data is not available.
+        Get the pair data from the external sources.
 
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
