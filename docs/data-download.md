@@ -25,8 +25,7 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--include-inactive-pairs]
                                [--timerange TIMERANGE] [--dl-trades]
                                [--exchange EXCHANGE]
-                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
-                               [--erase]
+                               [-t TIMEFRAMES [TIMEFRAMES ...]] [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
                                [--data-format-trades {json,jsongz,hdf5}]
                                [--trading-mode {spot,margin,futures}]
@@ -37,7 +36,8 @@ optional arguments:
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
                         separated.
-  --pairs-file FILE     File containing a list of pairs to download.
+  --pairs-file FILE     File containing a list of pairs. Takes precedence over
+                        --pairs or pairs configured in the configuration.
   --days INT            Download data for given number of days.
   --new-pairs-days INT  Download data of new pairs for given number of days.
                         Default: `None`.
@@ -50,7 +50,7 @@ optional arguments:
                         as --timeframes/-t.
   --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
                         config is provided.
-  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
+  -t TIMEFRAMES [TIMEFRAMES ...], --timeframes TIMEFRAMES [TIMEFRAMES ...]
                         Specify which tickers to download. Space-separated
                         list. Default: `1m 5m`.
   --erase               Clean all existing data for the selected
@@ -61,7 +61,7 @@ optional arguments:
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
                         `jsongz`).
-  --trading-mode {spot,margin,futures}
+  --trading-mode {spot,margin,futures}, --tradingmode {spot,margin,futures}
                         Select Trading mode
   --prepend             Allow data prepending. (Data-appending is disabled)
 

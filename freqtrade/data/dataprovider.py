@@ -206,7 +206,7 @@ class DataProvider:
         """
         _candle_type = CandleType.from_string(
             candle_type) if candle_type != '' else self._config['candle_type_def']
-        saved_pair = (pair, str(timeframe), _candle_type)
+        saved_pair: PairWithTimeframe = (pair, str(timeframe), _candle_type)
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
