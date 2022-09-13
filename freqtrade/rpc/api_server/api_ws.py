@@ -1,10 +1,9 @@
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocketDisconnect
+from fastapi.websockets import WebSocket, WebSocketState
 from pydantic import ValidationError
-# fastapi does not make this available through it, so import directly from starlette
-from starlette.websockets import WebSocketState
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
