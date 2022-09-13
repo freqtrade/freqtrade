@@ -67,6 +67,9 @@ class ExternalMessageConsumer:
         # The amount of candles per dataframe on the initial request
         self.initial_candle_limit = self._emc_config.get('initial_candle_limit', 1500)
 
+        # Message size limit, default 1mb
+        self.message_size_limit = self._emc_config.get('message_size_limit', 2**20)
+
         # Setting these explicitly as they probably shouldn't be changed by a user
         # Unless we somehow integrate this with the strategy to allow creating
         # callbacks for the messages
@@ -175,7 +178,7 @@ class ExternalMessageConsumer:
                 ws_url = f"{url}?token={token}"
 
                 # This will raise InvalidURI if the url is bad
-                async with websockets.connect(ws_url) as ws:
+                async with websockets.connect(ws_url, max_size=self.message_size_limit) as ws:
                     channel = WebSocketChannel(ws, channel_id=name)
 
                     logger.info(f"Producer connection success - {channel}")
