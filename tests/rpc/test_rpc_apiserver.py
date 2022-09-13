@@ -1698,8 +1698,7 @@ def test_api_ws_subscribe(botclient, mocker):
     ftbot, client = botclient
     ws_url = f"/api/v1/message/ws?token={_TEST_WS_TOKEN}"
 
-    sub_mock = mocker.patch(
-        'freqtrade.rpc.api_server.ws.channel.WebSocketChannel.set_subscriptions', MagicMock())
+    sub_mock = mocker.patch('freqtrade.rpc.api_server.ws.WebSocketChannel.set_subscriptions')
 
     with client.websocket_connect(ws_url) as ws:
         ws.send_json({'type': 'subscribe', 'data': ['whitelist']})
@@ -1752,18 +1751,24 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
 
         default_conf.update({"api_server": {"enabled": True,
                                             "listen_ip_address": "127.0.0.1",
-                                            "listen_port": 9913,
-                                            "username": "TestUser",
-                                            "password": "testPass",
+                                            "listen_port": 8080,
+                                            "CORS_origins": ['http://example.com'],
+                                            "username": _TEST_USER,
+                                            "password": _TEST_PASS,
+                                            "ws_token": _TEST_WS_TOKEN
                                             }})
-        mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
+        mocker.patch('freqtrade.rpc.telegram.Updater')
+        mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api')
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
+        apiserver.start_message_queue()
+        # Give the queue thread time to start
+        time.sleep(0.2)
 
         # Test message_queue coro receives the message
         test_message = {"type": "status", "data": "test"}
         apiserver.send_msg(test_message)
-        time.sleep(1)  # Not sure how else to wait for the coro to receive the data
+        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
         assert log_has("Found message of type: status", caplog)
 
         # Test if exception logged when error occurs in sending
@@ -1771,7 +1776,7 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
                      side_effect=Exception)
 
         apiserver.send_msg(test_message)
-        time.sleep(2)  # Not sure how else to wait for the coro to receive the data
+        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
         assert log_has_re(r"Exception happened in background task.*", caplog)
 
     finally:
