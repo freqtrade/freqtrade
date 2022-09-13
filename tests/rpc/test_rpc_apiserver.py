@@ -1752,7 +1752,7 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
 
         default_conf.update({"api_server": {"enabled": True,
                                             "listen_ip_address": "127.0.0.1",
-                                            "listen_port": 8080,
+                                            "listen_port": 9913,
                                             "username": "TestUser",
                                             "password": "testPass",
                                             }})
