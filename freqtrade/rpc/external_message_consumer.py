@@ -251,8 +251,9 @@ class ExternalMessageConsumer:
                     logger.debug(f"Connection to {channel} still alive...")
 
                     continue
-                except Exception:
+                except Exception as e:
                     logger.warning(f"Ping error {channel} - retrying in {self.sleep_time}s")
+                    logger.debug(e, exc_info=e)
                     await asyncio.sleep(self.sleep_time)
 
                     break
