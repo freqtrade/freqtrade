@@ -252,11 +252,11 @@ class ExternalMessageConsumer:
 
                     continue
                 except Exception:
-                    logger.info(
+                    logger.error(
                         f"Ping error {channel} - retrying in {self.sleep_time}s")
                     await asyncio.sleep(self.sleep_time)
 
-                    break
+                    continue
 
     def handle_producer_message(self, producer: Dict[str, Any], message: Dict[str, Any]):
         """
