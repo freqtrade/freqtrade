@@ -183,15 +183,15 @@ Freqtrade currently supports 3 data-formats for both OHLCV and trades data:
 * `jsongz` (a gzip-zipped version of json files)
 * `hdf5` (a high performance datastore)
 
-By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
+By default, OHLCV data and trades data are stored as `hdf5` data.
 
 This can be changed via the `--data-format-ohlcv` and `--data-format-trades` command line arguments respectively.
 To persist this change, you should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:
 
 ``` jsonc
     // ...
-    "dataformat_ohlcv": "hdf5",
-    "dataformat_trades": "hdf5",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "json",
     // ...
 ```
 

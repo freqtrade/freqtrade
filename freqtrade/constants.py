@@ -424,12 +424,12 @@ CONF_SCHEMA = {
         'dataformat_ohlcv': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
-            'default': 'json'
+            'default': 'hdf5'
         },
         'dataformat_trades': {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
-            'default': 'jsongz'
+            'default': 'hdf5'
         },
         'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
