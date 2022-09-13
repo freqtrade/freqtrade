@@ -205,14 +205,14 @@ class ExternalMessageConsumer:
                 continue
 
             except websockets.exceptions.ConnectionClosedOK:
-                # Successfully closed, just end
-                return
+                # Successfully closed, just keep trying to connect again indefinitely
+                continue
 
             except Exception as e:
                 # An unforseen error has occurred, log and stop
                 logger.error("Unexpected error has occurred:")
                 logger.exception(e)
-                break
+                continue
 
     async def _receive_messages(
         self,
@@ -256,7 +256,7 @@ class ExternalMessageConsumer:
                         f"Ping error {channel} - retrying in {self.sleep_time}s")
                     await asyncio.sleep(self.sleep_time)
 
-                    continue
+                    break
 
     def handle_producer_message(self, producer: Dict[str, Any], message: Dict[str, Any]):
         """
