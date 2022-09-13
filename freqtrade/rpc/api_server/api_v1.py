@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
 # 2.15: Add backtest history endpoints
 # 2.16: Additional daily metrics
 # 2.17: Forceentry - leverage, partial force_exit
-API_VERSION = 2.17
+# 2.20: Add websocket endpoints
+API_VERSION = 2.20
 
 # Public API, requires no auth.
 router_public = APIRouter()
