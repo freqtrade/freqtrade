@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
-from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
+from freqtrade.rpc.api_server.ws import WebSocketChannel
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
                                                  WSRequestSchema, WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC

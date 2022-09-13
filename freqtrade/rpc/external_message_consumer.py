@@ -17,7 +17,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import remove_entry_exit_signals
-from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
+from freqtrade.rpc.api_server.ws import WebSocketChannel
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzedDFRequest,
                                                  WSMessageSchema, WSRequestSchema,
                                                  WSSubscribeRequest, WSWhitelistMessage,
@@ -252,8 +252,7 @@ class ExternalMessageConsumer:
 
                     continue
                 except Exception:
-                    logger.error(
-                        f"Ping error {channel} - retrying in {self.sleep_time}s")
+                    logger.warning(f"Ping error {channel} - retrying in {self.sleep_time}s")
                     await asyncio.sleep(self.sleep_time)
 
                     break

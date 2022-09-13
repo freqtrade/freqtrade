@@ -14,7 +14,7 @@ from starlette.responses import JSONResponse
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
-from freqtrade.rpc.api_server.ws.channel import ChannelManager
+from freqtrade.rpc.api_server.ws import ChannelManager
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
