@@ -184,14 +184,14 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
     test_producer = default_conf['external_message_consumer']['producers'][0]
     lock = asyncio.Lock()
 
+    emc._running = True
+
     async def eat(websocket):
-        pass
+        emc._running = False
 
     try:
         async with websockets.serve(eat, _TEST_WS_HOST, _TEST_WS_PORT):
-            emc._running = True
             await emc._create_connection(test_producer, lock)
-            emc._running = False
 
         assert log_has_re(r"Producer connection success.+", caplog)
     finally:
