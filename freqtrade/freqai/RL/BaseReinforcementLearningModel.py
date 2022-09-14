@@ -155,12 +155,13 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         trade_duration = 0
         for trade in open_trades:
             if trade.pair == pair:
-                # FIXME: mypy typing doesnt like that strategy may be "None" (it never will be)
                 # FIXME: get_rate and trade_udration shouldn't work with backtesting,
                 # we need to use candle dates and prices to compute that.
-                pytest.set_trace()
-                current_value = self.strategy.dp._exchange.get_rate(
-                    pair, refresh=False, side="exit", is_short=trade.is_short)
+                if self.strategy.dp._exchange is None:
+                    logger.error('No exchange available.')
+                else:
+                    current_value = self.strategy.dp._exchange.get_rate(
+                                pair, refresh=False, side="exit", is_short=trade.is_short)
                 openrate = trade.open_rate
                 now = datetime.now(timezone.utc).timestamp()
                 trade_duration = int((now - trade.open_date.timestamp()) / self.base_tf_seconds)

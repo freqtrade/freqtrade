@@ -92,6 +92,7 @@ class IFreqaiModel(ABC):
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+        self.strategy: IStrategy = None
 
     def __getstate__(self):
         """
@@ -119,6 +120,7 @@ class IFreqaiModel(ABC):
 
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
+        self.strategy = strategy
 
         if self.live:
             self.inference_timer('start')

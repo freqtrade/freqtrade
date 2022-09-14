@@ -160,7 +160,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                     "already on disk."
                 )
                 download_all_data_for_training(self.dp, self.config)
-            self.freqai.strategy = self
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
