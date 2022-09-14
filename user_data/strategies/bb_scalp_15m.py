@@ -13,6 +13,9 @@ class bb_scalp_15m(WAOStrategy):
     brain = "Freq_bb_15m"
 
     def __init__(self, config: dict):
+        self.coin = str(config.get('pairs')[0]).split('/')[0]
+        if self.coin == 'BTC' or self.coin == 'ADA':
+            self.brain = "Freq_bb_15m_ada_btc"
         super().__init__(config, self.brain, 4, 0.14)
 
     # minimal_roi = {
