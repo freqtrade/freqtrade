@@ -512,11 +512,11 @@ CONF_SCHEMA = {
                     'maximum': 1500,
                     'default': 1500
                 },
-                'max_message_size': {
+                'max_message_size': {  # In megabytes
                     'type': 'integer',
-                    'minimum': 1048576,  # 1mb
-                    'maxmium': 8388608,  # 8.3mb,
-                    'default': 1048576,  # 1mb
+                    'minimum': 1,
+                    'maxmium': 20,
+                    'default': 8,
                 }
             },
             'required': ['producers']
