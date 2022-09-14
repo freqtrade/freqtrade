@@ -33,7 +33,6 @@ class Base4ActionRLEnv(BaseEnvironment):
 
         self._update_unrealized_total_profit()
 
-        self._update_profit(action)
         step_reward = self.calculate_reward(action)
         self.total_reward += step_reward
 
