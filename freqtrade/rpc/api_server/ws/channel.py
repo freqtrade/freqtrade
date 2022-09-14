@@ -71,7 +71,6 @@ class WebSocketChannel:
         Close the WebSocketChannel
         """
 
-        await self._websocket.close()
         self._closed = True
 
     def is_closed(self) -> bool:
