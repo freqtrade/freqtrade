@@ -98,6 +98,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `expiration_hours` | Avoid making predictions if a model is more than `expiration_hours` old. <br> Defaults set to 0, which means models never expire. <br> **Datatype:** Positive integer.
 | `fit_live_predictions_candles` | Number of historical candles to use for computing target (label) statistics from prediction data, instead of from the training data set. <br> **Datatype:** Positive integer.
 | `follow_mode` | If true, this instance of FreqAI will look for models associated with `identifier` and load those for inferencing. A `follower` will **not** train new models. <br> **Datatype:** Boolean. Default: `False`.
+| `continual_learning` | If true, FreqAI will start training new models from the final state of the most recently trained model. <br> **Datatype:** Boolean. Default: `False`.
 |  |  **Feature parameters**
 | `feature_parameters` | A dictionary containing the parameters used to engineer the feature set. Details and examples are shown [here](#feature-engineering). <br> **Datatype:** Dictionary.
 | `include_timeframes` | A list of timeframes that all indicators in `populate_any_indicators` will be created for. The list is added as features to the base asset feature set. <br> **Datatype:** List of timeframes (strings).
@@ -112,15 +113,17 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `DI_threshold` | Activates the Dissimilarity Index for outlier detection when > 0. See details about how it works [here](#removing-outliers-with-the-dissimilarity-index). <br> **Datatype:** Positive float (typically < 1).
 | `use_SVM_to_remove_outliers` | Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. See details about some select parameters [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Dictionary.
-| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean.
-| `outlier_protection_percentage` | If more than `outlier_protection_percentage` fraction of points are removed as outliers, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. <br> **Datatype:** float. Default: `30`
-| `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** bool. Default: False
+| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
+| `inlier_metric_window` | If set, FreqAI will add the `inlier_metric` to the training feature set and set the lookback to be the `inlier_metric_window`. Details of how the `inlier_metric` is computed can be found [here](#using-the-inliermetric) <br> **Datatype:** int. Default: 0
+| `noise_standard_deviation` | If > 0, FreqAI adds noise to the training features. FreqAI generates random deviates from a gaussian distribution with a standard deviation of `noise_standard_deviation` and adds them to all data points. Value should be kept relative to the normalized space between -1 and 1). In other words, since data is always normalized between -1 and 1 in FreqAI, the user can expect a `noise_standard_deviation: 0.05` to see 32% of data randomly increased/decreased by more than 2.5% (i.e. the percent of data falling within the first standard deviation). Good for preventing overfitting. <br> **Datatype:** int. Default: 0
+| `outlier_protection_percentage` | If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. If the outlier protection is triggered, no predictions will be made based on the training data. <br> **Datatype:** Float. Default: `30`
+| `reverse_train_test_order` | If true, FreqAI will train on the latest data split and test on historical split of the data. This allows the model to be trained up to the most recent data point, while avoiding overfitting. However, users should be careful to understand unorthodox nature of this parameter before employing it. <br> **Datatype:** Boolean. Default: False
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | Fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
-| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br>
+| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean.
 |  |  **Model training parameters**
-| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, such as `PPO` from stable_baselines3, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary
+| `model_training_parameters` | A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
@@ -289,8 +292,10 @@ The FreqAI strategy requires the user to include the following lines of code in 
 
 Notice how the `populate_any_indicators()` is where the user adds their own features ([more information](#feature-engineering)) and labels ([more information](#setting-classifier-targets)). See a full example at `templates/FreqaiExampleStrategy.py`.
 
+*Important*: The `self.freqai.start()` function cannot be called outside the `populate_indicators()`.
+
 ### Setting the `startup_candle_count`
-Users need to take care to set the `startup_candle_count` in their strategy the same way they would for any normal Freqtrade strategy (see details [here](strategy-customization.md/#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling on the `dataprovider` to avoid any NaNs at the beginning of the first training. Users can easily set this value by identifying the longest period (in candle units) that they pass to their indicator creation functions (e.g. talib functions). In the present example, the user would pass 20 to as this value (since it is the maximum value in their `indicators_periods_candles`).
+Users need to take care to set the `startup_candle_count` in their strategy the same way they would for any normal Freqtrade strategy (see details [here](strategy-customization.md#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling on the `dataprovider` to avoid any NaNs at the beginning of the first training. Users can easily set this value by identifying the longest period (in candle units) that they pass to their indicator creation functions (e.g. talib functions). In the present example, the user would pass 20 to as this value (since it is the maximum value in their `indicators_periods_candles`).
 
 !!! Note
     Typically it is best for users to be safe and multiply their expected `startup_candle_count` by 2. There are instances where the talib functions actually require more data than just the passed `period`. Anecdotally, multiplying the `startup_candle_count` by 2 always leads to a fully NaN free training dataset. Look out for this log message to confirm that your data is clean:
@@ -525,10 +530,10 @@ and if a full `live_retrain_hours` has elapsed since the end of the loaded model
 The FreqAI backtesting module can be executed with the following command:
 
 ```bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
+freqtrade backtesting --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
 ```
 
-Backtesting mode requires the user to have the data pre-downloaded (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-sliding-training-window-and-backtesting-duration).
+Backtesting mode requires the user to have the data [pre-downloaded](#downloading-data-for-backtesting) (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-sliding-training-window-and-backtesting-duration). 
 
 If this command has never been executed with the existing config file, it will train a new model
 for each pair, for each backtesting window within the expanded `--timerange`.
@@ -541,6 +546,31 @@ for each pair, for each backtesting window within the expanded `--timerange`.
     This way, the user can return to using any model they wish by simply specifying the `identifier`.
 
 ---
+
+### Hyperopt
+
+Users can hyperopt using the same command as typical [hyperopt](hyperopt.md):
+
+```bash
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --timerange 20220428-20220507
+```
+
+Users need to have the data pre-downloaded in the same fashion as if they were doing a FreqAI [backtest](#backtesting). In addition, users must consider some restrictions when trying to [Hyperopt](hyperopt.md)  FreqAI strategies:
+
+- The `--analyze-per-epoch` hyperopt parameter is not compatible with FreqAI.
+- It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
+- The [Backtesting](#backtesting) instructions also apply to Hyperopt.
+
+The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. Users need to focus on hyperopting parameters that are not used in their FreqAI features. For example, users should not try to hyperopt rolling window lengths in their feature creation, or any of their FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only. 
+
+A good example of a hyperoptable parameter in FreqAI is a value for `DI_values` beyond which we consider outliers and below which we consider inliers:
+
+```python
+di_max = IntParameter(low=1, high=20, default=10, space='buy', optimize=True, load=True)
+dataframe['outlier'] = np.where(dataframe['DI_values'] > self.di_max.value/10, 1, 0)
+```
+
+Which would help the user understand the appropriate Dissimilarity Index values for their particular parameter space.
 
 ### Deciding the size of the sliding training window and backtesting duration
 
@@ -556,7 +586,7 @@ FreqAI will train have trained 8 separate models at the end of `--timerange` (be
     Although fractional `backtest_period_days` is allowed, the user should be aware that the `--timerange` is divided by this value to determine the number of models that FreqAI will need to train in order to backtest the full range. For example, if the user wants to set a `--timerange` of 10 days, and asks for a `backtest_period_days` of 0.1, FreqAI will need to train 100 models per pair to complete the full backtest. Because of this, a true backtest of FreqAI adaptive training would take a *very* long time. The best way to fully test a model is to run it dry and let it constantly train. In this case, backtesting would take the exact same amount of time as a dry run.
 
 ### Downloading data for backtesting
-Live/dry instances will download the data automatically for the user, but users who wish to use backtesting functionality still need to download the necessary data using `download-data` (details [here](data-download/#data-downloading)). FreqAI users need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that they have a sufficient amount of training data *before* the start of their backtesting timerange. The amount of additional data can be roughly estimated by taking subtracting `train_period_days` and the `startup_candle_count` ([details](#setting-the-startupcandlecount)) from the beginning of the desired backtesting timerange. 
+Live/dry instances will download the data automatically for the user, but users who wish to use backtesting functionality still need to download the necessary data using `download-data` (details [here](data-download.md#data-downloading)). FreqAI users need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that they have a sufficient amount of training data *before* the start of their backtesting timerange. The amount of additional data can be roughly estimated by moving the start date of the timerange backwards by `train_period_days` and the `startup_candle_count` ([details](#setting-the-startupcandlecount)) from the beginning of the desired backtesting timerange. 
 
 As an example, if we wish to backtest the `--timerange` above of `20210501-20210701`, and we use the example config which sets `train_period_days` to 15. The startup candle count is 40 on a maximum `include_timeframes` of 1h. We would need 20210501 - 15 days - 40 * 1h / 24 hours = 20210414 (16.7 days earlier than the start of the desired training timerange).
 
@@ -652,6 +682,18 @@ example above, the user is asking for every third data point in the dataframe to
 testing; the other points are used for training.
 
 The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used.
+
+### Using the `inlier_metric`
+
+The `inlier_metric` is a metric aimed at quantifying how different a prediction data point is from the most recent historic data points. 
+
+User can set `inlier_metric_window` to set the look back window. FreqAI will compute the distance between the present prediction point and each of the previous data points (total of `inlier_metric_window` points). 
+
+This function goes one step further - during training, it computes the `inlier_metric` for all training data points and builds weibull distributions for each each lookback point. The cumulative distribution function for the weibull distribution is used to produce a quantile for each of the data points. The quantiles for each lookback point are averaged to create the `inlier_metric`. 
+
+FreqAI adds this `inlier_metric` score to the training features! In other words, your model is trained to recognize how this temporal inlier metric is related to the user set labels. 
+
+This function does **not** remove outliers from the data set.
 
 ### Controlling the model learning process
 
@@ -750,93 +792,6 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 
 FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)) with `min_samples` ($N$) taken as double the no. of user-defined features, and `eps` ($\varepsilon$) taken as the longest distance in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
 
-## Reinforcement Learning
-
-Setting up and running a Reinforcement Learning model is as quick and simple as running a Regressor. Users can start training and trading live from example files using:
-
-```bash
-freqtrade trade --freqaimodel ReinforcementLearner --strategy ReinforcementLearningExample5ac --strategy-path freqtrade/freqai/example_strats --config config_examples/config_freqai-rl.example.json
-```
-
-As users begin to modify the strategy and the prediction model, they will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, the user sets a `calculate_reward()` function inside their custom `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to give users the necessary building blocks to start their own models. It is inside the `calculate_reward()` where users express their creative theories about the market. For example, the user wants to reward their agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
-
-```python
-    class MyRLEnv(Base5ActionRLEnv):
-        """
-        User made custom environment. This class inherits from BaseEnvironment and gym.env.
-        Users can override any functions from those parent classes. Here is an example
-        of a user customized `calculate_reward()` function.
-        """
-
-        def calculate_reward(self, action):
-
-            # first, penalize if the action is not valid
-            if not self._is_valid(action):
-                return -2
-
-            pnl = self.get_unrealized_profit()
-            rew = np.sign(pnl) * (pnl + 1)
-            factor = 100
-
-            # reward agent for entering trades
-            if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
-                    and self._position == Positions.Neutral:
-                return 25
-            # discourage agent from not entering trades
-            if action == Actions.Neutral.value and self._position == Positions.Neutral:
-                return -1
-
-            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
-            trade_duration = self._current_tick - self._last_trade_tick
-
-            if trade_duration <= max_trade_duration:
-                factor *= 1.5
-            elif trade_duration > max_trade_duration:
-                factor *= 0.5
-
-            # discourage sitting in position
-            if self._position in (Positions.Short, Positions.Long) and \
-               action == Actions.Neutral.value:
-                return -1 * trade_duration / max_trade_duration
-
-            # close long
-            if action == Actions.Long_exit.value and self._position == Positions.Long:
-                if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
-
-            # close short
-            if action == Actions.Short_exit.value and self._position == Positions.Short:
-                if pnl > self.profit_aim * self.rr:
-                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
-
-            return 0.
-
-```
-
-After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple (as shown in `example_strats/ReinforcementLearningExample5ac.py`). The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy. 
-
-
-### Using Tensorboard
-
-Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
-
-```bash
-pip3 install tensorboard
-```
-
-Next, the user can activate Tensorboard with the following command:
-
-```bash
-cd freqtrade
-tensorboard --logdir user_data/models/unique-id
-```
-
-where `unique-id` is the `identifier` set in the `freqai` configuration file. 
-
-![tensorboard](assets/tensorboard.jpg)
-
 ## Additional information
 
 ### Common pitfalls
@@ -860,5 +815,5 @@ Code review, software architecture brainstorming:
 @xmatthias
 
 Beta testing and bug reporting:
-@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm,
 Juha Nykänen @suikula, Wagner Costa @wagnercosta

@@ -1,13 +1,12 @@
-# import contextlib
-import datetime
 import logging
 import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,6 +14,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -25,13 +25,6 @@ from freqtrade.strategy.interface import IStrategy
 
 pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
-
-
-def threaded(fn):
-    def wrapper(*args, **kwargs):
-        threading.Thread(target=fn, args=args, kwargs=kwargs).start()
-
-    return wrapper
 
 
 class IFreqaiModel(ABC):
@@ -66,7 +59,6 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
-        self.feature_parameters = config.get("freqai", {}).get("feature_parameters")
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -77,11 +69,14 @@ class IFreqaiModel(ABC):
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
+        self.ft_params = self.freqai_info["feature_parameters"]
         self.keras: bool = self.freqai_info.get("keras", False)
-        if self.keras and self.freqai_info.get("feature_parameters", {}).get("DI_threshold", 0):
-            self.freqai_info["feature_parameters"]["DI_threshold"] = 0
+        if self.keras and self.ft_params.get("DI_threshold", 0):
+            self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 2)
+        if self.ft_params.get("inlier_metric_window", 0):
+            self.CONV_WIDTH = self.ft_params.get("inlier_metric_window", 0) * 2
         self.pair_it = 0
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
@@ -93,6 +88,16 @@ class IFreqaiModel(ABC):
         self.begin_time: float = 0
         self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
+        self.continual_learning = self.freqai_info.get('continual_learning', False)
+
+        self._threads: List[threading.Thread] = []
+        self._stop_event = threading.Event()
+
+    def __getstate__(self):
+        """
+        Return an empty state to be pickled in hyperopt
+        """
+        return ({})
         self.strategy: Optional[IStrategy] = None
 
     def assert_config(self, config: Dict[str, Any]) -> None:
@@ -148,15 +153,34 @@ class IFreqaiModel(ABC):
         self.model = None
         self.dk = None
 
-    @threaded
-    def start_scanning(self, strategy: IStrategy) -> None:
+    def shutdown(self):
+        """
+        Cleans up threads on Shutdown, set stop event. Join threads to wait
+        for current training iteration.
+        """
+        logger.info("Stopping FreqAI")
+        self._stop_event.set()
+
+        logger.info("Waiting on Training iteration")
+        for _thread in self._threads:
+            _thread.join()
+
+    def start_scanning(self, *args, **kwargs) -> None:
+        """
+        Start `self._start_scanning` in a separate thread
+        """
+        _thread = threading.Thread(target=self._start_scanning, args=args, kwargs=kwargs)
+        self._threads.append(_thread)
+        _thread.start()
+
+    def _start_scanning(self, strategy: IStrategy) -> None:
         """
         Function designed to constantly scan pairs for retraining on a separate thread (intracandle)
         to improve model youth. This function is agnostic to data preparation/collection/storage,
         it simply trains on what ever data is available in the self.dd.
         :param strategy: IStrategy = The user defined strategy class
         """
-        while 1:
+        while not self._stop_event.is_set():
             time.sleep(1)
             for pair in self.config.get("exchange", {}).get("pair_whitelist"):
 
@@ -175,7 +199,7 @@ class IFreqaiModel(ABC):
 
                 if retrain:
                     self.train_timer('start')
-                    self.train_model_in_series(
+                    self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                     self.train_timer('stop')
@@ -215,12 +239,12 @@ class IFreqaiModel(ABC):
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
             trained_timestamp = tr_train
-            tr_train_startts_str = datetime.datetime.utcfromtimestamp(tr_train.startts).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            tr_train_stopts_str = datetime.datetime.utcfromtimestamp(tr_train.stopts).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            tr_train_startts_str = datetime.fromtimestamp(
+                                                tr_train.startts,
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+            tr_train_stopts_str = datetime.fromtimestamp(
+                                                tr_train.stopts,
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
             logger.info(
                 f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
                 f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
@@ -405,24 +429,30 @@ class IFreqaiModel(ABC):
 
     def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
         """
-        Base data cleaning method for train
-        Any function inside this method should drop training data points from the filtered_dataframe
-        based on user decided logic. See FreqaiDataKitchen::use_SVM_to_remove_outliers() for an
-        example of how outlier data points are dropped from the dataframe used for training.
+        Base data cleaning method for train.
+        Functions here improve/modify the input data by identifying outliers,
+        computing additional metrics, adding noise, reducing dimensionality etc.
         """
 
-        if self.freqai_info["feature_parameters"].get(
+        ft_params = self.freqai_info["feature_parameters"]
+
+        if ft_params.get('inlier_metric_window', 0):
+            dk.compute_inlier_metric(set_='train')
+            if self.freqai_info["data_split_parameters"]["test_size"] > 0:
+                dk.compute_inlier_metric(set_='test')
+
+        if ft_params.get(
             "principal_component_analysis", False
         ):
             dk.principal_component_analysis()
 
-        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
+        if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=False)
 
-        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
+        if ft_params.get("DI_threshold", 0):
             dk.data["avg_mean_dist"] = dk.compute_distances()
 
-        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             if dk.pair in self.dd.old_DBSCAN_eps:
                 eps = self.dd.old_DBSCAN_eps[dk.pair]
             else:
@@ -430,29 +460,31 @@ class IFreqaiModel(ABC):
             dk.use_DBSCAN_to_remove_outliers(predict=False, eps=eps)
             self.dd.old_DBSCAN_eps[dk.pair] = dk.data['DBSCAN_eps']
 
+        if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
+            dk.add_noise_to_training_features()
+
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
         """
         Base data cleaning method for predict.
-        These functions each modify dk.do_predict, which is a dataframe with equal length
-        to the number of candles coming from and returning to the strategy. Inside do_predict,
-         1 allows prediction and < 0 signals to the strategy that the model is not confident in
-         the prediction.
-         See FreqaiDataKitchen::remove_outliers() for an example
-        of how the do_predict vector is modified. do_predict is ultimately passed back to strategy
-        for buy signals.
+        Functions here are complementary to the functions of data_cleaning_train.
         """
-        if self.freqai_info["feature_parameters"].get(
+        ft_params = self.freqai_info["feature_parameters"]
+
+        if ft_params.get('inlier_metric_window', 0):
+            dk.compute_inlier_metric(set_='predict')
+
+        if ft_params.get(
             "principal_component_analysis", False
         ):
-            dk.pca_transform(dataframe)
+            dk.pca_transform(self.dk.data_dictionary['prediction_features'])
 
-        if self.freqai_info["feature_parameters"].get("use_SVM_to_remove_outliers", False):
+        if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
 
-        if self.freqai_info["feature_parameters"].get("DI_threshold", 0):
+        if ft_params.get("DI_threshold", 0):
             dk.check_if_pred_in_training_spaces()
 
-        if self.freqai_info["feature_parameters"].get("use_DBSCAN_to_remove_outliers", False):
+        if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
 
     def model_exists(
@@ -488,7 +520,7 @@ class IFreqaiModel(ABC):
             Path(self.full_path, Path(self.config["config_files"][0]).name),
         )
 
-    def train_model_in_series(
+    def extract_data_and_train_model(
         self,
         new_trained_timerange: TimeRange,
         pair: str,
@@ -580,7 +612,7 @@ class IFreqaiModel(ABC):
 
         # # for keras type models, the conv_window needs to be prepended so
         # # viewing is correct in frequi
-        if self.freqai_info.get('keras', False):
+        if self.freqai_info.get('keras', False) or self.ft_params.get('inlier_metric_window', 0):
             n_lost_points = self.freqai_info.get('conv_width', 2)
             zeros_df = DataFrame(np.zeros((n_lost_points, len(hist_preds_df.columns))),
                                  columns=hist_preds_df.columns)
@@ -646,21 +678,30 @@ class IFreqaiModel(ABC):
                 self.train_time = 0
         return
 
+    def get_init_model(self, pair: str) -> Any:
+        if pair not in self.dd.model_dictionary or not self.continual_learning:
+            init_model = None
+        else:
+            init_model = self.dd.model_dictionary[pair]
+
+        return init_model
+
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 
     @abstractmethod
-    def train(self, unfiltered_dataframe: DataFrame, pair: str, dk: FreqaiDataKitchen) -> Any:
+    def train(self, unfiltered_df: DataFrame, pair: str,
+              dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Filter the training data and train a model to it. Train makes heavy use of the datahandler
         for storing, saving, loading, and analyzing the data.
-        :param unfiltered_dataframe: Full dataframe for the current training period
+        :param unfiltered_df: Full dataframe for the current training period
         :param metadata: pair metadata from strategy.
         :return: Trained model which can be used to inference (self.predict)
         """
 
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, Any], pair: str = '') -> Any:
+    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
@@ -673,11 +714,11 @@ class IFreqaiModel(ABC):
 
     @abstractmethod
     def predict(
-        self, dataframe: DataFrame, dk: FreqaiDataKitchen, first: bool = True
+        self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
     ) -> Tuple[DataFrame, NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param unfiltered_dataframe: Full dataframe for the current backtest period.
+        :param unfiltered_df: Full dataframe for the current backtest period.
         :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
         :param first: boolean = whether this is the first prediction or not.
         :return:

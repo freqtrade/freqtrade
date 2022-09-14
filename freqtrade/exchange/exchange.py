@@ -205,7 +205,7 @@ class Exchange:
         logger.debug("Exchange object destroyed, closing async loop")
         if (self._api_async and inspect.iscoroutinefunction(self._api_async.close)
                 and self._api_async.session):
-            logger.info("Closing async ccxt session.")
+            logger.debug("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
 
     def validate_config(self, config):
@@ -445,6 +445,15 @@ class Exchange:
 
         contract_size = self.get_contract_size(pair)
         return contracts_to_amount(num_contracts, contract_size)
+
+    def amount_to_contract_precision(self, pair: str, amount: float) -> float:
+        """
+        Helper wrapper around amount_to_contract_precision
+        """
+        contract_size = self.get_contract_size(pair)
+
+        return amount_to_contract_precision(amount, self.get_precision_amount(pair),
+                                            self.precisionMode, contract_size)
 
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
@@ -2500,8 +2509,13 @@ class Exchange:
             cache=False,
             drop_incomplete=False,
         )
-        funding_rates = candle_histories[funding_comb]
-        mark_rates = candle_histories[mark_comb]
+        try:
+            # we can't assume we always get histories - for example during exchange downtimes
+            funding_rates = candle_histories[funding_comb]
+            mark_rates = candle_histories[mark_comb]
+        except KeyError:
+            raise ExchangeError("Could not find funding rates.") from None
+
         funding_mark_rates = self.combine_funding_and_mark(
             funding_rates=funding_rates, mark_rates=mark_rates)
 
@@ -2581,6 +2595,8 @@ class Exchange:
         :param is_short: trade direction
         :param amount: Trade amount
         :param open_date: Open date of the trade
+        :return: funding fee since open_date
+        :raies: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:

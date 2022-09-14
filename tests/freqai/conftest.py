@@ -81,6 +81,37 @@ def get_patched_freqaimodel(mocker, freqaiconf):
     return freqaimodel
 
 
+def make_unfiltered_dataframe(mocker, freqai_conf):
+    freqai_conf.update({"timerange": "20180110-20180130"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    freqai.dk.pair = "ADA/BTC"
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
+
+    freqai.dd.pair_dict = MagicMock()
+
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(
+            data_load_timerange, freqai.dk.pair, freqai.dk
+        )
+
+    unfiltered_dataframe = freqai.dk.use_strategy_to_populate_indicators(
+                strategy, corr_dataframes, base_dataframes, freqai.dk.pair
+            )
+
+    unfiltered_dataframe = freqai.dk.slice_dataframe(new_timerange, unfiltered_dataframe)
+
+    return freqai, unfiltered_dataframe
+
+
 def make_data_dictionary(mocker, freqai_conf):
     freqai_conf.update({"timerange": "20180110-20180130"})
 
@@ -92,12 +123,11 @@ def make_data_dictionary(mocker, freqai_conf):
     freqai.live = True
     freqai.dk = FreqaiDataKitchen(freqai_conf)
     freqai.dk.pair = "ADA/BTC"
-    timerange = TimeRange.parse_timerange("20180110-20180130")
-    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(data_load_timerange, freqai.dk)
 
     freqai.dd.pair_dict = MagicMock()
 
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
 
     corr_dataframes, base_dataframes = freqai.dd.get_base_and_corr_dataframes(

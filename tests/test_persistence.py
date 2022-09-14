@@ -9,7 +9,7 @@ import arrow
 import pytest
 from sqlalchemy import create_engine, text
 
-from freqtrade import constants
+from freqtrade.constants import DATETIME_PRINT_FORMAT, DEFAULT_DB_PROD_URL
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
@@ -52,7 +52,7 @@ def test_init_invalid_db_url():
 
 def test_init_prod_db(default_conf, mocker):
     default_conf.update({'dry_run': False})
-    default_conf.update({'db_url': constants.DEFAULT_DB_PROD_URL})
+    default_conf.update({'db_url': DEFAULT_DB_PROD_URL})
 
     create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
 
@@ -615,21 +615,25 @@ def test_calc_open_close_trade_price(
         is_short=is_short,
         leverage=lev,
         trading_mode=trading_mode,
-        funding_fees=funding_fees
     )
     entry_order = limit_order[trade.entry_side]
     exit_order = limit_order[trade.exit_side]
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
 
     oobj = Order.parse_from_ccxt_object(entry_order, 'ADA/USDT', trade.entry_side)
-    trade.orders.append(oobj)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(entry_order)
     trade.update_trade(oobj)
 
+    trade.funding_fees = funding_fees
+
     oobj = Order.parse_from_ccxt_object(exit_order, 'ADA/USDT', trade.exit_side)
-    trade.orders.append(oobj)
+    oobj.trade = trade
+    oobj.update_from_ccxt_object(exit_order)
     trade.update_trade(oobj)
 
     assert trade.is_open is False
+    assert trade.funding_fees == funding_fees
 
     assert pytest.approx(trade._calc_open_trade_value(trade.amount, trade.open_rate)) == open_value
     assert pytest.approx(trade.calc_close_trade_value(trade.close_rate)) == close_value
@@ -1735,7 +1739,7 @@ def test_to_json(fee):
                       'base_currency': 'ADA',
                       'quote_currency': 'USDT',
                       'is_open': None,
-                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
                       'open_order_id': 'dry_run_buy_12345',
                       'close_date': None,
@@ -1813,9 +1817,9 @@ def test_to_json(fee):
                       'pair': 'XRP/BTC',
                       'base_currency': 'XRP',
                       'quote_currency': 'BTC',
-                      'open_date': trade.open_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'open_date': trade.open_date.strftime(DATETIME_PRINT_FORMAT),
                       'open_timestamp': int(trade.open_date.timestamp() * 1000),
-                      'close_date': trade.close_date.strftime("%Y-%m-%d %H:%M:%S"),
+                      'close_date': trade.close_date.strftime(DATETIME_PRINT_FORMAT),
                       'close_timestamp': int(trade.close_date.timestamp() * 1000),
                       'open_rate': 0.123,
                       'close_rate': 0.125,

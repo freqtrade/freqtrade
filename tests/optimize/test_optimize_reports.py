@@ -40,14 +40,14 @@ def test_text_table_bt_results():
     )
 
     result_str = (
-        '|    Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % |'
-        '   Avg Duration |   Win  Draw  Loss  Win% |\n'
-        '|---------+--------+----------------+----------------+------------------+----------------+'
-        '----------------+-------------------------|\n'
-        '| ETH/BTC |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
-        '        0:20:00 |     2     0     1  66.7 |\n'
-        '|   TOTAL |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
-        '        0:20:00 |     2     0     1  66.7 |'
+        '|    Pair |   Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   '
+        'Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |\n'
+        '|---------+-----------+----------------+----------------+------------------+'
+        '----------------+----------------+-------------------------|\n'
+        '| ETH/BTC |         3 |           8.33 |          25.00 |       0.50000000 |          '
+        '12.50 |        0:20:00 |     2     0     1  66.7 |\n'
+        '|   TOTAL |         3 |           8.33 |          25.00 |       0.50000000 |          '
+        '12.50 |        0:20:00 |     2     0     1  66.7 |'
     )
 
     pair_results = generate_pair_metrics(['ETH/BTC'], stake_currency='BTC',
@@ -402,13 +402,13 @@ def test_text_table_strategy(testdatadir):
     bt_res_data_comparison = bt_res_data.pop('strategy_comparison')
 
     result_str = (
-        '|       Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '|       Strategy |   Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
         '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
-        '|----------------+--------+----------------+----------------+------------------+'
+        '|----------------+-----------+----------------+----------------+------------------+'
         '----------------+----------------+-------------------------+-----------------------|\n'
-        '| StrategyTestV2 |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '| StrategyTestV2 |       179 |           0.08 |          14.39 |       0.02608550 |'
         '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n'
-        '|   TestStrategy |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '|   TestStrategy |       179 |           0.08 |          14.39 |       0.02608550 |'
         '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |'
     )
 

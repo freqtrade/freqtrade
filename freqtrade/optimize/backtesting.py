@@ -537,7 +537,11 @@ class Backtesting:
                     return pos_trade
 
         if stake_amount is not None and stake_amount < 0.0:
-            amount = abs(stake_amount) / current_rate
+            amount = amount_to_contract_precision(
+                abs(stake_amount) / current_rate, trade.amount_precision,
+                self.precision_mode, trade.contract_size)
+            if amount == 0.0:
+                return trade
             if amount > trade.amount:
                 # This is currently ineffective as remaining would become < min tradable
                 amount = trade.amount
@@ -686,7 +690,7 @@ class Backtesting:
                 self.futures_data[trade.pair],
                 amount=trade.amount,
                 is_short=trade.is_short,
-                open_date=trade.open_date_utc,
+                open_date=trade.date_last_filled_utc,
                 close_date=exit_candle_time,
             )
 
