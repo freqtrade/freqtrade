@@ -20,14 +20,14 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
     User created Reinforcement Learning Model prediction model.
     """
 
-    def fit_rl(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen):
+    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
 
         train_df = data_dictionary["train_features"]
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
         # model arch
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=[256, 256, 128])
+                             net_arch=[128, 128])
 
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,

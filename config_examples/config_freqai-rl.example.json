@@ -62,6 +62,7 @@
         "train_period_days": 5,
         "backtest_period_days": 2,
         "identifier": "unique-id",
+        "continual_learning": false,
         "data_kitchen_thread_count": 2,
         "feature_parameters": {
             "include_corr_pairlist": [
@@ -91,7 +92,6 @@
             "max_trade_duration_candles": 300,
             "model_type": "PPO",
             "policy_type": "MlpPolicy",
-            "continual_learning": false,
             "max_training_drawdown_pct": 0.5,
             "model_reward_parameters": {
                 "rr": 1,

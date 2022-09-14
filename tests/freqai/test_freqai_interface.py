@@ -21,14 +21,39 @@ def is_arm() -> bool:
     'LightGBMRegressor',
     'XGBoostRegressor',
     'CatboostRegressor',
+    'ReinforcementLearner',
+    'ReinforcementLearner_multiproc'
     ])
-def test_extract_data_and_train_model_Regressors(mocker, freqai_conf, model):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
+    model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
+
+    if 'ReinforcementLearner' in model:
+        model_save_ext = 'zip'
+        freqai_conf.update({"strategy": "freqai_rl_test_strat"})
+        freqai_conf["freqai"].update({"model_training_parameters": {
+            "learning_rate": 0.00025,
+            "gamma": 0.9,
+            "verbose": 1
+        }})
+        freqai_conf["freqai"].update({"model_save_type": 'stable_baselines'})
+        freqai_conf["freqai"]["rl_config"] = {
+            "train_cycles": 1,
+            "thread_count": 2,
+            "max_trade_duration_candles": 300,
+            "model_type": "PPO",
+            "policy_type": "MlpPolicy",
+            "max_training_drawdown_pct": 0.5,
+            "model_reward_parameters": {
+                "rr": 1,
+                "profit_aim": 0.02,
+                "win_reward_factor": 2
+            }}
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -42,16 +67,19 @@ def test_extract_data_and_train_model_Regressors(mocker, freqai_conf, model):
 
     freqai.dd.pair_dict = MagicMock()
 
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    data_load_timerange = TimeRange.parse_timerange("20180125-20180130")
+    new_timerange = TimeRange.parse_timerange("20180127-20180130")
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
+    assert Path(freqai.dk.data_path /
+                f"{freqai.dk.model_filename}_model.{model_save_ext}").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
+    # if 'ReinforcementLearner' not in model:
+    #     assert Path(freqai.dk.data_path /
+    #                 f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -91,7 +119,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
-    assert len(freqai.dk.data['training_features_list']) == 26
+    assert len(freqai.dk.data['training_features_list']) == 14
 
     shutil.rmtree(Path(freqai.dk.full_path))
 

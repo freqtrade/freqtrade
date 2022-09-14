@@ -553,7 +553,8 @@ class IFreqaiModel(ABC):
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
-
+        # import pytest
+        # pytest.set_trace()
         model = self.train(unfiltered_dataframe, pair, dk)
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts

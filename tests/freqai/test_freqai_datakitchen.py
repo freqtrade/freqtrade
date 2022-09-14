@@ -72,7 +72,7 @@ def test_use_DBSCAN_to_remove_outliers(mocker, freqai_conf, caplog):
     # freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 1})
     freqai.dk.use_DBSCAN_to_remove_outliers(predict=False)
     assert log_has_re(
-        "DBSCAN found eps of 2.36.",
+        "DBSCAN found eps of 1.75.",
         caplog,
     )
 
@@ -81,7 +81,7 @@ def test_compute_distances(mocker, freqai_conf):
     freqai = make_data_dictionary(mocker, freqai_conf)
     freqai_conf['freqai']['feature_parameters'].update({"DI_threshold": 1})
     avg_mean_dist = freqai.dk.compute_distances()
-    assert round(avg_mean_dist, 2) == 2.54
+    assert round(avg_mean_dist, 2) == 1.99
 
 
 def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, caplog):
@@ -89,7 +89,7 @@ def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, 
     freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 0.1})
     freqai.dk.use_SVM_to_remove_outliers(predict=False)
     assert log_has_re(
-        "SVM detected 8.09%",
+        "SVM detected 7.36%",
         caplog,
     )
 
@@ -128,7 +128,7 @@ def test_normalize_data(mocker, freqai_conf):
     freqai = make_data_dictionary(mocker, freqai_conf)
     data_dict = freqai.dk.data_dictionary
     freqai.dk.normalize_data(data_dict)
-    assert len(freqai.dk.data) == 56
+    assert len(freqai.dk.data) == 32
 
 
 def test_filter_features(mocker, freqai_conf):
@@ -142,7 +142,7 @@ def test_filter_features(mocker, freqai_conf):
             training_filter=True,
     )
 
-    assert len(filtered_df.columns) == 26
+    assert len(filtered_df.columns) == 14
 
 
 def test_make_train_test_datasets(mocker, freqai_conf):
