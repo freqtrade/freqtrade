@@ -101,8 +101,6 @@ async def message_endpoint(
     Message WebSocket endpoint, facilitates sending RPC messages
     """
     try:
-        # TODO:
-        # Return a channel ID, pass that instead of ws to the rest of the methods
         channel = await channel_manager.on_connect(ws)
 
         if await is_websocket_alive(ws):

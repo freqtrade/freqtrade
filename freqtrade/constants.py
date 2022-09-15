@@ -496,23 +496,24 @@ CONF_SCHEMA = {
                         'type': 'object',
                         'properties': {
                             'name': {'type': 'string'},
-                            'url': {'type': 'string', 'default': ''},
-                            'ws_token': {'type': 'string', 'default': ''},
+                            'host': {'type': 'string'},
+                            'port': {'type': 'integer', 'default': 8080},
+                            'ws_token': {'type': 'string'},
                         },
-                        'required': ['name', 'url', 'ws_token']
+                        'required': ['name', 'host', 'ws_token']
                     }
                 },
                 'wait_timeout': {'type': 'integer', 'minimum': 0},
                 'sleep_time': {'type': 'integer', 'minimum': 0},
                 'ping_timeout': {'type': 'integer', 'minimum': 0},
-                'remove_signals_analyzed_df': {'type': 'boolean', 'default': False},
+                'remove_entry_exit_signals': {'type': 'boolean', 'default': False},
                 'initial_candle_limit': {
                     'type': 'integer',
                     'minimum': 0,
                     'maximum': 1500,
                     'default': 1500
                 },
-                'max_message_size': {  # In megabytes
+                'message_size_limit': {  # In megabytes
                     'type': 'integer',
                     'minimum': 1,
                     'maxmium': 20,
