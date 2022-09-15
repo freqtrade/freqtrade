@@ -586,7 +586,6 @@ class FreqaiDataDrawer:
             pairs = self.freqai_info["feature_parameters"].get(
                 "include_corr_pairlist", []
             )
-
             for tf in self.freqai_info["feature_parameters"].get("include_timeframes"):
                 base_dataframes[tf] = dk.slice_dataframe(timerange, historic_data[pair][tf])
                 if pairs:

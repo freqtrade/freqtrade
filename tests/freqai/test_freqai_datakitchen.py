@@ -161,3 +161,28 @@ def test_make_train_test_datasets(mocker, freqai_conf):
     assert data_dictionary
     assert len(data_dictionary) == 7
     assert len(data_dictionary['train_features'].index) == 1916
+
+
+@pytest.mark.parametrize('indicator', [
+    '%-ADArsi-period_10_5m',
+    'doesnt_exist',
+    ])
+def test_spice_extractor(mocker, freqai_conf, indicator, caplog):
+    freqai, unfiltered_dataframe = make_unfiltered_dataframe(mocker, freqai_conf)
+    freqai.dk.find_features(unfiltered_dataframe)
+
+    features_filtered, labels_filtered = freqai.dk.filter_features(
+            unfiltered_dataframe,
+            freqai.dk.training_features_list,
+            freqai.dk.label_list,
+            training_filter=True,
+        )
+
+    vec = freqai.dk.spice_extractor(indicator, features_filtered)
+    if 'doesnt_exist' in indicator:
+        assert log_has_re(
+            "User asked spice_rack for",
+            caplog,
+        )
+    else:
+        assert len(vec) == 2860

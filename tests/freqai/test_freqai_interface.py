@@ -1,3 +1,4 @@
+import copy
 import platform
 import shutil
 from pathlib import Path
@@ -314,3 +315,21 @@ def test_principal_component_analysis(mocker, freqai_conf):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_pca_object.pkl")
 
     shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_spice_rack(mocker, default_conf, tmpdir):
+    default_conf.update({"freqai_spice_rack": "true"})
+    default_conf.update({"freqai_config": "test_config.json"})
+    default_conf.update({"freqai_identifier": "spicy-id"})
+    default_conf.update({"strategy": "freqai_test_spice_rack"})
+    default_conf["config_files"] = [Path('config_examples', 'config_freqai.example.json')]
+    default_conf["timerange"] = "20180110-20180115"
+    default_conf["datadir"] = Path(default_conf["datadir"])
+    default_conf['exchange'].update({'pair_whitelist':
+                                    ['ADA/BTC', 'DASH/BTC', 'ETH/BTC', 'LTC/BTC']})
+    default_conf["user_data_dir"] = Path(tmpdir)
+    freqai_conf = copy.deepcopy(default_conf)
+
+    _ = get_patched_freqai_strategy(mocker, freqai_conf)
+
+    assert 'freqai' in freqai_conf

@@ -161,9 +161,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                 from freqtrade.freqai.utils import auto_populate_any_indicators
                 self.populate_any_indicators = types.MethodType(  # type: ignore
                         auto_populate_any_indicators, self)
-                # funcType = type(IStrategy.populate_any_indicators)
-                # self.populate_any_indicators = funcType(self.freqai.auto_populate_any_indicators,
-                #                                         self, self.populate_any_indicators)
 
                 self.freqai_info = self.config["freqai"]
 
@@ -192,8 +189,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def setup_freqai_spice_rack(self, config: dict) -> Dict[str, Any]:
         import json
         from pathlib import Path
+        auto_config = config.get('freqai_config', 'lightgbm_config.json')
         with open(Path('freqtrade') / 'freqai' / 'spice_rack'
-                  / 'lightgbm_config.json') as json_file:
+                  / auto_config) as json_file:
             freqai_config = json.load(json_file)
             config['freqai'] = freqai_config['freqai']
             config['freqai']['identifier'] = config['freqai_identifier']
