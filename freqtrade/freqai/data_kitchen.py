@@ -98,6 +98,7 @@ class FreqaiDataKitchen:
         self.train_dates: DataFrame = pd.DataFrame()
         self.unique_classes: Dict[str, list] = {}
         self.unique_class_list: list = []
+        self.spice_dataframe: DataFrame = None
 
     def set_paths(
         self,
@@ -1267,3 +1268,11 @@ class FreqaiDataKitchen:
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
         return file_exists
+
+    def spice_extractor(self, indicator: str, dataframe: DataFrame) -> npt.NDArray:
+        if indicator in dataframe:
+            return np.array(dataframe[indicator])
+        else:
+            logger.warning(f'User asked spice_rack for {indicator}, '
+                           f'but it is not available. Returning 0s')
+            return np.zeros(len(dataframe.index))

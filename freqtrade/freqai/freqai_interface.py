@@ -89,7 +89,7 @@ class IFreqaiModel(ABC):
         self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
         self.continual_learning = self.freqai_info.get('continual_learning', False)
-
+        self.spice_rack_open: bool = False
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
 
@@ -138,7 +138,7 @@ class IFreqaiModel(ABC):
             dk = self.start_backtesting(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
-        self.clean_up()
+        # self.clean_up()
         if self.live:
             self.inference_timer('stop')
         return dataframe
@@ -685,6 +685,18 @@ class IFreqaiModel(ABC):
 
         return init_model
 
+    def spice_rack(self, indicator: str, dataframe: DataFrame,
+                   metadata: dict, strategy: IStrategy) -> NDArray:
+        if not self.spice_rack_open:
+            dataframe = self.start(dataframe, metadata, strategy)
+            self.dk.spice_dataframe = dataframe
+            self.spice_rack_open = True
+            return self.dk.spice_extractor(indicator, dataframe)
+        else:
+            return self.dk.spice_extractor(indicator, self.dk.spice_dataframe)
+
+    def close_spice_rack(self):
+        self.spice_rack_open = False
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.
 

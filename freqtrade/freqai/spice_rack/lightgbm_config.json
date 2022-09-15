@@ -1,0 +1,35 @@
+{
+
+    "freqai": {
+        "enabled": true,
+        "purge_old_models": true,
+        "train_period_days": 4,
+        "identifier": "uniqe-id",
+        "feature_parameters": {
+            "include_timeframes": [
+                "3m",
+                "15m",
+                "1h"
+            ],
+            "include_corr_pairlist": [
+                "BTC/USDT",
+                "ETH/USDT"
+            ],
+            "label_period_candles": 20,
+            "include_shifted_candles": 2,
+            "DI_threshold": 0.9,
+            "weight_factor": 0.9,
+            "indicator_periods_candles": [
+                10,
+                20
+            ]
+        },
+        "data_split_parameters": {
+            "test_size": 0,
+            "random_state": 1
+        },
+        "model_training_parameters": {
+            "n_estimators": 800
+        }
+    }
+}

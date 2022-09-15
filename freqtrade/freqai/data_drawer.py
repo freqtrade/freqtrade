@@ -490,7 +490,7 @@ class FreqaiDataDrawer:
                 f"Unable to load model, ensure model exists at " f"{dk.data_path} "
             )
 
-        if self.config["freqai"]["feature_parameters"]["principal_component_analysis"]:
+        if self.config["freqai"]["feature_parameters"].get("principal_component_analysis", False):
             dk.pca = cloudpickle.load(
                 open(dk.data_path / f"{dk.model_filename}_pca_object.pkl", "rb")
             )

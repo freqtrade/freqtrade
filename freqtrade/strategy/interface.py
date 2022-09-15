@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -145,12 +145,27 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self._ft_informative.append((informative_data, cls_method))
 
     def load_freqAI_model(self) -> None:
-        if self.config.get('freqai', {}).get('enabled', False):
+        spice_rack = self.config.get('freqai_spice_rack', False)
+        if self.config.get('freqai', {}).get('enabled', False) or spice_rack:
+            spice_rack = self.config.get('freqai_spice_rack', False)
+            if spice_rack:
+                self.config = self.setup_freqai_spice_rack(self.config)
             # Import here to avoid importing this if freqAI is disabled
             from freqtrade.freqai.utils import download_all_data_for_training
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
-            self.freqai_info = self.config["freqai"]
+
+            if spice_rack:
+                import types
+
+                from freqtrade.freqai.utils import auto_populate_any_indicators
+                self.populate_any_indicators = types.MethodType(  # type: ignore
+                        auto_populate_any_indicators, self)
+                # funcType = type(IStrategy.populate_any_indicators)
+                # self.populate_any_indicators = funcType(self.freqai.auto_populate_any_indicators,
+                #                                         self, self.populate_any_indicators)
+
+                self.freqai_info = self.config["freqai"]
 
             # download the desired data in dry/live
             if self.config.get('runmode') in (RunMode.DRY_RUN, RunMode.LIVE):
@@ -160,6 +175,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     "already on disk."
                 )
                 download_all_data_for_training(self.dp, self.config)
+
         else:
             # Gracious failures if freqAI is disabled but "start" is called.
             class DummyClass():
@@ -172,6 +188,17 @@ class IStrategy(ABC, HyperStrategyMixin):
                     pass
 
             self.freqai = DummyClass()  # type: ignore
+
+    def setup_freqai_spice_rack(self, config: dict) -> Dict[str, Any]:
+        import json
+        from pathlib import Path
+        with open(Path('freqtrade') / 'freqai' / 'spice_rack'
+                  / 'lightgbm_config.json') as json_file:
+            freqai_config = json.load(json_file)
+            config['freqai'] = freqai_config['freqai']
+            config['freqai']['identifier'] = config['freqai_identifier']
+        config.update({"freqaimodel": 'LightGBMRegressorMultiTarget'})
+        return config
 
     def ft_bot_start(self, **kwargs) -> None:
         """

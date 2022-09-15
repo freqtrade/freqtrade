@@ -807,3 +807,85 @@ Code review, software architecture brainstorming:
 Beta testing and bug reporting:
 @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm,
 Juha Nykänen @suikula, Wagner Costa @wagnercosta
+
+## Using the `spice_rack`
+
+<!-- Dont forget this section during the doc reorg! -->
+
+The `spice_rack` is aimed at users who do not wish to deal with setting up `FreqAI` confgs, but instead prefer to interact with `FreqAI` similar to a `talib` indicator. In this case, the user can instead simply add two keys to their config:
+
+```json
+    "freqai_spice_rack": true, 
+    "freqai_identifier": "spicey-id",
+```
+
+Which tells `FreqAI` to set up a pre-set `FreqAI` instance automatically under the hood with preset parameters. Now the user can access a suite of custom `FreqAI` supercharged indicators inside their strategy:
+
+```python
+        dataframe['dissimilarity_index'] = self.freqai.spice_rack(
+            'DI_values', dataframe, metadata, self)
+        dataframe['maxima'] = self.freqai.spice_rack(
+            '&s-maxima', dataframe, metadata, self)
+        dataframe['minima'] = self.freqai.spice_rack(
+            '&s-minima', dataframe, metadata, self)
+        self.freqai.close_spice_rack()  # user must close the spicerack
+```
+
+Users can then use these columns, concert with all their own additional indicators added to `populate_indicators` in their entry/exit criteria and strategy callback methods the same way as any typical indicator. For example:
+
+```python
+    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+
+        df.loc[
+            (
+                (df['dissimilarity_index'] < 1) &
+                (df['minima'] > 0.1)
+            ),
+            'enter_long'] = 1
+
+        df.loc[
+            (
+                (df['dissimilarity_index'] < 1) &
+                (df['maxima'] > 0.1)
+            ),
+            'enter_short'] = 1
+
+        return df
+
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+
+        df.loc[
+            (
+                (df['dissimilarity_index'] < 1) &
+                (df['maxima'] > 0.1) 
+            ),
+
+            'exit_long'] = 1
+
+        df.loc[
+            (
+
+                (df['dissimilarity_index'] < 1) &
+                (df['minima'] > 0.1)
+            ),
+            'exit_short'] = 1
+
+        return df
+```
+
+The user does need to ensure their `informative_pairs()` contains the following (users can add their own `informative_pair` needs to the bottom of this template):
+
+```python
+    def informative_pairs(self):
+        whitelist_pairs = self.dp.current_whitelist()
+        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
+        informative_pairs = []
+        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
+            for pair in whitelist_pairs:
+                informative_pairs.append((pair, tf))
+            for pair in corr_pairs:
+                if pair in whitelist_pairs:
+                    continue  # avoid duplication
+                informative_pairs.append((pair, tf))
+        return informative_pairs
+```
