@@ -29,7 +29,8 @@ def patched_emc(default_conf, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": "ws://null:9891/api/v1/message/ws",
+                    "host": "null",
+                    "port": 9891,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ]
@@ -166,7 +167,8 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": f"ws://{_TEST_WS_HOST}:{_TEST_WS_PORT}/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -198,42 +200,43 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
         emc.shutdown()
 
 
-async def test_emc_create_connection_invalid(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "url": "ws://localhost:8080/api/v1/message/ws",
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 60,
-            "ping_timeout": 60,
-            "sleep_timeout": 60
-        }
-    })
-
-    mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
-                 MagicMock())
-
-    test_producer = default_conf['external_message_consumer']['producers'][0]
-    lock = asyncio.Lock()
-
-    dp = DataProvider(default_conf, None, None, None)
-    emc = ExternalMessageConsumer(default_conf, dp)
-
-    try:
-        # Test invalid URL
-        test_producer['url'] = "tcp://localhost:8080/api/v1/message/ws"
-        emc._running = True
-        await emc._create_connection(test_producer, lock)
-        emc._running = False
-
-        assert log_has_re(r".+is an invalid WebSocket URL.+", caplog)
-    finally:
-        emc.shutdown()
+# async def test_emc_create_connection_invalid(default_conf, caplog, mocker):
+#     default_conf.update({
+#         "external_message_consumer": {
+#             "enabled": True,
+#             "producers": [
+#                 {
+#                     "name": "default",
+#                     "host": _TEST_WS_HOST,
+#                     "port": _TEST_WS_PORT,
+#                     "ws_token": _TEST_WS_TOKEN
+#                 }
+#             ],
+#             "wait_timeout": 60,
+#             "ping_timeout": 60,
+#             "sleep_timeout": 60
+#         }
+#     })
+#
+#     mocker.patch('freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start',
+#                  MagicMock())
+#
+#     test_producer = default_conf['external_message_consumer']['producers'][0]
+#     lock = asyncio.Lock()
+#
+#     dp = DataProvider(default_conf, None, None, None)
+#     emc = ExternalMessageConsumer(default_conf, dp)
+#
+#     try:
+#         # Test invalid URL
+#         test_producer['url'] = "tcp://null:8080/api/v1/message/ws"
+#         emc._running = True
+#         await emc._create_connection(test_producer, lock)
+#         emc._running = False
+#
+#         assert log_has_re(r".+is an invalid WebSocket URL.+", caplog)
+#     finally:
+#         emc.shutdown()
 
 
 async def test_emc_create_connection_error(default_conf, caplog, mocker):
@@ -243,7 +246,8 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": "ws://localhost:8080/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -260,7 +264,7 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.01)
         assert log_has("Unexpected error has occurred:", caplog)
     finally:
         emc.shutdown()
@@ -273,7 +277,8 @@ async def test_emc_receive_messages_valid(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": f"ws://{_TEST_WS_HOST}:{_TEST_WS_PORT}/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -319,7 +324,8 @@ async def test_emc_receive_messages_invalid(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": f"ws://{_TEST_WS_HOST}:{_TEST_WS_PORT}/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -365,7 +371,8 @@ async def test_emc_receive_messages_timeout(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": f"ws://{_TEST_WS_HOST}:{_TEST_WS_PORT}/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -411,7 +418,8 @@ async def test_emc_receive_messages_handle_error(default_conf, caplog, mocker):
             "producers": [
                 {
                     "name": "default",
-                    "url": f"ws://{_TEST_WS_HOST}:{_TEST_WS_PORT}/api/v1/message/ws",
+                    "host": _TEST_WS_HOST,
+                    "port": _TEST_WS_PORT,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],

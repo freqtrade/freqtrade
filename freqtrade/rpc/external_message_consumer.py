@@ -99,7 +99,7 @@ class ExternalMessageConsumer:
 
         if self.enabled and self._config.get('process_only_new_candles', True):
             # Warning here or require it?
-            logger.warning("To receive best performance with external data,"
+            logger.warning("To receive best performance with external data, "
                            "please set `process_only_new_candles` to False")
 
     def start(self):
@@ -204,11 +204,6 @@ class ExternalMessageConsumer:
 
                     # Now receive data, if none is within the time limit, ping
                     await self._receive_messages(channel, producer, lock)
-
-            # Catch invalid ws_url, and break the loop
-            except websockets.exceptions.InvalidURI as e:
-                logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
-                break
 
             except (
                 socket.gaierror,
