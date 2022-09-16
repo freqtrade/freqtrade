@@ -20,8 +20,8 @@ def send_start_deliminator_message(brain, month, year):
 
 def post_request(text, is_from_429_watcher=False):
     text.replace("#", " ")
-    if Config.TELEGRAM_LOG_ENABLED:
-        print("post_request: " + text + " ---------------------")
+    # if Config.TELEGRAM_LOG_ENABLED:
+    #     print("post_request: " + text + " ---------------------")
 
     if Config.NOTIFIER_ENABLED:
         telegram_bot_api_token = Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
