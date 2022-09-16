@@ -580,11 +580,23 @@ class Hyperopt:
                     max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
                     widgets=widgets
                 ) as pbar:
-                    EVALS = ceil(self.total_epochs / jobs)
-                    for i in range(EVALS):
+                    start = 0
+
+                    if self.analyze_per_epoch:
+                        # First analysis not in parallel mode when using --analyze-per-epoch.
+                        # This allows dataprovider to load it's informative cache.
+                        asked, is_random = self.get_asked_points(n_points=1)
+                        f_val0 = self.generate_optimizer(asked[0])
+                        self.opt.tell(asked, [f_val0['loss']])
+                        self.evaluate_result(f_val0, 1, is_random[0])
+                        pbar.update(1)
+                        start += 1
+
+                    evals = ceil((self.total_epochs - start) / jobs)
+                    for i in range(evals):
                         # Correct the number of epochs to be processed for the last
                         # iteration (should not exceed self.total_epochs in total)
-                        n_rest = (i + 1) * jobs - self.total_epochs
+                        n_rest = (i + 1) * jobs - (self.total_epochs - start)
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
                         asked, is_random = self.get_asked_points(n_points=current_jobs)
@@ -594,7 +606,7 @@ class Hyperopt:
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
                             # Use human-friendly indexes here (starting from 1)
-                            current = i * jobs + j + 1
+                            current = i * jobs + j + 1 + start
 
                             self.evaluate_result(val, current, is_random[j])
 

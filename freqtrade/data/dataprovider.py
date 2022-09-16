@@ -313,7 +313,9 @@ class DataProvider:
         Clear pair dataframe cache.
         """
         self.__cached_pairs = {}
-        self.__cached_pairs_backtesting = {}
+        # Don't reset backtesting pairs -
+        # otherwise they're reloaded each time during hyperopt due to with analyze_per_epoch
+        # self.__cached_pairs_backtesting = {}
         self.__slice_index = 0
 
     # Exchange functions
