@@ -2,3 +2,4 @@
 -r requirements.txt
 
 plotly==5.10.0
+kaleido==0.2.1

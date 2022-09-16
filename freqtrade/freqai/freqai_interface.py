@@ -20,6 +20,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.utils import plot_feature_importance
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -554,6 +555,14 @@ class IFreqaiModel(ABC):
         dk.find_features(unfiltered_dataframe)
 
         model = self.train(unfiltered_dataframe, pair, dk)
+
+        if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):
+            plot_feature_importance(
+                model=model,
+                feature_names=dk.training_features_list,
+                pair=pair,
+                train_dir=dk.data_path
+            )
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange)
