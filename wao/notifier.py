@@ -24,10 +24,9 @@ def post_request(text, is_from_429_watcher=False):
     #     print("post_request: " + text + " ---------------------")
 
     if Config.NOTIFIER_ENABLED:
-        telegram_bot_api_token = Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
-        result = requests.post('https://api.telegram.org/bot' + telegram_bot_api_token +
-                            '/sendMessage?chat_id=' + Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST +
-                            '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
+        result = requests.post('https://api.telegram.org/bot' + get_telegram_bot_api_token() +
+                               '/sendMessage?chat_id=' + get_telegram_channel_id() +
+                               '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
         print(str(result))
 
@@ -37,3 +36,33 @@ def post_request(text, is_from_429_watcher=False):
                 write_to_429_file(text)
             elif str(result) == TELEGRAM_RESPONSE_200:
                 delete_429_file(text)
+
+
+def get_telegram_bot_api_token():
+    if BrainConfig.MODE == "test":
+        if Config.IS_BACKTEST:
+            return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
+        elif Config.BRAIN == "lstm":
+            return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_LSTM_TEST
+        else:
+            return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN[Config.BRAIN]
+    else:
+        if Config.BRAIN == "lstm":
+            return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_LSTM_PROD
+        else:
+            return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN[Config.BRAIN]
+
+
+def get_telegram_channel_id():
+    if BrainConfig.MODE == "test":
+        if Config.IS_BACKTEST:
+            return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_BACKTEST
+        elif Config.BRAIN == "lstm":
+            return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_LSTM_TEST
+        else:
+            return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID[Config.BRAIN]
+    else:
+        if Config.BRAIN == "lstm":
+            return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID_LSTM_PROD
+        else:
+            return Keys.NOTIFIER_TELEGRAM_CHANNEL_ID[Config.BRAIN]
