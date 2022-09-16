@@ -259,7 +259,7 @@ def dataframe_to_json(dataframe: pandas.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
-    return dataframe.to_json(orient='records')
+    return dataframe.to_json(orient='split')
 
 
 def json_to_dataframe(data: str) -> pandas.DataFrame:
@@ -268,7 +268,7 @@ def json_to_dataframe(data: str) -> pandas.DataFrame:
     :param data: A JSON string
     :returns: A pandas DataFrame from the JSON string
     """
-    dataframe = pandas.read_json(data)
+    dataframe = pandas.read_json(data, orient='split')
     if 'date' in dataframe.columns:
         dataframe['date'] = pandas.to_datetime(dataframe['date'], unit='ms', utc=True)
 
