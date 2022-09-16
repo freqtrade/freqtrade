@@ -24,7 +24,7 @@ def post_request(text, is_from_429_watcher=False):
     #     print("post_request: " + text + " ---------------------")
 
     if Config.NOTIFIER_ENABLED:
-        result = requests.post('https://api.telegram.org/bot' + get_telegram_bot_api_token() +
+        result = requests.post('https://api.telegram.org/bot' + get_telegram_bot_api_token(is_from_429_watcher) +
                                '/sendMessage?chat_id=' + get_telegram_channel_id() +
                                '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
@@ -38,7 +38,7 @@ def post_request(text, is_from_429_watcher=False):
                 delete_429_file(text)
 
 
-def get_telegram_bot_api_token():
+def get_telegram_bot_api_token(is_from_429_watcher):
     if BrainConfig.MODE == "test":
         if Config.IS_BACKTEST:
             return Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_429 if is_from_429_watcher else Keys.NOTIFIER_TELEGRAM_BOT_API_TOKEN_BACKTEST
