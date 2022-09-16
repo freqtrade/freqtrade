@@ -17,7 +17,7 @@ from tests.conftest import log_has, log_has_re, log_has_when
 
 
 _TEST_WS_TOKEN = "secret_Ws_t0ken"
-_TEST_WS_HOST = "localhost"
+_TEST_WS_HOST = "127.0.0.1"
 _TEST_WS_PORT = 9989
 
 
