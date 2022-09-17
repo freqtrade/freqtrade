@@ -2304,7 +2304,7 @@ class Exchange:
             updated = tiers.get('updated')
             if updated:
                 updated_dt = parser.parse(updated)
-                if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
+                if updated_dt < datetime.now(timezone.utc) - timedelta(weeks=4):
                     logger.info("Cached leverage tiers are outdated. Will update.")
                     return None
             return tiers['data']
