@@ -872,20 +872,3 @@ Users can then use these columns, concert with all their own additional indicato
 
         return df
 ```
-
-The user does need to ensure their `informative_pairs()` contains the following (users can add their own `informative_pair` needs to the bottom of this template):
-
-```python
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
-```

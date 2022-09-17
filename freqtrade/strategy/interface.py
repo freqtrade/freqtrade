@@ -157,7 +157,6 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             if spice_rack:
                 import types
-
                 from freqtrade.freqai.utils import auto_populate_any_indicators
                 self.populate_any_indicators = types.MethodType(  # type: ignore
                         auto_populate_any_indicators, self)
@@ -189,12 +188,44 @@ class IStrategy(ABC, HyperStrategyMixin):
     def setup_freqai_spice_rack(self, config: dict) -> Dict[str, Any]:
         import json
         from pathlib import Path
+        import difflib
         auto_config = config.get('freqai_config', 'lightgbm_config.json')
         with open(Path('freqtrade') / 'freqai' / 'spice_rack'
                   / auto_config) as json_file:
             freqai_config = json.load(json_file)
             config['freqai'] = freqai_config['freqai']
             config['freqai']['identifier'] = config['freqai_identifier']
+            corr_pairs = config['freqai']['feature_parameters']['include_corr_pairlist']
+            timeframes = config['freqai']['feature_parameters']['include_timeframes']
+            new_corr_pairs = []
+            new_tfs = []
+
+            # find the closest pairs to what the default config wants
+            for pair in corr_pairs:
+                closest_pair = difflib.get_close_matches(
+                                            pair,
+                                            self.dp._exchange.markets  # type: ignore
+                                            )[0]
+                new_corr_pairs.append(closest_pair)
+                logger.info(f'Spice rack will use {closest_pair} as informative in FreqAI model.')
+
+            # find the closest matching timeframes to what the default config wants
+            if timeframe_to_seconds(config['timeframe']) > timeframe_to_seconds('15m'):
+                logger.warning('Default spice rack is designed for lower base timeframes (e.g. > '
+                               f'15m). But user passed {config["timeframe"]}.')
+            new_tfs.append(config['timeframe'])
+
+            list_tfs = [timeframe_to_seconds(tf) for tf
+                        in self.dp._exchange.timeframes]  # type: ignore
+            for tf in timeframes:
+                tf_secs = timeframe_to_seconds(tf)
+                closest_index = min(range(len(list_tfs)), key=lambda i: abs(list_tfs[i] - tf_secs))
+                closest_tf = self.dp._exchange.timeframes[closest_index]  # type: ignore
+                logger.info(f'Spice rack will use {closest_tf} as informative tf in FreqAI model.')
+                new_tfs.append(closest_tf)
+
+        config['freqai']['feature_parameters'].update({'include_timeframes': new_tfs})
+        config['freqai']['feature_parameters'].update({'include_corr_pairlist': new_corr_pairs})
         config.update({"freqaimodel": 'LightGBMRegressorMultiTarget'})
         return config
 

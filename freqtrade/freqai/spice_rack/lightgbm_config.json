@@ -8,18 +8,19 @@
         "identifier": "spicy-id",
         "feature_parameters": {
             "include_timeframes": [
-                "3m",
-                "15m",
-                "1h"
+                "30m",
+                "1h",
+                "4h"
             ],
             "include_corr_pairlist": [
-                "BTC/USDT",
-                "ETH/USDT"
+                "BTC/USD",
+                "ETH/USD"
             ],
             "label_period_candles": 20,
             "include_shifted_candles": 2,
             "DI_threshold": 0.9,
             "weight_factor": 0.9,
+            "principal_component_analysis": true,
             "indicator_periods_candles": [
                 10,
                 20
