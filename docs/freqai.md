@@ -190,19 +190,6 @@ The FreqAI strategy requires the user to include the following lines of code in 
     # passed to any single indicator)
     startup_candle_count: int = 20
 
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
-
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         # the model will return all labels created by user in `populate_any_indicators`

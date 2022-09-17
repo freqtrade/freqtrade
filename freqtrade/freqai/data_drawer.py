@@ -355,7 +355,7 @@ class FreqaiDataDrawer:
         for dir in model_folders:
             result = pattern.match(str(dir.name))
             if result is None:
-                break
+                continue
             coin = result.group(1)
             timestamp = result.group(2)
 

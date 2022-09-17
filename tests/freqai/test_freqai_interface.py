@@ -9,6 +9,7 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
 
@@ -100,6 +101,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
 @pytest.mark.parametrize('model', [
     'LightGBMClassifier',
     'CatboostClassifier',
+    'XGBoostClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostClassifier':
@@ -340,3 +342,27 @@ def test_spice_rack(mocker, default_conf, tmpdir):
 
     assert 'freqai' in freqai_conf
     assert strategy.freqai
+
+
+@pytest.mark.parametrize('timeframes,corr_pairs', [
+    (['5m'], ['ADA/BTC', 'DASH/BTC']),
+    (['5m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
+    (['5m', '15m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
+])
+def test_freqai_informative_pairs(mocker, freqai_conf, timeframes, corr_pairs):
+    freqai_conf['freqai']['feature_parameters'].update({
+        'include_timeframes': timeframes,
+        'include_corr_pairlist': corr_pairs,
+
+    })
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    pairlists = PairListManager(exchange, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange, pairlists)
+    pairlist = strategy.dp.current_whitelist()
+
+    pairs_a = strategy.informative_pairs()
+    assert len(pairs_a) == 0
+    pairs_b = strategy.gather_informative_pairs()
+    # we expect unique pairs * timeframes
+    assert len(pairs_b) == len(set(pairlist + corr_pairs)) * len(timeframes)
