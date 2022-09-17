@@ -205,6 +205,10 @@ class ExternalMessageConsumer:
                     # Now receive data, if none is within the time limit, ping
                     await self._receive_messages(channel, producer, lock)
 
+            except (websockets.exceptions.InvalidURI, ValueError) as e:
+                logger.error(f"{ws_url} is an invalid WebSocket URL - {e}")
+                break
+
             except (
                 socket.gaierror,
                 ConnectionRefusedError,

@@ -497,7 +497,12 @@ CONF_SCHEMA = {
                         'properties': {
                             'name': {'type': 'string'},
                             'host': {'type': 'string'},
-                            'port': {'type': 'integer', 'default': 8080},
+                            'port': {
+                                'type': 'integer',
+                                'default': 8080,
+                                'minimum': 0,
+                                'maximum': 65535
+                            },
                             'ws_token': {'type': 'string'},
                         },
                         'required': ['name', 'host', 'ws_token']
