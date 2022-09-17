@@ -156,6 +156,8 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
     if 'FreqaiMultiOutputRegressor' in str(model.__class__):
         for estimator, label in zip(model.estimators_, dk.label_list):
             models[label] = estimator
+    else:
+        models[dk.label_list[0]]
 
     for label in models:
         mdl = models[label]
@@ -164,8 +166,8 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         elif "lightgbm.sklearn" or "xgb" in str(mdl.__class__):
             feature_importance = mdl.feature_importances_
         else:
-            # TODO: Add support for more libraries
-            raise NotImplementedError(f"Cannot extract feature importance from {mdl.__class__}")
+            logger.info('Model type not support for generating feature importances.')
+            return
 
         # Data preparation
         fi_df = pd.DataFrame({
