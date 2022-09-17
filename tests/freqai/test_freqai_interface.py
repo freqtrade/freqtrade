@@ -318,6 +318,11 @@ def test_principal_component_analysis(mocker, freqai_conf):
 
 
 def test_spice_rack(mocker, default_conf, tmpdir):
+
+    strategy = get_patched_freqai_strategy(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf)
+    strategy.dp = DataProvider(default_conf, exchange)
+
     default_conf.update({"freqai_spice_rack": "true"})
     default_conf.update({"freqai_config": "test_config.json"})
     default_conf.update({"freqai_identifier": "spicy-id"})
@@ -330,6 +335,8 @@ def test_spice_rack(mocker, default_conf, tmpdir):
     default_conf["user_data_dir"] = Path(tmpdir)
     freqai_conf = copy.deepcopy(default_conf)
 
-    _ = get_patched_freqai_strategy(mocker, freqai_conf)
+    strategy.config = freqai_conf
+    strategy.load_freqAI_model()
 
     assert 'freqai' in freqai_conf
+    assert strategy.freqai

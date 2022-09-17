@@ -205,12 +205,22 @@ class IStrategy(ABC, HyperStrategyMixin):
             new_corr_pairs = []
             new_tfs = []
 
+            if not self.dp:
+                logger.warning('No dataprovider available.')
+                config['freqai']['enabled'] = False
+                return config
             # find the closest pairs to what the default config wants
             for pair in corr_pairs:
                 closest_pair = difflib.get_close_matches(
                                             pair,
                                             self.dp._exchange.markets  # type: ignore
-                                            )[0]
+                                            )
+                if not closest_pair:
+                    logger.warning(f'Could not find {pair} in markets, removing from '
+                                   f'corr_pairlist.')
+                else:
+                    closest_pair = closest_pair[0]
+
                 new_corr_pairs.append(closest_pair)
                 logger.info(f'Spice rack will use {closest_pair} as informative in FreqAI model.')
 
