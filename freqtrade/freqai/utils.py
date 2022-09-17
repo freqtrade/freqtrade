@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,7 @@ from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.exchange import market_is_active
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 
 
@@ -138,36 +140,30 @@ def get_required_data_timerange(
 #         )
 
 
-def plot_feature_importance(model, feature_names, pair, train_dir, count_max=50) -> None:
+def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
+                            count_max: int = 25) -> None:
     """
-        Plot Best and Worst Features by importance for CatBoost model.
-        Called once per sub-train.
-        Usage: plot_feature_importance(
-            model=model,
-            feature_names=dk.training_features_list,
-            pair=pair,
-            train_dir=dk.data_path)
+        Plot Best and worst features by importance for a single sub-train.
+        :param model: Any = A model which was `fit` using a common library
+                            such as catboost or lightgbm
+        :param pair: str = pair e.g. BTC/USD
+        :param dk: FreqaiDataKitchen = non-persistent data container for current coin/loop
+        :param count_max: int = the amount of features to be loaded per column
     """
-    try:
-        import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
-    except ImportError:
-        logger.exception("Module plotly not found \n Please install using `pip3 install plotly`")
-        exit(1)
+    from freqtrade.plot.plotting import go, make_subplots, store_plot_file
 
-    from freqtrade.plot.plotting import store_plot_file
-
-    # Gather feature importance from model
+    # Extract feature importance from model
     if "catboost.core" in str(model.__class__):
         feature_importance = model.get_feature_importance()
     elif "lightgbm.sklearn" in str(model.__class__):
         feature_importance = model.feature_importances_
     else:
-        raise NotImplementedError(f"Cannot extract feature importance for {model.__class__}")
+        # TODO: Add support for more libraries
+        raise NotImplementedError(f"Cannot extract feature importance from {model.__class__}")
 
     # Data preparation
     fi_df = pd.DataFrame({
-        "feature_names": np.array(feature_names),
+        "feature_names": np.array(dk.training_features_list),
         "feature_importance": np.array(feature_importance)
     })
     fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
@@ -185,9 +181,9 @@ def plot_feature_importance(model, feature_names, pair, train_dir, count_max=50)
     fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.5)
     fig = add_feature_trace(fig, fi_df_top, 1)
     fig = add_feature_trace(fig, fi_df_worst, 2)
-    fig.update_layout(title_text=f"Best and Worst Features {pair}")
+    fig.update_layout(title_text=f"Best and worst features by importance {pair}")
 
     # Store plot file
-    model_dir, train_name = str(train_dir).rsplit("/", 1)
+    model_dir, train_name = str(dk.data_path).rsplit("/", 1)
     fi_dir = Path(f"{model_dir}/feature_importance/{pair.split('/')[0]}")
     store_plot_file(fig, f"{train_name}.html", fi_dir)

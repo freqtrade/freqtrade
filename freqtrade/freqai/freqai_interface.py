@@ -556,20 +556,15 @@ class IFreqaiModel(ABC):
 
         model = self.train(unfiltered_dataframe, pair, dk)
 
-        if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):
-            plot_feature_importance(
-                model=model,
-                feature_names=dk.training_features_list,
-                pair=pair,
-                train_dir=dk.data_path
-            )
-
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange)
         self.dd.pair_dict[pair]["first"] = False
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
             self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
+
+        if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):
+            plot_feature_importance(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
