@@ -1,11 +1,9 @@
 import logging
-from functools import reduce
 
-import pandas as pd
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, merge_informative_pair
+from freqtrade.strategy import IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -19,42 +17,8 @@ class freqai_test_spice_rack(IStrategy):
 
     minimal_roi = {"0": 0.1, "240": -1}
 
-    plot_config = {
-        "main_plot": {},
-        "subplots": {
-            "prediction": {"prediction": {"color": "blue"}},
-            "target_roi": {
-                "target_roi": {"color": "brown"},
-            },
-            "do_predict": {
-                "do_predict": {"color": "brown"},
-            },
-        },
-    }
-
     process_only_new_candles = True
-    stoploss = -0.05
-    use_exit_signal = True
-    startup_candle_count: int = 300
-    can_short = False
-
-    linear_roi_offset = DecimalParameter(
-        0.00, 0.02, default=0.005, space="sell", optimize=False, load=True
-    )
-    max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
-
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
+    startup_candle_count: int = 30
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -77,7 +41,7 @@ class freqai_test_spice_rack(IStrategy):
 
         df.loc[
             (
-                (df['tema'] > df['tema'].shift(1)) &  # Guard: tema is raising
+                (df['rsi'] > df['rsi'].shift(1)) &  # Guard: tema is raising
                 (df['dissimilarity_index'] < 1) &
                 (df['maxima'] > 0.1)
             ),
@@ -85,7 +49,7 @@ class freqai_test_spice_rack(IStrategy):
 
         df.loc[
             (
-                (df['tema'] < df['tema'].shift(1)) &  # Guard: tema is falling
+                (df['rsi'] < df['rsi'].shift(1)) &  # Guard: tema is falling
                 (df['dissimilarity_index'] < 1) &
                 (df['minima'] > 0.1)
             ),
@@ -97,7 +61,7 @@ class freqai_test_spice_rack(IStrategy):
 
         df.loc[
             (
-                (df['tema'] < df['tema'].shift(1)) &  # Guard: tema is falling
+                (df['rsi'] < df['rsi'].shift(1)) &  # Guard: tema is falling
                 (df['dissimilarity_index'] < 1) &
                 (df['maxima'] > 0.1)
             ),
@@ -106,7 +70,7 @@ class freqai_test_spice_rack(IStrategy):
 
         df.loc[
             (
-                (df['tema'] > df['tema'].shift(1)) &  # Guard: tema is raising
+                (df['rsi'] > df['rsi'].shift(1)) &  # Guard: tema is raising
                 (df['dissimilarity_index'] < 1) &
                 (df['minima'] > 0.1)
             ),

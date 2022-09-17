@@ -154,9 +154,14 @@ class IStrategy(ABC, HyperStrategyMixin):
             from freqtrade.freqai.utils import download_all_data_for_training
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
+            if not self.process_only_new_candles:
+                logger.warning('User set process_only_new_candles to false, '
+                               'FreqAI requires true. Changing to true.')
+                self.process_only_new_candles = True
 
             if spice_rack:
                 import types
+
                 from freqtrade.freqai.utils import auto_populate_any_indicators
                 self.populate_any_indicators = types.MethodType(  # type: ignore
                         auto_populate_any_indicators, self)
@@ -186,9 +191,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             self.freqai = DummyClass()  # type: ignore
 
     def setup_freqai_spice_rack(self, config: dict) -> Dict[str, Any]:
+        import difflib
         import json
         from pathlib import Path
-        import difflib
         auto_config = config.get('freqai_config', 'lightgbm_config.json')
         with open(Path('freqtrade') / 'freqai' / 'spice_rack'
                   / auto_config) as json_file:
