@@ -1072,6 +1072,7 @@ class FreqtradeBot(LoggingMixin):
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
             trade.orders.append(order_obj)
             trade.stoploss_order_id = str(stoploss_order['id'])
+            trade.stoploss_last_update = datetime.now(timezone.utc)
             return True
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place stoploss order {e}.")
@@ -1145,10 +1146,9 @@ class FreqtradeBot(LoggingMixin):
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
                 # The above will return False if the placement failed and the trade was force-sold.
                 # in which case the trade will be closed - which we must check below.
-                trade.stoploss_last_update = datetime.utcnow()
                 return False
 
-        # If stoploss order is canceled for some reason we add it
+        # If stoploss order is canceled for some reason we add it again
         if (trade.is_open
                 and stoploss_order
                 and stoploss_order['status'] in ('canceled', 'cancelled')):
@@ -1186,7 +1186,8 @@ class FreqtradeBot(LoggingMixin):
         if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
-            if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
+            upd_req = datetime.now(timezone.utc) - timedelta(seconds=update_beat)
+            if trade.stoploss_last_update_utc and upd_req >= trade.stoploss_last_update_utc:
                 # cancelling the current stoploss on exchange first
                 logger.info(f"Cancelling current stoploss on exchange for pair {trade.pair} "
                             f"(orderid:{order['id']}) in order to add another one ...")

@@ -57,7 +57,8 @@ This configuration enables kraken, as well as rate-limiting to avoid bans from t
 Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"
-    Binance supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange..
+    Binance supports `stoploss_on_exchange` and uses `stop-loss-limit` orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
+    On futures, Binance supports both `stop-limit` as well as `stop-market` orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to decide which type to use.
 
 ### Binance Blacklist
 
