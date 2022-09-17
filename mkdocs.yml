@@ -25,9 +25,11 @@ nav:
     - Hyperopt: hyperopt.md
     - FreqAI:
         - Introduction: freqai.md
-        - Setting-up: freqai-configuration.md
+        - Configuration: freqai-configuration.md
+        - Parameter table: freqai-parameter-table.md
         - Feature engineering: freqai-feature-engineering.md
-        - Running: freqai-running.md
+        - Outlier detection: freqai-outlier-detection.md
+        - Running FreqAI: freqai-running.md
         - Data handling: freqai-data-handling.md
         - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
