@@ -83,7 +83,7 @@ class Order(_DECL_BASE):
 
     @property
     def safe_price(self) -> float:
-        return self.average or self.price
+        return self.average or self.price or self.stop_price
 
     @property
     def safe_filled(self) -> float:
