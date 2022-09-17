@@ -47,19 +47,6 @@ class FreqaiExampleStrategy(IStrategy):
     std_dev_multiplier_sell = CategoricalParameter(
         [0.1, 0.25, 0.4], space="sell", default=0.2, optimize=True)
 
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
-
     def populate_any_indicators(
         self, pair, df, tf, informative=None, set_generalized_indicators=False
     ):
