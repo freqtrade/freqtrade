@@ -21,7 +21,7 @@ from freqtrade.freqai.freqai_interface import IFreqaiModel
 from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv
 from freqtrade.freqai.RL.BaseEnvironment import BaseEnvironment, Positions
 from freqtrade.persistence import Trade
-import pytest
+
 
 logger = logging.getLogger(__name__)
 
@@ -157,10 +157,10 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             if trade.pair == pair:
                 # FIXME: get_rate and trade_udration shouldn't work with backtesting,
                 # we need to use candle dates and prices to compute that.
-                if self.strategy.dp._exchange is None:
+                if self.strategy.dp._exchange is None:  # type: ignore
                     logger.error('No exchange available.')
                 else:
-                    current_value = self.strategy.dp._exchange.get_rate(
+                    current_value = self.strategy.dp._exchange.get_rate(  # type: ignore
                                 pair, refresh=False, side="exit", is_short=trade.is_short)
                 openrate = trade.open_rate
                 now = datetime.now(timezone.utc).timestamp()

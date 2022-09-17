@@ -92,7 +92,7 @@ class IFreqaiModel(ABC):
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
-        self.strategy: IStrategy = None
+        self.strategy: Optional[IStrategy] = None
 
     def __getstate__(self):
         """
