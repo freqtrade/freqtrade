@@ -613,6 +613,22 @@ class IStrategy(ABC, HyperStrategyMixin):
 # END - Intended to be overridden by strategy
 ###
 
+    def __informative_pairs_freqai(self) -> ListPairsWithTimeframes:
+        """
+        Create informative-pairs needed for FreqAI
+        """
+        if self.config.get('freqai', {}).get('enabled', False):
+            whitelist_pairs = self.dp.current_whitelist()
+            candle_type = self.config.get('candle_type_def', CandleType.SPOT)
+            corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
+            informative_pairs = []
+            for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
+                for pair in set(whitelist_pairs + corr_pairs):
+                    informative_pairs.append((pair, tf, candle_type))
+            return informative_pairs
+
+        return []
+
     def gather_informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Internal method which gathers all informative pairs (user or automatically defined).
@@ -637,6 +653,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 for pair in self.dp.current_whitelist():
                     informative_pairs.append((pair, inf_data.timeframe, candle_type))
+        informative_pairs.extend(self.__informative_pairs_freqai())
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
