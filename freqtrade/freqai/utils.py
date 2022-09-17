@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -153,37 +152,42 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
     from freqtrade.plot.plotting import go, make_subplots, store_plot_file
 
     # Extract feature importance from model
-    if "catboost.core" in str(model.__class__):
-        feature_importance = model.get_feature_importance()
-    elif "lightgbm.sklearn" in str(model.__class__):
-        feature_importance = model.feature_importances_
-    else:
-        # TODO: Add support for more libraries
-        raise NotImplementedError(f"Cannot extract feature importance from {model.__class__}")
+    models = {}
+    if 'FreqaiMultiOutputRegressor' in str(model.__class__):
+        for estimator, label in zip(model.estimators_, dk.label_list):
+            models[label] = estimator
 
-    # Data preparation
-    fi_df = pd.DataFrame({
-        "feature_names": np.array(dk.training_features_list),
-        "feature_importance": np.array(feature_importance)
-    })
-    fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
-    fi_df_worst = fi_df.nsmallest(count_max, "feature_importance")[::-1]
+    for label in models:
+        mdl = models[label]
+        if "catboost.core" in str(mdl.__class__):
+            feature_importance = mdl.get_feature_importance()
+        elif "lightgbm.sklearn" or "xgb" in str(mdl.__class__):
+            feature_importance = mdl.feature_importances_
+        else:
+            # TODO: Add support for more libraries
+            raise NotImplementedError(f"Cannot extract feature importance from {mdl.__class__}")
 
-    # Plotting
-    def add_feature_trace(fig, fi_df, col):
-        return fig.add_trace(
-            go.Bar(
-                x=fi_df["feature_importance"],
-                y=fi_df["feature_names"],
-                orientation='h', showlegend=False
-            ), row=1, col=col
-        )
-    fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.5)
-    fig = add_feature_trace(fig, fi_df_top, 1)
-    fig = add_feature_trace(fig, fi_df_worst, 2)
-    fig.update_layout(title_text=f"Best and worst features by importance {pair}")
+        # Data preparation
+        fi_df = pd.DataFrame({
+            "feature_names": np.array(dk.training_features_list),
+            "feature_importance": np.array(feature_importance)
+        })
+        fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
+        fi_df_worst = fi_df.nsmallest(count_max, "feature_importance")[::-1]
 
-    # Store plot file
-    model_dir, train_name = str(dk.data_path).rsplit("/", 1)
-    fi_dir = Path(f"{model_dir}/feature_importance/{pair.split('/')[0]}")
-    store_plot_file(fig, f"{train_name}.html", fi_dir)
+        # Plotting
+        def add_feature_trace(fig, fi_df, col):
+            return fig.add_trace(
+                go.Bar(
+                    x=fi_df["feature_importance"],
+                    y=fi_df["feature_names"],
+                    orientation='h', showlegend=False
+                ), row=1, col=col
+            )
+        fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.5)
+        fig = add_feature_trace(fig, fi_df_top, 1)
+        fig = add_feature_trace(fig, fi_df_worst, 2)
+        fig.update_layout(title_text=f"Best and worst features by importance {pair}")
+
+        store_plot_file(fig, f"{dk.model_filename}-{label}.html", dk.data_path,
+                        include_plotlyjs="cdn")

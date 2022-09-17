@@ -315,3 +315,38 @@ def test_principal_component_analysis(mocker, freqai_conf):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_pca_object.pkl")
 
     shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_plot_feature_importance(mocker, freqai_conf):
+
+    from freqtrade.freqai.utils import plot_feature_importance
+
+    freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"princpial_component_analysis": "true"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    freqai.dd.pair_dict = MagicMock()
+
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+
+    model = freqai.dd.load_data("ADA/BTC", freqai.dk)
+
+    plot_feature_importance(model, "ADA/BTC", freqai.dk)
+
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}.html")
+
+    shutil.rmtree(Path(freqai.dk.full_path))
