@@ -320,7 +320,7 @@ def test_principal_component_analysis(mocker, freqai_conf):
 
 @pytest.mark.parametrize('timeframes,corr_pairs', [
     (['5m'], ['ADA/BTC', 'DASH/BTC']),
-    (['5m'], ['ADA/BTC', 'DASH/BTC']),
+    (['5m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
     (['5m', '15m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
 ])
 def test_freqai_informative_pairs(mocker, freqai_conf, timeframes, corr_pairs):
