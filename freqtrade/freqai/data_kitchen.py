@@ -780,6 +780,9 @@ class FreqaiDataKitchen:
         into previous timepoints.
         """
 
+        def normalise(dataframe: DataFrame) -> DataFrame:
+            return (dataframe - dataframe.min()) / (dataframe.max() - dataframe.min())
+
         no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
 
         if set_ == 'train':
@@ -824,6 +827,7 @@ class FreqaiDataKitchen:
         inliers = pd.DataFrame(index=distances.index)
         for key in distances.keys():
             current_distances = distances[key].dropna()
+            current_distances = normalise(current_distances)
             fit_params = stats.weibull_min.fit(current_distances)
             quantiles = stats.weibull_min.cdf(current_distances, *fit_params)
 
