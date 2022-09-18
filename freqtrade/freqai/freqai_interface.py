@@ -707,6 +707,10 @@ class IFreqaiModel(ABC):
         for pair in pair_dict_sorted:
             if pair[0] in current_pairlist:
                 best_queue.appendleft(pair[0])
+        for pair in current_pairlist:
+            if pair not in best_queue:
+                best_queue.appendleft(pair)
+
         logger.info('Set existing queue from trained timestamps.')
         return best_queue
 
