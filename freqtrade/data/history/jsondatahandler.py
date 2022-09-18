@@ -1,7 +1,5 @@
 import logging
-import re
-from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from pandas import DataFrame, read_json, to_datetime
@@ -98,18 +96,6 @@ class JsonDataHandler(IDataHandler):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         raise NotImplementedError()
-
-    @classmethod
-    def trades_get_pairs(cls, datadir: Path) -> List[str]:
-        """
-        Returns a list of all pairs for which trade data is available in this
-        :param datadir: Directory to search for ohlcv files
-        :return: List of Pairs
-        """
-        _tmp = [re.search(r'^(\S+)(?=\-trades.json)', p.name)
-                for p in datadir.glob(f"*trades.{cls._get_file_extension()}")]
-        # Check if regex found something and only return these results to avoid exceptions.
-        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def trades_store(self, pair: str, data: TradeList) -> None:
         """
