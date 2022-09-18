@@ -469,7 +469,7 @@ class FreqaiDataDrawer:
             dk.label_list = dk.data["label_list"]
 
         dk.data_dictionary["train_features"] = pd.read_pickle(
-            dk.data_path / f"{dk.model_filename}_trained_df.pkl"
+            dk.data_path / f"{dk.model_filename}_trained_df.pkl.bz2"
         )
 
         # try to access model in memory instead of loading object from disk to save time
