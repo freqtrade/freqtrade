@@ -190,5 +190,5 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         fig = add_feature_trace(fig, fi_df_top, 1)
         fig = add_feature_trace(fig, fi_df_worst, 2)
         fig.update_layout(title_text=f"Best and worst features by importance {pair}")
-
+        label = label.replace('&', '').replace('%', '')  # escape two FreqAI specific characters
         store_plot_file(fig, f"{dk.model_filename}-{label}.html", dk.data_path)
