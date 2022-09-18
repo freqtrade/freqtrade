@@ -980,7 +980,7 @@ class FreqaiDataKitchen:
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
 
-        self.return_dataframe = self.remove_training_from_backtesting()
+        # self.return_dataframe = self.remove_training_from_backtesting()
         self.full_df = DataFrame()
 
         return
