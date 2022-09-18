@@ -81,7 +81,7 @@ class HyperoptTools():
                            )
 
     @staticmethod
-    def try_export_params(config: Dict[str, Any], strategy_name: str, params: Dict):
+    def try_export_params(config: Config, strategy_name: str, params: Dict):
         if params.get(FTHYPT_FILEVERSION, 1) >= 2 and not config.get('disableparamexport', False):
             # Export parameters ...
             fn = HyperoptTools.get_strategy_filename(config, strategy_name)
@@ -91,7 +91,7 @@ class HyperoptTools():
                 logger.warning("Strategy not found, not exporting parameter file.")
 
     @staticmethod
-    def has_space(config: Dict[str, Any], space: str) -> bool:
+    def has_space(config: Config, space: str) -> bool:
         """
         Tell if the space value is contained in the configuration
         """
@@ -131,7 +131,7 @@ class HyperoptTools():
             return False
 
     @staticmethod
-    def load_filtered_results(results_file: Path, config: Dict[str, Any]) -> Tuple[List, int]:
+    def load_filtered_results(results_file: Path, config: Config) -> Tuple[List, int]:
         filteroptions = {
             'only_best': config.get('hyperopt_list_best', False),
             'only_profitable': config.get('hyperopt_list_profitable', False),
@@ -346,7 +346,7 @@ class HyperoptTools():
         return trials
 
     @staticmethod
-    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+    def get_result_table(config: Config, results: list, total_epochs: int, highlight_best: bool,
                          print_colorized: bool, remove_header: int) -> str:
         """
         Log result table
@@ -444,7 +444,7 @@ class HyperoptTools():
         return table
 
     @staticmethod
-    def export_csv_file(config: dict, results: list, csv_file: str) -> None:
+    def export_csv_file(config: Config, results: list, csv_file: str) -> None:
         """
         Log result to csv-file
         """

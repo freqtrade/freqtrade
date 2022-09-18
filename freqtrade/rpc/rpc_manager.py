@@ -5,6 +5,7 @@ import logging
 from collections import deque
 from typing import Any, Dict, List
 
+from freqtrade.constants import Config
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
 
@@ -89,7 +90,7 @@ class RPCManager:
                 'msg': msg,
             })
 
-    def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
+    def startup_messages(self, config: Config, pairlist, protections) -> None:
         if config['dry_run']:
             self.send_msg({
                 'type': RPCMessageType.WARNING,

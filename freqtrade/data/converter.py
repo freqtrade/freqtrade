@@ -5,7 +5,7 @@ import itertools
 import logging
 from datetime import datetime, timezone
 from operator import itemgetter
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
@@ -237,7 +237,7 @@ def trades_to_ohlcv(trades: TradeList, timeframe: str) -> DataFrame:
     return df_new.loc[:, DEFAULT_DATAFRAME_COLUMNS]
 
 
-def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
+def convert_trades_format(config: Config, convert_from: str, convert_to: str, erase: bool):
     """
     Convert trades from one format to another format.
     :param config: Config dictionary

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import arrow
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, RunMode, SignalDirection,
                              SignalTagType, SignalType, TradingMode)
@@ -118,7 +118,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
