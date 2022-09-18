@@ -2,9 +2,9 @@
 This module loads custom exchanges
 """
 import logging
-from freqtrade.constants import Config
 
 import freqtrade.exchange as exchanges
+from freqtrade.constants import Config
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, Exchange
 from freqtrade.resolvers import IResolver
 

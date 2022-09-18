@@ -3,8 +3,8 @@ Price pair list filter
 """
 import logging
 from typing import Any, Dict
-from freqtrade.constants import Config
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 

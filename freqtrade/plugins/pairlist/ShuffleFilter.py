@@ -4,8 +4,8 @@ Shuffle pair list filter
 import logging
 import random
 from typing import Any, Dict, List
-from freqtrade.constants import Config
 
+from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.plugins.pairlist.IPairList import IPairList
 

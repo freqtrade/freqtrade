@@ -5,8 +5,8 @@ import logging
 from typing import Any, Dict, List
 
 import pandas as pd
-from freqtrade.constants import Config
 
+from freqtrade.constants import Config
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
