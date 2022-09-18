@@ -3,6 +3,7 @@ import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
@@ -80,6 +81,7 @@ class IFreqaiModel(ABC):
         self.pair_it = 0
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
+        self.train_queue = self._set_train_queue()
         self.last_trade_database_summary: DataFrame = {}
         self.current_trade_database_summary: DataFrame = {}
         self.analysis_lock = Lock()
@@ -180,30 +182,36 @@ class IFreqaiModel(ABC):
         :param strategy: IStrategy = The user defined strategy class
         """
         while not self._stop_event.is_set():
-            time.sleep(1)
-            for pair in self.config.get("exchange", {}).get("pair_whitelist"):
+            pair = self.train_queue[0]
 
-                (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
+            # ensure pair is avaialble in dp
+            if pair not in strategy.dp.current_whitelist():
+                self.train_queue.popleft()
+                logger.warning(f'{pair} not in current whitelist, removing from train queue.')
+                continue
 
-                if self.dd.pair_dict[pair]["priority"] != 1:
-                    continue
-                dk = FreqaiDataKitchen(self.config, self.live, pair)
-                dk.set_paths(pair, trained_timestamp)
-                (
-                    retrain,
-                    new_trained_timerange,
-                    data_load_timerange,
-                ) = dk.check_if_new_training_required(trained_timestamp)
-                dk.set_paths(pair, new_trained_timerange.stopts)
+            (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
-                if retrain:
-                    self.train_timer('start')
-                    self.extract_data_and_train_model(
-                        new_trained_timerange, pair, strategy, dk, data_load_timerange
-                    )
-                    self.train_timer('stop')
+            dk = FreqaiDataKitchen(self.config, self.live, pair)
+            dk.set_paths(pair, trained_timestamp)
+            (
+                retrain,
+                new_trained_timerange,
+                data_load_timerange,
+            ) = dk.check_if_new_training_required(trained_timestamp)
+            dk.set_paths(pair, new_trained_timerange.stopts)
 
-            self.dd.save_historic_predictions_to_disk()
+            if retrain:
+                self.train_timer('start')
+                self.extract_data_and_train_model(
+                    new_trained_timerange, pair, strategy, dk, data_load_timerange
+                )
+                self.train_timer('stop')
+
+                # only rotate the queue after the first has been trained.
+                self.train_queue.rotate(-1)
+
+                self.dd.save_historic_predictions_to_disk()
 
     def start_backtesting(
         self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
@@ -557,9 +565,6 @@ class IFreqaiModel(ABC):
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
         dk.set_new_model_names(pair, new_trained_timerange)
-        self.dd.pair_dict[pair]["first"] = False
-        if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
-            self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
@@ -684,6 +689,26 @@ class IFreqaiModel(ABC):
             init_model = self.dd.model_dictionary[pair]
 
         return init_model
+
+    def _set_train_queue(self):
+        """
+        Sets train queue from existing train timestamps if they exist
+        otherwise it sets the train queue based on the provided whitelist.
+        """
+        current_pairlist = self.config.get("exchange", {}).get("pair_whitelist")
+        if not self.dd.pair_dict:
+            logger.info('Set fresh train queue from whitelist.')
+            return deque(current_pairlist)
+
+        best_queue = deque()
+
+        pair_dict_sorted = sorted(self.dd.pair_dict.items(),
+                                  key=lambda k: k[1]['trained_timestamp'])
+        for pair in pair_dict_sorted:
+            if pair[0] in current_pairlist:
+                best_queue.appendleft(pair[0])
+        logger.info('Set existing queue from trained timestamps.')
+        return best_queue
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

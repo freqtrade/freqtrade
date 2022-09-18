@@ -45,7 +45,7 @@ class FreqaiExampleStrategy(IStrategy):
     std_dev_multiplier_buy = CategoricalParameter(
         [0.75, 1, 1.25, 1.5, 1.75], default=1.25, space="buy", optimize=True)
     std_dev_multiplier_sell = CategoricalParameter(
-        [0.1, 0.25, 0.4], space="sell", default=0.2, optimize=True)
+        [0.75, 1, 1.25, 1.5, 1.75], space="sell", default=1.25, optimize=True)
 
     def informative_pairs(self):
         whitelist_pairs = self.dp.current_whitelist()
