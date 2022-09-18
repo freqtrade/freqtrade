@@ -72,6 +72,10 @@ pip install -r requirements-freqai.txt
 
 For docker users, a dedicated tag with FreqAI dependencies is available as `:freqai`. As such - you can replace the image line in your docker-compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular FreqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices.
 
+## Common pitfalls
+
+FreqAI cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically). This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively, it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
+
 ## Credits
 
 FreqAI is developed by a group of individuals who all contribute specific skillsets to the project.
