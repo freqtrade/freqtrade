@@ -157,7 +157,7 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         for estimator, label in zip(model.estimators_, dk.label_list):
             models[label] = estimator
     else:
-        models[dk.label_list[0]]
+        models[dk.label_list[0]] = model
 
     for label in models:
         mdl = models[label]
