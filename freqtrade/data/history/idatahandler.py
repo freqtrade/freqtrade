@@ -61,7 +61,6 @@ class IDataHandler(ABC):
             ) for match in _tmp if match and len(match.groups()) > 1]
 
     @classmethod
-    @abstractmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
@@ -71,6 +70,15 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: List of Pairs
         """
+        candle = ""
+        if candle_type != CandleType.SPOT:
+            datadir = datadir.joinpath('futures')
+            candle = f"-{candle_type}"
+        ext = cls._get_file_extension()
+        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + f'.{ext})', p.name)
+                for p in datadir.glob(f"*{timeframe}{candle}.{ext}")]
+        # Check if regex found something and only return these results
+        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     @abstractmethod
     def ohlcv_store(

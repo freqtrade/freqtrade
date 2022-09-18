@@ -20,26 +20,6 @@ class HDF5DataHandler(IDataHandler):
 
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
-    @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
-        """
-        Returns a list of all pairs with ohlcv data available in this datadir
-        for the specified timeframe
-        :param datadir: Directory to search for ohlcv files
-        :param timeframe: Timeframe to search pairs for
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
-        :return: List of Pairs
-        """
-        candle = ""
-        if candle_type != CandleType.SPOT:
-            datadir = datadir.joinpath('futures')
-            candle = f"-{candle_type}"
-
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + '.h5)', p.name)
-                for p in datadir.glob(f"*{timeframe}{candle}.h5")]
-        # Check if regex found something and only return these results
-        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
-
     def ohlcv_store(
             self, pair: str, timeframe: str, data: pd.DataFrame, candle_type: CandleType) -> None:
         """
