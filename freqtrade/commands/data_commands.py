@@ -12,6 +12,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_oh
 from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, timeframe_to_minutes
+from freqtrade.freqai.utils import setup_freqai_spice_rack
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 
@@ -48,6 +49,10 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+
+    if config.get('freqai_spice_rack', False):
+        config = setup_freqai_spice_rack(config, exchange)
+
     markets = [p for p, m in exchange.markets.items() if market_is_active(m)
                or config.get('include_inactive')]
 

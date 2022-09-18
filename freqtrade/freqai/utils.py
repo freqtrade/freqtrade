@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 import numpy as np
 # for spice rack
@@ -12,7 +13,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.exchange import Exchange, timeframe_to_seconds
 from freqtrade.exchange.exchange import market_is_active
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.strategy import merge_informative_pair
@@ -169,6 +170,60 @@ def auto_populate_any_indicators(
             df.at[mp, "&s-maxima"] = 1
 
     return df
+
+
+def setup_freqai_spice_rack(config: dict, exchange: Optional[Exchange]) -> Dict[str, Any]:
+    import difflib
+    import json
+    from pathlib import Path
+    auto_config = config.get('freqai_config', 'lightgbm_config.json')
+    with open(Path(__file__).parent / Path('spice_rack') / auto_config) as json_file:
+        freqai_config = json.load(json_file)
+        config['freqai'] = freqai_config['freqai']
+        config['freqai']['identifier'] = config['freqai_identifier']
+        corr_pairs = config['freqai']['feature_parameters']['include_corr_pairlist']
+        timeframes = config['freqai']['feature_parameters']['include_timeframes']
+        new_corr_pairs = []
+        new_tfs = []
+
+        if not exchange:
+            logger.warning('No dataprovider available.')
+            config['freqai']['enabled'] = False
+            return config
+        # find the closest pairs to what the default config wants
+        for pair in corr_pairs:
+            closest_pair = difflib.get_close_matches(
+                                        pair,
+                                        exchange.markets
+                                        )
+            if not closest_pair:
+                logger.warning(f'Could not find {pair} in markets, removing from '
+                               f'corr_pairlist.')
+            else:
+                closest_pair = closest_pair[0]
+
+            new_corr_pairs.append(closest_pair)
+            logger.info(f'Spice rack will use {closest_pair} as informative in FreqAI model.')
+
+        # find the closest matching timeframes to what the default config wants
+        if timeframe_to_seconds(config['timeframe']) > timeframe_to_seconds('15m'):
+            logger.warning('Default spice rack is designed for lower base timeframes (e.g. > '
+                           f'15m). But user passed {config["timeframe"]}.')
+        new_tfs.append(config['timeframe'])
+
+        list_tfs = [timeframe_to_seconds(tf) for tf
+                    in exchange.timeframes]
+        for tf in timeframes:
+            tf_secs = timeframe_to_seconds(tf)
+            closest_index = min(range(len(list_tfs)), key=lambda i: abs(list_tfs[i] - tf_secs))
+            closest_tf = exchange.timeframes[closest_index]
+            logger.info(f'Spice rack will use {closest_tf} as informative tf in FreqAI model.')
+            new_tfs.append(closest_tf)
+
+    config['freqai']['feature_parameters'].update({'include_timeframes': new_tfs})
+    config['freqai']['feature_parameters'].update({'include_corr_pairlist': new_corr_pairs})
+    config.update({"freqaimodel": 'LightGBMRegressorMultiTarget'})
+    return config
 
 # Keep below for when we wish to download heterogeneously lengthed data for FreqAI.
 # def download_all_data_for_training(dp: DataProvider, config: dict) -> None:

@@ -89,6 +89,10 @@ class Backtesting:
             self._exchange_name, self.config, load_leverage_tiers=True)
         self.dataprovider = DataProvider(self.config, self.exchange)
 
+        if config.get('freqai_spice_rack', False):
+            from freqtrade.freqai.utils import setup_freqai_spice_rack
+            self.config = setup_freqai_spice_rack(self.config, self.exchange)
+
         if self.config.get('strategy_list'):
             if self.config.get('freqai', {}).get('enabled', False):
                 raise OperationalException(

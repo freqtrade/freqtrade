@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -147,9 +147,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     def load_freqAI_model(self) -> None:
         spice_rack = self.config.get('freqai_spice_rack', False)
         if self.config.get('freqai', {}).get('enabled', False) or spice_rack:
-            spice_rack = self.config.get('freqai_spice_rack', False)
             if spice_rack:
-                self.config = self.setup_freqai_spice_rack(self.config)
+                from freqtrade.freqai.utils import setup_freqai_spice_rack
+                self.config = setup_freqai_spice_rack(self.config, self.dp._exchange)
             # Import here to avoid importing this if freqAI is disabled
             from freqtrade.freqai.utils import download_all_data_for_training
             from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
@@ -189,60 +189,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                     pass
 
             self.freqai = DummyClass()  # type: ignore
-
-    def setup_freqai_spice_rack(self, config: dict) -> Dict[str, Any]:
-        import difflib
-        import json
-        from pathlib import Path
-        auto_config = config.get('freqai_config', 'lightgbm_config.json')
-        with open(Path('freqtrade') / 'freqai' / 'spice_rack'
-                  / auto_config) as json_file:
-            freqai_config = json.load(json_file)
-            config['freqai'] = freqai_config['freqai']
-            config['freqai']['identifier'] = config['freqai_identifier']
-            corr_pairs = config['freqai']['feature_parameters']['include_corr_pairlist']
-            timeframes = config['freqai']['feature_parameters']['include_timeframes']
-            new_corr_pairs = []
-            new_tfs = []
-
-            if not self.dp:
-                logger.warning('No dataprovider available.')
-                config['freqai']['enabled'] = False
-                return config
-            # find the closest pairs to what the default config wants
-            for pair in corr_pairs:
-                closest_pair = difflib.get_close_matches(
-                                            pair,
-                                            self.dp._exchange.markets  # type: ignore
-                                            )
-                if not closest_pair:
-                    logger.warning(f'Could not find {pair} in markets, removing from '
-                                   f'corr_pairlist.')
-                else:
-                    closest_pair = closest_pair[0]
-
-                new_corr_pairs.append(closest_pair)
-                logger.info(f'Spice rack will use {closest_pair} as informative in FreqAI model.')
-
-            # find the closest matching timeframes to what the default config wants
-            if timeframe_to_seconds(config['timeframe']) > timeframe_to_seconds('15m'):
-                logger.warning('Default spice rack is designed for lower base timeframes (e.g. > '
-                               f'15m). But user passed {config["timeframe"]}.')
-            new_tfs.append(config['timeframe'])
-
-            list_tfs = [timeframe_to_seconds(tf) for tf
-                        in self.dp._exchange.timeframes]  # type: ignore
-            for tf in timeframes:
-                tf_secs = timeframe_to_seconds(tf)
-                closest_index = min(range(len(list_tfs)), key=lambda i: abs(list_tfs[i] - tf_secs))
-                closest_tf = self.dp._exchange.timeframes[closest_index]  # type: ignore
-                logger.info(f'Spice rack will use {closest_tf} as informative tf in FreqAI model.')
-                new_tfs.append(closest_tf)
-
-        config['freqai']['feature_parameters'].update({'include_timeframes': new_tfs})
-        config['freqai']['feature_parameters'].update({'include_corr_pairlist': new_corr_pairs})
-        config.update({"freqaimodel": 'LightGBMRegressorMultiTarget'})
-        return config
 
     def ft_bot_start(self, **kwargs) -> None:
         """
