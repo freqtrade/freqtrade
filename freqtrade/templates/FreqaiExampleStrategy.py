@@ -170,25 +170,31 @@ class FreqaiExampleStrategy(IStrategy):
 
         dataframe = self.freqai.start(dataframe, metadata, self)
         for val in self.std_dev_multiplier_buy.range:
-            dataframe[f'target_roi_{val}'] = dataframe["&-s_close_mean"] + \
-                dataframe["&-s_close_std"] * val
+            dataframe[f'target_roi_{val}'] = (
+                dataframe["&-s_close_mean"] + dataframe["&-s_close_std"] * val
+                )
         for val in self.std_dev_multiplier_sell.range:
-            dataframe[f'sell_roi_{val}'] = dataframe["&-s_close_mean"] - \
-                dataframe["&-s_close_std"] * val
+            dataframe[f'sell_roi_{val}'] = (
+                dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * val
+                )
         return dataframe
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        enter_long_conditions = [df["do_predict"] == 1, df["&-s_close"]
-                                 > df[f"target_roi_{self.std_dev_multiplier_buy.value}"]]
+        enter_long_conditions = [
+            df["do_predict"] == 1,
+            df["&-s_close"] > df[f"target_roi_{self.std_dev_multiplier_buy.value}"],
+            ]
 
         if enter_long_conditions:
             df.loc[
                 reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
             ] = (1, "long")
 
-        enter_short_conditions = [df["do_predict"] == 1, df["&-s_close"]
-                                  < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"]]
+        enter_short_conditions = [
+            df["do_predict"] == 1,
+            df["&-s_close"] < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"],
+            ]
 
         if enter_short_conditions:
             df.loc[
@@ -198,13 +204,17 @@ class FreqaiExampleStrategy(IStrategy):
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        exit_long_conditions = [df["do_predict"] == 1, df["&-s_close"] <
-                                df[f"sell_roi_{self.std_dev_multiplier_sell.value}"] * 0.25]
+        exit_long_conditions = [
+            df["do_predict"] == 1,
+            df["&-s_close"] < df[f"sell_roi_{self.std_dev_multiplier_sell.value}"] * 0.25,
+            ]
         if exit_long_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
 
-        exit_short_conditions = [df["do_predict"] == 1, df["&-s_close"] >
-                                 df[f"target_roi_{self.std_dev_multiplier_buy.value}"] * 0.25]
+        exit_short_conditions = [
+            df["do_predict"] == 1,
+            df["&-s_close"] > df[f"target_roi_{self.std_dev_multiplier_buy.value}"] * 0.25,
+            ]
         if exit_short_conditions:
             df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
 
