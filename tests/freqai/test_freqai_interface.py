@@ -319,16 +319,15 @@ def test_principal_component_analysis(mocker, freqai_conf):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_spice_rack(mocker, default_conf, tmpdir):
+def test_spice_rack(mocker, default_conf, tmpdir, caplog):
 
     strategy = get_patched_freqai_strategy(mocker, default_conf)
     exchange = get_patched_exchange(mocker, default_conf)
     strategy.dp = DataProvider(default_conf, exchange)
 
     default_conf.update({"freqai_spice_rack": "true"})
-    default_conf.update({"freqai_config": "test_config.json"})
+    # default_conf.update({"freqai_config": "test_config.json"})
     default_conf.update({"freqai_identifier": "spicy-id"})
-    default_conf.update({"strategy": "freqai_test_spice_rack"})
     default_conf["config_files"] = [Path('config_examples', 'config_freqai.example.json')]
     default_conf["timerange"] = "20180110-20180115"
     default_conf["datadir"] = Path(default_conf["datadir"])
@@ -340,6 +339,8 @@ def test_spice_rack(mocker, default_conf, tmpdir):
     strategy.config = freqai_conf
     strategy.load_freqAI_model()
 
+    assert log_has_re("Spice rack will use LTC/USD", caplog)
+    assert log_has_re("Spice rack will use 15m", caplog)
     assert 'freqai' in freqai_conf
     assert strategy.freqai
 
