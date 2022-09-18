@@ -16,6 +16,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -58,7 +59,7 @@ class FreqaiDataDrawer:
     Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
-    def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
+    def __init__(self, full_path: Path, config: Config, follow_mode: bool = False):
 
         self.config = config
         self.freqai_info = config.get("freqai", {})

@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 from freqtrade.enums import CandleType
 
@@ -603,3 +603,5 @@ LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
+
+Config = Dict[str, Any]

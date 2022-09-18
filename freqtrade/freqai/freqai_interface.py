@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -50,7 +50,7 @@ class IFreqaiModel(ABC):
     Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
 
         self.config = config
         self.assert_config(self.config)
@@ -99,7 +99,7 @@ class IFreqaiModel(ABC):
         """
         return ({})
 
-    def assert_config(self, config: Dict[str, Any]) -> None:
+    def assert_config(self, config: Config) -> None:
 
         if not config.get("freqai", {}):
             raise OperationalException("No freqai parameters found in configuration file.")

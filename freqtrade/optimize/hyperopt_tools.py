@@ -12,7 +12,7 @@ import tabulate
 from colorama import Fore, Style
 from pandas import isna, json_normalize
 
-from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
+from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES, Config
 from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
@@ -45,7 +45,7 @@ class HyperoptStateContainer():
 class HyperoptTools():
 
     @staticmethod
-    def get_strategy_filename(config: Dict, strategy_name: str) -> Optional[Path]:
+    def get_strategy_filename(config: Config, strategy_name: str) -> Optional[Path]:
         """
         Get Strategy-location (filename) from strategy_name
         """

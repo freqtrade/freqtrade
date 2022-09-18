@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
@@ -37,10 +38,10 @@ class ApiServer(RPCHandler):
     _bt = None
     _bt_data = None
     _bt_timerange = None
-    _bt_last_config: Dict[str, Any] = {}
+    _bt_last_config: Config = {}
     _has_rpc: bool = False
     _bgtask_running: bool = False
-    _config: Dict[str, Any] = {}
+    _config: Config = {}
     # Exchange - only available in webserver mode.
     _exchange = None
 
@@ -54,7 +55,7 @@ class ApiServer(RPCHandler):
             ApiServer.__initialized = False
         return ApiServer.__instance
 
-    def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
+    def __init__(self, config: Config, standalone: bool = False) -> None:
         ApiServer._config = config
         if self.__initialized and (standalone or self._standalone):
             return

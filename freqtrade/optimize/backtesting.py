@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LongShort
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, LongShort
 from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
@@ -70,7 +70,7 @@ class Backtesting:
     backtesting.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
 
         LoggingMixin.show_output = False
         self.config = config

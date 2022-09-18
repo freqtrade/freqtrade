@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
+from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
@@ -28,7 +28,7 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
+    def __init__(self, config: Config, exchange: Optional[Exchange], pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists

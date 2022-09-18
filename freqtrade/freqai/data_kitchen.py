@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -57,7 +58,7 @@ class FreqaiDataKitchen:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: Config,
         live: bool = False,
         pair: str = "",
     ):

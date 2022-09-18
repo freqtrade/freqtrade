@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
@@ -13,7 +14,7 @@ from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 logger = logging.getLogger(__name__)
 
 
-def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
+def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
     """
     Called only once upon start of bot to download the necessary data for
     populating indicators and training the model.
@@ -47,9 +48,7 @@ def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
     )
 
 
-def get_required_data_timerange(
-    config: dict
-) -> TimeRange:
+def get_required_data_timerange(config: Config) -> TimeRange:
     """
     Used to compute the required data download time range
     for auto data-download in FreqAI
@@ -86,7 +85,7 @@ def get_required_data_timerange(
 
 
 # Keep below for when we wish to download heterogeneously lengthed data for FreqAI.
-# def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
+# def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
 #     """
 #     Called only once upon start of bot to download the necessary data for
 #     populating indicators and training a FreqAI model.

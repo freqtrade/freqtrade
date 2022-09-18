@@ -21,7 +21,8 @@ from dateutil import parser
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
+                                 Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
+                                 PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -91,7 +92,7 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Dict[str, Any], validate: bool = True,
+    def __init__(self, config: Config, validate: bool = True,
                  load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
@@ -108,7 +109,7 @@ class Exchange:
         self._loop_lock = Lock()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self._config: Dict = {}
+        self._config: Config = {}
 
         self._config.update(config)
 

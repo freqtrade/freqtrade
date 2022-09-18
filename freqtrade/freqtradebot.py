@@ -13,7 +13,7 @@ from schedule import Scheduler
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
-from freqtrade.constants import BuySell, LongShort
+from freqtrade.constants import BuySell, Config, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
@@ -44,7 +44,7 @@ class FreqtradeBot(LoggingMixin):
     This is from here the bot start its logic.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
         """
         Init all variables and objects the bot needs to work
         :param config: configuration dict, you can use Configuration.get_config()
