@@ -601,8 +601,7 @@ def generate_plot_filename(pair: str, timeframe: str) -> str:
     return file_name
 
 
-def store_plot_file(fig, filename: str, directory: Path,
-                    auto_open: bool = False) -> None:
+def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False) -> None:
     """
     Generate a plot html file from pre populated fig plotly object
     :param fig: Plotly Figure to plot
