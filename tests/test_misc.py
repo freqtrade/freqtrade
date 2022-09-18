@@ -184,8 +184,8 @@ def test_render_template_fallback(mocker):
             templatefile='subtemplates/indicators_does-not-exist.j2',)
 
     val = render_template_with_fallback(
-        templatefile='subtemplates/indicators_does-not-exist.j2',
-        templatefallbackfile='subtemplates/indicators_minimal.j2',
+        templatefile='strategy_subtemplates/indicators_does-not-exist.j2',
+        templatefallbackfile='strategy_subtemplates/indicators_minimal.j2',
     )
     assert isinstance(val, str)
     assert 'if self.dp' in val
