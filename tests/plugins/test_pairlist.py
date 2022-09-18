@@ -126,7 +126,7 @@ def test_log_cached(mocker, static_pl_conf, markets, tickers):
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    plm = PairListManager(freqtrade.exchange, default_conf)
+    plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'. "
                              r"This class does not exist or contains Python code errors."):
@@ -137,7 +137,7 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
 def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
-    plm = PairListManager(freqtrade.exchange, default_conf)
+    plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)
     assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
@@ -269,7 +269,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     with pytest.raises(OperationalException,
                        match=r'`number_assets` not specified. Please check your configuration '
                              r'for "pairlist.config.number_assets"'):
-        PairListManager(freqtrade.exchange, whitelist_conf)
+        PairListManager(freqtrade.exchange, whitelist_conf, MagicMock())
 
 
 def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_conf_2):
@@ -694,7 +694,7 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
 
     with pytest.raises(OperationalException,
                        match=r"PrecisionFilter can only work with stoploss defined\..*"):
-        PairListManager(MagicMock, whitelist_conf)
+        PairListManager(MagicMock, whitelist_conf, MagicMock())
 
 
 def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
@@ -703,7 +703,7 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
         del Trade.query
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
-    pm = PairListManager(exchange, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf, MagicMock())
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
