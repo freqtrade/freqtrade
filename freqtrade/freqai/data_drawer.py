@@ -420,8 +420,8 @@ class FreqaiDataDrawer:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
 
         # save the train data to file so we can check preds for area of applicability later
-        dk.data_dictionary["train_features"].to_pickle(
-            save_path / f"{dk.model_filename}_trained_df.pkl"
+        dk.data_dictionary["train_features"].astype("floa32").to_pickle(
+            save_path / f"{dk.model_filename}_trained_df.pkl.bz2"
         )
 
         dk.data_dictionary["train_dates"].to_pickle(
