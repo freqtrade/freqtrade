@@ -326,7 +326,6 @@ def test_spice_rack(mocker, default_conf, tmpdir, caplog):
     strategy.dp = DataProvider(default_conf, exchange)
 
     default_conf.update({"freqai_spice_rack": "true"})
-    # default_conf.update({"freqai_config": "test_config.json"})
     default_conf.update({"freqai_identifier": "spicy-id"})
     default_conf["config_files"] = [Path('config_examples', 'config_freqai.example.json')]
     default_conf["timerange"] = "20180110-20180115"
