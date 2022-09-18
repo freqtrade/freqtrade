@@ -69,7 +69,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='PATH',
     ),
     "datadir": Arg(
-        '-d', '--datadir',
+        '-d', '--datadir', '--data-dir',
         help='Path to directory with historical backtesting data.',
         metavar='PATH',
     ),
