@@ -18,8 +18,8 @@ from tests.conftest import log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
 
-def test_dataframe_correct_columns(result):
-    assert result.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
+def test_dataframe_correct_columns(dataframe_1m):
+    assert dataframe_1m.columns.tolist() == ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
 def test_ohlcv_to_dataframe(ohlcv_history_list, caplog):
