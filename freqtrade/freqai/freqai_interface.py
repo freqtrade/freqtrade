@@ -563,7 +563,7 @@ class IFreqaiModel(ABC):
             self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
 
-        if self.freqai_info["feature_parameters"].get("plot_feature_importance", True):
+        if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):
             plot_feature_importance(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):

@@ -78,7 +78,7 @@
                 10,
                 20
             ],
-            "plot_feature_importance": true
+            "plot_feature_importance": false
         },
         "data_split_parameters": {
             "test_size": 0.33,

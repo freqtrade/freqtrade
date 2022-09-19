@@ -504,6 +504,7 @@ CONF_SCHEMA = {
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
                         "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
+                        "plot_feature_importance": {"type": "boolean", "default": False},
                         "svm_params": {"type": "object",
                                        "properties": {
                                            "shuffle": {"type": "boolean", "default": False},
