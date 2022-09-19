@@ -20,6 +20,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.utils import plot_feature_importance
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -561,6 +562,9 @@ class IFreqaiModel(ABC):
         if self.dd.pair_dict[pair]["priority"] == 1 and self.scanning:
             self.dd.pair_to_end_of_training_queue(pair)
         self.dd.save_data(model, pair, dk)
+
+        if self.freqai_info["feature_parameters"].get("plot_feature_importance", True):
+            plot_feature_importance(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
