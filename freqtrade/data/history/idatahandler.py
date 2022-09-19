@@ -375,6 +375,9 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     elif datatype == 'hdf5':
         from .hdf5datahandler import HDF5DataHandler
         return HDF5DataHandler
+    elif datatype == 'feather':
+        from .featherdatahandler import FeatherDataHandler
+        return FeatherDataHandler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 
