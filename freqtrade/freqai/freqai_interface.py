@@ -205,9 +205,13 @@ class IFreqaiModel(ABC):
 
             if retrain:
                 self.train_timer('start')
-                self.extract_data_and_train_model(
-                    new_trained_timerange, pair, strategy, dk, data_load_timerange
-                )
+                try:
+                    self.extract_data_and_train_model(
+                        new_trained_timerange, pair, strategy, dk, data_load_timerange
+                    )
+                except Exception as msg:
+                    logger.warning(f'Training {pair} raised exception {msg}, skipping.')
+
                 self.train_timer('stop')
 
                 # only rotate the queue after the first has been trained.
