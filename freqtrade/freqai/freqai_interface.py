@@ -712,7 +712,7 @@ class IFreqaiModel(ABC):
                                   key=lambda k: k[1]['trained_timestamp'])
         for pair in pair_dict_sorted:
             if pair[0] in current_pairlist:
-                best_queue.appendright(pair[0])
+                best_queue.append(pair[0])
         for pair in current_pairlist:
             if pair not in best_queue:
                 best_queue.appendleft(pair)
