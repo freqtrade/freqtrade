@@ -182,6 +182,7 @@ class IFreqaiModel(ABC):
         :param strategy: IStrategy = The user defined strategy class
         """
         while not self._stop_event.is_set():
+            time.sleep(1)
             pair = self.train_queue[0]
 
             # ensure pair is avaialble in dp
