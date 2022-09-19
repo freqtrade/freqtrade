@@ -703,6 +703,7 @@ class IFreqaiModel(ABC):
         current_pairlist = self.config.get("exchange", {}).get("pair_whitelist")
         if not self.dd.pair_dict:
             logger.info('Set fresh train queue from whitelist.')
+            logger.info(f'Queue: {current_pairlist}')
             return deque(current_pairlist)
 
         best_queue = deque()
@@ -717,6 +718,7 @@ class IFreqaiModel(ABC):
                 best_queue.appendleft(pair)
 
         logger.info('Set existing queue from trained timestamps.')
+        logger.info(f'Best approximation queue: {best_queue}')
         return best_queue
 
     # Following methods which are overridden by user made prediction models.
