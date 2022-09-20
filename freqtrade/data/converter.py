@@ -292,6 +292,7 @@ def convert_ohlcv_format(
                 timeframe,
                 candle_type=candle_type
             ))
+        config['pairs'] = sorted(set(config['pairs']))
     logger.info(f"Converting candle (OHLCV) data for {config['pairs']}")
 
     for timeframe in timeframes:
@@ -302,7 +303,7 @@ def convert_ohlcv_format(
                                   drop_incomplete=False,
                                   startup_candles=0,
                                   candle_type=candle_type)
-            logger.info(f"Converting {len(data)} {candle_type} candles for {pair}")
+            logger.info(f"Converting {len(data)} {timeframe} {candle_type} candles for {pair}")
             if len(data) > 0:
                 trg.ohlcv_store(
                     pair=pair,
