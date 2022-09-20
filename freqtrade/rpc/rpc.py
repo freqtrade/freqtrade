@@ -16,7 +16,7 @@ from pandas import DataFrame, NaT
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
+from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
@@ -58,7 +58,7 @@ class RPCException(Exception):
 
 class RPCHandler:
 
-    def __init__(self, rpc: 'RPC', config: Dict[str, Any]) -> None:
+    def __init__(self, rpc: 'RPC', config: Config) -> None:
         """
         Initializes RPCHandlers
         :param rpc: instance of RPC Helper class
@@ -66,7 +66,7 @@ class RPCHandler:
         :return: None
         """
         self._rpc = rpc
-        self._config: Dict[str, Any] = config
+        self._config: Config = config
 
     @property
     def name(self) -> str:
@@ -96,7 +96,7 @@ class RPC:
         :return: None
         """
         self._freqtrade = freqtrade
-        self._config: Dict[str, Any] = freqtrade.config
+        self._config: Config = freqtrade.config
         if self._config.get('fiat_display_currency'):
             self._fiat_converter = CryptoToFiatConverter()
 

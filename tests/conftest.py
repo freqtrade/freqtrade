@@ -2287,7 +2287,7 @@ def tickers():
 
 
 @pytest.fixture
-def result(testdatadir):
+def dataframe_1m(testdatadir):
     with (testdatadir / 'UNITTEST_BTC-1m.json').open('r') as data_file:
         return ohlcv_to_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
                                   fill_missing=True)

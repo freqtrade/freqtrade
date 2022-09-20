@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
+from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
@@ -31,7 +31,7 @@ class DataProvider:
 
     def __init__(
         self,
-        config: dict,
+        config: Config,
         exchange: Optional[Exchange],
         pairlists=None,
         rpc: Optional[RPCManager] = None

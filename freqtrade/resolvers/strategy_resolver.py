@@ -9,10 +9,10 @@ from base64 import urlsafe_b64decode
 from inspect import getfullargspec
 from os import walk
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
-from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES
+from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES, Config
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers import IResolver
@@ -32,7 +32,7 @@ class StrategyResolver(IResolver):
     initial_search_path = None
 
     @staticmethod
-    def load_strategy(config: Dict[str, Any] = None) -> IStrategy:
+    def load_strategy(config: Config = None) -> IStrategy:
         """
         Load the custom class from config parameter
         :param config: configuration dictionary or None
@@ -91,8 +91,7 @@ class StrategyResolver(IResolver):
         return strategy
 
     @staticmethod
-    def _override_attribute_helper(strategy, config: Dict[str, Any],
-                                   attribute: str, default: Any):
+    def _override_attribute_helper(strategy, config: Config, attribute: str, default: Any):
         """
         Override attributes in the strategy.
         Prevalence:
@@ -215,7 +214,7 @@ class StrategyResolver(IResolver):
 
     @staticmethod
     def _load_strategy(strategy_name: str,
-                       config: dict, extra_dir: Optional[str] = None) -> IStrategy:
+                       config: Config, extra_dir: Optional[str] = None) -> IStrategy:
         """
         Search and loads the specified strategy.
         :param strategy_name: name of the module to import

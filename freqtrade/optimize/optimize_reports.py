@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Union
 from pandas import DataFrame, to_datetime
 from tabulate import tabulate
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
+from freqtrade.constants import (DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT,
+                                 Config)
 from freqtrade.data.metrics import (calculate_cagr, calculate_csum, calculate_market_change,
                                     calculate_max_drawdown)
 from freqtrade.misc import decimals_per_coin, file_dump_joblib, file_dump_json, round_coin_value
@@ -898,7 +899,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
     print()
 
 
-def show_backtest_results(config: Dict, backtest_stats: Dict):
+def show_backtest_results(config: Config, backtest_stats: Dict):
     stake_currency = config['stake_currency']
 
     for strategy, results in backtest_stats['strategy'].items():
@@ -918,7 +919,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         print('\nFor more details, please look at the detail tables above')
 
 
-def show_sorted_pairlist(config: Dict, backtest_stats: Dict):
+def show_sorted_pairlist(config: Config, backtest_stats: Dict):
     if config.get('backtest_show_pair_list', False):
         for strategy, results in backtest_stats['strategy'].items():
             print(f"Pairs for Strategy {strategy}: \n[")

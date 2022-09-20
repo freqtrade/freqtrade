@@ -8,6 +8,7 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
 
@@ -315,3 +316,62 @@ def test_principal_component_analysis(mocker, freqai_conf):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_pca_object.pkl")
 
     shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_plot_feature_importance(mocker, freqai_conf):
+
+    from freqtrade.freqai.utils import plot_feature_importance
+
+    freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"princpial_component_analysis": "true"})
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = True
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+
+    freqai.dd.pair_dict = MagicMock()
+
+    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
+    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+
+    freqai.extract_data_and_train_model(
+        new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+
+    model = freqai.dd.load_data("ADA/BTC", freqai.dk)
+
+    plot_feature_importance(model, "ADA/BTC", freqai.dk)
+
+    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}.html")
+
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+@pytest.mark.parametrize('timeframes,corr_pairs', [
+    (['5m'], ['ADA/BTC', 'DASH/BTC']),
+    (['5m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
+    (['5m', '15m'], ['ADA/BTC', 'DASH/BTC', 'ETH/USDT']),
+])
+def test_freqai_informative_pairs(mocker, freqai_conf, timeframes, corr_pairs):
+    freqai_conf['freqai']['feature_parameters'].update({
+        'include_timeframes': timeframes,
+        'include_corr_pairlist': corr_pairs,
+
+    })
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    pairlists = PairListManager(exchange, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange, pairlists)
+    pairlist = strategy.dp.current_whitelist()
+
+    pairs_a = strategy.informative_pairs()
+    assert len(pairs_a) == 0
+    pairs_b = strategy.gather_informative_pairs()
+    # we expect unique pairs * timeframes
+    assert len(pairs_b) == len(set(pairlist + corr_pairs)) * len(timeframes)

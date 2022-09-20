@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 import rapidjson
 
-from freqtrade.constants import MINIMAL_CONFIG
+from freqtrade.constants import MINIMAL_CONFIG, Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts
 
@@ -80,7 +80,7 @@ def load_from_files(files: List[str], base_path: Path = None, level: int = 0) ->
     Recursively load configuration files if specified.
     Sub-files are assumed to be relative to the initial config.
     """
-    config: Dict[str, Any] = {}
+    config: Config = {}
     if level > 5:
         raise OperationalException("Config loop detected.")
 

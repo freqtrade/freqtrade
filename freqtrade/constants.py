@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 from freqtrade.enums import CandleType
 
@@ -547,6 +547,7 @@ CONF_SCHEMA = {
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
                         "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
+                        "plot_feature_importance": {"type": "boolean", "default": False},
                         "svm_params": {"type": "object",
                                        "properties": {
                                            "shuffle": {"type": "boolean", "default": False},
@@ -646,3 +647,5 @@ LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
+
+Config = Dict[str, Any]

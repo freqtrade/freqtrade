@@ -109,11 +109,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `indicator_max_period_candles` | **No longer used**. User must use the strategy set `startup_candle_count` which defines the maximum *period* used in `populate_any_indicators()` for indicator creation (timeframe independent). FreqAI uses this information in combination with the maximum timeframe to calculate how many data points it should download so that the first data point does not have a NaN <br> **Datatype:** positive integer.
 | `indicator_periods_candles` | Calculate indicators for `indicator_periods_candles` time periods and add them to the feature set. <br> **Datatype:** List of positive integers.
 | `stratify_training_data` | This value is used to indicate the grouping of the data. For example, 2 would set every 2nd data point into a separate dataset to be pulled from during training/testing. See details about how it works [here](#stratifying-the-data-for-training-and-testing-the-model) <br> **Datatype:** Positive integer.
-| `principal_component_analysis` | Automatically reduce the dimensionality of the data set using Principal Component Analysis. See details about how it works [here](#reducing-data-dimensionality-with-principal-component-analysis) <br> **Datatype:** Boolean.
+| `principal_component_analysis` | Automatically reduce the dimensionality of the data set using Principal Component Analysis. See details about how it works [here](#reducing-data-dimensionality-with-principal-component-analysis)
+| `plot_feature_importance` | Create an interactive feature importance plot for each model.<br> **Datatype:** Boolean.<br> **Datatype:** Boolean, defaults to `False`
 | `DI_threshold` | Activates the Dissimilarity Index for outlier detection when > 0. See details about how it works [here](#removing-outliers-with-the-dissimilarity-index). <br> **Datatype:** Positive float (typically < 1).
 | `use_SVM_to_remove_outliers` | Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Boolean.
 | `svm_params` | All parameters available in Sklearn's `SGDOneClassSVM()`. See details about some select parameters [here](#removing-outliers-using-a-support-vector-machine-svm). <br> **Datatype:** Dictionary.
-| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean. 
+| `use_DBSCAN_to_remove_outliers` | Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works [here](#removing-outliers-with-dbscan). <br> **Datatype:** Boolean.
 | `inlier_metric_window` | If set, FreqAI will add the `inlier_metric` to the training feature set and set the lookback to be the `inlier_metric_window`. Details of how the `inlier_metric` is computed can be found [here](#using-the-inliermetric) <br> **Datatype:** int. Default: 0
 | `noise_standard_deviation` | If > 0, FreqAI adds noise to the training features. FreqAI generates random deviates from a gaussian distribution with a standard deviation of `noise_standard_deviation` and adds them to all data points. Value should be kept relative to the normalized space between -1 and 1). In other words, since data is always normalized between -1 and 1 in FreqAI, the user can expect a `noise_standard_deviation: 0.05` to see 32% of data randomly increased/decreased by more than 2.5% (i.e. the percent of data falling within the first standard deviation). Good for preventing overfitting. <br> **Datatype:** int. Default: 0
 | `outlier_protection_percentage` | If more than `outlier_protection_percentage` % of points are detected as outliers by the SVM or DBSCAN, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. If the outlier protection is triggered, no predictions will be made based on the training data. <br> **Datatype:** Float. Default: `30`
@@ -189,19 +190,6 @@ The FreqAI strategy requires the user to include the following lines of code in 
     # user should define the maximum startup candle count (the largest number of candles
     # passed to any single indicator)
     startup_candle_count: int = 20
-
-    def informative_pairs(self):
-        whitelist_pairs = self.dp.current_whitelist()
-        corr_pairs = self.config["freqai"]["feature_parameters"]["include_corr_pairlist"]
-        informative_pairs = []
-        for tf in self.config["freqai"]["feature_parameters"]["include_timeframes"]:
-            for pair in whitelist_pairs:
-                informative_pairs.append((pair, tf))
-            for pair in corr_pairs:
-                if pair in whitelist_pairs:
-                    continue  # avoid duplication
-                informative_pairs.append((pair, tf))
-        return informative_pairs
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -523,7 +511,7 @@ The FreqAI backtesting module can be executed with the following command:
 freqtrade backtesting --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701
 ```
 
-Backtesting mode requires the user to have the data [pre-downloaded](#downloading-data-for-backtesting) (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-sliding-training-window-and-backtesting-duration). 
+Backtesting mode requires the user to have the data [pre-downloaded](#downloading-data-for-backtesting) (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-sliding-training-window-and-backtesting-duration).
 
 If this command has never been executed with the existing config file, it will train a new model
 for each pair, for each backtesting window within the expanded `--timerange`.
@@ -551,7 +539,7 @@ Users need to have the data pre-downloaded in the same fashion as if they were d
 - It's not possible to hyperopt indicators in `populate_any_indicators()` function. This means that the user cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
 - The [Backtesting](#backtesting) instructions also apply to Hyperopt.
 
-The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. Users need to focus on hyperopting parameters that are not used in their FreqAI features. For example, users should not try to hyperopt rolling window lengths in their feature creation, or any of their FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only. 
+The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. Users need to focus on hyperopting parameters that are not used in their FreqAI features. For example, users should not try to hyperopt rolling window lengths in their feature creation, or any of their FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only.
 
 A good example of a hyperoptable parameter in FreqAI is a value for `DI_values` beyond which we consider outliers and below which we consider inliers:
 
@@ -576,7 +564,7 @@ FreqAI will train have trained 8 separate models at the end of `--timerange` (be
     Although fractional `backtest_period_days` is allowed, the user should be aware that the `--timerange` is divided by this value to determine the number of models that FreqAI will need to train in order to backtest the full range. For example, if the user wants to set a `--timerange` of 10 days, and asks for a `backtest_period_days` of 0.1, FreqAI will need to train 100 models per pair to complete the full backtest. Because of this, a true backtest of FreqAI adaptive training would take a *very* long time. The best way to fully test a model is to run it dry and let it constantly train. In this case, backtesting would take the exact same amount of time as a dry run.
 
 ### Downloading data for backtesting
-Live/dry instances will download the data automatically for the user, but users who wish to use backtesting functionality still need to download the necessary data using `download-data` (details [here](data-download.md#data-downloading)). FreqAI users need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that they have a sufficient amount of training data *before* the start of their backtesting timerange. The amount of additional data can be roughly estimated by moving the start date of the timerange backwards by `train_period_days` and the `startup_candle_count` ([details](#setting-the-startupcandlecount)) from the beginning of the desired backtesting timerange. 
+Live/dry instances will download the data automatically for the user, but users who wish to use backtesting functionality still need to download the necessary data using `download-data` (details [here](data-download.md#data-downloading)). FreqAI users need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that they have a sufficient amount of training data *before* the start of their backtesting timerange. The amount of additional data can be roughly estimated by moving the start date of the timerange backwards by `train_period_days` and the `startup_candle_count` ([details](#setting-the-startupcandlecount)) from the beginning of the desired backtesting timerange.
 
 As an example, if we wish to backtest the `--timerange` above of `20210501-20210701`, and we use the example config which sets `train_period_days` to 15. The startup candle count is 40 on a maximum `include_timeframes` of 1h. We would need 20210501 - 15 days - 40 * 1h / 24 hours = 20210414 (16.7 days earlier than the start of the desired training timerange).
 
@@ -675,13 +663,13 @@ The test data is used to evaluate the performance of the model after training. I
 
 ### Using the `inlier_metric`
 
-The `inlier_metric` is a metric aimed at quantifying how different a prediction data point is from the most recent historic data points. 
+The `inlier_metric` is a metric aimed at quantifying how different a prediction data point is from the most recent historic data points.
 
-User can set `inlier_metric_window` to set the look back window. FreqAI will compute the distance between the present prediction point and each of the previous data points (total of `inlier_metric_window` points). 
+User can set `inlier_metric_window` to set the look back window. FreqAI will compute the distance between the present prediction point and each of the previous data points (total of `inlier_metric_window` points).
 
-This function goes one step further - during training, it computes the `inlier_metric` for all training data points and builds weibull distributions for each each lookback point. The cumulative distribution function for the weibull distribution is used to produce a quantile for each of the data points. The quantiles for each lookback point are averaged to create the `inlier_metric`. 
+This function goes one step further - during training, it computes the `inlier_metric` for all training data points and builds weibull distributions for each each lookback point. The cumulative distribution function for the weibull distribution is used to produce a quantile for each of the data points. The quantiles for each lookback point are averaged to create the `inlier_metric`.
 
-FreqAI adds this `inlier_metric` score to the training features! In other words, your model is trained to recognize how this temporal inlier metric is related to the user set labels. 
+FreqAI adds this `inlier_metric` score to the training features! In other words, your model is trained to recognize how this temporal inlier metric is related to the user set labels.
 
 This function does **not** remove outliers from the data set.
 

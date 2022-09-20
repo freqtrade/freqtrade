@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
 from typing import Any, Dict, List
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange, market_is_active
 from freqtrade.mixins import LoggingMixin
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class IPairList(LoggingMixin, ABC):
 
     def __init__(self, exchange: Exchange, pairlistmanager,
-                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         """
         :param exchange: Exchange instance

@@ -16,6 +16,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -27,9 +28,7 @@ logger = logging.getLogger(__name__)
 
 class pair_info(TypedDict):
     model_filename: str
-    first: bool
     trained_timestamp: int
-    priority: int
     data_path: str
     extras: dict
 
@@ -58,7 +57,7 @@ class FreqaiDataDrawer:
     Juha Nykänen @suikula, Wagner Costa @wagnercosta, Johan Vlugt @Jooopieeert
     """
 
-    def __init__(self, full_path: Path, config: dict, follow_mode: bool = False):
+    def __init__(self, full_path: Path, config: Config, follow_mode: bool = False):
 
         self.config = config
         self.freqai_info = config.get("freqai", {})
@@ -91,7 +90,7 @@ class FreqaiDataDrawer:
         self.old_DBSCAN_eps: Dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
-                "priority": 1, "first": True, "data_path": "", "extras": {}}
+                "data_path": "", "extras": {}}
 
     def load_drawer_from_disk(self):
         """
@@ -216,7 +215,6 @@ class FreqaiDataDrawer:
             self.pair_dict[pair] = self.empty_pair_dict.copy()
             model_filename = ""
             trained_timestamp = 0
-            self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
         if not data_path_set and self.follow_mode:
             logger.warning(
@@ -236,17 +234,8 @@ class FreqaiDataDrawer:
             return
         else:
             self.pair_dict[metadata["pair"]] = self.empty_pair_dict.copy()
-            self.pair_dict[metadata["pair"]]["priority"] = len(self.pair_dict)
 
             return
-
-    def pair_to_end_of_training_queue(self, pair: str) -> None:
-        # march all pairs up in the queue
-        with self.pair_dict_lock:
-            for p in self.pair_dict:
-                self.pair_dict[p]["priority"] -= 1
-            # send pair to end of queue
-            self.pair_dict[pair]["priority"] = len(self.pair_dict)
 
     def set_initial_return_values(self, pair: str, pred_df: DataFrame) -> None:
         """

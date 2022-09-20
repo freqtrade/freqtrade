@@ -1,5 +1,4 @@
 """ Binance exchange subclass """
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, json_load
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class Binance(Exchange):
         "ccxt_futures_name": "future"
     }
     _ft_has_futures: Dict = {
-        "stoploss_order_types": {"limit": "stop"},
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
         "tickers_have_price": False,
     }
 
@@ -48,13 +47,12 @@ class Binance(Exchange):
         Returns True if adjustment is necessary.
         :param side: "buy" or "sell"
         """
-
-        ordertype = 'stop' if self.trading_mode == TradingMode.FUTURES else 'stop_loss_limit'
+        order_types = ('stop_loss_limit', 'stop', 'stop_market')
 
         return (
             order.get('stopPrice', None) is None
             or (
-                order['type'] == ordertype
+                order['type'] in order_types
                 and (
                     (side == "sell" and stop_loss > float(order['stopPrice'])) or
                     (side == "buy" and stop_loss < float(order['stopPrice']))
@@ -201,7 +199,7 @@ class Binance(Exchange):
                     Path(__file__).parent / 'binance_leverage_tiers.json'
                 )
                 with open(leverage_tiers_path) as json_file:
-                    return json.load(json_file)
+                    return json_load(json_file)
             else:
                 try:
                     return self._api.fetch_leverage_tiers()

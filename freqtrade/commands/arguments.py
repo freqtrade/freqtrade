@@ -62,9 +62,9 @@ ARGS_BUILD_CONFIG = ["config"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
-ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
+ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase", "exchange"]
 
-ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "exchange", "trading_mode",
+ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "trading_mode",
                                                "candle_types"]
 
 ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]

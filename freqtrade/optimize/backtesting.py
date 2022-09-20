@@ -15,7 +15,7 @@ from pandas import DataFrame
 
 from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LongShort
+from freqtrade.constants import DATETIME_PRINT_FORMAT, Config, LongShort
 from freqtrade.data import history
 from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
@@ -70,7 +70,7 @@ class Backtesting:
     backtesting.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
 
         LoggingMixin.show_output = False
         self.config = config
@@ -812,14 +812,6 @@ class Backtesting:
             return trade
         time_in_force = self.strategy.order_time_in_force['entry']
 
-        if not pos_adjust:
-            # Confirm trade entry:
-            if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
-                    pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
-                    time_in_force=time_in_force, current_time=current_time,
-                    entry_tag=entry_tag, side=direction):
-                return trade
-
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
@@ -833,6 +825,15 @@ class Backtesting:
                                                   contract_size)
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
+
+            if not pos_adjust:
+                # Confirm trade entry:
+                if not strategy_safe_wrapper(
+                        self.strategy.confirm_trade_entry, default_retval=True)(
+                            pair=pair, order_type=order_type, amount=amount, rate=propose_rate,
+                            time_in_force=time_in_force, current_time=current_time,
+                            entry_tag=entry_tag, side=direction):
+                    return trade
 
             is_short = (direction == 'short')
             # Necessary for Margin trading. Disabled until support is enabled.
