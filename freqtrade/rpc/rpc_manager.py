@@ -3,11 +3,12 @@ This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
 from collections import deque
-from typing import Any, Dict, List
+from typing import List
 
 from freqtrade.constants import Config
 from freqtrade.enums import NO_ECHO_MESSAGES, RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
+from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ class RPCManager:
             mod.cleanup()
             del mod
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
+    def send_msg(self, msg: RPCSendMsg) -> None:
         """
         Send given message to all registered rpc modules.
         A message consists of one or more key value pairs of strings.

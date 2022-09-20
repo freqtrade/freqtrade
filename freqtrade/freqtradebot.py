@@ -30,6 +30,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
+from freqtrade.rpc.rpc_types import RPCBuyMsg, RPCCancelMsg, RPCSellCancelMsg, RPCSellMsg
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -957,7 +958,7 @@ class FreqtradeBot(LoggingMixin):
             current_rate = self.exchange.get_rate(
                 trade.pair, side='entry', is_short=trade.is_short, refresh=False)
 
-        msg = {
+        msg: RPCBuyMsg = {
             'trade_id': trade.id,
             'type': msg_type,
             'buy_tag': trade.enter_tag,
@@ -989,7 +990,7 @@ class FreqtradeBot(LoggingMixin):
         current_rate = self.exchange.get_rate(
             trade.pair, side='entry', is_short=trade.is_short, refresh=False)
 
-        msg = {
+        msg: RPCCancelMsg = {
             'trade_id': trade.id,
             'type': RPCMessageType.ENTRY_CANCEL,
             'buy_tag': trade.enter_tag,
@@ -1001,6 +1002,7 @@ class FreqtradeBot(LoggingMixin):
             'limit': trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
+            'open_rate': trade.open_rate,
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': trade.amount,
@@ -1666,7 +1668,7 @@ class FreqtradeBot(LoggingMixin):
             amount = trade.amount
         gain = "profit" if profit_ratio > 0 else "loss"
 
-        msg = {
+        msg: RPCSellMsg = {
             'type': (RPCMessageType.EXIT_FILL if fill
                      else RPCMessageType.EXIT),
             'trade_id': trade.id,
@@ -1722,7 +1724,7 @@ class FreqtradeBot(LoggingMixin):
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
-        msg = {
+        msg: RPCSellCancelMsg = {
             'type': RPCMessageType.EXIT_CANCEL,
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
