@@ -378,6 +378,9 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     elif datatype == 'feather':
         from .featherdatahandler import FeatherDataHandler
         return FeatherDataHandler
+    elif datatype == 'parquet':
+        from .parquetdatahandler import ParquetDataHandler
+        return ParquetDataHandler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 
