@@ -286,7 +286,7 @@ class Telegram(RPCHandler):
         if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         elif msg['type'] in [RPCMessageType.ENTRY]:
-            message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
+            message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
         message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
@@ -353,8 +353,9 @@ class Telegram(RPCHandler):
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
         if msg['type'] == RPCMessageType.EXIT:
-            message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                        f"*Exit Rate:* `{msg['limit']:.8f}`")
+            message += f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+            if msg['order_rate']:
+                message += f"*Exit Rate:* `{msg['order_rate']:.8f}`"
 
         elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"

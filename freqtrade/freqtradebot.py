@@ -1597,14 +1597,14 @@ class FreqtradeBot(LoggingMixin):
         # second condition is for mypy only; order will always be passed during sub trade
         if sub_trade and order is not None:
             amount = order.safe_filled if fill else order.amount
-            profit_rate = order.safe_price
+            order_rate: float = order.safe_price
 
-            profit = trade.calc_profit(rate=profit_rate, amount=amount, open_rate=trade.open_rate)
-            profit_ratio = trade.calc_profit_ratio(profit_rate, amount, trade.open_rate)
+            profit = trade.calc_profit(rate=order_rate, amount=amount, open_rate=trade.open_rate)
+            profit_ratio = trade.calc_profit_ratio(order_rate, amount, trade.open_rate)
         else:
-            profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
-            profit = trade.calc_profit(rate=profit_rate) + (0.0 if fill else trade.realized_profit)
-            profit_ratio = trade.calc_profit_ratio(profit_rate)
+            order_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
+            profit = trade.calc_profit(rate=order_rate) + (0.0 if fill else trade.realized_profit)
+            profit_ratio = trade.calc_profit_ratio(order_rate)
             amount = trade.amount
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1617,11 +1617,12 @@ class FreqtradeBot(LoggingMixin):
             'leverage': trade.leverage,
             'direction': 'Short' if trade.is_short else 'Long',
             'gain': gain,
-            'limit': profit_rate,
+            'limit': order_rate,  # Deprecated
+            'order_rate': order_rate,
             'order_type': order_type,
             'amount': amount,
             'open_rate': trade.open_rate,
-            'close_rate': profit_rate,
+            'close_rate': order_rate,
             'current_rate': current_rate,
             'profit_amount': profit,
             'profit_ratio': profit_ratio,
