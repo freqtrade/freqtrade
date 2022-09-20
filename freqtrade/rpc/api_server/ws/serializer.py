@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 
-import msgpack
 import orjson
 import rapidjson
 from pandas import DataFrame
@@ -44,14 +43,6 @@ class HybridJSONWebSocketSerializer(WebSocketSerializer):
     def _deserialize(self, data: str):
         # RapidJSON expects strings
         return rapidjson.loads(data, object_hook=_json_object_hook)
-
-
-class MsgPackWebSocketSerializer(WebSocketSerializer):
-    def _serialize(self, data):
-        return msgpack.packb(data, use_bin_type=True)
-
-    def _deserialize(self, data):
-        return msgpack.unpackb(data, raw=False)
 
 
 # Support serializing pandas DataFrames

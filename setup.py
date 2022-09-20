@@ -81,7 +81,6 @@ setup(
         'aiofiles',
         'schedule',
         'websockets',
-        'msgpack',
         'janus'
     ],
     extras_require={
