@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from schedule import Scheduler
 
-from freqtrade import __version__, constants
+from freqtrade import constants
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.constants import BuySell, Config, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
@@ -51,8 +51,6 @@ class FreqtradeBot(LoggingMixin):
         to get the config dict.
         """
         self.active_pair_whitelist: List[str] = []
-
-        logger.info('Starting freqtrade %s', __version__)
 
         # Init bot state
         self.state = State.STOPPED
