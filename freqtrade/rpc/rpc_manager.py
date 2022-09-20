@@ -78,6 +78,8 @@ class RPCManager:
                 mod.send_msg(msg)
             except NotImplementedError:
                 logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
+            except Exception:
+                logger.exception('Exception occurred within RPC module %s', mod.name)
 
     def process_msg_queue(self, queue: deque) -> None:
         """
