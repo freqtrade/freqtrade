@@ -163,6 +163,7 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
         :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :returns: Tuple of the DataFrame and last analyzed timestamp
         """
         _timeframe = self._default_timeframe if not timeframe else timeframe
         _candle_type = self._default_candle_type if not candle_type else candle_type
