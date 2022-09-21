@@ -289,11 +289,12 @@ CONF_SCHEMA = {
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'entry': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'entry_fill': {'type': 'string',
-                                       'enum': TELEGRAM_SETTING_OPTIONS,
-                                       'default': 'off'
-                                       },
+                        'entry_fill': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                        },
+                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS, },
                         'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {
@@ -301,12 +302,12 @@ CONF_SCHEMA = {
                                 'enum': TELEGRAM_SETTING_OPTIONS
                             }
                         },
-                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'on'
                         },
+                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'protection_trigger': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
@@ -315,14 +316,17 @@ CONF_SCHEMA = {
                         'protection_trigger_global': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'on'
                         },
                         'show_candle': {
                             'type': 'string',
                             'enum': ['off', 'ohlc'],
+                            'default': 'off'
                         },
                         'strategy_msg': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'on'
                         },
                     }
                 },
