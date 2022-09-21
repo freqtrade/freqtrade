@@ -212,7 +212,8 @@ class ExternalMessageConsumer:
             except (
                 socket.gaierror,
                 ConnectionRefusedError,
-                websockets.exceptions.InvalidStatusCode
+                websockets.exceptions.InvalidStatusCode,
+                websockets.exceptions.InvalidMessage
             ) as e:
                 logger.error(f"Connection Refused - {e} retrying in {self.sleep_time}s")
                 await asyncio.sleep(self.sleep_time)
@@ -224,7 +225,7 @@ class ExternalMessageConsumer:
                 continue
 
             except Exception as e:
-                # An unforseen error has occurred, log and stop
+                # An unforseen error has occurred, log and continue
                 logger.error("Unexpected error has occurred:")
                 logger.exception(e)
                 continue
