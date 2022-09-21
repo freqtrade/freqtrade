@@ -19,6 +19,11 @@ def is_freqtrade_error(error_line):
     return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
 
 
+def is_timed_out_error(error_line):
+    lower_string = error_line.lower()
+    return "connection timed out" in lower_string or "read timed out" in lower_string
+
+
 def stop_bot(error_line):
     stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
         BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
@@ -62,7 +67,7 @@ def check_condition(file_name):
 
 def __check_condition(file_name):
     error_line = get_error_line(file_name)
-    if error_line is not None and not is_freqtrade_error(error_line):
+    if error_line is not None and not is_freqtrade_error(error_line) and not is_timed_out_error(error_line):
         if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED:
             smooth_romeo_restart(error_line)
         else:
