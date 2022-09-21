@@ -59,9 +59,18 @@ async def validate_ws_token(
     secret_ws_token = api_config.get('ws_token', None)
     secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
 
-    if ws_token and secret_ws_token and secrets.compare_digest(secret_ws_token, ws_token):
-        # Just return the token if it matches
-        return ws_token
+    if ws_token and secret_ws_token:
+        is_valid_ws_token = False
+        if isinstance(secret_ws_token, str):
+            is_valid_ws_token = secrets.compare_digest(secret_ws_token, ws_token)
+        elif isinstance(secret_ws_token, list):
+            is_valid_ws_token = any([
+                secrets.compare_digest(potential, ws_token)
+                for potential in secret_ws_token
+            ])
+
+        if is_valid_ws_token:
+            return ws_token
     else:
         try:
             user = get_user_from_token(ws_token, secret_jwt_key)

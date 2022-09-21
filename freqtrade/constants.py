@@ -401,7 +401,7 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
-                'ws_token': {'type': 'string'},
+                'ws_token': {'type': ['string', 'array'], 'items': {'type': 'string'}},
                 'jwt_secret_key': {'type': 'string'},
                 'CORS_origins': {'type': 'array', 'items': {'type': 'string'}},
                 'verbosity': {'type': 'string', 'enum': ['error', 'info']},
