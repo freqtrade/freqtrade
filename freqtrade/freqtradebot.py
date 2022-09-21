@@ -594,7 +594,7 @@ class FreqtradeBot(LoggingMixin):
                 amount = trade.amount
 
             if amount == 0.0:
-                logger.info("Amount to sell is 0.0 due to exchange limits - not selling.")
+                logger.info("Amount to exit is 0.0 due to exchange limits - not exiting.")
                 return
 
             remaining = (trade.amount - amount) * current_exit_rate

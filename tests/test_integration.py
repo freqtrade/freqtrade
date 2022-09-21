@@ -521,4 +521,4 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> Non
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
     assert trade.is_open
-    assert log_has_re('Amount to sell is 0.0 due to exchange limits - not selling.', caplog)
+    assert log_has_re('Amount to exit is 0.0 due to exchange limits - not exiting.', caplog)
