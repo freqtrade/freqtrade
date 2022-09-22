@@ -1,4 +1,4 @@
-# REST API, FreqUI & External Signals
+# REST API & FreqUI
 
 ## FreqUI
 
@@ -325,22 +325,20 @@ whitelist
 
 ### Message WebSocket
 
-The API Server makes available a websocket endpoint for subscribing to RPC messages
-from the FreqTrade Bot. This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
+The API Server includes a websocket endpoint for subscribing to RPC messages
+from the freqtrade Bot. This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
 
 Assuming your rest API is set to `127.0.0.1` on port `8080`, the endpoint is available at `http://localhost:8080/api/v1/message/ws`.
 
 To access the websocket endpoint, the `ws_token` is required as a query parameter in the endpoint URL.
 
-
- To generate a safe `ws_token` you can run the following code:
+To generate a safe `ws_token` you can run the following code:
 
 ``` python
 >>> import secrets
 >>> secrets.token_urlsafe(25)
 'hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q'
 ```
-
 
 You would then add that token under `ws_token` in your `api_server` config. Like so:
 
@@ -361,10 +359,8 @@ You would then add that token under `ws_token` in your `api_server` config. Like
 
 You can now connect to the endpoint at `http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q`.
 
-!!! warning "Warning"
-
+!!! Danger "Reuse of example tokens"
     Please do not use the above example token. To make sure you are secure, generate a completely new token.
-
 
 #### Using the WebSocket
 
@@ -376,6 +372,7 @@ Once connected to the WebSocket, the bot will broadcast RPC messages to anyone w
   "data": ["whitelist", "analyzed_df"] // A list of string message types
 }
 ```
+
 For a list of message types, please refer to the RPCMessageType enum in `freqtrade/enums/rpcmessagetype.py`
 
 Now anytime those types of RPC messages are sent in the bot, you will receive them through the WebSocket as long as the connection is active. They typically take the same form as the request:

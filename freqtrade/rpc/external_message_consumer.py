@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class ExternalMessageConsumer:
     """
     The main controller class for consuming external messages from
-    other FreqTrade bot's
+    other freqtrade bot's
     """
 
     def __init__(

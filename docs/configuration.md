@@ -234,7 +234,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `api_server.ws_token` | API token for the Message WebSocket. See the [API Server documentation](rest-api.md) for more details.  <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
-| `external_message_consumer` | Enable consuming of external signals. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** Dict
+| `external_message_consumer` | Enable consuming of external signals. See the [External signals](advanced-external-signals.md) for more details. <br> **Datatype:** Dict
 | | **Other**
 | `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `force_entry_enable` | Enables the RPC Commands to force a Trade entry. More information below. <br> **Datatype:** Boolean
