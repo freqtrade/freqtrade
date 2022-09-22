@@ -59,6 +59,7 @@ async def validate_ws_token(
     secret_ws_token = api_config.get('ws_token', None)
     secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
 
+    # Check if ws_token is/in secret_ws_token
     if ws_token and secret_ws_token:
         is_valid_ws_token = False
         if isinstance(secret_ws_token, str):
@@ -71,13 +72,16 @@ async def validate_ws_token(
 
         if is_valid_ws_token:
             return ws_token
-    else:
-        try:
-            user = get_user_from_token(ws_token, secret_jwt_key)
-            return user
-        # If the token is a jwt, and it's valid return the user
-        except HTTPException:
-            pass
+
+    # Check if ws_token is a JWT
+    try:
+        user = get_user_from_token(ws_token, secret_jwt_key)
+        return user
+    # If the token is a jwt, and it's valid return the user
+    except HTTPException:
+        pass
+
+    # No checks passed, deny the connection
     logger.debug("Denying websocket request.")
     # If it doesn't match, close the websocket connection
     await ws.close(code=status.WS_1008_POLICY_VIOLATION)
