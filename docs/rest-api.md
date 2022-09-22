@@ -94,7 +94,6 @@ Make sure that the following 2 lines are available in your docker-compose file:
 !!! Danger "Security warning"
     By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
 
-
 ## Rest API
 
 ### Consuming the API
@@ -325,8 +324,10 @@ whitelist
 
 ### Message WebSocket
 
-The API Server includes a websocket endpoint for subscribing to RPC messages
-from the freqtrade Bot. This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
+The API Server includes a websocket endpoint for subscribing to RPC messages from the freqtrade Bot.
+This can be used to consume real-time data from your bot, such as entry/exit fill messages, whitelist changes, populated indicators for pairs, and more.
+
+This is also used to setup [Producer/Consumer mode](producer-consumer.md) in Freqtrade.
 
 Assuming your rest API is set to `127.0.0.1` on port `8080`, the endpoint is available at `http://localhost:8080/api/v1/message/ws`.
 

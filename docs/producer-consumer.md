@@ -1,15 +1,15 @@
-# External Signals
+# Producer / Consumer mode
 
-freqtrade provides a mechanism whereby an instance may listen to messages from an upstream freqtrade instance using the message websocket. Mainly, `analyzed_df` and `whitelist` messages. This allows the reuse of computed indicators (and signals) for pairs in multiple bots without needing to compute them multiple times.
+freqtrade provides a mechanism whereby an instance (also called `consumer`) may listen to messages from an upstream freqtrade instance (also called `producer`) using the message websocket. Mainly, `analyzed_df` and `whitelist` messages. This allows the reuse of computed indicators (and signals) for pairs in multiple bots without needing to compute them multiple times.
 
-See [Message Websocket](rest-api.md#message-websocket) in the Rest API docs for setting up the `api_server` configuration for your message websocket.
+See [Message Websocket](rest-api.md#message-websocket) in the Rest API docs for setting up the `api_server` configuration for your message websocket (this will be your producer).
 
 !!! Note
-    We strongly recommend to also set `ws_token` to something random and known only to yourself to avoid unauthorized access to your bot.
+    We strongly recommend to set `ws_token` to something random and known only to yourself to avoid unauthorized access to your bot.
 
 ## Configuration
 
-Enable subscribing to an instance by adding the `external_message_consumer` section to the follower's config file.
+Enable subscribing to an instance by adding the `external_message_consumer` section to the consumer's config file.
 
 ```json
 {
@@ -19,9 +19,9 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
         "producers": [
             {
                 "name": "default", // This can be any name you'd like, default is "default"
-                "host": "127.0.0.1", // The host from your leader's api_server config
-                "port": 8080, // The port from your leader's api_server config
-                "ws_token": "mysecretapitoken" // The ws_token from your leader's api_server config
+                "host": "127.0.0.1", // The host from your producer's api_server config
+                "port": 8080, // The port from your producer's api_server config
+                "ws_token": "sercet_Ws_t0ken" // The ws_token from your producer's api_server config
             }
         ],
         // The following configurations are optional, and usually not required
@@ -37,12 +37,12 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 
 |  Parameter | Description |
 |------------|-------------|
-| `enabled` | **Required.** Enable follower mode. If set to false, all other settings in this section are ignored.<br>*Defaults to `false`.*<br> **Datatype:** boolean .
+| `enabled` | **Required.** Enable consumer mode. If set to false, all other settings in this section are ignored.<br>*Defaults to `false`.*<br> **Datatype:** boolean .
 | `producers` | **Required.** List of producers <br> **Datatype:** Array.
 | `producers.name` | **Required.** Name of this producer. This name must be used in calls to `get_producer_pairs()` and `get_producer_df()` if more than one producer is used.<br> **Datatype:** string
-| `producers.host` | **Required.** The hostname or IP address from your leader.<br> **Datatype:** string
+| `producers.host` | **Required.** The hostname or IP address from your producer.<br> **Datatype:** string
 | `producers.port` | **Required.** The port matching the above host.<br> **Datatype:** string
-| `producers.ws_token` | **Required.**  `ws_token` as configured on the leader.<br> **Datatype:** string
+| `producers.ws_token` | **Required.**  `ws_token` as configured on the producer.<br> **Datatype:** string
 | | **Optional settings**
 | `wait_timeout` | Timeout until we ping again if no message is received. <br>*Defaults to `300`.*<br> **Datatype:** Integer - in seconds.
 | `wait_timeout` | Ping timeout <br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
@@ -50,18 +50,18 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 | `remove_entry_exit_signals` | Remove signal columns from the dataframe (set them to 0) on dataframe receipt.<br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
 | `message_size_limit` | Size limit per message<br>*Defaults to `8`.*<br> **Datatype:** Integer - Megabytes.
 
-Instead of (or as well as) calculating indicators in `populate_indicators()` the follower instance listens on the connection to a leader instance's messages (or multiple leader instances in advanced configurations) and requests the leader's most recently analyzed dataframes for each pair in the active whitelist.
+Instead of (or as well as) calculating indicators in `populate_indicators()` the follower instance listens on the connection to a producer instance's messages (or multiple producer instances in advanced configurations) and requests the producer's most recently analyzed dataframes for each pair in the active whitelist.
 
-A follower instance will then have a full copy of the analyzed dataframes without the need to calculate them itself.
+A consumer instance will then have a full copy of the analyzed dataframes without the need to calculate them itself.
 
 ## Examples
 
-### Example - Leader Strategy
+### Example - Producer Strategy
 
 A simple strategy with multiple indicators. No special considerations are required in the strategy itself.
 
 ```py
-class LeaderStrategy(IStrategy):
+class ProducerStrategy(IStrategy):
     #...
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -92,14 +92,18 @@ class LeaderStrategy(IStrategy):
         return dataframe
 ```
 
-### Example - Follower Strategy
+!!! Tip "FreqAI"
+    You can use this to setup [FreqAI](freqai.md) on a powerful machine, while you run consumers on simple machines like raspberries, which can interpret the signals generated from the producer in different ways.
 
-A logically equivalent strategy which calculates no indicators itself, but will have the same analyzed dataframes available to make trading decisions based on the indicators calculated in the leader. In this example the follower has the same entry criteria, however this is not necessary. The follower may use different logic to enter/exit trades, and only use the indicators as specified.
+
+### Example - Consumer Strategy
+
+A logically equivalent strategy which calculates no indicators itself, but will have the same analyzed dataframes available to make trading decisions based on the indicators calculated in the producer. In this example the consumer has the same entry criteria, however this is not necessary. The consumer may use different logic to enter/exit trades, and only use the indicators as specified.
 
 ```py
-class FollowerStrategy(IStrategy):
+class ConsumerStrategy(IStrategy):
     #...
-    process_only_new_candles = False # required for followers
+    process_only_new_candles = False # required for consumers
 
     _columns_to_expect = ['rsi_default', 'tema_default', 'bb_middleband_default']
 
@@ -111,13 +115,13 @@ class FollowerStrategy(IStrategy):
         pair = metadata['pair']
         timeframe = self.timeframe
 
-        leader_pairs = self.dp.get_producer_pairs()
+        producer_pairs = self.dp.get_producer_pairs()
         # You can specify which producer to get pairs from via:
         # self.dp.get_producer_pairs("my_other_producer")
 
         # This func returns the analyzed dataframe, and when it was analyzed
-        leader_dataframe, _ = self.dp.get_producer_df(pair)
-        # You can get other data if your leader makes it available:
+        producer_dataframe, _ = self.dp.get_producer_df(pair)
+        # You can get other data if the producer makes it available:
         # self.dp.get_producer_df(
         #   pair,
         #   timeframe="1h",
@@ -125,10 +129,10 @@ class FollowerStrategy(IStrategy):
         #   producer_name="my_other_producer"
         # )
 
-        if not leader_dataframe.empty:
-            # If you plan on passing the leader's entry/exit signal directly,
+        if not producer_dataframe.empty:
+            # If you plan on passing the producer's entry/exit signal directly,
             # specify ffill=False or it will have unintended results
-            merged_dataframe = merge_informative_pair(dataframe, leader_dataframe,
+            merged_dataframe = merge_informative_pair(dataframe, producer_dataframe,
                                                       timeframe, timeframe,
                                                       append_timeframe=False,
                                                       suffix="default")
@@ -154,3 +158,6 @@ class FollowerStrategy(IStrategy):
 
         return dataframe
 ```
+
+!!! Tip "Using upstream signals"
+    By setting `remove_entry_exit_signals=false`, you can also use the producer's signals directly. They should be available as `enter_long_default` (assuming `suffix="default"` was used) - and can be used as either signal directly, or as additional indicator.

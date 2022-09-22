@@ -35,7 +35,7 @@ nav:
         - Advanced Post-installation Tasks: advanced-setup.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
-        - External Signals: advanced-external-signals.md
+        - Producer/Consumer mode: producer-consumer.md
         - FreqAI: freqai.md
         - Edge Positioning: edge.md
         - Sandbox Testing: sandbox-testing.md
