@@ -150,7 +150,7 @@ class DataProvider:
         self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
         logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
-    def get_external_df(
+    def get_producer_df(
         self,
         pair: str,
         timeframe: Optional[str] = None,
@@ -158,7 +158,7 @@ class DataProvider:
         producer_name: str = "default"
     ) -> Tuple[DataFrame, datetime]:
         """
-        Get the pair data from the external sources.
+        Get the pair data from producers.
 
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for

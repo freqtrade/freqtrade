@@ -161,7 +161,7 @@ def test_producer_pairs(mocker, default_conf, ohlcv_history):
     assert dataprovider.get_producer_pairs("bad") == []
 
 
-def test_external_df(mocker, default_conf, ohlcv_history):
+def test_get_producer_df(mocker, default_conf, ohlcv_history):
     dataprovider = DataProvider(default_conf, None)
 
     pair = 'BTC/USDT'
@@ -172,23 +172,23 @@ def test_external_df(mocker, default_conf, ohlcv_history):
     now = datetime.now(timezone.utc)
 
     # no data has been added, any request should return an empty dataframe
-    dataframe, la = dataprovider.get_external_df(pair, timeframe, candle_type)
+    dataframe, la = dataprovider.get_producer_df(pair, timeframe, candle_type)
     assert dataframe.empty
     assert la == empty_la
 
     # the data is added, should return that added dataframe
     dataprovider._add_external_df(pair, ohlcv_history, now, timeframe, candle_type)
-    dataframe, la = dataprovider.get_external_df(pair, timeframe, candle_type)
+    dataframe, la = dataprovider.get_producer_df(pair, timeframe, candle_type)
     assert len(dataframe) > 0
     assert la > empty_la
 
     # no data on this producer, should return empty dataframe
-    dataframe, la = dataprovider.get_external_df(pair, producer_name='bad')
+    dataframe, la = dataprovider.get_producer_df(pair, producer_name='bad')
     assert dataframe.empty
     assert la == empty_la
 
     # non existent timeframe, empty dataframe
-    datframe, la = dataprovider.get_external_df(pair, timeframe='1h')
+    datframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
     assert dataframe.empty
     assert la == empty_la
 

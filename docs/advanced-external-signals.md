@@ -39,7 +39,7 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 |------------|-------------|
 | `enabled` | **Required.** Enable follower mode. If set to false, all other settings in this section are ignored.<br>*Defaults to `false`.*<br> **Datatype:** boolean .
 | `producers` | **Required.** List of producers <br> **Datatype:** Array.
-| `producers.name` | **Required.** Name of this producer. This name must be used in calls to `get_producer_pairs()` and `get_external_df()` if more than one producer is used.<br> **Datatype:** string
+| `producers.name` | **Required.** Name of this producer. This name must be used in calls to `get_producer_pairs()` and `get_producer_df()` if more than one producer is used.<br> **Datatype:** string
 | `producers.host` | **Required.** The hostname or IP address from your leader.<br> **Datatype:** string
 | `producers.port` | **Required.** The port matching the above host.<br> **Datatype:** string
 | `producers.ws_token` | **Required.**  `ws_token` as configured on the leader.<br> **Datatype:** string
@@ -106,7 +106,7 @@ class FollowerStrategy(IStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Use the websocket api to get pre-populated indicators from another freqtrade instance.
-        Use `self.dp.get_external_df(pair)` to get the dataframe
+        Use `self.dp.get_producer_df(pair)` to get the dataframe
         """
         pair = metadata['pair']
         timeframe = self.timeframe
@@ -116,9 +116,9 @@ class FollowerStrategy(IStrategy):
         # self.dp.get_producer_pairs("my_other_producer")
 
         # This func returns the analyzed dataframe, and when it was analyzed
-        leader_dataframe, _ = self.dp.get_external_df(pair)
+        leader_dataframe, _ = self.dp.get_producer_df(pair)
         # You can get other data if your leader makes it available:
-        # self.dp.get_external_df(
+        # self.dp.get_producer_df(
         #   pair,
         #   timeframe="1h",
         #   candle_type=CandleType.SPOT,
