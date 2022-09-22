@@ -57,7 +57,7 @@ You can specify additional configuration files in `add_config_files`. Files spec
 This is similar to using multiple `--config` parameters, but simpler in usage as you don't have to specify all files for all commands.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
-    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.  
+    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
     The 2nd file should only specify what you intend to override.
     If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
 
@@ -110,7 +110,7 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited"
     }
     ```
-    
+
     If multiple files are in the `add_config_files` section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).
 
 ## Configuration parameters
@@ -659,22 +659,26 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
 ### Using proxy with Freqtrade
 
-To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
-
-An example for this can be found in `config_examples/config_full.example.json`
-
-``` json
-"ccxt_async_config": {
-    "aiohttp_trust_env": true
-}
-```
-
-Then, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values
+To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
 
 ``` bash
 export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
+```
+
+#### Proxy just exchange requests
+
+To use a proxy just for exchange connections (skips/ignores telegram and coingecko) - you can also define the proxies as part of the ccxt configuration.
+
+``` json
+"ccxt_config": {
+    "aiohttp_proxy": "http://addr:port",
+    "proxies": {
+        "http": "http://addr:port",
+        "https": "http://addr:port"
+    },
+}
 ```
 
 ## Next step

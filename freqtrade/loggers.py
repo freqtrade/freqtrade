@@ -2,8 +2,8 @@ import logging
 import sys
 from logging import Formatter
 from logging.handlers import BufferingHandler, RotatingFileHandler, SysLogHandler
-from typing import Any, Dict
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 
 
@@ -73,7 +73,7 @@ def setup_logging_pre() -> None:
     )
 
 
-def setup_logging(config: Dict[str, Any]) -> None:
+def setup_logging(config: Config) -> None:
     """
     Process -v/--verbose, --logfile options
     """

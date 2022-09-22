@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
+from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
@@ -28,7 +28,7 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
+    def __init__(self, config: Config, exchange: Optional[Exchange], pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
@@ -86,7 +86,7 @@ class DataProvider:
         """
         _candle_type = CandleType.from_string(
             candle_type) if candle_type != '' else self._config['candle_type_def']
-        saved_pair = (pair, str(timeframe), _candle_type)
+        saved_pair: PairWithTimeframe = (pair, str(timeframe), _candle_type)
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
@@ -196,7 +196,9 @@ class DataProvider:
         Clear pair dataframe cache.
         """
         self.__cached_pairs = {}
-        self.__cached_pairs_backtesting = {}
+        # Don't reset backtesting pairs -
+        # otherwise they're reloaded each time during hyperopt due to with analyze_per_epoch
+        # self.__cached_pairs_backtesting = {}
         self.__slice_index = 0
 
     # Exchange functions

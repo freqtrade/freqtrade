@@ -922,6 +922,45 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, 
     hyperopt.start()
 
 
+def test_in_strategy_auto_hyperopt_per_epoch(mocker, hyperopt_conf, tmpdir, fee) -> None:
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+
+    hyperopt_conf.update({
+        'strategy': 'HyperoptableStrategy',
+        'user_data_dir': Path(tmpdir),
+        'hyperopt_random_state': 42,
+        'spaces': ['all'],
+        'epochs': 3,
+        'analyze_per_epoch': True,
+    })
+    go = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.generate_optimizer',
+                      return_value={
+                            'loss': 0.05,
+                            'results_explanation': 'foo result', 'params': {},
+                            'results_metrics': generate_result_metrics(),
+                        })
+    hyperopt = Hyperopt(hyperopt_conf)
+    hyperopt.backtesting.exchange.get_max_leverage = MagicMock(return_value=1.0)
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+    assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
+    assert hyperopt.backtesting.strategy.bot_loop_started is True
+
+    assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
+    assert hyperopt.backtesting.strategy.buy_rsi.value == 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value == 74
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value == 30
+    buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
+    assert isinstance(buy_rsi_range, range)
+    # Range from 0 - 50 (inclusive)
+    assert len(list(buy_rsi_range)) == 51
+
+    hyperopt.start()
+    # backtesting should be called 3 times (once per epoch)
+    assert go.call_count == 3
+
+
 def test_SKDecimal():
     space = SKDecimal(1, 2, decimals=2)
     assert 1.5 in space

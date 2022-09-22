@@ -468,6 +468,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
        "max_rate_of_change": 0.01, "refresh_period": 1440}],
      "BTC", []),  # All removed because of max_rate_of_change being 0.017
     ([{"method": "StaticPairList"},
+      {"method": "RangeStabilityFilter", "lookback_days": 10,
+        "min_rate_of_change": 0.018, "max_rate_of_change": 0.02, "refresh_period": 1440}],
+     "BTC", []),  # All removed - limits are above the highest change_rate
+    ([{"method": "StaticPairList"},
       {"method": "VolatilityFilter", "lookback_days": 3,
        "min_volatility": 0.002, "max_volatility": 0.004, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC']),

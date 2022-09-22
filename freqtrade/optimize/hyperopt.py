@@ -21,7 +21,7 @@ from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_
 from joblib.externals import cloudpickle
 from pandas import DataFrame
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import HyperoptState
@@ -66,7 +66,7 @@ class Hyperopt:
     hyperopt.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
         self.protection_space: List[Dimension] = []
@@ -132,7 +132,7 @@ class Hyperopt:
         self.print_json = self.config.get('print_json', False)
 
     @staticmethod
-    def get_lock_filename(config: Dict[str, Any]) -> str:
+    def get_lock_filename(config: Config) -> str:
 
         return str(config['user_data_dir'] / 'hyperopt.lock')
 
@@ -290,7 +290,7 @@ class Hyperopt:
                 # noinspection PyProtectedMember
                 attr.value = params_dict[attr_name]
 
-    def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
+    def generate_optimizer(self, raw_params: List[Any]) -> Dict[str, Any]:
         """
         Used Optimize function.
         Called once per epoch to optimize whatever is configured.
@@ -410,9 +410,11 @@ class Hyperopt:
             model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
 
-    def run_optimizer_parallel(self, parallel, asked, i) -> List:
+    def run_optimizer_parallel(
+            self, parallel: Parallel, asked: List[List]) -> List[Dict[str, Any]]:
+        """ Start optimizer in a parallel way """
         return parallel(delayed(
-                        wrap_non_picklable_objects(self.generate_optimizer))(v, i) for v in asked)
+                        wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked)
 
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
@@ -491,6 +493,53 @@ class Hyperopt:
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
 
+    def get_progressbar_widgets(self):
+        if self.print_colorized:
+            widgets = [
+                ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                ' (', progressbar.Percentage(), ')] ',
+                progressbar.Bar(marker=progressbar.AnimatedMarker(
+                    fill='\N{FULL BLOCK}',
+                    fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
+                    marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
+                )),
+                ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+            ]
+        else:
+            widgets = [
+                ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
+                ' (', progressbar.Percentage(), ')] ',
+                progressbar.Bar(marker=progressbar.AnimatedMarker(
+                    fill='\N{FULL BLOCK}',
+                )),
+                ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
+            ]
+        return widgets
+
+    def evaluate_result(self, val: Dict[str, Any], current: int, is_random: bool):
+        """
+        Evaluate results returned from generate_optimizer
+        """
+        val['current_epoch'] = current
+        val['is_initial_point'] = current <= INITIAL_POINTS
+
+        logger.debug("Optimizer epoch evaluated: %s", val)
+
+        is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
+        # This value is assigned here and not in the optimization method
+        # to keep proper order in the list of results. That's because
+        # evaluations can take different time. Here they are aligned in the
+        # order they will be shown to the user.
+        val['is_best'] = is_best
+        val['is_random'] = is_random
+        self.print_results(val)
+
+        if is_best:
+            self.current_best_loss = val['loss']
+            self.current_best_epoch = val
+
+        self._save_result(val)
+
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state'))
         logger.info(f"Using optimizer random state: {self.random_state}")
@@ -526,64 +575,40 @@ class Hyperopt:
                 logger.info(f'Effective number of parallel workers used: {jobs}')
 
                 # Define progressbar
-                if self.print_colorized:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                            fill_wrap=Fore.GREEN + '{}' + Fore.RESET,
-                            marker_wrap=Style.BRIGHT + '{}' + Style.RESET_ALL,
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
-                else:
-                    widgets = [
-                        ' [Epoch ', progressbar.Counter(), ' of ', str(self.total_epochs),
-                        ' (', progressbar.Percentage(), ')] ',
-                        progressbar.Bar(marker=progressbar.AnimatedMarker(
-                            fill='\N{FULL BLOCK}',
-                        )),
-                        ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
-                    ]
+                widgets = self.get_progressbar_widgets()
                 with progressbar.ProgressBar(
                     max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
                     widgets=widgets
                 ) as pbar:
-                    EVALS = ceil(self.total_epochs / jobs)
-                    for i in range(EVALS):
+                    start = 0
+
+                    if self.analyze_per_epoch:
+                        # First analysis not in parallel mode when using --analyze-per-epoch.
+                        # This allows dataprovider to load it's informative cache.
+                        asked, is_random = self.get_asked_points(n_points=1)
+                        f_val0 = self.generate_optimizer(asked[0])
+                        self.opt.tell(asked, [f_val0['loss']])
+                        self.evaluate_result(f_val0, 1, is_random[0])
+                        pbar.update(1)
+                        start += 1
+
+                    evals = ceil((self.total_epochs - start) / jobs)
+                    for i in range(evals):
                         # Correct the number of epochs to be processed for the last
                         # iteration (should not exceed self.total_epochs in total)
-                        n_rest = (i + 1) * jobs - self.total_epochs
+                        n_rest = (i + 1) * jobs - (self.total_epochs - start)
                         current_jobs = jobs - n_rest if n_rest > 0 else jobs
 
                         asked, is_random = self.get_asked_points(n_points=current_jobs)
-                        f_val = self.run_optimizer_parallel(parallel, asked, i)
+                        f_val = self.run_optimizer_parallel(parallel, asked)
                         self.opt.tell(asked, [v['loss'] for v in f_val])
 
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
                             # Use human-friendly indexes here (starting from 1)
-                            current = i * jobs + j + 1
-                            val['current_epoch'] = current
-                            val['is_initial_point'] = current <= INITIAL_POINTS
+                            current = i * jobs + j + 1 + start
 
-                            logger.debug(f"Optimizer epoch evaluated: {val}")
-
-                            is_best = HyperoptTools.is_best_loss(val, self.current_best_loss)
-                            # This value is assigned here and not in the optimization method
-                            # to keep proper order in the list of results. That's because
-                            # evaluations can take different time. Here they are aligned in the
-                            # order they will be shown to the user.
-                            val['is_best'] = is_best
-                            val['is_random'] = is_random[j]
-                            self.print_results(val)
-
-                            if is_best:
-                                self.current_best_loss = val['loss']
-                                self.current_best_epoch = val
-
-                            self._save_result(val)
+                            self.evaluate_result(val, current, is_random[j])
 
                             pbar.update(current)
 

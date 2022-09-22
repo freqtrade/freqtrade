@@ -297,7 +297,7 @@ class TestCCXTExchange():
     def test_ccxt__async_get_candle_history(self, exchange):
         exchange, exchangename = exchange
         # For some weired reason, this test returns random lengths for bittrex.
-        if not exchange._ft_has['ohlcv_has_history'] or exchangename in ('bittrex', 'gateio'):
+        if not exchange._ft_has['ohlcv_has_history'] or exchangename in ('bittrex'):
             return
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']

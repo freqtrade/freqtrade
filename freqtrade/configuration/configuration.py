@@ -13,6 +13,7 @@ from freqtrade.configuration.deprecated_settings import process_temporary_deprec
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_file, load_from_files
+from freqtrade.constants import Config
 from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
@@ -30,10 +31,10 @@ class Configuration:
 
     def __init__(self, args: Dict[str, Any], runmode: RunMode = None) -> None:
         self.args = args
-        self.config: Optional[Dict[str, Any]] = None
+        self.config: Optional[Config] = None
         self.runmode = runmode
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Config:
         """
         Return the config. Use this method to get the bot config
         :return: Dict: Bot config
@@ -65,7 +66,7 @@ class Configuration:
         :return: Configuration dictionary
         """
         # Load all configs
-        config: Dict[str, Any] = load_from_files(self.args.get("config", []))
+        config: Config = load_from_files(self.args.get("config", []))
 
         # Load environment variables
         env_data = enironment_vars_to_dict()
@@ -108,7 +109,7 @@ class Configuration:
 
         return config
 
-    def _process_logging_options(self, config: Dict[str, Any]) -> None:
+    def _process_logging_options(self, config: Config) -> None:
         """
         Extract information for sys.argv and load logging configuration:
         the -v/--verbose, --logfile options
@@ -121,7 +122,7 @@ class Configuration:
 
         setup_logging(config)
 
-    def _process_trading_options(self, config: Dict[str, Any]) -> None:
+    def _process_trading_options(self, config: Config) -> None:
         if config['runmode'] not in TRADING_MODES:
             return
 
@@ -137,7 +138,7 @@ class Configuration:
 
         logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
 
-    def _process_common_options(self, config: Dict[str, Any]) -> None:
+    def _process_common_options(self, config: Config) -> None:
 
         # Set strategy if not specified in config and or if it's non default
         if self.args.get('strategy') or not config.get('strategy'):
@@ -161,7 +162,7 @@ class Configuration:
         if 'sd_notify' in self.args and self.args['sd_notify']:
             config['internals'].update({'sd_notify': True})
 
-    def _process_datadir_options(self, config: Dict[str, Any]) -> None:
+    def _process_datadir_options(self, config: Config) -> None:
         """
         Extract information for sys.argv and load directory configurations
         --user-data, --datadir
@@ -195,7 +196,7 @@ class Configuration:
             config['exportfilename'] = (config['user_data_dir']
                                         / 'backtest_results')
 
-    def _process_optimize_options(self, config: Dict[str, Any]) -> None:
+    def _process_optimize_options(self, config: Config) -> None:
 
         # This will override the strategy configuration
         self._args_to_config(config, argname='timeframe',
@@ -380,7 +381,7 @@ class Configuration:
         self._args_to_config(config, argname="hyperopt_ignore_missing_space",
                              logstring="Paramter --ignore-missing-space detected: {}")
 
-    def _process_plot_options(self, config: Dict[str, Any]) -> None:
+    def _process_plot_options(self, config: Config) -> None:
 
         self._args_to_config(config, argname='pairs',
                              logstring='Using pairs {}')
@@ -432,7 +433,7 @@ class Configuration:
         self._args_to_config(config, argname='show_timerange',
                              logstring='Detected --show-timerange')
 
-    def _process_data_options(self, config: Dict[str, Any]) -> None:
+    def _process_data_options(self, config: Config) -> None:
         self._args_to_config(config, argname='new_pairs_days',
                              logstring='Detected --new-pairs-days: {}')
         self._args_to_config(config, argname='trading_mode',
@@ -443,7 +444,7 @@ class Configuration:
         self._args_to_config(config, argname='candle_types',
                              logstring='Detected --candle-types: {}')
 
-    def _process_analyze_options(self, config: Dict[str, Any]) -> None:
+    def _process_analyze_options(self, config: Config) -> None:
         self._args_to_config(config, argname='analysis_groups',
                              logstring='Analysis reason groups: {}')
 
@@ -456,7 +457,7 @@ class Configuration:
         self._args_to_config(config, argname='indicator_list',
                              logstring='Analysis indicator list: {}')
 
-    def _process_runmode(self, config: Dict[str, Any]) -> None:
+    def _process_runmode(self, config: Config) -> None:
 
         self._args_to_config(config, argname='dry_run',
                              logstring='Parameter --dry-run detected, '
@@ -469,7 +470,7 @@ class Configuration:
 
         config.update({'runmode': self.runmode})
 
-    def _process_freqai_options(self, config: Dict[str, Any]) -> None:
+    def _process_freqai_options(self, config: Config) -> None:
 
         self._args_to_config(config, argname='freqaimodel',
                              logstring='Using freqaimodel class name: {}')
@@ -479,7 +480,7 @@ class Configuration:
 
         return
 
-    def _args_to_config(self, config: Dict[str, Any], argname: str,
+    def _args_to_config(self, config: Config, argname: str,
                         logstring: str, logfun: Optional[Callable] = None,
                         deprecated_msg: Optional[str] = None) -> None:
         """
@@ -502,7 +503,7 @@ class Configuration:
             if deprecated_msg:
                 warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
 
-    def _resolve_pairs_list(self, config: Dict[str, Any]) -> None:
+    def _resolve_pairs_list(self, config: Config) -> None:
         """
         Helper for download script.
         Takes first found:

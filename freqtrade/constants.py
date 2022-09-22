@@ -3,7 +3,7 @@
 """
 bot constants
 """
-from typing import List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 from freqtrade.enums import CandleType
 
@@ -289,11 +289,12 @@ CONF_SCHEMA = {
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'entry': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'entry_fill': {'type': 'string',
-                                       'enum': TELEGRAM_SETTING_OPTIONS,
-                                       'default': 'off'
-                                       },
+                        'entry_fill': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                        },
+                        'entry_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS, },
                         'exit': {
                             'type': ['string', 'object'],
                             'additionalProperties': {
@@ -301,12 +302,12 @@ CONF_SCHEMA = {
                                 'enum': TELEGRAM_SETTING_OPTIONS
                             }
                         },
-                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'exit_fill': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'on'
                         },
+                        'exit_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'protection_trigger': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
@@ -315,14 +316,17 @@ CONF_SCHEMA = {
                         'protection_trigger_global': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'on'
                         },
                         'show_candle': {
                             'type': 'string',
                             'enum': ['off', 'ohlc'],
+                            'default': 'off'
                         },
                         'strategy_msg': {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'on'
                         },
                     }
                 },
@@ -504,6 +508,7 @@ CONF_SCHEMA = {
                         "weight_factor": {"type": "number", "default": 0},
                         "principal_component_analysis": {"type": "boolean", "default": False},
                         "use_SVM_to_remove_outliers": {"type": "boolean", "default": False},
+                        "plot_feature_importance": {"type": "boolean", "default": False},
                         "svm_params": {"type": "object",
                                        "properties": {
                                            "shuffle": {"type": "boolean", "default": False},
@@ -600,3 +605,5 @@ LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
+
+Config = Dict[str, Any]

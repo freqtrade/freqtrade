@@ -1,19 +1,25 @@
 import logging
 from datetime import datetime, timezone
+from typing import Any
+
+import numpy as np
+import pandas as pd
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history.history_utils import refresh_backtest_ohlcv_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.exchange import market_is_active
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 
 
 logger = logging.getLogger(__name__)
 
 
-def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
+def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
     """
     Called only once upon start of bot to download the necessary data for
     populating indicators and training the model.
@@ -47,9 +53,7 @@ def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
     )
 
 
-def get_required_data_timerange(
-    config: dict
-) -> TimeRange:
+def get_required_data_timerange(config: Config) -> TimeRange:
     """
     Used to compute the required data download time range
     for auto data-download in FreqAI
@@ -86,7 +90,7 @@ def get_required_data_timerange(
 
 
 # Keep below for when we wish to download heterogeneously lengthed data for FreqAI.
-# def download_all_data_for_training(dp: DataProvider, config: dict) -> None:
+# def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
 #     """
 #     Called only once upon start of bot to download the necessary data for
 #     populating indicators and training a FreqAI model.
@@ -132,3 +136,58 @@ def get_required_data_timerange(
 #             trading_mode=config.get("trading_mode", "spot"),
 #             prepend=config.get("prepend_data", False),
 #         )
+
+
+def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
+                            count_max: int = 25) -> None:
+    """
+        Plot Best and worst features by importance for a single sub-train.
+        :param model: Any = A model which was `fit` using a common library
+                            such as catboost or lightgbm
+        :param pair: str = pair e.g. BTC/USD
+        :param dk: FreqaiDataKitchen = non-persistent data container for current coin/loop
+        :param count_max: int = the amount of features to be loaded per column
+    """
+    from freqtrade.plot.plotting import go, make_subplots, store_plot_file
+
+    # Extract feature importance from model
+    models = {}
+    if 'FreqaiMultiOutputRegressor' in str(model.__class__):
+        for estimator, label in zip(model.estimators_, dk.label_list):
+            models[label] = estimator
+    else:
+        models[dk.label_list[0]] = model
+
+    for label in models:
+        mdl = models[label]
+        if "catboost.core" in str(mdl.__class__):
+            feature_importance = mdl.get_feature_importance()
+        elif "lightgbm.sklearn" or "xgb" in str(mdl.__class__):
+            feature_importance = mdl.feature_importances_
+        else:
+            logger.info('Model type not support for generating feature importances.')
+            return
+
+        # Data preparation
+        fi_df = pd.DataFrame({
+            "feature_names": np.array(dk.training_features_list),
+            "feature_importance": np.array(feature_importance)
+        })
+        fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
+        fi_df_worst = fi_df.nsmallest(count_max, "feature_importance")[::-1]
+
+        # Plotting
+        def add_feature_trace(fig, fi_df, col):
+            return fig.add_trace(
+                go.Bar(
+                    x=fi_df["feature_importance"],
+                    y=fi_df["feature_names"],
+                    orientation='h', showlegend=False
+                ), row=1, col=col
+            )
+        fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.5)
+        fig = add_feature_trace(fig, fi_df_top, 1)
+        fig = add_feature_trace(fig, fi_df_worst, 2)
+        fig.update_layout(title_text=f"Best and worst features by importance {pair}")
+        label = label.replace('&', '').replace('%', '')  # escape two FreqAI specific characters
+        store_plot_file(fig, f"{dk.model_filename}-{label}.html", dk.data_path)

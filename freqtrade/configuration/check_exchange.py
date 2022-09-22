@@ -1,6 +1,6 @@
 import logging
-from typing import Any, Dict
 
+from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import (available_exchanges, is_exchange_known_ccxt,
@@ -10,7 +10,7 @@ from freqtrade.exchange import (available_exchanges, is_exchange_known_ccxt,
 logger = logging.getLogger(__name__)
 
 
-def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
+def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
     """
     Check if the exchange name in the config file is supported by Freqtrade
     :param check_for_bad: if True, check the exchange against the list of known 'bad'
