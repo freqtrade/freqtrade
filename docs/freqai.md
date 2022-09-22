@@ -4,7 +4,7 @@
 
 ##Introduction
 
-FreqAI is a module designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.
+FreqAI is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.
 
 Features include:
 
