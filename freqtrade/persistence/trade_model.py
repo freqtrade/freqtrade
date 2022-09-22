@@ -83,7 +83,7 @@ class Order(_DECL_BASE):
 
     @property
     def safe_price(self) -> float:
-        return self.average or self.price
+        return self.average or self.price or self.stop_price
 
     @property
     def safe_filled(self) -> float:
@@ -377,6 +377,12 @@ class LocalTrade():
         return self.open_date.replace(tzinfo=timezone.utc)
 
     @property
+    def stoploss_last_update_utc(self):
+        if self.stoploss_last_update:
+            return self.stoploss_last_update.replace(tzinfo=timezone.utc)
+        return None
+
+    @property
     def close_date_utc(self):
         return self.close_date.replace(tzinfo=timezone.utc)
 
@@ -560,7 +566,6 @@ class LocalTrade():
         self.stop_loss = stop_loss_norm
 
         self.stop_loss_pct = -1 * abs(percent)
-        self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False, refresh: bool = False) -> None:

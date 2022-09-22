@@ -69,7 +69,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='PATH',
     ),
     "datadir": Arg(
-        '-d', '--datadir',
+        '-d', '--datadir', '--data-dir',
         help='Path to directory with historical backtesting data.',
         metavar='PATH',
     ),
@@ -393,7 +393,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Download data
     "pairs_file": Arg(
         '--pairs-file',
-        help='File containing a list of pairs to download.',
+        help='File containing a list of pairs. '
+             'Takes precedence over --pairs or pairs configured in the configuration.',
         metavar='FILE',
     ),
     "days": Arg(

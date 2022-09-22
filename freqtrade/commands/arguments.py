@@ -53,8 +53,8 @@ ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all",
                    "trading_mode"]
 
-ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
-                      "list_pairs_print_json", "exchange"]
+ARGS_TEST_PAIRLIST = ["user_data_dir", "verbosity", "config", "quote_currencies",
+                      "print_one_column", "list_pairs_print_json", "exchange"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
@@ -62,9 +62,9 @@ ARGS_BUILD_CONFIG = ["config"]
 
 ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
-ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
+ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase", "exchange"]
 
-ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "exchange", "trading_mode",
+ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes", "trading_mode",
                                                "candle_types"]
 
 ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]

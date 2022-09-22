@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from freqtrade.constants import LongShort
+from freqtrade.constants import Config, LongShort
 from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
@@ -19,7 +19,7 @@ class MaxDrawdown(IProtection):
     has_global_stop: bool = True
     has_local_stop: bool = False
 
-    def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config, protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
 
         self._trade_limit = protection_config.get('trade_limit', 1)

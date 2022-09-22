@@ -472,7 +472,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
 
     api_mock.fetch_market_leverage_tiers.call_count == 0
     # 2 day passes ...
-    time_machine.move_to(datetime.now() + timedelta(days=2))
+    time_machine.move_to(datetime.now() + timedelta(weeks=5))
     exchange.load_leverage_tiers()
 
     assert log_has(logmsg, caplog)
