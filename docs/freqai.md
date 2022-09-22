@@ -913,6 +913,10 @@ and then the `&-action` will be used in `populate_entry/exit` functions:
 
 Users should be careful to consider that `&-action` depends on which environment they choose to use. The example above shows 5 actions, where 0 is neutral, 1 is enter long, 2 is exit long, 3 is enter short and 4 is exit short. 
 
+### Creating a custom agent
+
+Users can inherit from `stable_baselines3` and customize anything they wish about their agent. Doing this is for advanced users only, an example is presented in `freqai/RL/ReinforcementLearnerCustomAgent.py`
+
 ### Using Tensorboard
 
 Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
