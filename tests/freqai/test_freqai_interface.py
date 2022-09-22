@@ -18,6 +18,11 @@ def is_arm() -> bool:
     return "arm" in machine or "aarch64" in machine
 
 
+def is_mac() -> bool:
+    machine = platform.system()
+    return "Darwin" in machine
+
+
 @pytest.mark.parametrize('model', [
     'LightGBMRegressor',
     'XGBoostRegressor',
@@ -28,6 +33,9 @@ def is_arm() -> bool:
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
+
+    if is_mac():
+        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})

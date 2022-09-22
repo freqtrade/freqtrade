@@ -805,3 +805,129 @@ Code review, software architecture brainstorming:
 Beta testing and bug reporting:
 @bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm,
 Juha Nykänen @suikula, Wagner Costa @wagnercosta
+
+
+## Reinforcement Learning
+
+Setting up and running a Reinforcement Learning model is as quick and simple as running a Regressor. Users can start training and trading live from example files using:
+
+```bash
+freqtrade trade --freqaimodel ReinforcementLearner --strategy ReinforcementLearningExample5ac --strategy-path freqtrade/freqai/example_strats --config config_examples/config_freqai-rl.example.json
+```
+
+As users begin to modify the strategy and the prediction model, they will quickly realize some important differences between the Reinforcement Learner and the Regressors/Classifiers. Firstly, the strategy does not set a target value (no labels!). Instead, the user sets a `calculate_reward()` function inside their custom `ReinforcementLearner.py` file. A default `calculate_reward()` is provided inside `prediction_models/ReinforcementLearner.py` to give users the necessary building blocks to start their own models. It is inside the `calculate_reward()` where users express their creative theories about the market. For example, the user wants to reward their agent when it makes a winning trade, and penalize the agent when it makes a losing trade. Or perhaps, the user wishes to reward the agnet for entering trades, and penalize the agent for sitting in trades too long. Below we show examples of how these rewards are all calculated:
+
+```python
+    class MyRLEnv(Base5ActionRLEnv):
+        """
+        User made custom environment. This class inherits from BaseEnvironment and gym.env.
+        Users can override any functions from those parent classes. Here is an example
+        of a user customized `calculate_reward()` function.
+        """
+        def calculate_reward(self, action):
+            # first, penalize if the action is not valid
+            if not self._is_valid(action):
+                return -2
+            pnl = self.get_unrealized_profit()
+            rew = np.sign(pnl) * (pnl + 1)
+            factor = 100
+            # reward agent for entering trades
+            if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
+                    and self._position == Positions.Neutral:
+                return 25
+            # discourage agent from not entering trades
+            if action == Actions.Neutral.value and self._position == Positions.Neutral:
+                return -1
+            max_trade_duration = self.rl_config.get('max_trade_duration_candles', 300)
+            trade_duration = self._current_tick - self._last_trade_tick
+            if trade_duration <= max_trade_duration:
+                factor *= 1.5
+            elif trade_duration > max_trade_duration:
+                factor *= 0.5
+            # discourage sitting in position
+            if self._position in (Positions.Short, Positions.Long) and \
+               action == Actions.Neutral.value:
+                return -1 * trade_duration / max_trade_duration
+            # close long
+            if action == Actions.Long_exit.value and self._position == Positions.Long:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
+            # close short
+            if action == Actions.Short_exit.value and self._position == Positions.Short:
+                if pnl > self.profit_aim * self.rr:
+                    factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
+                return float(rew * factor)
+            return 0.
+```
+
+After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple. The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy:
+
+```python
+    def populate_any_indicators(
+        self, pair, df, tf, informative=None, set_generalized_indicators=False
+    ):
+        ...
+
+        if set_generalized_indicators:
+            # For RL, there are no direct targets to set. This sets the base action to neutral
+            # until the agent sends an action.
+            df["&-action"] = 0
+
+        return df
+
+```
+
+and then the `&-action` will be used in `populate_entry/exit` functions:
+
+```python
+    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+
+        enter_long_conditions = [df["do_predict"] == 1, df["&-action"] == 1]
+
+        if enter_long_conditions:
+            df.loc[
+                reduce(lambda x, y: x & y, enter_long_conditions), ["enter_long", "enter_tag"]
+            ] = (1, "long")
+
+        enter_short_conditions = [df["do_predict"] == 1, df["&-action"] == 3]
+
+        if enter_short_conditions:
+            df.loc[
+                reduce(lambda x, y: x & y, enter_short_conditions), ["enter_short", "enter_tag"]
+            ] = (1, "short")
+
+        return df
+
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        exit_long_conditions = [df["do_predict"] == 1, df["&-action"] == 2]
+        if exit_long_conditions:
+            df.loc[reduce(lambda x, y: x & y, exit_long_conditions), "exit_long"] = 1
+
+        exit_short_conditions = [df["do_predict"] == 1, df["&-action"] == 4]
+        if exit_short_conditions:
+            df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
+
+        return df
+```
+
+Users should be careful to consider that `&-action` depends on which environment they choose to use. The example above shows 5 actions, where 0 is neutral, 1 is enter long, 2 is exit long, 3 is enter short and 4 is exit short. 
+
+### Using Tensorboard
+
+Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
+
+```bash
+pip3 install tensorboard
+```
+
+Next, the user can activate Tensorboard with the following command:
+
+```bash
+cd freqtrade
+tensorboard --logdir user_data/models/unique-id
+```
+
+where `unique-id` is the `identifier` set in the `freqai` configuration file. 
+
+![tensorboard](assets/tensorboard.png)
