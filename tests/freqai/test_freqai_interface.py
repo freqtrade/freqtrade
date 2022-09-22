@@ -28,7 +28,8 @@ def is_mac() -> bool:
     'XGBoostRegressor',
     'CatboostRegressor',
     'ReinforcementLearner',
-    'ReinforcementLearner_multiproc'
+    'ReinforcementLearner_multiproc',
+    'ReinforcementLearner_test_4ac'
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostRegressor':
@@ -64,6 +65,9 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
                 "win_reward_factor": 2
             }}
 
+    if 'test_4ac' in model:
+        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -86,9 +90,6 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
                 f"{freqai.dk.model_filename}_model.{model_save_ext}").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
-    # if 'ReinforcementLearner' not in model:
-    #     assert Path(freqai.dk.data_path /
-    #                 f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
 
     shutil.rmtree(Path(freqai.dk.full_path))
 

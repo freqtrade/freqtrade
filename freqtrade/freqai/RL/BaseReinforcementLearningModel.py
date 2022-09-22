@@ -319,13 +319,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
             return 0.
 
-    # TODO take care of this appendage. Right now it needs to be called because FreqAI enforces it.
-    # But FreqaiRL needs more objects passed to fit() (like DK) and we dont want to go refactor
-    # all the other existing fit() functions to include dk argument. For now we instantiate and
-    # leave it.
-    # def fit(self, data_dictionary: Dict[str, Any], pair: str = '') -> Any:
-    #     return
-
 
 def make_env(MyRLEnv: BaseEnvironment, env_id: str, rank: int,
              seed: int, train_df: DataFrame, price: DataFrame,
