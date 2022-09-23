@@ -173,9 +173,54 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
+@pytest.mark.parametrize('model', [
+    'LightGBMRegressor',
+    'XGBoostRegressor',
+    'CatboostRegressor',
+    'ReinforcementLearner',
+    'ReinforcementLearner_multiproc',
+    'ReinforcementLearner_test_4ac'
+    ])
 def test_start_backtesting(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180120-20180130"})
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+
+    if is_arm() and model == 'CatboostRegressor':
+        pytest.skip("CatBoost is not supported on ARM")
+
+    if is_mac():
+        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+
+    model_save_ext = 'joblib'
+    freqai_conf.update({"freqaimodel": model})
+    freqai_conf.update({"timerange": "20180110-20180130"})
+    freqai_conf.update({"strategy": "freqai_test_strat"})
+
+    if 'ReinforcementLearner' in model:
+        model_save_ext = 'zip'
+        freqai_conf.update({"strategy": "freqai_rl_test_strat"})
+        freqai_conf["freqai"].update({"model_training_parameters": {
+            "learning_rate": 0.00025,
+            "gamma": 0.9,
+            "verbose": 1
+        }})
+        freqai_conf["freqai"].update({"model_save_type": 'stable_baselines'})
+        freqai_conf["freqai"]["rl_config"] = {
+            "train_cycles": 1,
+            "thread_count": 2,
+            "max_trade_duration_candles": 300,
+            "model_type": "PPO",
+            "policy_type": "MlpPolicy",
+            "max_training_drawdown_pct": 0.5,
+            "model_reward_parameters": {
+                "rr": 1,
+                "profit_aim": 0.02,
+                "win_reward_factor": 2
+            }}
+
+    if 'test_4ac' in model:
+        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
+    
+    
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
