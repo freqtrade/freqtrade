@@ -21,7 +21,7 @@ def is_freqtrade_error(error_line):
 
 def is_timed_out_error(error_line):
     lower_string = error_line.lower()
-    return "connection timed out" in lower_string or "read timed out" in lower_string
+    return "connection timed out" in lower_string or "read timed out" in lower_string or "internal error; unable to process your request" in lower_string
 
 
 def stop_bot(error_line):
