@@ -73,7 +73,7 @@ setup(
         'tables',
         'blosc',
         'joblib',
-        'pyarrow'
+        'pyarrow',
         'fastapi',
         'uvicorn',
         'psutil',
