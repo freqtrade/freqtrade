@@ -222,7 +222,7 @@ class ExternalMessageConsumer:
 
             except (
                 websockets.exceptions.ConnectionClosedError,
-                websockets.exceptions.ConnectionClosedOk
+                websockets.exceptions.ConnectionClosedOK
             ):
                 # Just keep trying to connect again indefinitely
                 continue
