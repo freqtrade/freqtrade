@@ -211,6 +211,7 @@ def ask_user_config() -> Dict[str, Any]:
     )
     # Force JWT token to be a random string
     answers['api_server_jwt_key'] = secrets.token_hex()
+    answers['api_server_ws_token'] = secrets.token_urlsafe(25)
 
     return answers
 

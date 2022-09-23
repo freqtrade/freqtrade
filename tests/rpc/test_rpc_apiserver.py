@@ -3,6 +3,8 @@ Unit test file for rpc/api_server.py
 """
 
 import json
+import logging
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -10,7 +12,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 import pandas as pd
 import pytest
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
@@ -31,6 +33,7 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_mock_
 BASE_URI = "/api/v1"
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
+_TEST_WS_TOKEN = "secret_Ws_t0ken"
 
 
 @pytest.fixture
@@ -44,17 +47,21 @@ def botclient(default_conf, mocker):
                                         "CORS_origins": ['http://example.com'],
                                         "username": _TEST_USER,
                                         "password": _TEST_PASS,
+                                        "ws_token": _TEST_WS_TOKEN
                                         }})
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
+    apiserver = None
     try:
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(rpc)
         yield ftbot, TestClient(apiserver.app)
         # Cleanup ... ?
     finally:
+        if apiserver:
+            apiserver.cleanup()
         ApiServer.shutdown()
 
 
@@ -152,6 +159,25 @@ def test_api_auth():
 
     with pytest.raises(HTTPException):
         get_user_from_token(b'not_a_token', 'secret1234')
+
+
+def test_api_ws_auth(botclient):
+    ftbot, client = botclient
+    def url(token): return f"/api/v1/message/ws?token={token}"
+
+    bad_token = "bad-ws_token"
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(url(bad_token)) as websocket:
+            websocket.receive()
+
+    good_token = _TEST_WS_TOKEN
+    with client.websocket_connect(url(good_token)) as websocket:
+        pass
+
+    jwt_secret = ftbot.config['api_server'].get('jwt_secret_key', 'super-secret')
+    jwt_token = create_token({'identity': {'u': 'Freqtrade'}}, jwt_secret)
+    with client.websocket_connect(url(jwt_token)) as websocket:
+        pass
 
 
 def test_api_unauthorized(botclient):
@@ -261,6 +287,7 @@ def test_api__init__(default_conf, mocker):
     with pytest.raises(OperationalException, match="RPC Handler already attached."):
         apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
+    apiserver.cleanup()
     ApiServer.shutdown()
 
 
@@ -388,6 +415,7 @@ def test_api_run(default_conf, mocker, caplog):
                  MagicMock(side_effect=Exception))
     apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
+    apiserver.cleanup()
     ApiServer.shutdown()
 
 
@@ -410,6 +438,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
+    assert log_has("Stopping API Server background tasks", caplog)
     ApiServer.shutdown()
 
 
@@ -1663,3 +1692,93 @@ def test_health(botclient):
     ret = rc.json()
     assert ret['last_process_ts'] == 0
     assert ret['last_process'] == '1970-01-01T00:00:00+00:00'
+
+
+def test_api_ws_subscribe(botclient, mocker):
+    ftbot, client = botclient
+    ws_url = f"/api/v1/message/ws?token={_TEST_WS_TOKEN}"
+
+    sub_mock = mocker.patch('freqtrade.rpc.api_server.ws.WebSocketChannel.set_subscriptions')
+
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({'type': 'subscribe', 'data': ['whitelist']})
+
+    # Check call count is now 1 as we sent a valid subscribe request
+    assert sub_mock.call_count == 1
+
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({'type': 'subscribe', 'data': 'whitelist'})
+
+    # Call count hasn't changed as the subscribe request was invalid
+    assert sub_mock.call_count == 1
+
+
+def test_api_ws_requests(botclient, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    ftbot, client = botclient
+    ws_url = f"/api/v1/message/ws?token={_TEST_WS_TOKEN}"
+
+    # Test whitelist request
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "whitelist", "data": None})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type whitelist from.+", caplog)
+    assert response['type'] == "whitelist"
+
+    # Test analyzed_df request
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "analyzed_df", "data": {}})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type analyzed_df from.+", caplog)
+    assert response['type'] == "analyzed_df"
+
+    caplog.clear()
+    # Test analyzed_df request with data
+    with client.websocket_connect(ws_url) as ws:
+        ws.send_json({"type": "analyzed_df", "data": {"limit": 100}})
+        response = ws.receive_json()
+
+    assert log_has_re(r"Request of type analyzed_df from.+", caplog)
+    assert response['type'] == "analyzed_df"
+
+
+def test_api_ws_send_msg(default_conf, mocker, caplog):
+    try:
+        caplog.set_level(logging.DEBUG)
+
+        default_conf.update({"api_server": {"enabled": True,
+                                            "listen_ip_address": "127.0.0.1",
+                                            "listen_port": 8080,
+                                            "CORS_origins": ['http://example.com'],
+                                            "username": _TEST_USER,
+                                            "password": _TEST_PASS,
+                                            "ws_token": _TEST_WS_TOKEN
+                                            }})
+        mocker.patch('freqtrade.rpc.telegram.Updater')
+        mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api')
+        apiserver = ApiServer(default_conf)
+        apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
+        apiserver.start_message_queue()
+        # Give the queue thread time to start
+        time.sleep(0.2)
+
+        # Test message_queue coro receives the message
+        test_message = {"type": "status", "data": "test"}
+        apiserver.send_msg(test_message)
+        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
+        assert log_has("Found message of type: status", caplog)
+
+        # Test if exception logged when error occurs in sending
+        mocker.patch('freqtrade.rpc.api_server.ws.channel.ChannelManager.broadcast',
+                     side_effect=Exception)
+
+        apiserver.send_msg(test_message)
+        time.sleep(0.1)  # Not sure how else to wait for the coro to receive the data
+        assert log_has_re(r"Exception happened in background task.*", caplog)
+
+    finally:
+        apiserver.cleanup()
+        ApiServer.shutdown()

@@ -14,9 +14,10 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.enums import CandleType, RunMode
+from freqtrade.enums import CandleType, RPCMessageType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
+from freqtrade.rpc import RPCManager
 from freqtrade.util import PeriodicCache
 
 
@@ -28,17 +29,33 @@ MAX_DATAFRAME_CANDLES = 1000
 
 class DataProvider:
 
-    def __init__(self, config: Config, exchange: Optional[Exchange], pairlists=None) -> None:
+    def __init__(
+        self,
+        config: Config,
+        exchange: Optional[Exchange],
+        pairlists=None,
+        rpc: Optional[RPCManager] = None
+    ) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
+        self.__rpc = rpc
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
+        self.__producer_pairs_df: Dict[str,
+                                       Dict[PairWithTimeframe, Tuple[DataFrame, datetime]]] = {}
+        self.__producer_pairs: Dict[str, List[str]] = {}
         self._msg_queue: deque = deque()
 
+        self._default_candle_type = self._config.get('candle_type_def', CandleType.SPOT)
+        self._default_timeframe = self._config.get('timeframe', '1h')
+
         self.__msg_cache = PeriodicCache(
-            maxsize=1000, ttl=timeframe_to_seconds(self._config.get('timeframe', '1h')))
+            maxsize=1000, ttl=timeframe_to_seconds(self._default_timeframe))
+
+        self.producers = self._config.get('external_message_consumer', {}).get('producers', [])
+        self.external_data_enabled = len(self.producers) > 0
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -63,8 +80,109 @@ class DataProvider:
         :param dataframe: analyzed dataframe
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
-        self.__cached_pairs[(pair, timeframe, candle_type)] = (
+        pair_key = (pair, timeframe, candle_type)
+        self.__cached_pairs[pair_key] = (
             dataframe, datetime.now(timezone.utc))
+
+    # For multiple producers we will want to merge the pairlists instead of overwriting
+    def _set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
+        """
+        Set the pairs received to later be used.
+
+        :param pairlist: List of pairs
+        """
+        self.__producer_pairs[producer_name] = pairlist
+
+    def get_producer_pairs(self, producer_name: str = "default") -> List[str]:
+        """
+        Get the pairs cached from the producer
+
+        :returns: List of pairs
+        """
+        return self.__producer_pairs.get(producer_name, []).copy()
+
+    def _emit_df(
+        self,
+        pair_key: PairWithTimeframe,
+        dataframe: DataFrame
+    ) -> None:
+        """
+        Send this dataframe as an ANALYZED_DF message to RPC
+
+        :param pair_key: PairWithTimeframe tuple
+        :param data: Tuple containing the DataFrame and the datetime it was cached
+        """
+        if self.__rpc:
+            self.__rpc.send_msg(
+                {
+                    'type': RPCMessageType.ANALYZED_DF,
+                    'data': {
+                        'key': pair_key,
+                        'df': dataframe,
+                        'la': datetime.now(timezone.utc)
+                    }
+                }
+            )
+
+    def _add_external_df(
+        self,
+        pair: str,
+        dataframe: DataFrame,
+        last_analyzed: datetime,
+        timeframe: str,
+        candle_type: CandleType,
+        producer_name: str = "default"
+    ) -> None:
+        """
+        Add the pair data to this class from an external source.
+
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        """
+        pair_key = (pair, timeframe, candle_type)
+
+        if producer_name not in self.__producer_pairs_df:
+            self.__producer_pairs_df[producer_name] = {}
+
+        _last_analyzed = datetime.now(timezone.utc) if not last_analyzed else last_analyzed
+
+        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
+        logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
+
+    def get_producer_df(
+        self,
+        pair: str,
+        timeframe: Optional[str] = None,
+        candle_type: Optional[CandleType] = None,
+        producer_name: str = "default"
+    ) -> Tuple[DataFrame, datetime]:
+        """
+        Get the pair data from producers.
+
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :returns: Tuple of the DataFrame and last analyzed timestamp
+        """
+        _timeframe = self._default_timeframe if not timeframe else timeframe
+        _candle_type = self._default_candle_type if not candle_type else candle_type
+
+        pair_key = (pair, _timeframe, _candle_type)
+
+        # If we have no data from this Producer yet
+        if producer_name not in self.__producer_pairs_df:
+            # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+
+        # If we do have data from that Producer, but no data on this pair_key
+        if pair_key not in self.__producer_pairs_df[producer_name]:
+            # We don't have this data yet, return empty DataFrame and datetime (01-01-1970)
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+
+        # We have it, return this data
+        df, la = self.__producer_pairs_df[producer_name][pair_key]
+        return (df.copy(), la)
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

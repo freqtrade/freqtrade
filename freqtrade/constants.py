@@ -243,6 +243,7 @@ CONF_SCHEMA = {
         'exchange': {'$ref': '#/definitions/exchange'},
         'edge': {'$ref': '#/definitions/edge'},
         'freqai': {'$ref': '#/definitions/freqai'},
+        'external_message_consumer': {'$ref': '#/definitions/external_message_consumer'},
         'experimental': {
             'type': 'object',
             'properties': {
@@ -404,6 +405,7 @@ CONF_SCHEMA = {
                 },
                 'username': {'type': 'string'},
                 'password': {'type': 'string'},
+                'ws_token': {'type': ['string', 'array'], 'items': {'type': 'string'}},
                 'jwt_secret_key': {'type': 'string'},
                 'CORS_origins': {'type': 'array', 'items': {'type': 'string'}},
                 'verbosity': {'type': 'string', 'enum': ['error', 'info']},
@@ -487,6 +489,47 @@ CONF_SCHEMA = {
                 'remove_pumps': {'type': 'boolean'}
             },
             'required': ['process_throttle_secs', 'allowed_risk']
+        },
+        'external_message_consumer': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean', 'default': False},
+                'producers': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {'type': 'string'},
+                            'host': {'type': 'string'},
+                            'port': {
+                                'type': 'integer',
+                                'default': 8080,
+                                'minimum': 0,
+                                'maximum': 65535
+                            },
+                            'ws_token': {'type': 'string'},
+                        },
+                        'required': ['name', 'host', 'ws_token']
+                    }
+                },
+                'wait_timeout': {'type': 'integer', 'minimum': 0},
+                'sleep_time': {'type': 'integer', 'minimum': 0},
+                'ping_timeout': {'type': 'integer', 'minimum': 0},
+                'remove_entry_exit_signals': {'type': 'boolean', 'default': False},
+                'initial_candle_limit': {
+                    'type': 'integer',
+                    'minimum': 0,
+                    'maximum': 1500,
+                    'default': 1500
+                },
+                'message_size_limit': {  # In megabytes
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maxmium': 20,
+                    'default': 8,
+                }
+            },
+            'required': ['producers']
         },
         "freqai": {
             "type": "object",

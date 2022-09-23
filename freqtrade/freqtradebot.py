@@ -29,6 +29,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
+from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.util import FtPrecise
@@ -72,6 +73,8 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
+        self.pairlists = PairListManager(self.exchange, self.config)
+
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
         # so anything in the Freqtradebot instance should be ready (initialized), including
@@ -79,9 +82,7 @@ class FreqtradeBot(LoggingMixin):
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
 
-        self.pairlists = PairListManager(self.exchange, self.config)
-
-        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
+        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists, self.rpc)
 
         # Attach Dataprovider to strategy instance
         self.strategy.dp = self.dataprovider
@@ -91,6 +92,10 @@ class FreqtradeBot(LoggingMixin):
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
             self.config.get('edge', {}).get('enabled', False) else None
+
+        # Init ExternalMessageConsumer if enabled
+        self.emc = ExternalMessageConsumer(self.config, self.dataprovider) if \
+            self.config.get('external_message_consumer', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_active_whitelist()
 
@@ -151,9 +156,11 @@ class FreqtradeBot(LoggingMixin):
         finally:
             self.strategy.ft_bot_cleanup()
 
-            self.rpc.cleanup()
-            Trade.commit()
-            self.exchange.close()
+        self.rpc.cleanup()
+        if self.emc:
+            self.emc.shutdown()
+        Trade.commit()
+        self.exchange.close()
 
     def startup(self) -> None:
         """
@@ -254,6 +261,7 @@ class FreqtradeBot(LoggingMixin):
         pairs that have open trades.
         """
         # Refresh whitelist
+        _prev_whitelist = self.pairlists.whitelist
         self.pairlists.refresh_pairlist()
         _whitelist = self.pairlists.whitelist
 
@@ -266,6 +274,11 @@ class FreqtradeBot(LoggingMixin):
             # Extend active-pair whitelist with pairs of open trades
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+
+        # Called last to include the included pairs
+        if _prev_whitelist != _whitelist:
+            self.rpc.send_msg({'type': RPCMessageType.WHITELIST, 'data': _whitelist})
+
         return _whitelist
 
     def get_free_open_trades(self) -> int:
