@@ -195,8 +195,6 @@ class BaseEnvironment(gym.Env):
         be inherited/edited by the user made ReinforcementLearner file.
         """
 
-        return 0.
-
     def _update_unrealized_total_profit(self):
         """
         Update the unrealized total profit incase of episode end.
@@ -250,21 +248,8 @@ class BaseEnvironment(gym.Env):
 
         return 0
 
-    def get_portfolio_log_returns(self):
-        return self.portfolio_log_returns[1:self._current_tick + 1]
-
     def update_portfolio_log_returns(self, action):
         self.portfolio_log_returns[self._current_tick] = self.most_recent_return(action)
 
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
-
-    def prev_price(self) -> float:
-        return self.prices.iloc[self._current_tick - 1].open
-
-    def sharpe_ratio(self):
-        if len(self.close_trade_profit) == 0:
-            return 0.
-        returns = np.array(self.close_trade_profit)
-        reward = (np.mean(returns) - 0. + 1e-9) / (np.std(returns) + 1e-9)
-        return reward
