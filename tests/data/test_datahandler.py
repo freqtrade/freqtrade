@@ -323,6 +323,61 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     assert ohlcv.empty
 
 
+@pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
+    # Data goes from 2018-01-10 - 2018-01-30
+    ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
+    # Mark data goes from to 2021-11-15 2021-11-19
+    ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
+])
+@pytest.mark.parametrize('datahandler', ['hdf5', 'feather', 'parquet'])
+def test_generic_datahandler_ohlcv_load_and_resave(
+    datahandler,
+    testdatadir,
+    tmpdir,
+    pair,
+    timeframe,
+    candle_type,
+    candle_append,
+    startdt, enddt
+):
+    tmpdir1 = Path(tmpdir)
+    tmpdir2 = tmpdir1
+    if candle_type not in ('', 'spot'):
+        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2.mkdir()
+    # Load data from one common file
+    dhbase = get_datahandler(testdatadir, 'json')
+    ohlcv = dhbase._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    # Get data to test
+    dh = get_datahandler(testdatadir, datahandler)
+
+    file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
+    assert not file.is_file()
+
+    dh1 = get_datahandler(tmpdir1, datahandler)
+    dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
+    assert file.is_file()
+
+    assert not ohlcv[ohlcv['date'] < startdt].empty
+
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+
+    ohlcv = dhbase.ohlcv_load(pair, timeframe, timerange=timerange, candle_type=candle_type)
+    ohlcv1 = dh1.ohlcv_load('UNITTEST/NEW', timeframe, timerange=timerange, candle_type=candle_type)
+
+    assert len(ohlcv) == len(ohlcv1)
+    assert ohlcv.equals(ohlcv1)
+    assert ohlcv[ohlcv['date'] < startdt].empty
+    assert ohlcv[ohlcv['date'] > enddt].empty
+
+    # Try loading inexisting file
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
+    assert ohlcv.empty
+
+
 def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
