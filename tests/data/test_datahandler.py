@@ -255,7 +255,6 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = get_datahandler(testdatadir, 'hdf5')
-    dh = get_datahandler(testdatadir, 'hdf5')
     assert not dh.trades_purge('UNITTEST/NONEXIST')
     assert unlinkmock.call_count == 0
 
