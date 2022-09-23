@@ -220,8 +220,11 @@ class ExternalMessageConsumer:
 
                 continue
 
-            except websockets.exceptions.ConnectionClosedOK:
-                # Successfully closed, just keep trying to connect again indefinitely
+            except (
+                websockets.exceptions.ConnectionClosedError,
+                websockets.exceptions.ConnectionClosedOk
+            ):
+                # Just keep trying to connect again indefinitely
                 continue
 
             except Exception as e:
