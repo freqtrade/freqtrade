@@ -177,11 +177,9 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     'LightGBMRegressor',
     'XGBoostRegressor',
     'CatboostRegressor',
-    'ReinforcementLearner',
-    'ReinforcementLearner_multiproc',
-    'ReinforcementLearner_test_4ac'
+    'ReinforcementLearner'
     ])
-def test_start_backtesting(mocker, freqai_conf):
+def test_start_backtesting(mocker, freqai_conf, model):
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
 
     if is_arm() and model == 'CatboostRegressor':
