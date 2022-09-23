@@ -179,9 +179,11 @@ freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT --
 
 Freqtrade currently supports 3 data-formats for both OHLCV and trades data:
 
-* `json` (plain "text" json files)
-* `jsongz` (a gzip-zipped version of json files)
-* `hdf5` (a high performance datastore)
+* `json` -  plain "text" json files
+* `jsongz` - a gzip-zipped version of json files
+* `hdf5` - a high performance datastore
+* `feather` - a dataformat based on Apache Arrow
+* `parquet` - columnar datastore
 
 By default, OHLCV data is stored as `json` data, while trades data is stored as `jsongz` data.
 
@@ -199,6 +201,42 @@ If the default data-format has been changed during download, then the keys `data
 
 !!! Note
     You can convert between data-formats using the [convert-data](#sub-command-convert-data) and [convert-trade-data](#sub-command-convert-trade-data) methods.
+
+#### Dataformat comparison
+
+The following comparisons have been made with the following data, and by using the linux `time` command.
+
+```
+Found 6 pair / timeframe combinations.
++----------+-------------+--------+---------------------+---------------------+
+|     Pair |   Timeframe |   Type |                From |                  To |
+|----------+-------------+--------+---------------------+---------------------|
+| BTC/USDT |          5m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:25:00 |
+| ETH/USDT |          1m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:26:00 |
+| BTC/USDT |          1m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:30:00 |
+| XRP/USDT |          5m |   spot | 2018-05-04 08:10:00 | 2022-09-13 19:15:00 |
+| XRP/USDT |          1m |   spot | 2018-05-04 08:11:00 | 2022-09-13 19:22:00 |
+| ETH/USDT |          5m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:20:00 |
++----------+-------------+--------+---------------------+---------------------+
+```
+
+Timings have been taken in a not very scientific way with the following command, which forces reading the data into memory.
+
+``` bash
+time freqtrade list-data --show-timerange --data-format-ohlcv <dataformat>
+```
+
+|  Format | Size | timing |
+|------------|-------------|-------------|
+| `json` | 149Mb | 25.6s |
+| `jsongz` | 39Mb | 27s |
+| `hdf5` | 145Mb | 3.9s |
+| `feather` | 72Mb | 3.5s |
+| `parquet` | 83Mb | 3.8s |
+
+Size has been taken from the BTC/USDT 1m spot combination for the timerange specified above.
+
+To have a best performance/size mix, we recommend the use of either feather or parquet.
 
 #### Sub-command convert data
 
