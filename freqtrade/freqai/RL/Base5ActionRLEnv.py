@@ -60,6 +60,17 @@ class Base5ActionRLEnv(BaseEnvironment):
         return self._get_observation()
 
     def step(self, action: int):
+        """
+        Logic for a single step (incrementing one candle in time)
+        by the agent
+        :param: action: int = the action type that the agent plans
+            to take for the current step.
+        :returns:
+            observation = current state of environment
+            step_reward = the reward from `calculate_reward()`
+            _done = if the agent "died" or if the candles finished
+            info = dict passed back to openai gym lib
+        """
         self._done = False
         self._current_tick += 1
 

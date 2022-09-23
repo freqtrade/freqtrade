@@ -43,6 +43,10 @@ class BaseEnvironment(gym.Env):
 
     def reset_env(self, df: DataFrame, prices: DataFrame, window_size: int,
                   reward_kwargs: dict, starting_point=True):
+        """
+        Resets the environment when the agent fails (in our case, if the drawdown
+        exceeds the user set max_training_drawdown_pct)
+        """
         self.df = df
         self.signal_features = self.df
         self.prices = prices
@@ -133,13 +137,18 @@ class BaseEnvironment(gym.Env):
         return features_and_state
 
     def get_trade_duration(self):
+        """
+        Get the trade duration if the agent is in a trade
+        """
         if self._last_trade_tick is None:
             return 0
         else:
             return self._current_tick - self._last_trade_tick
 
     def get_unrealized_profit(self):
-
+        """
+        Get the unrealized profit if the agent is in a trade
+        """
         if self._last_trade_tick is None:
             return 0.
 
@@ -158,7 +167,6 @@ class BaseEnvironment(gym.Env):
 
     @abstractmethod
     def is_tradesignal(self, action: int):
-        # trade signal
         """
         Determine if the signal is a trade signal. This is
         unique to the actions in the environment, and therefore must be
@@ -167,7 +175,6 @@ class BaseEnvironment(gym.Env):
         return
 
     def _is_valid(self, action: int):
-        # trade signal
         """
         Determine if the signal is valid.This is
         unique to the actions in the environment, and therefore must be
@@ -191,8 +198,13 @@ class BaseEnvironment(gym.Env):
     @abstractmethod
     def calculate_reward(self, action):
         """
-        Reward is created by BaseReinforcementLearningModel and can
-        be inherited/edited by the user made ReinforcementLearner file.
+        An example reward function. This is the one function that users will likely
+        wish to inject their own creativity into.
+        :params:
+        action: int = The action made by the agent for the current candle.
+        :returns:
+        float = the reward to give to the agent for current step (used for optimization
+            of weights in NN)
         """
 
     def _update_unrealized_total_profit(self):

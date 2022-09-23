@@ -244,7 +244,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == num_files
-
+    Trade.use_db = True
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
@@ -297,7 +297,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     assert len(model_folders) == 6
 
-    # without deleting the exiting folder structure, re-run
+    # without deleting the existing folder structure, re-run
 
     freqai_conf.update({"timerange": "20180120-20180130"})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)

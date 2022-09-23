@@ -25,6 +25,17 @@ class Base4ActionRLEnv(BaseEnvironment):
         self.action_space = spaces.Discrete(len(Actions))
 
     def step(self, action: int):
+        """
+        Logic for a single step (incrementing one candle in time)
+        by the agent
+        :param: action: int = the action type that the agent plans
+            to take for the current step.
+        :returns:
+            observation = current state of environment
+            step_reward = the reward from `calculate_reward()`
+            _done = if the agent "died" or if the candles finished
+            info = dict passed back to openai gym lib
+        """
         self._done = False
         self._current_tick += 1
 
@@ -92,7 +103,6 @@ class Base4ActionRLEnv(BaseEnvironment):
         return observation, step_reward, self._done, info
 
     def is_tradesignal(self, action: int):
-        # trade signal
         """
         Determine if the signal is a trade signal
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
@@ -107,7 +117,6 @@ class Base4ActionRLEnv(BaseEnvironment):
                     (action == Actions.Long_enter.value and self._position == Positions.Short))
 
     def _is_valid(self, action: int):
-        # trade signal
         """
         Determine if the signal is valid.
         e.g.: agent wants a Actions.Long_exit while it is in a Positions.short
