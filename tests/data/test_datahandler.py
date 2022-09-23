@@ -152,6 +152,15 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     assert df.columns.equals(df1.columns)
 
 
+@pytest.mark.parametrize('datahandler', ['feather', 'parquet'])
+def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
+    dh = get_datahandler(testdatadir, datahandler)
+    with pytest.raises(NotImplementedError):
+        dh.trades_load('UNITTEST/ETH')
+    with pytest.raises(NotImplementedError):
+        dh.trades_store('UNITTEST/ETH', MagicMock())
+
+
 def test_jsondatahandler_trades_load(testdatadir, caplog):
     dh = JsonGzDataHandler(testdatadir)
     logmsg = "Old trades format detected - converting"
