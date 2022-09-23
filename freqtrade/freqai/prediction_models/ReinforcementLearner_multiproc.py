@@ -4,9 +4,10 @@ from typing import Any, Dict  # , Tuple
 
 # import numpy.typing as npt
 import torch as th
+from pandas import DataFrame
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv
-from pandas import DataFrame
+
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.RL.BaseReinforcementLearningModel import (BaseReinforcementLearningModel,
                                                                 make_env)

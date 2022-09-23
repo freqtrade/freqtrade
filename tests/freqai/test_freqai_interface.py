@@ -4,15 +4,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from freqtrade.enums import RunMode
+
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
-from freqtrade.persistence import Trade
-from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
 
 
 def is_arm() -> bool:
