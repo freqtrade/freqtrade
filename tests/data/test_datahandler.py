@@ -198,7 +198,7 @@ def test_hdf5datahandler_trades_get_pairs(testdatadir):
 
 
 def test_hdf5datahandler_trades_load(testdatadir):
-    dh = HDF5DataHandler(testdatadir)
+    dh = get_datahandler(testdatadir, 'hdf5')
     trades = dh.trades_load('XRP/ETH')
     assert isinstance(trades, list)
 
@@ -224,10 +224,10 @@ def test_hdf5datahandler_trades_load(testdatadir):
 
 def test_hdf5datahandler_trades_store(testdatadir, tmpdir):
     tmpdir1 = Path(tmpdir)
-    dh = HDF5DataHandler(testdatadir)
+    dh = get_datahandler(testdatadir, 'hdf5')
     trades = dh.trades_load('XRP/ETH')
 
-    dh1 = HDF5DataHandler(tmpdir1)
+    dh1 = get_datahandler(tmpdir1, 'hdf5')
     dh1.trades_store('XRP/NEW', trades)
     file = tmpdir1 / 'XRP_NEW-trades.h5'
     assert file.is_file()
@@ -254,7 +254,8 @@ def test_hdf5datahandler_trades_store(testdatadir, tmpdir):
 def test_hdf5datahandler_trades_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
-    dh = HDF5DataHandler(testdatadir)
+    dh = get_datahandler(testdatadir, 'hdf5')
+    dh = get_datahandler(testdatadir, 'hdf5')
     assert not dh.trades_purge('UNITTEST/NONEXIST')
     assert unlinkmock.call_count == 0
 
@@ -283,7 +284,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     if candle_type not in ('', 'spot'):
         tmpdir2 = tmpdir1 / 'futures'
         tmpdir2.mkdir()
-    dh = HDF5DataHandler(testdatadir)
+    dh = get_datahandler(testdatadir, 'hdf5')
     ohlcv = dh._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
     assert isinstance(ohlcv, DataFrame)
     assert len(ohlcv) > 0
@@ -291,7 +292,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
     assert not file.is_file()
 
-    dh1 = HDF5DataHandler(tmpdir1)
+    dh1 = get_datahandler(tmpdir1, 'hdf5')
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
@@ -315,7 +316,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
 def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
-    dh = HDF5DataHandler(testdatadir)
+    dh = get_datahandler(testdatadir, 'hdf5')
     assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
     assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
     assert unlinkmock.call_count == 0
