@@ -1039,14 +1039,52 @@ class RPC:
 
     def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
                                 limit: Optional[int]) -> Dict[str, Any]:
+        """ Analyzed dataframe in Dict form """
 
+        _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
+        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                               pair, timeframe, _data, last_analyzed)
+
+    def __rpc_analysed_dataframe_raw(self, pair: str, timeframe: str,
+                                     limit: Optional[int]) -> Tuple[DataFrame, datetime]:
+        """ Get the dataframe and last analyze from the dataprovider """
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
             pair, timeframe)
         _data = _data.copy()
+
         if limit:
             _data = _data.iloc[-limit:]
-        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                               pair, timeframe, _data, last_analyzed)
+        return _data, last_analyzed
+
+    def _ws_all_analysed_dataframes(
+        self,
+        pairlist: List[str],
+        limit: Optional[int]
+    ) -> Dict[str, Any]:
+        """ Get the analysed dataframes of each pair in the pairlist """
+        timeframe = self._freqtrade.config['timeframe']
+        candle_type = self._freqtrade.config.get('candle_type_def', CandleType.SPOT)
+        _data = {}
+
+        for pair in pairlist:
+            dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
+
+            _data[pair] = {
+                "key": (pair, timeframe, candle_type),
+                "df": dataframe,
+                "la": last_analyzed
+            }
+
+        return _data
+
+    def _ws_request_analyzed_df(self, limit: Optional[int]):
+        """ Historical Analyzed Dataframes for WebSocket """
+        whitelist = self._freqtrade.active_pair_whitelist
+        return self._ws_all_analysed_dataframes(whitelist, limit)
+
+    def _ws_request_whitelist(self):
+        """ Whitelist data for WebSocket """
+        return self._freqtrade.active_pair_whitelist
 
     @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
