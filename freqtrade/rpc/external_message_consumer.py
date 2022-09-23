@@ -217,7 +217,6 @@ class ExternalMessageConsumer:
             ) as e:
                 logger.error(f"Connection Refused - {e} retrying in {self.sleep_time}s")
                 await asyncio.sleep(self.sleep_time)
-
                 continue
 
             except (
@@ -225,6 +224,7 @@ class ExternalMessageConsumer:
                 websockets.exceptions.ConnectionClosedOK
             ):
                 # Just keep trying to connect again indefinitely
+                await asyncio.sleep(self.sleep_time)
                 continue
 
             except Exception as e:
