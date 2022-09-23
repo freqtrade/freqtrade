@@ -366,7 +366,13 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
     ohlcv = dhbase.ohlcv_load(pair, timeframe, timerange=timerange, candle_type=candle_type)
-    ohlcv1 = dh1.ohlcv_load('UNITTEST/NEW', timeframe, timerange=timerange, candle_type=candle_type)
+    if datahandler == 'hdf5':
+        ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+        if candle_type == 'mark':
+            ohlcv1['volume'] = 0.0
+    else:
+        ohlcv1 = dh1.ohlcv_load('UNITTEST/NEW', timeframe,
+                                timerange=timerange, candle_type=candle_type)
 
     assert len(ohlcv) == len(ohlcv1)
     assert ohlcv.equals(ohlcv1)
