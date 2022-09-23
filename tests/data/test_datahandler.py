@@ -9,9 +9,11 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
+from freqtrade.data.history.featherdatahandler import FeatherDataHandler
 from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
+from freqtrade.data.history.parquetdatahandler import ParquetDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from tests.conftest import log_has
 
@@ -339,13 +341,24 @@ def test_gethandlerclass():
     cl = get_datahandlerclass('json')
     assert cl == JsonDataHandler
     assert issubclass(cl, IDataHandler)
+
     cl = get_datahandlerclass('jsongz')
     assert cl == JsonGzDataHandler
     assert issubclass(cl, IDataHandler)
     assert issubclass(cl, JsonDataHandler)
+
     cl = get_datahandlerclass('hdf5')
     assert cl == HDF5DataHandler
     assert issubclass(cl, IDataHandler)
+
+    cl = get_datahandlerclass('feather')
+    assert cl == FeatherDataHandler
+    assert issubclass(cl, IDataHandler)
+
+    cl = get_datahandlerclass('parquet')
+    assert cl == ParquetDataHandler
+    assert issubclass(cl, IDataHandler)
+
     with pytest.raises(ValueError, match=r"No datahandler for .*"):
         get_datahandlerclass('DeadBeef')
 
