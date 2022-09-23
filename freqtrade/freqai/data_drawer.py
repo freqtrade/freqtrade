@@ -602,22 +602,3 @@ class FreqaiDataDrawer:
                         )
 
         return corr_dataframes, base_dataframes
-
-    # to be used if we want to send predictions directly to the follower instead of forcing
-    # follower to load models and inference
-    # def save_model_return_values_to_disk(self) -> None:
-    #     with open(self.full_path / str('model_return_values.json'), "w") as fp:
-    #         json.dump(self.model_return_values, fp, default=self.np_encoder)
-
-    # def load_model_return_values_from_disk(self, dk: FreqaiDataKitchen) -> FreqaiDataKitchen:
-    #     exists = Path(self.full_path / str('model_return_values.json')).resolve().exists()
-    #     if exists:
-    #         with open(self.full_path / str('model_return_values.json'), "r") as fp:
-    #             self.model_return_values = json.load(fp)
-    #     elif not self.follow_mode:
-    #         logger.info("Could not find existing datadrawer, starting from scratch")
-    #     else:
-    #         logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
-    #                        'sending null values back to strategy')
-
-    #     return exists, dk
