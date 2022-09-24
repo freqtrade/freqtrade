@@ -275,7 +275,12 @@ jobs:
   pre-commit:
     runs-on: ubuntu-22.04
     steps:
-      - uses: pre-commit/action@v3.0.0
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - uses: pre-commit/action@v3.0.0
 
   docs_check:
     runs-on: ubuntu-20.04
