@@ -4499,6 +4499,20 @@ def test_amount_to_contract_precision(
     assert result_size == expected_fut
 
 
+@pytest.mark.parametrize('amount,precision,precision_mode,contract_size,expected', [
+    (1.17, 1.0, 4, 0.01, 1.17),  # Tick size
+    (1.17, 1.0, 2, 0.01, 1.17),  #
+    (1.16, 1.0, 4, 0.01, 1.16),  #
+    (1.16, 1.0, 2, 0.01, 1.16),  #
+    (1.13, 1.0, 2, 0.01, 1.13),  #
+    (10.988, 1.0, 2, 10, 10),
+    (10.988, 1.0, 4, 10, 10),
+])
+def test_amount_to_contract_precision2(amount, precision, precision_mode, contract_size, expected):
+    res = amount_to_contract_precision(amount, precision, precision_mode, contract_size)
+    assert pytest.approx(res) == expected
+
+
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,trading_mode,margin_mode', [
     # Bittrex
     ('bittrex', 2.0, False, 'spot', None),
