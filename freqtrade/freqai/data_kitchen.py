@@ -1283,3 +1283,36 @@ class FreqaiDataKitchen:
                 f"Could not find backtesting prediction file at {path_to_predictionfile}"
             )
         return file_exists
+
+    def get_timerange_from_ready_models(self):
+        return self.gen_get_timerange_from_ready_models(self.full_path)
+
+    def gen_get_timerange_from_ready_models(self, models_path: Path):
+        all_models_end_dates = []
+        pairs_end_dates: Dict[str, Any] = {}
+        for model_dir in models_path.iterdir():
+            if str(model_dir.name).startswith("sub-train"):
+                model_end_date = model_dir.name.split("_")[1]
+                pair = model_dir.name.split("_")[0].replace("sub-train-", "")
+                model_file_name = f"cb\
+                    _{str(model_dir.name).replace('sub-train-', '').lower()}_model.joblib"
+                model_path_file = Path(model_dir / model_file_name)
+                if model_path_file.is_file():
+                    if pair not in pairs_end_dates:
+                        pairs_end_dates[pair] = []
+
+                    pairs_end_dates[pair].append({
+                        "model_end_date": int(model_end_date),
+                        "model_path_file": model_path_file,
+                        "model_dir": model_dir
+                    })
+
+                    if model_end_date not in all_models_end_dates:
+                        all_models_end_dates.append(int(model_end_date))
+
+        start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
+        stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
+        backtesting_string_timerange = f"{start.strftime('%Y%m%d')}-{stop.strftime('%Y%m%d')}"
+        backtesting_timerange = TimeRange('date', 'date', min(all_models_end_dates),
+                                          max(all_models_end_dates))
+        return backtesting_timerange, backtesting_string_timerange, pairs_end_dates
