@@ -99,6 +99,7 @@ class FreqaiDataKitchen:
         self.train_dates: DataFrame = pd.DataFrame()
         self.unique_classes: Dict[str, list] = {}
         self.unique_class_list: list = []
+        self.backtest_live_models_data: Dict[str, Any] = {}
 
     def set_paths(
         self,
@@ -1262,7 +1263,15 @@ class FreqaiDataKitchen:
         return file_exists
 
     def get_timerange_from_ready_models(self):
-        return self.gen_get_timerange_from_ready_models(self.full_path)
+        backtesting_timerange, \
+            backtesting_string_timerange, \
+            pairs_end_dates = self.gen_get_timerange_from_ready_models(self.full_path)
+        self.backtest_live_models_data = {
+            "backtesting_timerange": backtesting_timerange,
+            "backtesting_string_timerange": backtesting_string_timerange,
+            "pairs_end_dates": pairs_end_dates
+            }
+        return
 
     def gen_get_timerange_from_ready_models(self, models_path: Path):
         all_models_end_dates = []
@@ -1271,8 +1280,9 @@ class FreqaiDataKitchen:
             if str(model_dir.name).startswith("sub-train"):
                 model_end_date = model_dir.name.split("_")[1]
                 pair = model_dir.name.split("_")[0].replace("sub-train-", "")
-                model_file_name = f"cb\
-                    _{str(model_dir.name).replace('sub-train-', '').lower()}_model.joblib"
+                model_file_name = (f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}")
+                model_file_name = f"{model_file_name}_model.joblib"
+
                 model_path_file = Path(model_dir / model_file_name)
                 if model_path_file.is_file():
                     if pair not in pairs_end_dates:
