@@ -26,7 +26,6 @@ from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzed
 
 if TYPE_CHECKING:
     import websockets.connect
-    import websockets.exceptions
 
 
 class Producer(TypedDict):
