@@ -65,7 +65,7 @@ class IFreqaiModel(ABC):
         self.first = True
         self.set_full_path()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
-        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", False)
+        self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
@@ -273,6 +273,8 @@ class IFreqaiModel(ABC):
             dk.set_new_model_names(pair, trained_timestamp)
 
             if dk.check_if_backtest_prediction_exists():
+                self.dd.load_metadata(dk)
+                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -429,14 +431,16 @@ class IFreqaiModel(ABC):
         if "training_features_list_raw" in dk.data:
             feature_list = dk.data["training_features_list_raw"]
         else:
-            feature_list = dk.training_features_list
+            feature_list = dk.data['training_features_list']
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
                 "but found different features furnished by current strategy."
                 "Change `identifier` to train from scratch, or ensure the"
                 "strategy is furnishing the same features as the pretrained"
-                "model"
+                "model. In case of --strategy-list, please be aware that FreqAI "
+                "requires all strategies to maintain identical "
+                "populate_any_indicator() functions"
             )
 
     def data_cleaning_train(self, dk: FreqaiDataKitchen) -> None:
