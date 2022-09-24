@@ -430,6 +430,16 @@ class FreqaiDataDrawer:
 
         return
 
+    def load_metadata(self, dk: FreqaiDataKitchen) -> None:
+        """
+        Load only metadata into datakitchen to increase performance during
+        presaved backtesting (prediction file loading).
+        """
+        with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
+            dk.data = json.load(fp)
+            dk.training_features_list = dk.data["training_features_list"]
+            dk.label_list = dk.data["label_list"]
+
     def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:
         """
         loads all data required to make a prediction on a sub-train time range
