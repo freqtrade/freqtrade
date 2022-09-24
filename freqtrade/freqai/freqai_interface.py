@@ -244,7 +244,8 @@ class IFreqaiModel(ABC):
         # following tr_train. Both of these windows slide through the
         # entire backtest
         for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            (_, _, _) = self.dd.get_pair_dict_info(metadata["pair"])
+            pair = metadata["pair"]
+            (_, _, _) = self.dd.get_pair_dict_info(pair)
             train_it += 1
             total_trains = len(dk.backtesting_timeranges)
             self.training_timerange = tr_train
@@ -266,12 +267,10 @@ class IFreqaiModel(ABC):
 
             trained_timestamp_int = int(trained_timestamp.stopts)
             dk.data_path = Path(
-                dk.full_path
-                /
-                f"sub-train-{metadata['pair'].split('/')[0]}_{trained_timestamp_int}"
+                dk.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp_int}"
                 )
 
-            dk.set_new_model_names(metadata["pair"], trained_timestamp)
+            dk.set_new_model_names(pair, trained_timestamp)
 
             if dk.check_if_backtest_prediction_exists():
                 append_df = dk.get_backtesting_prediction()
@@ -281,15 +280,15 @@ class IFreqaiModel(ABC):
                     metadata["pair"], dk, trained_timestamp=trained_timestamp_int
                 ):
                     dk.find_features(dataframe_train)
-                    self.model = self.train(dataframe_train, metadata["pair"], dk)
-                    self.dd.pair_dict[metadata["pair"]]["trained_timestamp"] = int(
+                    self.model = self.train(dataframe_train, pair, dk)
+                    self.dd.pair_dict[pair]["trained_timestamp"] = int(
                         trained_timestamp.stopts)
 
                     if self.save_backtest_models:
                         logger.info('Saving backtest model to disk.')
-                        self.dd.save_data(self.model, metadata["pair"], dk)
+                        self.dd.save_data(self.model, pair, dk)
                 else:
-                    self.model = self.dd.load_data(metadata["pair"], dk)
+                    self.model = self.dd.load_data(pair, dk)
 
                 self.check_if_feature_list_matches_strategy(dataframe_train, dk)
 
