@@ -260,7 +260,7 @@ class IFreqaiModel(ABC):
                                                 tr_train.stopts,
                                                 tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
             logger.info(
-                f"Training {metadata['pair']}, {self.pair_it}/{self.total_pairs} pairs"
+                f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
                 f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
                 "trains"
             )
@@ -279,7 +279,7 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
             else:
                 if not self.model_exists(
-                    metadata["pair"], dk, trained_timestamp=trained_timestamp_int
+                    pair, dk, trained_timestamp=trained_timestamp_int
                 ):
                     dk.find_features(dataframe_train)
                     self.model = self.train(dataframe_train, pair, dk)
