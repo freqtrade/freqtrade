@@ -15,7 +15,6 @@ from pydantic import ValidationError
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
-from freqtrade.exceptions import OperationalException
 from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws import WebSocketChannel
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSAnalyzedDFRequest,
@@ -74,8 +73,6 @@ class ExternalMessageConsumer:
         # as the websockets client expects bytes.
         self.message_size_limit = (self._emc_config.get('message_size_limit', 8) << 20)
 
-        self.validate_config()
-
         # Setting these explicitly as they probably shouldn't be changed by a user
         # Unless we somehow integrate this with the strategy to allow creating
         # callbacks for the messages
@@ -95,18 +92,6 @@ class ExternalMessageConsumer:
         }
 
         self.start()
-
-    def validate_config(self):
-        """
-        Make sure values are what they are supposed to be
-        """
-        if self.enabled and len(self.producers) < 1:
-            raise OperationalException("You must specify at least 1 Producer to connect to.")
-
-        if self.enabled and self._config.get('process_only_new_candles', True):
-            # Warning here or require it?
-            logger.warning("To receive best performance with external data, "
-                           "please set `process_only_new_candles` to False")
 
     def start(self):
         """
