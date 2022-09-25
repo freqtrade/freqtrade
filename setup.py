@@ -8,13 +8,11 @@ hyperopt = [
     'scikit-learn',
     'scikit-optimize>=0.7.0',
     'filelock',
-    'joblib',
     'progressbar2',
 ]
 
 freqai = [
     'scikit-learn',
-    'joblib',
     'catboost; platform_machine != "aarch64"',
     'lightgbm',
 ]
@@ -74,6 +72,8 @@ setup(
         'pandas',
         'tables',
         'blosc',
+        'joblib',
+        'pyarrow',
         'fastapi',
         'uvicorn',
         'psutil',

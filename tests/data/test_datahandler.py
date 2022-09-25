@@ -9,9 +9,11 @@ from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
+from freqtrade.data.history.featherdatahandler import FeatherDataHandler
 from freqtrade.data.history.hdf5datahandler import HDF5DataHandler
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
+from freqtrade.data.history.parquetdatahandler import ParquetDataHandler
 from freqtrade.enums import CandleType, TradingMode
 from tests.conftest import log_has
 
@@ -150,6 +152,15 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     assert len(df1) == 0
     assert log_has("Could not load data for NOPAIR/XXX.", caplog)
     assert df.columns.equals(df1.columns)
+
+
+@pytest.mark.parametrize('datahandler', ['feather', 'parquet'])
+def test_datahandler_trades_not_supported(datahandler, testdatadir, ):
+    dh = get_datahandler(testdatadir, datahandler)
+    with pytest.raises(NotImplementedError):
+        dh.trades_load('UNITTEST/ETH')
+    with pytest.raises(NotImplementedError):
+        dh.trades_store('UNITTEST/ETH', MagicMock())
 
 
 def test_jsondatahandler_trades_load(testdatadir, caplog):
@@ -312,6 +323,67 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     assert ohlcv.empty
 
 
+@pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
+    # Data goes from 2018-01-10 - 2018-01-30
+    ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
+    # Mark data goes from to 2021-11-15 2021-11-19
+    ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
+])
+@pytest.mark.parametrize('datahandler', ['hdf5', 'feather', 'parquet'])
+def test_generic_datahandler_ohlcv_load_and_resave(
+    datahandler,
+    testdatadir,
+    tmpdir,
+    pair,
+    timeframe,
+    candle_type,
+    candle_append,
+    startdt, enddt
+):
+    tmpdir1 = Path(tmpdir)
+    tmpdir2 = tmpdir1
+    if candle_type not in ('', 'spot'):
+        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2.mkdir()
+    # Load data from one common file
+    dhbase = get_datahandler(testdatadir, 'json')
+    ohlcv = dhbase._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
+    assert isinstance(ohlcv, DataFrame)
+    assert len(ohlcv) > 0
+
+    # Get data to test
+    dh = get_datahandler(testdatadir, datahandler)
+
+    file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.{dh._get_file_extension()}"
+    assert not file.is_file()
+
+    dh1 = get_datahandler(tmpdir1, datahandler)
+    dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
+    assert file.is_file()
+
+    assert not ohlcv[ohlcv['date'] < startdt].empty
+
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
+
+    ohlcv = dhbase.ohlcv_load(pair, timeframe, timerange=timerange, candle_type=candle_type)
+    if datahandler == 'hdf5':
+        ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
+        if candle_type == 'mark':
+            ohlcv1['volume'] = 0.0
+    else:
+        ohlcv1 = dh1.ohlcv_load('UNITTEST/NEW', timeframe,
+                                timerange=timerange, candle_type=candle_type)
+
+    assert len(ohlcv) == len(ohlcv1)
+    assert ohlcv.equals(ohlcv1)
+    assert ohlcv[ohlcv['date'] < startdt].empty
+    assert ohlcv[ohlcv['date'] > enddt].empty
+
+    # Try loading inexisting file
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
+    assert ohlcv.empty
+
+
 def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
@@ -330,13 +402,24 @@ def test_gethandlerclass():
     cl = get_datahandlerclass('json')
     assert cl == JsonDataHandler
     assert issubclass(cl, IDataHandler)
+
     cl = get_datahandlerclass('jsongz')
     assert cl == JsonGzDataHandler
     assert issubclass(cl, IDataHandler)
     assert issubclass(cl, JsonDataHandler)
+
     cl = get_datahandlerclass('hdf5')
     assert cl == HDF5DataHandler
     assert issubclass(cl, IDataHandler)
+
+    cl = get_datahandlerclass('feather')
+    assert cl == FeatherDataHandler
+    assert issubclass(cl, IDataHandler)
+
+    cl = get_datahandlerclass('parquet')
+    assert cl == ParquetDataHandler
+    assert issubclass(cl, IDataHandler)
+
     with pytest.raises(ValueError, match=r"No datahandler for .*"):
         get_datahandlerclass('DeadBeef')
 

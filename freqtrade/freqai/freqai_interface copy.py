@@ -92,7 +92,6 @@ class IFreqaiModel(ABC):
         self.begin_time_train: float = 0
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
         self.continual_learning = self.freqai_info.get('continual_learning', False)
-        self.plot_features = self.ft_params.get("plot_feature_importances", 0)
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
@@ -144,6 +143,8 @@ class IFreqaiModel(ABC):
                 strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
             )
             dk = self.start_backtesting(dataframe, metadata, self.dk)
+            # else:
+            #     dk = self.start_backtesting_live_models(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         self.clean_up()
@@ -267,8 +268,8 @@ class IFreqaiModel(ABC):
             if not dk.backtest_live_models:
                 logger.info(
                     f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
-                    f" from {tr_train_startts_str} "
-                    f"to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                    f" from {tr_train_startts_str}"
+                    f" to {tr_train_stopts_str}, {train_it}/{total_trains} "
                     "trains"
                 )
 
@@ -284,7 +285,9 @@ class IFreqaiModel(ABC):
 
             if dk.check_if_backtest_prediction_exists():
                 self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                if not dk.backtest_live_models:
+                    self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -296,29 +299,24 @@ class IFreqaiModel(ABC):
                             "mode"
                         )
                     dk.find_features(dataframe_train)
-                    dk.find_labels(dataframe_train)
                     self.model = self.train(dataframe_train, pair, dk)
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(
                         trained_timestamp.stopts)
-                    if self.plot_features:
-                        plot_feature_importance(self.model, pair, dk, self.plot_features)
+
                     if self.save_backtest_models:
                         logger.info('Saving backtest model to disk.')
                         self.dd.save_data(self.model, pair, dk)
-                    else:
-                        logger.info('Saving metadata to disk.')
-                        self.dd.save_metadata(dk)
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
-                # self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds)
                 dk.append_predictions(append_df)
                 dk.save_backtesting_prediction(append_df)
 
         dk.fill_predictions(dataframe)
-
         return dk
 
     def start_live(
@@ -390,7 +388,8 @@ class IFreqaiModel(ABC):
             self.dd.return_null_values_to_strategy(dataframe, dk)
             return dk
 
-        dk.find_labels(dataframe)
+        # ensure user is feeding the correct indicators to the model
+        self.check_if_feature_list_matches_strategy(dataframe, dk)
 
         self.build_strategy_return_arrays(dataframe, dk, metadata["pair"], trained_timestamp)
 
@@ -509,7 +508,7 @@ class IFreqaiModel(ABC):
         if ft_params.get(
             "principal_component_analysis", False
         ):
-            dk.pca_transform(dk.data_dictionary['prediction_features'])
+            dk.pca_transform(self.dk.data_dictionary['prediction_features'])
 
         if ft_params.get("use_SVM_to_remove_outliers", False):
             dk.use_SVM_to_remove_outliers(predict=True)
@@ -520,10 +519,11 @@ class IFreqaiModel(ABC):
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
 
-        # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk.data_dictionary['prediction_features'], dk)
-
-    def model_exists(self, dk: FreqaiDataKitchen) -> bool:
+    def model_exists(
+        self,
+        dk: FreqaiDataKitchen,
+        scanning: bool = False,
+    ) -> bool:
         """
         Given a pair and path, check if a model already exists
         :param pair: pair e.g. BTC/USD
@@ -533,9 +533,9 @@ class IFreqaiModel(ABC):
         """
         path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
-        if file_exists:
+        if file_exists and not scanning:
             logger.info("Found model at %s", dk.data_path / dk.model_filename)
-        else:
+        elif not scanning:
             logger.info("Could not find model at %s", dk.data_path / dk.model_filename)
         return file_exists
 
@@ -582,7 +582,6 @@ class IFreqaiModel(ABC):
 
         # find the features indicated by strategy and store in datakitchen
         dk.find_features(unfiltered_dataframe)
-        dk.find_labels(unfiltered_dataframe)
 
         model = self.train(unfiltered_dataframe, pair, dk)
 
@@ -590,8 +589,8 @@ class IFreqaiModel(ABC):
         dk.set_new_model_names(pair, int(new_trained_timerange.stopts))
         self.dd.save_data(model, pair, dk)
 
-        if self.plot_features:
-            plot_feature_importance(model, pair, dk, self.plot_features)
+        if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):
+            plot_feature_importance(model, pair, dk)
 
         if self.freqai_info.get("purge_old_models", False):
             self.dd.purge_old_models()
