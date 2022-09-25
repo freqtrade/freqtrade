@@ -22,6 +22,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`ProducerPairList`](#producerpairlist)
 * [`AgeFilter`](#agefilter)
 * [`OffsetFilter`](#offsetfilter)
 * [`PerformanceFilter`](#performancefilter)
@@ -84,7 +85,7 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
 
-### VolumePairList Advanced mode
+##### VolumePairList Advanced mode
 
 `VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
 
@@ -145,6 +146,32 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 
 !!! Note
     `VolumePairList` does not support backtesting mode.
+
+#### ProducerPairList
+
+With `ProducerPairList`, you can reuse the pairlist from a [Producer](producer-consumer.md) without explicitly defining the pairlist on each consumer.
+
+[Consumer mode](producer-consumer.md) is required for this pairlist to work.
+
+The pairlist will perform a check on active pairs against the current exchange configuration to avoid attempting to trade on invalid markets.
+
+You can limit the length of the pairlist with the optional parameter `number_assets`. Using `"number_assets"=0` or omitting this key will result in the reuse of all producer pairs valid for the current setup.
+
+```json
+"pairlists": [
+    {
+        "method": "ProducerPairList",
+        "number_assets": 5,
+        "producer_name": "default",
+    }
+],
+```
+
+
+!!! Tip "Combining pairlists"
+    This pairlist can be combined with all other pairlists and filters for further pairlist reduction, and can also act as an "additional" pairlist, on top of already defined pairs.
+    `ProducerPairList` can also be used multiple times in sequence, combining the pairs from multiple producers.
+    Obviously in complex such configurations, the Producer may not provide data for all pairs, so the strategy must be fit for this.
 
 #### AgeFilter
 
