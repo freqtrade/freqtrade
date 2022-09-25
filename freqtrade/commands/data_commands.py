@@ -11,7 +11,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_oh
                                     refresh_backtest_trades_data)
 from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import market_is_active, timeframe_to_minutes
+from freqtrade.exchange import Exchange, market_is_active, timeframe_to_minutes
 from freqtrade.freqai.utils import setup_freqai_spice_rack
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
@@ -68,37 +68,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
         exchange.validate_timeframes(timeframe)
 
     try:
-
-        if config.get('download_trades'):
-            if config.get('trading_mode') == 'futures':
-                raise OperationalException("Trade download not supported for futures.")
-            pairs_not_available = refresh_backtest_trades_data(
-                exchange, pairs=expanded_pairs, datadir=config['datadir'],
-                timerange=timerange, new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_trades'])
-
-            # Convert downloaded trade data to different timeframes
-            convert_trades_to_ohlcv(
-                pairs=expanded_pairs, timeframes=config['timeframes'],
-                datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
-                data_format_ohlcv=config['dataformat_ohlcv'],
-                data_format_trades=config['dataformat_trades'],
-            )
-        else:
-            if not exchange.get_option('ohlcv_has_history', True):
-                raise OperationalException(
-                    f"Historic klines not available for {exchange.name}. "
-                    "Please use `--dl-trades` instead for this exchange "
-                    "(will unfortunately take a long time)."
-                    )
-            pairs_not_available = refresh_backtest_ohlcv_data(
-                exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
-                datadir=config['datadir'], timerange=timerange,
-                new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
-                trading_mode=config.get('trading_mode', 'spot'),
-                prepend=config.get('prepend_data', False)
-            )
+        pairs_not_available = download_trades(exchange, expanded_pairs, config, timerange)
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
@@ -107,6 +77,42 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {exchange.name}.")
+
+
+def download_trades(exchange: Exchange, expanded_pairs: list,
+                    config: Dict[str, Any], timerange: TimeRange) -> list:
+    if config.get('download_trades'):
+        if config.get('trading_mode') == 'futures':
+            raise OperationalException("Trade download not supported for futures.")
+        pairs_not_available = refresh_backtest_trades_data(
+            exchange, pairs=expanded_pairs, datadir=config['datadir'],
+            timerange=timerange, new_pairs_days=config['new_pairs_days'],
+            erase=bool(config.get('erase')), data_format=config['dataformat_trades'])
+
+        # Convert downloaded trade data to different timeframes
+        convert_trades_to_ohlcv(
+            pairs=expanded_pairs, timeframes=config['timeframes'],
+            datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
+            data_format_ohlcv=config['dataformat_ohlcv'],
+            data_format_trades=config['dataformat_trades'],
+        )
+    else:
+        if not exchange.get_option('ohlcv_has_history', True):
+            raise OperationalException(
+                f"Historic klines not available for {exchange.name}. "
+                "Please use `--dl-trades` instead for this exchange "
+                "(will unfortunately take a long time)."
+                )
+        pairs_not_available = refresh_backtest_ohlcv_data(
+            exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
+            datadir=config['datadir'], timerange=timerange,
+            new_pairs_days=config['new_pairs_days'],
+            erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
+            trading_mode=config.get('trading_mode', 'spot'),
+            prepend=config.get('prepend_data', False)
+        )
+
+    return pairs_not_available
 
 
 def start_convert_trades(args: Dict[str, Any]) -> None:
