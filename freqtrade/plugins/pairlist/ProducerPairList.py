@@ -75,7 +75,6 @@ class ProducerPairList(IPairList):
         pairs = self._filter_pairlist(None)
         self.log_once(f"Received pairs: {pairs}", logger.debug)
         pairs = self._whitelist_for_active_markets(self.verify_whitelist(pairs, logger.info))
-        self.log_once(f"New Pairlist: {pairs}", logger.info)
         return pairs
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:

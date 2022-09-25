@@ -98,6 +98,8 @@ class PairListManager(LoggingMixin):
         # to ensure blacklist is respected.
         pairlist = self.verify_blacklist(pairlist, logger.warning)
 
+        self.log_once(f"Whitelist with {len(pairlist)} pairs: {pairlist}", logger.info)
+
         self._whitelist = pairlist
 
     def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
