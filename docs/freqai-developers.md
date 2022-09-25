@@ -2,13 +2,13 @@
 
 ## Project architecture
 
-The architechture and functions of FreqAI are generalized to encourages development of unique features, functions, models, etc.
+The architechture and functions of `FreqAI` are generalized to encourages development of unique features, functions, models, etc.
 
 The class structure and a detailed algorithmic overview is depicted in the following diagram: 
 
 ![image](assets/freqai_algorithm-diagram.jpg)
 
-As shown, there are three distinct objects comprising FreqAI:
+As shown, there are three distinct objects comprising `FreqAI`:
 
 * **IFreqaiModel** - A singular persistent object containing all the necessary logic to collect, store, and process data, engineer features, run training, and inference models. 
 * **FreqaiDataKitchen** - A non-persistent object which is created uniquely for each unique asset/model. Beyond metadata, it also contains a variety of data processing tools. 
@@ -27,7 +27,7 @@ The file structure is automatically generated based on the model `identifier` se
 | Structure | Description |
 |-----------|-------------|
 | `config_*.json` | A copy of the model specific configuration file. |
-| `historic_predictions.pkl` | A file containing all historic predictions generated during the lifetime of the `identifier` model during live deployment. `historic_predictions.pkl` is used to reload the model after a crash or a config change. A backup file is always held incase of corruption on the main file. **FreqAI automatically detects corruption and replaces the corrupted file with the backup**. |
+| `historic_predictions.pkl` | A file containing all historic predictions generated during the lifetime of the `identifier` model during live deployment. `historic_predictions.pkl` is used to reload the model after a crash or a config change. A backup file is always held incase of corruption on the main file. **`FreqAI` automatically detects corruption and replaces the corrupted file with the backup**. |
 | `pair_dictionary.json` | A file containing the training queue as well as the on disk location of the most recently trained model. |
 | `sub-train-*_TIMESTAMP` | A folder containing all the files associated with a single model, such as: <br>
 || `*_metadata.json` - Metadata for the model, such as normalization max/mins, expected training feature list, etc. <br>

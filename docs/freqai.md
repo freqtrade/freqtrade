@@ -1,10 +1,10 @@
 ![freqai-logo](assets/freqai_doc_logo.svg)
 
-# FreqAI 
+# `FreqAI` 
 
 ##Introduction
 
-FreqAI is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.
+`FreqAI` is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.
 
 Features include:
 
@@ -23,7 +23,7 @@ Features include:
 
 ## Quick start
 
-The easiest way to quickly test FreqAI is to run it in dry mode with the following command:
+The easiest way to quickly test `FreqAI` is to run it in dry mode with the following command:
 
 ```bash
 freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates
@@ -37,7 +37,7 @@ An example strategy, prediction model, and config to use as a starting points ca
 
 ## General approach
 
-You provide FreqAI with a set of custom *base indicators* (the same way as in a [typical Freqtrade strategy](strategy-customization.md)) as well as target values (*labels*). For each pair in the whitelist, FreqAI trains a model to predict the target values based on the input of custom indicators. The models are then consistently retrained, with a predetermined frequency, to adapt to market conditions. FreqAI offers the ability to both backtest strategies (emulating reality with periodic retraining on historic data) and deploy dry/live runs. In dry/live conditions, FreqAI can be set to constant retraining in a background thread to keep models as up to date as possible.
+You provide `FreqAI` with a set of custom *base indicators* (the same way as in a [typical Freqtrade strategy](strategy-customization.md)) as well as target values (*labels*). For each pair in the whitelist, `FreqAI` trains a model to predict the target values based on the input of custom indicators. The models are then consistently retrained, with a predetermined frequency, to adapt to market conditions. `FreqAI` offers the ability to both backtest strategies (emulating reality with periodic retraining on historic data) and deploy dry/live runs. In dry/live conditions, `FreqAI` can be set to constant retraining in a background thread to keep models as up to date as possible.
 
 An overview of the algorithm, explaining the data processing pipeline and model usage, is shown below.
 
@@ -45,7 +45,7 @@ An overview of the algorithm, explaining the data processing pipeline and model 
 
 ### Important machine learning vocabulary
 
-**Features** - the parameters, based on historic data, on which a model is trained. All features for a single candle is stored as a vector. In FreqAI, you build a feature data sets from anything you can construct in the strategy.
+**Features** - the parameters, based on historic data, on which a model is trained. All features for a single candle is stored as a vector. In `FreqAI`, you build a feature data sets from anything you can construct in the strategy.
 
 **Labels** - the target values that a model is trained toward. Each feature vector is associated with a single label that is defined by you within your strategy. These labels intentionally look into the future, and are not available to the model during dry/live/backtesting.
 
@@ -59,7 +59,7 @@ An overview of the algorithm, explaining the data processing pipeline and model 
 
 ## Install prerequisites
 
-The normal Freqtrade install process will ask if you wish to install FreqAI dependencies. You should reply "yes" to this question if you wish to use FreqAI. If you did not reply yes, you can manually install these dependencies after the install with:
+The normal Freqtrade install process will ask if you wish to install `FreqAI` dependencies. You should reply "yes" to this question if you wish to use `FreqAI`. If you did not reply yes, you can manually install these dependencies after the install with:
 
 ``` bash
 pip install -r requirements-freqai.txt
@@ -70,15 +70,18 @@ pip install -r requirements-freqai.txt
 
 ### Usage with docker
 
-If you are using docker, a dedicated tag with FreqAI dependencies is available as `:freqai`. As such - you can replace the image line in your docker-compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular FreqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices.
+If you are using docker, a dedicated tag with `FreqAI` dependencies is available as `:freqai`. As such - you can replace the image line in your docker-compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular `FreqAI` dependencies. Similar to native installs, Catboost will not be available on ARM based devices.
 
-## Common pitfalls
+### Common pitfalls
 
-FreqAI cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically). This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively, it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
+`FreqAI` cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
+This is for performance reasons - `FreqAI` relies on making quick predictions/retrains. To do this effectively,
+it needs to download all the training data at the beginning of a dry/live instance. `FreqAI` stores and appends
+new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, `FreqAI` does work with the `ShufflePairlist` or a `VolumePairlist` which keeps the total pairlist constant (but reorders the pairs according to volume).
 
 ## Credits
 
-FreqAI is developed by a group of individuals who all contribute specific skillsets to the project.
+`FreqAI` is developed by a group of individuals who all contribute specific skillsets to the project.
 
 Conception and software development:
 Robert Caulk @robcaulk

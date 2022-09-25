@@ -1,6 +1,6 @@
 # Running FreqAI
 
-There are two ways to train and deploy an adaptive machine learning model - live deployment and deployment for backtesting analysis. FreqAI can be used for both and allows for periodic training of models in live and backtesting, as shown in the following figure.
+There are two ways to train and deploy an adaptive machine learning model - live deployment and historical backtesting. In both cases, `FreqAI` runs/simulates periodic retraining of models as shown in the following figure:
 
 ![freqai-window](assets/freqai_moving-window.jpg)
 
