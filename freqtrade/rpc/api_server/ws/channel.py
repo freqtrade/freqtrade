@@ -140,7 +140,7 @@ class ChannelManager:
         Disconnect all Channels
         """
         with self._lock:
-            for websocket, channel in self.channels.items():
+            for websocket, channel in self.channels.copy().items():
                 if not channel.is_closed():
                     await channel.close()
 
@@ -154,7 +154,7 @@ class ChannelManager:
         """
         with self._lock:
             message_type = data.get('type')
-            for websocket, channel in self.channels.items():
+            for websocket, channel in self.channels.copy().items():
                 try:
                     if channel.subscribed_to(message_type):
                         await channel.send(data)
