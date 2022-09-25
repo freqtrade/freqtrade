@@ -91,8 +91,8 @@ class Backtesting:
 
         if self.config.get('strategy_list'):
             if self.config.get('freqai', {}).get('enabled', False):
-                raise OperationalException(
-                    "You can't use strategy_list and freqai at the same time.")
+                logger.warning("Using --strategy-list with FreqAI REQUIRES all strategies "
+                               "to have identical populate_any_indicators.")
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -139,9 +139,14 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
+
+        if self.config.get('freqai', {}).get('enabled', False):
+            # For FreqAI, increase the required_startup to includes the training data
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
+
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
-        self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
@@ -217,7 +222,7 @@ class Backtesting:
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.dataprovider.get_required_startup(self.timeframe),
+            startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)

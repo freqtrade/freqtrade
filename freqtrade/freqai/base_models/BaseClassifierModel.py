@@ -1,4 +1,5 @@
 import logging
+from time import time
 from typing import Any, Tuple
 
 import numpy as np
@@ -32,7 +33,9 @@ class BaseClassifierModel(IFreqaiModel):
         :model: Trained model which can be used to inference (self.predict)
         """
 
-        logger.info("-------------------- Starting training " f"{pair} --------------------")
+        logger.info(f"-------------------- Starting training {pair} --------------------")
+
+        start_time = time()
 
         # filter the features requested by user in the configuration file and elegantly handle NaNs
         features_filtered, labels_filtered = dk.filter_features(
@@ -45,10 +48,10 @@ class BaseClassifierModel(IFreqaiModel):
         start_date = unfiltered_df["date"].iloc[0].strftime("%Y-%m-%d")
         end_date = unfiltered_df["date"].iloc[-1].strftime("%Y-%m-%d")
         logger.info(f"-------------------- Training on data from {start_date} to "
-                    f"{end_date}--------------------")
+                    f"{end_date} --------------------")
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        if not self.freqai_info.get('fit_live_predictions', 0) or not self.live:
+        if not self.freqai_info.get("fit_live_predictions", 0) or not self.live:
             dk.fit_labels()
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
@@ -57,13 +60,16 @@ class BaseClassifierModel(IFreqaiModel):
         self.data_cleaning_train(dk)
 
         logger.info(
-            f'Training model on {len(dk.data_dictionary["train_features"].columns)}' " features"
+            f"Training model on {len(dk.data_dictionary['train_features'].columns)} features"
         )
-        logger.info(f'Training model on {len(data_dictionary["train_features"])} data points')
+        logger.info(f"Training model on {len(data_dictionary['train_features'])} data points")
 
         model = self.fit(data_dictionary, dk)
 
-        logger.info(f"--------------------done training {pair}--------------------")
+        end_time = time()
+
+        logger.info(f"-------------------- Done training {pair} "
+                    f"({end_time - start_time:.2f} secs) --------------------")
 
         return model
 

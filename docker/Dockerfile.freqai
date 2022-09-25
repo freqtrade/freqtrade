@@ -6,4 +6,3 @@ FROM ${sourceimage}:${sourcetag}
 COPY requirements-freqai.txt /freqtrade/
 
 RUN pip install -r requirements-freqai.txt --user --no-cache-dir
-

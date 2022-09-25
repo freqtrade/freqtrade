@@ -313,6 +313,7 @@ class FreqaiDataDrawer:
         """
 
         dk.find_features(dataframe)
+        dk.find_labels(dataframe)
 
         full_labels = dk.label_list + dk.unique_class_list
 
@@ -376,7 +377,27 @@ class FreqaiDataDrawer:
         if self.config.get("freqai", {}).get("purge_old_models", False):
             self.purge_old_models()
 
-    # Functions pulled back from FreqaiDataKitchen because they relied on DataDrawer
+    def save_metadata(self, dk: FreqaiDataKitchen) -> None:
+        """
+        Saves only metadata for backtesting studies if user prefers
+        not to save model data. This saves tremendous amounts of space
+        for users generating huge studies.
+        This is only active when `save_backtest_models`: false (not default)
+        """
+        if not dk.data_path.is_dir():
+            dk.data_path.mkdir(parents=True, exist_ok=True)
+
+        save_path = Path(dk.data_path)
+
+        dk.data["data_path"] = str(dk.data_path)
+        dk.data["model_filename"] = str(dk.model_filename)
+        dk.data["training_features_list"] = list(dk.data_dictionary["train_features"].columns)
+        dk.data["label_list"] = dk.label_list
+
+        with open(save_path / f"{dk.model_filename}_metadata.json", "w") as fp:
+            rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE)
+
+        return
 
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
         """
@@ -429,6 +450,16 @@ class FreqaiDataDrawer:
         self.save_drawer_to_disk()
 
         return
+
+    def load_metadata(self, dk: FreqaiDataKitchen) -> None:
+        """
+        Load only metadata into datakitchen to increase performance during
+        presaved backtesting (prediction file loading).
+        """
+        with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
+            dk.data = json.load(fp)
+            dk.training_features_list = dk.data["training_features_list"]
+            dk.label_list = dk.data["label_list"]
 
     def load_data(self, coin: str, dk: FreqaiDataKitchen) -> Any:
         """

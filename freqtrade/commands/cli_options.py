@@ -440,7 +440,7 @@ AVAILABLE_CLI_OPTIONS = {
     "dataformat_trades": Arg(
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `jsongz`).',
-        choices=constants.AVAILABLE_DATAHANDLERS,
+        choices=constants.AVAILABLE_DATAHANDLERS_TRADES,
     ),
     "show_timerange": Arg(
         '--show-timerange',
