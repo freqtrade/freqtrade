@@ -831,7 +831,7 @@ class FreqaiDataKitchen:
 
         inlier_metric = pd.DataFrame(
             data=inliers.sum(axis=1) / no_prev_pts,
-            columns=['inlier_metric'],
+            columns=['%-inlier_metric'],
             index=compute_df.index
         )
 
@@ -881,11 +881,14 @@ class FreqaiDataKitchen:
         """
         column_names = dataframe.columns
         features = [c for c in column_names if "%" in c]
-        labels = [c for c in column_names if "&" in c]
         if not features:
             raise OperationalException("Could not find any features!")
 
         self.training_features_list = features
+
+    def find_labels(self, dataframe: DataFrame) -> None:
+        column_names = dataframe.columns
+        labels = [c for c in column_names if "&" in c]
         self.label_list = labels
 
     def check_if_pred_in_training_spaces(self) -> None:
@@ -1206,7 +1209,8 @@ class FreqaiDataKitchen:
 
     def get_unique_classes_from_labels(self, dataframe: DataFrame) -> None:
 
-        self.find_features(dataframe)
+        # self.find_features(dataframe)
+        self.find_labels(dataframe)
 
         for key in self.label_list:
             if dataframe[key].dtype == object:
