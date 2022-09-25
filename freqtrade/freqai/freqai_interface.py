@@ -134,17 +134,17 @@ class IFreqaiModel(ABC):
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
-            self.dk.get_timerange_from_ready_models()
-            logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
+            if(self.dk.backtest_live_models):
+                logger.info(
+                    f"Backtesting {len(self.dk.backtesting_timeranges)} timeranges (Live Models)")
+            else:
+                logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
             dataframe = self.dk.use_strategy_to_populate_indicators(
                 strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
             )
-
-            backtest_live_models = True  # temp
-            if not backtest_live_models:
-                dk = self.start_backtesting(dataframe, metadata, self.dk)
-            else:
-                dk = self.start_backtesting_live_models(dataframe, metadata, self.dk)
+            dk = self.start_backtesting(dataframe, metadata, self.dk)
+            # else:
+            #     dk = self.start_backtesting_live_models(dataframe, metadata, self.dk)
 
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         self.clean_up()
@@ -265,28 +265,39 @@ class IFreqaiModel(ABC):
             tr_train_stopts_str = datetime.fromtimestamp(
                                                 tr_train.stopts,
                                                 tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            logger.info(
-                f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
-                f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
-                "trains"
-            )
-
-            trained_timestamp_int = int(trained_timestamp.stopts)
-            dk.data_path = Path(
-                dk.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp_int}"
+            if not dk.backtest_live_models:
+                logger.info(
+                    f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
+                    f" from {tr_train_startts_str}"
+                    f" to {tr_train_stopts_str}, {train_it}/{total_trains} "
+                    "trains"
                 )
 
-            dk.set_new_model_names(pair, trained_timestamp)
+            timestamp_model_id = int(trained_timestamp.stopts)
+            if dk.backtest_live_models:
+                timestamp_model_id = int(tr_backtest.startts)
+
+            dk.data_path = Path(
+                dk.full_path / f"sub-train-{pair.split('/')[0]}_{timestamp_model_id}"
+                )
+
+            dk.set_new_model_names(pair, timestamp_model_id)
 
             if dk.check_if_backtest_prediction_exists():
                 self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                if not dk.backtest_live_models:
+                    self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
-                if not self.model_exists(
-                    pair, dk, trained_timestamp=trained_timestamp_int
-                ):
+                if not self.model_exists(dk):
+                    if dk.backtest_live_models:
+                        raise OperationalException(
+                            "Training models is not allowed "
+                            "in backtest_live_models backtesting "
+                            "mode"
+                        )
                     dk.find_features(dataframe_train)
                     self.model = self.train(dataframe_train, pair, dk)
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(
@@ -306,91 +317,6 @@ class IFreqaiModel(ABC):
                 dk.save_backtesting_prediction(append_df)
 
         dk.fill_predictions(dataframe)
-
-        return dk
-
-    def start_backtesting_live_models(
-        self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
-    ) -> FreqaiDataKitchen:
-        """
-        The main broad execution for backtesting. For backtesting, each pair enters and then gets
-        trained for each window along the sliding window defined by "train_period_days"
-        (training window) and "backtest_period_days" (backtest window, i.e. window immediately
-        following the training window). FreqAI slides the window and sequentially builds
-        the backtesting results before returning the concatenated results for the full
-        backtesting period back to the strategy.
-        :param dataframe: DataFrame = strategy passed dataframe
-        :param metadata: Dict = pair metadata
-        :param dk: FreqaiDataKitchen = Data management/analysis tool associated to present pair only
-        :return:
-            FreqaiDataKitchen = Data management/analysis tool associated to present pair only
-        """
-
-        self.pair_it += 1
-        train_it = 0
-        # Loop enforcing the sliding window training/backtesting paradigm
-        # tr_train is the training time range e.g. 1 historical month
-        # tr_backtest is the backtesting time range e.g. the week directly
-        # following tr_train. Both of these windows slide through the
-        # entire backtest
-        for tr_train, tr_backtest in zip(dk.training_timeranges, dk.backtesting_timeranges):
-            pair = metadata["pair"]
-            (_, _, _) = self.dd.get_pair_dict_info(pair)
-            train_it += 1
-            total_trains = len(dk.backtesting_timeranges)
-            self.training_timerange = tr_train
-            dataframe_train = dk.slice_dataframe(tr_train, dataframe)
-            dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
-
-            trained_timestamp = tr_train
-            tr_train_startts_str = datetime.fromtimestamp(
-                                                tr_train.startts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            tr_train_stopts_str = datetime.fromtimestamp(
-                                                tr_train.stopts,
-                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-            logger.info(
-                f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"
-                f" from {tr_train_startts_str} to {tr_train_stopts_str}, {train_it}/{total_trains} "
-                "trains"
-            )
-
-            trained_timestamp_int = int(trained_timestamp.stopts)
-            dk.data_path = Path(
-                dk.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp_int}"
-                )
-
-            dk.set_new_model_names(pair, trained_timestamp)
-
-            if dk.check_if_backtest_prediction_exists():
-                self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
-                append_df = dk.get_backtesting_prediction()
-                dk.append_predictions(append_df)
-            else:
-                if not self.model_exists(
-                    pair, dk, trained_timestamp=trained_timestamp_int
-                ):
-                    dk.find_features(dataframe_train)
-                    self.model = self.train(dataframe_train, pair, dk)
-                    self.dd.pair_dict[pair]["trained_timestamp"] = int(
-                        trained_timestamp.stopts)
-
-                    if self.save_backtest_models:
-                        logger.info('Saving backtest model to disk.')
-                        self.dd.save_data(self.model, pair, dk)
-                else:
-                    self.model = self.dd.load_data(pair, dk)
-
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
-
-                pred_df, do_preds = self.predict(dataframe_backtest, dk)
-                append_df = dk.get_predictions_to_append(pred_df, do_preds)
-                dk.append_predictions(append_df)
-                dk.save_backtesting_prediction(append_df)
-
-        dk.fill_predictions(dataframe)
-
         return dk
 
     def start_live(
@@ -595,10 +521,7 @@ class IFreqaiModel(ABC):
 
     def model_exists(
         self,
-        pair: str,
         dk: FreqaiDataKitchen,
-        trained_timestamp: int = None,
-        model_filename: str = "",
         scanning: bool = False,
     ) -> bool:
         """
@@ -608,7 +531,7 @@ class IFreqaiModel(ABC):
         :return:
         :boolean: whether the model file exists or not.
         """
-        path_to_modelfile = Path(dk.data_path / f"{model_filename}_model.joblib")
+        path_to_modelfile = Path(dk.data_path / f"{dk.model_filename}_model.joblib")
         file_exists = path_to_modelfile.is_file()
         if file_exists and not scanning:
             logger.info("Found model at %s", dk.data_path / dk.model_filename)
@@ -663,7 +586,7 @@ class IFreqaiModel(ABC):
         model = self.train(unfiltered_dataframe, pair, dk)
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
-        dk.set_new_model_names(pair, new_trained_timerange)
+        dk.set_new_model_names(pair, int(new_trained_timerange.stopts))
         self.dd.save_data(model, pair, dk)
 
         if self.freqai_info["feature_parameters"].get("plot_feature_importance", False):

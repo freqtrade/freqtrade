@@ -62,6 +62,7 @@ class FreqaiDataKitchen:
         live: bool = False,
         pair: str = "",
     ):
+        self.backtest_live_models = False  # temp
         self.data: Dict[str, Any] = {}
         self.data_dictionary: Dict[str, DataFrame] = {}
         self.config = config
@@ -88,11 +89,16 @@ class FreqaiDataKitchen:
                 self.config["timerange"], self.freqai_config.get("train_period_days", 0)
             )
 
-            (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
-                self.full_timerange,
-                config["freqai"]["train_period_days"],
-                config["freqai"]["backtest_period_days"],
-            )
+            if self.backtest_live_models:
+                self.get_timerange_from_ready_models()
+                (self.training_timeranges,
+                 self.backtesting_timeranges) = self.split_timerange_live_models()
+            else:
+                (self.training_timeranges, self.backtesting_timeranges) = self.split_timerange(
+                    self.full_timerange,
+                    config["freqai"]["train_period_days"],
+                    config["freqai"]["backtest_period_days"],
+                )
 
         self.data['extra_returns_per_train'] = self.freqai_config.get('extra_returns_per_train', {})
         self.thread_count = self.freqai_config.get("data_kitchen_thread_count", -1)
@@ -450,6 +456,26 @@ class FreqaiDataKitchen:
 
         # print(tr_training_list, tr_backtesting_list)
         return tr_training_list_timerange, tr_backtesting_list_timerange
+
+    def split_timerange_live_models(
+        self
+    ) -> Tuple[list, list]:
+
+        tr_backtesting_list_timerange = []
+        pair = self.pair.split("/")[0].split(":")[0]
+        pair_data = self.backtest_live_models_data["pairs_end_dates"][pair]
+        model_end_dates = []
+        backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
+        for data in pair_data:
+            model_end_dates.append(data["model_end_date"])
+        model_end_dates.append(backtesting_timerange.stopts)
+        model_end_dates.sort()
+        for index, item in enumerate(model_end_dates):
+            if len(model_end_dates) > (index + 1):
+                tr_to_add = TimeRange("date", "date", item, model_end_dates[index + 1])
+                tr_backtesting_list_timerange.append(tr_to_add)
+
+        return tr_backtesting_list_timerange, tr_backtesting_list_timerange
 
     def slice_dataframe(self, timerange: TimeRange, df: DataFrame) -> DataFrame:
         """
@@ -1093,15 +1119,15 @@ class FreqaiDataKitchen:
 
         return retrain, trained_timerange, data_load_timerange
 
-    def set_new_model_names(self, pair: str, trained_timerange: TimeRange):
+    def set_new_model_names(self, pair: str, timestamp_id: int):
 
         coin, _ = pair.split("/")
         self.data_path = Path(
             self.full_path
-            / f"sub-train-{pair.split('/')[0]}_{int(trained_timerange.stopts)}"
+            / f"sub-train-{pair.split('/')[0]}_{timestamp_id}"
         )
 
-        self.model_filename = f"cb_{coin.lower()}_{int(trained_timerange.stopts)}"
+        self.model_filename = f"cb_{coin.lower()}_{timestamp_id}"
 
     def set_all_pairs(self) -> None:
 
@@ -1278,7 +1304,7 @@ class FreqaiDataKitchen:
         pairs_end_dates: Dict[str, Any] = {}
         for model_dir in models_path.iterdir():
             if str(model_dir.name).startswith("sub-train"):
-                model_end_date = model_dir.name.split("_")[1]
+                model_end_date = int(model_dir.name.split("_")[1])
                 pair = model_dir.name.split("_")[0].replace("sub-train-", "")
                 model_file_name = (f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}")
                 model_file_name = f"{model_file_name}_model.joblib"
@@ -1289,14 +1315,24 @@ class FreqaiDataKitchen:
                         pairs_end_dates[pair] = []
 
                     pairs_end_dates[pair].append({
-                        "model_end_date": int(model_end_date),
+                        "model_end_date": model_end_date,
                         "model_path_file": model_path_file,
                         "model_dir": model_dir
                     })
 
                     if model_end_date not in all_models_end_dates:
-                        all_models_end_dates.append(int(model_end_date))
+                        all_models_end_dates.append(model_end_date)
 
+        finish_timestamp = int(datetime.now(tz=timezone.utc).timestamp())
+        if len(all_models_end_dates) > 1:
+            # After last model end date, use the same period from previous model
+            # to finish the backtest
+            all_models_end_dates.sort(reverse=True)
+            finish_timestamp = all_models_end_dates[0] + \
+                (all_models_end_dates[0] - all_models_end_dates[1])
+
+        all_models_end_dates.append(finish_timestamp)
+        all_models_end_dates.sort()
         start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
         stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
         backtesting_string_timerange = f"{start.strftime('%Y%m%d')}-{stop.strftime('%Y%m%d')}"
