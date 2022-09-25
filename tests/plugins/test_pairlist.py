@@ -1413,3 +1413,16 @@ def test_ProducerPairlist(mocker, whitelist_conf, markets):
     # Pairlist reduced to 2
     assert pm.whitelist == pairs[:2]
     assert len(pm.whitelist) == 2
+    whitelist_conf['exchange']['pair_whitelist'] = ['TKN/BTC']
+
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {
+            "method": "ProducerPairList",
+            "producer_name": "hello_world",
+        }
+    ]
+    pm = PairListManager(exchange, whitelist_conf, dp)
+    pm.refresh_pairlist()
+    assert len(pm.whitelist) == 4
+    assert pm.whitelist == ['TKN/BTC'] + pairs

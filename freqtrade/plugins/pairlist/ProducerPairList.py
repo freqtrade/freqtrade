@@ -62,7 +62,7 @@ class ProducerPairList(IPairList):
         if pairlist is None:
             pairlist = self._pairlistmanager._dataprovider.get_producer_pairs(self._producer_name)
 
-        pairs = list(dict.fromkeys(upstream_pairlist + pairlist))
+        pairs = list(dict.fromkeys(pairlist + upstream_pairlist))
         if self._num_assets:
             pairs = pairs[:self._num_assets]
 
