@@ -32,7 +32,7 @@ class ProducerPairList(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._num_assets = self._pairlistconfig.get('number_assets')
+        self._num_assets: int = self._pairlistconfig.get('number_assets', 0)
         self._producer_name = self._pairlistconfig.get('producer_name', 'default')
         if config.get('external_message_consumer').get('enabled') is False:
             raise ValueError("ProducerPairList requires external_message_consumer to be enabled.")
@@ -60,7 +60,9 @@ class ProducerPairList(IPairList):
         if pairlist is None:
             pairlist = self._pairlistmanager._dataprovider.get_producer_pairs(self._producer_name)
 
-        pairs = list(dict.fromkeys(upstream_pairlist + pairlist))[:self._num_assets]
+        pairs = list(dict.fromkeys(upstream_pairlist + pairlist))
+        if self._num_assets:
+            pairs = pairs[:self._num_assets]
 
         return pairs
 
