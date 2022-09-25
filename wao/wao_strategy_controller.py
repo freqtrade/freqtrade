@@ -42,6 +42,11 @@ class WAOStrategyController:
     def on_sell_signal(self, sell_reason, current_time, coin):
         print("WAOStrategyController: on_sell_signal: sell_reason=" + str(sell_reason) + ", current_time=" + str(
             current_time) + ", coin=" + str(coin) + ", brain=" + str(self.brain))
+
+        if not is_romeo_alive(coin):
+            print("WAOStrategyController: on_sell_signal: warning: romeo not alive: empty pool: ignoring sell_signal!")
+            return
+
         if BrainConfig.IS_BACKTEST:
             write_to_backtest_table(current_time, coin, self.brain, self.time_out_hours, self.dup, "sell")
         else:
