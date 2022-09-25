@@ -292,7 +292,7 @@ class IFreqaiModel(ABC):
                         self.dd.save_data(self.model, pair, dk)
                     else:
                         logger.info('Saving metadata to disk.')
-                        self.dd.save_metaddata(dk)
+                        self.dd.save_metadata(dk)
                 else:
                     self.model = self.dd.load_data(pair, dk)
 

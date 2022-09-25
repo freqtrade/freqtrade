@@ -377,7 +377,7 @@ class FreqaiDataDrawer:
         if self.config.get("freqai", {}).get("purge_old_models", False):
             self.purge_old_models()
 
-    def save_metaddata(self, dk: FreqaiDataKitchen) -> None:
+    def save_metadata(self, dk: FreqaiDataKitchen) -> None:
         """
         Saves only metadata for backtesting studies if user prefers
         not to save model data. This saves tremendous amounts of space
