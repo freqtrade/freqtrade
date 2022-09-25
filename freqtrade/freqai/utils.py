@@ -170,7 +170,7 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
 
         # Data preparation
         fi_df = pd.DataFrame({
-            "feature_names": np.array(dk.training_features_list),
+            "feature_names": np.array(dk.data_dictionary['train_features'].columns),
             "feature_importance": np.array(feature_importance)
         })
         fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
