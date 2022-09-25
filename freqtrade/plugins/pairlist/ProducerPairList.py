@@ -34,7 +34,7 @@ class ProducerPairList(IPairList):
 
         self._num_assets: int = self._pairlistconfig.get('number_assets', 0)
         self._producer_name = self._pairlistconfig.get('producer_name', 'default')
-        if config.get('external_message_consumer').get('enabled') is False:
+        if config.get('external_message_consumer', {}).get('enabled') is False:
             raise ValueError("ProducerPairList requires external_message_consumer to be enabled.")
 
     @property
