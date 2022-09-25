@@ -28,9 +28,9 @@ nav:
         - Configuration: freqai-configuration.md
         - Parameter table: freqai-parameter-table.md
         - Feature engineering: freqai-feature-engineering.md
-        - Outlier detection: freqai-outlier-detection.md
+        # - Outlier detection: freqai-outlier-detection.md
         - Running FreqAI: freqai-running.md
-        - Data handling: freqai-data-handling.md
+        # - Data handling: freqai-data-handling.md
         - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
