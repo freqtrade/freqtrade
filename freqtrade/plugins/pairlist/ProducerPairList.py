@@ -6,6 +6,7 @@ Provides pair list from Leader data
 import logging
 from typing import Any, Dict, List, Optional
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -34,8 +35,9 @@ class ProducerPairList(IPairList):
 
         self._num_assets: int = self._pairlistconfig.get('number_assets', 0)
         self._producer_name = self._pairlistconfig.get('producer_name', 'default')
-        if config.get('external_message_consumer', {}).get('enabled') is False:
-            raise ValueError("ProducerPairList requires external_message_consumer to be enabled.")
+        if not config.get('external_message_consumer', {}).get('enabled'):
+            raise OperationalException(
+                "ProducerPairList requires external_message_consumer to be enabled.")
 
     @property
     def needstickers(self) -> bool:
