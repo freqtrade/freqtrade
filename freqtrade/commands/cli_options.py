@@ -69,7 +69,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='PATH',
     ),
     "datadir": Arg(
-        '-d', '--datadir',
+        '-d', '--datadir', '--data-dir',
         help='Path to directory with historical backtesting data.',
         metavar='PATH',
     ),
@@ -440,7 +440,7 @@ AVAILABLE_CLI_OPTIONS = {
     "dataformat_trades": Arg(
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `jsongz`).',
-        choices=constants.AVAILABLE_DATAHANDLERS,
+        choices=constants.AVAILABLE_DATAHANDLERS_TRADES,
     ),
     "show_timerange": Arg(
         '--show-timerange',

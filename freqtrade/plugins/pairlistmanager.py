@@ -7,7 +7,7 @@ from typing import Dict, List
 
 from cachetools import TTLCache, cached
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.mixins import LoggingMixin
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class PairListManager(LoggingMixin):
 
-    def __init__(self, exchange, config: dict) -> None:
+    def __init__(self, exchange, config: Config) -> None:
         self._exchange = exchange
         self._config = config
         self._whitelist = self._config['exchange'].get('pair_whitelist')

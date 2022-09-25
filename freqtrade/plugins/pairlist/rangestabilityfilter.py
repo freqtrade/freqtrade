@@ -9,7 +9,7 @@ import arrow
 from cachetools import TTLCache
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class RangeStabilityFilter(IPairList):
 
     def __init__(self, exchange, pairlistmanager,
-                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
@@ -100,23 +100,19 @@ class RangeStabilityFilter(IPairList):
         if cached_res is not None:
             return cached_res
 
-        result = False
+        result = True
         if daily_candles is not None and not daily_candles.empty:
             highest_high = daily_candles['high'].max()
             lowest_low = daily_candles['low'].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
-            if pct_change >= self._min_rate_of_change:
-                result = True
-            else:
+            if pct_change < self._min_rate_of_change:
                 self.log_once(f"Removed {pair} from whitelist, because rate of change "
                               f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
                               f"which is below the threshold of {self._min_rate_of_change}.",
                               logger.info)
                 result = False
             if self._max_rate_of_change:
-                if pct_change <= self._max_rate_of_change:
-                    result = True
-                else:
+                if pct_change > self._max_rate_of_change:
                     self.log_once(
                         f"Removed {pair} from whitelist, because rate of change "
                         f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "

@@ -9,8 +9,9 @@ from typing import Any, Callable, Dict, Optional
 
 import sdnotify
 
-from freqtrade import __version__, constants
+from freqtrade import __version__
 from freqtrade.configuration import Configuration
+from freqtrade.constants import PROCESS_THROTTLE_SECS, RETRY_TIMEOUT, Config
 from freqtrade.enums import State
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
@@ -24,7 +25,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Dict[str, Any] = None) -> None:
+    def __init__(self, args: Dict[str, Any], config: Config = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
@@ -53,7 +54,7 @@ class Worker:
 
         internals_config = self._config.get('internals', {})
         self._throttle_secs = internals_config.get('process_throttle_secs',
-                                                   constants.PROCESS_THROTTLE_SECS)
+                                                   PROCESS_THROTTLE_SECS)
         self._heartbeat_interval = internals_config.get('heartbeat_interval', 60)
 
         self._sd_notify = sdnotify.SystemdNotifier() if \
@@ -151,8 +152,8 @@ class Worker:
         try:
             self.freqtrade.process()
         except TemporaryError as error:
-            logger.warning(f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
-            time.sleep(constants.RETRY_TIMEOUT)
+            logger.warning(f"Error: {error}, retrying in {RETRY_TIMEOUT} seconds...")
+            time.sleep(RETRY_TIMEOUT)
         except OperationalException:
             tb = traceback.format_exc()
             hint = 'Issue `/start` if you think it is safe to restart.'

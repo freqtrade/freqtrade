@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.interface import IStrategy
@@ -57,7 +58,7 @@ class FreqaiDataKitchen:
 
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: Config,
         live: bool = False,
         pair: str = "",
     ):
@@ -466,27 +467,6 @@ class FreqaiDataKitchen:
 
         return df
 
-    def remove_training_from_backtesting(
-        self
-    ) -> DataFrame:
-        """
-        Function which takes the backtesting time range and
-        remove training data from dataframe, keeping only the
-        startup_candle_count candles
-        """
-        startup_candle_count = self.config.get('startup_candle_count', 0)
-        tf = self.config['timeframe']
-        tr = self.config["timerange"]
-
-        backtesting_timerange = TimeRange.parse_timerange(tr)
-        if startup_candle_count > 0 and backtesting_timerange:
-            backtesting_timerange.subtract_start(timeframe_to_seconds(tf) * startup_candle_count)
-
-        start = datetime.fromtimestamp(backtesting_timerange.startts, tz=timezone.utc)
-        df = self.return_dataframe
-        df = df.loc[df["date"] >= start, :]
-        return df
-
     def principal_component_analysis(self) -> None:
         """
         Performs Principal Component Analysis on the data for dimensionality reduction
@@ -775,11 +755,21 @@ class FreqaiDataKitchen:
 
     def compute_inlier_metric(self, set_='train') -> None:
         """
-
         Compute inlier metric from backwards distance distributions.
         This metric defines how well features from a timepoint fit
         into previous timepoints.
         """
+
+        def normalise(dataframe: DataFrame, key: str) -> DataFrame:
+            if set_ == 'train':
+                min_value = dataframe.min()
+                max_value = dataframe.max()
+                self.data[f'{key}_min'] = min_value
+                self.data[f'{key}_max'] = max_value
+            else:
+                min_value = self.data[f'{key}_min']
+                max_value = self.data[f'{key}_max']
+            return (dataframe - min_value) / (max_value - min_value)
 
         no_prev_pts = self.freqai_config["feature_parameters"]["inlier_metric_window"]
 
@@ -825,7 +815,12 @@ class FreqaiDataKitchen:
         inliers = pd.DataFrame(index=distances.index)
         for key in distances.keys():
             current_distances = distances[key].dropna()
-            fit_params = stats.weibull_min.fit(current_distances)
+            current_distances = normalise(current_distances, key)
+            if set_ == 'train':
+                fit_params = stats.weibull_min.fit(current_distances)
+                self.data[f'{key}_fit_params'] = fit_params
+            else:
+                fit_params = self.data[f'{key}_fit_params']
             quantiles = stats.weibull_min.cdf(current_distances, *fit_params)
 
             df_inlier = pd.DataFrame(
@@ -979,8 +974,6 @@ class FreqaiDataKitchen:
 
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         self.return_dataframe = pd.concat([dataframe[to_keep], self.full_df], axis=1)
-
-        # self.return_dataframe = self.remove_training_from_backtesting()
         self.full_df = DataFrame()
 
         return
