@@ -48,5 +48,5 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
 |  |  **Extraneous parameters**
-| `keras` | If the selected model makes use of Keras (typical for Tensorflow-based prediction models), this flag needs to be activated so that the model save/loading follows Keras standards. <br> **Datatype:** Boolean. <br> Default: `False`.
+| `model_save_type` | Indicate to FreqAI if the model save type needs to be something besides typical `joblib` files. Available (`keras` (hd5) and `stable_baselines` (zip).  <br> **Datatype:** str. <br> Default: `joblib`.
 | `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for shifting candles (`include_shifted_candles`) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> **Datatype:** Integer. <br> Default: 2.

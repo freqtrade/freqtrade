@@ -413,10 +413,13 @@ class FreqaiDataDrawer:
         save_path = Path(dk.data_path)
 
         # Save the trained model
-        if not dk.keras:
+        model_type = self.freqai_info.get('model_save_type', 'joblib')
+        if model_type == 'joblib':
             dump(model, save_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif model_type == 'keras':
             model.save(save_path / f"{dk.model_filename}_model.h5")
+        elif 'stable_baselines' in model_type:
+            model.save(save_path / f"{dk.model_filename}_model.zip")
 
         if dk.svm_model is not None:
             dump(dk.svm_model, save_path / f"{dk.model_filename}_svm_model.joblib")
@@ -492,15 +495,20 @@ class FreqaiDataDrawer:
             dk.data_path / f"{dk.model_filename}_trained_df.pkl"
         )
 
+        model_type = self.freqai_info.get('model_save_type', 'joblib')
         # try to access model in memory instead of loading object from disk to save time
         if dk.live and coin in self.model_dictionary:
             model = self.model_dictionary[coin]
-        elif not dk.keras:
+        elif model_type == 'joblib':
             model = load(dk.data_path / f"{dk.model_filename}_model.joblib")
-        else:
+        elif model_type == 'keras':
             from tensorflow import keras
-
             model = keras.models.load_model(dk.data_path / f"{dk.model_filename}_model.h5")
+        elif model_type == 'stable_baselines':
+            mod = __import__('stable_baselines3', fromlist=[
+                             self.freqai_info['rl_config']['model_type']])
+            MODELCLASS = getattr(mod, self.freqai_info['rl_config']['model_type'])
+            model = MODELCLASS.load(dk.data_path / f"{dk.model_filename}_model")
 
         if Path(dk.data_path / f"{dk.model_filename}_svm_model.joblib").is_file():
             dk.svm_model = load(dk.data_path / f"{dk.model_filename}_svm_model.joblib")
