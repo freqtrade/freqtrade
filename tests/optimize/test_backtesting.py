@@ -52,13 +52,6 @@ def trim_dictlist(dict_list, num):
     return new
 
 
-@pytest.fixture(autouse=True)
-def backtesting_cleanup() -> None:
-    yield None
-
-    Backtesting.cleanup()
-
-
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = history.load_pair_history(pair='UNITTEST/BTC', datadir=testdatadir,
