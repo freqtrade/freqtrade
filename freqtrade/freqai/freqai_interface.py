@@ -135,9 +135,9 @@ class IFreqaiModel(ABC):
         # the concatenated results for the full backtesting period back to the strategy.
         elif not self.follow_mode:
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
-            if(self.dk.backtest_live_models):
+            if self.dk.backtest_live_models:
                 logger.info(
-                    f"Backtesting {len(self.dk.backtesting_timeranges)} timeranges (Live Models)")
+                    f"Backtesting {len(self.dk.backtesting_timeranges)} timeranges (live models)")
             else:
                 logger.info(f"Training {len(self.dk.training_timeranges)} timeranges")
             dataframe = self.dk.use_strategy_to_populate_indicators(
