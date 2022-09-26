@@ -1,3 +1,6 @@
+"""
+FreqAI generic functions
+"""
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,15 +15,33 @@ logger = logging.getLogger(__name__)
 
 
 def get_full_model_path(config: Config) -> Path:
+    """
+    Returns default FreqAI model path
+    :param config: Configuration dictionary
+    """
     freqai_config: Dict[str, Any] = config["freqai"]
     return Path(
         config["user_data_dir"] / "models" / str(freqai_config.get("identifier"))
     )
 
 
-def get_timerange_from_ready_models(models_path: Path):
+def get_timerange_from_ready_models(models_path: Path) -> tuple[TimeRange, str, dict[str, Any]]:
+    """
+    Returns timerange information based on a FreqAI model directory
+    :param models_path: FreqAI model path
+
+    :returns: a Tuple with (backtesting_timerange: Timerange calculated from directory,
+    backtesting_string_timerange: str timerange calculated from
+    directory (format example '20020822-20220830'), \
+    pairs_end_dates: Dict with pair and model end training dates info)
+    """
     all_models_end_dates = []
     pairs_end_dates: Dict[str, Any] = {}
+    if not models_path.is_dir():
+        raise OperationalException(
+            'Model folders not found. Saved models are required '
+            'to run backtest with the freqai-backtest-live-models option'
+        )
     for model_dir in models_path.iterdir():
         if str(model_dir.name).startswith("sub-train"):
             model_end_date = int(model_dir.name.split("_")[1])
@@ -47,7 +68,7 @@ def get_timerange_from_ready_models(models_path: Path):
     if len(all_models_end_dates) == 0:
         raise OperationalException(
             'At least 1 saved model is required to '
-            'run backtesting with the backtest_live_models option'
+            'run backtest with the freqai-backtest-live-models option'
         )
 
     if len(all_models_end_dates) == 1:
