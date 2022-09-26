@@ -61,7 +61,7 @@ class Hyperopt:
     """
     Hyperopt class, this class contains all the logic to run a hyperopt simulation
 
-    To run a backtest:
+    To start a hyperopt run:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """

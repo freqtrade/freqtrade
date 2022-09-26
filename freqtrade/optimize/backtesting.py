@@ -114,7 +114,7 @@ class Backtesting:
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting. "
-                                       "Please use StaticPairlist instead.")
+                                       "Please use StaticPairList instead.")
         if 'PerformanceFilter' in self.pairlists.name_list:
             raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
@@ -160,9 +160,6 @@ class Backtesting:
         self._can_short = self.trading_mode != TradingMode.SPOT
 
         self.init_backtest()
-
-    def __del__(self):
-        self.cleanup()
 
     @staticmethod
     def cleanup():
