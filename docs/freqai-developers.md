@@ -1,24 +1,24 @@
-# Development 
+# Development
 
 ## Project architecture
 
-The architechture and functions of `FreqAI` are generalized to encourages development of unique features, functions, models, etc.
+The architecture and functions of `FreqAI` are generalized to encourages development of unique features, functions, models, etc.
 
-The class structure and a detailed algorithmic overview is depicted in the following diagram: 
+The class structure and a detailed algorithmic overview is depicted in the following diagram:
 
 ![image](assets/freqai_algorithm-diagram.jpg)
 
 As shown, there are three distinct objects comprising `FreqAI`:
 
-* **IFreqaiModel** - A singular persistent object containing all the necessary logic to collect, store, and process data, engineer features, run training, and inference models. 
-* **FreqaiDataKitchen** - A non-persistent object which is created uniquely for each unique asset/model. Beyond metadata, it also contains a variety of data processing tools. 
-* **FreqaiDataDrawer** - A singular persistent object containing all the historical predictions, models, and save/load methods. 
+* **IFreqaiModel** - A singular persistent object containing all the necessary logic to collect, store, and process data, engineer features, run training, and inference models.
+* **FreqaiDataKitchen** - A non-persistent object which is created uniquely for each unique asset/model. Beyond metadata, it also contains a variety of data processing tools.
+* **FreqaiDataDrawer** - A singular persistent object containing all the historical predictions, models, and save/load methods.
 
-There are a variety of built-in [prediction models](freqai-configuration.md#using-different-prediction-models) which inherit directly from `IFreqaiModel`. Each of these models have full access to all methods in `IFreqaiModel` and can therefore override any of those functions at will. However, advanced users will likely stick to overriding `fit()`, `train()`, `predict()`, and `data_cleaning_train/predict()`. 
+There are a variety of built-in [prediction models](freqai-configuration.md#using-different-prediction-models) which inherit directly from `IFreqaiModel`. Each of these models have full access to all methods in `IFreqaiModel` and can therefore override any of those functions at will. However, advanced users will likely stick to overriding `fit()`, `train()`, `predict()`, and `data_cleaning_train/predict()`.
 
 ## Data handling
 
-`FreqAI` aims to organize model files, prediction data, and meta data in a way that simplifies post-processing and enhances crash recililence by automatic data reloading. The data is saved in a file structure,`user_data_dir/models/`, which contains all the data associated with the trainings and backtests. The `FreqaiDataKitchen()` relies heavily on the file structure for proper training and inferencing and should therefore not be manually modified.
+`FreqAI` aims to organize model files, prediction data, and meta data in a way that simplifies post-processing and enhances crash resilience by automatic data reloading. The data is saved in a file structure,`user_data_dir/models/`, which contains all the data associated with the trainings and backtests. The `FreqaiDataKitchen()` relies heavily on the file structure for proper training and inferencing and should therefore not be manually modified.
 
 ### File structure
 

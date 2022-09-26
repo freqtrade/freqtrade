@@ -32,7 +32,8 @@
         },
     }
 ```
-A full example config is available in `config_examples/config_freqai.example.json`. 
+
+A full example config is available in `config_examples/config_freqai.example.json`.
 
 ## Building a `FreqAI` strategy
 
@@ -120,7 +121,7 @@ The `FreqAI` strategy requires including the following lines of code in the stan
 
 ```
 
-Notice how the `populate_any_indicators()` is where [features](freqai-feature-engineering.md#feature-engineering) and labels/tragets are added. A full example strategy is available in `templates/FreqaiExampleStrategy.py`. 
+Notice how the `populate_any_indicators()` is where [features](freqai-feature-engineering.md#feature-engineering) and labels/targets are added. A full example strategy is available in `templates/FreqaiExampleStrategy.py`. 
 
 Notice also the location of the labels under `if set_generalized_indicators:` at the bottom of the example. This is where single features and labels/targets should be added to the feature set to avoid duplication of them from various configuration parameters that multiply the feature set, such as `include_timeframes`.
 
@@ -172,10 +173,11 @@ Below are the values you can expect to include/use inside a typical strategy dat
 | `df['%*']` | Any dataframe column prepended with `%` in `populate_any_indicators()` is treated as a training feature. For example, you can include the RSI in the training feature set (similar to in `templates/FreqaiExampleStrategy.py`) by setting `df['%-rsi']`. See more details on how this is done [here](freqai-feature-engineering.md). <br> **Note:** Since the number of features prepended with `%` can multiply very quickly (10s of thousands of features is easily engineered using the multiplictative functionality described in the `feature_parameters` table shown above), these features are removed from the dataframe upon return from `FreqAI`. To keep a particular type of feature for plotting purposes, you would prepend it with `%%`. <br> **Datatype:** Depends on the output of the model.
 
 ## Setting the `startup_candle_count`
-The `startup_candle_count` in the `FreqAI` strategy needs to be set up in the same way as in the standard Freqtrade strategy (see details [here](strategy-customization.md#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling the `dataprovider`, to avoid any NaNs at the beginning of the first training. You can easily set this value by identifying the longest period (in candle units) which is passed to the indicator creation functions (e.g., talib functions). In the presented example, `startup_candle_count` is 20 since this is the maximum value in `indicators_periods_candles`.
+
+The `startup_candle_count` in the `FreqAI` strategy needs to be set up in the same way as in the standard Freqtrade strategy (see details [here](strategy-customization.md#strategy-startup-period)). This value is used by Freqtrade to ensure that a sufficient amount of data is provided when calling the `dataprovider`, to avoid any NaNs at the beginning of the first training. You can easily set this value by identifying the longest period (in candle units) which is passed to the indicator creation functions (e.g., Ta-Lib functions). In the presented example, `startup_candle_count` is 20 since this is the maximum value in `indicators_periods_candles`.
 
 !!! Note
-    There are instances where the talib functions actually require more data than just the passed `period` or else the feature dataset gets populated with NaNs. Anecdotally, multiplying the `startup_candle_count` by 2 always leads to a fully NaN free training dataset. Hence, it is typically safest to multiply the expected `startup_candle_count` by 2. Look out for this log message to confirm that the data is clean:
+    There are instances where the Ta-Lib functions actually require more data than just the passed `period` or else the feature dataset gets populated with NaNs. Anecdotally, multiplying the `startup_candle_count` by 2 always leads to a fully NaN free training dataset. Hence, it is typically safest to multiply the expected `startup_candle_count` by 2. Look out for this log message to confirm that the data is clean:
 
     ```
     2022-08-31 15:14:04 - freqtrade.freqai.data_kitchen - INFO - dropped 0 training points due to NaNs in populated dataset 4319.

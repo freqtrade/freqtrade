@@ -58,7 +58,7 @@ freqtrade backtesting --strategy FreqaiExampleStrategy --strategy-path freqtrade
 If this command has never been executed with the existing config file, FreqAI will train a new model
 for each pair, for each backtesting window within the expanded `--timerange`.
 
-Backtesting mode requires [downloading the necessary data](#downloading-data-to-cover-the-full-backtest-period) before deployment (unlike in dry/live mode where FreqAI handles the data downloading automatically). You should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration). 
+Backtesting mode requires [downloading the necessary data](#downloading-data-to-cover-the-full-backtest-period) before deployment (unlike in dry/live mode where FreqAI handles the data downloading automatically). You should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the set backtesting time range. More details on how to calculate the data to download can be found [here](#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration).
 
 !!! Note "Model reuse"
     Once the training is completed, you can execute the backtesting again with the same config file and
@@ -71,11 +71,11 @@ Backtesting mode requires [downloading the necessary data](#downloading-data-to-
 
 ### Saving prediction data
 
-To allow for tweaking your strategy (**not** the features!), FreqAI will automatically save the predictions during backtesting so that they can be reused for future backtests and live runs using the same `identifier` model. This provides a performance enhancement geared towards enabling **high-level hyperopting** of entry/exit criteria. 
+To allow for tweaking your strategy (**not** the features!), FreqAI will automatically save the predictions during backtesting so that they can be reused for future backtests and live runs using the same `identifier` model. This provides a performance enhancement geared towards enabling **high-level hyperopting** of entry/exit criteria.
 
-An additional directory called `predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder. 
+An additional directory called `predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder.
 
-To change your **features**, you **must** set a new `identifier` in the config to signal to `FreqAI` to train new models. 
+To change your **features**, you **must** set a new `identifier` in the config to signal to `FreqAI` to train new models.
 
 To save the models generated during a particular backtest so that you can start a live deployment from one of them instead of training a new model, you must set `save_backtest_models` to `True` in the config.
 
@@ -132,7 +132,7 @@ The FreqAI specific parameter `label_period_candles` defines the offset (number 
 
 ## Continual learning
 
-You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `false` which means that all new models are trained from scratch, without input from previous models. 
+You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `false` which means that all new models are trained from scratch, without input from previous models.
 
 ## Hyperopt
 
@@ -148,7 +148,7 @@ freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleSt
 - It's not possible to hyperopt indicators in the `populate_any_indicators()` function. This means that you cannot optimize model parameters using hyperopt. Apart from this exception, it is possible to optimize all other [spaces](hyperopt.md#running-hyperopt-with-smaller-search-space).
 - The backtesting instructions also apply to hyperopt.
 
-The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. You need to focus on hyperopting parameters that are not used in your features. For example, you should not try to hyperopt rolling window lengths in the feature creation, or any part of the FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only. 
+The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. You need to focus on hyperopting parameters that are not used in your features. For example, you should not try to hyperopt rolling window lengths in the feature creation, or any part of the FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only.
 
 A good example of a hyperoptable parameter in FreqAI is a threshold for the [Dissimilarity Index (DI)](freqai-feature-engineering.md#identifying-outliers-with-the-dissimilarity-index-di) `DI_values` beyond which we consider data points as outliers:
 

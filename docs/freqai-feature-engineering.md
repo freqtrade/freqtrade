@@ -1,6 +1,6 @@
 # Feature engineering
 
-## Defining the features 
+## Defining the features
 
 Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%`, while labels/targets are prepended with `&`.
 
@@ -102,7 +102,7 @@ After having defined the `base features`, the next step is to expand upon them u
 
 ```json
     "freqai": {
-        ...
+        //...
         "feature_parameters" : {
             "include_timeframes": ["5m","15m","4h"],
             "include_corr_pairlist": [
@@ -114,7 +114,7 @@ After having defined the `base features`, the next step is to expand upon them u
             "include_shifted_candles": 2,
             "indicator_periods_candles": [10, 20]
         },
-        ...
+        //...
     }
 ```
 

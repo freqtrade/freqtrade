@@ -1,8 +1,8 @@
 ![freqai-logo](assets/freqai_doc_logo.svg)
 
-# `FreqAI` 
+# `FreqAI`
 
-##Introduction
+## Introduction
 
 `FreqAI` is a software designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.
 
@@ -47,7 +47,7 @@ An overview of the algorithm, explaining the data processing pipeline and model 
 
 **Features** - the parameters, based on historic data, on which a model is trained. All features for a single candle is stored as a vector. In `FreqAI`, you build a feature data sets from anything you can construct in the strategy.
 
-**Labels** - the target values that a model is trained toward. Each feature vector is associated with a single label that is defined by you within your strategy. These labels intentionally look into the future, and are not available to the model during dry/live/backtesting.
+**Labels** - the target values that a model is trained toward. Each feature vector is associated with a single label that is defined by you within the strategy. These labels intentionally look into the future, and are not available to the model during dry/live/backtesting.
 
 **Training** - the process of "teaching" the model to match the feature sets to the associated labels. Different types of models "learn" in different ways. More information about the different models can be found [here](freqai-configuration.md#using-different-prediction-models).
 
@@ -72,7 +72,7 @@ pip install -r requirements-freqai.txt
 
 If you are using docker, a dedicated tag with `FreqAI` dependencies is available as `:freqai`. As such - you can replace the image line in your docker-compose file with `image: freqtradeorg/freqtrade:develop_freqai`. This image contains the regular `FreqAI` dependencies. Similar to native installs, Catboost will not be available on ARM based devices.
 
-### Common pitfalls
+## Common pitfalls
 
 `FreqAI` cannot be combined with dynamic `VolumePairlists` (or any pairlist filter that adds and removes pairs dynamically).
 This is for performance reasons - `FreqAI` relies on making quick predictions/retrains. To do this effectively,
