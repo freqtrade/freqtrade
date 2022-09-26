@@ -668,4 +668,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify additional lookup path for freqaimodels.',
         metavar='PATH',
     ),
+    "freqai_backtest_live_models": Arg(
+        '--freqai-backtest-live-models',
+        help='Run backtest with ready models.',
+        action='store_true',
+        default=False,
+    ),
 }

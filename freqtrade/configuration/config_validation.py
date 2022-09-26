@@ -86,6 +86,7 @@ def validate_config_consistency(conf: Dict[str, Any], preliminary: bool = False)
     _validate_unlimited_amount(conf)
     _validate_ask_orderbook(conf)
     _validate_freqai_hyperopt(conf)
+    _validate_freqai_backtest(conf)
     _validate_consumers(conf)
     validate_migrated_strategy_settings(conf)
 
@@ -332,6 +333,21 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
     if analyze_per_epoch and freqai_enabled:
         raise OperationalException(
             'Using analyze-per-epoch parameter is not supported with a FreqAI strategy.')
+
+
+def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
+    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
+    timerange = conf.get('timerange')
+    freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
+    if freqai_backtest_live_models and freqai_enabled and timerange:
+        raise OperationalException(
+            'Using timerange parameter is not supported with '
+            '--freqai-backtest-live-models parameter.')
+
+    if freqai_backtest_live_models and not freqai_enabled:
+        raise OperationalException(
+            'Using --freqai-backtest-live-models parameter is only '
+            'supported with a FreqAI strategy.')
 
 
 def _validate_consumers(conf: Dict[str, Any]) -> None:

@@ -21,6 +21,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.freqai import freqai_util
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -62,7 +63,6 @@ class FreqaiDataKitchen:
         live: bool = False,
         pair: str = "",
     ):
-        self.backtest_live_models = False  # temp
         self.data: Dict[str, Any] = {}
         self.data_dictionary: Dict[str, DataFrame] = {}
         self.config = config
@@ -81,16 +81,21 @@ class FreqaiDataKitchen:
         self.svm_model: linear_model.SGDOneClassSVM = None
         self.keras: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
+        self.backtest_live_models = config.get("freqai_backtest_live_models", False)
+
         if not self.live:
-            if not self.config["timerange"]:
+            if (not self.config.get("timerange") and
+                    not self.backtest_live_models):
                 raise OperationalException(
                     'Please pass --timerange if you intend to use FreqAI for backtesting.')
+
+            self.full_path = freqai_util.get_full_model_path(self.config)
             self.full_timerange = self.create_fulltimerange(
                 self.config["timerange"], self.freqai_config.get("train_period_days", 0)
             )
 
             if self.backtest_live_models:
-                self.get_timerange_from_ready_models()
+                self.set_timerange_from_ready_models()
                 (self.training_timeranges,
                  self.backtesting_timeranges) = self.split_timerange_live_models()
             else:
@@ -118,10 +123,7 @@ class FreqaiDataKitchen:
         metadata: dict = strategy furnished pair metadata
         trained_timestamp: int = timestamp of most recent training
         """
-        self.full_path = Path(
-            self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
-        )
-
+        self.full_path = freqai_util.get_full_model_path(self.config)
         self.data_path = Path(
             self.full_path
             / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
@@ -1035,11 +1037,6 @@ class FreqaiDataKitchen:
         start = datetime.fromtimestamp(backtest_timerange.startts, tz=timezone.utc)
         stop = datetime.fromtimestamp(backtest_timerange.stopts, tz=timezone.utc)
         full_timerange = start.strftime("%Y%m%d") + "-" + stop.strftime("%Y%m%d")
-
-        self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_config['identifier']}"
-        )
-
         config_path = Path(self.config["config_files"][0])
 
         if not self.full_path.is_dir():
@@ -1292,10 +1289,10 @@ class FreqaiDataKitchen:
             )
         return file_exists
 
-    def get_timerange_from_ready_models(self):
+    def set_timerange_from_ready_models(self):
         backtesting_timerange, \
             backtesting_string_timerange, \
-            pairs_end_dates = self.gen_get_timerange_from_ready_models(self.full_path)
+            pairs_end_dates = freqai_util.get_timerange_from_ready_models(self.full_path)
         self.backtest_live_models_data = {
             "backtesting_timerange": backtesting_timerange,
             "backtesting_string_timerange": backtesting_string_timerange,
@@ -1303,43 +1300,53 @@ class FreqaiDataKitchen:
             }
         return
 
-    def gen_get_timerange_from_ready_models(self, models_path: Path):
-        all_models_end_dates = []
-        pairs_end_dates: Dict[str, Any] = {}
-        for model_dir in models_path.iterdir():
-            if str(model_dir.name).startswith("sub-train"):
-                model_end_date = int(model_dir.name.split("_")[1])
-                pair = model_dir.name.split("_")[0].replace("sub-train-", "")
-                model_file_name = (f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}")
-                model_file_name = f"{model_file_name}_model.joblib"
+    # def get_timerange_from_ready_models(self, models_path: Path):
+    #     all_models_end_dates = []
+    #     pairs_end_dates: Dict[str, Any] = {}
+    #     for model_dir in models_path.iterdir():
+    #         if str(model_dir.name).startswith("sub-train"):
+    #             model_end_date = int(model_dir.name.split("_")[1])
+    #             pair = model_dir.name.split("_")[0].replace("sub-train-", "")
+    #             model_file_name = (f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
+    #                                 "_model.joblib")
 
-                model_path_file = Path(model_dir / model_file_name)
-                if model_path_file.is_file():
-                    if pair not in pairs_end_dates:
-                        pairs_end_dates[pair] = []
+    #             model_path_file = Path(model_dir / model_file_name)
+    #             if model_path_file.is_file():
+    #                 if pair not in pairs_end_dates:
+    #                     pairs_end_dates[pair] = []
 
-                    pairs_end_dates[pair].append({
-                        "model_end_date": model_end_date,
-                        "model_path_file": model_path_file,
-                        "model_dir": model_dir
-                    })
+    #                 pairs_end_dates[pair].append({
+    #                     "model_end_date": model_end_date,
+    #                     "model_path_file": model_path_file,
+    #                     "model_dir": model_dir
+    #                 })
 
-                    if model_end_date not in all_models_end_dates:
-                        all_models_end_dates.append(model_end_date)
+    #                 if model_end_date not in all_models_end_dates:
+    #                     all_models_end_dates.append(model_end_date)
 
-        finish_timestamp = int(datetime.now(tz=timezone.utc).timestamp())
-        if len(all_models_end_dates) > 1:
-            # After last model end date, use the same period from previous model
-            # to finish the backtest
-            all_models_end_dates.sort(reverse=True)
-            finish_timestamp = all_models_end_dates[0] + \
-                (all_models_end_dates[0] - all_models_end_dates[1])
+    #     if len(all_models_end_dates) == 0:
+    #         raise OperationalException(
+    #             'At least 1 saved model is required to '
+    #             'run backtesting with the backtest_live_models option'
+    #             )
 
-        all_models_end_dates.append(finish_timestamp)
-        all_models_end_dates.sort()
-        start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
-        stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
-        backtesting_string_timerange = f"{start.strftime('%Y%m%d')}-{stop.strftime('%Y%m%d')}"
-        backtesting_timerange = TimeRange('date', 'date', min(all_models_end_dates),
-                                          max(all_models_end_dates))
-        return backtesting_timerange, backtesting_string_timerange, pairs_end_dates
+    #     if len(all_models_end_dates) == 1:
+    #         logger.warning(f"Only 1 model was found. Backtesting will run with the "
+    #                        "timerange from the end of the training date to the current date")
+
+    #     finish_timestamp = int(datetime.now(tz=timezone.utc).timestamp())
+    #     if len(all_models_end_dates) > 1:
+    #         # After last model end date, use the same period from previous model
+    #         # to finish the backtest
+    #         all_models_end_dates.sort(reverse=True)
+    #         finish_timestamp = all_models_end_dates[0] + \
+    #             (all_models_end_dates[0] - all_models_end_dates[1])
+
+    #     all_models_end_dates.append(finish_timestamp)
+    #     all_models_end_dates.sort()
+    #     start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
+    #     stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
+    #     backtesting_string_timerange = f"{start.strftime('%Y%m%d')}-{stop.strftime('%Y%m%d')}"
+    #     backtesting_timerange = TimeRange('date', 'date', min(all_models_end_dates),
+    #                                       max(all_models_end_dates))
+    #     return backtesting_timerange, backtesting_string_timerange, pairs_end_dates
