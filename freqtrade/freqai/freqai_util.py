@@ -4,7 +4,7 @@ FreqAI generic functions
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
@@ -25,7 +25,7 @@ def get_full_model_path(config: Config) -> Path:
     )
 
 
-def get_timerange_from_ready_models(models_path: Path) -> tuple[TimeRange, str, dict[str, Any]]:
+def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, dict[str, Any]]:
     """
     Returns timerange information based on a FreqAI model directory
     :param models_path: FreqAI model path
