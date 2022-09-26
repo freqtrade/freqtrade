@@ -154,9 +154,6 @@ class Backtesting:
 
         self.init_backtest()
 
-    def __del__(self):
-        self.cleanup()
-
     @staticmethod
     def cleanup():
         LoggingMixin.show_output = True
