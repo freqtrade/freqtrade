@@ -25,7 +25,7 @@ def get_full_model_path(config: Config) -> Path:
     )
 
 
-def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, dict[str, Any]]:
+def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, Dict[str, Any]]:
     """
     Returns timerange information based on a FreqAI model directory
     :param models_path: FreqAI model path
