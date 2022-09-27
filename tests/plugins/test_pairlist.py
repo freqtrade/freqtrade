@@ -622,10 +622,10 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
 
     # create candles for high volume with all candles high volume, but very low price.
     ohlcv_history_high_volume = ohlcv_history.copy()
-    ohlcv_history_high_volume.loc[:, 'volume'] = 10
-    ohlcv_history_high_volume.loc[:, 'low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
-    ohlcv_history_high_volume.loc[:, 'high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
-    ohlcv_history_high_volume.loc[:, 'close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
+    ohlcv_history_high_volume['volume'] = 10
+    ohlcv_history_high_volume['low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
+    ohlcv_history_high_volume['high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
+    ohlcv_history_high_volume['close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
 
     mocker.patch('freqtrade.exchange.ftx.Ftx.market_is_tradable', return_value=True)
 

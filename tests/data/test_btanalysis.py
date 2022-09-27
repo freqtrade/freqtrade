@@ -275,7 +275,7 @@ def test_create_cum_profit1(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
-    bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
+    bt_data['close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="TRX/BTC", timeframe='5m',

@@ -839,7 +839,7 @@ def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> N
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     df = data['UNITTEST/BTC']
-    df.loc[:, 'date'] = df.loc[:, 'date'] - timedelta(days=1)
+    df['date'] = df.loc[:, 'date'] - timedelta(days=1)
     # Trimming 100 candles, so after 2nd trimming, no candle is left.
     df = df.iloc[:100]
     data['XRP/USDT'] = df

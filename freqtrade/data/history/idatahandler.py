@@ -272,7 +272,7 @@ class IDataHandler(ABC):
         return res
 
     def ohlcv_load(self, pair, timeframe: str,
-                   candle_type: CandleType,
+                   candle_type: CandleType, *,
                    timerange: Optional[TimeRange] = None,
                    fill_missing: bool = True,
                    drop_incomplete: bool = True,
