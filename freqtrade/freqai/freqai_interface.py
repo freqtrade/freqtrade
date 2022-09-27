@@ -257,6 +257,21 @@ class IFreqaiModel(ABC):
             dataframe_train = dk.slice_dataframe(tr_train, dataframe)
             dataframe_backtest = dk.slice_dataframe(tr_backtest, dataframe)
 
+            if dk.backtest_live_models and len(dataframe_backtest) == 0:
+                tr_backtest_startts_str = datetime.fromtimestamp(
+                                                tr_backtest.startts,
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+                tr_backtest_stopts_str = datetime.fromtimestamp(
+                                                tr_backtest.stopts,
+                                                tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+                logger.info(
+                    f"No data found for pair {pair} "
+                    f" from {tr_backtest_startts_str} "
+                    f"to {tr_backtest_stopts_str}. "
+                    "Probably more than one training within the same candle period."
+                )
+                continue
+
             trained_timestamp = tr_train
             tr_train_startts_str = datetime.fromtimestamp(
                                                 tr_train.startts,
@@ -264,6 +279,7 @@ class IFreqaiModel(ABC):
             tr_train_stopts_str = datetime.fromtimestamp(
                                                 tr_train.stopts,
                                                 tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
+
             if not dk.backtest_live_models:
                 logger.info(
                     f"Training {pair}, {self.pair_it}/{self.total_pairs} pairs"

@@ -465,6 +465,11 @@ class FreqaiDataKitchen:
 
         tr_backtesting_list_timerange = []
         pair = self.pair.split("/")[0].split(":")[0]
+        if pair not in self.backtest_live_models_data["pairs_end_dates"]:
+            raise OperationalException(
+                f"Model not available for pair {self.pair}. "
+                "Please, try again after removing this pair from the configuration file."
+            )
         pair_data = self.backtest_live_models_data["pairs_end_dates"][pair]
         model_end_dates = []
         backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]

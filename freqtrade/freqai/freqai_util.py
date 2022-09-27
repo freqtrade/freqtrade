@@ -2,7 +2,7 @@
 FreqAI generic functions
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -89,7 +89,17 @@ def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, 
     all_models_end_dates.sort()
     start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
     stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
-    backtesting_string_timerange = f"{start.strftime('%Y%m%d')}-{stop.strftime('%Y%m%d')}"
+    end_date_string_timerange = stop
+    if (
+        finish_timestamp < int(datetime.now(tz=timezone.utc).timestamp()) and
+        datetime.now(tz=timezone.utc).strftime('%Y%m%d') != stop.strftime('%Y%m%d')
+    ):
+        # add 1 day to string timerange to ensure BT module will load all dataframe data
+        end_date_string_timerange = stop + timedelta(days=1)
+
+    backtesting_string_timerange = (
+        f"{start.strftime('%Y%m%d')}-{end_date_string_timerange.strftime('%Y%m%d')}"
+    )
     backtesting_timerange = TimeRange(
         'date', 'date', min(all_models_end_dates), max(all_models_end_dates)
     )
