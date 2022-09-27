@@ -284,7 +284,7 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                 df['enter_tag'] = df['buy_tag']
                 df = df.drop(['buy_tag'], axis=1)
             if 'orders' not in df.columns:
-                df.loc[:, 'orders'] = None
+                df['orders'] = None
 
     else:
         # old format - only with lists.
