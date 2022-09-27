@@ -473,8 +473,8 @@ class FreqaiDataKitchen:
         pair_data = self.backtest_live_models_data["pairs_end_dates"][pair]
         model_end_dates = []
         backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
-        for data in pair_data:
-            model_end_dates.append(data["model_end_date"])
+        for end_date in pair_data:
+            model_end_dates.append(end_date)
         model_end_dates.append(backtesting_timerange.stopts)
         model_end_dates.sort()
         for index, item in enumerate(model_end_dates):

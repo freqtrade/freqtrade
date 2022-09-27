@@ -36,34 +36,11 @@ def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, 
     pairs_end_dates: Dict with pair and model end training dates info)
     """
     all_models_end_dates = []
-    pairs_end_dates: Dict[str, Any] = {}
-    if not models_path.is_dir():
-        raise OperationalException(
-            'Model folders not found. Saved models are required '
-            'to run backtest with the freqai-backtest-live-models option'
-        )
-    for model_dir in models_path.iterdir():
-        if str(model_dir.name).startswith("sub-train"):
-            model_end_date = int(model_dir.name.split("_")[1])
-            pair = model_dir.name.split("_")[0].replace("sub-train-", "")
-            model_file_name = (
-                f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
-                "_model.joblib"
-            )
-
-            model_path_file = Path(model_dir / model_file_name)
-            if model_path_file.is_file():
-                if pair not in pairs_end_dates:
-                    pairs_end_dates[pair] = []
-
-                pairs_end_dates[pair].append({
-                    "model_end_date": model_end_date,
-                    "model_path_file": model_path_file,
-                    "model_dir": model_dir
-                })
-
-                if model_end_date not in all_models_end_dates:
-                    all_models_end_dates.append(model_end_date)
+    pairs_end_dates: Dict[str, Any] = get_pairs_timestamps_training_from_ready_models(models_path)
+    for key in pairs_end_dates:
+        for model_end_date in pairs_end_dates[key]:
+            if model_end_date not in all_models_end_dates:
+                all_models_end_dates.append(model_end_date)
 
     if len(all_models_end_dates) == 0:
         raise OperationalException(
@@ -104,3 +81,35 @@ def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, 
         'date', 'date', min(all_models_end_dates), max(all_models_end_dates)
     )
     return backtesting_timerange, backtesting_string_timerange, pairs_end_dates
+
+
+def get_pairs_timestamps_training_from_ready_models(models_path: Path) -> Dict[str, Any]:
+    """
+    Scan the models path and returns all pairs end training dates (timestamp)
+    :param models_path: FreqAI model path
+
+    :returns:
+    :pairs_end_dates: Dict with pair and model end training dates info
+    """
+    pairs_end_dates: Dict[str, Any] = {}
+    if not models_path.is_dir():
+        raise OperationalException(
+            'Model folders not found. Saved models are required '
+            'to run backtest with the freqai-backtest-live-models option'
+        )
+    for model_dir in models_path.iterdir():
+        if str(model_dir.name).startswith("sub-train"):
+            model_end_date = int(model_dir.name.split("_")[1])
+            pair = model_dir.name.split("_")[0].replace("sub-train-", "")
+            model_file_name = (
+                f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
+                "_model.joblib"
+            )
+
+            model_path_file = Path(model_dir / model_file_name)
+            if model_path_file.is_file():
+                if pair not in pairs_end_dates:
+                    pairs_end_dates[pair] = []
+
+                pairs_end_dates[pair].append(model_end_date)
+    return pairs_end_dates
