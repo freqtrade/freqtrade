@@ -341,9 +341,9 @@ def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
     """
     df = pd.DataFrame.from_records([t.to_json(True) for t in trades], columns=BT_DATA_COLUMNS)
     if len(df) > 0:
-        df.loc[:, 'close_date'] = pd.to_datetime(df['close_date'], utc=True)
-        df.loc[:, 'open_date'] = pd.to_datetime(df['open_date'], utc=True)
-        df.loc[:, 'close_rate'] = df['close_rate'].astype('float64')
+        df['close_date'] = pd.to_datetime(df['close_date'], utc=True)
+        df['open_date'] = pd.to_datetime(df['open_date'], utc=True)
+        df['close_rate'] = df['close_rate'].astype('float64')
     return df
 
 
