@@ -73,7 +73,7 @@ setup(
         'tables',
         'blosc',
         'joblib',
-        'pyarrow',
+        'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'uvicorn',
         'psutil',
