@@ -94,8 +94,8 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         Hook called on bot shutdown. Close SubprocVecEnv subprocesses for clean shutdown.
         """
 
-        if hasattr(self, "train_env") and self.train_env:
+        if self.train_env:
             self.train_env.close()
 
-        if hasattr(self, "eval_env") and self.eval_env:
+        if self.eval_env:
             self.eval_env.close()
