@@ -73,7 +73,7 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         test_df = data_dictionary["test_features"]
 
         env_id = "train_env"
-        num_cpu = int(self.freqai_info["rl_config"]["thread_count"])
+        num_cpu = int(self.freqai_info["rl_config"].get("cpu_count", 2))
         self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1, train_df, prices_train,
                                         self.reward_params, self.CONV_WIDTH, monitor=True,
                                         config=self.config) for i
@@ -88,3 +88,15 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
+
+
+    def _on_stop(self):
+        """
+        Hook called on bot shutdown. Close SubprocVecEnv subprocesses for clean shutdown.
+        """
+
+        if hasattr(self, "train_env") and self.train_env:
+            self.train_env.close()
+
+        if hasattr(self, "eval_env") and self.eval_env:
+            self.eval_env.close()

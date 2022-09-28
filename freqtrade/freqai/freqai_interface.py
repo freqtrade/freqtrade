@@ -158,6 +158,13 @@ class IFreqaiModel(ABC):
         self.model = None
         self.dk = None
 
+    def _on_stop(self):
+        """
+        Callback for Subclasses to override to include logic for shutting down resources
+        when SIGINT is sent.
+        """
+        return
+
     def shutdown(self):
         """
         Cleans up threads on Shutdown, set stop event. Join threads to wait
@@ -165,6 +172,8 @@ class IFreqaiModel(ABC):
         """
         logger.info("Stopping FreqAI")
         self._stop_event.set()
+
+        self._on_stop()
 
         logger.info("Waiting on Training iteration")
         for _thread in self._threads:
