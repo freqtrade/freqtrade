@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 import arrow
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class AgeFilter(IPairList):
 
     def __init__(self, exchange, pairlistmanager,
-                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 config: Config, pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 

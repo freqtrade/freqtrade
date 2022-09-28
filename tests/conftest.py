@@ -58,6 +58,11 @@ def log_has(line, logs):
     return any(line == message for message in logs.messages)
 
 
+def log_has_when(line, logs, when):
+    """Check if line is found in caplog's messages during a specified stage"""
+    return any(line == message.message for message in logs.get_records(when))
+
+
 def log_has_re(line, logs):
     """Check if line matches some caplog's message."""
     return any(re.match(line, message) for message in logs.messages)
@@ -2282,7 +2287,7 @@ def tickers():
 
 
 @pytest.fixture
-def result(testdatadir):
+def dataframe_1m(testdatadir):
     with (testdatadir / 'UNITTEST_BTC-1m.json').open('r') as data_file:
         return ohlcv_to_dataframe(json.load(data_file), '1m', pair="UNITTEST/BTC",
                                   fill_missing=True)

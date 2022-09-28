@@ -21,14 +21,14 @@ def test_strategy_test_v3_structure():
     (True, 'short'),
     (False, 'long'),
 ])
-def test_strategy_test_v3(result, fee, is_short, side):
+def test_strategy_test_v3(dataframe_1m, fee, is_short, side):
     strategy = StrategyTestV3({})
 
     metadata = {'pair': 'ETH/BTC'}
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
     assert type(strategy.timeframe) is str
-    indicators = strategy.populate_indicators(result, metadata)
+    indicators = strategy.populate_indicators(dataframe_1m, metadata)
     assert type(indicators) is DataFrame
     assert type(strategy.populate_buy_trend(indicators, metadata)) is DataFrame
     assert type(strategy.populate_sell_trend(indicators, metadata)) is DataFrame

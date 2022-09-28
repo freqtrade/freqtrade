@@ -21,7 +21,7 @@ from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_
 from joblib.externals import cloudpickle
 from pandas import DataFrame
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import HyperoptState
@@ -61,12 +61,12 @@ class Hyperopt:
     """
     Hyperopt class, this class contains all the logic to run a hyperopt simulation
 
-    To run a backtest:
+    To start a hyperopt run:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
         self.protection_space: List[Dimension] = []
@@ -132,7 +132,7 @@ class Hyperopt:
         self.print_json = self.config.get('print_json', False)
 
     @staticmethod
-    def get_lock_filename(config: Dict[str, Any]) -> str:
+    def get_lock_filename(config: Config) -> str:
 
         return str(config['user_data_dir'] / 'hyperopt.lock')
 

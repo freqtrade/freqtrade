@@ -284,7 +284,7 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                 df['enter_tag'] = df['buy_tag']
                 df = df.drop(['buy_tag'], axis=1)
             if 'orders' not in df.columns:
-                df.loc[:, 'orders'] = None
+                df['orders'] = None
 
     else:
         # old format - only with lists.
@@ -341,9 +341,9 @@ def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
     """
     df = pd.DataFrame.from_records([t.to_json(True) for t in trades], columns=BT_DATA_COLUMNS)
     if len(df) > 0:
-        df.loc[:, 'close_date'] = pd.to_datetime(df['close_date'], utc=True)
-        df.loc[:, 'open_date'] = pd.to_datetime(df['open_date'], utc=True)
-        df.loc[:, 'close_rate'] = df['close_rate'].astype('float64')
+        df['close_date'] = pd.to_datetime(df['close_date'], utc=True)
+        df['open_date'] = pd.to_datetime(df['open_date'], utc=True)
+        df['close_rate'] = df['close_rate'].astype('float64')
     return df
 
 

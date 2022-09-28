@@ -172,7 +172,24 @@
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
         "username": "freqtrader",
-        "password": "SuperSecurePassword"
+        "password": "SuperSecurePassword",
+        "ws_token": "secret_ws_t0ken."
+    },
+    "external_message_consumer": {
+        "enabled": false,
+        "producers": [
+          {
+            "name": "default",
+            "host": "127.0.0.2",
+            "port": 8080,
+            "ws_token": "secret_ws_t0ken."
+          }
+        ],
+        "wait_timeout": 300,
+        "ping_timeout": 10,
+        "sleep_time": 10,
+        "remove_entry_exit_signals": false,
+        "message_size_limit": 8
     },
     "bot_name": "freqtrade",
     "db_url": "sqlite:///tradesv3.sqlite",

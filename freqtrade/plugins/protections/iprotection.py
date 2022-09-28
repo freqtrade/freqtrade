@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from freqtrade.constants import LongShort
+from freqtrade.constants import Config, LongShort
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import plural
 from freqtrade.mixins import LoggingMixin
@@ -30,7 +30,7 @@ class IProtection(LoggingMixin, ABC):
     # Can stop trading for one pair
     has_local_stop: bool = False
 
-    def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config, protection_config: Dict[str, Any]) -> None:
         self._config = config
         self._protection_config = protection_config
         self._stop_duration_candles: Optional[int] = None

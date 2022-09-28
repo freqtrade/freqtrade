@@ -41,6 +41,10 @@ def get_exchange(config=Depends(get_config)):
     return ApiServer._exchange
 
 
+def get_channel_manager():
+    return ApiServer._ws_channel_manager
+
+
 def is_webserver_mode(config=Depends(get_config)):
     if config['runmode'] != RunMode.WEBSERVER:
         raise RPCException('Bot is not in the correct state')

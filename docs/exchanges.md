@@ -233,7 +233,7 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
 
 !!! Warning "Futures"
     OKX Futures has the concept of "position mode" - which can be Net or long/short (hedge mode).
-    Freqtrade supports both modes - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
+    Freqtrade supports both modes (we recommend to use net mode) - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
     OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
 
 ## Gate.io

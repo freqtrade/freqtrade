@@ -1,14 +1,18 @@
+import logging
 import secrets
 from datetime import datetime, timedelta
+from typing import Any, Dict, Union
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
 from freqtrade.rpc.api_server.api_schemas import AccessAndRefreshToken, AccessToken
 from freqtrade.rpc.api_server.deps import get_api_config
 
+
+logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 
@@ -25,7 +29,7 @@ httpbasic = HTTPBasic(auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
-def get_user_from_token(token, secret_key: str, token_type: str = "access"):
+def get_user_from_token(token, secret_key: str, token_type: str = "access") -> str:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -42,6 +46,45 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
     except jwt.PyJWTError:
         raise credentials_exception
     return username
+
+
+# This should be reimplemented to better realign with the existing tools provided
+# by FastAPI regarding API Tokens
+# https://github.com/tiangolo/fastapi/blob/master/fastapi/security/api_key.py
+async def validate_ws_token(
+    ws: WebSocket,
+    ws_token: Union[str, None] = Query(default=None, alias="token"),
+    api_config: Dict[str, Any] = Depends(get_api_config)
+):
+    secret_ws_token = api_config.get('ws_token', None)
+    secret_jwt_key = api_config.get('jwt_secret_key', 'super-secret')
+
+    # Check if ws_token is/in secret_ws_token
+    if ws_token and secret_ws_token:
+        is_valid_ws_token = False
+        if isinstance(secret_ws_token, str):
+            is_valid_ws_token = secrets.compare_digest(secret_ws_token, ws_token)
+        elif isinstance(secret_ws_token, list):
+            is_valid_ws_token = any([
+                secrets.compare_digest(potential, ws_token)
+                for potential in secret_ws_token
+            ])
+
+        if is_valid_ws_token:
+            return ws_token
+
+    # Check if ws_token is a JWT
+    try:
+        user = get_user_from_token(ws_token, secret_jwt_key)
+        return user
+    # If the token is a jwt, and it's valid return the user
+    except HTTPException:
+        pass
+
+    # No checks passed, deny the connection
+    logger.debug("Denying websocket request.")
+    # If it doesn't match, close the websocket connection
+    await ws.close(code=status.WS_1008_POLICY_VIOLATION)
 
 
 def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:
