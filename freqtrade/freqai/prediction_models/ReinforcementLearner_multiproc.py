@@ -89,7 +89,6 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
 
-
     def _on_stop(self):
         """
         Hook called on bot shutdown. Close SubprocVecEnv subprocesses for clean shutdown.
