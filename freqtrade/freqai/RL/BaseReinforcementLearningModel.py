@@ -39,7 +39,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
     def __init__(self, **kwargs):
         super().__init__(config=kwargs['config'])
-        self.max_threads = max(self.freqai_info['rl_config'].get(
+        self.max_threads = min(self.freqai_info['rl_config'].get(
             'cpu_count', 0), int(self.max_system_threads / 2))
         th.set_num_threads(self.max_threads)
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
