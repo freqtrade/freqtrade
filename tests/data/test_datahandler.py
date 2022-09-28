@@ -139,10 +139,10 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
 def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     dh = JsonDataHandler(testdatadir)
     df = dh.ohlcv_load('XRP/ETH', '5m', 'spot')
-    assert len(df) == 711
+    assert len(df) == 712
 
     df_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', candle_type="mark")
-    assert len(df_mark) == 99
+    assert len(df_mark) == 100
 
     df_no_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', 'spot')
     assert len(df_no_mark) == 0

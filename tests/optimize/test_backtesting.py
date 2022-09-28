@@ -80,7 +80,7 @@ def load_data_test(what, testdatadir):
         data.loc[:, 'close'] = np.sin(data.index * hz) / 1000 + base
 
     return {'UNITTEST/BTC': clean_ohlcv_dataframe(data, timeframe='1m', pair='UNITTEST/BTC',
-                                                  fill_missing=True)}
+                                                  fill_missing=True, drop_incomplete=True)}
 
 
 # FIX: fixturize this?
@@ -323,7 +323,7 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     processed = backtesting.strategy.advise_all_indicators(data)
-    assert len(processed['UNITTEST/BTC']) == 102
+    assert len(processed['UNITTEST/BTC']) == 103
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -1165,9 +1165,9 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Parameter --enable-position-stacking detected ...'
     ]
 
@@ -1244,9 +1244,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
         'Running backtesting for Strategy StrategyTestV2',
@@ -1355,9 +1355,9 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
         'Running backtesting for Strategy StrategyTestV2',
@@ -1371,7 +1371,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     assert 'EXIT REASON STATS' in captured.out
     assert 'DAY BREAKDOWN' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
-    assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
+    assert '2017-11-14 21:17:00 -> 2017-11-14 22:59:00 | Max open trades : 1' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out
 
 
@@ -1503,9 +1503,9 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
         'Parameter -i/--timeframe detected ... Using timeframe: 1h ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2021-11-17 01:00:00 '
-        'up to 2021-11-21 03:00:00 (4 days).',
+        'up to 2021-11-21 04:00:00 (4 days).',
         'Backtesting with data from 2021-11-17 21:00:00 '
-        'up to 2021-11-21 03:00:00 (3 days).',
+        'up to 2021-11-21 04:00:00 (3 days).',
         'XRP/USDT, funding_rate, 8h, data starts at 2021-11-18 00:00:00',
         'XRP/USDT, mark, 8h, data starts at 2021-11-18 00:00:00',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
@@ -1616,9 +1616,9 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
         'Parameter --timeframe-detail detected, using 1m for intra-candle backtesting ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2019-10-11 00:00:00 '
-        'up to 2019-10-13 11:10:00 (2 days).',
+        'up to 2019-10-13 11:15:00 (2 days).',
         'Backtesting with data from 2019-10-11 01:40:00 '
-        'up to 2019-10-13 11:10:00 (2 days).',
+        'up to 2019-10-13 11:15:00 (2 days).',
         f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
     ]
 
@@ -1719,7 +1719,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
+        'up to 2017-11-14 22:59:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
     ]
 
@@ -1732,7 +1732,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
             'Running backtesting for Strategy StrategyTestV2',
             'Running backtesting for Strategy StrategyTestV3',
             'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days).',
         ]
     elif run_id == '2' and min_backtest_date < start_time:
         assert backtestmock.call_count == 0
@@ -1745,7 +1745,7 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
             'Reusing result of previous backtest for StrategyTestV2',
             'Running backtesting for Strategy StrategyTestV3',
             'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
-            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:59:00 (0 days).',
         ]
         assert backtestmock.call_count == 1
 
