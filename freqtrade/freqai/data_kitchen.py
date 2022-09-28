@@ -134,19 +134,13 @@ class FreqaiDataKitchen:
         """
         feat_dict = self.freqai_config["feature_parameters"]
 
+        shuffle = self.freqai_config.get('data_split_parameters', {}).get('shuffle', False)
+
         weights: npt.ArrayLike
         if feat_dict.get("weight_factor", 0) > 0:
             weights = self.set_weights_higher_recent(len(filtered_dataframe))
         else:
             weights = np.ones(len(filtered_dataframe))
-
-        if feat_dict.get("stratify_training_data", 0) > 0:
-            stratification = np.zeros(len(filtered_dataframe))
-            for i in range(1, len(stratification)):
-                if i % feat_dict.get("stratify_training_data", 0) == 0:
-                    stratification[i] = 1
-        else:
-            stratification = None
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
             (
@@ -160,7 +154,7 @@ class FreqaiDataKitchen:
                 filtered_dataframe[: filtered_dataframe.shape[0]],
                 labels,
                 weights,
-                stratify=stratification,
+                shuffle=shuffle,
                 **self.config["freqai"]["data_split_parameters"],
             )
         else:
