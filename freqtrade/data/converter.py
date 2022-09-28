@@ -47,8 +47,7 @@ def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
 
 
 def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
-                          fill_missing: bool = True,
-                          drop_incomplete: bool = True) -> DataFrame:
+                          fill_missing: bool, drop_incomplete: bool) -> DataFrame:
     """
     Cleanse a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
