@@ -45,7 +45,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.enter_positions()
     trades = Trade.get_open_trades()
-    trades[0].open_order_id = None
     freqtradebot.exit_positions(trades)
 
     results = rpc._rpc_trade_status()
@@ -1031,6 +1030,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
 
 def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
     default_conf['force_entry_enable'] = True
+    default_conf['max_open_trades'] = 0
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
@@ -1045,6 +1045,10 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
+    with pytest.raises(RPCException, match='Maximum number of trades is reached.'):
+        rpc._rpc_force_entry(pair, None)
+    freqtradebot.config['max_open_trades'] = 5
+
     trade = rpc._rpc_force_entry(pair, None)
     assert isinstance(trade, Trade)
     assert trade.pair == pair

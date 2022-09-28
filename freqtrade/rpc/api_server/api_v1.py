@@ -265,6 +265,8 @@ def list_strategies(config=Depends(get_config)):
 
 @router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
 def get_strategy(strategy: str, config=Depends(get_config)):
+    if ":" in strategy:
+        raise HTTPException(status_code=500, detail="base64 encoded strategies are not allowed.")
 
     config_ = deepcopy(config)
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
