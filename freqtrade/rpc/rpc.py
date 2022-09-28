@@ -25,7 +25,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin, shorten_date
-from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -166,9 +166,9 @@ class RPC:
         else:
             results = []
             for trade in trades:
-                order = None
+                order: Optional[Order] = None
                 if trade.open_order_id:
-                    order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
+                    order = trade.select_order_by_order_id(trade.open_order_id)
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
@@ -219,7 +219,7 @@ class RPC:
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
-                        order['type'], order['side'], order['remaining']
+                        order.order_type, order.side, order.remaining
                     ) if order else None,
                 ))
                 results.append(trade_dict)

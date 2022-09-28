@@ -45,7 +45,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.enter_positions()
     trades = Trade.get_open_trades()
-    trades[0].open_order_id = None
     freqtradebot.exit_positions(trades)
 
     results = rpc._rpc_trade_status()
