@@ -336,18 +336,23 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
 
 
 def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
-    freqai_enabled = conf.get('freqai', {}).get('enabled', False)
-    timerange = conf.get('timerange')
-    freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
-    if freqai_backtest_live_models and freqai_enabled and timerange:
-        raise OperationalException(
-            'Using timerange parameter is not supported with '
-            '--freqai-backtest-live-models parameter.')
+    if conf.get('runmode', RunMode.OTHER) == RunMode.BACKTEST:
+        freqai_enabled = conf.get('freqai', {}).get('enabled', False)
+        timerange = conf.get('timerange')
+        freqai_backtest_live_models = conf.get('freqai_backtest_live_models', False)
+        if freqai_backtest_live_models and freqai_enabled and timerange:
+            raise OperationalException(
+                'Using timerange parameter is not supported with '
+                '--freqai-backtest-live-models parameter.')
 
-    if freqai_backtest_live_models and not freqai_enabled:
-        raise OperationalException(
-            'Using --freqai-backtest-live-models parameter is only '
-            'supported with a FreqAI strategy.')
+        if freqai_backtest_live_models and not freqai_enabled:
+            raise OperationalException(
+                'Using --freqai-backtest-live-models parameter is only '
+                'supported with a FreqAI strategy.')
+
+        if freqai_enabled and not freqai_backtest_live_models and not timerange:
+            raise OperationalException(
+                'Please pass --timerange if you intend to use FreqAI for backtesting.')
 
 
 def _validate_consumers(conf: Dict[str, Any]) -> None:

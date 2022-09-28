@@ -56,34 +56,6 @@ def test_freqai_backtest_load_data(freqai_conf, mocker, caplog):
     Backtesting.cleanup()
 
 
-def test_freqai_backtest_live_models_validations(freqai_conf, mocker, testdatadir, caplog):
-    patch_exchange(mocker)
-
-    now = datetime.now(timezone.utc)
-    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
-                 PropertyMock(return_value=['HULUMULU/USDT', 'XRP/USDT']))
-    mocker.patch('freqtrade.optimize.backtesting.history.load_data')
-    mocker.patch('freqtrade.optimize.backtesting.history.get_timerange', return_value=(now, now))
-
-    patched_configuration_load_config_file(mocker, freqai_conf)
-
-    args = [
-        'backtesting',
-        '--config', 'config.json',
-        '--datadir', str(testdatadir),
-        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
-        '--timeframe', '1h',
-        '--timerange', '20220108-20220115',
-        '--freqai-backtest-live-models'
-    ]
-    args = get_args(args)
-    with pytest.raises(OperationalException,
-                       match=r".* timerange parameter is not supported .*"):
-        setup_optimize_configuration(args, RunMode.BACKTEST)
-
-    Backtesting.cleanup()
-
-
 def test_freqai_backtest_live_models_model_not_found(freqai_conf, mocker, testdatadir, caplog):
     patch_exchange(mocker)
 

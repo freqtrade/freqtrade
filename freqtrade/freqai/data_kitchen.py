@@ -84,11 +84,6 @@ class FreqaiDataKitchen:
         self.backtest_live_models = config.get("freqai_backtest_live_models", False)
 
         if not self.live:
-            if (not self.config.get("timerange") and
-                    not self.backtest_live_models):
-                raise OperationalException(
-                    'Please pass --timerange if you intend to use FreqAI for backtesting.')
-
             self.full_path = freqai_util.get_full_model_path(self.config)
             self.full_timerange = self.create_fulltimerange(
                 self.config["timerange"], self.freqai_config.get("train_period_days", 0)

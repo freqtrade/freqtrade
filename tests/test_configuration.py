@@ -1609,7 +1609,7 @@ def test_setup_hyperopt_freqai(mocker, default_conf, caplog) -> None:
         validate_config_consistency(config)
 
 
-def test_setup_freqai_backtest_live_models(mocker, default_conf, caplog) -> None:
+def test_setup_freqai_backtesting(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
     mocker.patch(
         'freqtrade.configuration.configuration.create_datadir',
@@ -1633,6 +1633,8 @@ def test_setup_freqai_backtest_live_models(mocker, default_conf, caplog) -> None
 
     configuration = Configuration(args)
     config = configuration.get_config()
+    config['runmode'] = RunMode.BACKTEST
+
     with pytest.raises(
         OperationalException, match=r".*--freqai-backtest-live-models parameter is only.*"
     ):
@@ -1644,5 +1646,13 @@ def test_setup_freqai_backtest_live_models(mocker, default_conf, caplog) -> None
     }
     with pytest.raises(
         OperationalException, match=r".* timerange parameter is not supported with .*"
+    ):
+        validate_config_consistency(conf)
+
+    conf['timerange'] = None
+    conf['freqai_backtest_live_models'] = False
+
+    with pytest.raises(
+        OperationalException, match=r".* pass --timerange if you intend to use FreqAI .*"
     ):
         validate_config_consistency(conf)
