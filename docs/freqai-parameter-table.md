@@ -40,7 +40,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 |  |  **Data split parameters**
 | `data_split_parameters` | Include any additional parameters available from Scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
 | `test_size` | The fraction of data that should be used for testing instead of training. <br> **Datatype:** Positive float < 1.
-| `shuffle` | Shuffle the training data points during training. Typically, for time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean.
+| `shuffle` | Shuffle the training data points during training. Typically, to not remove the chronological order of data in time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean. <br> Defaut: `False`.
 |  |  **Model training parameters**
 | `model_training_parameters` | A flexible dictionary that includes all parameters available by the selected model library. For example, if you use `LightGBMRegressor`, this dictionary can contain any parameter available by the `LightGBMRegressor` [here](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html) (external website). If you select a different model, this dictionary can contain any parameter from that model.  <br> **Datatype:** Dictionary.
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
