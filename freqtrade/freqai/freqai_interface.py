@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import psutil
 from numpy.typing import NDArray
 from pandas import DataFrame
 
@@ -96,6 +97,7 @@ class IFreqaiModel(ABC):
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
         self.strategy: Optional[IStrategy] = None
+        self.max_system_threads = int(psutil.cpu_count() * 2 - 2)
 
     def __getstate__(self):
         """

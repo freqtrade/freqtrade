@@ -73,18 +73,17 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         test_df = data_dictionary["test_features"]
 
         env_id = "train_env"
-        num_cpu = int(self.freqai_info["rl_config"].get("cpu_count", 2))
         self.train_env = SubprocVecEnv([make_env(self.MyRLEnv, env_id, i, 1, train_df, prices_train,
                                         self.reward_params, self.CONV_WIDTH, monitor=True,
                                         config=self.config) for i
-                                        in range(num_cpu)])
+                                        in range(self.max_threads)])
 
         eval_env_id = 'eval_env'
         self.eval_env = SubprocVecEnv([make_env(self.MyRLEnv, eval_env_id, i, 1,
                                                 test_df, prices_test,
                                                 self.reward_params, self.CONV_WIDTH, monitor=True,
                                                 config=self.config) for i
-                                       in range(num_cpu)])
+                                       in range(self.max_threads)])
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
