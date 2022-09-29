@@ -25,7 +25,6 @@ from freqtrade.enums import (BacktestState, CandleType, ExitCheckTuple, ExitType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import (amount_to_contract_precision, price_to_precision,
                                 timeframe_to_minutes, timeframe_to_seconds)
-from freqtrade.freqai import freqai_util
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -136,10 +135,8 @@ class Backtesting:
         self.precision_mode = self.exchange.precisionMode
 
         if self.config.get('freqai_backtest_live_models', False):
-            freqai_model_path = freqai_util.get_full_model_path(self.config)
-            _, live_models_timerange, _ = freqai_util.get_timerange_from_ready_models(
-                freqai_model_path)
-            self.config['timerange'] = live_models_timerange
+            from freqtrade.freqai import freqai_util
+            self.config['timerange'] = freqai_util.get_timerange_backtest_live_models(self.config)
 
         self.timerange = TimeRange.parse_timerange(
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))

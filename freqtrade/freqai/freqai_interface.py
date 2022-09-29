@@ -264,12 +264,9 @@ class IFreqaiModel(ABC):
                 tr_backtest_stopts_str = datetime.fromtimestamp(
                                                 tr_backtest.stopts,
                                                 tz=timezone.utc).strftime(DATETIME_PRINT_FORMAT)
-                logger.info(
-                    f"No data found for pair {pair} "
-                    f" from {tr_backtest_startts_str} "
-                    f"to {tr_backtest_stopts_str}. "
-                    "Probably more than one training within the same candle period."
-                )
+                logger.info(f"No data found for pair {pair} from {tr_backtest_startts_str} "
+                            f" from {tr_backtest_startts_str} to {tr_backtest_stopts_str}. "
+                            "Probably more than one training within the same candle period.")
                 continue
 
             trained_timestamp = tr_train
@@ -305,12 +302,6 @@ class IFreqaiModel(ABC):
                 dk.append_predictions(append_df)
             else:
                 if not self.model_exists(dk):
-                    if dk.backtest_live_models:
-                        raise OperationalException(
-                            "Training models is not allowed "
-                            "in backtest_live_models backtesting "
-                            "mode"
-                        )
                     dk.find_features(dataframe_train)
                     dk.find_labels(dataframe_train)
                     self.model = self.train(dataframe_train, pair, dk)
@@ -603,7 +594,7 @@ class IFreqaiModel(ABC):
         model = self.train(unfiltered_dataframe, pair, dk)
 
         self.dd.pair_dict[pair]["trained_timestamp"] = new_trained_timerange.stopts
-        dk.set_new_model_names(pair, int(new_trained_timerange.stopts))
+        dk.set_new_model_names(pair, new_trained_timerange.stopts)
         self.dd.save_data(model, pair, dk)
 
         if self.plot_features:

@@ -84,7 +84,7 @@ class FreqaiDataKitchen:
         self.backtest_live_models = config.get("freqai_backtest_live_models", False)
 
         if not self.live:
-            self.full_path = freqai_util.get_full_model_path(self.config)
+            self.full_path = freqai_util.get_full_models_path(self.config)
             self.full_timerange = self.create_fulltimerange(
                 self.config["timerange"], self.freqai_config.get("train_period_days", 0)
             )
@@ -118,7 +118,7 @@ class FreqaiDataKitchen:
         metadata: dict = strategy furnished pair metadata
         trained_timestamp: int = timestamp of most recent training
         """
-        self.full_path = freqai_util.get_full_model_path(self.config)
+        self.full_path = freqai_util.get_full_models_path(self.config)
         self.data_path = Path(
             self.full_path
             / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
@@ -459,17 +459,15 @@ class FreqaiDataKitchen:
     ) -> Tuple[list, list]:
 
         tr_backtesting_list_timerange = []
-        pair = self.pair.split("/")[0].split(":")[0]
-        if pair not in self.backtest_live_models_data["pairs_end_dates"]:
+        asset = self.pair.split("/")[0]
+        if asset not in self.backtest_live_models_data["assets_end_dates"]:
             raise OperationalException(
                 f"Model not available for pair {self.pair}. "
                 "Please, try again after removing this pair from the configuration file."
             )
-        pair_data = self.backtest_live_models_data["pairs_end_dates"][pair]
-        model_end_dates = []
+        asset_data = self.backtest_live_models_data["assets_end_dates"][asset]
         backtesting_timerange = self.backtest_live_models_data["backtesting_timerange"]
-        for end_date in pair_data:
-            model_end_dates.append(end_date)
+        model_end_dates = [x for x in asset_data]
         model_end_dates.append(backtesting_timerange.stopts)
         model_end_dates.sort()
         for index, item in enumerate(model_end_dates):
@@ -1291,11 +1289,11 @@ class FreqaiDataKitchen:
 
     def set_timerange_from_ready_models(self):
         backtesting_timerange, \
-            backtesting_string_timerange, \
-            pairs_end_dates = freqai_util.get_timerange_from_ready_models(self.full_path)
+            assets_end_dates = (
+                freqai_util.get_timerange_and_assets_end_dates_from_ready_models(self.full_path))
+
         self.backtest_live_models_data = {
             "backtesting_timerange": backtesting_timerange,
-            "backtesting_string_timerange": backtesting_string_timerange,
-            "pairs_end_dates": pairs_end_dates
+            "assets_end_dates": assets_end_dates
             }
         return

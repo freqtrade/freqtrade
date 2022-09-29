@@ -14,7 +14,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def get_full_model_path(config: Config) -> Path:
+def get_full_models_path(config: Config) -> Path:
     """
     Returns default FreqAI model path
     :param config: Configuration dictionary
@@ -25,20 +25,19 @@ def get_full_model_path(config: Config) -> Path:
     )
 
 
-def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, Dict[str, Any]]:
+def get_timerange_and_assets_end_dates_from_ready_models(
+        models_path: Path) -> Tuple[TimeRange, Dict[str, Any]]:
     """
     Returns timerange information based on a FreqAI model directory
     :param models_path: FreqAI model path
 
-    :returns: a Tuple with (backtesting_timerange: Timerange calculated from directory,
-    backtesting_string_timerange: str timerange calculated from
-    directory (format example '20020822-20220830'), \
-    pairs_end_dates: Dict with pair and model end training dates info)
+    :return: a Tuple with (Timerange calculated from directory and
+    a Dict with pair and model end training dates info)
     """
     all_models_end_dates = []
-    pairs_end_dates: Dict[str, Any] = get_pairs_timestamps_training_from_ready_models(models_path)
-    for key in pairs_end_dates:
-        for model_end_date in pairs_end_dates[key]:
+    assets_end_dates: Dict[str, Any] = get_assets_timestamps_training_from_ready_models(models_path)
+    for key in assets_end_dates:
+        for model_end_date in assets_end_dates[key]:
             if model_end_date not in all_models_end_dates:
                 all_models_end_dates.append(model_end_date)
 
@@ -64,34 +63,27 @@ def get_timerange_from_ready_models(models_path: Path) -> Tuple[TimeRange, str, 
 
     all_models_end_dates.append(finish_timestamp)
     all_models_end_dates.sort()
-    start = datetime.fromtimestamp(min(all_models_end_dates), tz=timezone.utc)
-    stop = datetime.fromtimestamp(max(all_models_end_dates), tz=timezone.utc)
-    end_date_string_timerange = stop
-    if (
-        finish_timestamp < int(datetime.now(tz=timezone.utc).timestamp()) and
-        datetime.now(tz=timezone.utc).strftime('%Y%m%d') != stop.strftime('%Y%m%d')
-    ):
-        # add 1 day to string timerange to ensure BT module will load all dataframe data
-        end_date_string_timerange = stop + timedelta(days=1)
+    start_date = (datetime(*datetime.fromtimestamp(min(all_models_end_dates)).timetuple()[:3],
+                           tzinfo=timezone.utc))
+    end_date = (datetime(*datetime.fromtimestamp(max(all_models_end_dates)).timetuple()[:3],
+                         tzinfo=timezone.utc))
 
-    backtesting_string_timerange = (
-        f"{start.strftime('%Y%m%d')}-{end_date_string_timerange.strftime('%Y%m%d')}"
-    )
+    # add 1 day to string timerange to ensure BT module will load all dataframe data
+    end_date = end_date + timedelta(days=1)
     backtesting_timerange = TimeRange(
-        'date', 'date', min(all_models_end_dates), max(all_models_end_dates)
+        'date', 'date', int(start_date.timestamp()), int(end_date.timestamp())
     )
-    return backtesting_timerange, backtesting_string_timerange, pairs_end_dates
+    return backtesting_timerange, assets_end_dates
 
 
-def get_pairs_timestamps_training_from_ready_models(models_path: Path) -> Dict[str, Any]:
+def get_assets_timestamps_training_from_ready_models(models_path: Path) -> Dict[str, Any]:
     """
-    Scan the models path and returns all pairs end training dates (timestamp)
+    Scan the models path and returns all assets end training dates (timestamp)
     :param models_path: FreqAI model path
 
-    :returns:
-    :pairs_end_dates: Dict with pair and model end training dates info
+    :return: a Dict with asset and model end training dates info
     """
-    pairs_end_dates: Dict[str, Any] = {}
+    assets_end_dates: Dict[str, Any] = {}
     if not models_path.is_dir():
         raise OperationalException(
             'Model folders not found. Saved models are required '
@@ -100,7 +92,7 @@ def get_pairs_timestamps_training_from_ready_models(models_path: Path) -> Dict[s
     for model_dir in models_path.iterdir():
         if str(model_dir.name).startswith("sub-train"):
             model_end_date = int(model_dir.name.split("_")[1])
-            pair = model_dir.name.split("_")[0].replace("sub-train-", "")
+            asset = model_dir.name.split("_")[0].replace("sub-train-", "")
             model_file_name = (
                 f"cb_{str(model_dir.name).replace('sub-train-', '').lower()}"
                 "_model.joblib"
@@ -108,8 +100,23 @@ def get_pairs_timestamps_training_from_ready_models(models_path: Path) -> Dict[s
 
             model_path_file = Path(model_dir / model_file_name)
             if model_path_file.is_file():
-                if pair not in pairs_end_dates:
-                    pairs_end_dates[pair] = []
+                if asset not in assets_end_dates:
+                    assets_end_dates[asset] = []
+                assets_end_dates[asset].append(model_end_date)
 
-                pairs_end_dates[pair].append(model_end_date)
-    return pairs_end_dates
+    return assets_end_dates
+
+
+def get_timerange_backtest_live_models(config: Config):
+    """
+    Returns a formated timerange for backtest live/ready models
+    :param config: Configuration dictionary
+
+    :return: a string timerange (format example: '20220801-20220822')
+    """
+    models_path = get_full_models_path(config)
+    timerange, _ = get_timerange_and_assets_end_dates_from_ready_models(models_path)
+    start_date = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+    end_date = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+    tr = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+    return tr

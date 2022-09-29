@@ -671,7 +671,6 @@ AVAILABLE_CLI_OPTIONS = {
     "freqai_backtest_live_models": Arg(
         '--freqai-backtest-live-models',
         help='Run backtest with ready models.',
-        action='store_true',
-        default=False,
+        action='store_true'
     ),
 }
