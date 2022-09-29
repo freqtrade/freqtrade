@@ -4,8 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
-from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exchange.exchange import timeframe_to_minutes
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -473,7 +472,7 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmpdir, caplog, 
 
     api_mock.fetch_market_leverage_tiers.call_count == 0
     # 2 day passes ...
-    time_machine.move_to(datetime.now() + timedelta(days=2))
+    time_machine.move_to(datetime.now() + timedelta(weeks=5))
     exchange.load_leverage_tiers()
 
     assert log_has(logmsg, caplog)

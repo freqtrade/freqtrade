@@ -1,16 +1,16 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from freqtrade.constants import USER_DATA_FILES
+from freqtrade.constants import USER_DATA_FILES, Config
 from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
 
 
-def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Path:
+def create_datadir(config: Config, datadir: Optional[str] = None) -> Path:
 
     folder = Path(datadir) if datadir else Path(f"{config['user_data_dir']}/data")
     if not datadir:

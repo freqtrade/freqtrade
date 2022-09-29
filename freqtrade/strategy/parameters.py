@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from typing import Any, Optional, Sequence, Union
 
-from freqtrade.enums.hyperoptstate import HyperoptState
+from freqtrade.enums import HyperoptState
 from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer
 
 

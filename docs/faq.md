@@ -4,7 +4,7 @@
 
 Freqtrade supports spot trading only.
 
-### Can I open short positions?
+### Can my bot open short positions?
 
 Freqtrade can open short positions in futures markets.
 This requires the strategy to be made for this - and `"trading_mode": "futures"` in the configuration.
@@ -12,15 +12,22 @@ Please make sure to read the [relevant documentation page](leverage.md) first.
 
 In spot markets, you can in some cases use leveraged spot tokens, which reflect an inverted pair (eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD,...) which can be traded with Freqtrade.
 
-### Can I trade options or futures?
+### Can my bot trade options or futures?
 
-Futures trading is supported for selected exchanges.
+Futures trading is supported for selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an uptodate list of supported exchanges.
 
 ## Beginner Tips & Tricks
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
 
 ## Freqtrade common issues
+
+### Can freqtrade open multiple positions on the same pair in parallel?
+
+No. Freqtrade will only open one position per pair at a time.
+You can however use the [`adjust_trade_position()` callback](strategy-callbacks.md#adjust-trade-position) to adjust an open position.
+
+Backtesting provides an option for this in `--eps` - however this is only there to highlight "hidden" signals, and will not work in live.
 
 ### The bot does not start
 
@@ -30,7 +37,7 @@ This could be caused by the following reasons:
 
 * The virtual environment is not active.
   * Run `source .env/bin/activate` to activate the virtual environment.
-* The installation did not work correctly.
+* The installation did not complete successfully.
   * Please check the [Installation documentation](installation.md).
 
 ### I have waited 5 minutes, why hasn't the bot made any trades yet?
@@ -67,7 +74,7 @@ This is not a bot-problem, but will also happen while manual trading.
 While freqtrade can handle this (it'll sell 99 COIN), fees are often below the minimum tradable lot-size (you can only trade full COIN, not 0.9 COIN).
 Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next time freqtrade buys COIN, it'll eat into the remaining small balance, this time selling everything it bought, and therefore slowly declining the dust balance (although it most likely will never reach exactly 0).
 
-Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.  
+Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.
 On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
 Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
 
@@ -109,7 +116,7 @@ This warning can point to one of the below problems:
 
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 
-Currently known to happen for US Bittrex users.  
+Currently known to happen for US Bittrex users.
 
 Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
@@ -177,8 +184,8 @@ The GPU improvements would only apply to pandas-native calculations - or ones wr
 For hyperopt, freqtrade is using scikit-optimize, which is built on top of scikit-learn.
 Their statement about GPU support is [pretty clear](https://scikit-learn.org/stable/faq.html#will-you-add-gpu-support).
 
-GPU's also are only good at crunching numbers (floating point operations). 
-For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting). 
+GPU's also are only good at crunching numbers (floating point operations).
+For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting).
 As such, GPU's are not too well suited for most parts of hyperopt.
 
 The benefit of using GPU would therefore be pretty slim - and will not justify the complexity introduced by trying to add GPU support.
@@ -219,9 +226,9 @@ already 8\*10^9\*10 evaluations. A roughly total of 80 billion evaluations.
 Did you run 100 000 evaluations? Congrats, you've done roughly 1 / 100 000 th
 of the search space, assuming that the bot never tests the same parameters more than once.
 
-* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 100000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. 
+* The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 100000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades.
 
-Example: 4% profit 650 times vs 0,3% profit a trade 10000 times in a year. If we assume you set the --timerange to 365 days. 
+Example: 4% profit 650 times vs 0,3% profit a trade 10000 times in a year. If we assume you set the --timerange to 365 days.
 
 Example:
 `freqtrade --config config.json --strategy SampleStrategy --hyperopt SampleHyperopt -e 1000 --timerange 20190601-20200601`

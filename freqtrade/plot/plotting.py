@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 
 from freqtrade.configuration import TimeRange
+from freqtrade.constants import Config
 from freqtrade.data.btanalysis import (analyze_trade_parallelism, extract_trades_of_period,
                                        load_trades)
 from freqtrade.data.converter import trim_dataframe
@@ -618,7 +619,7 @@ def store_plot_file(fig, filename: str, directory: Path, auto_open: bool = False
     logger.info(f"Stored plot as {_filename}")
 
 
-def load_and_plot_trades(config: Dict[str, Any]):
+def load_and_plot_trades(config: Config):
     """
     From configuration provided
     - Initializes plot-script
@@ -666,7 +667,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     logger.info('End of plotting process. %s plots generated', pair_counter)
 
 
-def plot_profit(config: Dict[str, Any]) -> None:
+def plot_profit(config: Config) -> None:
     """
     Plots the total profit for all pairs.
     Note, the profit calculation isn't realistic.

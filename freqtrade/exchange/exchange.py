@@ -21,7 +21,8 @@ from dateutil import parser
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 EntryExit, ListPairsWithTimeframes, MakerTaker, PairWithTimeframe)
+                                 Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
+                                 PairWithTimeframe)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
@@ -62,7 +63,7 @@ class Exchange:
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
-        "order_time_in_force": ["gtc"],
+        "order_time_in_force": ["GTC"],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
@@ -91,7 +92,7 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
-    def __init__(self, config: Dict[str, Any], validate: bool = True,
+    def __init__(self, config: Config, validate: bool = True,
                  load_leverage_tiers: bool = False) -> None:
         """
         Initializes this module with the given config,
@@ -108,7 +109,7 @@ class Exchange:
         self._loop_lock = Lock()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self._config: Dict = {}
+        self._config: Config = {}
 
         self._config.update(config)
 
@@ -205,7 +206,7 @@ class Exchange:
         logger.debug("Exchange object destroyed, closing async loop")
         if (self._api_async and inspect.iscoroutinefunction(self._api_async.close)
                 and self._api_async.session):
-            logger.info("Closing async ccxt session.")
+            logger.debug("Closing async ccxt session.")
             self.loop.run_until_complete(self._api_async.close())
 
     def validate_config(self, config):
@@ -446,6 +447,15 @@ class Exchange:
         contract_size = self.get_contract_size(pair)
         return contracts_to_amount(num_contracts, contract_size)
 
+    def amount_to_contract_precision(self, pair: str, amount: float) -> float:
+        """
+        Helper wrapper around amount_to_contract_precision
+        """
+        contract_size = self.get_contract_size(pair)
+
+        return amount_to_contract_precision(amount, self.get_precision_amount(pair),
+                                            self.precisionMode, contract_size)
+
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
@@ -611,7 +621,7 @@ class Exchange:
         """
         Checks if order time in force configured in strategy/config are supported
         """
-        if any(v not in self._ft_has["order_time_in_force"]
+        if any(v.upper() not in self._ft_has["order_time_in_force"]
                for k, v in order_time_in_force.items()):
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
@@ -989,12 +999,12 @@ class Exchange:
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
+        if time_in_force != 'GTC' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: time_in_force})
+            params.update({param: time_in_force.upper()})
         if reduceOnly:
             params.update({'reduceOnly': True})
         return params
@@ -1009,7 +1019,7 @@ class Exchange:
         rate: float,
         leverage: float,
         reduceOnly: bool = False,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
@@ -2295,7 +2305,7 @@ class Exchange:
             updated = tiers.get('updated')
             if updated:
                 updated_dt = parser.parse(updated)
-                if updated_dt < datetime.now(timezone.utc) - timedelta(days=1):
+                if updated_dt < datetime.now(timezone.utc) - timedelta(weeks=4):
                     logger.info("Cached leverage tiers are outdated. Will update.")
                     return None
             return tiers['data']
@@ -2432,36 +2442,6 @@ class Exchange:
         """
         return 0.0
 
-    def get_liquidation_price(
-            self,
-            pair: str,
-            open_rate: float,
-            amount: float,  # quote currency, includes leverage
-            stake_amount: float,
-            leverage: float,
-            is_short: bool
-    ) -> Optional[float]:
-
-        if self.trading_mode in TradingMode.SPOT:
-            return None
-        elif (
-            self.trading_mode == TradingMode.FUTURES
-        ):
-            isolated_liq = self.get_or_calculate_liquidation_price(
-                pair=pair,
-                open_rate=open_rate,
-                is_short=is_short,
-                amount=amount,
-                stake_amount=stake_amount,
-                wallet_balance=stake_amount,  # In isolated mode, stake-amount = wallet size
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-            )
-            return isolated_liq
-        else:
-            raise OperationalException(
-                "Freqtrade currently only supports futures for leverage trading.")
-
     def funding_fee_cutoff(self, open_date: datetime):
         """
         :param open_date: The open date for a trade
@@ -2530,8 +2510,13 @@ class Exchange:
             cache=False,
             drop_incomplete=False,
         )
-        funding_rates = candle_histories[funding_comb]
-        mark_rates = candle_histories[mark_comb]
+        try:
+            # we can't assume we always get histories - for example during exchange downtimes
+            funding_rates = candle_histories[funding_comb]
+            mark_rates = candle_histories[mark_comb]
+        except KeyError:
+            raise ExchangeError("Could not find funding rates.") from None
+
         funding_mark_rates = self.combine_funding_and_mark(
             funding_rates=funding_rates, mark_rates=mark_rates)
 
@@ -2611,6 +2596,8 @@ class Exchange:
         :param is_short: trade direction
         :param amount: Trade amount
         :param open_date: Open date of the trade
+        :return: funding fee since open_date
+        :raies: ExchangeError if something goes wrong.
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:
@@ -2622,7 +2609,7 @@ class Exchange:
         else:
             return 0.0
 
-    def get_or_calculate_liquidation_price(
+    def get_liquidation_price(
         self,
         pair: str,
         # Dry-run
@@ -2630,7 +2617,7 @@ class Exchange:
         is_short: bool,
         amount: float,  # Absolute value of position size
         stake_amount: float,
-        wallet_balance: float,  # Or margin balance
+        wallet_balance: float,
         mm_ex_1: float = 0.0,  # (Binance) Cross only
         upnl_ex_1: float = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -2641,8 +2628,9 @@ class Exchange:
             return None
         elif (self.trading_mode != TradingMode.FUTURES):
             raise OperationalException(
-                f"{self.name} does not support {self.margin_mode.value} {self.trading_mode.value}")
+                f"{self.name} does not support {self.margin_mode} {self.trading_mode}")
 
+        isolated_liq = None
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
 
             isolated_liq = self.dry_run_liquidation_price(
@@ -2660,8 +2648,6 @@ class Exchange:
             if len(positions) > 0:
                 pos = positions[0]
                 isolated_liq = pos['liquidationPrice']
-            else:
-                return None
 
         if isolated_liq:
             buffer_amount = abs(open_rate - isolated_liq) * self.liquidation_buffer
@@ -2905,7 +2891,7 @@ def amount_to_contracts(amount: float, contract_size: Optional[float]) -> float:
     :return: num-contracts
     """
     if contract_size and contract_size != 1:
-        return amount / contract_size
+        return float(FtPrecise(amount) / FtPrecise(contract_size))
     else:
         return amount
 
@@ -2919,7 +2905,7 @@ def contracts_to_amount(num_contracts: float, contract_size: Optional[float]) ->
     """
 
     if contract_size and contract_size != 1:
-        return num_contracts * contract_size
+        return float(FtPrecise(num_contracts) * FtPrecise(contract_size))
     else:
         return num_contracts
 

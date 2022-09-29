@@ -52,13 +52,6 @@ def trim_dictlist(dict_list, num):
     return new
 
 
-@pytest.fixture(autouse=True)
-def backtesting_cleanup() -> None:
-    yield None
-
-    Backtesting.cleanup()
-
-
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = history.load_pair_history(pair='UNITTEST/BTC', datadir=testdatadir,
@@ -434,7 +427,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
 
     default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
     with pytest.raises(OperationalException,
-                       match=r'VolumePairList not allowed for backtesting\..*StaticPairlist.*'):
+                       match=r'VolumePairList not allowed for backtesting\..*StaticPairList.*'):
         Backtesting(default_conf)
 
     default_conf.update({
@@ -467,7 +460,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
     default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
     with pytest.raises(OperationalException,
-                       match=r'VolumePairList not allowed for backtesting\..*StaticPairlist.*'):
+                       match=r'VolumePairList not allowed for backtesting\..*StaticPairList.*'):
         Backtesting(default_conf)
 
     default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
@@ -846,7 +839,7 @@ def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> N
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
     df = data['UNITTEST/BTC']
-    df.loc[:, 'date'] = df.loc[:, 'date'] - timedelta(days=1)
+    df['date'] = df.loc[:, 'date'] - timedelta(days=1)
     # Trimming 100 candles, so after 2nd trimming, no candle is left.
     df = df.iloc[:100]
     data['XRP/USDT'] = df

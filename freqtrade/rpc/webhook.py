@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from requests import RequestException, post
 
+from freqtrade.constants import Config
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
 
@@ -19,7 +20,7 @@ logger.debug('Included module rpc.webhook ...')
 class Webhook(RPCHandler):
     """  This class handles all webhook communication """
 
-    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
+    def __init__(self, rpc: RPC, config: Config) -> None:
         """
         Init the Webhook class, and init the super class RPCHandler
         :param rpc: instance of RPC Helper class

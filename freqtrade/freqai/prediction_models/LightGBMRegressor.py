@@ -3,7 +3,8 @@ from typing import Any, Dict
 
 from lightgbm import LGBMRegressor
 
-from freqtrade.freqai.prediction_models.BaseRegressionModel import BaseRegressionModel
+from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
+from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class LightGBMRegressor(BaseRegressionModel):
     has its own DataHandler where data is held, saved, loaded, and managed.
     """
 
-    def fit(self, data_dictionary: Dict) -> Any:
+    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
@@ -35,9 +36,11 @@ class LightGBMRegressor(BaseRegressionModel):
         y = data_dictionary["train_labels"]
         train_weights = data_dictionary["train_weights"]
 
+        init_model = self.get_init_model(dk.pair)
+
         model = LGBMRegressor(**self.model_training_parameters)
 
         model.fit(X=X, y=y, eval_set=eval_set, sample_weight=train_weights,
-                  eval_sample_weight=[eval_weights])
+                  eval_sample_weight=[eval_weights], init_model=init_model)
 
         return model

@@ -973,17 +973,17 @@ def test_validate_time_in_force(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
         'buy': 'gtc',
-        'sell': 'gtc',
+        'sell': 'GTC',
     }
     validate_config_consistency(conf)
     assert log_has_re(r"DEPRECATED: Using 'buy' and 'sell' for time_in_force is.*", caplog)
     assert conf['order_time_in_force']['entry'] == 'gtc'
-    assert conf['order_time_in_force']['exit'] == 'gtc'
+    assert conf['order_time_in_force']['exit'] == 'GTC'
 
     conf = deepcopy(default_conf)
     conf['order_time_in_force'] = {
-        'buy': 'gtc',
-        'sell': 'gtc',
+        'buy': 'GTC',
+        'sell': 'GTC',
     }
     conf['trading_mode'] = 'futures'
     with pytest.raises(OperationalException,
@@ -1087,6 +1087,58 @@ def test__validate_pricing_rules(default_conf, caplog) -> None:
             OperationalException,
             match=r"Please migrate your pricing settings to use the new wording\."):
         validate_config_consistency(conf)
+
+
+def test__validate_consumers(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf.update({
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": []
+                }
+            })
+    with pytest.raises(OperationalException,
+                       match="You must specify at least 1 Producer to connect to."):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf.update({
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [
+                {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8081,
+                    "ws_token": "secret_ws_t0ken."
+                }, {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8080,
+                    "ws_token": "secret_ws_t0ken."
+                }
+            ]}
+        })
+    with pytest.raises(OperationalException,
+                       match="Producer names must be unique. Duplicate: default"):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf.update({
+        "process_only_new_candles": True,
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [
+                {
+                    "name": "default",
+                    "host": "127.0.0.1",
+                    "port": 8081,
+                    "ws_token": "secret_ws_t0ken."
+                }
+            ]}
+        })
+    validate_config_consistency(conf)
+    assert log_has_re("To receive best performance with external data.*", caplog)
 
 
 def test_load_config_test_comments() -> None:

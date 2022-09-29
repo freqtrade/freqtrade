@@ -267,13 +267,8 @@ class TestCCXTExchange():
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
-    def test_ccxt__async_get_candle_history(self, exchange):
-        exchange, exchangename = exchange
-        # For some weired reason, this test returns random lengths for bittrex.
-        if not exchange._ft_has['ohlcv_has_history'] or exchangename == 'bittrex':
-            return
-        pair = EXCHANGES[exchangename]['pair']
-        timeframe = EXCHANGES[exchangename]['timeframe']
+    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe):
+
         candle_type = CandleType.SPOT
         timeframe_ms = timeframe_to_msecs(timeframe)
         now = timeframe_to_prev_date(
@@ -298,6 +293,24 @@ class TestCCXTExchange():
             candle_count1 = (now.timestamp() * 1000 - since_ms) // timeframe_ms
             assert len(candles) >= min(candle_count, candle_count1)
             assert candles[0][0] == since_ms or (since_ms + timeframe_ms)
+
+    def test_ccxt__async_get_candle_history(self, exchange):
+        exchange, exchangename = exchange
+        # For some weired reason, this test returns random lengths for bittrex.
+        if not exchange._ft_has['ohlcv_has_history'] or exchangename in ('bittrex'):
+            return
+        pair = EXCHANGES[exchangename]['pair']
+        timeframe = EXCHANGES[exchangename]['timeframe']
+        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
+
+    def test_ccxt__async_get_candle_history_futures(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        timeframe = EXCHANGES[exchangename]['timeframe']
+        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
         exchange, exchangename = exchange_futures

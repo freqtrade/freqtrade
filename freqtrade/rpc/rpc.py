@@ -16,7 +16,7 @@ from pandas import DataFrame, NaT
 
 from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
-from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
+from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT, Config
 from freqtrade.data.history import load_data
 from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.enums import (CandleType, ExitCheckTuple, ExitType, SignalDirection, State,
@@ -25,7 +25,7 @@ from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import decimals_per_coin, shorten_date
-from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -58,7 +58,7 @@ class RPCException(Exception):
 
 class RPCHandler:
 
-    def __init__(self, rpc: 'RPC', config: Dict[str, Any]) -> None:
+    def __init__(self, rpc: 'RPC', config: Config) -> None:
         """
         Initializes RPCHandlers
         :param rpc: instance of RPC Helper class
@@ -66,7 +66,7 @@ class RPCHandler:
         :return: None
         """
         self._rpc = rpc
-        self._config: Dict[str, Any] = config
+        self._config: Config = config
 
     @property
     def name(self) -> str:
@@ -96,7 +96,7 @@ class RPC:
         :return: None
         """
         self._freqtrade = freqtrade
-        self._config: Dict[str, Any] = freqtrade.config
+        self._config: Config = freqtrade.config
         if self._config.get('fiat_display_currency'):
             self._fiat_converter = CryptoToFiatConverter()
 
@@ -166,9 +166,9 @@ class RPC:
         else:
             results = []
             for trade in trades:
-                order = None
+                order: Optional[Order] = None
                 if trade.open_order_id:
-                    order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
+                    order = trade.select_order_by_order_id(trade.open_order_id)
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
@@ -219,7 +219,7 @@ class RPC:
                     stoploss_entry_dist=stoploss_entry_dist,
                     stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
                     open_order='({} {} rem={:.8f})'.format(
-                        order['type'], order['side'], order['remaining']
+                        order.order_type, order.side, order.remaining
                     ) if order else None,
                 ))
                 results.append(trade_dict)
@@ -261,11 +261,15 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
+                open_order = (trade.select_order_by_order_id(
+                    trade.open_order_id) if trade.open_order_id else None)
+
                 detail_trade = [
                     f'{trade.id} {direction_str}',
-                    trade.pair + ('*' if (trade.open_order_id is not None
-                                          and trade.close_rate_requested is None) else '')
-                    + ('**' if (trade.close_rate_requested is not None) else ''),
+                    trade.pair + ('*' if (open_order
+                                  and open_order.ft_order_side == trade.entry_side) else '')
+                    + ('**' if (open_order and
+                                open_order.ft_order_side == trade.exit_side is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ]
@@ -769,6 +773,9 @@ class RPC:
             is_short = trade.is_short
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
+        else:
+            if Trade.get_open_trade_count() >= self._config['max_open_trades']:
+                raise RPCException("Maximum number of trades is reached.")
 
         if not stake_amount:
             # gen stake amount
@@ -1035,14 +1042,52 @@ class RPC:
 
     def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
                                 limit: Optional[int]) -> Dict[str, Any]:
+        """ Analyzed dataframe in Dict form """
 
+        _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
+        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
+                                               pair, timeframe, _data, last_analyzed)
+
+    def __rpc_analysed_dataframe_raw(self, pair: str, timeframe: str,
+                                     limit: Optional[int]) -> Tuple[DataFrame, datetime]:
+        """ Get the dataframe and last analyze from the dataprovider """
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
             pair, timeframe)
         _data = _data.copy()
+
         if limit:
             _data = _data.iloc[-limit:]
-        return self._convert_dataframe_to_dict(self._freqtrade.config['strategy'],
-                                               pair, timeframe, _data, last_analyzed)
+        return _data, last_analyzed
+
+    def _ws_all_analysed_dataframes(
+        self,
+        pairlist: List[str],
+        limit: Optional[int]
+    ) -> Dict[str, Any]:
+        """ Get the analysed dataframes of each pair in the pairlist """
+        timeframe = self._freqtrade.config['timeframe']
+        candle_type = self._freqtrade.config.get('candle_type_def', CandleType.SPOT)
+        _data = {}
+
+        for pair in pairlist:
+            dataframe, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
+
+            _data[pair] = {
+                "key": (pair, timeframe, candle_type),
+                "df": dataframe,
+                "la": last_analyzed
+            }
+
+        return _data
+
+    def _ws_request_analyzed_df(self, limit: Optional[int]):
+        """ Historical Analyzed Dataframes for WebSocket """
+        whitelist = self._freqtrade.active_pair_whitelist
+        return self._ws_all_analysed_dataframes(whitelist, limit)
+
+    def _ws_request_whitelist(self):
+        """ Whitelist data for WebSocket """
+        return self._freqtrade.active_pair_whitelist
 
     @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,

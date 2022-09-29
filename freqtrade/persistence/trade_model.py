@@ -65,6 +65,8 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
+    funding_fee = Column(Float, nullable=True)
+
     ft_fee_base = Column(Float, nullable=True)
 
     @property
@@ -73,8 +75,15 @@ class Order(_DECL_BASE):
         return self.order_date.replace(tzinfo=timezone.utc)
 
     @property
+    def order_filled_utc(self) -> Optional[datetime]:
+        """ last order-date with UTC timezoneinfo"""
+        return (
+            self.order_filled_date.replace(tzinfo=timezone.utc) if self.order_filled_date else None
+        )
+
+    @property
     def safe_price(self) -> float:
-        return self.average or self.price
+        return self.average or self.price or self.stop_price
 
     @property
     def safe_filled(self) -> float:
@@ -119,6 +128,10 @@ class Order(_DECL_BASE):
         self.ft_is_open = True
         if self.status in NON_OPEN_EXCHANGE_STATES:
             self.ft_is_open = False
+            if self.trade:
+                # Assign funding fee up to this point
+                # (represents the funding fee since the last order)
+                self.funding_fee = self.trade.funding_fees
             if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
@@ -179,6 +192,10 @@ class Order(_DECL_BASE):
         self.remaining = 0
         self.status = 'closed'
         self.ft_is_open = False
+        # Assign funding fees to Order.
+        # Assumes backtesting will use date_last_filled_utc to calculate future funding fees.
+        self.funding_fee = trade.funding_fees
+
         if (self.ft_order_side == trade.entry_side):
             trade.open_rate = self.price
             trade.recalc_trade_from_orders()
@@ -347,8 +364,23 @@ class LocalTrade():
             return self.amount
 
     @property
+    def date_last_filled_utc(self) -> datetime:
+        """ Date of the last filled order"""
+        orders = self.select_filled_orders()
+        if not orders:
+            return self.open_date_utc
+        return max([self.open_date_utc,
+                    max(o.order_filled_utc for o in orders if o.order_filled_utc)])
+
+    @property
     def open_date_utc(self):
         return self.open_date.replace(tzinfo=timezone.utc)
+
+    @property
+    def stoploss_last_update_utc(self):
+        if self.stoploss_last_update:
+            return self.stoploss_last_update.replace(tzinfo=timezone.utc)
+        return None
 
     @property
     def close_date_utc(self):
@@ -534,7 +566,6 @@ class LocalTrade():
         self.stop_loss = stop_loss_norm
 
         self.stop_loss_pct = -1 * abs(percent)
-        self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False, refresh: bool = False) -> None:
@@ -648,7 +679,6 @@ class LocalTrade():
         """
         self.close_rate = rate
         self.close_date = self.close_date or datetime.utcnow()
-        self.close_profit_abs = self.calc_profit(rate) + self.realized_profit
         self.is_open = False
         self.exit_order_status = 'closed'
         self.open_order_id = None
@@ -844,10 +874,14 @@ class LocalTrade():
         close_profit = 0.0
         close_profit_abs = 0.0
         profit = None
-        for o in self.orders:
+        # Reset funding fees
+        self.funding_fees = 0.0
+        funding_fees = 0.0
+        ordercount = len(self.orders) - 1
+        for i, o in enumerate(self.orders):
             if o.ft_is_open or not o.filled:
                 continue
-
+            funding_fees += (o.funding_fee or 0.0)
             tmp_amount = FtPrecise(o.safe_amount_after_fee)
             tmp_price = FtPrecise(o.safe_price)
 
@@ -862,7 +896,11 @@ class LocalTrade():
                     avg_price = current_stake / current_amount
 
             if is_exit:
-                # Process partial exits
+                # Process exits
+                if i == ordercount and is_closing:
+                    # Apply funding fees only to the last closing order
+                    self.funding_fees = funding_fees
+
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
                 profit = self.calc_profit(rate=exit_rate, amount=exit_amount,
@@ -872,6 +910,7 @@ class LocalTrade():
                     exit_rate, amount=exit_amount, open_rate=avg_price)
             else:
                 total_stake = total_stake + self._calc_open_trade_value(tmp_amount, price)
+        self.funding_fees = funding_fees
 
         if close_profit:
             self.close_profit = close_profit

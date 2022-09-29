@@ -1,4 +1,3 @@
-from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -269,14 +268,14 @@ def test_create_cum_profit(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
+    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 8.723007518796964e-06
 
 
 def test_create_cum_profit1(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
-    bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
+    bt_data['close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="TRX/BTC", timeframe='5m',
@@ -287,7 +286,7 @@ def test_create_cum_profit1(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
+    assert pytest.approx(cum_profits.iloc[-1]['cum_profits']) == 8.723007518796964e-06
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],
