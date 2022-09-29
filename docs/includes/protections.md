@@ -25,7 +25,7 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 * [`MaxDrawdown`](#maxdrawdown) Stop trading if max-drawdown is reached.
 * [`LowProfitPairs`](#low-profit-pairs) Lock pairs with low profits
 * [`CooldownPeriod`](#cooldown-period) Don't enter a trade right after selling a trade.
-* [`ProfitLimit`](#profitlimit) Stop trading once a set profit limit is reached
+* [`ProfitLimit`](#profit-limit) Stop trading once a set profit limit is reached
 
 
 ### Common settings to all Protections
