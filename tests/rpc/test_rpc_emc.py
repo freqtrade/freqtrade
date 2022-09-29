@@ -276,6 +276,8 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
 
 
 async def test_emc_receive_messages_valid(default_conf, caplog, mocker):
+    caplog.set_level(logging.DEBUG)
+
     default_conf.update({
         "external_message_consumer": {
             "enabled": True,
