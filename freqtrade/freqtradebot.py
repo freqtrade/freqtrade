@@ -597,7 +597,7 @@ class FreqtradeBot(LoggingMixin):
             # We should decrease our position
             amount = self.exchange.amount_to_contract_precision(
                 trade.pair,
-                abs(float(FtPrecise(stake_amount) / FtPrecise(current_exit_rate))))
+                abs(float(FtPrecise(stake_amount * trade.leverage) / FtPrecise(current_exit_rate))))
             if amount > trade.amount:
                 # This is currently ineffective as remaining would become < min tradable
                 # Fixing this would require checking for 0.0 there -
