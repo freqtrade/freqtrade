@@ -134,7 +134,8 @@ class FreqaiDataKitchen:
         """
         feat_dict = self.freqai_config["feature_parameters"]
 
-        shuffle = self.freqai_config.get('data_split_parameters', {}).get('shuffle', False)
+        if 'shuffle' not in self.freqai_config['data_split_parameters']:
+            self.freqai_config["data_split_parameters"].update({'shuffle': False})
 
         weights: npt.ArrayLike
         if feat_dict.get("weight_factor", 0) > 0:
@@ -154,7 +155,6 @@ class FreqaiDataKitchen:
                 filtered_dataframe[: filtered_dataframe.shape[0]],
                 labels,
                 weights,
-                shuffle=shuffle,
                 **self.config["freqai"]["data_split_parameters"],
             )
         else:

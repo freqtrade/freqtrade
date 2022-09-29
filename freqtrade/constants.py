@@ -567,6 +567,7 @@ CONF_SCHEMA = {
                     "properties": {
                         "test_size": {"type": "number"},
                         "random_state": {"type": "integer"},
+                        "shuffle": {"type": "boolean", "default": False}
                     },
                 },
                 "model_training_parameters": {
