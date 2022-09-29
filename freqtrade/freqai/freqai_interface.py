@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import psutil
 from numpy.typing import NDArray
 from pandas import DataFrame
 
@@ -96,6 +97,7 @@ class IFreqaiModel(ABC):
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
         self.strategy: Optional[IStrategy] = None
+        self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
     def __getstate__(self):
         """
@@ -158,6 +160,13 @@ class IFreqaiModel(ABC):
         self.model = None
         self.dk = None
 
+    def _on_stop(self):
+        """
+        Callback for Subclasses to override to include logic for shutting down resources
+        when SIGINT is sent.
+        """
+        return
+
     def shutdown(self):
         """
         Cleans up threads on Shutdown, set stop event. Join threads to wait
@@ -165,6 +174,8 @@ class IFreqaiModel(ABC):
         """
         logger.info("Stopping FreqAI")
         self._stop_event.set()
+
+        self._on_stop()
 
         logger.info("Waiting on Training iteration")
         for _thread in self._threads:

@@ -39,7 +39,9 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
     def __init__(self, **kwargs):
         super().__init__(config=kwargs['config'])
-        th.set_num_threads(self.freqai_info['rl_config'].get('thread_count', 4))
+        self.max_threads = min(self.freqai_info['rl_config'].get(
+            'cpu_count', 1), max(int(self.max_system_threads / 2), 1))
+        th.set_num_threads(self.max_threads)
         self.reward_params = self.freqai_info['rl_config']['model_reward_parameters']
         self.train_env: Union[SubprocVecEnv, gym.Env] = None
         self.eval_env: Union[SubprocVecEnv, gym.Env] = None
