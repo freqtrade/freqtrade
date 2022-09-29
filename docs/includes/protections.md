@@ -25,6 +25,8 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 * [`MaxDrawdown`](#maxdrawdown) Stop trading if max-drawdown is reached.
 * [`LowProfitPairs`](#low-profit-pairs) Lock pairs with low profits
 * [`CooldownPeriod`](#cooldown-period) Don't enter a trade right after selling a trade.
+* [`ProfitLimit`](#profitlimit) Stop trading once a set profit limit is reached
+
 
 ### Common settings to all Protections
 
@@ -139,6 +141,27 @@ def protections(self):
     This Protection applies only at pair-level, and will never lock all pairs globally.
     This Protection does not consider `lookback_period` as it only looks at the latest trade.
 
+#### Profit Limit
+
+`ProfitLimit` uses all trades for a pair within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the overall profit ratio.
+If that ratio is greater than `profit_limit`, all pairs will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
+
+The below example will stop trading a pair for 180 minutes if the total profit from all trades reaches 1% (and a minimum of 3 trades) within the last 6 candles.
+
+``` python
+@property
+def protections(self):
+    return [
+        {
+            "method": "ProfitLimit",
+            "lookback_period_candles": 6,
+            "trade_limit": 3,
+            "stop_duration": 180,
+            "profit_limit": 0.01
+        }
+    ]
+```
+
 ### Full example of Protections
 
 All protections can be combined at will, also with different parameters, creating a increasing wall for under-performing pairs.
@@ -151,6 +174,7 @@ The below example assumes a timeframe of 1 hour:
 * Stops trading if more than 4 stoploss occur for all pairs within a 1 day (`24 * 1h candles`) limit (`StoplossGuard`).
 * Locks all pairs that had 4 Trades within the last 6 hours (`6 * 1h candles`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
 * Locks all pairs for 2 candles that had a profit of below 0.01 (<1%) within the last 24h (`24 * 1h candles`), a minimum of 4 trades.
+* Locks all pairs for 360 minutes once a profit of 0.02 (2%) is achieved within the last 800 candles , a minimum of 2 trades.
 
 ``` python
 from freqtrade.strategy import IStrategy
@@ -192,6 +216,13 @@ class AwesomeStrategy(IStrategy)
                 "trade_limit": 4,
                 "stop_duration_candles": 2,
                 "required_profit": 0.01
+            },
+            {
+                "method": "ProfitLimit",
+                "lookback_period_candles": 800,
+                "trade_limit": 2,
+                "stop_duration": 360,
+                "profit_limit": 0.02
             }
         ]
     # ...
