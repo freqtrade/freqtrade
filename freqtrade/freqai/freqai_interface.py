@@ -97,7 +97,7 @@ class IFreqaiModel(ABC):
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
         self.strategy: Optional[IStrategy] = None
-        self.max_system_threads = int(psutil.cpu_count() * 2 - 2)
+        self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
     def __getstate__(self):
         """
