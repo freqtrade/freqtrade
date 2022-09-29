@@ -67,7 +67,7 @@ class RPCManager:
             'status': 'stopping bot'
         }
         """
-        if msg.get('type') is not RPCMessageType.ANALYZED_DF:
+        if msg.get('type') not in (RPCMessageType.ANALYZED_DF, RPCMessageType.WHITELIST):
             logger.info('Sending rpc message: %s', msg)
         if 'pair' in msg:
             msg.update({
