@@ -1,4 +1,3 @@
-
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -21,7 +20,7 @@ class ProfitLimit(IProtection):
         
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._required_profit = protection_config.get('profit_limit', 1.0)
-
+        
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
