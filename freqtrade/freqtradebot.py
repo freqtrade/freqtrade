@@ -1692,11 +1692,6 @@ class FreqtradeBot(LoggingMixin):
             'stake_amount': trade.stake_amount,
         }
 
-        if 'fiat_display_currency' in self.config:
-            msg.update({
-                'fiat_currency': self.config['fiat_display_currency'],
-            })
-
         # Send the message
         self.rpc.send_msg(msg)
 
