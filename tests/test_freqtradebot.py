@@ -2661,6 +2661,7 @@ def test_manage_open_orders_exit_usercustom(
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_min_pair_stake_amount', return_value=0.0)
     et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -2744,7 +2745,8 @@ def test_manage_open_orders_exit(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
         fetch_order=MagicMock(return_value=limit_sell_order_old),
-        cancel_order=cancel_order_mock
+        cancel_order=cancel_order_mock,
+        get_min_pair_stake_amount=MagicMock(return_value=0),
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
 
@@ -3117,20 +3119,21 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         amount=2,
         exchange='binance',
         open_rate=0.245441,
-        open_order_id="123456",
+        open_order_id="sell_123456",
         open_date=arrow.utcnow().shift(days=-2).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         close_rate=0.555,
         close_date=arrow.utcnow().datetime,
         exit_reason="sell_reason_whatever",
+        stake_amount=0.245441 * 2,
     )
     trade.orders = [
-         Order(
+        Order(
             ft_order_side='buy',
             ft_pair=trade.pair,
-            ft_is_open=True,
-            order_id='123456',
+            ft_is_open=False,
+            order_id='buy_123456',
             status="closed",
             symbol=trade.pair,
             order_type="market",
@@ -3143,15 +3146,33 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
             order_date=trade.open_date,
             order_filled_date=trade.open_date,
              ),
+        Order(
+            ft_order_side='sell',
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id='sell_123456',
+            status="open",
+            symbol=trade.pair,
+            order_type="limit",
+            side="sell",
+            price=trade.open_rate,
+            average=trade.open_rate,
+            filled=0.0,
+            remaining=trade.amount,
+            cost=trade.open_rate * trade.amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+             ),
     ]
-    order = {'id': "123456",
+    order = {'id': "sell_123456",
              'remaining': 1,
              'amount': 1,
              'status': "open"}
     reason = CANCEL_REASON['TIMEOUT']
+    send_msg_mock.reset_mock()
     assert freqtrade.handle_cancel_exit(trade, order, reason)
     assert cancel_order_mock.call_count == 1
-    assert send_msg_mock.call_count == 2
+    assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
     assert trade.exit_reason is None
 
@@ -3177,8 +3198,9 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
 def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch(
-        'freqtrade.exchange.Exchange.cancel_order_with_result', side_effect=InvalidOrderException())
+    mocker.patch('freqtrade.exchange.Exchange.get_min_pair_stake_amount', return_value=0.0)
+    mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result',
+                 side_effect=InvalidOrderException())
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
