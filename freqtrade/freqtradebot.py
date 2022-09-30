@@ -1420,18 +1420,15 @@ class FreqtradeBot(LoggingMixin):
                 reason = constants.CANCEL_REASON['PARTIALLY_FILLED']
                 if minstake and filled_rem_stake < minstake:
                     logger.warning(
-                        f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
-                        f"as the filled amount of {filled_val} would result in an unexitable trade.")
+                        f"Order {trade.open_order_id} for {trade.pair} not cancelled, as "
+                        f"the filled amount of {filled_val} would result in an unexitable trade.")
                     reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
 
-                    order_obj = trade.select_order_by_order_id(order['id'])
-                    if not order_obj:
-                        raise DependencyException(
-                            f"Order_obj not found for {order['id']}. This should not have happened.")
                     self._notify_exit_cancel(
                         trade,
                         order_type=self.strategy.order_types['exit'],
-                        reason=reason, order=order_obj, sub_trade=trade.amount != order['amount']
+                        reason=reason, order_id=order['id'],
+                        sub_trade=trade.amount != order['amount']
                     )
                     return False
 
@@ -1459,16 +1456,11 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, order)
 
         self.wallets.update()
-        order_obj = trade.select_order_by_order_id(order['id'])
-        if not order_obj:
-            raise DependencyException(
-                f"Order_obj not found for {order['id']}. This should not have happened.")
 
-        sub_trade = order_obj.amount != trade.amount
         self._notify_exit_cancel(
             trade,
             order_type=self.strategy.order_types['exit'],
-            reason=reason, order=order_obj, sub_trade=sub_trade
+            reason=reason, order_id=order['id'], sub_trade=trade.amount != order['amount']
         )
         return cancelled
 
@@ -1665,7 +1657,7 @@ class FreqtradeBot(LoggingMixin):
         self.rpc.send_msg(msg)
 
     def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str,
-                            order: Order, sub_trade: bool = False) -> None:
+                            order_id: str, sub_trade: bool = False) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
@@ -1673,6 +1665,11 @@ class FreqtradeBot(LoggingMixin):
             return
         else:
             trade.exit_order_status = reason
+
+        order = trade.select_order_by_order_id(order_id)
+        if not order:
+            raise DependencyException(
+                f"Order_obj not found for {order_id}. This should not have happened.")
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
