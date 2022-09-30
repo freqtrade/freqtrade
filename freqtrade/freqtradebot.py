@@ -82,7 +82,10 @@ class FreqtradeBot(LoggingMixin):
         # Keep this at the end of this initialization method.
         self.rpc: RPCManager = RPCManager(self)
 
-        self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists, self.rpc)
+        self.dataprovider = DataProvider(self.config, self.exchange, rpc=self.rpc)
+        self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
+
+        self.dataprovider.add_pairlisthandler(self.pairlists)
 
         # Attach Dataprovider to strategy instance
         self.strategy.dp = self.dataprovider

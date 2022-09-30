@@ -9,6 +9,7 @@ import pytest
 import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
+from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
@@ -40,6 +41,12 @@ def whitelist_conf(default_conf):
             "sort_key": "quoteVolume",
         },
     ]
+    default_conf.update({
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [],
+        }
+    })
     return default_conf
 
 
@@ -126,7 +133,7 @@ def test_log_cached(mocker, static_pl_conf, markets, tickers):
 def test_load_pairlist_noexist(mocker, markets, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    plm = PairListManager(freqtrade.exchange, default_conf)
+    plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     with pytest.raises(OperationalException,
                        match=r"Impossible to load Pairlist 'NonexistingPairList'. "
                              r"This class does not exist or contains Python code errors."):
@@ -137,7 +144,7 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
 def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
-    plm = PairListManager(freqtrade.exchange, default_conf)
+    plm = PairListManager(freqtrade.exchange, default_conf, MagicMock())
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)
     assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
@@ -269,7 +276,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     with pytest.raises(OperationalException,
                        match=r'`number_assets` not specified. Please check your configuration '
                              r'for "pairlist.config.number_assets"'):
-        PairListManager(freqtrade.exchange, whitelist_conf)
+        PairListManager(freqtrade.exchange, whitelist_conf, MagicMock())
 
 
 def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_conf_2):
@@ -694,7 +701,7 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
 
     with pytest.raises(OperationalException,
                        match=r"PrecisionFilter can only work with stoploss defined\..*"):
-        PairListManager(MagicMock, whitelist_conf)
+        PairListManager(MagicMock, whitelist_conf, MagicMock())
 
 
 def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
@@ -703,7 +710,7 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
         del Trade.query
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
-    pm = PairListManager(exchange, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf, MagicMock())
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
@@ -1167,6 +1174,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      "[{'OffsetFilter': 'OffsetFilter - Taking 10 Pairs, starting from 5.'}]",
      None
      ),
+    ({"method": "ProducerPairList"},
+     "[{'ProducerPairList': 'ProducerPairList - default'}]",
+     None
+     ),
 ])
 def test_pricefilter_desc(mocker, whitelist_conf, markets, pairlistconfig,
                           desc_expected, exception_expected):
@@ -1341,3 +1352,77 @@ def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
             expand_pairlist(wildcardlist, pairs, keep_invalid=True)
     else:
         assert sorted(expand_pairlist(wildcardlist, pairs, keep_invalid=True)) == sorted(expected)
+
+
+def test_ProducerPairlist_no_emc(mocker, whitelist_conf):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    whitelist_conf['pairlists'] = [
+        {
+            "method": "ProducerPairList",
+            "number_assets": 10,
+            "producer_name": "hello_world",
+        }
+    ]
+    del whitelist_conf['external_message_consumer']
+
+    with pytest.raises(OperationalException,
+                       match=r"ProducerPairList requires external_message_consumer to be enabled."):
+        get_patched_freqtradebot(mocker, whitelist_conf)
+
+
+def test_ProducerPairlist(mocker, whitelist_conf, markets):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          )
+    whitelist_conf['pairlists'] = [
+        {
+            "method": "ProducerPairList",
+            "number_assets": 2,
+            "producer_name": "hello_world",
+        }
+    ]
+    whitelist_conf.update({
+        "external_message_consumer": {
+            "enabled": True,
+            "producers": [
+                {
+                    "name": "hello_world",
+                    "host": "null",
+                    "port": 9891,
+                    "ws_token": "dummy",
+                }
+            ]
+        }
+    })
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    dp = DataProvider(whitelist_conf, exchange, None)
+    pairs = ['ETH/BTC', 'LTC/BTC', 'XRP/BTC']
+    # different producer
+    dp._set_producer_pairs(pairs + ['MEEP/USDT'], 'default')
+    pm = PairListManager(exchange, whitelist_conf, dp)
+    pm.refresh_pairlist()
+    assert pm.whitelist == []
+    # proper producer
+    dp._set_producer_pairs(pairs, 'hello_world')
+    pm.refresh_pairlist()
+
+    # Pairlist reduced to 2
+    assert pm.whitelist == pairs[:2]
+    assert len(pm.whitelist) == 2
+    whitelist_conf['exchange']['pair_whitelist'] = ['TKN/BTC']
+
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {
+            "method": "ProducerPairList",
+            "producer_name": "hello_world",
+        }
+    ]
+    pm = PairListManager(exchange, whitelist_conf, dp)
+    pm.refresh_pairlist()
+    assert len(pm.whitelist) == 4
+    assert pm.whitelist == ['TKN/BTC'] + pairs
