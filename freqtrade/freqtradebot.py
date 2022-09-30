@@ -1446,8 +1446,10 @@ class FreqtradeBot(LoggingMixin):
             trade.close_rate_requested = None
             trade.close_profit = None
             trade.close_profit_abs = None
-            trade.exit_reason = None
+            # Set exit_reason for fill message
+            trade.exit_reason = trade.exit_reason + f", {reason}" if trade.exit_reason else reason
             self.update_trade_state(trade, trade.open_order_id, co)
+            trade.exit_reason = None
 
             logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
             cancelled = True
