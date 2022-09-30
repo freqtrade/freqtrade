@@ -434,6 +434,10 @@ class IFreqaiModel(ABC):
             feature_list = dk.data["training_features_list_raw"]
         else:
             feature_list = dk.data['training_features_list']
+
+        if self.ft_params.get('principal_component_analysis', False):
+            feature_list = dk.data['training_features_list']
+
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
