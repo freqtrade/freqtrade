@@ -1409,37 +1409,41 @@ class FreqtradeBot(LoggingMixin):
         :return: True if exit order was cancelled, false otherwise
         """
         cancelled = False
-        # if trade is not partially completed, just cancel the order
-        if order['remaining'] == order['amount'] or order.get('filled') == 0.0:
-            if not self.exchange.check_order_canceled_empty(order):
-                try:
-                    # if trade is not partially completed, just delete the order
-                    co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
-                                                                trade.amount)
-                    trade.update_order(co)
-                except InvalidOrderException:
-                    logger.exception(
-                        f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
-                    return False
-                logger.info('%s order %s for %s.', trade.exit_side.capitalize(), reason, trade)
-            else:
-                reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
-                logger.info('%s order %s for %s.', trade.exit_side.capitalize(), reason, trade)
-                trade.update_order(order)
+        # Cancelled orders may have the status of 'canceled' or 'closed'
+        if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
+            filled_val: float = order.get('filled', 0.0) or 0.0
+            filled_rem_stake = trade.stake_amount - filled_val * trade.open_rate
+            minstake = self.exchange.get_min_pair_stake_amount(
+                trade.pair, trade.open_rate, self.strategy.stoploss)
+            # Double-check remaining amount
+            if filled_val > 0 and minstake and filled_rem_stake < minstake:
+                logger.warning(
+                    f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
+                    f"as the filled amount of {filled_val} would result in an unexitable trade.")
+                return False
 
+            try:
+                co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                            trade.amount)
+            except InvalidOrderException:
+                logger.exception(
+                    f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
+                return False
             trade.close_rate = None
             trade.close_rate_requested = None
             trade.close_profit = None
             trade.close_profit_abs = None
-            trade.open_order_id = None
             trade.exit_reason = None
-            cancelled = True
-            self.wallets.update()
-        else:
-            # TODO: figure out how to handle partially complete sell orders
-            reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
-            cancelled = False
+            self.update_trade_state(trade, trade.open_order_id, co)
 
+            logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
+            cancelled = True
+        else:
+            reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
+            logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
+            self.update_trade_state(trade, trade.open_order_id, order)
+
+        self.wallets.update()
         order_obj = trade.select_order_by_order_id(order['id'])
         if not order_obj:
             raise DependencyException(
