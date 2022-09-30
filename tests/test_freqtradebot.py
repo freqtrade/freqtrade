@@ -3111,6 +3111,9 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
         cancel_order=cancel_order_mock,
     )
     mocker.patch('freqtrade.exchange.Exchange.get_rate', return_value=0.245441)
+    mocker.patch('freqtrade.exchange.Exchange.get_min_pair_stake_amount', return_value=0.2)
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_order_fee')
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
@@ -3178,7 +3181,9 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
 
     send_msg_mock.reset_mock()
 
+    # Partial exit - below exit threshold
     order['amount'] = 2
+    order['filled'] = 1.9
     assert not freqtrade.handle_cancel_exit(trade, order, reason)
     # Assert cancel_order was not called (callcount remains unchanged)
     assert cancel_order_mock.call_count == 1
@@ -3188,11 +3193,20 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
 
     assert not freqtrade.handle_cancel_exit(trade, order, reason)
 
-    send_msg_mock.call_args_list[0][0][0]['reason'] = CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+    assert (send_msg_mock.call_args_list[0][0][0]['reason']
+            == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN'])
 
     # Message should not be iterated again
     assert trade.exit_order_status == CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
     assert send_msg_mock.call_count == 1
+
+    send_msg_mock.reset_mock()
+
+    order['filled'] = 1
+    assert freqtrade.handle_cancel_exit(trade, order, reason)
+    assert send_msg_mock.call_count == 1
+    assert (send_msg_mock.call_args_list[0][0][0]['reason']
+            == CANCEL_REASON['PARTIALLY_FILLED'])
 
 
 def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:

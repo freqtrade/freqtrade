@@ -1416,11 +1416,24 @@ class FreqtradeBot(LoggingMixin):
             minstake = self.exchange.get_min_pair_stake_amount(
                 trade.pair, trade.open_rate, self.strategy.stoploss)
             # Double-check remaining amount
-            if filled_val > 0 and minstake and filled_rem_stake < minstake:
-                logger.warning(
-                    f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
-                    f"as the filled amount of {filled_val} would result in an unexitable trade.")
-                return False
+            if filled_val > 0:
+                reason = constants.CANCEL_REASON['PARTIALLY_FILLED']
+                if minstake and filled_rem_stake < minstake:
+                    logger.warning(
+                        f"Order {trade.open_order_id} for {trade.pair} not cancelled, "
+                        f"as the filled amount of {filled_val} would result in an unexitable trade.")
+                    reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
+
+                    order_obj = trade.select_order_by_order_id(order['id'])
+                    if not order_obj:
+                        raise DependencyException(
+                            f"Order_obj not found for {order['id']}. This should not have happened.")
+                    self._notify_exit_cancel(
+                        trade,
+                        order_type=self.strategy.order_types['exit'],
+                        reason=reason, order=order_obj, sub_trade=trade.amount != order['amount']
+                    )
+                    return False
 
             try:
                 co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
