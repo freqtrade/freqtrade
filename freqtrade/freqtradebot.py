@@ -1343,11 +1343,12 @@ class FreqtradeBot(LoggingMixin):
             replacing: Optional[bool] = False
     ) -> bool:
         """
-        Buy cancel - cancel order
+        entry cancel - cancel order
         :param replacing: Replacing order - prevent trade deletion.
         :return: True if order was fully cancelled
         """
         was_trade_fully_canceled = False
+        side = trade.entry_side.capitalize()
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
         if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
@@ -1374,7 +1375,6 @@ class FreqtradeBot(LoggingMixin):
             corder = order
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
 
-        side = trade.entry_side.capitalize()
         logger.info('%s order %s for %s.', side, reason, trade)
 
         # Using filled to determine the filled amount
@@ -1388,15 +1388,12 @@ class FreqtradeBot(LoggingMixin):
                 was_trade_fully_canceled = True
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
             else:
-                # FIXME TODO: This could possibly reworked to not duplicate the code 15 lines below.
                 self.update_trade_state(trade, trade.open_order_id, corder)
                 trade.open_order_id = None
                 logger.info(f'{side} Order timeout for {trade}.')
         else:
             # update_trade_state (and subsequently recalc_trade_from_orders) will handle updates
             # to the trade object
-            trade.amount = filled_amount
-
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None

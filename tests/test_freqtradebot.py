@@ -2998,6 +2998,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     trade.open_rate = 200
     trade.is_short = False
     trade.entry_side = "buy"
+    trade.amount = 100
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     trade.nr_of_successful_entries = 0
@@ -3086,6 +3087,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     trade.entry_side = "buy"
     trade.open_order_id = "open_order_noop"
     trade.nr_of_successful_entries = 0
+    trade.amount = 100
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
