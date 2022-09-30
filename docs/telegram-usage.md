@@ -82,6 +82,8 @@ Example configuration showing the different settings:
         "warning": "on",
         "startup": "off",
         "entry": "silent",
+        "entry_fill": "on",
+        "entry_cancel": "silent",
         "exit": {
             "roi": "silent",
             "emergency_exit": "on",
@@ -93,9 +95,7 @@ Example configuration showing the different settings:
             "custom_exit": "silent",
             "partial_exit": "on"
         },
-        "entry_cancel": "silent",
         "exit_cancel": "on",
-        "entry_fill": "off",
         "exit_fill": "off",
         "protection_trigger": "off",
         "protection_trigger_global": "on",

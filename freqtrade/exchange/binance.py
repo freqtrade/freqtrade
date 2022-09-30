@@ -1,5 +1,4 @@
 """ Binance exchange subclass """
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, json_load
 
 
 logger = logging.getLogger(__name__)
@@ -200,7 +199,7 @@ class Binance(Exchange):
                     Path(__file__).parent / 'binance_leverage_tiers.json'
                 )
                 with open(leverage_tiers_path) as json_file:
-                    return json.load(json_file)
+                    return json_load(json_file)
             else:
                 try:
                     return self._api.fetch_leverage_tiers()

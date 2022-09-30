@@ -36,24 +36,24 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     """
     fallback = 'full'
     indicators = render_template_with_fallback(
-        templatefile=f"subtemplates/indicators_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/indicators_{fallback}.j2",
+        templatefile=f"strategy_subtemplates/indicators_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/indicators_{fallback}.j2",
     )
     buy_trend = render_template_with_fallback(
-        templatefile=f"subtemplates/buy_trend_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/buy_trend_{fallback}.j2",
+        templatefile=f"strategy_subtemplates/buy_trend_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/buy_trend_{fallback}.j2",
     )
     sell_trend = render_template_with_fallback(
-        templatefile=f"subtemplates/sell_trend_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/sell_trend_{fallback}.j2",
+        templatefile=f"strategy_subtemplates/sell_trend_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/sell_trend_{fallback}.j2",
     )
     plot_config = render_template_with_fallback(
-        templatefile=f"subtemplates/plot_config_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/plot_config_{fallback}.j2",
+        templatefile=f"strategy_subtemplates/plot_config_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/plot_config_{fallback}.j2",
     )
     additional_methods = render_template_with_fallback(
-        templatefile=f"subtemplates/strategy_methods_{subtemplate}.j2",
-        templatefallbackfile="subtemplates/strategy_methods_empty.j2",
+        templatefile=f"strategy_subtemplates/strategy_methods_{subtemplate}.j2",
+        templatefallbackfile="strategy_subtemplates/strategy_methods_empty.j2",
     )
 
     strategy_text = render_template(templatefile='base_strategy.py.j2',

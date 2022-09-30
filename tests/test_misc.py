@@ -7,10 +7,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.misc import (decimals_per_coin, deep_merge_dicts, file_dump_json, file_load_json,
-                            format_ms_time, pair_to_filename, parse_db_uri_for_logging, plural,
-                            render_template, render_template_with_fallback, round_coin_value,
-                            safe_value_fallback, safe_value_fallback2, shorten_date)
+from freqtrade.misc import (dataframe_to_json, decimals_per_coin, deep_merge_dicts, file_dump_json,
+                            file_load_json, format_ms_time, json_to_dataframe, pair_to_filename,
+                            parse_db_uri_for_logging, plural, render_template,
+                            render_template_with_fallback, round_coin_value, safe_value_fallback,
+                            safe_value_fallback2, shorten_date)
 
 
 def test_decimals_per_coin():
@@ -184,8 +185,8 @@ def test_render_template_fallback(mocker):
             templatefile='subtemplates/indicators_does-not-exist.j2',)
 
     val = render_template_with_fallback(
-        templatefile='subtemplates/indicators_does-not-exist.j2',
-        templatefallbackfile='subtemplates/indicators_minimal.j2',
+        templatefile='strategy_subtemplates/indicators_does-not-exist.j2',
+        templatefallbackfile='strategy_subtemplates/indicators_minimal.j2',
     )
     assert isinstance(val, str)
     assert 'if self.dp' in val
@@ -219,3 +220,14 @@ def test_deep_merge_dicts():
 
     res2['first']['rows']['test'] = 'asdf'
     assert deep_merge_dicts(a, deepcopy(b), allow_null_overrides=False) == res2
+
+
+def test_dataframe_json(ohlcv_history):
+    from pandas.testing import assert_frame_equal
+    json = dataframe_to_json(ohlcv_history)
+    dataframe = json_to_dataframe(json)
+
+    assert list(ohlcv_history.columns) == list(dataframe.columns)
+    assert len(ohlcv_history) == len(dataframe)
+
+    assert_frame_equal(ohlcv_history, dataframe)

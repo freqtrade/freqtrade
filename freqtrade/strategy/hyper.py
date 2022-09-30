@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple, Type, Union
 
+from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
@@ -21,7 +22,7 @@ class HyperStrategyMixin:
      strategy logic.
     """
 
-    def __init__(self, config: Dict[str, Any], *args, **kwargs):
+    def __init__(self, config: Config, *args, **kwargs):
         """
         Initialize hyperoptable strategy mixin.
         """

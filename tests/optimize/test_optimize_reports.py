@@ -1,6 +1,7 @@
 import re
 from datetime import timedelta
 from pathlib import Path
+from shutil import copyfile
 
 import joblib
 import pandas as pd
@@ -25,7 +26,22 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from tests.conftest import CURRENT_TEST_STRATEGY
-from tests.data.test_history import _backup_file, _clean_test_file
+from tests.data.test_history import _clean_test_file
+
+
+def _backup_file(file: Path, copy_file: bool = False) -> None:
+    """
+    Backup existing file to avoid deleting the user file
+    :param file: complete path to the file
+    :param copy_file: keep file in place too.
+    :return: None
+    """
+    file_swp = str(file) + '.swp'
+    if file.is_file():
+        file.rename(file_swp)
+
+        if copy_file:
+            copyfile(file_swp, file)
 
 
 def test_text_table_bt_results():

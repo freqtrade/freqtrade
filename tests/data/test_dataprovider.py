@@ -144,6 +144,77 @@ def test_available_pairs(mocker, default_conf, ohlcv_history):
     assert dp.available_pairs == [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe), ]
 
 
+def test_producer_pairs(mocker, default_conf, ohlcv_history):
+    dataprovider = DataProvider(default_conf, None)
+
+    producer = "default"
+    whitelist = ["XRP/BTC", "ETH/BTC"]
+    assert len(dataprovider.get_producer_pairs(producer)) == 0
+
+    dataprovider._set_producer_pairs(whitelist, producer)
+    assert len(dataprovider.get_producer_pairs(producer)) == 2
+
+    new_whitelist = ["BTC/USDT"]
+    dataprovider._set_producer_pairs(new_whitelist, producer)
+    assert dataprovider.get_producer_pairs(producer) == new_whitelist
+
+    assert dataprovider.get_producer_pairs("bad") == []
+
+
+def test_get_producer_df(mocker, default_conf, ohlcv_history):
+    dataprovider = DataProvider(default_conf, None)
+
+    pair = 'BTC/USDT'
+    timeframe = default_conf['timeframe']
+    candle_type = CandleType.SPOT
+
+    empty_la = datetime.fromtimestamp(0, tz=timezone.utc)
+    now = datetime.now(timezone.utc)
+
+    # no data has been added, any request should return an empty dataframe
+    dataframe, la = dataprovider.get_producer_df(pair, timeframe, candle_type)
+    assert dataframe.empty
+    assert la == empty_la
+
+    # the data is added, should return that added dataframe
+    dataprovider._add_external_df(pair, ohlcv_history, now, timeframe, candle_type)
+    dataframe, la = dataprovider.get_producer_df(pair, timeframe, candle_type)
+    assert len(dataframe) > 0
+    assert la > empty_la
+
+    # no data on this producer, should return empty dataframe
+    dataframe, la = dataprovider.get_producer_df(pair, producer_name='bad')
+    assert dataframe.empty
+    assert la == empty_la
+
+    # non existent timeframe, empty dataframe
+    datframe, la = dataprovider.get_producer_df(pair, timeframe='1h')
+    assert dataframe.empty
+    assert la == empty_la
+
+
+def test_emit_df(mocker, default_conf, ohlcv_history):
+    mocker.patch('freqtrade.rpc.rpc_manager.RPCManager.__init__', MagicMock())
+    rpc_mock = mocker.patch('freqtrade.rpc.rpc_manager.RPCManager', MagicMock())
+    send_mock = mocker.patch('freqtrade.rpc.rpc_manager.RPCManager.send_msg', MagicMock())
+
+    dataprovider = DataProvider(default_conf, exchange=None, rpc=rpc_mock)
+    dataprovider_no_rpc = DataProvider(default_conf, exchange=None)
+
+    pair = "BTC/USDT"
+
+    # No emit yet
+    assert send_mock.call_count == 0
+
+    # Rpc is added, we call emit, should call send_msg
+    dataprovider._emit_df(pair, ohlcv_history)
+    assert send_mock.call_count == 1
+
+    # No rpc added, emit called, should not call send_msg
+    dataprovider_no_rpc._emit_df(pair, ohlcv_history)
+    assert send_mock.call_count == 1
+
+
 def test_refresh(mocker, default_conf, ohlcv_history):
     refresh_mock = MagicMock()
     mocker.patch("freqtrade.exchange.Exchange.refresh_latest_ohlcv", refresh_mock)
