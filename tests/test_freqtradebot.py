@@ -2673,7 +2673,6 @@ def test_manage_open_orders_exit_usercustom(
     open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
     open_trade_usdt.close_profit_abs = 0.001
-    open_trade_usdt.is_open = False
 
     Trade.query.session.add(open_trade_usdt)
     Trade.commit()
@@ -2687,7 +2686,6 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert open_trade_usdt.is_open is False
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
@@ -2697,7 +2695,6 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 0
     assert rpc_mock.call_count == 1
-    assert open_trade_usdt.is_open is False
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
@@ -2707,7 +2704,6 @@ def test_manage_open_orders_exit_usercustom(
     freqtrade.manage_open_orders()
     assert cancel_order_mock.call_count == 1
     assert rpc_mock.call_count == 2
-    assert open_trade_usdt.is_open is True
     assert freqtrade.strategy.check_exit_timeout.call_count == 1
     assert freqtrade.strategy.check_entry_timeout.call_count == 0
 
@@ -2755,7 +2751,6 @@ def test_manage_open_orders_exit(
     open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
     open_trade_usdt.close_profit_abs = 0.001
-    open_trade_usdt.is_open = False
     open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
@@ -2796,7 +2791,6 @@ def test_check_handle_cancelled_exit(
 
     open_trade_usdt.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade_usdt.close_date = arrow.utcnow().shift(minutes=-601).datetime
-    open_trade_usdt.is_open = False
     open_trade_usdt.is_short = is_short
 
     Trade.query.session.add(open_trade_usdt)
