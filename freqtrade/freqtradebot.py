@@ -1393,16 +1393,10 @@ class FreqtradeBot(LoggingMixin):
                 trade.open_order_id = None
                 logger.info(f'{side} Order timeout for {trade}.')
         else:
-            # if trade is partially complete, edit the stake details for the trade
-            # and close the order
-            # cancel_order may not contain the full order dict, so we need to fallback
-            # to the order dict acquired before cancelling.
-            # we need to fall back to the values from order if corder does not contain these keys.
+            # update_trade_state (and subsequently recalc_trade_from_orders) will handle updates
+            # to the trade object
             trade.amount = filled_amount
-            # * Check edge cases, we don't want to make leverage > 1.0 if we don't have to
-            # * (for leverage modes which aren't isolated futures)
 
-            trade.stake_amount = trade.amount * trade.open_rate / trade.leverage
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
@@ -1442,8 +1436,6 @@ class FreqtradeBot(LoggingMixin):
             trade.close_rate_requested = None
             trade.close_profit = None
             trade.close_profit_abs = None
-            trade.close_date = None
-            trade.is_open = True
             trade.open_order_id = None
             trade.exit_reason = None
             cancelled = True
