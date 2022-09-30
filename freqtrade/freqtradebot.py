@@ -1345,7 +1345,7 @@ class FreqtradeBot(LoggingMixin):
         """
         entry cancel - cancel order
         :param replacing: Replacing order - prevent trade deletion.
-        :return: True if order was fully cancelled
+        :return: True if trade was fully cancelled
         """
         was_trade_fully_canceled = False
         side = trade.entry_side.capitalize()
@@ -1389,14 +1389,12 @@ class FreqtradeBot(LoggingMixin):
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
             else:
                 self.update_trade_state(trade, trade.open_order_id, corder)
-                trade.open_order_id = None
                 logger.info(f'{side} Order timeout for {trade}.')
         else:
             # update_trade_state (and subsequently recalc_trade_from_orders) will handle updates
             # to the trade object
             self.update_trade_state(trade, trade.open_order_id, corder)
 
-            trade.open_order_id = None
             logger.info(f'Partial {trade.entry_side} order timeout for {trade}.')
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
