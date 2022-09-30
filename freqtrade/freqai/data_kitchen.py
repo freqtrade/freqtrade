@@ -210,7 +210,7 @@ class FreqaiDataKitchen:
         filtered_df = unfiltered_df.filter(training_feature_list, axis=1)
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
-        drop_index = pd.isnull(filtered_df).any(1)  # get the rows that have NaNs,
+        drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (training_filter):
             const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
@@ -221,7 +221,7 @@ class FreqaiDataKitchen:
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_df.filter(label_list, axis=1)
-            drop_index_labels = pd.isnull(labels).any(1)
+            drop_index_labels = pd.isnull(labels).any(axis=1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
             dates = unfiltered_df['date']
             filtered_df = filtered_df[
@@ -249,7 +249,7 @@ class FreqaiDataKitchen:
         else:
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
-            drop_index = pd.isnull(filtered_df).any(1)
+            drop_index = pd.isnull(filtered_df).any(axis=1)
             self.data["filter_drop_index_prediction"] = drop_index
             filtered_df.fillna(0, inplace=True)
             # replacing all NaNs with zeros to avoid issues in 'prediction', but any prediction
@@ -808,7 +808,7 @@ class FreqaiDataKitchen:
                 :, :no_prev_pts
             ]
         distances = distances.replace([np.inf, -np.inf], np.nan)
-        drop_index = pd.isnull(distances).any(1)
+        drop_index = pd.isnull(distances).any(axis=1)
         distances = distances[drop_index == 0]
 
         inliers = pd.DataFrame(index=distances.index)
