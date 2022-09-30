@@ -72,7 +72,7 @@ setup(
         'pandas',
         'tables',
         'blosc',
-        'joblib',
+        'joblib>=1.2.0',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
         'uvicorn',
