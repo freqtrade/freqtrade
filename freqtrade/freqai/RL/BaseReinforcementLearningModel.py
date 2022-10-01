@@ -213,7 +213,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         dk.data_dictionary["prediction_features"] = filtered_dataframe
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk, filtered_dataframe)
+        self.data_cleaning_predict(dk)
 
         pred_df = self.rl_model_predict(
             dk.data_dictionary["prediction_features"], dk, self.model)
