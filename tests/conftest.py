@@ -200,6 +200,8 @@ def patch_freqtradebot(mocker, config) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     patch_whitelist(mocker, config)
+    mocker.patch('freqtrade.freqtradebot.ExternalMessageConsumer')
+    mocker.patch('freqtrade.configuration.config_validation._validate_consumers')
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
