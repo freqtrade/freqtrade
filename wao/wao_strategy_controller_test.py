@@ -18,4 +18,4 @@ controller.on_buy_signal(current_time,  coin)
 #
 # current_time = str(datetime.datetime.now()).replace('.', '+')
 #
-# controller.on_sell_signal(sell_reason, current_time, coin)
+controller.on_sell_signal(sell_reason, current_time, coin)
