@@ -14,7 +14,7 @@ class WAOStrategyController:
         self.time_out_hours = time_out_hours
         self.dup = dup
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
-        create_watchers()
+        # create_watchers()
         clear_cumulative_value()
         create_initial_account_balance_binance_file()
         if BrainConfig.IS_BACKTEST:
