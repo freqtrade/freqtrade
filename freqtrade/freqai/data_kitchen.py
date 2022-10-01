@@ -1,6 +1,5 @@
 import copy
 import logging
-import re
 import shutil
 from datetime import datetime, timezone
 from math import cos, sin
@@ -882,9 +881,6 @@ class FreqaiDataKitchen:
         """
         column_names = dataframe.columns
         features = [c for c in column_names if "%" in c]
-        pca_features = [c for c in column_names if re.search(r"^PC\d+$", c)]
-        if not features and pca_features:
-            features = pca_features
 
         if not features:
             raise OperationalException("Could not find any features!")

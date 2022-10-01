@@ -275,7 +275,8 @@ class IFreqaiModel(ABC):
 
             if dk.check_if_backtest_prediction_exists():
                 self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                dk.find_features(dataframe_train)
+                self.check_if_feature_list_matches_strategy(dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -296,7 +297,6 @@ class IFreqaiModel(ABC):
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
-                # self.check_if_feature_list_matches_strategy(dataframe_train, dk)
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds)
                 dk.append_predictions(append_df)
@@ -420,7 +420,7 @@ class IFreqaiModel(ABC):
         return
 
     def check_if_feature_list_matches_strategy(
-        self, dataframe: DataFrame, dk: FreqaiDataKitchen
+        self, dk: FreqaiDataKitchen
     ) -> None:
         """
         Ensure user is passing the proper feature set if they are reusing an `identifier` pointing
@@ -429,13 +429,10 @@ class IFreqaiModel(ABC):
         :param dk: FreqaiDataKitchen = non-persistent data container/analyzer for
                    current coin/bot loop
         """
-        dk.find_features(dataframe)
+
         if "training_features_list_raw" in dk.data:
             feature_list = dk.data["training_features_list_raw"]
         else:
-            feature_list = dk.data['training_features_list']
-
-        if self.ft_params.get('principal_component_analysis', False):
             feature_list = dk.data['training_features_list']
 
         if dk.training_features_list != feature_list:
@@ -510,7 +507,7 @@ class IFreqaiModel(ABC):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
 
         # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk.data_dictionary['prediction_features'], dk)
+        self.check_if_feature_list_matches_strategy(dk)
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """
