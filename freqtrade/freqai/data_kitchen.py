@@ -881,6 +881,7 @@ class FreqaiDataKitchen:
         """
         column_names = dataframe.columns
         features = [c for c in column_names if "%" in c]
+
         if not features:
             raise OperationalException("Could not find any features!")
 

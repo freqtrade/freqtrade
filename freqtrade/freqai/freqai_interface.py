@@ -275,7 +275,8 @@ class IFreqaiModel(ABC):
 
             if dk.check_if_backtest_prediction_exists():
                 self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                dk.find_features(dataframe_train)
+                self.check_if_feature_list_matches_strategy(dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -296,7 +297,6 @@ class IFreqaiModel(ABC):
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
-                # self.check_if_feature_list_matches_strategy(dataframe_train, dk)
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds)
                 dk.append_predictions(append_df)
@@ -420,7 +420,7 @@ class IFreqaiModel(ABC):
         return
 
     def check_if_feature_list_matches_strategy(
-        self, dataframe: DataFrame, dk: FreqaiDataKitchen
+        self, dk: FreqaiDataKitchen
     ) -> None:
         """
         Ensure user is passing the proper feature set if they are reusing an `identifier` pointing
@@ -429,11 +429,12 @@ class IFreqaiModel(ABC):
         :param dk: FreqaiDataKitchen = non-persistent data container/analyzer for
                    current coin/bot loop
         """
-        dk.find_features(dataframe)
+
         if "training_features_list_raw" in dk.data:
             feature_list = dk.data["training_features_list_raw"]
         else:
             feature_list = dk.data['training_features_list']
+
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
@@ -481,12 +482,15 @@ class IFreqaiModel(ABC):
         if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
             dk.add_noise_to_training_features()
 
-    def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
+    def data_cleaning_predict(self, dk: FreqaiDataKitchen) -> None:
         """
         Base data cleaning method for predict.
         Functions here are complementary to the functions of data_cleaning_train.
         """
         ft_params = self.freqai_info["feature_parameters"]
+
+        # ensure user is feeding the correct indicators to the model
+        self.check_if_feature_list_matches_strategy(dk)
 
         if ft_params.get('inlier_metric_window', 0):
             dk.compute_inlier_metric(set_='predict')
@@ -504,9 +508,6 @@ class IFreqaiModel(ABC):
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
-
-        # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk.data_dictionary['prediction_features'], dk)
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """
