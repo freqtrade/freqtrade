@@ -12,7 +12,7 @@ time_out_hours = 7
 controller = WAOStrategyController(brain, time_out_hours, dup)
 
 
-controller.on_buy_signal(current_time,  coin)
+# controller.on_buy_signal(current_time,  coin)
 #
 # time.sleep(10)
 #
