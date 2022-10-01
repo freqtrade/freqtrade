@@ -844,12 +844,10 @@ class FreqaiDataKitchen:
             self.remove_beginning_points_from_data_dict(set_, no_prev_pts)
             self.data_dictionary[f'{set_}_features'] = pd.concat(
                 [compute_df, inlier_metric], axis=1)
-            # self.find_features(self.data_dictionary[f'{set_}_features'])
         else:
             self.data_dictionary['prediction_features'] = pd.concat(
                 [compute_df, inlier_metric], axis=1)
             self.data_dictionary['prediction_features'].fillna(0, inplace=True)
-            # self.find_features(self.data_dictionary['prediction_features'])
 
         logger.info('Inlier metric computed and added to features.')
 
