@@ -34,7 +34,7 @@ python -m venv .env
 .env\Scripts\activate.ps1
 # optionally install ta-lib from wheel
 # Eventually adjust the below filename to match the downloaded wheel
-pip install --find-links build_helpers\ TA-Lib
+pip install --find-links build_helpers\ TA-Lib -U
 pip install -r requirements.txt
 pip install -e .
 freqtrade
