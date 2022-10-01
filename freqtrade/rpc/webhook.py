@@ -61,6 +61,14 @@ class Webhook(RPCHandler):
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):
                 valuedict = whconfig.get('webhookstatus')
+            elif msg['type'] in (
+                    RPCMessageType.PROTECTION_TRIGGER,
+                    RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+                    RPCMessageType.WHITELIST,
+                    RPCMessageType.ANALYZED_DF,
+                    RPCMessageType.STRATEGY_MSG):
+                # Don't fail for non-implemented types
+                return
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:
