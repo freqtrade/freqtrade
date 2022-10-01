@@ -13,7 +13,7 @@ def send_start_deliminator_message(brain, month, year):
     print("notifier: send_start_deliminator_message: ")
     text = "========" + str(brain) + " " + str(month) + " " + str(year) + "=======>"
 
-    post_request(text)
+    post_request(text, brain=brain)
 
 
 def post_request(text, is_from_429_watcher=False, brain=Config.BRAIN):
