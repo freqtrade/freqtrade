@@ -46,6 +46,16 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `n_estimators` | The number of boosted trees to fit in regression. <br> **Datatype:** Integer.
 | `learning_rate` | Boosting learning rate during regression. <br> **Datatype:** Float.
 | `n_jobs`, `thread_count`, `task_type` | Set the number of threads for parallel processing and the `task_type` (`gpu` or `cpu`). Different model libraries use different parameter names. <br> **Datatype:** Float.
+|  |  *Reinforcement Learning Parameters**
+| `rl_config` | A dictionary containing the control parameters for a Reinforcement Learning model. <br> **Datatype:** Dictionary.
+| `train_cycles` | Training time steps will be set based on the `train_cycles * number of training data points. <br> **Datatype:** Integer.
+| `cpu_count` | Number of processors to dedicate to the Reinforcement Learning training process. <br> **Datatype:** int.
+| `max_trade_duration_candles`| Guides the agent training to keep trades below desired length. Example usage shown in `prediction_models/ReinforcementLearner.py` within the user customizable `calculate_reward()` <br> **Datatype:** int.
+| `model_type` | Model string from stable_baselines3 or SBcontrib. Available strings include: `'TRPO', 'ARS', 'RecurrentPPO', 'MaskablePPO', 'PPO', 'A2C', 'DQN'`. User should ensure that `model_training_parameters` match those available to the corresponding stable_baselines3 model by visiting their documentaiton. [PPO doc](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html) (external website) <br> **Datatype:** string.
+| `policy_type` | One of the available policy types from stable_baselines3 <br> **Datatype:** string.
+| `continual_learning` | If true, the agent will start new trainings from the model selected during the previous training. If false, a new agent is trained from scratch for each training. <br> **Datatype:** Bool.
+| `cpu_count` | Number of threads/cpus to dedicate to the Reinforcement Learning training process (depending on if `ReinforcementLearning_multiproc` is selected or not). <br> **Datatype:** int. 
+| `model_reward_parameters` | Parameters used inside the user customizable `calculate_reward()` function in `ReinforcementLearner.py` <br> **Datatype:** int.
 |  |  **Extraneous parameters**
 | `keras` | If the selected model makes use of Keras (typical for Tensorflow-based prediction models), this flag needs to be activated so that the model save/loading follows Keras standards. <br> **Datatype:** Boolean. <br> Default: `False`.
 | `conv_width` | The width of a convolutional neural network input tensor. This replaces the need for shifting candles (`include_shifted_candles`) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> **Datatype:** Integer. <br> Default: 2.
