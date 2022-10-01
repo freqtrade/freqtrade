@@ -81,6 +81,7 @@ class HDF5DataHandler(IDataHandler):
             raise ValueError("Wrong dataframe format")
         pairdata = pairdata.astype(dtype={'open': 'float', 'high': 'float',
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
+        pairdata = pairdata.reset_index(drop=True)
         return pairdata
 
     def ohlcv_append(

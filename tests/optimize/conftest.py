@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.enums import ExitType, RunMode
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.optimize.hyperopt import Hyperopt
 from tests.conftest import patch_exchange
 
@@ -26,6 +27,13 @@ def hyperopt_conf(default_conf):
         'hyperopt_min_trades': 1,
     })
     return hyperconf
+
+
+@pytest.fixture(autouse=True)
+def backtesting_cleanup() -> None:
+    yield None
+
+    Backtesting.cleanup()
 
 
 @pytest.fixture(scope='function')

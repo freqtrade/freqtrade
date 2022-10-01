@@ -91,8 +91,8 @@ class Backtesting:
 
         if self.config.get('strategy_list'):
             if self.config.get('freqai', {}).get('enabled', False):
-                raise OperationalException(
-                    "You can't use strategy_list and freqai at the same time.")
+                logger.warning("Using --strategy-list with FreqAI REQUIRES all strategies "
+                               "to have identical populate_any_indicators.")
             for strat in list(self.config['strategy_list']):
                 stratconf = deepcopy(self.config)
                 stratconf['strategy'] = strat
@@ -110,10 +110,10 @@ class Backtesting:
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
         self.init_backtest_detail()
-        self.pairlists = PairListManager(self.exchange, self.config)
+        self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting. "
-                                       "Please use StaticPairlist instead.")
+                                       "Please use StaticPairList instead.")
         if 'PerformanceFilter' in self.pairlists.name_list:
             raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
@@ -139,18 +139,20 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
+
+        if self.config.get('freqai', {}).get('enabled', False):
+            # For FreqAI, increase the required_startup to includes the training data
+            self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
+
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
-        self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
 
         self.init_backtest()
-
-    def __del__(self):
-        self.cleanup()
 
     @staticmethod
     def cleanup():
@@ -217,7 +219,7 @@ class Backtesting:
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
             timerange=self.timerange,
-            startup_candles=self.dataprovider.get_required_startup(self.timeframe),
+            startup_candles=self.config['startup_candle_count'],
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
             candle_type=self.config.get('candle_type_def', CandleType.SPOT)
@@ -368,10 +370,10 @@ class Backtesting:
             for col in HEADERS[5:]:
                 tag_col = col in ('enter_tag', 'exit_tag')
                 if col in df_analyzed.columns:
-                    df_analyzed.loc[:, col] = df_analyzed.loc[:, col].replace(
+                    df_analyzed[col] = df_analyzed.loc[:, col].replace(
                         [nan], [0 if not tag_col else None]).shift(1)
                 elif not df_analyzed.empty:
-                    df_analyzed.loc[:, col] = 0 if not tag_col else None
+                    df_analyzed[col] = 0 if not tag_col else None
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
@@ -538,7 +540,7 @@ class Backtesting:
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = amount_to_contract_precision(
-                abs(stake_amount) / current_rate, trade.amount_precision,
+                abs(stake_amount * trade.leverage) / current_rate, trade.amount_precision,
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
                 return trade

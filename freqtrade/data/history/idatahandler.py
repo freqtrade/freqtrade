@@ -272,10 +272,10 @@ class IDataHandler(ABC):
         return res
 
     def ohlcv_load(self, pair, timeframe: str,
-                   candle_type: CandleType,
+                   candle_type: CandleType, *,
                    timerange: Optional[TimeRange] = None,
                    fill_missing: bool = True,
-                   drop_incomplete: bool = True,
+                   drop_incomplete: bool = False,
                    startup_candles: int = 0,
                    warn_no_data: bool = True,
                    ) -> DataFrame:
@@ -375,6 +375,12 @@ def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
     elif datatype == 'hdf5':
         from .hdf5datahandler import HDF5DataHandler
         return HDF5DataHandler
+    elif datatype == 'feather':
+        from .featherdatahandler import FeatherDataHandler
+        return FeatherDataHandler
+    elif datatype == 'parquet':
+        from .parquetdatahandler import ParquetDataHandler
+        return ParquetDataHandler
     else:
         raise ValueError(f"No datahandler for datatype {datatype} available.")
 

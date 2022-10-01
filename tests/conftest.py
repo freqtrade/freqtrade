@@ -58,6 +58,11 @@ def log_has(line, logs):
     return any(line == message for message in logs.messages)
 
 
+def log_has_when(line, logs, when):
+    """Check if line is found in caplog's messages during a specified stage"""
+    return any(line == message.message for message in logs.get_records(when))
+
+
 def log_has_re(line, logs):
     """Check if line matches some caplog's message."""
     return any(re.match(line, message) for message in logs.messages)
@@ -195,6 +200,8 @@ def patch_freqtradebot(mocker, config) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
     patch_whitelist(mocker, config)
+    mocker.patch('freqtrade.freqtradebot.ExternalMessageConsumer')
+    mocker.patch('freqtrade.configuration.config_validation._validate_consumers')
 
 
 def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:

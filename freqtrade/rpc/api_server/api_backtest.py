@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi.exceptions import HTTPException
 
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.data.btanalysis import get_backtest_resultlist, load_and_merge_backtest_result
@@ -30,6 +31,9 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     """Start backtesting if not done so already"""
     if ApiServer._bgtask_running:
         raise RPCException('Bot Background task already running')
+
+    if ':' in bt_settings.strategy:
+        raise HTTPException(status_code=500, detail="base64 encoded strategies are not allowed.")
 
     btconfig = deepcopy(config)
     settings = dict(bt_settings)
