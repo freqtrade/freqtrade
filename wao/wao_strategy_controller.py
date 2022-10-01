@@ -3,11 +3,8 @@ import threading
 from wao.brain_config import BrainConfig
 from wao.brain_util import create_watchers
 from wao.notifier import send_start_deliminator_message
-import sys
-import os
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
+from execution.config import Config
 
 
 class WAOStrategyController:

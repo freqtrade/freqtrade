@@ -3,15 +3,12 @@ import threading
 
 import watchdog.events
 import watchdog.observers
-import sys
 
 from wao.notifier import post_request
 from wao.brain_config import BrainConfig
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
-from romeo import Romeo, RomeoExitPriceType
-
+from execution.config import Config
+from execution.romeo import Romeo, RomeoExitPriceType
 
 
 def is_freqtrade_error(error_line):

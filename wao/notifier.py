@@ -1,11 +1,9 @@
 from wao.brain_config import BrainConfig
 import requests
-import sys
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
-from keys import Keys
-from _429_file_util import delete_429_file, write_to_429_file
+from execution.config import Config
+from execution.keys import Keys
+from execution._429_file_util import delete_429_file, write_to_429_file
 
 TELEGRAM_RESPONSE_200 = "<Response [200]>"
 TELEGRAM_RESPONSE_429 = "<Response [429]>"
