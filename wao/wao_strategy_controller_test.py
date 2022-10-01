@@ -18,4 +18,4 @@ controller = WAOStrategyController(brain, time_out_hours, dup)
 #
 # current_time = str(datetime.datetime.now()).replace('.', '+')
 #
-controller.on_sell_signal(sell_reason, current_time, coin)
+# controller.on_sell_signal(sell_reason, current_time, coin)
