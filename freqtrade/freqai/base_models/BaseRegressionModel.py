@@ -92,7 +92,7 @@ class BaseRegressionModel(IFreqaiModel):
         dk.data_dictionary["prediction_features"] = filtered_df
 
         # optional additional data cleaning/analysis
-        self.data_cleaning_predict(dk, filtered_df)
+        self.data_cleaning_predict(dk)
 
         predictions = self.model.predict(dk.data_dictionary["prediction_features"])
         pred_df = DataFrame(predictions, columns=dk.label_list)
