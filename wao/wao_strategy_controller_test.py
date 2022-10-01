@@ -1,7 +1,7 @@
 from wao.wao_strategy_controller import WAOStrategyController
 import time
 import datetime
-brain = 'Freq_Strategy000'
+brain = 'Freq_bb_scalp_15m'
 dup = 0.1
 mode = "test"
 coin = "ETH"
