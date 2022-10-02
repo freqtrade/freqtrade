@@ -37,3 +37,12 @@ pip install -e .
 # Ensure freqUI is at the latest version
 freqtrade install-ui 
 ```
+
+### Problems updating
+
+Update-problems usually come missing dependencies (you didn't follow the above instructions) - or from updated dependencies, which fail to install (for example TA-lib).
+Please refer to the corresponding installation sections (common problems linked below)
+
+Common problems and their solutions:
+
+* [ta-lib update on windows](windows_installation.md#2-install-ta-lib)
