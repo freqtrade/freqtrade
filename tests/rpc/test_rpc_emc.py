@@ -212,10 +212,10 @@ async def test_emc_create_connection_invalid_port(default_conf, caplog, mocker):
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
+        emc._running = True
         await emc._create_connection(emc.producers[0], asyncio.Lock())
         assert log_has_re(r".+ is an invalid WebSocket URL .+", caplog)
     finally:
-        emc._running = False
         emc.shutdown()
 
 
