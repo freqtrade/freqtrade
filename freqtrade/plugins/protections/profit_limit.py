@@ -1,14 +1,14 @@
+
 import logging
 from datetime import datetime, timedelta
+from turtle import pd
 from typing import Any, Dict, Optional
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
-
 logger = logging.getLogger(__name__)
-
 
 class ProfitLimit(IProtection):
 
@@ -20,7 +20,7 @@ class ProfitLimit(IProtection):
         
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._required_profit = protection_config.get('profit_limit', 1.0)
-        
+
     def short_desc(self) -> str:
         """
         Short method description - used for startup-messages
@@ -41,32 +41,27 @@ class ProfitLimit(IProtection):
         Evaluate recent trades for pair
         """
         look_back_until = date_now - timedelta(minutes=self._lookback_period)
-        # filters = [
-        #     Trade.is_open.is_(False),
-        #     Trade.close_date > look_back_until,
-        # ]
-        # if pair:
-        #     filters.append(Trade.pair == pair)
 
         trades = Trade.get_trades_proxy(is_open=False, close_date=look_back_until)
-        # trades = Trade.get_trades(filters).all()
+
         if len(trades) < self._trade_limit:
             # Not enough trades in the relevant period
             return None
 
-        profit = sum(
-            trade.close_profit for trade in trades if trade.close_profit
-            )
-        if profit >= self._required_profit:
+        profit_sum = trades['profit_abs'].sum()
+        stake_sum = trades['stake_amount'].sum()
+        profit_ratio = profit_sum / stake_sum
+    
+        if profit_ratio >= self._required_profit:
             self.log_once(
-                f"Trading stopped due to {profit:.2f} >= {self._required_profit} "
+                f"Trading stopped due to {profit_ratio:.2f} >= {self._required_profit} "
                 f"within {self._lookback_period} minutes.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 
             return ProtectionReturn(
                 lock=True,
                 until=until,
-                reason=self._reason(profit)
+                reason=self._reason(profit_ratio)
             )
 
         return None
