@@ -28,6 +28,7 @@ from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_pat
 from tests.conftest_trades import (MOCK_TRADE_COUNT, entry_side, exit_side, mock_order_1,
                                    mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
                                    mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
+from tests.conftest_trades_usdt import mock_trade_usdt_4
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -2980,7 +2981,7 @@ def test_manage_open_orders_exception(default_conf_usdt, ticker_usdt, open_trade
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_short) -> None:
+def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_short, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     l_order = limit_order[entry_side(is_short)]
@@ -2994,16 +2995,12 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade._notify_enter_cancel = MagicMock()
 
-    # TODO: Convert to real trade
-    trade = MagicMock()
-    trade.pair = 'LTC/USDT'
-    trade.open_rate = 200
-    trade.is_short = False
-    trade.entry_side = "buy"
-    trade.amount = 100
+    trade = mock_trade_usdt_4(fee, is_short)
+    Trade.query.session.add(trade)
+    Trade.commit()
+
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
-    trade.nr_of_successful_entries = 0
     reason = CANCEL_REASON['TIMEOUT']
     assert freqtrade.handle_cancel_enter(trade, l_order, reason)
     assert cancel_order_mock.call_count == 1
@@ -3035,7 +3032,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order, is_
 @pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
                          indirect=['limit_buy_order_canceled_empty'])
-def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short,
+def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short, fee,
                                        limit_buy_order_canceled_empty) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3046,11 +3043,10 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_sho
     freqtrade = FreqtradeBot(default_conf_usdt)
 
     reason = CANCEL_REASON['TIMEOUT']
-    # TODO: Convert to real trade
-    trade = MagicMock()
-    trade.nr_of_successful_entries = 0
-    trade.pair = 'LTC/ETH'
-    trade.entry_side = "sell" if is_short else "buy"
+
+    trade = mock_trade_usdt_4(fee, is_short)
+    Trade.query.session.add(trade)
+    Trade.commit()
     assert freqtrade.handle_cancel_enter(trade, limit_buy_order_canceled_empty, reason)
     assert cancel_order_mock.call_count == 0
     assert log_has_re(
