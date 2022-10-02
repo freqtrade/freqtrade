@@ -3095,6 +3095,9 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
 
     cancel_order_mock.reset_mock()
     l_order['filled'] = 1.0
+    order = deepcopy(l_order)
+    order['status'] = 'canceled'
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
     assert not freqtrade.handle_cancel_enter(trade, l_order, reason)
     assert cancel_order_mock.call_count == 1
 
