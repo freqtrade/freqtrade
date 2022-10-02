@@ -1292,7 +1292,14 @@ class Exchange:
             order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
             logger.warning(f"Could not fetch cancelled order {order_id}.")
-            order = {'id': order_id, 'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+            order = {
+                'id': order_id,
+                'status': 'canceled',
+                'amount': amount,
+                'filled': 0.0,
+                'fee': {},
+                'info': {}
+            }
 
         return order
 
