@@ -1,7 +1,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from turtle import pd
 from typing import Any, Dict, Optional
 
 from freqtrade.constants import Config, LongShort
