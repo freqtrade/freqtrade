@@ -4,7 +4,7 @@
 
 Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%`, while labels/targets are prepended with `&`.
 
-Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the `FreqAI` config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles." 
+Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the `FreqAI` config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
 
 It is advisable to start from the template `populate_any_indicators()` in the source provided example strategy (found in `templates/FreqaiExampleStrategy.py`) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:
 
@@ -141,7 +141,7 @@ Another example, where the user wants to use live metrics from the trade databas
     }
 ```
 
-You need to set the standard dictionary in the config so that `FreqAI` can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the preset values are what will be returned.
+You need to set the standard dictionary in the config so that `FreqAI` can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the pre-set values are what will be returned.
 
 ## Feature normalization
 
@@ -265,4 +265,4 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 
 ![dbscan](assets/freqai_dbscan.jpg)
 
-`FreqAI` uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (external website)) with `min_samples` ($N$) taken as 1/4 of the no. of time points in the feature set. `eps` ($\varepsilon$) is computed automatically as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
+`FreqAI` uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (external website)) with `min_samples` ($N$) taken as 1/4 of the no. of time points (candles) in the feature set. `eps` ($\varepsilon$) is computed automatically as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.

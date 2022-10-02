@@ -45,17 +45,17 @@ An overview of the algorithm, explaining the data processing pipeline and model 
 
 ### Important machine learning vocabulary
 
-**Features** - the parameters, based on historic data, on which a model is trained. All features for a single candle is stored as a vector. In `FreqAI`, you build a feature data sets from anything you can construct in the strategy.
+**Features** - the parameters, based on historic data, on which a model is trained. All features for a single candle are stored as a vector. In `FreqAI`, you build a feature data set from anything you can construct in the strategy.
 
-**Labels** - the target values that a model is trained toward. Each feature vector is associated with a single label that is defined by you within the strategy. These labels intentionally look into the future, and are not available to the model during dry/live/backtesting.
+**Labels** - the target values that the model is trained toward. Each feature vector is associated with a single label that is defined by you within the strategy. These labels intentionally look into the future and are what you are training the model to be able to predict.
 
-**Training** - the process of "teaching" the model to match the feature sets to the associated labels. Different types of models "learn" in different ways. More information about the different models can be found [here](freqai-configuration.md#using-different-prediction-models).
+**Training** - the process of "teaching" the model to match the feature sets to the associated labels. Different types of models "learn" in different ways which means that one might be better than another for a specific application. More information about the different models that are already implemented in `FreqAI` can be found [here](freqai-configuration.md#using-different-prediction-models).
 
-**Train data** - a subset of the feature data set that is fed to the model during training. This data directly influences weight connections in the model.
+**Train data** - a subset of the feature data set that is fed to the model during training to "teach" the model how to predict the targets. This data directly influences weight connections in the model.
 
 **Test data** - a subset of the feature data set that is used to evaluate the performance of the model after training. This data does not influence nodal weights within the model.
 
-**Inferencing** - the process of feeding a trained model new data on which it will make a prediction.
+**Inferencing** - the process of feeding a trained model new unseen data on which it will make a prediction. 
 
 ## Install prerequisites
 
@@ -96,5 +96,4 @@ Software development:
 Wagner Costa @wagnercosta
 
 Beta testing and bug reporting:
-Stefan Gehring @bloodhunter4rc, @longyu, Andrew Robert Lawless @paranoidandy, Pascal Schmidt @smidelis, Ryan McMullan @smarmau,
-Juha Nykänen @suikula, Johan van der Vlugt @jooopiert, Richárd Józsa @richardjosza
+Stefan Gehring @bloodhunter4rc, @longyu, Andrew Lawless @paranoidandy, Pascal Schmidt @smidelis, Ryan McMullan @smarmau, Juha Nykänen @suikula, Johan van der Vlugt @jooopiert, Richárd Józsa @richardjosza, Timothy Pogue @wizrds
