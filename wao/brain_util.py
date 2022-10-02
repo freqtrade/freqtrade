@@ -25,6 +25,8 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     elif BrainConfig.MODE == Config.MODE_PROD:
         is_test_mode = False
 
+    Config.IS_SCHEDULE_ORDER = BrainConfig.IS_SCHEDULE_ORDER
+    Config.WORKSPACE_NORMAL = BrainConfig.WORKSPACE_NORMAL
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours

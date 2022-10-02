@@ -6,7 +6,9 @@ class BrainConfig:
     IS_BACKTEST = False
     IS_ERROR_WATCHER_ENABLED = True
     ROMEO_POOL = {}  # romeo_pool: key=coin, value=romeo_instance
-    WORKSPACE = "/workspace2" if IS_BACKTEST else "/workspace"
+    WORKSPACE_BACKTEST = "/workspace2"
+    WORKSPACE_NORMAL = "/workspace"
+    WORKSPACE = WORKSPACE_BACKTEST if IS_BACKTEST else WORKSPACE_NORMAL
     ROOT = "/root"
     EXECUTION_PATH = ROOT + WORKSPACE + "/execution"
     FREQTRADE_PATH = ROOT + WORKSPACE + "/freqtrade"
