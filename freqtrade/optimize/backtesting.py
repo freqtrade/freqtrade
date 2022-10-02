@@ -110,7 +110,7 @@ class Backtesting:
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
         self.init_backtest_detail()
-        self.pairlists = PairListManager(self.exchange, self.config)
+        self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting. "
                                        "Please use StaticPairList instead.")
@@ -540,7 +540,7 @@ class Backtesting:
 
         if stake_amount is not None and stake_amount < 0.0:
             amount = amount_to_contract_precision(
-                abs(stake_amount) / current_rate, trade.amount_precision,
+                abs(stake_amount * trade.leverage) / current_rate, trade.amount_precision,
                 self.precision_mode, trade.contract_size)
             if amount == 0.0:
                 return trade

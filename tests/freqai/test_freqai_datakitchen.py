@@ -86,7 +86,7 @@ def test_use_SVM_to_remove_outliers_and_outlier_protection(mocker, freqai_conf, 
     freqai_conf['freqai']['feature_parameters'].update({"outlier_protection_percentage": 0.1})
     freqai.dk.use_SVM_to_remove_outliers(predict=False)
     assert log_has_re(
-        "SVM detected 8.09%",
+        "SVM detected 8.66%",
         caplog,
     )
 

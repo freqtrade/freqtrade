@@ -235,7 +235,7 @@ def test_calculate_market_change(testdatadir):
     data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
     result = calculate_market_change(data)
     assert isinstance(result, float)
-    assert pytest.approx(result) == 0.00955514
+    assert pytest.approx(result) == 0.01100002
 
 
 def test_combine_dataframes_with_mean(testdatadir):

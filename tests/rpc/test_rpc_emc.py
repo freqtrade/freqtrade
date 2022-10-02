@@ -207,10 +207,13 @@ async def test_emc_create_connection_invalid_port(default_conf, caplog, mocker):
     })
 
     dp = DataProvider(default_conf, None, None, None)
+    # Handle start explicitly to avoid messing with threading in tests
+    mocker.patch("freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start",)
     emc = ExternalMessageConsumer(default_conf, dp)
 
     try:
-        await asyncio.sleep(0.01)
+        emc._running = True
+        await emc._create_connection(emc.producers[0], asyncio.Lock())
         assert log_has_re(r".+ is an invalid WebSocket URL .+", caplog)
     finally:
         emc.shutdown()

@@ -105,23 +105,6 @@ During dry/live mode, FreqAI trains each coin pair sequentially (on separate thr
 
 In the presented example config, the user will only allow predictions on models that are less than 1/2 hours old.
 
-## Data stratification for training and testing the model
-
-You can stratify (group) the training/testing data using:
-
-```json
-    "freqai": {
-        "feature_parameters" : {
-            "stratify_training_data": 3
-        }
-    }
-```
-
-This will split the data chronologically so that every Xth data point is used to test the model after training. In the example above, the user is asking for every third data point in the dataframe to be used for
-testing; the other points are used for training.
-
-The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model does not capture the complexity of the data, the test data is significantly different from the train data, or a different type of model should be used.
-
 ## Controlling the model learning process
 
 Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the `model_training_parameters` dictionary in the config. The example config (found in `config_examples/config_freqai.example.json`) shows some of the example parameters associated with `Catboost` and `LightGBM`, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.

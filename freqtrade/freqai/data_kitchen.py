@@ -134,19 +134,14 @@ class FreqaiDataKitchen:
         """
         feat_dict = self.freqai_config["feature_parameters"]
 
+        if 'shuffle' not in self.freqai_config['data_split_parameters']:
+            self.freqai_config["data_split_parameters"].update({'shuffle': False})
+
         weights: npt.ArrayLike
         if feat_dict.get("weight_factor", 0) > 0:
             weights = self.set_weights_higher_recent(len(filtered_dataframe))
         else:
             weights = np.ones(len(filtered_dataframe))
-
-        if feat_dict.get("stratify_training_data", 0) > 0:
-            stratification = np.zeros(len(filtered_dataframe))
-            for i in range(1, len(stratification)):
-                if i % feat_dict.get("stratify_training_data", 0) == 0:
-                    stratification[i] = 1
-        else:
-            stratification = None
 
         if self.freqai_config.get('data_split_parameters', {}).get('test_size', 0.1) != 0:
             (
@@ -160,7 +155,6 @@ class FreqaiDataKitchen:
                 filtered_dataframe[: filtered_dataframe.shape[0]],
                 labels,
                 weights,
-                stratify=stratification,
                 **self.config["freqai"]["data_split_parameters"],
             )
         else:
@@ -210,7 +204,7 @@ class FreqaiDataKitchen:
         filtered_df = unfiltered_df.filter(training_feature_list, axis=1)
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
-        drop_index = pd.isnull(filtered_df).any(1)  # get the rows that have NaNs,
+        drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
         if (training_filter):
             const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
@@ -221,7 +215,7 @@ class FreqaiDataKitchen:
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_df.filter(label_list, axis=1)
-            drop_index_labels = pd.isnull(labels).any(1)
+            drop_index_labels = pd.isnull(labels).any(axis=1)
             drop_index_labels = drop_index_labels.replace(True, 1).replace(False, 0)
             dates = unfiltered_df['date']
             filtered_df = filtered_df[
@@ -249,7 +243,7 @@ class FreqaiDataKitchen:
         else:
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
-            drop_index = pd.isnull(filtered_df).any(1)
+            drop_index = pd.isnull(filtered_df).any(axis=1)
             self.data["filter_drop_index_prediction"] = drop_index
             filtered_df.fillna(0, inplace=True)
             # replacing all NaNs with zeros to avoid issues in 'prediction', but any prediction
@@ -808,7 +802,7 @@ class FreqaiDataKitchen:
                 :, :no_prev_pts
             ]
         distances = distances.replace([np.inf, -np.inf], np.nan)
-        drop_index = pd.isnull(distances).any(1)
+        drop_index = pd.isnull(distances).any(axis=1)
         distances = distances[drop_index == 0]
 
         inliers = pd.DataFrame(index=distances.index)
@@ -881,6 +875,7 @@ class FreqaiDataKitchen:
         """
         column_names = dataframe.columns
         features = [c for c in column_names if "%" in c]
+
         if not features:
             raise OperationalException("Could not find any features!")
 

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.enums import ExitCheckTuple, ExitType
+from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
 from freqtrade.rpc.rpc import RPC
@@ -455,10 +455,12 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert pytest.approx(trade.orders[-1].amount) == 61.538461232
 
 
-def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> None:
+@pytest.mark.parametrize('leverage', [1, 2])
+def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, leverage) -> None:
     default_conf_usdt['position_adjustment_enable'] = True
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.trading_mode = TradingMode.FUTURES
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
@@ -467,15 +469,17 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> Non
         price_to_precision=lambda s, x, y: y,
         get_min_pair_stake_amount=MagicMock(return_value=10),
     )
+    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
 
     patch_get_signal(freqtrade)
+    freqtrade.strategy.leverage = MagicMock(return_value=leverage)
     freqtrade.enter_positions()
 
     assert len(Trade.get_trades().all()) == 1
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
     assert pytest.approx(trade.stake_amount) == 60
-    assert pytest.approx(trade.amount) == 30.0
+    assert pytest.approx(trade.amount) == 30.0 * leverage
     assert trade.open_rate == 2.0
 
     # Too small size
@@ -484,8 +488,9 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> Non
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 1
     assert pytest.approx(trade.stake_amount) == 60
-    assert pytest.approx(trade.amount) == 30.0
-    assert log_has_re("Remaining amount of 1.6.* would be smaller than the minimum of 10.", caplog)
+    assert pytest.approx(trade.amount) == 30.0 * leverage
+    assert log_has_re(
+        r"Remaining amount of \d\.\d+.* would be smaller than the minimum of 10.", caplog)
 
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-20)
 
@@ -494,7 +499,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog) -> Non
     assert len(trade.orders) == 2
     assert trade.orders[-1].ft_order_side == 'sell'
     assert pytest.approx(trade.stake_amount) == 40.198
-    assert pytest.approx(trade.amount) == 20.099
+    assert pytest.approx(trade.amount) == 20.099 * leverage
     assert trade.open_rate == 2.0
     assert trade.is_open
     caplog.clear()
