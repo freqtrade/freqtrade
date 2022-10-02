@@ -1061,6 +1061,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.is_short = is_short
     trade.open_order_id = None
@@ -1102,6 +1103,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     # First case: when stoploss is not yet set but the order is open
     # should get the stoploss order id immediately
     # and should return false as no trade actually happened
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.is_short = is_short
     trade.is_open = True
@@ -1880,6 +1882,7 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
                  return_value=limit_order[entry_side(is_short)])
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.is_short = is_short
     trade.open_order_id = '123'
@@ -1903,6 +1906,7 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog
     order = limit_order[entry_side(is_short)]
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.is_short = is_short
     trade.open_order_id = None
@@ -2043,6 +2047,7 @@ def test_update_trade_state_exception(mocker, default_conf_usdt, is_short, limit
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.open_order_id = '123'
     trade.amount = 123
@@ -2061,6 +2066,7 @@ def test_update_trade_state_orderexception(mocker, default_conf_usdt, caplog) ->
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
                  MagicMock(side_effect=InvalidOrderException))
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     trade.open_order_id = '123'
 
@@ -3064,7 +3070,7 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_sho
     'String Return value',
     123
 ])
-def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order, is_short,
+def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order, is_short, fee,
                                           cancelorder) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3072,20 +3078,15 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
     cancel_order_mock = MagicMock(return_value=cancelorder)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        cancel_order=cancel_order_mock
+        cancel_order=cancel_order_mock,
+        fetch_order=MagicMock(side_effect=InvalidOrderException)
     )
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade._notify_enter_cancel = MagicMock()
-    # TODO: Convert to real trade
-    trade = MagicMock()
-    trade.pair = 'LTC/USDT'
-    trade.entry_side = "buy"
-    trade.open_rate = 200
-    trade.entry_side = "buy"
-    trade.open_order_id = "open_order_noop"
-    trade.nr_of_successful_entries = 0
-    trade.amount = 100
+    trade = mock_trade_usdt_4(fee, is_short)
+    Trade.query.session.add(trade)
+    Trade.commit()
     l_order['filled'] = 0.0
     l_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
@@ -3200,6 +3201,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
+    # TODO: should not be magicmock
     trade = MagicMock()
     reason = CANCEL_REASON['TIMEOUT']
     order = {'remaining': 1,
