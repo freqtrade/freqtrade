@@ -10,7 +10,6 @@ class BrainConfig:
     WORKSPACE_NORMAL = "/workspace"
     WORKSPACE = WORKSPACE_BACKTEST if IS_BACKTEST else WORKSPACE_NORMAL
     ROOT = "/root"
-    EXECUTION_PATH = ROOT + WORKSPACE + "/execution"
     FREQTRADE_PATH = ROOT + WORKSPACE + "/freqtrade"
     _429_DIRECTORY = FREQTRADE_PATH + "/_429_directory/"
     _WAO_LOGS_DIRECTORY = FREQTRADE_PATH + "/_wao_logs/"
