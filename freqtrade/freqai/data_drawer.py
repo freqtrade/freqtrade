@@ -294,6 +294,12 @@ class FreqaiDataDrawer:
             for return_str in rets:
                 df[return_str].iloc[-1] = rets[return_str]
 
+        # this logic carries users between version without needing to 
+        # change their identifier
+        if 'close_price' not in df.columns:
+            df['close_price'] = 0
+            df['date_pred'] = 0
+
         df['close_price'].iloc[-1] = strat_df['close'].iloc[-1]
         df['date_pred'].iloc[-1] = strat_df['date'].iloc[-1]
 
