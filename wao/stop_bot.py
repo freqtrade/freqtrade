@@ -5,6 +5,7 @@ from execution.config import Config
 from execution.broker.binance_future_broker import Binance_Future_Broker
 from execution.broker.binance_spot_broker import Binance_Spot_Broker
 from execution.notifier import Notifier
+from notifier import send_stop_bot_message
 
 
 if len(sys.argv) < 3:
@@ -24,7 +25,7 @@ else:
         broker = Binance_Spot_Broker(notifier)
     broker.close_all_open_positions()
 
-    notifier.send_stop_bot_message(reason)
+    send_stop_bot_message(reason)
 
     subprocess.Popen(["killall screen"],
                      stdout=subprocess.PIPE,
