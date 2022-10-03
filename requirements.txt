@@ -4,7 +4,7 @@ pandas==1.5.0; platform_machine != 'armv7l'
 pandas==1.4.3; platform_machine == 'armv7l'
 pandas-ta==0.3.14b
 
-ccxt==1.93.98
+ccxt==1.95.2
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==38.0.1
 aiohttp==3.8.3
