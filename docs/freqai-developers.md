@@ -2,13 +2,13 @@
 
 ## Project architecture
 
-The architecture and functions of `FreqAI` are generalized to encourages development of unique features, functions, models, etc.
+The architecture and functions of FreqAI are generalized to encourages development of unique features, functions, models, etc.
 
 The class structure and a detailed algorithmic overview is depicted in the following diagram:
 
 ![image](assets/freqai_algorithm-diagram.jpg)
 
-As shown, there are three distinct objects comprising `FreqAI`:
+As shown, there are three distinct objects comprising FreqAI:
 
 * **IFreqaiModel** - A singular persistent object containing all the necessary logic to collect, store, and process data, engineer features, run training, and inference models.
 * **FreqaiDataKitchen** - A non-persistent object which is created uniquely for each unique asset/model. Beyond metadata, it also contains a variety of data processing tools.
@@ -18,7 +18,7 @@ There are a variety of built-in [prediction models](freqai-configuration.md#usin
 
 ## Data handling
 
-`FreqAI` aims to organize model files, prediction data, and meta data in a way that simplifies post-processing and enhances crash resilience by automatic data reloading. The data is saved in a file structure,`user_data_dir/models/`, which contains all the data associated with the trainings and backtests. The `FreqaiDataKitchen()` relies heavily on the file structure for proper training and inferencing and should therefore not be manually modified.
+FreqAI aims to organize model files, prediction data, and meta data in a way that simplifies post-processing and enhances crash resilience by automatic data reloading. The data is saved in a file structure,`user_data_dir/models/`, which contains all the data associated with the trainings and backtests. The `FreqaiDataKitchen()` relies heavily on the file structure for proper training and inferencing and should therefore not be manually modified.
 
 ### File structure
 
@@ -27,7 +27,7 @@ The file structure is automatically generated based on the model `identifier` se
 | Structure | Description |
 |-----------|-------------|
 | `config_*.json` | A copy of the model specific configuration file. |
-| `historic_predictions.pkl` | A file containing all historic predictions generated during the lifetime of the `identifier` model during live deployment. `historic_predictions.pkl` is used to reload the model after a crash or a config change. A backup file is always held in case of corruption on the main file.`FreqAI`**automatically** detects corruption and replaces the corrupted file with the backup. |
+| `historic_predictions.pkl` | A file containing all historic predictions generated during the lifetime of the `identifier` model during live deployment. `historic_predictions.pkl` is used to reload the model after a crash or a config change. A backup file is always held in case of corruption on the main file. FreqAI **automatically** detects corruption and replaces the corrupted file with the backup. |
 | `pair_dictionary.json` | A file containing the training queue as well as the on disk location of the most recently trained model. |
 | `sub-train-*_TIMESTAMP` | A folder containing all the files associated with a single model, such as: <br>
 || `*_metadata.json` - Metadata for the model, such as normalization max/min, expected training feature list, etc. <br>
