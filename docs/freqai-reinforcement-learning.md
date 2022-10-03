@@ -118,7 +118,6 @@ In order to configure the `Reinforcement Learner` the following dictionary to th
             "cpu_count": 8,
             "model_type": "PPO",
             "policy_type": "MlpPolicy",
-            "continual_learning": false,
             "model_reward_parameters": {
                 "rr": 1,
                 "profit_aim": 0.025
