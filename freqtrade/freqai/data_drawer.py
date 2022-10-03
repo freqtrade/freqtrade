@@ -294,7 +294,7 @@ class FreqaiDataDrawer:
             for return_str in rets:
                 df[return_str].iloc[-1] = rets[return_str]
 
-        # this logic carries users between version without needing to 
+        # this logic carries users between version without needing to
         # change their identifier
         if 'close_price' not in df.columns:
             df['close_price'] = np.nan
