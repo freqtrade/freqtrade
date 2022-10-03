@@ -16,7 +16,7 @@ def send_start_deliminator_message(brain, month, year):
     post_request(text, brain=brain)
 
 
-def post_request(text, is_from_429_watcher=False, brain=Config.BRAIN):
+def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN):
     text.replace("#", " ")
     # if Config.TELEGRAM_LOG_ENABLED:
     #     print("post_request: " + text + " ---------------------")

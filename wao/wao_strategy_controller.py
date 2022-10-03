@@ -11,6 +11,7 @@ class WAOStrategyController:
 
     def __init__(self, brain, time_out_hours, dup):
         self.brain = brain
+        BrainConfig.BRAIN = brain
         self.time_out_hours = time_out_hours
         self.dup = dup
         print("WAOStrategyController: __init__: is_backtest=" + str(BrainConfig.IS_BACKTEST))
