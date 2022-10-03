@@ -188,15 +188,19 @@ async def test_emc_create_connection_success(default_conf, caplog, mocker):
         emc.shutdown()
 
 
-async def test_emc_create_connection_invalid_port(default_conf, caplog, mocker):
+@pytest.mark.parametrize('host,port', [
+    (_TEST_WS_HOST, -1),
+    ("10000.1241..2121/", _TEST_WS_PORT),
+])
+async def test_emc_create_connection_invalid_url(default_conf, caplog, mocker, host, port):
     default_conf.update({
         "external_message_consumer": {
             "enabled": True,
             "producers": [
                 {
                     "name": "default",
-                    "host": _TEST_WS_HOST,
-                    "port": -1,
+                    "host": host,
+                    "port": port,
                     "ws_token": _TEST_WS_TOKEN
                 }
             ],
@@ -214,34 +218,6 @@ async def test_emc_create_connection_invalid_port(default_conf, caplog, mocker):
     try:
         emc._running = True
         await emc._create_connection(emc.producers[0], asyncio.Lock())
-        assert log_has_re(r".+ is an invalid WebSocket URL .+", caplog)
-    finally:
-        emc.shutdown()
-
-
-async def test_emc_create_connection_invalid_host(default_conf, caplog, mocker):
-    default_conf.update({
-        "external_message_consumer": {
-            "enabled": True,
-            "producers": [
-                {
-                    "name": "default",
-                    "host": "10000.1241..2121/",
-                    "port": _TEST_WS_PORT,
-                    "ws_token": _TEST_WS_TOKEN
-                }
-            ],
-            "wait_timeout": 60,
-            "ping_timeout": 60,
-            "sleep_timeout": 60
-        }
-    })
-
-    dp = DataProvider(default_conf, None, None, None)
-    emc = ExternalMessageConsumer(default_conf, dp)
-
-    try:
-        await asyncio.sleep(0.01)
         assert log_has_re(r".+ is an invalid WebSocket URL .+", caplog)
     finally:
         emc.shutdown()
