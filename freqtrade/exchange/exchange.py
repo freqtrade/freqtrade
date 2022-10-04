@@ -1882,10 +1882,8 @@ class Exchange:
         input_coroutines = []
         cached_pairs = []
         for pair, timeframe, candle_type in set(pair_list):
-            if (
-                timeframe not in self.timeframes
-                and candle_type in (CandleType.SPOT, CandleType.FUTURES)
-            ):
+            if (timeframe not in self.timeframes
+                    and candle_type in (CandleType.SPOT, CandleType.FUTURES)):
                 logger.warning(
                     f"Cannot download ({pair}, {timeframe}) combination as this timeframe is "
                     f"not available on {self.name}. Available timeframes are "
