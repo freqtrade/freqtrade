@@ -184,8 +184,9 @@ class Exchange:
             # Initial markets load
             self._load_markets()
             self.validate_config(config)
+            self._startup_candle_count: int = config.get('startup_candle_count', 0)
             self.required_candle_call_count = self.validate_required_startup_candles(
-                config.get('startup_candle_count', 0), config.get('timeframe', ''))
+                self._startup_candle_count, config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -1918,6 +1919,9 @@ class Exchange:
                 # Reassign so we return the updated, combined df
                 ohlcv_df = clean_ohlcv_dataframe(concat([old, ohlcv_df], axis=0), timeframe, pair,
                                                  fill_missing=True, drop_incomplete=False)
+                candle_limit = self.ohlcv_candle_limit(timeframe, self._config['candle_type_def'])
+                # Age out old candles
+                ohlcv_df = ohlcv_df.tail(candle_limit + self._startup_candle_count)
                 self._klines[(pair, timeframe, c_type)] = ohlcv_df
             else:
                 self._klines[(pair, timeframe, c_type)] = ohlcv_df
