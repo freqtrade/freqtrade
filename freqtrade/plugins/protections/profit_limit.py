@@ -9,6 +9,7 @@ from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
 logger = logging.getLogger(__name__)
 
+
 class ProfitLimit(IProtection):
 
     has_global_stop: bool = True
@@ -16,7 +17,7 @@ class ProfitLimit(IProtection):
 
     def __init__(self, config: Config, protection_config: Dict[str, Any]) -> None:
         super().__init__(config, protection_config)
-        
+
         self._trade_limit = protection_config.get('trade_limit', 1)
         self._required_profit = protection_config.get('profit_limit', 1.0)
 
@@ -47,10 +48,10 @@ class ProfitLimit(IProtection):
             # Not enough trades in the relevant period
             return None
 
-        profit_sum = trades['profit_abs'].sum()
-        stake_sum = trades['stake_amount'].sum()
+        profit_sum = sum(trade.close_profit_abs for trade in trades if trade.close_profit_abs)
+        stake_sum = sum(trade.stake_amount for trade in trades)
         profit_ratio = profit_sum / stake_sum
-    
+
         if profit_ratio >= self._required_profit:
             self.log_once(
                 f"Trading stopped due to {profit_ratio:.2f} >= {self._required_profit} "

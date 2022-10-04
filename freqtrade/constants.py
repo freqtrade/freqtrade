@@ -36,7 +36,7 @@ AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown',
-                        'StoplossGuard', 'ProfitLimit']
+                         'StoplossGuard', 'ProfitLimit']
 AVAILABLE_DATAHANDLERS_TRADES = ['json', 'jsongz', 'hdf5']
 AVAILABLE_DATAHANDLERS = AVAILABLE_DATAHANDLERS_TRADES + ['feather', 'parquet']
 BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
