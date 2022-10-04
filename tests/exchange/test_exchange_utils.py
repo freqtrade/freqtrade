@@ -20,10 +20,26 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test an officially supported by Freqtrade team exchange
     default_conf.get('exchange').update({'name': 'binance'})
     assert check_exchange(default_conf)
-    assert log_has_re(r"Exchange .* is officially supported by the Freqtrade development team\.",
-                      caplog)
+    assert log_has_re(
+        r"Exchange \"binance\" is officially supported by the Freqtrade development team\.",
+        caplog)
     caplog.clear()
 
+    # Test an officially supported by Freqtrade team exchange
+    default_conf.get('exchange').update({'name': 'binanceus'})
+    assert check_exchange(default_conf)
+    assert log_has_re(
+        r"Exchange \"binanceus\" is officially supported by the Freqtrade development team\.",
+        caplog)
+    caplog.clear()
+
+    # Test an officially supported by Freqtrade team exchange - with remapping
+    default_conf.get('exchange').update({'name': 'okex'})
+    assert check_exchange(default_conf)
+    assert log_has_re(
+        r"Exchange \"okex\" is officially supported by the Freqtrade development team\.",
+        caplog)
+    caplog.clear()
     # Test an available exchange, supported by ccxt
     default_conf.get('exchange').update({'name': 'huobipro'})
     assert check_exchange(default_conf)
