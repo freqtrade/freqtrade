@@ -480,7 +480,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    timerange = TimeRange('index', 'index', 200, 250)
+    timerange = TimeRange()
     data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
