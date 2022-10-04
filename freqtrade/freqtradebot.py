@@ -1389,11 +1389,13 @@ class FreqtradeBot(LoggingMixin):
                 reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
             else:
                 self.update_trade_state(trade, trade.open_order_id, corder)
+                trade.open_order_id = None
                 logger.info(f'{side} Order timeout for {trade}.')
         else:
             # update_trade_state (and subsequently recalc_trade_from_orders) will handle updates
             # to the trade object
             self.update_trade_state(trade, trade.open_order_id, corder)
+            trade.open_order_id = None
 
             logger.info(f'Partial {trade.entry_side} order timeout for {trade}.')
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
@@ -1450,6 +1452,7 @@ class FreqtradeBot(LoggingMixin):
             # Order might be filled above in odd timing issues.
             if co.get('status') in ('canceled', 'cancelled'):
                 trade.exit_reason = None
+                trade.open_order_id = None
             else:
                 trade.exit_reason = exit_reason_prev
 
@@ -1459,8 +1462,7 @@ class FreqtradeBot(LoggingMixin):
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
             logger.info(f'{trade.exit_side.capitalize()} order {reason} for {trade}.')
             self.update_trade_state(trade, trade.open_order_id, order)
-
-        self.wallets.update()
+            trade.open_order_id = None
 
         self._notify_exit_cancel(
             trade,

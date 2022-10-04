@@ -3178,6 +3178,7 @@ def test_handle_cancel_exit_limit(mocker, default_conf_usdt, fee) -> None:
     assert send_msg_mock.call_count == 1
     assert trade.close_rate is None
     assert trade.exit_reason is None
+    assert trade.open_order_id is None
 
     send_msg_mock.reset_mock()
 
