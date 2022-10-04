@@ -112,7 +112,7 @@ class Hyperopt:
 
         self.clean_hyperopt()
 
-        self.market_change = 0
+        self.market_change = 0.0
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
