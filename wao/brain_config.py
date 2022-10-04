@@ -1,5 +1,5 @@
 class BrainConfig:
-    BRAIN = "Freq_bbrsi_scalp"
+    BRAIN = "Freq_Cluc6werk"
     IS_SCHEDULE_ORDER = False
     IS_LIMIT_STOP_ORDER_ENABLED = False
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
