@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from freqtrade import constants
-from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
@@ -99,6 +98,9 @@ class Configuration:
         self._process_analyze_options(config)
 
         self._process_freqai_options(config)
+
+        # Import check_exchange here to avoid import cycle problems
+        from freqtrade.exchange.check_exchange import check_exchange
 
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
