@@ -1,5 +1,8 @@
 # Reinforcement Learning
 
+!!! Note
+    Reinforcement learning dependencies include large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]?" Users who prefer docker should ensure they use the docker image appended with `_freqaiRL`. 
+
 Setting up and running a Reinforcement Learning model is the same as running a Regressor or Classifier. The same two flags, `--freqaimodel` and `--strategy`, must be defined on the command line:
 
 ```bash
@@ -143,7 +146,7 @@ As users begin to modify the strategy and the prediction model, they will quickl
             if not self._is_valid(action):
                 return -2
             pnl = self.get_unrealized_profit()
-            rew = np.sign(pnl) * (pnl + 1)
+
             factor = 100
             # reward agent for entering trades
             if action in (Actions.Long_enter.value, Actions.Short_enter.value) \
@@ -166,12 +169,12 @@ As users begin to modify the strategy and the prediction model, they will quickl
             if action == Actions.Long_exit.value and self._position == Positions.Long:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
+                return float(pnl * factor)
             # close short
             if action == Actions.Short_exit.value and self._position == Positions.Short:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
+                return float(pnl * factor)
             return 0.
 ```
 
@@ -194,6 +197,6 @@ cd freqtrade
 tensorboard --logdir user_data/models/unique-id
 ```
 
-where `unique-id` is the `identifier` set in the `freqai` configuration file. 
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if the user wishes to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
 ![tensorboard](assets/tensorboard.png)

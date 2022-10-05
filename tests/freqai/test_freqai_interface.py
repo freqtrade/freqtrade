@@ -8,7 +8,6 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
-from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
 from freqtrade.optimize.backtesting import Backtesting

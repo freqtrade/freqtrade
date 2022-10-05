@@ -1,5 +1,5 @@
 # Include all requirements to run the bot.
--r requirements-hyperopt.txt
+-r requirements.txt
 
 # Required for freqai
 scikit-learn==1.1.2
@@ -8,8 +8,6 @@ catboost==1.1; platform_machine != 'aarch64'
 lightgbm==3.3.2
 xgboost==1.6.2
 torch==1.12.1
-stable-baselines3==1.6.0
-gym==0.21.0
-tensorboard==2.9.1
-optuna==2.10.1
-sb3-contrib==1.6.0
+stable-baselines3==1.6.1
+gym==0.26.2
+sb3-contrib==1.6.1
