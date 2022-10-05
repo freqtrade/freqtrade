@@ -30,8 +30,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
-                                       SUPPORTED_EXCHANGES, remove_credentials, retrier,
-                                       retrier_async)
+                                       remove_credentials, retrier, retrier_async)
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1292,7 +1291,14 @@ class Exchange:
             order = self.fetch_order(order_id, pair)
         except InvalidOrderException:
             logger.warning(f"Could not fetch cancelled order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+            order = {
+                'id': order_id,
+                'status': 'canceled',
+                'amount': amount,
+                'filled': 0.0,
+                'fee': {},
+                'info': {}
+            }
 
         return order
 
@@ -1863,6 +1869,38 @@ class Exchange:
             return self._async_get_candle_history(
                 pair, timeframe, since_ms=since_ms, candle_type=candle_type)
 
+    def _build_ohlcv_dl_jobs(
+            self, pair_list: ListPairsWithTimeframes, since_ms: Optional[int],
+            cache: bool) -> Tuple[List[Coroutine], List[Tuple[str, str, CandleType]]]:
+        """
+        Build Coroutines to execute as part of refresh_latest_ohlcv
+        """
+        input_coroutines = []
+        cached_pairs = []
+        for pair, timeframe, candle_type in set(pair_list):
+            if (
+                timeframe not in self.timeframes
+                and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+            ):
+                logger.warning(
+                    f"Cannot download ({pair}, {timeframe}) combination as this timeframe is "
+                    f"not available on {self.name}. Available timeframes are "
+                    f"{', '.join(self.timeframes)}.")
+                continue
+
+            if ((pair, timeframe, candle_type) not in self._klines or not cache
+                    or self._now_is_time_to_refresh(pair, timeframe, candle_type)):
+                input_coroutines.append(self._build_coroutine(
+                    pair, timeframe, candle_type=candle_type, since_ms=since_ms))
+
+            else:
+                logger.debug(
+                    f"Using cached candle (OHLCV) data for {pair}, {timeframe}, {candle_type} ..."
+                )
+                cached_pairs.append((pair, timeframe, candle_type))
+
+        return input_coroutines, cached_pairs
+
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True,
                              drop_incomplete: Optional[bool] = None
@@ -1880,27 +1918,9 @@ class Exchange:
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
         drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
-        input_coroutines = []
-        cached_pairs = []
-        # Gather coroutines to run
-        for pair, timeframe, candle_type in set(pair_list):
-            if (timeframe not in self.timeframes
-                    and candle_type in (CandleType.SPOT, CandleType.FUTURES)):
-                logger.warning(
-                    f"Cannot download ({pair}, {timeframe}) combination as this timeframe is "
-                    f"not available on {self.name}. Available timeframes are "
-                    f"{', '.join(self.timeframes)}.")
-                continue
-            if ((pair, timeframe, candle_type) not in self._klines or not cache
-                    or self._now_is_time_to_refresh(pair, timeframe, candle_type)):
-                input_coroutines.append(self._build_coroutine(
-                    pair, timeframe, candle_type=candle_type, since_ms=since_ms))
 
-            else:
-                logger.debug(
-                    f"Using cached candle (OHLCV) data for {pair}, {timeframe}, {candle_type} ..."
-                )
-                cached_pairs.append((pair, timeframe, candle_type))
+        # Gather coroutines to run
+        input_coroutines, cached_pairs = self._build_ohlcv_dl_jobs(pair_list, since_ms, cache)
 
         results_df = {}
         # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
@@ -1941,10 +1961,8 @@ class Exchange:
         interval_in_sec = timeframe_to_seconds(timeframe)
 
         return not (
-            (self._pairs_last_refresh_time.get(
-                (pair, timeframe, candle_type),
-                0
-            ) + interval_in_sec) >= arrow.utcnow().int_timestamp
+            (self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
+             + interval_in_sec) >= arrow.utcnow().int_timestamp
         )
 
     @retrier_async
@@ -2752,10 +2770,6 @@ class Exchange:
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
-
-
-def is_exchange_officially_supported(exchange_name: str) -> bool:
-    return exchange_name in SUPPORTED_EXCHANGES
 
 
 def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:

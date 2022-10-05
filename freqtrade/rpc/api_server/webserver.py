@@ -198,8 +198,10 @@ class ApiServer(RPCHandler):
                 logger.debug(f"Found message of type: {message.get('type')}")
                 # Broadcast it
                 await self._ws_channel_manager.broadcast(message)
-                # Sleep, make this configurable?
-                await asyncio.sleep(0.1)
+                # Limit messages per sec.
+                # Could cause problems with queue size if too low, and
+                # problems with network traffik if too high.
+                await asyncio.sleep(0.001)
         except asyncio.CancelledError:
             pass
 

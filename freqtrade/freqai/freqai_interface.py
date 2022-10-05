@@ -407,7 +407,7 @@ class IFreqaiModel(ABC):
             # allows FreqUI to show full return values.
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
-                self.set_initial_historic_predictions(pred_df, dk, pair)
+                self.set_initial_historic_predictions(pred_df, dk, pair, dataframe)
             self.dd.set_initial_return_values(pair, pred_df)
 
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
@@ -428,7 +428,7 @@ class IFreqaiModel(ABC):
 
         if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
             self.fit_live_predictions(dk, pair)
-        self.dd.append_model_predictions(pair, pred_df, do_preds, dk, len(dataframe))
+        self.dd.append_model_predictions(pair, pred_df, do_preds, dk, dataframe)
         dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
 
         return
@@ -597,7 +597,7 @@ class IFreqaiModel(ABC):
             self.dd.purge_old_models()
 
     def set_initial_historic_predictions(
-        self, pred_df: DataFrame, dk: FreqaiDataKitchen, pair: str
+        self, pred_df: DataFrame, dk: FreqaiDataKitchen, pair: str, strat_df: DataFrame
     ) -> None:
         """
         This function is called only if the datadrawer failed to load an
@@ -639,6 +639,9 @@ class IFreqaiModel(ABC):
 
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = 0
+
+        hist_preds_df['close_price'] = strat_df['close']
+        hist_preds_df['date_pred'] = strat_df['date']
 
         # # for keras type models, the conv_window needs to be prepended so
         # # viewing is correct in frequi
