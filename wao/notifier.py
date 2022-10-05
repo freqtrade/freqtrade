@@ -23,7 +23,7 @@ def send_stop_bot_message(reason):
 
 
 def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN):
-    text.replace("#", " ")
+    text.replace("#", "_")
     # if Config.TELEGRAM_LOG_ENABLED:
     #     print("post_request: " + text + " ---------------------")
 
