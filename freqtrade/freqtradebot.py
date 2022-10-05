@@ -1311,7 +1311,7 @@ class FreqtradeBot(LoggingMixin):
                     # place new order only if new price is supplied
                     self.execute_entry(
                         pair=trade.pair,
-                        stake_amount=(order_obj.remaining * order_obj.price),
+                        stake_amount=(order_obj.remaining * order_obj.price / trade.leverage),
                         price=adjusted_entry_price,
                         trade=trade,
                         is_short=trade.is_short,
