@@ -4,7 +4,7 @@
 
 Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%`, while labels/targets are prepended with `&`.
 
-Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the `FreqAI` config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles." 
+Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
 
 It is advisable to start from the template `populate_any_indicators()` in the source provided example strategy (found in `templates/FreqaiExampleStrategy.py`) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:
 
@@ -122,7 +122,7 @@ The `include_timeframes` in the config above are the timeframes (`tf`) of each c
 
 You can ask for each of the defined features to be included also for informative pairs using the `include_corr_pairlist`. This means that the feature set will include all the features from `populate_any_indicators` on all the `include_timeframes` for each of the correlated pairs defined in the config (`ETH/USD`, `LINK/USD`, and `BNB/USD` in the presented example).
 
-`include_shifted_candles` indicates the number of previous candles to include in the feature set. For example, `include_shifted_candles: 2` tells `FreqAI` to include the past 2 candles for each of the features in the feature set.
+`include_shifted_candles` indicates the number of previous candles to include in the feature set. For example, `include_shifted_candles: 2` tells FreqAI to include the past 2 candles for each of the features in the feature set.
 
 In total, the number of features the user of the presented example strat has created is: length of `include_timeframes` * no. features in `populate_any_indicators()` * length of `include_corr_pairlist` * no. `include_shifted_candles` * length of `indicator_periods_candles`
  $= 3 * 3 * 3 * 2 * 2 = 108$.
@@ -131,7 +131,7 @@ In total, the number of features the user of the presented example strat has cre
 
 Important metrics can be returned to the strategy at the end of each model training by assigning them to `dk.data['extra_returns_per_train']['my_new_value'] = XYZ` inside the custom prediction model class. 
 
-`FreqAI` takes the `my_new_value` assigned in this dictionary and expands it to fit the dataframe that is returned to the strategy. You can then use the returned metrics in your strategy through `dataframe['my_new_value']`. An example of how return values can be used in `FreqAI` are the `&*_mean` and `&*_std` values that are used to [created a dynamic target threshold](freqai-configuration.md#creating-a-dynamic-target-threshold).
+FreqAI takes the `my_new_value` assigned in this dictionary and expands it to fit the dataframe that is returned to the strategy. You can then use the returned metrics in your strategy through `dataframe['my_new_value']`. An example of how return values can be used in FreqAI are the `&*_mean` and `&*_std` values that are used to [created a dynamic target threshold](freqai-configuration.md#creating-a-dynamic-target-threshold).
 
 Another example, where the user wants to use live metrics from the trade database, is shown below:
 
@@ -141,15 +141,15 @@ Another example, where the user wants to use live metrics from the trade databas
     }
 ```
 
-You need to set the standard dictionary in the config so that `FreqAI` can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the preset values are what will be returned.
+You need to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the pre-set values are what will be returned.
 
 ## Feature normalization
 
-`FreqAI` is strict when it comes to data normalization. The train features, $X^{train}$, are always normalized to [-1, 1] using a shifted min-max normalization:
+FreqAI is strict when it comes to data normalization. The train features, $X^{train}$, are always normalized to [-1, 1] using a shifted min-max normalization:
 
 $$X^{train}_{norm} = 2 * \frac{X^{train} - X^{train}.min()}{X^{train}.max() - X^{train}.min()} - 1$$
 
-All other data (test data and unseen prediction data in dry/live/backtest) is always automatically normalized to the training feature space according to industry standards. `FreqAI` stores all the metadata required to ensure that test and prediction features will be properly normalized and that predictions are properly denormalized. For this reason, it is not recommended to eschew industry standards and modify `FreqAI` internals - however - advanced users can do so by inheriting `train()` in their custom `IFreqaiModel` and using their own normalization functions.
+All other data (test data and unseen prediction data in dry/live/backtest) is always automatically normalized to the training feature space according to industry standards. FreqAI stores all the metadata required to ensure that test and prediction features will be properly normalized and that predictions are properly denormalized. For this reason, it is not recommended to eschew industry standards and modify FreqAI internals - however - advanced users can do so by inheriting `train()` in their custom `IFreqaiModel` and using their own normalization functions.
 
 ## Data dimensionality reduction with Principal Component Analysis
 
@@ -169,17 +169,17 @@ This will perform PCA on the features and reduce their dimensionality so that th
 
 The `inlier_metric` is a metric aimed at quantifying how similar a the features of a data point are to the most recent historic data points. 
 
-You define the lookback window by setting `inlier_metric_window` and `FreqAI` computes the distance between the present time point and each of the previous `inlier_metric_window` lookback points. A Weibull function is fit to each of the lookback distributions and its cumulative distribution function (CDF) is used to produce a quantile for each lookback point. The `inlier_metric` is then computed for each time point as the average of the corresponding lookback quantiles. The figure below explains the concept for an `inlier_metric_window` of 5.
+You define the lookback window by setting `inlier_metric_window` and FreqAI computes the distance between the present time point and each of the previous `inlier_metric_window` lookback points. A Weibull function is fit to each of the lookback distributions and its cumulative distribution function (CDF) is used to produce a quantile for each lookback point. The `inlier_metric` is then computed for each time point as the average of the corresponding lookback quantiles. The figure below explains the concept for an `inlier_metric_window` of 5.
 
 ![inlier-metric](assets/freqai_inlier-metric.jpg)
 
-`FreqAI` adds the `inlier_metric` to the training features and hence gives the model access to a novel type of temporal information. 
+FreqAI adds the `inlier_metric` to the training features and hence gives the model access to a novel type of temporal information. 
 
 This function does **not** remove outliers from the data set.
 
 ## Weighting features for temporal importance
 
-`FreqAI` allows you to set a `weight_factor` to weight recent data more strongly than past data via an exponential function:
+FreqAI allows you to set a `weight_factor` to weight recent data more strongly than past data via an exponential function:
 
 $$ W_i = \exp(\frac{-i}{\alpha*n}) $$
 
@@ -189,13 +189,13 @@ where $W_i$ is the weight of data point $i$ in a total set of $n$ data points. B
 
 ## Outlier detection
 
-Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. `FreqAI` implements a variety of methods to identify such outliers and hence mitigate risk.
+Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. FreqAI implements a variety of methods to identify such outliers and hence mitigate risk.
 
 ### Identifying outliers with the Dissimilarity Index (DI)
 
  The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. 
 
-You can tell `FreqAI` to remove outlier data points from the training/test data sets using the DI by including the following statement in the config:
+You can tell FreqAI to remove outlier data points from the training/test data sets using the DI by including the following statement in the config:
 
 ```json
     "freqai": {
@@ -205,7 +205,7 @@ You can tell `FreqAI` to remove outlier data points from the training/test data 
     }
 ```
 
- The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. To do so, `FreqAI` measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
+ The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. To do so, FreqAI measures the distance between each training data point (feature vector), $X_{a}$, and all other training data points:
 
 $$ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} $$
 
@@ -229,7 +229,7 @@ Below is a figure that describes the DI for a 3D data set.
 
 ### Identifying outliers using a Support Vector Machine (SVM)
 
-You can tell `FreqAI` to remove outlier data points from the training/test data sets using a Support Vector Machine (SVM) by including the following statement in the config:
+You can tell FreqAI to remove outlier data points from the training/test data sets using a Support Vector Machine (SVM) by including the following statement in the config:
 
 ```json
     "freqai": {
@@ -241,7 +241,7 @@ You can tell `FreqAI` to remove outlier data points from the training/test data 
 
 The SVM will be trained on the training data and any data point that the SVM deems to be beyond the feature space will be removed.
 
-`FreqAI` uses `sklearn.linear_model.SGDOneClassSVM` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDOneClassSVM.html) (external website)) and you can elect to provide additional parameters for the SVM, such as `shuffle`, and `nu`.
+FreqAI uses `sklearn.linear_model.SGDOneClassSVM` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDOneClassSVM.html) (external website)) and you can elect to provide additional parameters for the SVM, such as `shuffle`, and `nu`.
 
 The parameter `shuffle` is by default set to `False` to ensure consistent results. If it is set to `True`, running the SVM multiple times on the same data set might result in different outcomes due to `max_iter` being to low for the algorithm to reach the demanded `tol`. Increasing `max_iter` solves this issue but causes the procedure to take longer time.
 
@@ -249,7 +249,7 @@ The parameter `nu`, *very* broadly, is the amount of data points that should be 
 
 ### Identifying outliers with DBSCAN
 
-You can configure `FreqAI` to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating `use_DBSCAN_to_remove_outliers` in the config:
+You can configure FreqAI to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating `use_DBSCAN_to_remove_outliers` in the config:
 
 ```json
     "freqai": {
@@ -265,4 +265,4 @@ Given a number of data points $N$, and a distance $\varepsilon$, DBSCAN clusters
 
 ![dbscan](assets/freqai_dbscan.jpg)
 
-`FreqAI` uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (external website)) with `min_samples` ($N$) taken as 1/4 of the no. of time points in the feature set. `eps` ($\varepsilon$) is computed automatically as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.
+FreqAI uses `sklearn.cluster.DBSCAN` (details are available on scikit-learn's webpage [here](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (external website)) with `min_samples` ($N$) taken as 1/4 of the no. of time points (candles) in the feature set. `eps` ($\varepsilon$) is computed automatically as the elbow point in the *k-distance graph* computed from the nearest neighbors in the pairwise distances of all data points in the feature set.

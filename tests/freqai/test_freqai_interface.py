@@ -8,8 +8,10 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
+from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
@@ -245,7 +247,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == num_files
-    Trade.use_db = True
+    Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
 

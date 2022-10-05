@@ -63,7 +63,7 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
 
 def test_add_indicators(default_conf, testdatadir, caplog):
     pair = "UNITTEST/BTC"
-    timerange = TimeRange(None, 'line', 0, -1000)
+    timerange = TimeRange()
 
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
