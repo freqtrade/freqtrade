@@ -351,8 +351,13 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.nr_of_successful_exits == 1
 
 
-def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
+@pytest.mark.parametrize('leverage', [
+    1, 2
+])
+def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker) -> None:
     default_conf_usdt['position_adjustment_enable'] = True
+    default_conf_usdt['trading_mode'] = 'futures'
+    default_conf_usdt['margin_mode'] = 'isolated'
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch.multiple(
@@ -363,9 +368,14 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
         price_to_precision=lambda s, x, y: y,
     )
     mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=False)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_leverage", return_value=10)
+    mocker.patch("freqtrade.exchange.Exchange.get_funding_fees", return_value=0)
+    mocker.patch("freqtrade.exchange.Exchange.get_maintenance_ratio_and_amt", return_value=(0, 0))
 
     patch_get_signal(freqtrade)
     freqtrade.strategy.custom_entry_price = lambda **kwargs: ticker_usdt['ask'] * 0.96
+    freqtrade.strategy.leverage = MagicMock(return_value=leverage)
+    freqtrade.strategy.minimal_roi = {0: 0.2}
 
     freqtrade.enter_positions()
 
@@ -377,6 +387,8 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct is None
     assert trade.stop_loss == 0.0
+    assert trade.leverage == leverage
+    assert trade.stake_amount == 60
     assert trade.initial_stop_loss == 0.0
     assert trade.initial_stop_loss_pct is None
     # No adjustment
@@ -396,6 +408,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_rate == 1.96
     assert trade.stop_loss_pct is None
     assert trade.stop_loss == 0.0
+    assert trade.stake_amount == 60
     assert trade.initial_stop_loss == 0.0
     assert trade.initial_stop_loss_pct is None
 
@@ -407,9 +420,10 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_order_id is None
     # Open rate is not adjusted yet
     assert trade.open_rate == 1.99
+    assert trade.stake_amount == 60
     assert trade.stop_loss_pct == -0.1
-    assert trade.stop_loss == 1.99 * 0.9
-    assert trade.initial_stop_loss == 1.99 * 0.9
+    assert pytest.approx(trade.stop_loss) == 1.99 * (1 - 0.1 / leverage)
+    assert pytest.approx(trade.initial_stop_loss) == 1.99 * (1 - 0.1 / leverage)
     assert trade.initial_stop_loss_pct == -0.1
 
     # 2nd order - not filling
@@ -422,7 +436,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_order_id is not None
     assert trade.open_rate == 1.99
     assert trade.orders[-1].price == 1.96
-    assert trade.orders[-1].cost == 120
+    assert trade.orders[-1].cost == 120 * leverage
 
     # Replace new order with diff. order at a lower price
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1.95)
@@ -432,8 +446,9 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert len(trade.orders) == 4
     assert trade.open_order_id is not None
     assert trade.open_rate == 1.99
+    assert trade.stake_amount == 60
     assert trade.orders[-1].price == 1.95
-    assert pytest.approx(trade.orders[-1].cost) == 120
+    assert pytest.approx(trade.orders[-1].cost) == 120 * leverage
 
     # Fill DCA order
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=None)
@@ -446,13 +461,13 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.open_order_id is None
     assert pytest.approx(trade.open_rate) == 1.963153456
     assert trade.orders[-1].price == 1.95
-    assert pytest.approx(trade.orders[-1].cost) == 120
+    assert pytest.approx(trade.orders[-1].cost) == 120 * leverage
     assert trade.orders[-1].status == 'closed'
 
-    assert pytest.approx(trade.amount) == 91.689215
+    assert pytest.approx(trade.amount) == 91.689215 * leverage
     # Check the 2 filled orders equal the above amount
-    assert pytest.approx(trade.orders[1].amount) == 30.150753768
-    assert pytest.approx(trade.orders[-1].amount) == 61.538461232
+    assert pytest.approx(trade.orders[1].amount) == 30.150753768 * leverage
+    assert pytest.approx(trade.orders[-1].amount) == 61.538461232 * leverage
 
 
 @pytest.mark.parametrize('leverage', [1, 2])
