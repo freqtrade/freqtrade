@@ -202,13 +202,7 @@ As users begin to modify the strategy and the prediction model, they will quickl
 
 ### Using Tensorboard
 
-Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
-
-```bash
-pip3 install tensorboard
-```
-
-Next, the user can activate Tensorboard with the following command:
+Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
 
 ```bash
 cd freqtrade
