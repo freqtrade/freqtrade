@@ -10,6 +10,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
+from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
@@ -37,9 +38,6 @@ def is_mac() -> bool:
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
-
-    if is_mac():
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
 
     model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
@@ -182,7 +180,6 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         ("LightGBMRegressor", 6, "freqai_test_strat"),
         ("XGBoostRegressor", 6, "freqai_test_strat"),
         ("CatboostRegressor", 6, "freqai_test_strat"),
-        ("ReinforcementLearner", 7, "freqai_rl_test_strat"),
         ("XGBoostClassifier", 6, "freqai_test_classifier"),
         ("LightGBMClassifier", 6, "freqai_test_classifier"),
         ("CatboostClassifier", 6, "freqai_test_classifier")
@@ -195,36 +192,9 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM")
 
-    if is_mac():
-        pytest.skip("Reinforcement learning module not available on intel based Mac OS")
-
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180120-20180130"})
     freqai_conf.update({"strategy": strat})
-
-    if 'ReinforcementLearner' in model:
-
-        freqai_conf["freqai"].update({"model_training_parameters": {
-            "learning_rate": 0.00025,
-            "gamma": 0.9,
-            "verbose": 1
-        }})
-        freqai_conf["freqai"].update({"model_save_type": 'stable_baselines'})
-        freqai_conf["freqai"]["rl_config"] = {
-            "train_cycles": 1,
-            "thread_count": 2,
-            "max_trade_duration_candles": 300,
-            "model_type": "PPO",
-            "policy_type": "MlpPolicy",
-            "max_training_drawdown_pct": 0.5,
-            "model_reward_parameters": {
-                "rr": 1,
-                "profit_aim": 0.02,
-                "win_reward_factor": 2
-            }}
-
-    if 'test_4ac' in model:
-        freqai_conf["freqaimodel_path"] = str(Path(__file__).parents[1] / "freqai" / "test_models")
 
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -245,7 +215,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == num_files
-    Trade.use_db = True
+    Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
