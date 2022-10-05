@@ -3,6 +3,28 @@
 !!! Note
     Reinforcement learning dependencies include large packages such as `torch`, which should be explicitly requested during `./setup.sh -i` by answering "y" to the question "Do you also want dependencies for freqai-rl (~700mb additional space required) [y/N]?" Users who prefer docker should ensure they use the docker image appended with `_freqaiRL`. 
 
+
+## Background and terminology
+
+### What is RL and why does FreqAI need it?
+
+Reinforcement learning involves two important components, the *agent* and the training *environment*. During agent training, the agent moves through historical data candle by candle, always making 1 of a set of actions: Long entry, long exit, short entry, short exit, neutral). During this training process, the environment tracks the performance of these actions and rewards the agent according to a custom user made `calculate_reward()` (here we offer a default reward for users to build on if they wish [details here](#creating-the-reward)). The reward is used to train weights in a neural network. 
+
+A second important component of the FreqAI RL implementation is the use of *state* information. State information is fed into the network at each step, including current profit, current position, and current trade duration. These are used to train the agent in the training environment, and to reinforce the agent in dry/live. *FreqAI + Freqtrade is a perfect match for this reinforcing mechanism since this information is readily available in live deployements.*
+
+Reinforcement learning is a natural progression for FreqAI, since it adds a new layer of adaptivity and market reactivity that Classifiers and Regressors cannot match. However, Classifiers and Regressors have strengths that RL does not have such as robust predictions. Improperly trained RL agents may find "cheats" and "tricks" to maximize reward without actually winning any trades. For this reason, RL is more complex and demands a higher level of understanding than typical Classifiers and Regressors.
+
+### The RL interface
+
+With the current framework, we aim to expose the training environment to the user via the common "prediction model" file (i.e. CatboostClassifier, LightGBMRegressor, etc.). Users inherit our base environment in this file, which allows them to override as much or as little of the environment as they wish. 
+
+We envision the majority of users focusing their effort on creative design of the `calculate_reward()` function [details here](#creating-the-reward), while leaving the rest of the environment untouched. Other users may not touch the environment at all, and they will only play with the configruation settings and the powerful feature engineering that already exists in FreqAI. Meanwhile, we enable advanced users to create their own model classes entirely.
+
+The framework is built on stable_baselines3 (torch) and openai gym for the base environment class. But generally speaking, the model class is well isolated. Thus, the addition of competing libraries can be easily integrated into the existing framework (albeit with some basic assistance from core-dev). For the environment, it is inheriting from `gym.env` which means that a user would need to write an entirely new environment if they wish to switch to a different library. 
+
+
+## Running Reinforcement Learning
+
 Setting up and running a Reinforcement Learning model is the same as running a Regressor or Classifier. The same two flags, `--freqaimodel` and `--strategy`, must be defined on the command line:
 
 ```bash
@@ -178,10 +200,6 @@ As users begin to modify the strategy and the prediction model, they will quickl
             return 0.
 ```
 
-### Creating a custom agent
-
-Users can inherit from `stable_baselines3` and customize anything they wish about their agent. Doing this is for advanced users only, an example is presented in `freqai/RL/ReinforcementLearnerCustomAgent.py`
-
 ### Using Tensorboard
 
 Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. To start, the user should ensure Tensorboard is installed on their computer:
@@ -199,4 +217,4 @@ tensorboard --logdir user_data/models/unique-id
 
 where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if the user wishes to view the output in their browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
 
-![tensorboard](assets/tensorboard.png)
+![tensorboard](assets/tensorboard.jpg)
