@@ -2140,10 +2140,22 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
     assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 0
-    exchange.required_candle_call_count = 1
     assert log_has(f"Using cached candle (OHLCV) data for {pairs[0][0]}, "
                    f"{pairs[0][1]}, {candle_type} ...",
                    caplog)
+    caplog.clear()
+    # Reset refresh times - must do 1 call per pair (even though required_calls is 2)
+    exchange._pairs_last_refresh_time = {}
+    res = exchange.refresh_latest_ohlcv(
+        [('IOTA/ETH', '5m', candle_type), ('XRP/ETH', '5m', candle_type)])
+    assert len(res) == len(pairs)
+
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+
+    # cache - but disabled caching
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    exchange.required_candle_call_count = 1
+
     pairlist = [
         ('IOTA/ETH', '5m', candle_type),
         ('XRP/ETH', '5m', candle_type),
