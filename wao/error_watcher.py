@@ -45,6 +45,7 @@ def smooth_romeo_restart(error_line):
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
+        # romeo.send_error_report(error_line) #todo
 
 
 def string_to_list(string):
