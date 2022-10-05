@@ -7,6 +7,7 @@ from freqtrade.constants import Config, LongShort
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
+
 logger = logging.getLogger(__name__)
 
 
