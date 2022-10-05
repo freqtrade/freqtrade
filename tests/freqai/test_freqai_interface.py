@@ -246,6 +246,7 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == num_files
+    Trade.use_db = True
     Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
