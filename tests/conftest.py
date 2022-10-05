@@ -104,6 +104,13 @@ def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     return df
 
 
+def generate_test_data_raw(timeframe: str, size: int, start: str = '2020-07-05'):
+    """ Generates data in the ohlcv format used by ccxt """
+    df = generate_test_data(timeframe, size, start)
+    df['date'] = df.loc[:, 'date'].view(np.int64) // 1000 // 1000
+    return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns)))
+
+
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
 # TODO: This should be replaced with AsyncMock once support for python 3.7 is dropped.
 def get_mock_coro(return_value=None, side_effect=None):

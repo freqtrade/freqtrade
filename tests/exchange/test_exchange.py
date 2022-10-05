@@ -22,7 +22,8 @@ from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_CO
                                        calculate_backoff, remove_credentials)
 from freqtrade.exchange.exchange import amount_to_contract_precision
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
+from tests.conftest import (generate_test_data_raw, get_mock_coro, get_patched_exchange, log_has,
+                            log_has_re, num_log_has_re)
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
@@ -2180,6 +2181,79 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
         assert log_has_re(r'Cannot download \(IOTA\/ETH, 3m\).*', caplog)
     else:
         assert len(res) == 1
+
+
+@pytest.mark.parametrize('candle_type', [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
+def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_machine) -> None:
+    start = datetime(2021, 8, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
+    ohlcv = generate_test_data_raw('1h', 100, start.strftime('%Y-%m-%d'))
+    time_machine.move_to(start + timedelta(hours=99, minutes=30))
+
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+    pair1 = ('IOTA/ETH', '1h', candle_type)
+    pair2 = ('XRP/ETH', '1h', candle_type)
+    pairs = [pair1, pair2]
+
+    # No caching
+    assert not exchange._klines
+    res = exchange.refresh_latest_ohlcv(pairs, cache=False)
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert len(res) == 2
+    assert len(res[pair1]) == 99
+    assert len(res[pair2]) == 99
+    assert not exchange._klines
+    exchange._api_async.fetch_ohlcv.reset_mock()
+
+    # With caching
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert len(res) == 2
+    assert len(res[pair1]) == 99
+    assert len(res[pair2]) == 99
+    assert exchange._klines
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    exchange._api_async.fetch_ohlcv.reset_mock()
+
+    # Returned from cache
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
+    assert len(res) == 2
+    assert len(res[pair1]) == 99
+    assert len(res[pair2]) == 99
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+
+    # Move time 1 candle further but result didn't change yet
+    time_machine.move_to(start + timedelta(hours=101))
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert len(res) == 2
+    assert len(res[pair1]) == 99
+    assert len(res[pair2]) == 99
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    refresh_pior = exchange._pairs_last_refresh_time[pair1]
+
+    # New candle on exchange - only return 50 candles (but one candle further)
+    new_startdate = (start + timedelta(hours=51)).strftime('%Y-%m-%d %H:%M')
+    ohlcv = generate_test_data_raw('1h', 50, new_startdate)
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert len(res) == 2
+    assert len(res[pair1]) == 100
+    assert len(res[pair2]) == 100
+    assert refresh_pior != exchange._pairs_last_refresh_time[pair1]
+
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
+    assert exchange._pairs_last_refresh_time[pair2] == ohlcv[-1][0] // 1000
+    exchange._api_async.fetch_ohlcv.reset_mock()
+
+    # Retry same call - no action.
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
+    assert len(res) == 2
+    assert len(res[pair1]) == 100
+    assert len(res[pair2]) == 100
 
 
 @pytest.mark.asyncio
