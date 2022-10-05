@@ -1,7 +1,7 @@
 class BrainConfig:
     BRAIN = "Freq_Cluc6werk"
-    IS_SCHEDULE_ORDER = False
-    IS_LIMIT_STOP_ORDER_ENABLED = False
+    IS_SCHEDULE_ORDER = True
+    IS_LIMIT_STOP_ORDER_ENABLED = True
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
     BACKTEST_MONTH_LIST = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     BACKTEST_DATA_CLEANER_YEAR = 2021
