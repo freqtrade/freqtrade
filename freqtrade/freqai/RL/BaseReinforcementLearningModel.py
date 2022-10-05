@@ -309,7 +309,6 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                 return -2
 
             pnl = self.get_unrealized_profit()
-            rew = np.sign(pnl) * (pnl + 1)
             factor = 100.
 
             # reward agent for entering trades
@@ -340,13 +339,13 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             if action == Actions.Long_exit.value and self._position == Positions.Long:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
+                return float(pnl * factor)
 
             # close short
             if action == Actions.Short_exit.value and self._position == Positions.Short:
                 if pnl > self.profit_aim * self.rr:
                     factor *= self.rl_config['model_reward_parameters'].get('win_reward_factor', 2)
-                return float(rew * factor)
+                return float(pnl * factor)
 
             return 0.
 
