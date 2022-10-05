@@ -1,4 +1,4 @@
-from wao.brain_config import BrainConfig
+from brain_config import BrainConfig
 import requests
 
 from execution.config import Config
