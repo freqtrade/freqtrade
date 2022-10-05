@@ -2083,7 +2083,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None:
     ohlcv = [
         [
-            (arrow.utcnow().int_timestamp - 1) * 1000,  # unix timestamp ms
+            (arrow.utcnow().shift(minutes=-5).int_timestamp) * 1000,  # unix timestamp ms
             1,  # open
             2,  # high
             3,  # low
@@ -2159,6 +2159,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None
     assert exchange._api_async.fetch_ohlcv.call_count == 3
     exchange._api_async.fetch_ohlcv.reset_mock()
     caplog.clear()
+
     # Call with invalid timeframe
     res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '3m', candle_type)], cache=False)
     if candle_type != CandleType.MARK:
