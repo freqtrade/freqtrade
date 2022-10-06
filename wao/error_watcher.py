@@ -11,6 +11,8 @@ from wao.brain_config import BrainConfig
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
+from trello_notifier import Trello_Notifier
+
 
 
 
