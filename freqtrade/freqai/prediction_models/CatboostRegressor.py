@@ -41,7 +41,8 @@ class CatboostRegressor(BaseRegressionModel):
         init_model = self.get_init_model(dk.pair)
 
         model = CatBoostRegressor(
-            allow_writing_files=False,
+            allow_writing_files=True,
+            train_dir=dk.data_path,
             **self.model_training_parameters,
         )
 
