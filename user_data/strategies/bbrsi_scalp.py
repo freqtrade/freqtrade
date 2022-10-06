@@ -9,7 +9,7 @@ from wao.wao_strategy import WAOStrategy
 
 
 class bbrsi_scalp(WAOStrategy):
-    brain = "Freq_Cluc6werk"
+    brain = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
