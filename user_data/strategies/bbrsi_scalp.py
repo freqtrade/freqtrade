@@ -6,16 +6,17 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.wao_strategy import WAOStrategy
+from wao.brain_config import BrainConfig
 
 
 class bbrsi_scalp(WAOStrategy):
-    brain = "Freq_bbrsi_scalp"
+    BrainConfig.BRAIN = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
         if self.coin == 'BTC' or self.coin == 'ADA':
-            self.brain = "Freq_bbrsi_scalp_ada_btc"
-        super().__init__(config, self.brain, 2, 0.14)
+            BrainConfig.BRAIN = "Freq_bbrsi_scalp_ada_btc"
+        super().__init__(config, 2, 0.14)
 
     timeframe = '5m'
 

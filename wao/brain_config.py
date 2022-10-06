@@ -1,5 +1,5 @@
 class BrainConfig:
-    BRAIN = "Freq_Cluc6werk"
+    BRAIN = "Freq_Cluc6werk"  # set from strategy files
     IS_SCHEDULE_ORDER = True
     IS_LIMIT_STOP_ORDER_ENABLED = True
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
@@ -24,4 +24,3 @@ class BrainConfig:
     CUMULATIVE_PROFIT_BINANCE_FILE_PATH = FREQTRADE_PATH + "/_cumulative_profit_binance.txt"
     INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH = FREQTRADE_PATH + "/_initial_account_balance_binance.txt"
     IS_SMOOTH_ERROR_HANDLING_ENABLED = True
-
