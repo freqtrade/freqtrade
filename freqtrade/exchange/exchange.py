@@ -1866,8 +1866,7 @@ class Exchange:
                     f"Time jump detected. Evicting cache for {pair}, {timeframe}, {candle_type}")
                 del self._klines[(pair, timeframe, candle_type)]
 
-        if (not since_ms
-                and (self._ft_has["ohlcv_require_since"] or not_all_data)):
+        if (not since_ms and (self._ft_has["ohlcv_require_since"] or not_all_data)):
             # Multiple calls for one pair - to get more history
             one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
                 timeframe, candle_type, since_ms)
@@ -1917,7 +1916,7 @@ class Exchange:
     def _process_ohlcv_df(self, pair: str, timeframe: str, c_type: CandleType, ticks: List[List],
                           cache: bool, drop_incomplete: bool) -> DataFrame:
         # keeping last candle time as last refreshed time of the pair
-        if ticks:
+        if ticks and cache:
             self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[-1][0] // 1000
         # keeping parsed dataframe in cache
         ohlcv_df = ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
