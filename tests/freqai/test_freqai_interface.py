@@ -181,6 +181,8 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
@@ -208,6 +210,8 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
@@ -233,6 +237,8 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'constant_{i}'] = i
 
     metadata = {"pair": "ADA/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
@@ -256,6 +262,8 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'constant_{i}'] = i
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
@@ -312,6 +320,8 @@ def test_follow_mode(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
+    for i in range(5):
+        df[f'constant_{i}'] = i
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702

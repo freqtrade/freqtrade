@@ -460,6 +460,18 @@ class FreqaiDataKitchen:
 
         return df
 
+    def check_pred_labels(self, df_predictions: DataFrame) -> None:
+        """
+        Check that prediction feature labels match training feature labels.
+        :params:
+        :df_predictions: incoming predictions
+        """
+        train_labels = self.data_dictionary["train_features"].columns
+        pred_labels = df_predictions.columns
+        if len(train_labels.difference(pred_labels)) != 0:
+            self.data_dictionary["prediction_features"] = df_predictions[train_labels]
+        return
+
     def principal_component_analysis(self) -> None:
         """
         Performs Principal Component Analysis on the data for dimensionality reduction
