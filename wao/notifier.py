@@ -34,6 +34,8 @@ def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN):
                                '/sendMessage?chat_id=' + get_telegram_channel_id(brain) +
                                '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
+        print(str(result))
+
         if is_from_429_watcher:
             if str(result) == TELEGRAM_RESPONSE_429:
                 delete_429_file(text)
