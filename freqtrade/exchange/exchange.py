@@ -1854,8 +1854,12 @@ class Exchange:
                          since_ms: Optional[int], cache: bool) -> Coroutine:
         not_all_data = self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
-            # Not in cache - force multi-calls
-            not_all_data = False
+            candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
+            min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
+            # Check if 1 call can get us updated candles without hole in the data.
+            if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
+                # Cache can be used - do one-off call.
+                not_all_data = False
 
         if (not since_ms
                 and (self._ft_has["ohlcv_require_since"] or not_all_data)):
