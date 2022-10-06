@@ -7,16 +7,17 @@ Should not import anything from freqtrade,
 so it can be used as a standalone script.
 """
 import argparse
-import time
-import websockets
-import socket
 import asyncio
 import logging
-import rapidjson
-import pandas
-import orjson
+import socket
 import sys
+import time
 from pathlib import Path
+
+import orjson
+import pandas
+import rapidjson
+import websockets
 from dateutil.relativedelta import relativedelta
 
 
