@@ -24,4 +24,5 @@ class BrainConfig:
     CUMULATIVE_PROFIT_BINANCE_FILE_PATH = FREQTRADE_PATH + "/_cumulative_profit_binance.txt"
     INITIAL_ACCOUNT_BALANCE_BINANCE_FILE_PATH = FREQTRADE_PATH + "/_initial_account_balance_binance.txt"
     IS_SMOOTH_ERROR_HANDLING_ENABLED = True
+    IS_SCHEDULE_ORDER = True
 
