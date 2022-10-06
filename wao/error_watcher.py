@@ -48,9 +48,9 @@ def smooth_romeo_restart(error_line):
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
         # romeo.send_error_report(error_line) #todo
-    # else:
+    else:
     #     post_request(error_line) #todo uncomment
-    #     send_to_trello(error_line) #todo title-error_line, description-error_line
+        send_to_trello(title=error_line,description=error_line) #todo title-error_line, description-error_line
 
 
 def string_to_list(string):
@@ -90,6 +90,9 @@ def get_error_line(file_name):
                 return line_str
     return None
 
+def send_to_trello(title,description):
+    trello_notifier = Trello_Notifier()
+    trello_notifier.create_trello_bug_ticket(title,description)
 
 class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
