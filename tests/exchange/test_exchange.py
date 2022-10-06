@@ -2255,6 +2255,18 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res[pair1]) == 100
     assert len(res[pair2]) == 100
 
+    # Move to distant future (so a 1 call would cause a hole in the data)
+    time_machine.move_to(start + timedelta(hours=2000))
+    ohlcv = generate_test_data_raw('1h', 100, start + timedelta(hours=1900))
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+    res = exchange.refresh_latest_ohlcv(pairs)
+
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert len(res) == 2
+    # Cache eviction - new data.
+    assert len(res[pair1]) == 99
+    assert len(res[pair2]) == 99
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

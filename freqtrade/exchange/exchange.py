@@ -1860,6 +1860,11 @@ class Exchange:
             if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
                 # Cache can be used - do one-off call.
                 not_all_data = False
+            else:
+                # Time jump detected, evict cache
+                logger.info(
+                    f"Time jump detected. Evicting cache for {pair}, {timeframe}, {candle_type}")
+                del self._klines[(pair, timeframe, candle_type)]
 
         if (not since_ms
                 and (self._ft_has["ohlcv_require_since"] or not_all_data)):
