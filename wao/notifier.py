@@ -24,7 +24,7 @@ def send_stop_bot_message(reason):
     post_request(text)
 
 
-def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN):
+def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN, is_from_error_handler=False):
     text.replace("#", "_")
     # if Config.TELEGRAM_LOG_ENABLED:
     #     print("post_request: " + text + " ---------------------")
@@ -34,7 +34,8 @@ def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN):
                                '/sendMessage?chat_id=' + get_telegram_channel_id(brain) +
                                '&text=' + text.replace("_", "-") + '&parse_mode=Markdown')
 
-        print(str(result))
+        if not is_from_error_handler:
+            print(str(result))
 
         if is_from_429_watcher:
             if str(result) == TELEGRAM_RESPONSE_429:
