@@ -11,7 +11,7 @@ from wao.brain_config import BrainConfig
 sys.path.append(BrainConfig.EXECUTION_PATH)
 from config import Config
 from romeo import Romeo, RomeoExitPriceType
-from trello_notifier import Trello_Notifier
+from notifier import Notifier
 
 
 
@@ -90,8 +90,9 @@ def get_error_line(file_name):
     return None
 
 def send_to_trello(title,description):
-    trello_notifier = Trello_Notifier()
-    trello_notifier.create_trello_bug_ticket(title,description)
+    # trello_notifier = Trello_Notifier()
+    notifier = Notifier(BrainConfig.MODE)
+    notifier.create_trello_bug_ticket(title,description)
 
 class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
