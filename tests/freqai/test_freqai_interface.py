@@ -192,12 +192,12 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
-    Trade.use_db = False
     if is_arm() and "Catboost" in model:
         pytest.skip("CatBoost is not supported on ARM")
 
     if is_mac():
         pytest.skip("Reinforcement learning module not available on intel based Mac OS")
+    Trade.use_db = False
 
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180120-20180130"})
