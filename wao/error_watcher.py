@@ -90,7 +90,6 @@ def get_error_line(file_name):
     return None
 
 def send_to_trello(title,description):
-    # trello_notifier = Trello_Notifier()
     notifier = Notifier(BrainConfig.MODE)
     notifier.create_trello_bug_ticket(title,description)
 
