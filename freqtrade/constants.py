@@ -5,7 +5,7 @@ bot constants
 """
 from typing import Any, Dict, List, Literal, Tuple
 
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, RPCMessageType
 
 
 DEFAULT_CONFIG = 'config.json'
@@ -282,6 +282,7 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'allow_custom_messages': {'type': 'boolean', 'default': True},
                 'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
@@ -344,6 +345,8 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
+                **dict([(x, {'type': 'object'}) for x in RPCMessageType]),
+                # Below -> Deprecated
                 'webhookentry': {'type': 'object'},
                 'webhookentrycancel': {'type': 'object'},
                 'webhookentryfill': {'type': 'object'},

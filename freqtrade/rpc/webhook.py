@@ -45,6 +45,7 @@ class Webhook(RPCHandler):
         """ Send a message to telegram channel """
         try:
             whconfig = self._config['webhook']
+            # Deprecated 2022.10 - only keep generic method.
             if msg['type'] in [RPCMessageType.ENTRY]:
                 valuedict = whconfig.get('webhookentry')
             elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
@@ -61,6 +62,9 @@ class Webhook(RPCHandler):
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):
                 valuedict = whconfig.get('webhookstatus')
+            elif msg['type'].value in whconfig:
+                # Allow all types ...
+                valuedict = whconfig.get(msg['type'].value)
             elif msg['type'] in (
                     RPCMessageType.PROTECTION_TRIGGER,
                     RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
@@ -69,8 +73,7 @@ class Webhook(RPCHandler):
                     RPCMessageType.STRATEGY_MSG):
                 # Don't fail for non-implemented types
                 return
-            else:
-                raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
+
             if not valuedict:
                 logger.info("Message type '%s' not configured for webhooks", msg['type'])
                 return
