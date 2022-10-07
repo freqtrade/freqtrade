@@ -46,7 +46,9 @@ class CryptoToFiatConverter(LoggingMixin):
         if CryptoToFiatConverter.__instance is None:
             CryptoToFiatConverter.__instance = object.__new__(cls)
             try:
-                CryptoToFiatConverter._coingekko = CoinGeckoAPI()
+                # Limit retires to 1 (0 and 1)
+                # otherwise we risk bot impact if coingecko is down.
+                CryptoToFiatConverter._coingekko = CoinGeckoAPI(retries=1)
             except BaseException:
                 CryptoToFiatConverter._coingekko = None
         return CryptoToFiatConverter.__instance
