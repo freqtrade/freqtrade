@@ -94,6 +94,19 @@ Optional parameters are available to enable automatic retries for webhook messag
     },
 ```
 
+Custom messages can be sent to Webhook endpoints via the dataprovider.send_msg() function. To enable this, set the `allow_custom_messages` option to `true`:
+
+```json
+  "webhook": {
+        "enabled": true,
+        "url": "https://<YOURHOOKURL>",
+        "allow_custom_messages": true,
+        "webhookstatus": {
+            "status": "Status: {status}"
+        }
+    },
+```
+
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
 ### Webhookentry
@@ -288,3 +301,13 @@ Available fields correspond to the fields for webhooks and are documented in the
 The notifications will look as follows by default.
 
 ![discord-notification](assets/discord_notification.png)
+
+Custom messages can be sent from a strategy to Discord endpoints via the dataprovider.send_msg() function. To enable this, set the `allow_custom_messages` option to `true`:
+
+```json
+  "discord": {
+        "enabled": true,
+        "webhook_url": "https://discord.com/api/webhooks/<Your webhook URL ...>",
+        "allow_custom_messages": true,
+    },
+```
