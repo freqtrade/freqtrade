@@ -181,13 +181,14 @@ class ClientProtocol:
     async def _handle_default(self, name, type, data):
         key, la, df = data['key'], data['la'], data['df']
 
-        columns = ", ".join([str(column) for column in df.columns])
+        if not df.empty:
+            columns = ", ".join([str(column) for column in df.columns])
 
-        self.logger.info(key)
-        self.logger.info(f"Last analyzed datetime: {la}")
-        self.logger.info(f"Latest candle datetime: {df.iloc[-1]['date']}")
-        self.logger.info(f"DataFrame length: {len(df)}")
-        self.logger.info(f"DataFrame columns: {columns}")
+            self.logger.info(key)
+            self.logger.info(f"Last analyzed datetime: {la}")
+            self.logger.info(f"Latest candle datetime: {df.iloc[-1]['date']}")
+            self.logger.info(f"DataFrame length: {len(df)}")
+            self.logger.info(f"DataFrame columns: {columns}")
 
 
 async def create_client(
@@ -275,6 +276,7 @@ async def create_client(
             logger.error("Unexpected error has occurred:")
             logger.exception(e)
 
+            await asyncio.sleep(sleep_time)
             continue
 
 
