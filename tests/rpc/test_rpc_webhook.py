@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
-import pytest
 from requests import RequestException
 
 from freqtrade.enums import ExitType, RPCMessageType
@@ -355,15 +354,6 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     webhook.send_msg(msg)
     assert log_has("Problem calling Webhook. Please check your webhook configuration. "
                    "Exception: 'DEADBEEF'", caplog)
-
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
-    msg = {
-        'type': 'DEADBEEF',
-        'status': 'whatever'
-    }
-    with pytest.raises(NotImplementedError):
-        webhook.send_msg(msg)
 
     # Test no failure for not implemented but known messagetypes
     for e in RPCMessageType:
