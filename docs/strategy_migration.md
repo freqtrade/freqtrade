@@ -50,12 +50,12 @@ Note : `forcesell`, `forcebuy`, `emergencysell` are changed to `force_exit`, `fo
     * `force_sell` -> `force_exit`
     * `emergency_sell` -> `emergency_exit`
   * Webhook terminology changed from "sell" to "exit", and from "buy" to entry
-    * `webhookbuy` -> `webhookentry`
-    * `webhookbuyfill` -> `webhookentryfill`
-    * `webhookbuycancel` -> `webhookentrycancel`
-    * `webhooksell` -> `webhookexit`
-    * `webhooksellfill` -> `webhookexitfill`
-    * `webhooksellcancel` -> `webhookexitcancel`
+    * `webhookbuy` -> `entry`
+    * `webhookbuyfill` -> `entry_fill`
+    * `webhookbuycancel` -> `entry_cancel`
+    * `webhooksell` -> `exit`
+    * `webhooksellfill` -> `exit_fill`
+    * `webhooksellcancel` -> `exit_cancel`
   * Telegram notification settings
     * `buy` -> `entry`
     * `buy_fill` -> `entry_fill`
