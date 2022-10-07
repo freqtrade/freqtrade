@@ -170,15 +170,15 @@ class ClientProtocol:
 
     def _calculate_time_difference(self):
         old_last_received_at = self._LAST_RECEIVED_AT
-        self._LAST_RECEIVED_AT = time.time()
-        time_delta = relativedelta(seconds=(self._LAST_RECEIVED_AT - old_last_received_at))
+        self._LAST_RECEIVED_AT = time.time() * 1000
+        time_delta = relativedelta(microseconds=(self._LAST_RECEIVED_AT - old_last_received_at))
 
         return readable_timedelta(time_delta)
 
     async def _handle_whitelist(self, name, type, data):
         self.logger.info(data)
 
-    async def _handle_default(self, name, type, data):
+    async def _handle_analyzed_df(self, name, type, data):
         key, la, df = data['key'], data['la'], data['df']
 
         if not df.empty:
@@ -189,6 +189,12 @@ class ClientProtocol:
             self.logger.info(f"Latest candle datetime: {df.iloc[-1]['date']}")
             self.logger.info(f"DataFrame length: {len(df)}")
             self.logger.info(f"DataFrame columns: {columns}")
+        else:
+            self.logger.info("Empty DataFrame")
+
+    async def _handle_default(self, name, type, data):
+        self.logger.info("Unkown message of type {type} received...")
+        self.logger.info(data)
 
 
 async def create_client(
