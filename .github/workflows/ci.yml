@@ -407,15 +407,6 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-    - name: Discord notification
-      uses: rjstone/discord-webhook-notify@v1
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
-      with:
-          severity: info
-          details: Deploy Succeeded!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-
-
   deploy_arm:
     needs: [ deploy ]
     # Only run on 64bit machines
@@ -443,3 +434,11 @@ jobs:
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_arm64.sh
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
+      with:
+          severity: info
+          details: Deploy Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

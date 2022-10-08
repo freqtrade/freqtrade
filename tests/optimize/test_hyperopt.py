@@ -297,6 +297,7 @@ def test_params_no_optimize_details(hyperopt) -> None:
 def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
 
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
@@ -530,6 +531,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
 
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
@@ -581,6 +583,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
     mocker.patch(
@@ -622,6 +625,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
 def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
@@ -663,6 +667,7 @@ def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
 def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
@@ -736,6 +741,7 @@ def test_simplified_interface_all_failed(mocker, hyperopt_conf, caplog) -> None:
 def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))
@@ -778,6 +784,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
 def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
+    mocker.patch('freqtrade.optimize.hyperopt.calculate_market_change', return_value=1.5)
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
                  MagicMock(return_value=(MagicMock(), None)))

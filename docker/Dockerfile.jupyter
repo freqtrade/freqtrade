@@ -1,7 +1,8 @@
 FROM freqtradeorg/freqtrade:develop_plot
 
 
-RUN pip install jupyterlab --user --no-cache-dir
+# Pin jupyter-client to avoid tornado version conflict
+RUN pip install jupyterlab jupyter-client==7.3.4 --user --no-cache-dir
 
 # Empty the ENTRYPOINT to allow all commands
 ENTRYPOINT []

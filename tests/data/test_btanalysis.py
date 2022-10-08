@@ -235,7 +235,7 @@ def test_calculate_market_change(testdatadir):
     data = load_data(datadir=testdatadir, pairs=pairs, timeframe='5m')
     result = calculate_market_change(data)
     assert isinstance(result, float)
-    assert pytest.approx(result) == 0.00955514
+    assert pytest.approx(result) == 0.01100002
 
 
 def test_combine_dataframes_with_mean(testdatadir):
@@ -275,7 +275,7 @@ def test_create_cum_profit1(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
-    bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
+    bt_data['close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
     df = load_pair_history(pair="TRX/BTC", timeframe='5m',

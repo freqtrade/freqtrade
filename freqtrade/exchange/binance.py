@@ -69,6 +69,37 @@ class Binance(Exchange):
         return tickers
 
     @retrier
+    def additional_exchange_init(self) -> None:
+        """
+        Additional exchange initialization logic.
+        .api will be available at this point.
+        Must be overridden in child methods if required.
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
+                position_side = self._api.fapiPrivateGetPositionsideDual()
+                self._log_exchange_response('position_side_setting', position_side)
+                assets_margin = self._api.fapiPrivateGetMultiAssetsMargin()
+                self._log_exchange_response('multi_asset_margin', assets_margin)
+                msg = ""
+                if position_side.get('dualSidePosition') is True:
+                    msg += (
+                        "\nHedge Mode is not supported by freqtrade. "
+                        "Please change 'Position Mode' on your binance futures account.")
+                if assets_margin.get('multiAssetsMargin') is True:
+                    msg += ("\nMulti-Asset Mode is not supported by freqtrade. "
+                            "Please change 'Asset Mode' on your binance futures account.")
+                if msg:
+                    raise OperationalException(msg)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
     def _set_leverage(
         self,
         leverage: float,

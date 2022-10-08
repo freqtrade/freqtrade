@@ -284,7 +284,7 @@ class ExternalMessageConsumer:
             logger.error(f"Empty message received from `{producer_name}`")
             return
 
-        logger.info(f"Received message of type `{producer_message.type}` from `{producer_name}`")
+        logger.debug(f"Received message of type `{producer_message.type}` from `{producer_name}`")
 
         message_handler = self._message_handlers.get(producer_message.type)
 

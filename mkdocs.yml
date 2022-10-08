@@ -23,6 +23,13 @@ nav:
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
+    - FreqAI:
+        - Introduction: freqai.md
+        - Configuration: freqai-configuration.md
+        - Parameter table: freqai-parameter-table.md
+        - Feature engineering: freqai-feature-engineering.md
+        - Running FreqAI: freqai-running.md
+        - Developer guide: freqai-developers.md
     - Short / Leverage: leverage.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
@@ -36,7 +43,6 @@ nav:
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
         - Producer/Consumer mode: producer-consumer.md
-        - FreqAI: freqai.md
         - Edge Positioning: edge.md
         - Sandbox Testing: sandbox-testing.md
     - FAQ: faq.md
