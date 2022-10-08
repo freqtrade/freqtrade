@@ -63,6 +63,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         self.MODELCLASS = getattr(mod, self.model_type)
         self.policy_type = self.freqai_info['rl_config']['policy_type']
         self.unset_outlier_removal()
+        self.net_arch = self.rl_config.get('net_arch', [128, 128])
 
     def unset_outlier_removal(self):
         """
@@ -286,6 +287,17 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             logger.info('No model file on disk to continue learning from.')
 
         return model
+
+    def _on_stop(self):
+        """
+        Hook called on bot shutdown. Close SubprocVecEnv subprocesses for clean shutdown.
+        """
+
+        if self.train_env:
+            self.train_env.close()
+
+        if self.eval_env:
+            self.eval_env.close()
 
     # Nested class which can be overridden by user to customize further
     class MyRLEnv(Base5ActionRLEnv):

@@ -24,7 +24,7 @@ class ReinforcementLearner_test_4ac(BaseReinforcementLearningModel):
         total_timesteps = self.freqai_info["rl_config"]["train_cycles"] * len(train_df)
 
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=[128, 128])
+                             net_arch=[64, 64])
 
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,

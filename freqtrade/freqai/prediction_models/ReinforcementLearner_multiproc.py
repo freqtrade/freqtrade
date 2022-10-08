@@ -28,7 +28,7 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
 
         # model arch
         policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                             net_arch=[128, 128])
+                             net_arch=self.net_arch)
 
         if dk.pair not in self.dd.model_dictionary or not self.continual_learning:
             model = self.MODELCLASS(self.policy_type, self.train_env, policy_kwargs=policy_kwargs,
@@ -87,14 +87,3 @@ class ReinforcementLearner_multiproc(BaseReinforcementLearningModel):
         self.eval_callback = EvalCallback(self.eval_env, deterministic=True,
                                           render=False, eval_freq=len(train_df),
                                           best_model_save_path=str(dk.data_path))
-
-    def _on_stop(self):
-        """
-        Hook called on bot shutdown. Close SubprocVecEnv subprocesses for clean shutdown.
-        """
-
-        if self.train_env:
-            self.train_env.close()
-
-        if self.eval_env:
-            self.eval_env.close()
