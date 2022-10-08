@@ -1262,7 +1262,7 @@ class FreqaiDataKitchen:
         return file_exists
 
     def spice_extractor(self, indicator: str, dataframe: DataFrame) -> npt.NDArray:
-        if indicator in dataframe:
+        if indicator in dataframe.columns:
             return np.array(dataframe[indicator])
         else:
             logger.warning(f'User asked spice_rack for {indicator}, '

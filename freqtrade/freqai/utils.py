@@ -160,14 +160,13 @@ def auto_populate_any_indicators(
     if set_generalized_indicators:
         df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
         df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
-        df["&s-minima"] = 0
-        df["&s-maxima"] = 0
+        df["&s-extrema"] = 0
         min_peaks = argrelextrema(df["close"].values, np.less, order=80)
         max_peaks = argrelextrema(df["close"].values, np.greater, order=80)
         for mp in min_peaks[0]:
-            df.at[mp, "&s-minima"] = 1
+            df.at[mp, "&s-extrema"] = -1
         for mp in max_peaks[0]:
-            df.at[mp, "&s-maxima"] = 1
+            df.at[mp, "&s-extrema"] = 1
 
     return df
 
@@ -222,7 +221,7 @@ def setup_freqai_spice_rack(config: dict, exchange: Optional[Exchange]) -> Dict[
 
     config['freqai']['feature_parameters'].update({'include_timeframes': new_tfs})
     config['freqai']['feature_parameters'].update({'include_corr_pairlist': new_corr_pairs})
-    config.update({"freqaimodel": 'LightGBMRegressorMultiTarget'})
+    config.update({"freqaimodel": 'LightGBMRegressor'})
     return config
 
 # Keep below for when we wish to download heterogeneously lengthed data for FreqAI.

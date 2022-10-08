@@ -4,7 +4,7 @@
         "enabled": true,
         "purge_old_models": true,
         "train_period_days": 4,
-        "backtest_period_days": 2,
+        "backtest_period_days": 1,
         "identifier": "spicy-id",
         "feature_parameters": {
             "include_timeframes": [
