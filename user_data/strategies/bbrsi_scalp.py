@@ -10,7 +10,7 @@ from wao.brain_config import BrainConfig
 
 
 class bbrsi_scalp(WAOStrategy):
-    BrainConfig.BRAIN = "Freq_Cluc6werk"
+    BrainConfig.BRAIN = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
