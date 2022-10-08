@@ -58,9 +58,20 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
     You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
+
+    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
+
+    ``` bash
+    freqtrade trade --config user_data/config1.json --config user_data/config-private.json <...>
+    ```
+
+    The below is equivalent to the example above - but having 2 configuration files in the configuration, for easier reuse.
 
     ``` json title="user_data/config.json"
     "add_config_files": [
+        "config1.json",
         "config-private.json"
     ]
     ```
@@ -68,17 +79,6 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
     ``` bash
     freqtrade trade --config user_data/config.json <...>
     ```
-
-    The 2nd file should only specify what you intend to override.
-    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
-
-    For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.
-
-    ``` bash
-    freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
-    ```
-
-    This is equivalent to the example above - but `config-private.json` is specified as cli argument.
 
 ??? Note "config collision handling"
     If the same configuration setting takes place in both `config.json` and `config-import.json`, then the parent configuration wins.
@@ -110,6 +110,8 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
         "stake_amount": "unlimited"
     }
     ```
+
+    If multiple files are in the `add_config_files` section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).
 
 ## Configuration parameters
 
@@ -223,14 +225,16 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `webhook.webhookexitcancel` | Payload to send on exit order cancel. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `webhook.webhookexitfill` | Payload to send on exit order filled. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `webhook.webhookstatus` | Payload to send on status calls. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
-| | **Rest API / FreqUI**
+| | **Rest API / FreqUI / Producer-Consumer**
 | `api_server.enabled` | Enable usage of API Server. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** Boolean
 | `api_server.listen_ip_address` | Bind IP address. See the [API Server documentation](rest-api.md) for more details. <br> **Datatype:** IPv4
 | `api_server.listen_port` | Bind Port. See the [API Server documentation](rest-api.md) for more details. <br>**Datatype:** Integer between 1024 and 65535
 | `api_server.verbosity` | Logging verbosity. `info` will print all RPC Calls, while "error" will only display errors. <br>**Datatype:** Enum, either `info` or `error`. Defaults to `info`.
 | `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
+| `api_server.ws_token` | API token for the Message WebSocket. See the [API Server documentation](rest-api.md) for more details.  <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
+| `external_message_consumer` | Enable [Producer/Consumer mode](producer-consumer.md) for more details. <br> **Datatype:** Dict
 | | **Other**
 | `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `force_entry_enable` | Enables the RPC Commands to force a Trade entry. More information below. <br> **Datatype:** Boolean
@@ -525,21 +529,28 @@ It means if the order is not executed immediately AND fully then it is cancelled
 It is the same as FOK (above) except it can be partially fulfilled. The remaining part
 is automatically cancelled by the exchange.
 
-The `order_time_in_force` parameter contains a dict with buy and sell time in force policy values.
+**PO (Post only):**
+
+Post only order. The order is either placed as a maker order, or it is canceled.
+This means the order must be placed on orderbook for at at least time in an unfilled state.
+
+#### time_in_force config
+
+The `order_time_in_force` parameter contains a dict with entry and exit time in force policy values.
 This can be set in the configuration file or in the strategy.
 Values set in the configuration file overwrites values set in the strategy.
 
-The possible values are: `gtc` (default), `fok` or `ioc`.
+The possible values are: `GTC` (default), `FOK` or `IOC`.
 
 ``` python
 "order_time_in_force": {
-    "entry": "gtc",
-    "exit": "gtc"
+    "entry": "GTC",
+    "exit": "GTC"
 },
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance and kucoin.
+    This is ongoing work. For now, it is supported only for binance, gate, ftx and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### What values can be used for fiat_display_currency?
@@ -650,22 +661,26 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
 ### Using proxy with Freqtrade
 
-To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
-
-An example for this can be found in `config_examples/config_full.example.json`
-
-``` json
-"ccxt_async_config": {
-    "aiohttp_trust_env": true
-}
-```
-
-Then, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values
+To use a proxy with freqtrade, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_PROXY"` set to the appropriate values.
 
 ``` bash
 export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
+```
+
+#### Proxy just exchange requests
+
+To use a proxy just for exchange connections (skips/ignores telegram and coingecko) - you can also define the proxies as part of the ccxt configuration.
+
+``` json
+"ccxt_config": {
+    "aiohttp_proxy": "http://addr:port",
+    "proxies": {
+        "http": "http://addr:port",
+        "https": "http://addr:port"
+    },
+}
 ```
 
 ## Next step

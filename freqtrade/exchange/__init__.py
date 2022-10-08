@@ -9,10 +9,10 @@ from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.coinbasepro import Coinbasepro
-from freqtrade.exchange.exchange import (amount_to_contracts, amount_to_precision,
-                                         available_exchanges, ccxt_exchanges, contracts_to_amount,
-                                         date_minus_candles, is_exchange_known_ccxt,
-                                         is_exchange_officially_supported, market_is_active,
+from freqtrade.exchange.exchange import (amount_to_contract_precision, amount_to_contracts,
+                                         amount_to_precision, available_exchanges, ccxt_exchanges,
+                                         contracts_to_amount, date_minus_candles,
+                                         is_exchange_known_ccxt, market_is_active,
                                          price_to_precision, timeframe_to_minutes,
                                          timeframe_to_msecs, timeframe_to_next_date,
                                          timeframe_to_prev_date, timeframe_to_seconds,

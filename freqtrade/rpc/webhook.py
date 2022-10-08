@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from requests import RequestException, post
 
+from freqtrade.constants import Config
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC, RPCHandler
 
@@ -19,7 +20,7 @@ logger.debug('Included module rpc.webhook ...')
 class Webhook(RPCHandler):
     """  This class handles all webhook communication """
 
-    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
+    def __init__(self, rpc: RPC, config: Config) -> None:
         """
         Init the Webhook class, and init the super class RPCHandler
         :param rpc: instance of RPC Helper class
@@ -60,6 +61,14 @@ class Webhook(RPCHandler):
                                  RPCMessageType.STARTUP,
                                  RPCMessageType.WARNING):
                 valuedict = whconfig.get('webhookstatus')
+            elif msg['type'] in (
+                    RPCMessageType.PROTECTION_TRIGGER,
+                    RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+                    RPCMessageType.WHITELIST,
+                    RPCMessageType.ANALYZED_DF,
+                    RPCMessageType.STRATEGY_MSG):
+                # Don't fail for non-implemented types
+                return
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
             if not valuedict:

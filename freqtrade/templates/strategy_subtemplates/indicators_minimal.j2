@@ -1,0 +1,17 @@
+
+# Momentum Indicators
+# ------------------------------------
+
+# RSI
+dataframe['rsi'] = ta.RSI(dataframe)
+
+# Retrieve best bid and best ask from the orderbook
+# ------------------------------------
+"""
+# first check if dataprovider is available
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]
+"""

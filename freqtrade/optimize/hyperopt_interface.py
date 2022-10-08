@@ -10,6 +10,7 @@ from typing import Dict, List, Union
 from sklearn.base import RegressorMixin
 from skopt.space import Categorical, Dimension, Integer
 
+from freqtrade.constants import Config
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 from freqtrade.optimize.space import SKDecimal
@@ -32,7 +33,7 @@ class IHyperOpt(ABC):
     timeframe: str
     strategy: IStrategy
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
 
         # Assign timeframe to be used in hyperopt

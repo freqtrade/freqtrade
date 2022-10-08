@@ -69,7 +69,7 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='PATH',
     ),
     "datadir": Arg(
-        '-d', '--datadir',
+        '-d', '--datadir', '--data-dir',
         help='Path to directory with historical backtesting data.',
         metavar='PATH',
     ),
@@ -255,6 +255,13 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         default='default',
     ),
+    "analyze_per_epoch": Arg(
+        '--analyze-per-epoch',
+        help='Run populate_indicators once per epoch.',
+        action='store_true',
+        default=False,
+    ),
+
     "print_all": Arg(
         '--print-all',
         help='Print all results, not only the best ones.',
@@ -386,7 +393,8 @@ AVAILABLE_CLI_OPTIONS = {
     # Download data
     "pairs_file": Arg(
         '--pairs-file',
-        help='File containing a list of pairs to download.',
+        help='File containing a list of pairs. '
+             'Takes precedence over --pairs or pairs configured in the configuration.',
         metavar='FILE',
     ),
     "days": Arg(
@@ -432,7 +440,7 @@ AVAILABLE_CLI_OPTIONS = {
     "dataformat_trades": Arg(
         '--data-format-trades',
         help='Storage format for downloaded trades data. (default: `jsongz`).',
-        choices=constants.AVAILABLE_DATAHANDLERS,
+        choices=constants.AVAILABLE_DATAHANDLERS_TRADES,
     ),
     "show_timerange": Arg(
         '--show-timerange',
@@ -448,14 +456,12 @@ AVAILABLE_CLI_OPTIONS = {
         '-t', '--timeframes',
         help='Specify which tickers to download. Space-separated list. '
         'Default: `1m 5m`.',
-        choices=['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h',
-                 '6h', '8h', '12h', '1d', '3d', '1w', '2w', '1M', '1y'],
         default=['1m', '5m'],
         nargs='+',
     ),
     "prepend_data": Arg(
         '--prepend',
-        help='Allow data prepending.',
+        help='Allow data prepending. (Data-appending is disabled)',
         action='store_true',
     ),
     "erase": Arg(

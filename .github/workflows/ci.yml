@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04 ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10.6"]
 
     steps:
     - uses: actions/checkout@v3
@@ -121,7 +121,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10.6"]
 
     steps:
     - uses: actions/checkout@v3
@@ -205,7 +205,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10.6"]
 
     steps:
     - uses: actions/checkout@v3
@@ -272,6 +272,16 @@ jobs:
         pip install pyaml
         python build_helpers/pre_commit_update.py
 
+  pre-commit:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - uses: pre-commit/action@v3.0.0
+
   docs_check:
     runs-on: ubuntu-20.04
     steps:
@@ -302,7 +312,7 @@ jobs:
 
   # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
     runs-on: ubuntu-20.04
     # Discord notification can't handle schedule events
     if: (github.event_name != 'schedule')
@@ -327,7 +337,7 @@ jobs:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
-    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check ]
+    needs: [ build_linux, build_macos, build_windows, docs_check, mypy_version_check, pre-commit ]
     runs-on: ubuntu-20.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
@@ -397,15 +407,6 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-    - name: Discord notification
-      uses: rjstone/discord-webhook-notify@v1
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
-      with:
-          severity: info
-          details: Deploy Succeeded!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-
-
   deploy_arm:
     needs: [ deploy ]
     # Only run on 64bit machines
@@ -433,3 +434,11 @@ jobs:
         BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_arm64.sh
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
+      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (github.event_name != 'schedule')
+      with:
+          severity: info
+          details: Deploy Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

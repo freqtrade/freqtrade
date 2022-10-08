@@ -4,8 +4,7 @@ from typing import Dict, List, Optional, Tuple
 import ccxt
 
 from freqtrade.constants import BuySell
-from freqtrade.enums import MarginMode, TradingMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
@@ -72,13 +71,15 @@ class Okx(Exchange):
         try:
             if self.trading_mode == TradingMode.FUTURES and not self._config['dry_run']:
                 accounts = self._api.fetch_accounts()
+                self._log_exchange_response('fetch_accounts', accounts)
                 if len(accounts) > 0:
                     self.net_only = accounts[0].get('info', {}).get('posMode') == 'net_mode'
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+                f'Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}'
+                ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
@@ -98,7 +99,7 @@ class Okx(Exchange):
         ordertype: str,
         leverage: float,
         reduceOnly: bool,
-        time_in_force: str = 'gtc',
+        time_in_force: str = 'GTC',
     ) -> Dict:
         params = super()._get_params(
             side=side,
@@ -146,4 +147,4 @@ class Okx(Exchange):
             return float('inf')
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]['max'] / leverage
+        return pair_tiers[-1]['maxNotional'] / leverage

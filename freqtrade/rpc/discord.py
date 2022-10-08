@@ -1,7 +1,7 @@
 import logging
-from typing import Any, Dict
 
-from freqtrade.enums.rpcmessagetype import RPCMessageType
+from freqtrade.constants import Config
+from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPC
 from freqtrade.rpc.webhook import Webhook
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Discord(Webhook):
-    def __init__(self, rpc: 'RPC', config: Dict[str, Any]):
+    def __init__(self, rpc: 'RPC', config: Config):
         # super().__init__(rpc, config)
         self.rpc = rpc
         self.config = config
@@ -30,9 +30,9 @@ class Discord(Webhook):
         pass
 
     def send_msg(self, msg) -> None:
-        logger.info(f"Sending discord message: {msg}")
 
         if msg['type'].value in self.config['discord']:
+            logger.info(f"Sending discord message: {msg}")
 
             msg['strategy'] = self.strategy
             msg['timeframe'] = self.timeframe

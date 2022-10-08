@@ -4,7 +4,7 @@ from typing import Any, Dict
 from sqlalchemy import func
 
 from freqtrade.configuration.config_setup import setup_utils_configuration
-from freqtrade.enums.runmode import RunMode
+from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)

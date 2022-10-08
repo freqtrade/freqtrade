@@ -6,6 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import partial
@@ -23,7 +24,7 @@ from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, 
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
-from freqtrade.constants import DUST_PER_COIN
+from freqtrade.constants import DUST_PER_COIN, Config
 from freqtrade.enums import RPCMessageType, SignalDirection, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
@@ -87,7 +88,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
 class Telegram(RPCHandler):
     """  This class handles all telegram communication """
 
-    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
+    def __init__(self, rpc: RPC, config: Config) -> None:
         """
         Init the Telegram call, and init the super class RPCHandler
         :param rpc: instance of RPC Helper class
@@ -114,18 +115,20 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
-                                 r'/trades$', r'/performance$', r'/buys', r'/entries',
-                                 r'/sells', r'/exits', r'/mix_tags',
-                                 r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
-                                 r'/stats$', r'/count$', r'/locks$', r'/balance$',
-                                 r'/stopbuy$', r'/reload_config$', r'/show_config$',
-                                 r'/logs$', r'/whitelist$', r'/whitelist(\ssorted|\sbaseonly)+$',
-                                 r'/blacklist$', r'/bl_delete$',
-                                 r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
-                                 r'/forcesell$', r'/forceexit$',
-                                 r'/edge$', r'/health$', r'/help$', r'/version$']
+        valid_keys: List[str] = [
+            r'/start$', r'/stop$', r'/status$', r'/status table$',
+            r'/trades$', r'/performance$', r'/buys', r'/entries',
+            r'/sells', r'/exits', r'/mix_tags',
+            r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
+            r'/stats$', r'/count$', r'/locks$', r'/balance$',
+            r'/stopbuy$', r'/stopentry$', r'/reload_config$', r'/show_config$',
+            r'/logs$', r'/whitelist$', r'/whitelist(\ssorted|\sbaseonly)+$',
+            r'/blacklist$', r'/bl_delete$',
+            r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
+            r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+            r'/forcesell$', r'/forceexit$',
+            r'/edge$', r'/health$', r'/help$', r'/version$'
+        ]
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -182,7 +185,7 @@ class Telegram(RPCHandler):
             CommandHandler(['unlock', 'delete_locks'], self._delete_locks),
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
-            CommandHandler('stopbuy', self._stopbuy),
+            CommandHandler(['stopbuy', 'stopentry'], self._stopentry),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
             CommandHandler(['blacklist_delete', 'bl_delete'], self._blacklist_delete),
@@ -283,7 +286,7 @@ class Telegram(RPCHandler):
         if msg['type'] in [RPCMessageType.ENTRY_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         elif msg['type'] in [RPCMessageType.ENTRY]:
-            message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
+            message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
         message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
@@ -350,8 +353,9 @@ class Telegram(RPCHandler):
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
         )
         if msg['type'] == RPCMessageType.EXIT:
-            message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                        f"*Exit Rate:* `{msg['limit']:.8f}`")
+            message += f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+            if msg['order_rate']:
+                message += f"*Exit Rate:* `{msg['order_rate']:.8f}`"
 
         elif msg['type'] == RPCMessageType.EXIT_FILL:
             message += f"*Exit Rate:* `{msg['close_rate']:.8f}`"
@@ -372,7 +376,7 @@ class Telegram(RPCHandler):
             message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
         return message
 
-    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
+    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
         if msg_type in [RPCMessageType.ENTRY, RPCMessageType.ENTRY_FILL]:
             message = self._format_entry_msg(msg)
 
@@ -409,7 +413,8 @@ class Telegram(RPCHandler):
         elif msg_type == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
         else:
-            raise NotImplementedError(f"Unknown message type: {msg_type}")
+            logger.debug("Unknown message type: %s", msg_type)
+            return None
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
@@ -436,9 +441,9 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        message = self.compose_message(msg, msg_type)
-
-        self._send_msg(message, disable_notification=(noti == 'silent'))
+        message = self.compose_message(deepcopy(msg), msg_type)
+        if message:
+            self._send_msg(message, disable_notification=(noti == 'silent'))
 
     def _get_sell_emoji(self, msg):
         """
@@ -984,7 +989,7 @@ class Telegram(RPCHandler):
         self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
-    def _stopbuy(self, update: Update, context: CallbackContext) -> None:
+    def _stopentry(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /stop_buy.
         Sets max_open_trades to 0 and gracefully sells all open trades
@@ -992,7 +997,7 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        msg = self._rpc._rpc_stopbuy()
+        msg = self._rpc._rpc_stopentry()
         self._send_msg(f"Status: `{msg['status']}`")
 
     @authorized_only
@@ -1488,7 +1493,7 @@ class Telegram(RPCHandler):
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
-            "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
+            "*/stopentry:* `Stops entering, but handles open trades gracefully` \n"
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
