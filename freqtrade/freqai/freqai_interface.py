@@ -492,8 +492,6 @@ class IFreqaiModel(ABC):
         # ensure user is feeding the correct indicators to the model
         self.check_if_feature_list_matches_strategy(dk)
 
-        dk.check_pred_labels(dk.data_dictionary['prediction_features'])
-
         if ft_params.get('inlier_metric_window', 0):
             dk.compute_inlier_metric(set_='predict')
 
