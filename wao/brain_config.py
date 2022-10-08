@@ -1,5 +1,5 @@
 class BrainConfig:
-    BRAIN = "Freq_Cluc6werk"  # set from strategy files
+    BRAIN = ""  # set from strategy files
     IS_SCHEDULE_ORDER = True
     IS_LIMIT_STOP_ORDER_ENABLED = True
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
