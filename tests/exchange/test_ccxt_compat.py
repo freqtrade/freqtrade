@@ -268,9 +268,8 @@ class TestCCXTExchange():
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
-    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe):
+    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe, candle_type):
 
-        candle_type = CandleType.SPOT
         timeframe_ms = timeframe_to_msecs(timeframe)
         now = timeframe_to_prev_date(
                 timeframe, datetime.now(timezone.utc))
@@ -302,7 +301,8 @@ class TestCCXTExchange():
             return
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']
-        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
+        self.ccxt__async_get_candle_history(
+            exchange, exchangename, pair, timeframe, CandleType.SPOT)
 
     def test_ccxt__async_get_candle_history_futures(self, exchange_futures):
         exchange, exchangename = exchange_futures
@@ -311,7 +311,8 @@ class TestCCXTExchange():
             return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         timeframe = EXCHANGES[exchangename]['timeframe']
-        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
+        self.ccxt__async_get_candle_history(
+            exchange, exchangename, pair, timeframe, CandleType.FUTURES)
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
