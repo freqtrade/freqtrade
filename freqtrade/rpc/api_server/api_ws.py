@@ -134,13 +134,13 @@ async def message_endpoint(
 
             except (
                 WebSocketDisconnect,
-                websockets.exceptions.ConnectionClosed
+                websockets.exceptions.WebSocketException
             ):
                 # Handle client disconnects
                 logger.info(f"Consumer disconnected - {channel}")
             except Exception as e:
                 logger.info(f"Consumer connection failed - {channel}")
-                logger.exception(e)
+                logger.debug(e, exc_info=e)
                 # Handle cases like -
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
             finally:

@@ -177,7 +177,7 @@ def test_get_producer_df(mocker, default_conf, ohlcv_history):
     assert la == empty_la
 
     # the data is added, should return that added dataframe
-    dataprovider._add_external_df(pair, ohlcv_history, now, timeframe, candle_type)
+    dataprovider._add_producer_df(pair, ohlcv_history, now, timeframe, candle_type)
     dataframe, la = dataprovider.get_producer_df(pair, timeframe, candle_type)
     assert len(dataframe) > 0
     assert la > empty_la
