@@ -2339,7 +2339,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
             await exchange._async_get_candle_history(
-                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                "ETH/BTC", "5m", CandleType.SPOT,
+                since_ms=(arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
     assert num_log_has_re(msg, caplog) == 3
 
     caplog.clear()
@@ -2355,7 +2356,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
         for _ in range(3):
             with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
                 await exchange._async_get_candle_history(
-                    "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                    "ETH/BTC", "5m", CandleType.SPOT,
+                    (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
         # Expect the "returned exception" message 12 times (4 retries * 3 (loop))
         assert num_log_has_re(msg, caplog) == 12
         assert num_log_has_re(msg2, caplog) == 9

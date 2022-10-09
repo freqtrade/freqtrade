@@ -2018,8 +2018,8 @@ class Exchange:
             candle_limit = self.ohlcv_candle_limit(
                 timeframe, candle_type=candle_type, since_ms=since_ms)
 
-            if candle_type != CandleType.SPOT:
-                params.update({'price': candle_type})
+            if candle_type and candle_type != CandleType.SPOT:
+                params.update({'price': candle_type.value})
             if candle_type != CandleType.FUNDING_RATE:
                 data = await self._api_async.fetch_ohlcv(
                     pair, timeframe=timeframe, since=since_ms,
