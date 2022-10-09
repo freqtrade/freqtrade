@@ -1,7 +1,7 @@
 # Using the `spice_rack`
 
 !!! Note:
-    `spice_rack` indicators should not be used exclusively for entries and exits, the following example is just a demonstration of syntax. `spice_rack` indicators should **always** be used to support existing strategies).
+    `spice_rack` indicators should not be used exclusively for entries and exits, the following example is just a demonstration of syntax. `spice_rack` indicators should **always** be used to support existing strategies.
 
 The `spice_rack` is aimed at users who do not wish to deal with setting up `FreqAI` confgs, but instead prefer to interact with `FreqAI` similar to a `talib` indicator. In this case, the user can instead simply add two keys to their config:
 
@@ -20,7 +20,7 @@ Which tells `FreqAI` to set up a pre-set `FreqAI` instance automatically under t
         self.freqai.close_spice_rack()  # user must close the spicerack
 ```
 
-Users can then use these columns, concert with all their own additional indicators added to `populate_indicators` in their entry/exit criteria and strategy callback methods the same way as any typical indicator. For example:
+Users can then use these columns in concert with all their own additional indicators added to `populate_indicators` in their entry/exit criteria and strategy callback methods the same way as any typical indicator. For example:
 
 ```python
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
