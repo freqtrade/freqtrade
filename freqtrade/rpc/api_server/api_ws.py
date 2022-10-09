@@ -1,6 +1,8 @@
+import asyncio
 import logging
 from typing import Any, Dict
 
+import websockets
 from fastapi import APIRouter, Depends, WebSocketDisconnect
 from fastapi.websockets import WebSocket, WebSocketState
 from pydantic import ValidationError
@@ -90,6 +92,20 @@ async def _process_consumer_request(
             await channel.send(response.dict(exclude_none=True))
 
 
+async def relay(channel, queue):
+    """
+    Relay messages in the queue to the channel
+    """
+    while True:
+        message = await queue.get()
+        try:
+            await channel.send(message)
+            queue.task_done()
+        except RuntimeError:
+            # What do we do here?
+            return
+
+
 @router.websocket("/message/ws")
 async def message_endpoint(
     ws: WebSocket,
@@ -100,12 +116,13 @@ async def message_endpoint(
     """
     Message WebSocket endpoint, facilitates sending RPC messages
     """
+    relay_task = None
     try:
-        channel = await channel_manager.on_connect(ws)
-
+        channel, queue = await channel_manager.on_connect(ws)
         if await is_websocket_alive(ws):
 
             logger.info(f"Consumer connected - {channel}")
+            relay_task = asyncio.create_task(relay(channel, queue))
 
             # Keep connection open until explicitly closed, and process requests
             try:
@@ -115,26 +132,32 @@ async def message_endpoint(
                     # Process the request here
                     await _process_consumer_request(request, channel, rpc)
 
-            except WebSocketDisconnect:
+            except (
+                WebSocketDisconnect,
+                websockets.exceptions.ConnectionClosed
+            ):
                 # Handle client disconnects
                 logger.info(f"Consumer disconnected - {channel}")
-                await channel_manager.on_disconnect(ws)
             except Exception as e:
                 logger.info(f"Consumer connection failed - {channel}")
                 logger.exception(e)
                 # Handle cases like -
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
+            finally:
+                relay_task.cancel()
                 await channel_manager.on_disconnect(ws)
 
         else:
             await ws.close()
 
     except RuntimeError:
-        # WebSocket was closed
-        await channel_manager.on_disconnect(ws)
-
+        # We don't want to log these
+        pass
     except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")
         # Log tracebacks to keep track of what errors are happening
         logger.exception(e)
+    finally:
         await channel_manager.on_disconnect(ws)
+        if relay_task:
+            relay_task.cancel()

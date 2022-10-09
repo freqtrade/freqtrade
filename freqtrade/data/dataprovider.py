@@ -9,7 +9,7 @@ from collections import deque
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config, ListPairsWithTimeframes, PairWithTimeframe
@@ -118,13 +118,13 @@ class DataProvider:
                     'type': RPCMessageType.ANALYZED_DF,
                     'data': {
                         'key': pair_key,
-                        'df': dataframe,
+                        'df': dataframe.tail(1),
                         'la': datetime.now(timezone.utc)
                     }
                 }
             )
 
-    def _add_external_df(
+    def _add_producer_df(
         self,
         pair: str,
         dataframe: DataFrame,
@@ -147,7 +147,16 @@ class DataProvider:
 
         _last_analyzed = datetime.now(timezone.utc) if not last_analyzed else last_analyzed
 
-        self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
+        if pair_key not in self.__producer_pairs_df[producer_name]:
+            # This is the first message, set the dataframe in that pair key
+            self.__producer_pairs_df[producer_name][pair_key] = (dataframe, _last_analyzed)
+        else:
+            # These are new candles, append them to the dataframe
+            existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
+            existing_df = self._append_candle_to_dataframe(existing_df, dataframe)
+
+            self.__producer_pairs_df[producer_name][pair_key] = (existing_df, _last_analyzed)
+
         logger.debug(f"External DataFrame for {pair_key} from {producer_name} added.")
 
     def get_producer_df(
@@ -183,6 +192,24 @@ class DataProvider:
         # We have it, return this data
         df, la = self.__producer_pairs_df[producer_name][pair_key]
         return (df.copy(), la)
+
+    def _append_candle_to_dataframe(self, existing: DataFrame, new: DataFrame):
+        """
+        Append the `new` dataframe to the `existing` dataframe
+
+        :param existing: The full dataframe you want appended to
+        :param new: The new dataframe containing the data you want appended
+        :returns:The dataframe with the new data in it
+        """
+        if existing.iloc[-1]['date'] != new.iloc[-1]['date']:
+            existing = concat([existing, new])
+
+        # Only keep the last 1000 candles in memory
+        # TODO: Do this better
+        if len(existing) > 1000:
+            existing = existing[-1000:]
+
+        return existing
 
     def add_pairlisthandler(self, pairlists) -> None:
         """

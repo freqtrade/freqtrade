@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from threading import RLock
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 from fastapi import WebSocket as FastAPIWebSocket
@@ -52,7 +53,7 @@ class WebSocketChannel:
         """
         Send data on the wrapped websocket
         """
-        await self._wrapped_ws.send(data)
+        return await self._wrapped_ws.send(data)
 
     async def recv(self):
         """
@@ -115,11 +116,12 @@ class ChannelManager:
                 return
 
         ws_channel = WebSocketChannel(websocket)
+        ws_queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
 
         with self._lock:
-            self.channels[websocket] = ws_channel
+            self.channels[websocket] = (ws_channel, ws_queue)
 
-        return ws_channel
+        return ws_channel, ws_queue
 
     async def on_disconnect(self, websocket: WebSocketType):
         """
@@ -128,7 +130,7 @@ class ChannelManager:
         :param websocket: The WebSocket objet attached to the Channel
         """
         with self._lock:
-            channel = self.channels.get(websocket)
+            channel, _ = self.channels.get(websocket, (None, None))
             if channel:
                 if not channel.is_closed():
                     await channel.close()
@@ -140,7 +142,7 @@ class ChannelManager:
         Disconnect all Channels
         """
         with self._lock:
-            for websocket, channel in self.channels.copy().items():
+            for websocket, (channel, _) in self.channels.copy().items():
                 if not channel.is_closed():
                     await channel.close()
 
@@ -154,13 +156,12 @@ class ChannelManager:
         """
         with self._lock:
             message_type = data.get('type')
-            for websocket, channel in self.channels.copy().items():
-                try:
-                    if channel.subscribed_to(message_type):
-                        await channel.send(data)
-                except RuntimeError:
-                    # Handle cannot send after close cases
-                    await self.on_disconnect(websocket)
+            for websocket, (channel, queue) in self.channels.copy().items():
+                if channel.subscribed_to(message_type):
+                    if not queue.full():
+                        queue.put_nowait(data)
+                    else:
+                        await self.on_disconnect(websocket)
 
     async def send_direct(self, channel, data):
         """

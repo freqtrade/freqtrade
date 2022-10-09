@@ -245,6 +245,7 @@ class ApiServer(RPCHandler):
                                   use_colors=False,
                                   log_config=None,
                                   access_log=True if verbosity != 'error' else False,
+                                  ws_ping_interval=None
                                   )
         try:
             self._server = UvicornServer(uvconfig)
