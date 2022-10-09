@@ -62,7 +62,7 @@ class ExternalMessageConsumer:
         self.enabled = self._emc_config.get('enabled', False)
         self.producers: List[Producer] = self._emc_config.get('producers', [])
 
-        self.wait_timeout = self._emc_config.get('wait_timeout', 300)  # in seconds
+        self.wait_timeout = self._emc_config.get('wait_timeout', 30)  # in seconds
         self.ping_timeout = self._emc_config.get('ping_timeout', 10)  # in seconds
         self.sleep_time = self._emc_config.get('sleep_time', 10)  # in seconds
 
