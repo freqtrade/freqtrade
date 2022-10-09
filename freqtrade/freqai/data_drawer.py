@@ -9,6 +9,7 @@ from typing import Any, Dict, Tuple, TypedDict
 
 import numpy as np
 import pandas as pd
+import psutil
 import rapidjson
 from joblib import dump, load
 from joblib.externals import cloudpickle
@@ -78,25 +79,53 @@ class FreqaiDataDrawer:
         self.historic_predictions_bkp_path = Path(
             self.full_path / "historic_predictions.backup.pkl")
         self.pair_dictionary_path = Path(self.full_path / "pair_dictionary.json")
+        self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
         self.follow_mode = follow_mode
         if follow_mode:
             self.create_follower_dict()
         self.load_drawer_from_disk()
         self.load_historic_predictions_from_disk()
+        self.load_metric_tracker_from_disk()
         self.training_queue: Dict[str, int] = {}
         self.history_lock = threading.Lock()
         self.save_lock = threading.Lock()
         self.pair_dict_lock = threading.Lock()
+        self.metric_tracker_lock = threading.Lock()
         self.old_DBSCAN_eps: Dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
+        self.metric_tracker: Dict[str, Dict[str, list]] = {}
+
+    def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
+        """
+        General utility for adding and updating custom metrics. Typically used
+        for adding training performance, train timings, inferenc timings, cpu loads etc.
+        """
+        with self.metric_tracker_lock:
+            if pair not in self.metric_tracker:
+                self.metric_tracker[pair] = {}
+            if metric not in self.metric_tracker[pair]:
+                self.metric_tracker[pair][metric] = []
+
+            self.metric_tracker[pair][metric].append(value)
+
+    def collect_metrics(self, time_spent: float, pair: str):
+        """
+        Add metrics to the metric tracker dictionary
+        """
+        load1, load5, load15 = psutil.getloadavg()
+        cpus = psutil.cpu_count()
+        self.update_metric_tracker('train_time', time_spent, pair)
+        self.update_metric_tracker('cpu_load1min', load1 / cpus, pair)
+        self.update_metric_tracker('cpu_load5min', load5 / cpus, pair)
+        self.update_metric_tracker('cpu_load15min', load15 / cpus, pair)
 
     def load_drawer_from_disk(self):
         """
         Locate and load a previously saved data drawer full of all pair model metadata in
         present model folder.
-        :return: bool - whether or not the drawer was located
+        Load any existing metric tracker that may be present.
         """
         exists = self.pair_dictionary_path.is_file()
         if exists:
@@ -110,7 +139,18 @@ class FreqaiDataDrawer:
                 "sending null values back to strategy"
             )
 
-        return exists
+    def load_metric_tracker_from_disk(self):
+        """
+        Tries to load an existing metrics dictionary if the user
+        wants to collect metrics.
+        """
+        if self.freqai_info.get('write_metrics_to_disk', False):
+            exists = self.metric_tracker_path.is_file()
+            if exists:
+                with open(self.metric_tracker_path, "r") as fp:
+                    self.metric_tracker = json.load(fp)
+            else:
+                logger.info("Could not find existing metric tracker, starting from scratch")
 
     def load_historic_predictions_from_disk(self):
         """
@@ -146,13 +186,22 @@ class FreqaiDataDrawer:
 
     def save_historic_predictions_to_disk(self):
         """
-        Save data drawer full of all pair model metadata in present model folder.
+        Save historic predictions pickle to disk
         """
         with open(self.historic_predictions_path, "wb") as fp:
             cloudpickle.dump(self.historic_predictions, fp, protocol=cloudpickle.DEFAULT_PROTOCOL)
 
         # create a backup
         shutil.copy(self.historic_predictions_path, self.historic_predictions_bkp_path)
+
+    def save_metric_tracker_to_disk(self):
+        """
+        Save metric tracker of all pair metrics collected.
+        """
+        with self.save_lock:
+            with open(self.metric_tracker_path, 'w') as fp:
+                rapidjson.dump(self.metric_tracker, fp, default=self.np_encoder,
+                               number_mode=rapidjson.NM_NATIVE)
 
     def save_drawer_to_disk(self):
         """
