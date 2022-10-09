@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from threading import RLock
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 from fastapi import WebSocket as FastAPIWebSocket
@@ -34,6 +35,8 @@ class WebSocketChannel:
         self._serializer_cls = serializer_cls
 
         self._subscriptions: List[str] = []
+        self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+        self._relay_task = asyncio.create_task(self.relay())
 
         # Internal event to signify a closed websocket
         self._closed = False
@@ -72,6 +75,7 @@ class WebSocketChannel:
         """
 
         self._closed = True
+        self._relay_task.cancel()
 
     def is_closed(self) -> bool:
         """
@@ -94,6 +98,20 @@ class WebSocketChannel:
         :param message_type: The message type to check
         """
         return message_type in self._subscriptions
+
+    async def relay(self):
+        """
+        Relay messages from the channel's queue and send them out. This is started
+        as a task.
+        """
+        while True:
+            message = await self.queue.get()
+            try:
+                await self.send(message)
+                self.queue.task_done()
+            except RuntimeError:
+                # The connection was closed, just exit the task
+                return
 
 
 class ChannelManager:
@@ -155,12 +173,12 @@ class ChannelManager:
         with self._lock:
             message_type = data.get('type')
             for websocket, channel in self.channels.copy().items():
-                try:
-                    if channel.subscribed_to(message_type):
-                        await channel.send(data)
-                except RuntimeError:
-                    # Handle cannot send after close cases
-                    await self.on_disconnect(websocket)
+                if channel.subscribed_to(message_type):
+                    if not channel.queue.full():
+                        channel.queue.put_nowait(data)
+                    else:
+                        logger.info(f"Channel {channel} is too far behind, disconnecting")
+                        await self.on_disconnect(websocket)
 
     async def send_direct(self, channel, data):
         """
