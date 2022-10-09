@@ -35,7 +35,7 @@ class WebSocketChannel:
         self._serializer_cls = serializer_cls
 
         self._subscriptions: List[str] = []
-        self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+        self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=32)
         self._relay_task = asyncio.create_task(self.relay())
 
         # Internal event to signify a closed websocket
