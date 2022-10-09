@@ -179,7 +179,7 @@ class Exchange:
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
         logger.info(f'Using Exchange "{self.name}"')
-
+        self.required_candle_call_count = 1
         if validate:
             # Initial markets load
             self._load_markets()
@@ -1852,7 +1852,7 @@ class Exchange:
 
     def _build_coroutine(self, pair: str, timeframe: str, candle_type: CandleType,
                          since_ms: Optional[int], cache: bool) -> Coroutine:
-        not_all_data = self.required_candle_call_count > 1
+        not_all_data = cache and self.required_candle_call_count > 1
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
             min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
