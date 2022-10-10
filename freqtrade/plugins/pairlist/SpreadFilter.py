@@ -48,7 +48,7 @@ class SpreadFilter(IPairList):
         """
         Validate spread for the ticker
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
         if 'bid' in ticker and 'ask' in ticker and ticker['ask'] and ticker['bid']:

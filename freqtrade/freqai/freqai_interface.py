@@ -215,7 +215,8 @@ class IFreqaiModel(ABC):
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                 except Exception as msg:
-                    logger.warning(f'Training {pair} raised exception {msg}, skipping.')
+                    logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
+                                   f"Message: {msg}, skipping.")
 
                 self.train_timer('stop')
 
@@ -297,7 +298,8 @@ class IFreqaiModel(ABC):
 
             if dk.check_if_backtest_prediction_exists():
                 self.dd.load_metadata(dk)
-                self.check_if_feature_list_matches_strategy(dataframe_train, dk)
+                dk.find_features(dataframe_train)
+                self.check_if_feature_list_matches_strategy(dk)
                 append_df = dk.get_backtesting_prediction()
                 dk.append_predictions(append_df)
             else:
@@ -318,7 +320,6 @@ class IFreqaiModel(ABC):
                 else:
                     self.model = self.dd.load_data(pair, dk)
 
-                # self.check_if_feature_list_matches_strategy(dataframe_train, dk)
                 pred_df, do_preds = self.predict(dataframe_backtest, dk)
                 append_df = dk.get_predictions_to_append(pred_df, do_preds)
                 dk.append_predictions(append_df)
@@ -415,7 +416,7 @@ class IFreqaiModel(ABC):
             # allows FreqUI to show full return values.
             pred_df, do_preds = self.predict(dataframe, dk)
             if pair not in self.dd.historic_predictions:
-                self.set_initial_historic_predictions(pred_df, dk, pair)
+                self.set_initial_historic_predictions(pred_df, dk, pair, dataframe)
             self.dd.set_initial_return_values(pair, pred_df)
 
             dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
@@ -436,13 +437,13 @@ class IFreqaiModel(ABC):
 
         if self.freqai_info.get('fit_live_predictions_candles', 0) and self.live:
             self.fit_live_predictions(dk, pair)
-        self.dd.append_model_predictions(pair, pred_df, do_preds, dk, len(dataframe))
+        self.dd.append_model_predictions(pair, pred_df, do_preds, dk, dataframe)
         dk.return_dataframe = self.dd.attach_return_values_to_return_dataframe(pair, dataframe)
 
         return
 
     def check_if_feature_list_matches_strategy(
-        self, dataframe: DataFrame, dk: FreqaiDataKitchen
+        self, dk: FreqaiDataKitchen
     ) -> None:
         """
         Ensure user is passing the proper feature set if they are reusing an `identifier` pointing
@@ -451,11 +452,12 @@ class IFreqaiModel(ABC):
         :param dk: FreqaiDataKitchen = non-persistent data container/analyzer for
                    current coin/bot loop
         """
-        dk.find_features(dataframe)
+
         if "training_features_list_raw" in dk.data:
             feature_list = dk.data["training_features_list_raw"]
         else:
             feature_list = dk.data['training_features_list']
+
         if dk.training_features_list != feature_list:
             raise OperationalException(
                 "Trying to access pretrained model with `identifier` "
@@ -503,12 +505,15 @@ class IFreqaiModel(ABC):
         if self.freqai_info["feature_parameters"].get('noise_standard_deviation', 0):
             dk.add_noise_to_training_features()
 
-    def data_cleaning_predict(self, dk: FreqaiDataKitchen, dataframe: DataFrame) -> None:
+    def data_cleaning_predict(self, dk: FreqaiDataKitchen) -> None:
         """
         Base data cleaning method for predict.
         Functions here are complementary to the functions of data_cleaning_train.
         """
         ft_params = self.freqai_info["feature_parameters"]
+
+        # ensure user is feeding the correct indicators to the model
+        self.check_if_feature_list_matches_strategy(dk)
 
         if ft_params.get('inlier_metric_window', 0):
             dk.compute_inlier_metric(set_='predict')
@@ -526,9 +531,6 @@ class IFreqaiModel(ABC):
 
         if ft_params.get("use_DBSCAN_to_remove_outliers", False):
             dk.use_DBSCAN_to_remove_outliers(predict=True)
-
-        # ensure user is feeding the correct indicators to the model
-        self.check_if_feature_list_matches_strategy(dk.data_dictionary['prediction_features'], dk)
 
     def model_exists(self, dk: FreqaiDataKitchen) -> bool:
         """
@@ -604,7 +606,7 @@ class IFreqaiModel(ABC):
             self.dd.purge_old_models()
 
     def set_initial_historic_predictions(
-        self, pred_df: DataFrame, dk: FreqaiDataKitchen, pair: str
+        self, pred_df: DataFrame, dk: FreqaiDataKitchen, pair: str, strat_df: DataFrame
     ) -> None:
         """
         This function is called only if the datadrawer failed to load an
@@ -623,11 +625,11 @@ class IFreqaiModel(ABC):
         If the user reuses an identifier on a subsequent instance,
         this function will not be called. In that case, "real" predictions
         will be appended to the loaded set of historic predictions.
-        :param: df: DataFrame = the dataframe containing the training feature data
-        :param: model: Any = A model which was `fit` using a common library such as
-        catboost or lightgbm
-        :param: dk: FreqaiDataKitchen = object containing methods for data analysis
-        :param: pair: str = current pair
+        :param df: DataFrame = the dataframe containing the training feature data
+        :param model: Any = A model which was `fit` using a common library such as
+                      catboost or lightgbm
+        :param dk: FreqaiDataKitchen = object containing methods for data analysis
+        :param pair: str = current pair
         """
 
         self.dd.historic_predictions[pair] = pred_df
@@ -646,6 +648,9 @@ class IFreqaiModel(ABC):
 
         for return_str in dk.data['extra_returns_per_train']:
             hist_preds_df[return_str] = 0
+
+        hist_preds_df['close_price'] = strat_df['close']
+        hist_preds_df['date_pred'] = strat_df['date']
 
         # # for keras type models, the conv_window needs to be prepended so
         # # viewing is correct in frequi

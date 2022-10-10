@@ -90,5 +90,5 @@ def test_use_strategy_to_populate_indicators(mocker, freqai_conf):
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, 'LTC/BTC')
 
-    assert len(df.columns) == 45
+    assert len(df.columns) == 33
     shutil.rmtree(Path(freqai.dk.full_path))

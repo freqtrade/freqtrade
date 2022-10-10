@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import ccxt
 import pytest
 
-from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -501,6 +501,24 @@ def test_fill_leverage_tiers_binance_dryrun(default_conf, mocker, leverage_tiers
         assert len(v) == len(value)
 
 
+def test_additional_exchange_init_binance(default_conf, mocker):
+    api_mock = MagicMock()
+    api_mock.fapiPrivateGetPositionsideDual = MagicMock(return_value={"dualSidePosition": True})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": True})
+    default_conf['dry_run'] = False
+    default_conf['trading_mode'] = TradingMode.FUTURES
+    default_conf['margin_mode'] = MarginMode.ISOLATED
+    with pytest.raises(OperationalException,
+                       match=r"Hedge Mode is not supported.*\nMulti-Asset Mode is not supported.*"):
+        get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+    api_mock.fapiPrivateGetPositionsideDual = MagicMock(return_value={"dualSidePosition": False})
+    api_mock.fapiPrivateGetMultiAssetsMargin = MagicMock(return_value={"multiAssetsMargin": False})
+    exchange = get_patched_exchange(mocker, default_conf, id="binance", api_mock=api_mock)
+    assert exchange
+    ccxt_exceptionhandlers(mocker, default_conf, api_mock, 'binance',
+                           "additional_exchange_init", "fapiPrivateGetPositionsideDual")
+
+
 def test__set_leverage_binance(mocker, default_conf):
 
     api_mock = MagicMock()
@@ -524,7 +542,7 @@ def test__set_leverage_binance(mocker, default_conf):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('candle_type', ['mark', ''])
+@pytest.mark.parametrize('candle_type', [CandleType.MARK, ''])
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [
         [

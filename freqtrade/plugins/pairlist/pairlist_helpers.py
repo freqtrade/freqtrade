@@ -12,7 +12,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
     :param wildcardpl: List of Pairlists, which may contain regex
     :param available_pairs: List of all available pairs (`exchange.get_markets().keys()`)
     :param keep_invalid: If sets to True, drops invalid pairs silently while expanding regexes
-    :return expanded pairlist, with Regexes from wildcardpl applied to match all available pairs.
+    :return: expanded pairlist, with Regexes from wildcardpl applied to match all available pairs.
     :raises: ValueError if a wildcard is invalid (like '*/BTC' - which should be `.*/BTC`)
     """
     result = []

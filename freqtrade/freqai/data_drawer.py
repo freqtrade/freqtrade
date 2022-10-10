@@ -257,7 +257,7 @@ class FreqaiDataDrawer:
 
     def append_model_predictions(self, pair: str, predictions: DataFrame,
                                  do_preds: NDArray[np.int_],
-                                 dk: FreqaiDataKitchen, len_df: int) -> None:
+                                 dk: FreqaiDataKitchen, strat_df: DataFrame) -> None:
         """
         Append model predictions to historic predictions dataframe, then set the
         strategy return dataframe to the tail of the historic predictions. The length of
@@ -266,6 +266,7 @@ class FreqaiDataDrawer:
         historic predictions.
         """
 
+        len_df = len(strat_df)
         index = self.historic_predictions[pair].index[-1:]
         columns = self.historic_predictions[pair].columns
 
@@ -292,6 +293,15 @@ class FreqaiDataDrawer:
             rets = dk.data['extra_returns_per_train']
             for return_str in rets:
                 df[return_str].iloc[-1] = rets[return_str]
+
+        # this logic carries users between version without needing to
+        # change their identifier
+        if 'close_price' not in df.columns:
+            df['close_price'] = np.nan
+            df['date_pred'] = np.nan
+
+        df['close_price'].iloc[-1] = strat_df['close'].iloc[-1]
+        df['date_pred'].iloc[-1] = strat_df['date'].iloc[-1]
 
         self.model_return_values[pair] = df.tail(len_df).reset_index(drop=True)
 
@@ -402,9 +412,8 @@ class FreqaiDataDrawer:
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
         """
         Saves all data associated with a model for a single sub-train time range
-        :params:
-        :model: User trained model which can be reused for inferencing to generate
-        predictions
+        :param model: User trained model which can be reused for inferencing to generate
+                      predictions
         """
 
         if not dk.data_path.is_dir():
@@ -423,7 +432,7 @@ class FreqaiDataDrawer:
 
         dk.data["data_path"] = str(dk.data_path)
         dk.data["model_filename"] = str(dk.model_filename)
-        dk.data["training_features_list"] = list(dk.data_dictionary["train_features"].columns)
+        dk.data["training_features_list"] = dk.training_features_list
         dk.data["label_list"] = dk.label_list
         # store the metadata
         with open(save_path / f"{dk.model_filename}_metadata.json", "w") as fp:
@@ -522,8 +531,7 @@ class FreqaiDataDrawer:
         Append new candles to our stores historic data (in memory) so that
         we do not need to load candle history from disk and we dont need to
         pinging exchange multiple times for the same candle.
-        :params:
-        dataframe: DataFrame = strategy provided dataframe
+        :param dataframe: DataFrame = strategy provided dataframe
         """
         feat_params = self.freqai_info["feature_parameters"]
         with self.history_lock:
@@ -569,9 +577,8 @@ class FreqaiDataDrawer:
         """
         Load pair histories for all whitelist and corr_pairlist pairs.
         Only called once upon startup of bot.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
+        :param timerange: TimeRange = full timerange required to populate all indicators
+                          for training according to user defined train_period_days
         """
         history_data = self.historic_data
 
@@ -594,10 +601,9 @@ class FreqaiDataDrawer:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
-        metadata: dict = strategy furnished pair metadata
+        :param timerange: TimeRange = full timerange required to populate all indicators
+                          for training according to user defined train_period_days
+        :param metadata: dict = strategy furnished pair metadata
         """
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
@@ -608,7 +614,8 @@ class FreqaiDataDrawer:
             )
 
             for tf in self.freqai_info["feature_parameters"].get("include_timeframes"):
-                base_dataframes[tf] = dk.slice_dataframe(timerange, historic_data[pair][tf])
+                base_dataframes[tf] = dk.slice_dataframe(
+                    timerange, historic_data[pair][tf]).reset_index(drop=True)
                 if pairs:
                     for p in pairs:
                         if pair in p:
@@ -617,7 +624,7 @@ class FreqaiDataDrawer:
                             corr_dataframes[p] = {}
                         corr_dataframes[p][tf] = dk.slice_dataframe(
                             timerange, historic_data[p][tf]
-                        )
+                        ).reset_index(drop=True)
 
         return corr_dataframes, base_dataframes
 
