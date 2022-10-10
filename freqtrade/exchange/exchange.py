@@ -793,7 +793,7 @@ class Exchange:
         """
         if endpoint in self._ft_has.get("exchange_has_overrides", {}):
             return self._ft_has["exchange_has_overrides"][endpoint]
-        return endpoint in self._api.has and self._api.has[endpoint]
+        return endpoint in self._api_async.has and self._api_async.has[endpoint]
 
     def get_precision_amount(self, pair: str) -> Optional[float]:
         """
