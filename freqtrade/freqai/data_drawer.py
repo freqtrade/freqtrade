@@ -412,9 +412,8 @@ class FreqaiDataDrawer:
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
         """
         Saves all data associated with a model for a single sub-train time range
-        :params:
-        :model: User trained model which can be reused for inferencing to generate
-        predictions
+        :param model: User trained model which can be reused for inferencing to generate
+                      predictions
         """
 
         if not dk.data_path.is_dir():
@@ -532,8 +531,7 @@ class FreqaiDataDrawer:
         Append new candles to our stores historic data (in memory) so that
         we do not need to load candle history from disk and we dont need to
         pinging exchange multiple times for the same candle.
-        :params:
-        dataframe: DataFrame = strategy provided dataframe
+        :param dataframe: DataFrame = strategy provided dataframe
         """
         feat_params = self.freqai_info["feature_parameters"]
         with self.history_lock:
@@ -579,9 +577,8 @@ class FreqaiDataDrawer:
         """
         Load pair histories for all whitelist and corr_pairlist pairs.
         Only called once upon startup of bot.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
+        :param timerange: TimeRange = full timerange required to populate all indicators
+                          for training according to user defined train_period_days
         """
         history_data = self.historic_data
 
@@ -604,10 +601,9 @@ class FreqaiDataDrawer:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
-        :params:
-        timerange: TimeRange = full timerange required to populate all indicators
-        for training according to user defined train_period_days
-        metadata: dict = strategy furnished pair metadata
+        :param timerange: TimeRange = full timerange required to populate all indicators
+                          for training according to user defined train_period_days
+        :param metadata: dict = strategy furnished pair metadata
         """
         with self.history_lock:
             corr_dataframes: Dict[Any, Any] = {}
