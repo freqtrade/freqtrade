@@ -58,7 +58,10 @@ def validate_exchange(exchange: str) -> Tuple[bool, str]:
     returns: can_use, reason
         with Reason including both missing and missing_opt
     """
-    ex_mod = getattr(ccxt, exchange.lower())()
+    try:
+        ex_mod = getattr(ccxt.pro, exchange.lower())()
+    except AttributeError:
+        ex_mod = getattr(ccxt.async_support, exchange.lower())()
     result = True
     reason = ""
     if not ex_mod or not ex_mod.has:
