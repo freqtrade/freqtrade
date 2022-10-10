@@ -183,7 +183,11 @@ class ExternalMessageConsumer:
                 ws_url = f"ws://{host}:{port}/api/v1/message/ws?token={token}"
 
                 # This will raise InvalidURI if the url is bad
-                async with websockets.connect(ws_url, max_size=self.message_size_limit) as ws:
+                async with websockets.connect(
+                    ws_url,
+                    max_size=self.message_size_limit,
+                    ping_interval=None
+                ) as ws:
                     channel = WebSocketChannel(ws, channel_id=name)
 
                     logger.info(f"Producer connection success - {channel}")
