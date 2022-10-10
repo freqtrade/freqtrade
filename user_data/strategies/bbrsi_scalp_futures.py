@@ -9,13 +9,14 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.wao_strategy_futures import WAOStrategy_futures
+from wao.brain_config import BrainConfig
 
 
 class bbrsi_scalp_futures(WAOStrategy_futures):
-    brain = "Freq_bbrsi_scalp"
+    BrainConfig.BRAIN = "Freq_bbrsi_scalp"
 
     def __init__(self, config: dict):
-        super().__init__(config, self.brain, 8, 0.15)
+        super().__init__(config, 8, 0.15)
 
     # Optimal timeframe for the strategy
     timeframe = '5m'

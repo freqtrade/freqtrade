@@ -1,4 +1,3 @@
-import sys
 import threading
 import watchdog
 import os
@@ -8,10 +7,9 @@ from wao._429_watcher import _429_Watcher
 from wao.error_watcher import Error_Watcher
 import pickle
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
-from romeo import Romeo, RomeoExitPriceType
-from backtest_signal import BacktestSignal
+from execution.config import Config
+from execution.romeo import Romeo, RomeoExitPriceType
+from execution.backtest_signal import BacktestSignal
 
 
 def write_to_backtest_table(timestamp, coin, brain, time_out_hours, dup, type):
@@ -27,6 +25,9 @@ def perform_execute_buy(coin, brain, time_out_hours, dup):
     elif BrainConfig.MODE == Config.MODE_PROD:
         is_test_mode = False
 
+    Config.IS_SCHEDULE_ORDER = BrainConfig.IS_SCHEDULE_ORDER
+    Config.IS_LIMIT_STOP_ORDER_ENABLED = BrainConfig.IS_LIMIT_STOP_ORDER_ENABLED
+    Config.WORKSPACE_NORMAL = BrainConfig.WORKSPACE_NORMAL
     Config.COIN = coin
     Config.BRAIN = brain
     Config.ROMEO_SS_TIMEOUT_HOURS = time_out_hours

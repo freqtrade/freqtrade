@@ -5,6 +5,7 @@ from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy import merge_informative_pair
 from pandas import DataFrame, Series
 from wao.wao_strategy import WAOStrategy
+from wao.brain_config import BrainConfig
 
 
 def bollinger_bands(stock_price, window_size, num_of_std):
@@ -20,10 +21,10 @@ def ha_typical_price(bars):
 
 
 class ClucHAnix(WAOStrategy):
-    brain = "Freq_ClucHAnix"
+    BrainConfig.BRAIN = "Freq_ClucHAnix"
 
     def __init__(self, config: dict):
-        super().__init__(config, self.brain, 8, 0.15)
+        super().__init__(config, 8, 0.15)
     """
     PASTE OUTPUT FROM HYPEROPT HERE
     Can be overridden for specific sub-strategies (stake currencies) at the bottom.

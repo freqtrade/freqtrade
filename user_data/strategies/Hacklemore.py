@@ -10,6 +10,7 @@ from freqtrade.persistence import Trade
 from technical.indicators import RMI
 from statistics import mean
 from wao.wao_strategy import WAOStrategy
+from wao.brain_config import BrainConfig
 
 """
 TODO: 
@@ -19,10 +20,10 @@ TODO:
 
 
 class Hacklemore(WAOStrategy):
-    brain = "Freq_Hacklemore"
+    BrainConfig.BRAIN = "Freq_Hacklemore"
 
     def __init__(self, config: dict):
-        super().__init__(config, self.brain, 8, 0.15)
+        super().__init__(config, 8, 0.15)
     timeframe = '5m'
     inf_timeframe = '1h'
 
