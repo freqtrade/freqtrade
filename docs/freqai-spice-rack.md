@@ -10,7 +10,7 @@ The `spice_rack` is aimed at users who do not wish to deal with setting up `Freq
     "freqai_identifier": "spicey-id",
 ```
 
-Which tells `FreqAI` to set up a pre-set `FreqAI` instance automatically under the hood with preset parameters. Now the user can access a suite of custom `FreqAI` supercharged indicators inside their strategy:
+Which tells `FreqAI` to set up a pre-set `FreqAI` instance automatically under the hood with preset parameters. Now the user can access a suite of custom `FreqAI` supercharged indicators inside their strategy by placing the following code into `populate_indicators`:
 
 ```python
         dataframe['dissimilarity_index'] = self.freqai.spice_rack(
