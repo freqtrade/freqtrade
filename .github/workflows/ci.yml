@@ -74,8 +74,7 @@ jobs:
       if: matrix.python-version == '3.9' && matrix.os == 'ubuntu-22.04'
 
     - name: Coveralls
-      if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04'
-)
+      if: (runner.os == 'Linux' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04')
       env:
         # Coveralls token. Not used as secret due to github not providing secrets to forked repositories
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
