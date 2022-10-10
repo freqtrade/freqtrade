@@ -72,7 +72,7 @@ def test_freqai_backtest_live_models_model_not_found(freqai_conf, mocker, testda
         '--config', 'config.json',
         '--datadir', str(testdatadir),
         '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
-        '--timeframe', '1h',
+        '--timeframe', '5m',
         '--freqai-backtest-live-models'
     ]
     args = get_args(args)
