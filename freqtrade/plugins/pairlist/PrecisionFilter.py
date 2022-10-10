@@ -49,7 +49,7 @@ class PrecisionFilter(IPairList):
         Check if pair has enough room to add a stoploss to avoid "unsellable" buys of very
         low value pairs.
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
         if ticker.get('last', None) is None:

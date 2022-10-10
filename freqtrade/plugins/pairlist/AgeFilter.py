@@ -70,7 +70,7 @@ class AgeFilter(IPairList):
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [

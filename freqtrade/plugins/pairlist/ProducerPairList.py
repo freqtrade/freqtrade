@@ -71,7 +71,7 @@ class ProducerPairList(IPairList):
     def gen_pairlist(self, tickers: Dict) -> List[str]:
         """
         Generate the pairlist
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
         pairs = self._filter_pairlist(None)
@@ -84,7 +84,7 @@ class ProducerPairList(IPairList):
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
         return self._filter_pairlist(pairlist)

@@ -69,7 +69,7 @@ class IPairList(LoggingMixin, ABC):
         filter_pairlist() method.
 
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
         raise NotImplementedError()
@@ -85,7 +85,7 @@ class IPairList(LoggingMixin, ABC):
         it will raise the exception if a Pairlist Handler is used at the first
         position in the chain.
 
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
         raise OperationalException("This Pairlist Handler should not be used "
@@ -103,7 +103,7 @@ class IPairList(LoggingMixin, ABC):
         own filtration.
 
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
         if self._enabled:

@@ -47,7 +47,7 @@ class OffsetFilter(IPairList):
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
         if self._offset > len(pairlist):

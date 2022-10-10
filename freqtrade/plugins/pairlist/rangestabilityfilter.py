@@ -64,7 +64,7 @@ class RangeStabilityFilter(IPairList):
         """
         Validate trading range
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
