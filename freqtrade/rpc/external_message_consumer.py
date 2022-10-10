@@ -174,6 +174,7 @@ class ExternalMessageConsumer:
         :param producer: Dictionary containing producer info
         :param lock: An asyncio Lock
         """
+        channel = None
         while self._running:
             try:
                 host, port = producer['host'], producer['port']
@@ -223,6 +224,10 @@ class ExternalMessageConsumer:
                 logger.error("Unexpected error has occurred:")
                 logger.exception(e)
                 continue
+
+            finally:
+                if channel:
+                    await channel.close()
 
     async def _receive_messages(
         self,

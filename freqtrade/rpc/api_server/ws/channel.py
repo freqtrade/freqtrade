@@ -51,11 +51,17 @@ class WebSocketChannel:
     def remote_addr(self):
         return self._websocket.remote_addr
 
-    async def send(self, data):
+    async def _send(self, data):
         """
         Send data on the wrapped websocket
         """
         await self._wrapped_ws.send(data)
+
+    async def send(self, data):
+        """
+        Add the data to the queue to be sent
+        """
+        self.queue.put_nowait(data)
 
     async def recv(self):
         """
@@ -107,7 +113,7 @@ class WebSocketChannel:
         while True:
             message = await self.queue.get()
             try:
-                await self.send(message)
+                await self._send(message)
                 self.queue.task_done()
             except RuntimeError:
                 # The connection was closed, just exit the task
@@ -175,7 +181,7 @@ class ChannelManager:
             for websocket, channel in self.channels.copy().items():
                 if channel.subscribed_to(message_type):
                     if not channel.queue.full():
-                        channel.queue.put_nowait(data)
+                        await channel.send(data)
                     else:
                         logger.info(f"Channel {channel} is too far behind, disconnecting")
                         await self.on_disconnect(websocket)
