@@ -182,7 +182,8 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
     for i in range(5):
-        df.loc[:, f'%-constant_{i}'] = i
+        df[f'%-constant_{i}'] = i
+        # df.loc[:, f'%-constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
