@@ -157,7 +157,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         ("CatboostClassifier", 6, "freqai_test_classifier")
     ],
     )
-def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
+def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
     freqai_conf['runmode'] = RunMode.BACKTEST
     Trade.use_db = False
@@ -181,12 +181,23 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'%-constant_{i}'] = i
+        # df.loc[:, f'%-constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
     assert len(model_folders) == num_files
+    assert log_has_re(
+        "Removed features ",
+        caplog,
+    )
+    assert log_has_re(
+        "Removed 5 features from prediction features, ",
+        caplog,
+    )
     Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -256,6 +267,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
@@ -312,6 +324,7 @@ def test_follow_mode(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
+
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702

@@ -243,6 +243,7 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
+            filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
             drop_index = pd.isnull(filtered_df).any(axis=1)
@@ -461,6 +462,24 @@ class FreqaiDataKitchen:
             df = df.loc[df["date"] < stop, :]
 
         return df
+
+    def check_pred_labels(self, df_predictions: DataFrame) -> DataFrame:
+        """
+        Check that prediction feature labels match training feature labels.
+        :params:
+        :df_predictions: incoming predictions
+        """
+        train_labels = self.data_dictionary["train_features"].columns
+        pred_labels = df_predictions.columns
+        num_diffs = len(pred_labels.difference(train_labels))
+        if num_diffs != 0:
+            df_predictions = df_predictions[train_labels]
+            logger.warning(
+                f"Removed {num_diffs} features from prediction features, "
+                f"these were likely considered constant values during most recent training."
+            )
+
+        return df_predictions
 
     def principal_component_analysis(self) -> None:
         """
