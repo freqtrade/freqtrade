@@ -196,7 +196,6 @@ class IFreqaiModel(ABC):
             (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
             dk = FreqaiDataKitchen(self.config, self.live, pair)
-            dk.set_paths(pair, trained_timestamp)
             (
                 retrain,
                 new_trained_timerange,
@@ -268,9 +267,7 @@ class IFreqaiModel(ABC):
             )
 
             trained_timestamp_int = int(trained_timestamp.stopts)
-            dk.data_path = Path(
-                dk.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp_int}"
-                )
+            dk.set_paths(pair, trained_timestamp_int)
 
             dk.set_new_model_names(pair, trained_timestamp)
 

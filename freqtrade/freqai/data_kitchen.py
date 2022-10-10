@@ -119,6 +119,8 @@ class FreqaiDataKitchen:
             / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
         )
 
+        Path(self.data_path / 'tensorboard').mkdir(parents=True, exist_ok=True)
+
         return
 
     def make_train_test_datasets(

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 from catboost import CatBoostClassifier, Pool
@@ -31,8 +32,9 @@ class CatboostClassifier(BaseClassifierModel):
         )
 
         cbr = CatBoostClassifier(
-            allow_writing_files=False,
+            allow_writing_files=True,
             loss_function='MultiClass',
+            train_dir=Path(dk.data_path / 'tensorboard'),
             **self.model_training_parameters,
         )
 
