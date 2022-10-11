@@ -656,5 +656,6 @@ LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
+BidAsk = Literal['bid', 'ask']
 
 Config = Dict[str, Any]

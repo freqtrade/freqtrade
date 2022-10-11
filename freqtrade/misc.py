@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator, List
+from typing import Any, Dict, Iterator, List, Mapping, Union
 from typing.io import IO
 from urllib.parse import urlparse
 
@@ -186,7 +186,10 @@ def safe_value_fallback(obj: dict, key1: str, key2: str, default_value=None):
     return default_value
 
 
-def safe_value_fallback2(dict1: dict, dict2: dict, key1: str, key2: str, default_value=None):
+dictMap = Union[Dict[str, Any], Mapping[str, Any]]
+
+
+def safe_value_fallback2(dict1: dictMap, dict2: dictMap, key1: str, key2: str, default_value=None):
     """
     Search a value in dict1, return this if it's not None.
     Fall back to dict2 - return key2 from dict2 if it's not None.
