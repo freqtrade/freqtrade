@@ -82,7 +82,7 @@ def readable_timedelta(delta):
     """
     attrs = ['years', 'months', 'days', 'hours', 'minutes', 'seconds', 'microseconds']
     return ", ".join([
-        '%d %s' % (getattr(delta, attr), attr if getattr(delta, attr) > 1 else attr[:-1])
+        '%d %s' % (getattr(delta, attr), attr if getattr(delta, attr) > 0 else attr[:-1])
         for attr in attrs if getattr(delta, attr)
     ])
 
@@ -170,7 +170,7 @@ class ClientProtocol:
 
     def _calculate_time_difference(self):
         old_last_received_at = self._LAST_RECEIVED_AT
-        self._LAST_RECEIVED_AT = time.time() * 1000
+        self._LAST_RECEIVED_AT = time.time() * 1e6
         time_delta = relativedelta(microseconds=(self._LAST_RECEIVED_AT - old_last_received_at))
 
         return readable_timedelta(time_delta)
@@ -238,7 +238,7 @@ async def create_client(
 
                     except (
                         asyncio.TimeoutError,
-                        websockets.exceptions.ConnectionClosed
+                        websockets.exceptions.WebSocketException
                     ):
                         # Try pinging
                         try:
@@ -298,7 +298,7 @@ async def _main(args):
     producers = emc_config.get('producers', [])
     producer = producers[0]
 
-    wait_timeout = emc_config.get('wait_timeout', 300)
+    wait_timeout = emc_config.get('wait_timeout', 30)
     ping_timeout = emc_config.get('ping_timeout', 10)
     sleep_time = emc_config.get('sleep_time', 10)
     message_size_limit = (emc_config.get('message_size_limit', 8) << 20)
@@ -311,7 +311,8 @@ async def _main(args):
         sleep_time=sleep_time,
         ping_timeout=ping_timeout,
         wait_timeout=wait_timeout,
-        max_size=message_size_limit
+        max_size=message_size_limit,
+        ping_interval=None
     )
 
 
