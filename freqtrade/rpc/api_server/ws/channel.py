@@ -115,6 +115,12 @@ class WebSocketChannel:
             try:
                 await self._send(message)
                 self.queue.task_done()
+
+                # Limit messages per sec.
+                # Could cause problems with queue size if too low, and
+                # problems with network traffik if too high.
+                # 0.001 = 1000/s
+                await asyncio.sleep(0.001)
             except RuntimeError:
                 # The connection was closed, just exit the task
                 return
