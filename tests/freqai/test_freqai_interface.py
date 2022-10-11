@@ -30,6 +30,7 @@ def is_mac() -> bool:
 @pytest.mark.parametrize('model', [
     'LightGBMRegressor',
     'XGBoostRegressor',
+    'XGBoostRFRegressor',
     'CatboostRegressor',
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
@@ -111,6 +112,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
     'LightGBMClassifier',
     'CatboostClassifier',
     'XGBoostClassifier',
+    'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostClassifier':
