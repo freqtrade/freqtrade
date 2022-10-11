@@ -201,10 +201,10 @@ class IFreqaiModel(ABC):
                 new_trained_timerange,
                 data_load_timerange,
             ) = dk.check_if_new_training_required(trained_timestamp)
-            dk.set_paths(pair, new_trained_timerange.stopts)
 
             if retrain:
                 self.train_timer('start')
+                dk.set_paths(pair, new_trained_timerange.stopts)
                 try:
                     self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
