@@ -119,7 +119,6 @@ class FreqaiDataKitchen:
             / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
         )
 
-
         return
 
     def make_train_test_datasets(
