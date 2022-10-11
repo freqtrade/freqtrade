@@ -77,9 +77,10 @@ class FreqaiDataKitchen:
         self.backtest_predictions_folder: str = "backtesting_predictions"
         self.live = live
         self.pair = pair
+        self.model_save_type = self.freqai_config.get('model_save_type', 'joblib')
 
         self.svm_model: linear_model.SGDOneClassSVM = None
-        self.keras: bool = self.freqai_config.get("keras", False)
+        # self.model_save_type: bool = self.freqai_config.get("keras", False)
         self.set_all_pairs()
         if not self.live:
             if not self.config["timerange"]:
@@ -569,7 +570,7 @@ class FreqaiDataKitchen:
         predict: bool = If true, inference an existing SVM model, else construct one
         """
 
-        if self.keras:
+        if self.model_save_type == 'keras':
             logger.warning(
                 "SVM outlier removal not currently supported for Keras based models. "
                 "Skipping user requested function."
