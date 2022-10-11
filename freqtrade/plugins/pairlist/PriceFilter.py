@@ -72,13 +72,13 @@ class PriceFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
-        if not ticker or ticker.get('last', None) is None or ticker.get('last') == 0:
+        if ticker and 'last' in ticker and ticker['last'] is not None and ticker.get('last') != 0:
+            price: float = ticker['last']
+        else:
             self.log_once(f"Removed {pair} from whitelist, because "
                           "ticker['last'] is empty (Usually no trade in the last 24h).",
                           logger.info)
             return False
-        else:
-            price: float = ticker['last']
 
         # Perform low_price_ratio check.
         if self._low_price_ratio != 0:
