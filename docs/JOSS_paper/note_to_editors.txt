@@ -1,0 +1,15 @@
+Dear Editors,
+We present a paper for ``FreqAI`` a machine learning sandbox for researchers and citizen scientists alike.
+There are a large number of authors, however all have contributed in a significant way to this paper.
+For clarity the contribution of each author is outlined:
+
+  - Robert Caulk            : Conception and software development
+  - Elin Tornquist          : Theoretical brainstorming, data analysis, tool dev
+  - Matthias Voppichler     : Software architecture and code review
+  - Andrew R. Lawless       : Extensive testing, feature brainstorming
+  - Ryan McMullan           : Extensive testing, feature brainstorming
+  - Wagner Costa Santos     : Major backtesting developments, extensive testing
+  - Pascal Schmidt          : Extensive testing, feature brainstorming
+  - Timothy C. Pogue        : Webhooks forecast sharing
+  - Stefan P. Gehring       : Extensive testing, feature brainstorming
+  - Johan van der Vlugt     : Extensive testing, feature brainstorming

@@ -1,0 +1,941 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN"
+                  "JATS-publishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2" article-type="other">
+<front>
+<journal-meta>
+<journal-id></journal-id>
+<journal-title-group>
+<journal-title>Journal of Open Source Software</journal-title>
+<abbrev-journal-title>JOSS</abbrev-journal-title>
+</journal-title-group>
+<issn publication-format="electronic">2475-9066</issn>
+<publisher>
+<publisher-name>Open Journals</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">0</article-id>
+<article-id pub-id-type="doi">N/A</article-id>
+<title-group>
+<article-title><monospace>FreqAI</monospace>: generalizing adaptive
+modeling for chaotic time-series market forecasts</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">0000-0001-5618-8629</contrib-id>
+<name>
+<surname>Ph.D</surname>
+<given-names>Robert A. Caulk</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">0000-0003-3289-8604</contrib-id>
+<name>
+<surname>Ph.D</surname>
+<given-names>Elin Törnquist</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Voppichler</surname>
+<given-names>Matthias</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Lawless</surname>
+<given-names>Andrew R.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>McMullan</surname>
+<given-names>Ryan</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Santos</surname>
+<given-names>Wagner Costa</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Pogue</surname>
+<given-names>Timothy C.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>van der Vlugt</surname>
+<given-names>Johan</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Gehring</surname>
+<given-names>Stefan P.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Schmidt</surname>
+<given-names>Pascal</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<aff id="aff-1">
+<institution-wrap>
+<institution>Emergent Methods LLC, Arvada Colorado, 80005,
+USA</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution>Freqtrade open source project</institution>
+</institution-wrap>
+</aff>
+</contrib-group>
+<volume>¿VOL?</volume>
+<issue>¿ISSUE?</issue>
+<fpage>¿PAGE?</fpage>
+<permissions>
+<copyright-statement>Authors of papers retain copyright and release the
+work under a Creative Commons Attribution 4.0 International License (CC
+BY 4.0)</copyright-statement>
+<copyright-year>2022</copyright-year>
+<copyright-holder>The article authors</copyright-holder>
+<license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>Authors of papers retain copyright and release the work under
+a Creative Commons Attribution 4.0 International License (CC BY
+4.0)</license-p>
+</license>
+</permissions>
+<kwd-group kwd-group-type="author">
+<kwd>Python</kwd>
+<kwd>Machine Learning</kwd>
+<kwd>adaptive modeling</kwd>
+<kwd>chaotic systems</kwd>
+<kwd>time-series forecasting</kwd>
+</kwd-group>
+</article-meta>
+</front>
+<body>
+<sec id="statement-of-need">
+  <title>Statement of need</title>
+  <p>Forecasting chaotic time-series based systems, such as
+  equity/cryptocurrency markets, requires a broad set of tools geared
+  toward testing a wide range of hypotheses. Fortunately, a recent
+  maturation of robust machine learning libraries
+  (e.g. <monospace>scikit-learn</monospace>), has opened up a wide range
+  of research possibilities. Scientists from a diverse range of fields
+  can now easily prototype their studies on an abundance of established
+  machine learning algorithms. Similarly, these user-friendly libraries
+  enable “citzen scientists” to use their basic Python skills for
+  data-exploration. However, leveraging these machine learning libraries
+  on historical and live chaotic data sources can be logistically
+  difficult and expensive. Additionally, robust data-collection,
+  storage, and handling presents a disparate challenge.
+  <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/"><monospace>FreqAI</monospace></ext-link>
+  aims to provide a generalized and extensible open-sourced framework
+  geared toward live deployments of adaptive modeling for market
+  forecasting. The <monospace>FreqAI</monospace> framework is
+  effectively a sandbox for the rich world of open-source machine
+  learning libraries. Inside the <monospace>FreqAI</monospace> sandbox,
+  users find they can combine a wide variety of third-party libraries to
+  test creative hypotheses on a free live 24/7 chaotic data source -
+  cryptocurrency exchange data.</p>
+</sec>
+<sec id="summary">
+  <title>Summary</title>
+  <p><ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/"><monospace>FreqAI</monospace></ext-link>
+  evolved from a desire to test and compare a range of adaptive
+  time-series forecasting methods on chaotic data. Cryptocurrency
+  markets provide a unique data source since they are operational 24/7
+  and the data is freely available. Luckily, an existing open-source
+  software,
+  <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/stable/"><monospace>Freqtrade</monospace></ext-link>,
+  had already matured under a range of talented developers to support
+  robust data collection/storage, as well as robust live environmental
+  interactions for standard algorithmic trading.
+  <monospace>Freqtrade</monospace> also provides a set of data
+  analysis/visualization tools for the evaluation of historical
+  performance as well as live environmental feedback.
+  <monospace>FreqAI</monospace> builds on top of
+  <monospace>Freqtrade</monospace> to include a user-friendly well
+  tested interface for integrating external machine learning libraries
+  for adaptive time-series forecasting. Beyond enabling the integration
+  of existing libraries, <monospace>FreqAI</monospace> hosts a range of
+  custom algorithms and methodologies aimed at improving computational
+  and predictive performances. Thus, <monospace>FreqAI</monospace>
+  contains a range of unique features which can be easily tested in
+  combination with all the existing Python-accessible machine learning
+  libraries to generate novel research on live and historical data.</p>
+  <p>The high-level overview of the software is depicted in Figure
+  1.</p>
+  <p><named-content content-type="image">freqai-algo</named-content>
+  <italic>Abstracted overview of FreqAI algorithm</italic></p>
+  <sec id="connecting-machine-learning-libraries">
+    <title>Connecting machine learning libraries</title>
+    <p>Although the <monospace>FreqAI</monospace> framework is designed
+    to accommodate any Python library in the “Model training” and
+    “Feature set engineering” portions of the software (Figure 1), it
+    already boasts a wide range of well documented examples based on
+    various combinations of:</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>scikit-learn
+        (<xref alt="Pedregosa et al., 2011" rid="ref-scikit-learn" ref-type="bibr">Pedregosa
+        et al., 2011</xref>), Catboost
+        (<xref alt="Prokhorenkova et al., 2018" rid="ref-catboost" ref-type="bibr">Prokhorenkova
+        et al., 2018</xref>), LightGBM
+        (<xref alt="Ke et al., 2017" rid="ref-lightgbm" ref-type="bibr">Ke
+        et al., 2017</xref>), XGBoost
+        (<xref alt="Chen &amp; Guestrin, 2016" rid="ref-xgboost" ref-type="bibr">Chen
+        &amp; Guestrin, 2016</xref>), stable_baselines3
+        (<xref alt="Raffin et al., 2021" rid="ref-stable-baselines3" ref-type="bibr">Raffin
+        et al., 2021</xref>), openai gym
+        (<xref alt="Brockman et al., 2016" rid="ref-openai" ref-type="bibr">Brockman
+        et al., 2016</xref>), tensorflow
+        (<xref alt="Abadi et al., 2015" rid="ref-tensorflow" ref-type="bibr">Abadi
+        et al., 2015</xref>), pytorch
+        (<xref alt="Paszke et al., 2019" rid="ref-pytorch" ref-type="bibr">Paszke
+        et al., 2019</xref>), Scipy
+        (<xref alt="Virtanen et al., 2020" rid="ref-scipy" ref-type="bibr">Virtanen
+        et al., 2020</xref>), Numpy
+        (<xref alt="Harris et al., 2020" rid="ref-numpy" ref-type="bibr">Harris
+        et al., 2020</xref>), and pandas
+        (<xref alt="McKinney &amp; others, 2010" rid="ref-pandas" ref-type="bibr">McKinney
+        &amp; others, 2010</xref>).</p>
+      </list-item>
+    </list>
+    <p>These mature projects contain a wide range of peer-reviewed and
+    industry standard methods, including:</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>Regression, Classification, Neural Networks, Reinforcement
+        Learning, Support Vector Machines, Principal Component Analysis,
+        point clustering, and much more.</p>
+      </list-item>
+    </list>
+    <p>which are all leveraged in <monospace>FreqAI</monospace> for
+    users to use as templates or extend with their own methods.</p>
+  </sec>
+  <sec id="furnishing-novel-methods-and-features">
+    <title>Furnishing novel methods and features</title>
+    <p>Beyond the industry standard methods available through external
+    libraries - <monospace>FreqAI</monospace> includes novel methods
+    which are not available anywhere else in the open-source (or
+    scientific) world. For example, <monospace>FreqAI</monospace>
+    provides :</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>a custom algorithm/methodology for adaptive modeling</p>
+      </list-item>
+      <list-item>
+        <p>rapid and self-monitored feature engineering tools</p>
+      </list-item>
+      <list-item>
+        <p>unique model features/indicators</p>
+      </list-item>
+      <list-item>
+        <p>optimized data collection algorithms</p>
+      </list-item>
+      <list-item>
+        <p>safely integrated outlier detection methods</p>
+      </list-item>
+      <list-item>
+        <p>websocket communicated forecasts</p>
+      </list-item>
+    </list>
+    <p>Of particular interest for researchers,
+    <monospace>FreqAI</monospace> provides the option of large scale
+    experimentation via an optimized websocket communications
+    interface.</p>
+  </sec>
+  <sec id="optimizing-the-back-end">
+    <title>Optimizing the back-end</title>
+    <p><monospace>FreqAI</monospace> aims to make it simple for users to
+    combine all the above tools to run studies based in two distinct
+    modules:</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>backtesting studies</p>
+      </list-item>
+      <list-item>
+        <p>live-deployments</p>
+      </list-item>
+    </list>
+    <p>Both of these modules and their respective data management
+    systems are built on top of
+    <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/"><monospace>Freqtrade</monospace></ext-link>,
+    a mature and actively developed cryptocurrency trading software.
+    This means that <monospace>FreqAI</monospace> benefits from a wide
+    range of tangential/disparate feature developments such as:</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>FreqUI, a graphical interface for backtesting and live
+        monitoring</p>
+      </list-item>
+      <list-item>
+        <p>telegram control</p>
+      </list-item>
+      <list-item>
+        <p>robust database handling</p>
+      </list-item>
+      <list-item>
+        <p>futures/leverage trading</p>
+      </list-item>
+      <list-item>
+        <p>dollar cost averaging</p>
+      </list-item>
+      <list-item>
+        <p>trading strategy handling</p>
+      </list-item>
+      <list-item>
+        <p>a variety of free data sources via CCXT (FTX, Binance, Kucoin
+        etc.)</p>
+      </list-item>
+    </list>
+    <p>These features derive from a strong external developer community
+    that shares in the benefit and stability of a communal CI
+    (Continuous Integration) system. Beyond the developer community,
+    <monospace>FreqAI</monospace> benefits strongly from the userbase of
+    <monospace>Freqtrade</monospace>, where most
+    <monospace>FreqAI</monospace> beta-testers/developers originated.
+    This symbiotic relationship between <monospace>Freqtrade</monospace>
+    and <monospace>FreqAI</monospace> ignited a thoroughly tested
+    <ext-link ext-link-type="uri" xlink:href="https://github.com/freqtrade/freqtrade/pull/6832"><monospace>beta</monospace></ext-link>,
+    which demanded a four month beta and
+    <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/">comprehensive
+    documentation</ext-link> containing:</p>
+    <list list-type="bullet">
+      <list-item>
+        <p>numerous example scripts</p>
+      </list-item>
+      <list-item>
+        <p>a full parameter table</p>
+      </list-item>
+      <list-item>
+        <p>methodological descriptions</p>
+      </list-item>
+      <list-item>
+        <p>high-resolution diagrams/figures</p>
+      </list-item>
+      <list-item>
+        <p>detailed parameter setting recommendations</p>
+      </list-item>
+    </list>
+  </sec>
+  <sec id="providing-a-reproducible-foundation-for-researchers">
+    <title>Providing a reproducible foundation for researchers</title>
+    <p><monospace>FreqAI</monospace> provides an extensible, robust,
+    framework for researchers and citizen data scientists. The
+    <monospace>FreqAI</monospace> sandbox enables rapid conception and
+    testing of exotic hypotheses. From a research perspective,
+    <monospace>FreqAI</monospace> handles the multitude of logistics
+    associated with live deployments, historical backtesting, and
+    feature engineering. With <monospace>FreqAI</monospace>, researchers
+    can focus on their primary interests of feature engineering and
+    hypothesis testing rather than figuring out how to collect and
+    handle data. Further - the well maintained and easily installed
+    open-source framework of <monospace>FreqAI</monospace> enables
+    reproducible scientific studies. This reproducibility component is
+    essential to general scientific advancement in time-series
+    forecasting for chaotic systems.</p>
+  </sec>
+</sec>
+<sec id="technical-details">
+  <title>Technical details</title>
+  <p>Typical users configure <monospace>FreqAI</monospace> via two
+  files:</p>
+  <list list-type="order">
+    <list-item>
+      <p>A <monospace>configuration</monospace> file
+      (<monospace>--config</monospace>) which provides access to the
+      full parameter list available
+      <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/">here</ext-link>:</p>
+    </list-item>
+  </list>
+  <list list-type="bullet">
+    <list-item>
+      <p>control high-level feature engineering</p>
+    </list-item>
+    <list-item>
+      <p>customize adaptive modeling techniques</p>
+    </list-item>
+    <list-item>
+      <p>set any model training parameters available in third-party
+      libraries</p>
+    </list-item>
+    <list-item>
+      <p>manage adaptive modeling parameters (retrain frequency,
+      training window size, continual learning, etc.)</p>
+    </list-item>
+  </list>
+  <list list-type="order">
+    <list-item>
+      <label>2.</label>
+      <p>A strategy file (<monospace>--strategy</monospace>) where
+      users:</p>
+    </list-item>
+  </list>
+  <list list-type="bullet">
+    <list-item>
+      <p>list of the base training features</p>
+    </list-item>
+    <list-item>
+      <p>set standard technical-analysis strategies</p>
+    </list-item>
+    <list-item>
+      <p>control trade entry/exit criteria</p>
+    </list-item>
+  </list>
+  <p>With these two files, most users can exploit a wide range of
+  pre-existing integrations in <monospace>Catboost</monospace> and 7
+  other libraries with a simple command:</p>
+  <preformat>freqtrade trade --config config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel CatboostRegressor</preformat>
+  <p>Advanced users will edit one of the existing
+  <monospace>--freqaimodel</monospace> files, which are simply an
+  children of the <monospace>IFreqaiModel</monospace> (details below).
+  Within these files, advanced users can customize training procedures,
+  prediction procedures, outlier detection methods, data preparation,
+  data saving methods, etc. This is all configured in a way where they
+  can customize as little or as much as they want. This flexible
+  customization is owed to the foundational architecture in
+  <monospace>FreqAI</monospace>, which is comprised of three distinct
+  Python objects:</p>
+  <list list-type="bullet">
+    <list-item>
+      <p><monospace>IFreqaiModel</monospace></p>
+      <list list-type="bullet">
+        <list-item>
+          <p>A singular long-lived object containing all the necessary
+          logic to collect data, store data, process data, engineer
+          features, run training, and inference models.</p>
+        </list-item>
+      </list>
+    </list-item>
+    <list-item>
+      <p><monospace>FreqaiDataKitchen</monospace></p>
+      <list list-type="bullet">
+        <list-item>
+          <p>A short-lived object which is uniquely created for each
+          asset/model. Beyond metadata, it also contains a variety of
+          data processing tools.</p>
+        </list-item>
+      </list>
+    </list-item>
+    <list-item>
+      <p><monospace>FreqaiDataDrawer</monospace></p>
+      <list list-type="bullet">
+        <list-item>
+          <p>Singular long-lived object containing all the historical
+          predictions, models, and save/load methods.</p>
+        </list-item>
+      </list>
+    </list-item>
+  </list>
+  <p>These objects interact with one another with one goal in mind - to
+  provide a clean data set to machine learning experts/enthusiasts at
+  the user endpoint. These power-users interact with an inherited
+  <monospace>IFreqaiModel</monospace> that allows them to dig as deep or
+  as shallow as they wish into the inheritence tree. Typical power-users
+  focus their efforts on customizing training procedures and testing
+  exotic functionalities available in third-party libraries. Thus,
+  power-users are freed from the algorithmic weight associated with data
+  management, and can instead focus their energy on testing creative
+  hypotheses. Meanwhile, some users choose to override deeper
+  functionalities within <monospace>IFreqaiModel</monospace> to help
+  them craft unique data structures and training procedures.</p>
+  <p>The class structure and algorithmic details are depicted in the
+  following diagram:</p>
+  <p><named-content content-type="image">image</named-content>
+  <italic>Class diagram summarizing object interactions in
+  FreqAI</italic></p>
+</sec>
+<sec id="online-documentation">
+  <title>Online documentation</title>
+  <p>The documentation for
+  <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/"><monospace>FreqAI</monospace></ext-link>
+  is available online at
+  <ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/">https://www.freqtrade.io/en/latest/freqai/</ext-link>
+  and covers a wide range of materials:</p>
+  <list list-type="bullet">
+    <list-item>
+      <p>Quick-start with a single command and example files -
+      (beginners)</p>
+    </list-item>
+    <list-item>
+      <p>Introduction to the feature engineering interface and basic
+      configurations - (intermediate users)</p>
+    </list-item>
+    <list-item>
+      <p>Parameter table with indepth descriptions and default parameter
+      setting recommendations - (intermediate users)</p>
+    </list-item>
+    <list-item>
+      <p>Data analysis and post-processing - (advanced users)</p>
+    </list-item>
+    <list-item>
+      <p>Methodological considerations complemented by high resolution
+      figures - (advanced users)</p>
+    </list-item>
+    <list-item>
+      <p>Instructions for integrating third party machine learning
+      libraries into custom prediction models - (advanced users)</p>
+    </list-item>
+    <list-item>
+      <p>Software architectural description with class diagram -
+      (developers)</p>
+    </list-item>
+    <list-item>
+      <p>File structure descriptions - (developers)</p>
+    </list-item>
+  </list>
+  <p>The docs direct users to a variety of pre-made examples which
+  integrate <monospace>Catboost</monospace>,
+  <monospace>LightGBM</monospace>, <monospace>XGBoost</monospace>,
+  <monospace>Sklearn</monospace>,
+  <monospace>stable_baselines3</monospace>,
+  <monospace>torch</monospace>, <monospace>tensorflow</monospace>.
+  Meanwhile, developers will also find thorough docstrings and type
+  hinting throughout the source code to aid in code readability and
+  customization.</p>
+  <p><monospace>FreqAI</monospace> also benefits from a strong support
+  network of users and developers on the
+  <ext-link ext-link-type="uri" xlink:href="https://discord.gg/w6nDM6cM4y"><monospace>Freqtrade</monospace>
+  discord</ext-link> as well as on the
+  <ext-link ext-link-type="uri" xlink:href="https://discord.gg/xE4RMg4QYw"><monospace>FreqAI</monospace>
+  discord</ext-link>. Within the <monospace>FreqAI</monospace> discord,
+  users will find a deep and easily searched knowledge base containing
+  common errors. But more importantly, users in the
+  <monospace>FreqAI</monospace> discord share anectdotal and
+  quantitative observations which compare performance between various
+  third-party libraries and methods.</p>
+</sec>
+<sec id="state-of-the-field">
+  <title>State of the field</title>
+  <p>There are two other open-source tools which are geared toward
+  helping users build models for time-series forecasts on market based
+  data. However, each of these tools suffer from a non-generalized
+  frameworks that do not permit comparison of methods and libraries.
+  Additionally, they do not permit easy live-deployments or
+  adaptive-modeling methods. For example, two open-sourced projects
+  called
+  <ext-link ext-link-type="uri" xlink:href="https://tensortradex.readthedocs.io/en/latest/"><monospace>tensortrade</monospace></ext-link>
+  (<xref alt="Tensortrade, 2022" rid="ref-tensortrade" ref-type="bibr"><italic>Tensortrade</italic>,
+  2022</xref>) and
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/AI4Finance-Foundation/FinRL"><monospace>FinRL</monospace></ext-link>
+  (<xref alt="AI4Finance-Foundation, 2022" rid="ref-finrl" ref-type="bibr"><italic>AI4Finance-Foundation</italic>,
+  2022</xref>) limit users to the exploration of reinforcement learning
+  on historical data. These softwares also do not provide robust live
+  deployments, they do not furnish novel feature engineering algorithms,
+  and they do not provide custom data analysis tools.
+  <monospace>FreqAI</monospace> fills the gap.</p>
+</sec>
+<sec id="on-going-research">
+  <title>On-going research</title>
+  <p>Emergent Methods, based in Arvada CO, is actively using
+  <monospace>FreqAI</monospace> to perform large scale experiments aimed
+  at comparing machine learning libraries in live and historical
+  environments. Past projects include backtesting parametric sweeps,
+  while active projects include a 3 week live deployment comparison
+  between <monospace>CatboosRegressor</monospace>,
+  <monospace>LightGBMRegressor</monospace>, and
+  <monospace>XGBoostRegressor</monospace>. Results from these studies
+  are on track for publication in scientific journals as well as more
+  general data science blogs (e.g. Medium).</p>
+</sec>
+<sec id="installing-and-running-freqai">
+  <title>Installing and running <monospace>FreqAI</monospace></title>
+  <p><monospace>FreqAI</monospace> is automatically installed with
+  <monospace>Freqtrade</monospace> using the following commands on linux
+  systems:</p>
+  <preformat>git clone git@github.com:freqtrade/freqtrade.git
+cd freqtrade
+./setup.sh -i</preformat>
+  <p>However, <monospace>FreqAI</monospace> also benefits from
+  <monospace>Freqtrade</monospace> docker distributions, and can be run
+  with docker by pulling the stable or develop images from
+  <monospace>Freqtrade</monospace> distributions.</p>
+</sec>
+<sec id="funding-sources">
+  <title>Funding sources</title>
+  <p><ext-link ext-link-type="uri" xlink:href="https://www.freqtrade.io/en/latest/freqai/"><monospace>FreqAI</monospace></ext-link>
+  has had no official sponsors, and is entirely grass roots. All
+  donations into the project (e.g. the GitHub sponsor system) are kept
+  inside the project to help support development of open-sourced and
+  communally beneficial features.</p>
+</sec>
+<sec id="acknowledgements">
+  <title>Acknowledgements</title>
+  <p>We would like to acknowledge various beta testers of
+  <monospace>FreqAI</monospace>:</p>
+  <list list-type="bullet">
+    <list-item>
+      <p>Richárd Józsa</p>
+    </list-item>
+    <list-item>
+      <p>Juha Nykänen</p>
+    </list-item>
+    <list-item>
+      <p>Salah Lamkadem</p>
+    </list-item>
+  </list>
+  <p>As well as various <monospace>Freqtrade</monospace>
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/freqtrade/freqtrade/graphs/contributors">developers</ext-link>
+  maintaining tangential, yet essential, modules.</p>
+</sec>
+</body>
+<back>
+<ref-list>
+  <ref id="ref-scikit-learn">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Pedregosa</surname><given-names>F.</given-names></name>
+        <name><surname>Varoquaux</surname><given-names>G.</given-names></name>
+        <name><surname>Gramfort</surname><given-names>A.</given-names></name>
+        <name><surname>Michel</surname><given-names>V.</given-names></name>
+        <name><surname>Thirion</surname><given-names>B.</given-names></name>
+        <name><surname>Grisel</surname><given-names>O.</given-names></name>
+        <name><surname>Blondel</surname><given-names>M.</given-names></name>
+        <name><surname>Prettenhofer</surname><given-names>P.</given-names></name>
+        <name><surname>Weiss</surname><given-names>R.</given-names></name>
+        <name><surname>Dubourg</surname><given-names>V.</given-names></name>
+        <name><surname>Vanderplas</surname><given-names>J.</given-names></name>
+        <name><surname>Passos</surname><given-names>A.</given-names></name>
+        <name><surname>Cournapeau</surname><given-names>D.</given-names></name>
+        <name><surname>Brucher</surname><given-names>M.</given-names></name>
+        <name><surname>Perrot</surname><given-names>M.</given-names></name>
+        <name><surname>Duchesnay</surname><given-names>E.</given-names></name>
+      </person-group>
+      <article-title>Scikit-learn: Machine learning in Python</article-title>
+      <source>Journal of Machine Learning Research</source>
+      <year iso-8601-date="2011">2011</year>
+      <volume>12</volume>
+      <fpage>2825</fpage>
+      <lpage>2830</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-catboost">
+    <element-citation publication-type="paper-conference">
+      <person-group person-group-type="author">
+        <name><surname>Prokhorenkova</surname><given-names>Liudmila</given-names></name>
+        <name><surname>Gusev</surname><given-names>Gleb</given-names></name>
+        <name><surname>Vorobev</surname><given-names>Aleksandr</given-names></name>
+        <name><surname>Dorogush</surname><given-names>Anna Veronika</given-names></name>
+        <name><surname>Gulin</surname><given-names>Andrey</given-names></name>
+      </person-group>
+      <article-title>CatBoost: Unbiased boosting with categorical features</article-title>
+      <source>Proceedings of the 32nd international conference on neural information processing systems</source>
+      <publisher-name>Curran Associates Inc.</publisher-name>
+      <publisher-loc>Red Hook, NY, USA</publisher-loc>
+      <year iso-8601-date="2018">2018</year>
+      <fpage>6639</fpage>
+      <lpage>6649</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-lightgbm">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Ke</surname><given-names>Guolin</given-names></name>
+        <name><surname>Meng</surname><given-names>Qi</given-names></name>
+        <name><surname>Finley</surname><given-names>Thomas</given-names></name>
+        <name><surname>Wang</surname><given-names>Taifeng</given-names></name>
+        <name><surname>Chen</surname><given-names>Wei</given-names></name>
+        <name><surname>Ma</surname><given-names>Weidong</given-names></name>
+        <name><surname>Ye</surname><given-names>Qiwei</given-names></name>
+        <name><surname>Liu</surname><given-names>Tie-Yan</given-names></name>
+      </person-group>
+      <article-title>Lightgbm: A highly efficient gradient boosting decision tree</article-title>
+      <source>Advances in neural information processing systems</source>
+      <year iso-8601-date="2017">2017</year>
+      <volume>30</volume>
+      <fpage>3146</fpage>
+      <lpage>3154</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-xgboost">
+    <element-citation publication-type="paper-conference">
+      <person-group person-group-type="author">
+        <name><surname>Chen</surname><given-names>Tianqi</given-names></name>
+        <name><surname>Guestrin</surname><given-names>Carlos</given-names></name>
+      </person-group>
+      <article-title>XGBoost: A scalable tree boosting system</article-title>
+      <source>Proceedings of the 22nd ACM SIGKDD international conference on knowledge discovery and data mining</source>
+      <publisher-name>ACM</publisher-name>
+      <publisher-loc>New York, NY, USA</publisher-loc>
+      <year iso-8601-date="2016">2016</year>
+      <isbn>978-1-4503-4232-2</isbn>
+      <uri>http://doi.acm.org/10.1145/2939672.2939785</uri>
+      <pub-id pub-id-type="doi">10.1145/2939672.2939785</pub-id>
+      <fpage>785</fpage>
+      <lpage>794</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-stable-baselines3">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Raffin</surname><given-names>Antonin</given-names></name>
+        <name><surname>Hill</surname><given-names>Ashley</given-names></name>
+        <name><surname>Gleave</surname><given-names>Adam</given-names></name>
+        <name><surname>Kanervisto</surname><given-names>Anssi</given-names></name>
+        <name><surname>Ernestus</surname><given-names>Maximilian</given-names></name>
+        <name><surname>Dormann</surname><given-names>Noah</given-names></name>
+      </person-group>
+      <article-title>Stable-Baselines3: Reliable reinforcement learning implementations</article-title>
+      <source>Journal of Machine Learning Research</source>
+      <year iso-8601-date="2021">2021</year>
+      <volume>22</volume>
+      <issue>268</issue>
+      <uri>http://jmlr.org/papers/v22/20-1364.html</uri>
+      <fpage>1</fpage>
+      <lpage>8</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-openai">
+    <element-citation>
+      <person-group person-group-type="author">
+        <name><surname>Brockman</surname><given-names>Greg</given-names></name>
+        <name><surname>Cheung</surname><given-names>Vicki</given-names></name>
+        <name><surname>Pettersson</surname><given-names>Ludwig</given-names></name>
+        <name><surname>Schneider</surname><given-names>Jonas</given-names></name>
+        <name><surname>Schulman</surname><given-names>John</given-names></name>
+        <name><surname>Tang</surname><given-names>Jie</given-names></name>
+        <name><surname>Zaremba</surname><given-names>Wojciech</given-names></name>
+      </person-group>
+      <article-title>OpenAI gym</article-title>
+      <year iso-8601-date="2016">2016</year>
+      <uri>https://arxiv.org/abs/1606.01540</uri>
+    </element-citation>
+  </ref>
+  <ref id="ref-tensorflow">
+    <element-citation>
+      <person-group person-group-type="author">
+        <name><surname>Abadi</surname><given-names>Martín</given-names></name>
+        <name><surname>Agarwal</surname><given-names>Ashish</given-names></name>
+        <name><surname>Barham</surname><given-names>Paul</given-names></name>
+        <name><surname>Brevdo</surname><given-names>Eugene</given-names></name>
+        <name><surname>Chen</surname><given-names>Zhifeng</given-names></name>
+        <name><surname>Citro</surname><given-names>Craig</given-names></name>
+        <name><surname>Corrado</surname><given-names>Greg S.</given-names></name>
+        <name><surname>Davis</surname><given-names>Andy</given-names></name>
+        <name><surname>Dean</surname><given-names>Jeffrey</given-names></name>
+        <name><surname>Devin</surname><given-names>Matthieu</given-names></name>
+        <name><surname>Ghemawat</surname><given-names>Sanjay</given-names></name>
+        <name><surname>Goodfellow</surname><given-names>Ian</given-names></name>
+        <name><surname>Harp</surname><given-names>Andrew</given-names></name>
+        <name><surname>Irving</surname><given-names>Geoffrey</given-names></name>
+        <name><surname>Isard</surname><given-names>Michael</given-names></name>
+        <name><surname>Jia</surname><given-names>Yangqing</given-names></name>
+        <name><surname>Jozefowicz</surname><given-names>Rafal</given-names></name>
+        <name><surname>Kaiser</surname><given-names>Lukasz</given-names></name>
+        <name><surname>Kudlur</surname><given-names>Manjunath</given-names></name>
+        <name><surname>Levenberg</surname><given-names>Josh</given-names></name>
+        <name><surname>Mané</surname><given-names>Dandelion</given-names></name>
+        <name><surname>Monga</surname><given-names>Rajat</given-names></name>
+        <name><surname>Moore</surname><given-names>Sherry</given-names></name>
+        <name><surname>Murray</surname><given-names>Derek</given-names></name>
+        <name><surname>Olah</surname><given-names>Chris</given-names></name>
+        <name><surname>Schuster</surname><given-names>Mike</given-names></name>
+        <name><surname>Shlens</surname><given-names>Jonathon</given-names></name>
+        <name><surname>Steiner</surname><given-names>Benoit</given-names></name>
+        <name><surname>Sutskever</surname><given-names>Ilya</given-names></name>
+        <name><surname>Talwar</surname><given-names>Kunal</given-names></name>
+        <name><surname>Tucker</surname><given-names>Paul</given-names></name>
+        <name><surname>Vanhoucke</surname><given-names>Vincent</given-names></name>
+        <name><surname>Vasudevan</surname><given-names>Vijay</given-names></name>
+        <name><surname>Viégas</surname><given-names>Fernanda</given-names></name>
+        <name><surname>Vinyals</surname><given-names>Oriol</given-names></name>
+        <name><surname>Warden</surname><given-names>Pete</given-names></name>
+        <name><surname>Wattenberg</surname><given-names>Martin</given-names></name>
+        <name><surname>Wicke</surname><given-names>Martin</given-names></name>
+        <name><surname>Yu</surname><given-names>Yuan</given-names></name>
+        <name><surname>Zheng</surname><given-names>Xiaoqiang</given-names></name>
+      </person-group>
+      <article-title>TensorFlow: Large-scale machine learning on heterogeneous systems</article-title>
+      <year iso-8601-date="2015">2015</year>
+      <uri>https://www.tensorflow.org/</uri>
+    </element-citation>
+  </ref>
+  <ref id="ref-pytorch">
+    <element-citation publication-type="chapter">
+      <person-group person-group-type="author">
+        <name><surname>Paszke</surname><given-names>Adam</given-names></name>
+        <name><surname>Gross</surname><given-names>Sam</given-names></name>
+        <name><surname>Massa</surname><given-names>Francisco</given-names></name>
+        <name><surname>Lerer</surname><given-names>Adam</given-names></name>
+        <name><surname>Bradbury</surname><given-names>James</given-names></name>
+        <name><surname>Chanan</surname><given-names>Gregory</given-names></name>
+        <name><surname>Killeen</surname><given-names>Trevor</given-names></name>
+        <name><surname>Lin</surname><given-names>Zeming</given-names></name>
+        <name><surname>Gimelshein</surname><given-names>Natalia</given-names></name>
+        <name><surname>Antiga</surname><given-names>Luca</given-names></name>
+        <name><surname>Desmaison</surname><given-names>Alban</given-names></name>
+        <name><surname>Kopf</surname><given-names>Andreas</given-names></name>
+        <name><surname>Yang</surname><given-names>Edward</given-names></name>
+        <name><surname>DeVito</surname><given-names>Zachary</given-names></name>
+        <name><surname>Raison</surname><given-names>Martin</given-names></name>
+        <name><surname>Tejani</surname><given-names>Alykhan</given-names></name>
+        <name><surname>Chilamkurthy</surname><given-names>Sasank</given-names></name>
+        <name><surname>Steiner</surname><given-names>Benoit</given-names></name>
+        <name><surname>Fang</surname><given-names>Lu</given-names></name>
+        <name><surname>Bai</surname><given-names>Junjie</given-names></name>
+        <name><surname>Chintala</surname><given-names>Soumith</given-names></name>
+      </person-group>
+      <article-title>PyTorch: An imperative style, high-performance deep learning library</article-title>
+      <source>Advances in neural information processing systems 32</source>
+      <person-group person-group-type="editor">
+        <name><surname>Wallach</surname><given-names>H.</given-names></name>
+        <name><surname>Larochelle</surname><given-names>H.</given-names></name>
+        <name><surname>Beygelzimer</surname><given-names>A.</given-names></name>
+        <name><surname>dAlché-Buc</surname><given-names>F.</given-names></name>
+        <name><surname>Fox</surname><given-names>E.</given-names></name>
+        <name><surname>Garnett</surname><given-names>R.</given-names></name>
+      </person-group>
+      <publisher-name>Curran Associates, Inc.</publisher-name>
+      <year iso-8601-date="2019">2019</year>
+      <uri>http://papers.neurips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library.pdf</uri>
+      <fpage>8024</fpage>
+      <lpage>8035</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-scipy">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Virtanen</surname><given-names>Pauli</given-names></name>
+        <name><surname>Gommers</surname><given-names>Ralf</given-names></name>
+        <name><surname>Oliphant</surname><given-names>Travis E.</given-names></name>
+        <name><surname>Haberland</surname><given-names>Matt</given-names></name>
+        <name><surname>Reddy</surname><given-names>Tyler</given-names></name>
+        <name><surname>Cournapeau</surname><given-names>David</given-names></name>
+        <name><surname>Burovski</surname><given-names>Evgeni</given-names></name>
+        <name><surname>Peterson</surname><given-names>Pearu</given-names></name>
+        <name><surname>Weckesser</surname><given-names>Warren</given-names></name>
+        <name><surname>Bright</surname><given-names>Jonathan</given-names></name>
+        <name><surname>van der Walt</surname><given-names>Stéfan J.</given-names></name>
+        <name><surname>Brett</surname><given-names>Matthew</given-names></name>
+        <name><surname>Wilson</surname><given-names>Joshua</given-names></name>
+        <name><surname>Millman</surname><given-names>K. Jarrod</given-names></name>
+        <name><surname>Mayorov</surname><given-names>Nikolay</given-names></name>
+        <name><surname>Nelson</surname><given-names>Andrew R. J.</given-names></name>
+        <name><surname>Jones</surname><given-names>Eric</given-names></name>
+        <name><surname>Kern</surname><given-names>Robert</given-names></name>
+        <name><surname>Larson</surname><given-names>Eric</given-names></name>
+        <name><surname>Carey</surname><given-names>C J</given-names></name>
+        <name><surname>Polat</surname><given-names>İlhan</given-names></name>
+        <name><surname>Feng</surname><given-names>Yu</given-names></name>
+        <name><surname>Moore</surname><given-names>Eric W.</given-names></name>
+        <name><surname>VanderPlas</surname><given-names>Jake</given-names></name>
+        <name><surname>Laxalde</surname><given-names>Denis</given-names></name>
+        <name><surname>Perktold</surname><given-names>Josef</given-names></name>
+        <name><surname>Cimrman</surname><given-names>Robert</given-names></name>
+        <name><surname>Henriksen</surname><given-names>Ian</given-names></name>
+        <name><surname>Quintero</surname><given-names>E. A.</given-names></name>
+        <name><surname>Harris</surname><given-names>Charles R.</given-names></name>
+        <name><surname>Archibald</surname><given-names>Anne M.</given-names></name>
+        <name><surname>Ribeiro</surname><given-names>Antônio H.</given-names></name>
+        <name><surname>Pedregosa</surname><given-names>Fabian</given-names></name>
+        <name><surname>van Mulbregt</surname><given-names>Paul</given-names></name>
+        <string-name>SciPy 1.0 Contributors</string-name>
+      </person-group>
+      <article-title>SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python</article-title>
+      <source>Nature Methods</source>
+      <year iso-8601-date="2020">2020</year>
+      <volume>17</volume>
+      <pub-id pub-id-type="doi">10.1038/s41592-019-0686-2</pub-id>
+      <fpage>261</fpage>
+      <lpage>272</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-numpy">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Harris</surname><given-names>Charles R.</given-names></name>
+        <name><surname>Millman</surname><given-names>K. Jarrod</given-names></name>
+        <name><surname>Walt</surname><given-names>Stéfan J. van der</given-names></name>
+        <name><surname>Gommers</surname><given-names>Ralf</given-names></name>
+        <name><surname>Virtanen</surname><given-names>Pauli</given-names></name>
+        <name><surname>Cournapeau</surname><given-names>David</given-names></name>
+        <name><surname>Wieser</surname><given-names>Eric</given-names></name>
+        <name><surname>Taylor</surname><given-names>Julian</given-names></name>
+        <name><surname>Berg</surname><given-names>Sebastian</given-names></name>
+        <name><surname>Smith</surname><given-names>Nathaniel J.</given-names></name>
+        <name><surname>Kern</surname><given-names>Robert</given-names></name>
+        <name><surname>Picus</surname><given-names>Matti</given-names></name>
+        <name><surname>Hoyer</surname><given-names>Stephan</given-names></name>
+        <name><surname>Kerkwijk</surname><given-names>Marten H. van</given-names></name>
+        <name><surname>Brett</surname><given-names>Matthew</given-names></name>
+        <name><surname>Haldane</surname><given-names>Allan</given-names></name>
+        <name><surname>Río</surname><given-names>Jaime Fernández del</given-names></name>
+        <name><surname>Wiebe</surname><given-names>Mark</given-names></name>
+        <name><surname>Peterson</surname><given-names>Pearu</given-names></name>
+        <name><surname>Gérard-Marchant</surname><given-names>Pierre</given-names></name>
+        <name><surname>Sheppard</surname><given-names>Kevin</given-names></name>
+        <name><surname>Reddy</surname><given-names>Tyler</given-names></name>
+        <name><surname>Weckesser</surname><given-names>Warren</given-names></name>
+        <name><surname>Abbasi</surname><given-names>Hameer</given-names></name>
+        <name><surname>Gohlke</surname><given-names>Christoph</given-names></name>
+        <name><surname>Oliphant</surname><given-names>Travis E.</given-names></name>
+      </person-group>
+      <article-title>Array programming with NumPy</article-title>
+      <source>Nature</source>
+      <publisher-name>Springer Science; Business Media LLC</publisher-name>
+      <year iso-8601-date="2020-09">2020</year><month>09</month>
+      <volume>585</volume>
+      <issue>7825</issue>
+      <uri>https://doi.org/10.1038/s41586-020-2649-2</uri>
+      <pub-id pub-id-type="doi">10.1038/s41586-020-2649-2</pub-id>
+      <fpage>357</fpage>
+      <lpage>362</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-pandas">
+    <element-citation publication-type="paper-conference">
+      <person-group person-group-type="author">
+        <name><surname>McKinney</surname><given-names>Wes</given-names></name>
+        <name><surname>others</surname></name>
+      </person-group>
+      <article-title>Data structures for statistical computing in python</article-title>
+      <source>Proceedings of the 9th python in science conference</source>
+      <publisher-name>Austin, TX</publisher-name>
+      <year iso-8601-date="2010">2010</year>
+      <volume>445</volume>
+      <fpage>51</fpage>
+      <lpage>56</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-finrl">
+    <element-citation publication-type="webpage">
+      <article-title>AI4Finance-foundation</article-title>
+      <year iso-8601-date="2022">2022</year>
+      <date-in-citation content-type="access-date"><year iso-8601-date="2022-09-30">2022</year><month>09</month><day>30</day></date-in-citation>
+      <uri>https://github.com/AI4Finance-Foundation/FinRL</uri>
+    </element-citation>
+  </ref>
+  <ref id="ref-tensortrade">
+    <element-citation publication-type="webpage">
+      <article-title>Tensortrade</article-title>
+      <year iso-8601-date="2022">2022</year>
+      <date-in-citation content-type="access-date"><year iso-8601-date="2022-09-30">2022</year><month>09</month><day>30</day></date-in-citation>
+      <uri>https://tensortradex.readthedocs.io/en/latest/L</uri>
+    </element-citation>
+  </ref>
+</ref-list>
+</back>
+</article>
