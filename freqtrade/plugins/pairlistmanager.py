@@ -11,6 +11,7 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.mixins import LoggingMixin
 from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -76,7 +77,7 @@ class PairListManager(LoggingMixin):
         return [{p.name: p.short_desc()} for p in self._pairlist_handlers]
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _get_cached_tickers(self):
+    def _get_cached_tickers(self) -> Tickers:
         return self._exchange.get_tickers()
 
     def refresh_pairlist(self) -> None:

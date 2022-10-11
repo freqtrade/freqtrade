@@ -2,10 +2,11 @@
 Price pair list filter
 """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Ticker
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -64,14 +65,14 @@ class PriceFilter(IPairList):
 
         return f"{self.name} - No price filters configured."
 
-    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
+    def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """
         Check if if one price-step (pip) is > than a certain barrier.
         :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
-        if ticker.get('last', None) is None or ticker.get('last') == 0:
+        if not ticker or ticker.get('last', None) is None or ticker.get('last') == 0:
             self.log_once(f"Removed {pair} from whitelist, because "
                           "ticker['last'] is empty (Usually no trade in the last 24h).",
                           logger.info)

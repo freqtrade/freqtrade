@@ -4,11 +4,12 @@ PairList Handler base class
 import logging
 from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange, market_is_active
+from freqtrade.exchange.types import Ticker, Tickers
 from freqtrade.mixins import LoggingMixin
 
 
@@ -61,7 +62,7 @@ class IPairList(LoggingMixin, ABC):
         -> Please overwrite in subclasses
         """
 
-    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
+    def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """
         Check one pair against Pairlist Handler's specific conditions.
 
@@ -74,7 +75,7 @@ class IPairList(LoggingMixin, ABC):
         """
         raise NotImplementedError()
 
-    def gen_pairlist(self, tickers: Dict) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
         Generate the pairlist.
 
@@ -91,7 +92,7 @@ class IPairList(LoggingMixin, ABC):
         raise OperationalException("This Pairlist Handler should not be used "
                                    "at the first position in the list of Pairlist Handlers.")
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
 
@@ -110,7 +111,7 @@ class IPairList(LoggingMixin, ABC):
             # Copy list since we're modifying this list
             for p in deepcopy(pairlist):
                 # Filter out assets
-                if not self._validate_pair(p, tickers[p] if p in tickers else {}):
+                if not self._validate_pair(p, tickers[p] if p in tickers else None):
                     pairlist.remove(p)
 
         return pairlist

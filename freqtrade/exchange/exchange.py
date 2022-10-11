@@ -31,6 +31,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        remove_credentials, retrier, retrier_async)
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1420,14 +1421,15 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         """
         :param cached: Allow cached result
         :return: fetch_tickers result
         """
+        tickers: Tickers
         if cached:
             with self._cache_lock:
-                tickers = self._fetch_tickers_cache.get('fetch_tickers')
+                tickers = self._fetch_tickers_cache.get('fetch_tickers')  # type: ignore
             if tickers:
                 return tickers
         try:
