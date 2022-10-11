@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict
 
-import websockets
 from fastapi import APIRouter, Depends, WebSocketDisconnect
 from fastapi.websockets import WebSocket, WebSocketState
 from pydantic import ValidationError
+from websockets.exceptions import WebSocketException
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
@@ -115,10 +115,7 @@ async def message_endpoint(
                     # Process the request here
                     await _process_consumer_request(request, channel, rpc)
 
-            except (
-                WebSocketDisconnect,
-                websockets.exceptions.WebSocketException
-            ):
+            except (WebSocketDisconnect, WebSocketException):
                 # Handle client disconnects
                 logger.info(f"Consumer disconnected - {channel}")
             except RuntimeError:
@@ -126,7 +123,7 @@ async def message_endpoint(
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
                 pass
             except Exception as e:
-                logger.info(f"Consumer connection failed - {channel}")
+                logger.info(f"Consumer connection failed - {channel}: {e}")
                 logger.debug(e, exc_info=e)
             finally:
                 await channel_manager.on_disconnect(ws)
