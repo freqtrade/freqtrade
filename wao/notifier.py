@@ -21,7 +21,7 @@ def send_start_deliminator_message(brain, month, year):
 def send_stop_bot_message(reason, brain):
     text = "[STOP_BOT_SCRIPT] Bot Stopped! Positions Closed! Reason: " + reason
     print("Notifier: send_stop_bot_message: " + str(text))
-    post_request(text, brain)
+    post_request(text, brain=brain)
 
 
 def post_request(text, is_from_429_watcher=False, brain=BrainConfig.BRAIN, is_from_error_handler=False):
