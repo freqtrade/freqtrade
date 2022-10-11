@@ -28,7 +28,7 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
 
         cbr = CatBoostRegressor(
             allow_writing_files=True,
-            train_dir=Path(dk.data_path / 'tensorboard'),
+            train_dir=Path(dk.data_path),
             **self.model_training_parameters,
         )
 
