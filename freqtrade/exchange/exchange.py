@@ -7,6 +7,7 @@ import asyncio
 import inspect
 import logging
 import signal
+import time
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import floor, isnan
@@ -229,6 +230,8 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
+        self._has_watch_ohlcv = self.exchange_has('watchOHLCV')
+
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
         if validate:
@@ -2219,6 +2222,14 @@ class Exchange:
         data = sorted(data, key=lambda x: x[0])
         return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
+    async def _async_watch_ohlcv(self, pair: str, timeframe: str,
+                                 candle_type: CandleType) -> Tuple[str, str, str, List]:
+        start = time.time()
+        data = await self._api_async.watch_ohlcv(pair, timeframe, )
+
+        logger.info(f"watch {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
+        return pair, timeframe, candle_type, data
+
     def _build_coroutine(
         self,
         pair: str,
@@ -2231,8 +2242,16 @@ class Exchange:
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
             min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
+            one_date = date_minus_candles(timeframe, 1).timestamp()
+            last_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
+            if (self._has_watch_ohlcv
+                    and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+                    and one_date <= last_refresh):
+                logger.info(f"Using watch {pair}, {timeframe}, {candle_type}")
+                return self._async_watch_ohlcv(pair, timeframe, candle_type)
+                pass
             # Check if 1 call can get us updated candles without hole in the data.
-            if min_date < self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0):
+            elif min_date < last_refresh:
                 # Cache can be used - do one-off call.
                 not_all_data = False
             else:
