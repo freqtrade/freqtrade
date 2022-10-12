@@ -15,6 +15,7 @@ from typing import Any, Coroutine, Dict, List, Literal, Optional, Tuple, Union
 
 import ccxt
 import ccxt.async_support as ccxt_async
+import ccxt.pro as ccxt_pro
 from cachetools import TTLCache
 from ccxt import TICK_SIZE
 from dateutil import parser
@@ -218,7 +219,7 @@ class Exchange:
         ccxt_config = deep_merge_dicts(exchange_conf.get("ccxt_config", {}), ccxt_config)
         ccxt_config = deep_merge_dicts(exchange_conf.get("ccxt_sync_config", {}), ccxt_config)
 
-        self._api = self._init_ccxt(exchange_conf, ccxt_kwargs=ccxt_config)
+        self._api = self._init_ccxt(exchange_conf, True, ccxt_config)
 
         ccxt_async_config = self._ccxt_config
         ccxt_async_config = deep_merge_dicts(
@@ -227,8 +228,7 @@ class Exchange:
         ccxt_async_config = deep_merge_dicts(
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
-        self._api_async = self._init_ccxt(exchange_conf, ccxt_async, ccxt_kwargs=ccxt_async_config)
-
+        self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
         if validate:
@@ -287,18 +287,20 @@ class Exchange:
         self.validate_pricing(config["entry_pricing"])
 
     def _init_ccxt(
-        self,
-        exchange_config: Dict[str, Any],
-        ccxt_module: CcxtModuleType = ccxt,
-        *,
-        ccxt_kwargs: Dict,
+        self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
     ) -> ccxt.Exchange:
         """
-        Initialize ccxt with given config and return valid
-        ccxt instance.
+        Initialize ccxt with given config and return valid ccxt instance.
         """
         # Find matching class for the given exchange name
         name = exchange_config["name"]
+        if sync:
+            ccxt_module = ccxt
+        else:
+            ccxt_module = ccxt_pro
+            if not is_exchange_known_ccxt(name, ccxt_module):
+                # Fall back to async if pro doesn't support this exchange
+                ccxt_module = ccxt_async
 
         if not is_exchange_known_ccxt(name, ccxt_module):
             raise OperationalException(f"Exchange {name} is not supported by ccxt")
