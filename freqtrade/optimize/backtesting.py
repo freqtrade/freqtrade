@@ -617,13 +617,16 @@ class Backtesting:
                     exit_reason = row[EXIT_TAG_IDX]
                 # Custom exit pricing only for exit-signals
                 if order_type == 'limit':
-                    close_rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                                       default_retval=close_rate)(
+                    rate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                 default_retval=close_rate)(
                         pair=trade.pair,
                         trade=trade,  # type: ignore[arg-type]
                         current_time=exit_candle_time,
                         proposed_rate=close_rate, current_profit=current_profit,
                         exit_tag=exit_reason)
+                    if rate != close_rate:
+                        close_rate = price_to_precision(rate, trade.price_precision,
+                                                        self.precision_mode)
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
                     if trade.is_short:
@@ -660,7 +663,6 @@ class Backtesting:
         # amount = amount or trade.amount
         amount = amount_to_contract_precision(amount or trade.amount, trade.amount_precision,
                                               self.precision_mode, trade.contract_size)
-        rate = price_to_precision(close_rate, trade.price_precision, self.precision_mode)
         order = Order(
             id=self.order_id_counter,
             ft_trade_id=trade.id,
@@ -674,12 +676,12 @@ class Backtesting:
             side=trade.exit_side,
             order_type=order_type,
             status="open",
-            price=rate,
-            average=rate,
+            price=close_rate,
+            average=close_rate,
             amount=amount,
             filled=0,
             remaining=amount,
-            cost=amount * rate,
+            cost=amount * close_rate,
         )
         trade.orders.append(order)
         return trade
@@ -726,18 +728,21 @@ class Backtesting:
     def get_valid_price_and_stake(
         self, pair: str, row: Tuple, propose_rate: float, stake_amount: float,
         direction: LongShort, current_time: datetime, entry_tag: Optional[str],
-        trade: Optional[LocalTrade], order_type: str
+        trade: Optional[LocalTrade], order_type: str, price_precision: Optional[float]
     ) -> Tuple[float, float, float, float]:
 
         if order_type == 'limit':
-            propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
-                                                 default_retval=propose_rate)(
+            new_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
+                                             default_retval=propose_rate)(
                 pair=pair, current_time=current_time,
                 proposed_rate=propose_rate, entry_tag=entry_tag,
                 side=direction,
             )  # default value is the open rate
             # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
+            if new_rate != propose_rate:
+                propose_rate = price_to_precision(new_rate, price_precision,
+                                                  self.precision_mode)
             if direction == "short":
                 propose_rate = max(propose_rate, row[LOW_IDX])
             else:
@@ -799,9 +804,11 @@ class Backtesting:
         pos_adjust = trade is not None and requested_rate is None
 
         stake_amount_ = stake_amount or (trade.stake_amount if trade else 0.0)
+        precision_price = self.exchange.get_precision_price(pair)
+
         propose_rate, stake_amount, leverage, min_stake_amount = self.get_valid_price_and_stake(
             pair, row, row[OPEN_IDX], stake_amount_, direction, current_time, entry_tag, trade,
-            order_type
+            order_type, precision_price,
         )
 
         # replace proposed rate if another rate was requested
@@ -817,8 +824,6 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             self.order_id_counter += 1
             base_currency = self.exchange.get_pair_base_currency(pair)
-            precision_price = self.exchange.get_precision_price(pair)
-            propose_rate = price_to_precision(propose_rate, precision_price, self.precision_mode)
             amount_p = (stake_amount / propose_rate) * leverage
 
             contract_size = self.exchange.get_contract_size(pair)
