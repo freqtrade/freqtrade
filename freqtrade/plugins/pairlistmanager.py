@@ -46,6 +46,15 @@ class PairListManager(LoggingMixin):
         if not self._pairlist_handlers:
             raise OperationalException("No Pairlist Handlers defined")
 
+        if self._tickers_needed and not self._exchange.exchange_has('fetchTickers'):
+            invalid = ". ".join([p.name for p in self._pairlist_handlers if p.needstickers])
+
+            raise OperationalException(
+                "Exchange does not support fetchTickers, therefore the following pairlists "
+                "cannot be used. Please edit your config and restart the bot.\n"
+                f"{invalid}."
+            )
+
         refresh_period = config.get('pairlist_refresh_period', 3600)
         LoggingMixin.__init__(self, logger, refresh_period)
 

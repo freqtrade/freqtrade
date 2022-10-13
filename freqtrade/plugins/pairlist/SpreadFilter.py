@@ -5,7 +5,6 @@ import logging
 from typing import Any, Dict, Optional
 
 from freqtrade.constants import Config
-from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.types import Ticker
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
@@ -22,12 +21,6 @@ class SpreadFilter(IPairList):
 
         self._max_spread_ratio = pairlistconfig.get('max_spread_ratio', 0.005)
         self._enabled = self._max_spread_ratio != 0
-
-        if not self._exchange.exchange_has('fetchTickers'):
-            raise OperationalException(
-                'Exchange does not support fetchTickers, therefore SpreadFilter cannot be used.'
-                'Please edit your config and restart the bot.'
-            )
 
     @property
     def needstickers(self) -> bool:
