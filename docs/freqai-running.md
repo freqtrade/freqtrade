@@ -155,7 +155,6 @@ where `unique-id` is the `identifier` set in the `freqai` configuration file. Th
 
 ![tensorboard](assets/tensorboard.jpg)
 
-
 ## Setting up a follower
 
 You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:
