@@ -87,11 +87,16 @@ def test_get_timerange_from_ready_models(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180101-20180130")
 
-    new_timerange = TimeRange.parse_timerange("20180120-20180122")
+    # 1516233600 (2018-01-18 00:00) - Start Training 1
+    # 1516406400 (2018-01-20 00:00) - End Training 1 (Backtest slice 1)
+    # 1516579200 (2018-01-22 00:00) - End Training 2 (Backtest slice 2)
+    # 1516838400 (2018-01-25 00:00) - End Timerange
+
+    new_timerange = TimeRange("date", "date", 1516233600, 1516406400)
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
-    new_timerange = TimeRange.parse_timerange("20180122-20180124")
+    new_timerange = TimeRange("date", "date", 1516406400, 1516579200)
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
 
@@ -100,8 +105,8 @@ def test_get_timerange_from_ready_models(mocker, freqai_conf, model):
      pairs_end_dates) = get_timerange_and_assets_end_dates_from_ready_models(models_path=model_path)
 
     assert len(pairs_end_dates["ADA"]) == 2
-    assert backtesting_timerange.startts == 1516492800
-    assert backtesting_timerange.stopts == 1516924800
+    assert backtesting_timerange.startts == 1516406400
+    assert backtesting_timerange.stopts == 1516838400
 
     backtesting_string_timerange = get_timerange_backtest_live_models(freqai_conf)
-    assert backtesting_string_timerange == '20180121-20180126'
+    assert backtesting_string_timerange == '20180120-20180125'

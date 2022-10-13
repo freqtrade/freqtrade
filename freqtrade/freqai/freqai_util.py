@@ -63,10 +63,10 @@ def get_timerange_and_assets_end_dates_from_ready_models(
 
     all_models_end_dates.append(finish_timestamp)
     all_models_end_dates.sort()
-    start_date = (datetime(*datetime.fromtimestamp(min(all_models_end_dates)).timetuple()[:3],
-                           tzinfo=timezone.utc))
-    end_date = (datetime(*datetime.fromtimestamp(max(all_models_end_dates)).timetuple()[:3],
-                         tzinfo=timezone.utc))
+    start_date = (datetime(*datetime.fromtimestamp(min(all_models_end_dates),
+                  timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
+    end_date = (datetime(*datetime.fromtimestamp(max(all_models_end_dates),
+                timezone.utc).timetuple()[:3], tzinfo=timezone.utc))
 
     # add 1 day to string timerange to ensure BT module will load all dataframe data
     end_date = end_date + timedelta(days=1)
