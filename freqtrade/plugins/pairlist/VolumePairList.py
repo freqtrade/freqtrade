@@ -5,13 +5,14 @@ Provides dynamic pair list based on trade volumes
 """
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 from cachetools import TTLCache
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import format_ms_time
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
@@ -36,7 +37,7 @@ class VolumePairList(IPairList):
 
         self._stake_currency = config['stake_currency']
         self._number_pairs = self._pairlistconfig['number_assets']
-        self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
+        self._sort_key: Literal['quoteVolume'] = self._pairlistconfig.get('sort_key', 'quoteVolume')
         self._min_value = self._pairlistconfig.get('min_value', 0)
         self._refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
@@ -110,7 +111,7 @@ class VolumePairList(IPairList):
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
-    def gen_pairlist(self, tickers: Dict) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.

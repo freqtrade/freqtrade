@@ -198,10 +198,6 @@ class ApiServer(RPCHandler):
                 logger.debug(f"Found message of type: {message.get('type')}")
                 # Broadcast it
                 await self._ws_channel_manager.broadcast(message)
-                # Limit messages per sec.
-                # Could cause problems with queue size if too low, and
-                # problems with network traffik if too high.
-                await asyncio.sleep(0.001)
         except asyncio.CancelledError:
             pass
 
@@ -245,6 +241,7 @@ class ApiServer(RPCHandler):
                                   use_colors=False,
                                   log_config=None,
                                   access_log=True if verbosity != 'error' else False,
+                                  ws_ping_interval=None  # We do this explicitly ourselves
                                   )
         try:
             self._server = UvicornServer(uvconfig)

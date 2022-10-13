@@ -10,37 +10,37 @@ Sample configuration (tested using IFTTT).
   "webhook": {
         "enabled": true,
         "url": "https://maker.ifttt.com/trigger/<YOUREVENT>/with/key/<YOURKEY>/",
-        "webhookentry": {
+        "entry": {
             "value1": "Buying {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-        "webhookentrycancel": {
+        "entry_cancel": {
             "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
-         "webhookentryfill": {
+         "entry_fill": {
             "value1": "Buy Order for {pair} filled",
             "value2": "at {open_rate:8f}",
             "value3": ""
         },
-        "webhookexit": {
+        "exit": {
             "value1": "Exiting {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhookexitcancel": {
+        "exit_cancel": {
             "value1": "Cancelling Open Exit Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
         },
-        "webhookexitfill": {
+        "exit_fill": {
             "value1": "Exit Order for {pair} filled",
             "value2": "at {close_rate:8f}.",
             "value3": ""
         },
-        "webhookstatus": {
+        "status": {
             "value1": "Status: {status}",
             "value2": "",
             "value3": ""
@@ -57,7 +57,7 @@ You can set the POST body format to Form-Encoded (default), JSON-Encoded, or raw
         "enabled": true,
         "url": "https://<YOURSUBDOMAIN>.cloud.mattermost.com/hooks/<YOURHOOK>",
         "format": "json",
-        "webhookstatus": {
+        "status": {
             "text": "Status: {status}"
         }
     },
@@ -88,17 +88,30 @@ Optional parameters are available to enable automatic retries for webhook messag
         "url": "https://<YOURHOOKURL>",
         "retries": 3,
         "retry_delay": 0.2,
-        "webhookstatus": {
+        "status": {
             "status": "Status: {status}"
+        }
+    },
+```
+
+Custom messages can be sent to Webhook endpoints via the `self.dp.send_msg()` function from within the strategy. To enable this, set the `allow_custom_messages` option to `true`:
+
+```json
+  "webhook": {
+        "enabled": true,
+        "url": "https://<YOURHOOKURL>",
+        "allow_custom_messages": true,
+        "strategy_msg": {
+            "status": "StrategyMessage: {msg}"
         }
     },
 ```
 
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
-### Webhookentry
+### Entry
 
-The fields in `webhook.webhookentry` are filled when the bot executes a long/short. Parameters are filled using string.format.
+The fields in `webhook.entry` are filled when the bot executes a long/short. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -118,9 +131,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhookentrycancel
+### Entry cancel
 
-The fields in `webhook.webhookentrycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
+The fields in `webhook.entry_cancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -139,9 +152,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhookentryfill
+### Entry fill
 
-The fields in `webhook.webhookentryfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
+The fields in `webhook.entry_fill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -160,9 +173,9 @@ Possible parameters are:
 * `current_rate`
 * `enter_tag`
 
-### Webhookexit
+### Exit
 
-The fields in `webhook.webhookexit` are filled when the bot exits a trade. Parameters are filled using string.format.
+The fields in `webhook.exit` are filled when the bot exits a trade. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -184,9 +197,9 @@ Possible parameters are:
 * `open_date`
 * `close_date`
 
-### Webhookexitfill
+### Exit fill
 
-The fields in `webhook.webhookexitfill` are filled when the bot fills a exit order (closes a Trade). Parameters are filled using string.format.
+The fields in `webhook.exit_fill` are filled when the bot fills a exit order (closes a Trade). Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -209,9 +222,9 @@ Possible parameters are:
 * `open_date`
 * `close_date`
 
-### Webhookexitcancel
+### Exit cancel
 
-The fields in `webhook.webhookexitcancel` are filled when the bot cancels a exit order. Parameters are filled using string.format.
+The fields in `webhook.exit_cancel` are filled when the bot cancels a exit order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
@@ -234,9 +247,9 @@ Possible parameters are:
 * `open_date`
 * `close_date`
 
-### Webhookstatus
+### Status
 
-The fields in `webhook.webhookstatus` are used for regular status messages (Started / Stopped / ...). Parameters are filled using string.format.
+The fields in `webhook.status` are used for regular status messages (Started / Stopped / ...). Parameters are filled using string.format.
 
 The only possible value here is `{status}`.
 
@@ -280,7 +293,6 @@ You can configure this as follows:
 }
 ```
 
-
 The above represents the default (`exit_fill` and `entry_fill` are optional and will default to the above configuration) - modifications are obviously possible.
 
 Available fields correspond to the fields for webhooks and are documented in the corresponding webhook sections.
@@ -288,3 +300,13 @@ Available fields correspond to the fields for webhooks and are documented in the
 The notifications will look as follows by default.
 
 ![discord-notification](assets/discord_notification.png)
+
+Custom messages can be sent from a strategy to Discord endpoints via the dataprovider.send_msg() function. To enable this, set the `allow_custom_messages` option to `true`:
+
+```json
+  "discord": {
+        "enabled": true,
+        "webhook_url": "https://discord.com/api/webhooks/<Your webhook URL ...>",
+        "allow_custom_messages": true,
+    },
+```

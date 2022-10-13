@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from threading import RLock
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 from fastapi import WebSocket as FastAPIWebSocket
@@ -34,6 +35,8 @@ class WebSocketChannel:
         self._serializer_cls = serializer_cls
 
         self._subscriptions: List[str] = []
+        self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=32)
+        self._relay_task = asyncio.create_task(self.relay())
 
         # Internal event to signify a closed websocket
         self._closed = False
@@ -48,11 +51,17 @@ class WebSocketChannel:
     def remote_addr(self):
         return self._websocket.remote_addr
 
-    async def send(self, data):
+    async def _send(self, data):
         """
         Send data on the wrapped websocket
         """
         await self._wrapped_ws.send(data)
+
+    async def send(self, data):
+        """
+        Add the data to the queue to be sent
+        """
+        self.queue.put_nowait(data)
 
     async def recv(self):
         """
@@ -72,6 +81,7 @@ class WebSocketChannel:
         """
 
         self._closed = True
+        self._relay_task.cancel()
 
     def is_closed(self) -> bool:
         """
@@ -94,6 +104,26 @@ class WebSocketChannel:
         :param message_type: The message type to check
         """
         return message_type in self._subscriptions
+
+    async def relay(self):
+        """
+        Relay messages from the channel's queue and send them out. This is started
+        as a task.
+        """
+        while True:
+            message = await self.queue.get()
+            try:
+                await self._send(message)
+                self.queue.task_done()
+
+                # Limit messages per sec.
+                # Could cause problems with queue size if too low, and
+                # problems with network traffik if too high.
+                # 0.001 = 1000/s
+                await asyncio.sleep(0.001)
+            except RuntimeError:
+                # The connection was closed, just exit the task
+                return
 
 
 class ChannelManager:
@@ -155,12 +185,12 @@ class ChannelManager:
         with self._lock:
             message_type = data.get('type')
             for websocket, channel in self.channels.copy().items():
-                try:
-                    if channel.subscribed_to(message_type):
+                if channel.subscribed_to(message_type):
+                    if not channel.queue.full():
                         await channel.send(data)
-                except RuntimeError:
-                    # Handle cannot send after close cases
-                    await self.on_disconnect(websocket)
+                    else:
+                        logger.info(f"Channel {channel} is too far behind, disconnecting")
+                        await self.on_disconnect(websocket)
 
     async def send_direct(self, channel, data):
         """

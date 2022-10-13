@@ -200,16 +200,15 @@ class IFreqaiModel(ABC):
             (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
             dk = FreqaiDataKitchen(self.config, self.live, pair)
-            dk.set_paths(pair, trained_timestamp)
             (
                 retrain,
                 new_trained_timerange,
                 data_load_timerange,
             ) = dk.check_if_new_training_required(trained_timestamp)
-            dk.set_paths(pair, new_trained_timerange.stopts)
 
             if retrain:
                 self.train_timer('start')
+                dk.set_paths(pair, new_trained_timerange.stopts)
                 try:
                     self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
@@ -290,9 +289,7 @@ class IFreqaiModel(ABC):
             if dk.backtest_live_models:
                 timestamp_model_id = int(tr_backtest.startts)
 
-            dk.data_path = Path(
-                dk.full_path / f"sub-train-{pair.split('/')[0]}_{timestamp_model_id}"
-                )
+            dk.set_paths(pair, timestamp_model_id)
 
             dk.set_new_model_names(pair, timestamp_model_id)
 

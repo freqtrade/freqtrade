@@ -13,6 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
@@ -62,7 +63,7 @@ class VolatilityFilter(IPairList):
                 f"{self._min_volatility}-{self._max_volatility} "
                 f" the last {self._days} {plural(self._days, 'day')}.")
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Validate trading range
         :param pairlist: pairlist to filter or sort

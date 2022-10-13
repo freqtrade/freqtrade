@@ -4,6 +4,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, WebSocketDisconnect
 from fastapi.websockets import WebSocket, WebSocketState
 from pydantic import ValidationError
+from websockets.exceptions import WebSocketException
 
 from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
@@ -102,7 +103,6 @@ async def message_endpoint(
     """
     try:
         channel = await channel_manager.on_connect(ws)
-
         if await is_websocket_alive(ws):
 
             logger.info(f"Consumer connected - {channel}")
@@ -115,26 +115,31 @@ async def message_endpoint(
                     # Process the request here
                     await _process_consumer_request(request, channel, rpc)
 
-            except WebSocketDisconnect:
+            except (WebSocketDisconnect, WebSocketException):
                 # Handle client disconnects
                 logger.info(f"Consumer disconnected - {channel}")
-                await channel_manager.on_disconnect(ws)
-            except Exception as e:
-                logger.info(f"Consumer connection failed - {channel}")
-                logger.exception(e)
+            except RuntimeError:
                 # Handle cases like -
                 # RuntimeError('Cannot call "send" once a closed message has been sent')
+                pass
+            except Exception as e:
+                logger.info(f"Consumer connection failed - {channel}: {e}")
+                logger.debug(e, exc_info=e)
+            finally:
                 await channel_manager.on_disconnect(ws)
 
         else:
+            if channel:
+                await channel_manager.on_disconnect(ws)
             await ws.close()
 
     except RuntimeError:
         # WebSocket was closed
-        await channel_manager.on_disconnect(ws)
-
+        # Do nothing
+        pass
     except Exception as e:
         logger.error(f"Failed to serve - {ws.client}")
         # Log tracebacks to keep track of what errors are happening
         logger.exception(e)
+    finally:
         await channel_manager.on_disconnect(ws)

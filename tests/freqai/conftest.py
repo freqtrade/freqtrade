@@ -107,6 +107,8 @@ def make_unfiltered_dataframe(mocker, freqai_conf):
     unfiltered_dataframe = freqai.dk.use_strategy_to_populate_indicators(
                 strategy, corr_dataframes, base_dataframes, freqai.dk.pair
             )
+    for i in range(5):
+        unfiltered_dataframe[f'constant_{i}'] = i
 
     unfiltered_dataframe = freqai.dk.slice_dataframe(new_timerange, unfiltered_dataframe)
 
