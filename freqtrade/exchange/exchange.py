@@ -1427,6 +1427,8 @@ class Exchange:
         :return: fetch_tickers result
         """
         tickers: Tickers
+        if not self.exchange_has('fetchTickers'):
+            return {}
         if cached:
             with self._cache_lock:
                 tickers = self._fetch_tickers_cache.get('fetch_tickers')  # type: ignore
