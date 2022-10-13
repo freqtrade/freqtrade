@@ -910,8 +910,9 @@ def test_in_strategy_auto_hyperopt_with_parallel(mocker, hyperopt_conf, tmpdir, 
     })
     hyperopt = Hyperopt(hyperopt_conf)
     hyperopt.backtesting.exchange.get_max_leverage = lambda *x, **xx: 1.0
-    hyperopt.backtesting.exchange.get_min_pair_stake_amount = lambda *x, **xx: 1.0
+    hyperopt.backtesting.exchange.get_min_pair_stake_amount = lambda *x, **xx: 0.00001
     hyperopt.backtesting.exchange.get_max_pair_stake_amount = lambda *x, **xx: 100.0
+    hyperopt.backtesting.exchange._markets = get_markets()
 
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
