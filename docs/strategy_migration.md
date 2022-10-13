@@ -43,12 +43,18 @@ Note : `forcesell`, `forcebuy`, `emergencysell` are changed to `force_exit`, `fo
   * `order_time_in_force` buy -> entry, sell -> exit.
   * `order_types` buy -> entry, sell -> exit.
   * `unfilledtimeout` buy -> entry, sell -> exit.
+  * `ignore_buying_expired_candle_after` -> moved to root level instead of "ask_strategy/exit_pricing"
 * Terminology changes
   * Sell reasons changed to reflect the new naming of "exit" instead of sells. Be careful in your strategy if you're using `exit_reason` checks and eventually update your strategy.
     * `sell_signal` -> `exit_signal`
     * `custom_sell` -> `custom_exit`
     * `force_sell` -> `force_exit`
     * `emergency_sell` -> `emergency_exit`
+  * Order pricing
+    * `bid_strategy` -> `entry_pricing`
+    * `ask_strategy` -> `exit_pricing`
+    * `ask_last_balance` -> `price_last_balance`
+    * `bid_last_balance` -> `price_last_balance`
   * Webhook terminology changed from "sell" to "exit", and from "buy" to entry
     * `webhookbuy` -> `entry`
     * `webhookbuyfill` -> `entry_fill`
@@ -443,6 +449,7 @@ Please refer to the [pricing documentation](configuration.md#prices-used-for-ord
         "use_order_book": true,
         "order_book_top": 1,
         "bid_last_balance": 0.0
+        "ignore_buying_expired_candle_after": 120
     }
 }
 ```
@@ -466,6 +473,7 @@ after:
         "use_order_book": true,
         "order_book_top": 1,
         "price_last_balance": 0.0
-    }
+    },
+    "ignore_buying_expired_candle_after": 120
 }
 ```
