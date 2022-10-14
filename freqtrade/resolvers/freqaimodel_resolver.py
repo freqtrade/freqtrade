@@ -26,6 +26,7 @@ class FreqaiModelResolver(IResolver):
     initial_search_path = (
         Path(__file__).parent.parent.joinpath("freqai/prediction_models").resolve()
     )
+    extra_path = "freqaimodel_path"
 
     @staticmethod
     def load_freqaimodel(config: Config) -> IFreqaiModel:
@@ -50,7 +51,6 @@ class FreqaiModelResolver(IResolver):
             freqaimodel_name,
             config,
             kwargs={"config": config},
-            extra_dir=config.get("freqaimodel_path"),
         )
 
         return freqaimodel

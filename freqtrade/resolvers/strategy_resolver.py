@@ -30,6 +30,7 @@ class StrategyResolver(IResolver):
     object_type_str = "Strategy"
     user_subdir = USERPATH_STRATEGIES
     initial_search_path = None
+    extra_path = "strategy_path"
 
     @staticmethod
     def load_strategy(config: Config = None) -> IStrategy:
@@ -267,14 +268,6 @@ class StrategyResolver(IResolver):
             f"Impossible to load Strategy '{strategy_name}'. This class does not exist "
             "or contains Python code errors."
         )
-
-    @classmethod
-    def build_search_paths(cls, config: Config, user_subdir: Optional[str] = None,
-                           extra_dirs: List[str] = []) -> List[Path]:
-
-        if 'strategy_path' in config and config['strategy_path'] not in extra_dirs:
-            extra_dirs = [config['strategy_path']] + extra_dirs
-        return super().build_search_paths(config, user_subdir, extra_dirs)
 
 
 def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False):
