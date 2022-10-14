@@ -24,6 +24,7 @@ from pandas import DataFrame
 from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
+from freqtrade.data.metrics import calculate_market_change
 from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
@@ -111,6 +112,7 @@ class Hyperopt:
 
         self.clean_hyperopt()
 
+        self.market_change = 0.0
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
@@ -357,7 +359,7 @@ class Hyperopt:
 
         strat_stats = generate_strategy_stats(
             self.pairlist, self.backtesting.strategy.get_strategy_name(),
-            backtesting_results, min_date, max_date, market_change=0
+            backtesting_results, min_date, max_date, market_change=self.market_change
         )
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
@@ -425,6 +427,9 @@ class Hyperopt:
         # Trim startup period from analyzed dataframe to get correct dates for output.
         trimmed = trim_dataframes(preprocessed, self.timerange, self.backtesting.required_startup)
         self.min_date, self.max_date = get_timerange(trimmed)
+        if not self.market_change:
+            self.market_change = calculate_market_change(trimmed, 'close')
+
         # Real trimming will happen as part of backtesting.
         return preprocessed
 

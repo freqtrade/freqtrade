@@ -377,8 +377,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(data['UNITTEST/BTC'])
 
-    # Shift endtime with +5 - as last candle is dropped (partial candle)
-    end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
+    # Shift endtime with +5
+    end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0])
     assert log_has(f'UNITTEST/BTC, spot, 5m, '
                    f'data ends at {end_real.strftime(DATETIME_PRINT_FORMAT)}',
                    caplog)
@@ -447,7 +447,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     )
     min_date, max_date = get_timerange(data)
     assert min_date.isoformat() == '2017-11-04T23:02:00+00:00'
-    assert max_date.isoformat() == '2017-11-14T22:58:00+00:00'
+    assert max_date.isoformat() == '2017-11-14T22:59:00+00:00'
 
 
 def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) -> None:
@@ -470,7 +470,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
                                   min_date, max_date, timeframe_to_minutes('1m'))
     assert len(caplog.record_tuples) == 1
     assert log_has(
-        "UNITTEST/BTC has missing frames: expected 14396, got 13680, that's 716 missing values",
+        "UNITTEST/BTC has missing frames: expected 14397, got 13681, that's 716 missing values",
         caplog)
 
 
@@ -480,7 +480,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    timerange = TimeRange('index', 'index', 200, 250)
+    timerange = TimeRange()
     data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,

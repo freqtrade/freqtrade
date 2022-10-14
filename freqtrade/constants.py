@@ -31,7 +31,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'CalmarHyperOptLoss',
                          'MaxDrawDownHyperOptLoss', 'MaxDrawDownRelativeHyperOptLoss',
                          'ProfitDrawDownHyperOptLoss']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
@@ -567,6 +567,7 @@ CONF_SCHEMA = {
                     "properties": {
                         "test_size": {"type": "number"},
                         "random_state": {"type": "integer"},
+                        "shuffle": {"type": "boolean", "default": False}
                     },
                 },
                 "model_training_parameters": {

@@ -643,7 +643,7 @@ This callback is **not** called when there is an open order (either buy or sell)
 
 Additional Buys are ignored once you have reached the maximum amount of extra buys that you have set on `max_entry_position_adjustment`, but the callback is called anyway looking for partial exits.
 
-Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade. Modifications to leverage are not possible.
+Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade. Modifications to leverage are not possible, and the stake-amount is assumed to be before applying leverage.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.

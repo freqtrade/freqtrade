@@ -30,9 +30,9 @@ class Discord(Webhook):
         pass
 
     def send_msg(self, msg) -> None:
-        logger.info(f"Sending discord message: {msg}")
 
         if msg['type'].value in self.config['discord']:
+            logger.info(f"Sending discord message: {msg}")
 
             msg['strategy'] = self.strategy
             msg['timeframe'] = self.timeframe

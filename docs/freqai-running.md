@@ -1,6 +1,6 @@
 # Running FreqAI
 
-There are two ways to train and deploy an adaptive machine learning model - live deployment and historical backtesting. In both cases, `FreqAI` runs/simulates periodic retraining of models as shown in the following figure:
+There are two ways to train and deploy an adaptive machine learning model - live deployment and historical backtesting. In both cases, FreqAI runs/simulates periodic retraining of models as shown in the following figure:
 
 ![freqai-window](assets/freqai_moving-window.jpg)
 
@@ -33,7 +33,7 @@ FreqAI automatically downloads the proper amount of data needed to ensure traini
 
 ### Saving prediction data
 
-All predictions made during the lifetime of a specific `identifier` model are stored in `historical_predictions.pkl` to allow for reloading after a crash or changes made to the config.
+All predictions made during the lifetime of a specific `identifier` model are stored in `historic_predictions.pkl` to allow for reloading after a crash or changes made to the config.
 
 ### Purging old model data
 
@@ -75,19 +75,19 @@ To allow for tweaking your strategy (**not** the features!), FreqAI will automat
 
 An additional directory called `predictions`, which contains all the predictions stored in `hdf` format, will be created in the `unique-id` folder.
 
-To change your **features**, you **must** set a new `identifier` in the config to signal to `FreqAI` to train new models.
+To change your **features**, you **must** set a new `identifier` in the config to signal to FreqAI to train new models.
 
 To save the models generated during a particular backtest so that you can start a live deployment from one of them instead of training a new model, you must set `save_backtest_models` to `True` in the config.
 
 ### Downloading data to cover the full backtest period
 
-For live/dry deployments, FreqAI will download the necessary data automatically. However, to use backtesting functionality, you need to download the necessary data using `download-data` (details [here](data-download.md#data-downloading)). You need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that there is a sufficient amount of training data *before* the start of the backtesting timerange. The amount of additional data can be roughly estimated by moving the start date of the timerange backwards by `train_period_days` and the `startup_candle_count` (see the [parameter table](freqai-parameter-table.md) for detailed descriptions of these parameters) from the beginning of the desired backtesting timerange. 
+For live/dry deployments, FreqAI will download the necessary data automatically. However, to use backtesting functionality, you need to download the necessary data using `download-data` (details [here](data-download.md#data-downloading)). You need to pay careful attention to understanding how much *additional* data needs to be downloaded to ensure that there is a sufficient amount of training data *before* the start of the backtesting time range. The amount of additional data can be roughly estimated by moving the start date of the time range backwards by `train_period_days` and the `startup_candle_count` (see the [parameter table](freqai-parameter-table.md) for detailed descriptions of these parameters) from the beginning of the desired backtesting time range. 
 
-As an example, to backtest the `--timerange 20210501-20210701` using the [example config](freqai-configuration.md#setting-up-the-configuration-file) which sets `train_period_days` to 30, together with `startup_candle_count: 40` on a maximum `include_timeframes` of 1h, the start date for the downloaded data needs to be `20210501` - 30 days - 40 * 1h / 24 hours = 20210330 (31.7 days earlier than the start of the desired training timerange).
+As an example, to backtest the `--timerange 20210501-20210701` using the [example config](freqai-configuration.md#setting-up-the-configuration-file) which sets `train_period_days` to 30, together with `startup_candle_count: 40` on a maximum `include_timeframes` of 1h, the start date for the downloaded data needs to be `20210501` - 30 days - 40 * 1h / 24 hours = 20210330 (31.7 days earlier than the start of the desired training time range).
 
 ### Deciding the size of the sliding training window and backtesting duration
 
-The backtesting timerange is defined with the typical `--timerange` parameter in the configuration file. The duration of the sliding training window is set by `train_period_days`, whilst `backtest_period_days` is the sliding backtesting window, both in number of days (`backtest_period_days` can be
+The backtesting time range is defined with the typical `--timerange` parameter in the configuration file. The duration of the sliding training window is set by `train_period_days`, whilst `backtest_period_days` is the sliding backtesting window, both in number of days (`backtest_period_days` can be
 a float to indicate sub-daily retraining in live/dry mode). In the presented [example config](freqai-configuration.md#setting-up-the-configuration-file) (found in `config_examples/config_freqai.example.json`), the user is asking FreqAI to use a training period of 30 days and backtest on the subsequent 7 days. After the training of the model, FreqAI will backtest the subsequent 7 days. The "sliding window" then moves one week forward (emulating FreqAI retraining once per week in live mode) and the new model uses the previous 30 days (including the 7 days used for backtesting by the previous model) to train. This is repeated until the end of `--timerange`.  This means that if you set `--timerange 20210501-20210701`, FreqAI will have trained 8 separate models at the end of `--timerange` (because the full range comprises 8 weeks).
 
 !!! Note
@@ -105,23 +105,6 @@ During dry/live mode, FreqAI trains each coin pair sequentially (on separate thr
 
 In the presented example config, the user will only allow predictions on models that are less than 1/2 hours old.
 
-## Data stratification for training and testing the model
-
-You can stratify (group) the training/testing data using:
-
-```json
-    "freqai": {
-        "feature_parameters" : {
-            "stratify_training_data": 3
-        }
-    }
-```
-
-This will split the data chronologically so that every Xth data point is used to test the model after training. In the example above, the user is asking for every third data point in the dataframe to be used for
-testing; the other points are used for training.
-
-The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model does not capture the complexity of the data, the test data is significantly different from the train data, or a different type of model should be used.
-
 ## Controlling the model learning process
 
 Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the `model_training_parameters` dictionary in the config. The example config (found in `config_examples/config_freqai.example.json`) shows some of the example parameters associated with `Catboost` and `LightGBM`, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.
@@ -132,7 +115,7 @@ The FreqAI specific parameter `label_period_candles` defines the offset (number 
 
 ## Continual learning
 
-You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `false` which means that all new models are trained from scratch, without input from previous models.
+You can choose to adopt a continual learning scheme by setting `"continual_learning": true` in the config. By enabling `continual_learning`, after training an initial model from scratch, subsequent trainings will start from the final model state of the preceding training. This gives the new model a "memory" of the previous state. By default, this is set to `False` which means that all new models are trained from scratch, without input from previous models.
 
 ## Hyperopt
 
