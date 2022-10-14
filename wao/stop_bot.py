@@ -25,7 +25,7 @@ else:
         broker = Binance_Spot_Broker(notifier)
     broker.close_all_open_positions()
 
-    send_stop_bot_message(reason)
+    send_stop_bot_message(reason, Config.BRAIN)
 
     subprocess.Popen(["killall screen"],
                      stdout=subprocess.PIPE,
