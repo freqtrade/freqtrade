@@ -20,8 +20,8 @@ from ccxt import ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE, decimal_to_precision
 from dateutil import parser
 from pandas import DataFrame, concat
 
-from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BuySell,
-                                 Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
+from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES, BidAsk,
+                                 BuySell, Config, EntryExit, ListPairsWithTimeframes, MakerTaker,
                                  PairWithTimeframe)
 from freqtrade.data.converter import clean_ohlcv_dataframe, ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.enums import OPTIMIZE_MODES, CandleType, MarginMode, TradingMode
@@ -31,6 +31,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
                                        remove_credentials, retrier, retrier_async)
+from freqtrade.exchange.types import Ticker, Tickers
 from freqtrade.misc import (chunks, deep_merge_dicts, file_dump_json, file_load_json,
                             safe_value_fallback2)
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1420,14 +1421,17 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         """
         :param cached: Allow cached result
         :return: fetch_tickers result
         """
+        tickers: Tickers
+        if not self.exchange_has('fetchTickers'):
+            return {}
         if cached:
             with self._cache_lock:
-                tickers = self._fetch_tickers_cache.get('fetch_tickers')
+                tickers = self._fetch_tickers_cache.get('fetch_tickers')  # type: ignore
             if tickers:
                 return tickers
         try:
@@ -1450,12 +1454,12 @@ class Exchange:
     # Pricing info
 
     @retrier
-    def fetch_ticker(self, pair: str) -> dict:
+    def fetch_ticker(self, pair: str) -> Ticker:
         try:
             if (pair not in self.markets or
                     self.markets[pair].get('active', False) is False):
                 raise ExchangeError(f"Pair {pair} not available")
-            data = self._api.fetch_ticker(pair)
+            data: Ticker = self._api.fetch_ticker(pair)
             return data
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -1506,7 +1510,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _get_price_side(self, side: str, is_short: bool, conf_strategy: Dict) -> str:
+    def _get_price_side(self, side: str, is_short: bool, conf_strategy: Dict) -> BidAsk:
         price_side = conf_strategy['price_side']
 
         if price_side in ('same', 'other'):
@@ -1525,7 +1529,7 @@ class Exchange:
 
     def get_rate(self, pair: str, refresh: bool,
                  side: EntryExit, is_short: bool,
-                 order_book: Optional[dict] = None, ticker: Optional[dict] = None) -> float:
+                 order_book: Optional[dict] = None, ticker: Optional[Ticker] = None) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price

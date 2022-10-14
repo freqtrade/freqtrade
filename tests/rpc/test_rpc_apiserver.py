@@ -1443,8 +1443,9 @@ def test_api_plot_config(botclient):
     assert isinstance(rc.json()['subplots'], dict)
 
 
-def test_api_strategies(botclient):
+def test_api_strategies(botclient, tmpdir):
     ftbot, client = botclient
+    ftbot.config['user_data_dir'] = Path(tmpdir)
 
     rc = client_get(client, f"{BASE_URI}/strategies")
 

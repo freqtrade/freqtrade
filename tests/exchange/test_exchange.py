@@ -1834,6 +1834,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
         'last': 41,
     }
     }
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=True)
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     api_mock.fetch_bids_asks = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -1882,6 +1883,11 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     exchange.get_tickers()
     assert api_mock.fetch_tickers.call_count == 1
     assert api_mock.fetch_bids_asks.call_count == (1 if exchange_name == 'binance' else 0)
+
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=False)
+    assert exchange.get_tickers() == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

@@ -32,7 +32,7 @@ def test_search_strategy():
 
 def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
     assert len(strategies) == 9
     assert isinstance(strategies[0], dict)
@@ -40,7 +40,7 @@ def test_search_all_strategies_no_failed():
 
 def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
     assert len(strategies) == 10
     # with enum_failed=True search_all_objects() shall find 2 good strategies
@@ -49,7 +49,7 @@ def test_search_all_strategies_with_failed():
     assert len([x for x in strategies if x['class'] is None]) == 1
 
     directory = Path(__file__).parent / "strats_nonexistingdir"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=True)
     assert len(strategies) == 0
 
 
@@ -77,10 +77,9 @@ def test_load_strategy_base64(dataframe_1m, caplog, default_conf):
 
 
 def test_load_strategy_invalid_directory(caplog, default_conf):
-    default_conf['strategy'] = 'StrategyTestV3'
     extra_dir = Path.cwd() / 'some/path'
-    with pytest.raises(OperationalException):
-        StrategyResolver._load_strategy(CURRENT_TEST_STRATEGY, config=default_conf,
+    with pytest.raises(OperationalException, match=r"Impossible to load Strategy.*"):
+        StrategyResolver._load_strategy('StrategyTestV333', config=default_conf,
                                         extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
@@ -102,8 +101,8 @@ def test_load_strategy_noname(default_conf):
         StrategyResolver.load_strategy(default_conf)
 
 
-@pytest.mark.filterwarnings("ignore:deprecated")
-@pytest.mark.parametrize('strategy_name', ['StrategyTestV2'])
+@ pytest.mark.filterwarnings("ignore:deprecated")
+@ pytest.mark.parametrize('strategy_name', ['StrategyTestV2'])
 def test_strategy_pre_v3(dataframe_1m, default_conf, strategy_name):
     default_conf.update({'strategy': strategy_name})
 
@@ -349,7 +348,7 @@ def test_strategy_override_use_exit_profit_only(caplog, default_conf):
     assert log_has("Override strategy 'exit_profit_only' with value in config file: True.", caplog)
 
 
-@pytest.mark.filterwarnings("ignore:deprecated")
+@ pytest.mark.filterwarnings("ignore:deprecated")
 def test_missing_implements(default_conf, caplog):
 
     default_location = Path(__file__).parent / "strats"

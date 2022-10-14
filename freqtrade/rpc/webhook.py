@@ -3,7 +3,7 @@ This module manages webhook communication
 """
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from requests import RequestException, post
 
@@ -41,36 +41,44 @@ class Webhook(RPCHandler):
         """
         pass
 
+    def _get_value_dict(self, msg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        whconfig = self._config['webhook']
+        # Deprecated 2022.10 - only keep generic method.
+        if msg['type'] in [RPCMessageType.ENTRY]:
+            valuedict = whconfig.get('webhookentry')
+        elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
+            valuedict = whconfig.get('webhookentrycancel')
+        elif msg['type'] in [RPCMessageType.ENTRY_FILL]:
+            valuedict = whconfig.get('webhookentryfill')
+        elif msg['type'] == RPCMessageType.EXIT:
+            valuedict = whconfig.get('webhookexit')
+        elif msg['type'] == RPCMessageType.EXIT_FILL:
+            valuedict = whconfig.get('webhookexitfill')
+        elif msg['type'] == RPCMessageType.EXIT_CANCEL:
+            valuedict = whconfig.get('webhookexitcancel')
+        elif msg['type'] in (RPCMessageType.STATUS,
+                             RPCMessageType.STARTUP,
+                             RPCMessageType.WARNING):
+            valuedict = whconfig.get('webhookstatus')
+        elif msg['type'].value in whconfig:
+            # Allow all types ...
+            valuedict = whconfig.get(msg['type'].value)
+        elif msg['type'] in (
+                RPCMessageType.PROTECTION_TRIGGER,
+                RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+                RPCMessageType.WHITELIST,
+                RPCMessageType.ANALYZED_DF,
+                RPCMessageType.STRATEGY_MSG):
+            # Don't fail for non-implemented types
+            return None
+        return valuedict
+
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
         try:
-            whconfig = self._config['webhook']
-            if msg['type'] in [RPCMessageType.ENTRY]:
-                valuedict = whconfig.get('webhookentry')
-            elif msg['type'] in [RPCMessageType.ENTRY_CANCEL]:
-                valuedict = whconfig.get('webhookentrycancel')
-            elif msg['type'] in [RPCMessageType.ENTRY_FILL]:
-                valuedict = whconfig.get('webhookentryfill')
-            elif msg['type'] == RPCMessageType.EXIT:
-                valuedict = whconfig.get('webhookexit')
-            elif msg['type'] == RPCMessageType.EXIT_FILL:
-                valuedict = whconfig.get('webhookexitfill')
-            elif msg['type'] == RPCMessageType.EXIT_CANCEL:
-                valuedict = whconfig.get('webhookexitcancel')
-            elif msg['type'] in (RPCMessageType.STATUS,
-                                 RPCMessageType.STARTUP,
-                                 RPCMessageType.WARNING):
-                valuedict = whconfig.get('webhookstatus')
-            elif msg['type'] in (
-                    RPCMessageType.PROTECTION_TRIGGER,
-                    RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
-                    RPCMessageType.WHITELIST,
-                    RPCMessageType.ANALYZED_DF,
-                    RPCMessageType.STRATEGY_MSG):
-                # Don't fail for non-implemented types
-                return
-            else:
-                raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
+
+            valuedict = self._get_value_dict(msg)
+
             if not valuedict:
                 logger.info("Message type '%s' not configured for webhooks", msg['type'])
                 return

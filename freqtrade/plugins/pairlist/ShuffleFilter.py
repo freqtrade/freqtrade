@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 
 from freqtrade.constants import Config
 from freqtrade.enums import RunMode
+from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -47,12 +48,12 @@ class ShuffleFilter(IPairList):
         return (f"{self.name} - Shuffling pairs" +
                 (f", seed = {self._seed}." if self._seed is not None else "."))
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
         # Shuffle is done inplace

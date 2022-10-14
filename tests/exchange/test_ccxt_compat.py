@@ -56,7 +56,7 @@ EXCHANGES = {
         'leverage_in_spot_market': True,
     },
     'kucoin': {
-        'pair': 'BTC/USDT',
+        'pair': 'XRP/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',

@@ -107,9 +107,8 @@ class FreqaiDataKitchen:
     ) -> None:
         """
         Set the paths to the data for the present coin/botloop
-        :params:
-        metadata: dict = strategy furnished pair metadata
-        trained_timestamp: int = timestamp of most recent training
+        :param metadata: dict = strategy furnished pair metadata
+        :param trained_timestamp: int = timestamp of most recent training
         """
         self.full_path = Path(
             self.config["user_data_dir"] / "models" / str(self.freqai_config.get("identifier"))
@@ -129,8 +128,8 @@ class FreqaiDataKitchen:
         Given the dataframe for the full history for training, split the data into
         training and test data according to user specified parameters in configuration
         file.
-        :filtered_dataframe: cleaned dataframe ready to be split.
-        :labels: cleaned labels ready to be split.
+        :param filtered_dataframe: cleaned dataframe ready to be split.
+        :param labels: cleaned labels ready to be split.
         """
         feat_dict = self.freqai_config["feature_parameters"]
 
@@ -189,13 +188,14 @@ class FreqaiDataKitchen:
         remove all NaNs. Any row with a NaN is removed from training dataset or replaced with
         0s in the prediction dataset. However, prediction dataset do_predict will reflect any
         row that had a NaN and will shield user from that prediction.
-        :params:
-        :unfiltered_df: the full dataframe for the present training period
-        :training_feature_list: list, the training feature list constructed by
-        self.build_feature_list() according to user specified parameters in the configuration file.
-        :labels: the labels for the dataset
-        :training_filter: boolean which lets the function know if it is training data or
-        prediction data to be filtered.
+
+        :param unfiltered_df: the full dataframe for the present training period
+        :param training_feature_list: list, the training feature list constructed by
+                                      self.build_feature_list() according to user specified
+                                      parameters in the configuration file.
+        :param labels: the labels for the dataset
+        :param training_filter: boolean which lets the function know if it is training data or
+                                prediction data to be filtered.
         :returns:
         :filtered_df: dataframe cleaned of NaNs and only containing the user
         requested feature set.
@@ -241,6 +241,7 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
+            filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
             drop_index = pd.isnull(filtered_df).any(axis=1)
@@ -285,8 +286,8 @@ class FreqaiDataKitchen:
     def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
         """
         Normalize all data in the data_dictionary according to the training dataset
-        :params:
-        :data_dictionary: dictionary containing the cleaned and split training/test data/labels
+        :param data_dictionary: dictionary containing the cleaned and
+                                split training/test data/labels
         :returns:
         :data_dictionary: updated dictionary with standardized values.
         """
@@ -460,6 +461,24 @@ class FreqaiDataKitchen:
 
         return df
 
+    def check_pred_labels(self, df_predictions: DataFrame) -> DataFrame:
+        """
+        Check that prediction feature labels match training feature labels.
+        :params:
+        :df_predictions: incoming predictions
+        """
+        train_labels = self.data_dictionary["train_features"].columns
+        pred_labels = df_predictions.columns
+        num_diffs = len(pred_labels.difference(train_labels))
+        if num_diffs != 0:
+            df_predictions = df_predictions[train_labels]
+            logger.warning(
+                f"Removed {num_diffs} features from prediction features, "
+                f"these were likely considered constant values during most recent training."
+            )
+
+        return df_predictions
+
     def principal_component_analysis(self) -> None:
         """
         Performs Principal Component Analysis on the data for dimensionality reduction
@@ -516,8 +535,7 @@ class FreqaiDataKitchen:
     def pca_transform(self, filtered_dataframe: DataFrame) -> None:
         """
         Use an existing pca transform to transform data into components
-        :params:
-        filtered_dataframe: DataFrame = the cleaned dataframe
+        :param filtered_dataframe: DataFrame = the cleaned dataframe
         """
         pca_components = self.pca.transform(filtered_dataframe)
         self.data_dictionary["prediction_features"] = pd.DataFrame(
@@ -561,8 +579,7 @@ class FreqaiDataKitchen:
         """
         Build/inference a Support Vector Machine to detect outliers
         in training data and prediction
-        :params:
-        predict: bool = If true, inference an existing SVM model, else construct one
+        :param predict: bool = If true, inference an existing SVM model, else construct one
         """
 
         if self.keras:
@@ -647,11 +664,11 @@ class FreqaiDataKitchen:
         Use DBSCAN to cluster training data and remove "noisy" data (read outliers).
         User controls this via the config param `DBSCAN_outlier_pct` which indicates the
         pct of training data that they want to be considered outliers.
-        :params:
-        predict: bool = If False (training), iterate to find the best hyper parameters to match
-        user requested outlier percent target. If True (prediction), use the parameters
-        determined from the previous training to estimate if the current prediction point
-        is an outlier.
+        :param predict: bool = If False (training), iterate to find the best hyper parameters
+                        to match user requested outlier percent target.
+                        If True (prediction), use the parameters determined from
+                        the previous training to estimate if the current prediction point
+                        is an outlier.
         """
 
         if predict:
@@ -1118,15 +1135,13 @@ class FreqaiDataKitchen:
         prediction_dataframe: DataFrame = pd.DataFrame(),
     ) -> DataFrame:
         """
-        Use the user defined strategy for populating indicators during
-        retrain
-        :params:
-        strategy: IStrategy = user defined strategy object
-        corr_dataframes: dict = dict containing the informative pair dataframes
-        (for user defined timeframes)
-        base_dataframes: dict = dict containing the current pair dataframes
-        (for user defined timeframes)
-        metadata: dict = strategy furnished pair metadata
+        Use the user defined strategy for populating indicators during retrain
+        :param strategy: IStrategy = user defined strategy object
+        :param corr_dataframes: dict = dict containing the informative pair dataframes
+                                (for user defined timeframes)
+        :param base_dataframes: dict = dict containing the current pair dataframes
+                                (for user defined timeframes)
+        :param metadata: dict = strategy furnished pair metadata
         :returns:
         dataframe: DataFrame = dataframe containing populated indicators
         """

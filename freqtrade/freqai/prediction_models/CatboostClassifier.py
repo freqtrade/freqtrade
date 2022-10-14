@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 from catboost import CatBoostClassifier, Pool
@@ -20,9 +21,8 @@ class CatboostClassifier(BaseClassifierModel):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
         """
 
         train_data = Pool(
@@ -32,8 +32,9 @@ class CatboostClassifier(BaseClassifierModel):
         )
 
         cbr = CatBoostClassifier(
-            allow_writing_files=False,
+            allow_writing_files=True,
             loss_function='MultiClass',
+            train_dir=Path(dk.data_path),
             **self.model_training_parameters,
         )
 
