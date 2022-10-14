@@ -1,13 +1,11 @@
 import logging
 from copy import deepcopy
-from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
-from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException

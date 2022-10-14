@@ -272,7 +272,7 @@ class StrategyResolver(IResolver):
     def build_search_paths(cls, config: Config, user_subdir: Optional[str] = None,
                            extra_dirs: List[str] = []) -> List[Path]:
 
-        if 'strategy_path' in config:
+        if 'strategy_path' in config and config['strategy_path'] not in extra_dirs:
             extra_dirs = [config['strategy_path']] + extra_dirs
         return super().build_search_paths(config, user_subdir, extra_dirs)
 

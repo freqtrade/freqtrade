@@ -204,8 +204,8 @@ class IResolver:
     def _build_rel_location(cls, directory: Path, entry: Path) -> str:
 
         builtin = cls.initial_search_path == directory
-        return f"<builtin>/{entry.relative_to(directory)}" if builtin else entry.relative_to(
-                    directory)
+        return f"<builtin>/{entry.relative_to(directory)}" if builtin else str(
+            entry.relative_to(directory))
 
     @classmethod
     def _search_all_objects(
