@@ -32,7 +32,7 @@ def test_search_strategy():
 
 def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
     assert len(strategies) == 9
     assert isinstance(strategies[0], dict)
@@ -40,7 +40,7 @@ def test_search_all_strategies_no_failed():
 
 def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
     assert len(strategies) == 10
     # with enum_failed=True search_all_objects() shall find 2 good strategies
@@ -49,7 +49,7 @@ def test_search_all_strategies_with_failed():
     assert len([x for x in strategies if x['class'] is None]) == 1
 
     directory = Path(__file__).parent / "strats_nonexistingdir"
-    strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
+    strategies = StrategyResolver._search_all_objects(directory, enum_failed=True)
     assert len(strategies) == 0
 
 

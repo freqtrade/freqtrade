@@ -196,7 +196,6 @@ class IResolver:
         result = []
 
         abs_paths = cls.build_search_paths(config, user_subdir=cls.user_subdir)
-        print(abs_paths)
         for path in abs_paths:
             result.extend(cls._search_all_objects(path, enum_failed, recursive))
         return result
@@ -209,8 +208,9 @@ class IResolver:
                     directory)
 
     @classmethod
-    def _search_all_objects(cls, directory: Path, enum_failed: bool,
-                            recursive: bool = False) -> List[Dict[str, Any]]:
+    def _search_all_objects(
+            cls, directory: Path, enum_failed: bool, recursive: bool = False,
+            basedir: Optional[Path] = None) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
@@ -230,7 +230,8 @@ class IResolver:
                 and not entry.name.startswith('__')
                 and not entry.name.startswith('.')
             ):
-                objects.extend(cls._search_all_objects(entry, enum_failed, recursive=recursive))
+                objects.extend(cls._search_all_objects(
+                    entry, enum_failed, recursive, basedir or directory))
             # Only consider python files
             if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
@@ -243,6 +244,6 @@ class IResolver:
                     {'name': obj[0].__name__ if obj is not None else '',
                      'class': obj[0] if obj is not None else None,
                      'location': entry,
-                     'location_rel': cls._build_rel_location(directory, entry),
+                     'location_rel': cls._build_rel_location(basedir or directory, entry),
                      })
         return objects
