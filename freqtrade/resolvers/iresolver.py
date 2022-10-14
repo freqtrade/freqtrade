@@ -183,8 +183,34 @@ class IResolver:
         )
 
     @classmethod
-    def search_all_objects(cls, directory: Path, enum_failed: bool,
+    def search_all_objects(cls, config: Config, enum_failed: bool,
                            recursive: bool = False) -> List[Dict[str, Any]]:
+        """
+        Searches for valid objects
+        :param config: Config object
+        :param enum_failed: If True, will return None for modules which fail.
+            Otherwise, failing modules are skipped.
+        :param recursive: Recursively walk directory tree searching for strategies
+        :return: List of dicts containing 'name', 'class' and 'location' entries
+        """
+        result = []
+
+        abs_paths = cls.build_search_paths(config, user_subdir=cls.user_subdir)
+        print(abs_paths)
+        for path in abs_paths:
+            result.extend(cls._search_all_objects(path, enum_failed, recursive))
+        return result
+
+    @classmethod
+    def _build_rel_location(cls, directory: Path, entry: Path) -> str:
+
+        builtin = cls.initial_search_path == directory
+        return f"<builtin>/{entry.relative_to(directory)}" if builtin else entry.relative_to(
+                    directory)
+
+    @classmethod
+    def _search_all_objects(cls, directory: Path, enum_failed: bool,
+                            recursive: bool = False) -> List[Dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
@@ -204,7 +230,7 @@ class IResolver:
                 and not entry.name.startswith('__')
                 and not entry.name.startswith('.')
             ):
-                objects.extend(cls.search_all_objects(entry, enum_failed, recursive=recursive))
+                objects.extend(cls._search_all_objects(entry, enum_failed, recursive=recursive))
             # Only consider python files
             if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
@@ -217,5 +243,6 @@ class IResolver:
                     {'name': obj[0].__name__ if obj is not None else '',
                      'class': obj[0] if obj is not None else None,
                      'location': entry,
+                     'location_rel': cls._build_rel_location(directory, entry),
                      })
         return objects
