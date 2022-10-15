@@ -65,6 +65,8 @@ class FreqaiDataDrawer:
         self.pair_dict: Dict[str, pair_info] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
         self.model_dictionary: Dict[str, Any] = {}
+        # all additional metadata that we want to keep in ram
+        self.meta_data_dictionary: Dict[str, Dict[str, Any]] = {}
         self.model_return_values: Dict[str, DataFrame] = {}
         self.historic_data: Dict[str, Dict[str, DataFrame]] = {}
         self.historic_predictions: Dict[str, DataFrame] = {}
@@ -453,9 +455,14 @@ class FreqaiDataDrawer:
             )
 
         # if self.live:
+        # store as much in ram as possible to increase performance
         self.model_dictionary[coin] = model
         self.pair_dict[coin]["model_filename"] = dk.model_filename
         self.pair_dict[coin]["data_path"] = str(dk.data_path)
+        if coin not in self.meta_data_dictionary:
+            self.meta_data_dictionary[coin] = {}
+        self.meta_data_dictionary[coin]["train_df"] = dk.data_dictionary["train_features"]
+        self.meta_data_dictionary[coin]["meta_data"] = dk.data
         self.save_drawer_to_disk()
 
         return
@@ -492,14 +499,19 @@ class FreqaiDataDrawer:
                     / dk.data_path.parts[-1]
                 )
 
-        with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
-            dk.data = json.load(fp)
-            dk.training_features_list = dk.data["training_features_list"]
-            dk.label_list = dk.data["label_list"]
+        if coin in self.meta_data_dictionary:
+            dk.data = self.meta_data_dictionary[coin]["meta_data"]
+            dk.data_dictionary["train_features"] = self.meta_data_dictionary[coin]["train_df"]
+        else:
+            with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
+                dk.data = json.load(fp)
 
-        dk.data_dictionary["train_features"] = pd.read_pickle(
-            dk.data_path / f"{dk.model_filename}_trained_df.pkl"
-        )
+            dk.data_dictionary["train_features"] = pd.read_pickle(
+                dk.data_path / f"{dk.model_filename}_trained_df.pkl"
+            )
+
+        dk.training_features_list = dk.data["training_features_list"]
+        dk.label_list = dk.data["label_list"]
 
         # try to access model in memory instead of loading object from disk to save time
         if dk.live and coin in self.model_dictionary:
