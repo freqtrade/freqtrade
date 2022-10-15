@@ -7,7 +7,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
 import pandas as pd
@@ -657,7 +657,7 @@ class IFreqaiModel(ABC):
 
         return
 
-    def inference_timer(self, do: str = 'start', pair: str = ''):
+    def inference_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
         the whitelist. This will check if the time spent is more than 1/4 the time
@@ -682,7 +682,7 @@ class IFreqaiModel(ABC):
                 self.inference_time = 0
         return
 
-    def train_timer(self, do: str = 'start', pair: str = ''):
+    def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent training the full pairlist in
         FreqAI.

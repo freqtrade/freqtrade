@@ -1,9 +1,9 @@
 import collections
-import json
 import logging
 import re
 import shutil
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple, TypedDict
 
@@ -95,7 +95,7 @@ class FreqaiDataDrawer:
         self.empty_pair_dict: pair_info = {
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
-        self.metric_tracker: Dict[str, Dict[str, list]] = {}
+        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
@@ -106,9 +106,11 @@ class FreqaiDataDrawer:
             if pair not in self.metric_tracker:
                 self.metric_tracker[pair] = {}
             if metric not in self.metric_tracker[pair]:
-                self.metric_tracker[pair][metric] = []
+                self.metric_tracker[pair][metric] = {'timestamp': [], 'value': []}
 
-            self.metric_tracker[pair][metric].append(value)
+            timestamp = int(datetime.now(timezone.utc).timestamp())
+            self.metric_tracker[pair][metric]['value'].append(value)
+            self.metric_tracker[pair][metric]['timestamp'].append(timestamp)
 
     def collect_metrics(self, time_spent: float, pair: str):
         """
@@ -130,7 +132,7 @@ class FreqaiDataDrawer:
         exists = self.pair_dictionary_path.is_file()
         if exists:
             with open(self.pair_dictionary_path, "r") as fp:
-                self.pair_dict = json.load(fp)
+                self.pair_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
         elif not self.follow_mode:
             logger.info("Could not find existing datadrawer, starting from scratch")
         else:
@@ -148,7 +150,7 @@ class FreqaiDataDrawer:
             exists = self.metric_tracker_path.is_file()
             if exists:
                 with open(self.metric_tracker_path, "r") as fp:
-                    self.metric_tracker = json.load(fp)
+                    self.metric_tracker = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
             else:
                 logger.info("Could not find existing metric tracker, starting from scratch")
 
@@ -515,7 +517,7 @@ class FreqaiDataDrawer:
         presaved backtesting (prediction file loading).
         """
         with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
-            dk.data = json.load(fp)
+            dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
 
@@ -542,7 +544,7 @@ class FreqaiDataDrawer:
                 )
 
         with open(dk.data_path / f"{dk.model_filename}_metadata.json", "r") as fp:
-            dk.data = json.load(fp)
+            dk.data = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
             dk.training_features_list = dk.data["training_features_list"]
             dk.label_list = dk.data["label_list"]
 
@@ -676,22 +678,3 @@ class FreqaiDataDrawer:
                         ).reset_index(drop=True)
 
         return corr_dataframes, base_dataframes
-
-    # to be used if we want to send predictions directly to the follower instead of forcing
-    # follower to load models and inference
-    # def save_model_return_values_to_disk(self) -> None:
-    #     with open(self.full_path / str('model_return_values.json'), "w") as fp:
-    #         json.dump(self.model_return_values, fp, default=self.np_encoder)
-
-    # def load_model_return_values_from_disk(self, dk: FreqaiDataKitchen) -> FreqaiDataKitchen:
-    #     exists = Path(self.full_path / str('model_return_values.json')).resolve().exists()
-    #     if exists:
-    #         with open(self.full_path / str('model_return_values.json'), "r") as fp:
-    #             self.model_return_values = json.load(fp)
-    #     elif not self.follow_mode:
-    #         logger.info("Could not find existing datadrawer, starting from scratch")
-    #     else:
-    #         logger.warning(f'Follower could not find pair_dictionary at {self.full_path} '
-    #                        'sending null values back to strategy')
-
-    #     return exists, dk
