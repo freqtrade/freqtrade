@@ -919,11 +919,10 @@ class Backtesting:
         return trade
 
     def handle_left_open(self, open_trades: Dict[str, List[LocalTrade]],
-                         data: Dict[str, List[Tuple]]) -> List[LocalTrade]:
+                         data: Dict[str, List[Tuple]]) -> None:
         """
         Handling of left open trades at the end of backtesting
         """
-        trades = []
         for pair in open_trades.keys():
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
@@ -938,11 +937,6 @@ class Backtesting:
                     trade.exit_reason = ExitType.FORCE_EXIT.value
                     trade.close(exit_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
-                    # Deepcopy object to have wallets update correctly
-                    trade1 = deepcopy(trade)
-                    trade1.is_open = True
-                    trades.append(trade1)
-        return trades
 
     def trade_slot_available(self, max_open_trades: int, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
@@ -1094,7 +1088,6 @@ class Backtesting:
         :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
-        trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
         # Ensure wallets are uptodate (important for --strategy-list)
         self.wallets.update()
@@ -1188,7 +1181,6 @@ class Backtesting:
                             open_trade_count -= 1
                             open_trades[pair].remove(trade)
                             LocalTrade.close_bt_trade(trade)
-                            trades.append(trade)
                         self.wallets.update()
                         self.run_protections(
                             enable_protections, pair, current_time, trade.trade_direction)
@@ -1197,10 +1189,10 @@ class Backtesting:
             self.progress.increment()
             current_time += timedelta(minutes=self.timeframe_min)
 
-        trades += self.handle_left_open(open_trades, data=data)
+        self.handle_left_open(open_trades, data=data)
         self.wallets.update()
 
-        results = trade_list_to_dataframe(trades)
+        results = trade_list_to_dataframe(LocalTrade.trades)
         return {
             'results': results,
             'config': self.strategy.config,
