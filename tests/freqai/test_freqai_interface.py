@@ -30,6 +30,7 @@ def is_mac() -> bool:
 @pytest.mark.parametrize('model', [
     'LightGBMRegressor',
     'XGBoostRegressor',
+    'XGBoostRFRegressor',
     'CatboostRegressor',
     ])
 def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
@@ -55,6 +56,7 @@ def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180125-20180130")
     new_timerange = TimeRange.parse_timerange("20180127-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
@@ -93,6 +95,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
@@ -111,6 +114,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
     'LightGBMClassifier',
     'CatboostClassifier',
     'XGBoostClassifier',
+    'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostClassifier':
@@ -134,6 +138,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
                                         strategy, freqai.dk, data_load_timerange)
