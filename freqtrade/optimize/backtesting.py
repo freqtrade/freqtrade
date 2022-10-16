@@ -1067,6 +1067,76 @@ class Backtesting:
             return None
         return row
 
+    def backtest_loop(
+            self, row: Tuple, pair: str, current_time: datetime, end_date: datetime,
+            max_open_trades: int, position_stacking: bool, enable_protections: bool,
+            open_trade_count_start: int) -> int:
+        """
+        NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
+
+        Backtesting processing for one candle.
+        """
+        for t in list(LocalTrade.bt_trades_open_pp[pair]):
+            # 1. Manage currently open orders of active trades
+            if self.manage_open_orders(t, current_time, row):
+                # Close trade
+                open_trade_count_start -= 1
+                LocalTrade.remove_bt_trade(t)
+                self.wallets.update()
+
+        # 2. Process entries.
+        # without positionstacking, we can only have one open trade per pair.
+        # max_open_trades must be respected
+        # don't open on the last row
+        trade_dir = self.check_for_trade_entry(row)
+        if (
+            (position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
+            and self.trade_slot_available(max_open_trades, open_trade_count_start)
+            and current_time != end_date
+            and trade_dir is not None
+            and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
+        ):
+            trade = self._enter_trade(pair, row, trade_dir)
+            if trade:
+                # TODO: hacky workaround to avoid opening > max_open_trades
+                # This emulates previous behavior - not sure if this is correct
+                # Prevents entering if the trade-slot was freed in this candle
+                open_trade_count_start += 1
+                # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
+                LocalTrade.add_bt_trade(trade)
+                self.wallets.update()
+
+        for trade in list(LocalTrade.bt_trades_open_pp[pair]):
+            # 3. Process entry orders.
+            order = trade.select_order(trade.entry_side, is_open=True)
+            if order and self._get_order_filled(order.price, row):
+                order.close_bt_order(current_time, trade)
+                trade.open_order_id = None
+                self.wallets.update()
+
+                # 4. Create exit orders (if any)
+            if not trade.open_order_id:
+                self._get_exit_trade_entry(trade, row)  # Place exit order if necessary
+
+                # 5. Process exit orders.
+            order = trade.select_order(trade.exit_side, is_open=True)
+            if order and self._get_order_filled(order.price, row):
+                order.close_bt_order(current_time, trade)
+                trade.open_order_id = None
+                sub_trade = order.safe_amount_after_fee != trade.amount
+                if sub_trade:
+                    order.close_bt_order(current_time, trade)
+                    trade.recalc_trade_from_orders()
+                else:
+                    trade.close_date = current_time
+                    trade.close(order.price, show_msg=False)
+
+                    # logger.debug(f"{pair} - Backtesting exit {trade}")
+                    LocalTrade.close_bt_trade(trade)
+                self.wallets.update()
+                self.run_protections(enable_protections, pair, current_time, trade.trade_direction)
+        return open_trade_count_start
+
     def backtest(self, processed: Dict,  # noqa: max-complexity: 13
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
@@ -1115,66 +1185,9 @@ class Backtesting:
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
 
-                for t in list(LocalTrade.bt_trades_open_pp[pair]):
-                    # 1. Manage currently open orders of active trades
-                    if self.manage_open_orders(t, current_time, row):
-                        # Close trade
-                        open_trade_count_start -= 1
-                        LocalTrade.remove_bt_trade(t)
-                        self.wallets.update()
-
-                # 2. Process entries.
-                # without positionstacking, we can only have one open trade per pair.
-                # max_open_trades must be respected
-                # don't open on the last row
-                trade_dir = self.check_for_trade_entry(row)
-                if (
-                    (position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
-                    and self.trade_slot_available(max_open_trades, open_trade_count_start)
-                    and current_time != end_date
-                    and trade_dir is not None
-                    and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
-                ):
-                    trade = self._enter_trade(pair, row, trade_dir)
-                    if trade:
-                        # TODO: hacky workaround to avoid opening > max_open_trades
-                        # This emulates previous behavior - not sure if this is correct
-                        # Prevents entering if the trade-slot was freed in this candle
-                        open_trade_count_start += 1
-                        # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
-                        LocalTrade.add_bt_trade(trade)
-                        self.wallets.update()
-
-                for trade in list(LocalTrade.bt_trades_open_pp[pair]):
-                    # 3. Process entry orders.
-                    order = trade.select_order(trade.entry_side, is_open=True)
-                    if order and self._get_order_filled(order.price, row):
-                        order.close_bt_order(current_time, trade)
-                        trade.open_order_id = None
-                        self.wallets.update()
-
-                    # 4. Create exit orders (if any)
-                    if not trade.open_order_id:
-                        self._get_exit_trade_entry(trade, row)  # Place exit order if necessary
-
-                    # 5. Process exit orders.
-                    order = trade.select_order(trade.exit_side, is_open=True)
-                    if order and self._get_order_filled(order.price, row):
-                        order.close_bt_order(current_time, trade)
-                        trade.open_order_id = None
-                        sub_trade = order.safe_amount_after_fee != trade.amount
-                        if sub_trade:
-                            order.close_bt_order(current_time, trade)
-                            trade.recalc_trade_from_orders()
-                        else:
-                            trade.close_date = current_time
-                            trade.close(order.price, show_msg=False)
-
-                            # logger.debug(f"{pair} - Backtesting exit {trade}")
-                            LocalTrade.close_bt_trade(trade)
-                        self.wallets.update()
-                        self.run_protections(
-                            enable_protections, pair, current_time, trade.trade_direction)
+                open_trade_count_start = self.backtest_loop(
+                    row, pair, current_time, end_date, max_open_trades,
+                    position_stacking, enable_protections, open_trade_count_start)
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
