@@ -1457,6 +1457,7 @@ def test_api_strategies(botclient, tmpdir):
         'InformativeDecoratorTest',
         'StrategyTestV2',
         'StrategyTestV3',
+        'StrategyTestV3CustomEntryPrice',
         'StrategyTestV3Futures',
         'freqai_test_classifier',
         'freqai_test_multimodel_strat',
