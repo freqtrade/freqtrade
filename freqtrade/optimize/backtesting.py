@@ -924,7 +924,7 @@ class Backtesting:
         Handling of left open trades at the end of backtesting
         """
         for pair in open_trades.keys():
-            for trade in open_trades[pair]:
+            for trade in list(open_trades[pair]):
                 if trade.open_order_id and trade.nr_of_successful_entries == 0:
                     # Ignore trade if entry-order did not fill yet
                     continue
@@ -1098,15 +1098,12 @@ class Backtesting:
         indexes: Dict = defaultdict(int)
         current_time = start_date + timedelta(minutes=self.timeframe_min)
 
-        open_trades: Dict[str, List[LocalTrade]] = defaultdict(list)
-        open_trade_count = 0
-
         self.progress.init_step(BacktestState.BACKTEST, int(
             (end_date - start_date) / timedelta(minutes=self.timeframe_min)))
 
         # Loop timerange and get candle for each pair at that point in time
         while current_time <= end_date:
-            open_trade_count_start = open_trade_count
+            open_trade_count_start = LocalTrade.bt_open_open_trade_count
             self.check_abort()
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
@@ -1118,13 +1115,11 @@ class Backtesting:
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
 
-                for t in list(open_trades[pair]):
+                for t in list(LocalTrade.bt_trades_open_pp[pair]):
                     # 1. Manage currently open orders of active trades
                     if self.manage_open_orders(t, current_time, row):
                         # Close trade
-                        open_trade_count -= 1
                         open_trade_count_start -= 1
-                        open_trades[pair].remove(t)
                         LocalTrade.remove_bt_trade(t)
                         self.wallets.update()
 
@@ -1134,7 +1129,7 @@ class Backtesting:
                 # don't open on the last row
                 trade_dir = self.check_for_trade_entry(row)
                 if (
-                    (position_stacking or len(open_trades[pair]) == 0)
+                    (position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
                     and self.trade_slot_available(max_open_trades, open_trade_count_start)
                     and current_time != end_date
                     and trade_dir is not None
@@ -1146,13 +1141,11 @@ class Backtesting:
                         # This emulates previous behavior - not sure if this is correct
                         # Prevents entering if the trade-slot was freed in this candle
                         open_trade_count_start += 1
-                        open_trade_count += 1
                         # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
-                        open_trades[pair].append(trade)
                         LocalTrade.add_bt_trade(trade)
                         self.wallets.update()
 
-                for trade in list(open_trades[pair]):
+                for trade in list(LocalTrade.bt_trades_open_pp[pair]):
                     # 3. Process entry orders.
                     order = trade.select_order(trade.entry_side, is_open=True)
                     if order and self._get_order_filled(order.price, row):
@@ -1178,8 +1171,6 @@ class Backtesting:
                             trade.close(order.price, show_msg=False)
 
                             # logger.debug(f"{pair} - Backtesting exit {trade}")
-                            open_trade_count -= 1
-                            open_trades[pair].remove(trade)
                             LocalTrade.close_bt_trade(trade)
                         self.wallets.update()
                         self.run_protections(
@@ -1189,7 +1180,7 @@ class Backtesting:
             self.progress.increment()
             current_time += timedelta(minutes=self.timeframe_min)
 
-        self.handle_left_open(open_trades, data=data)
+        self.handle_left_open(LocalTrade.bt_trades_open_pp, data=data)
         self.wallets.update()
 
         results = trade_list_to_dataframe(LocalTrade.trades)

@@ -2,6 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from typing import Any, Dict, List, Optional
@@ -255,6 +256,9 @@ class LocalTrade():
     # Trades container for backtesting
     trades: List['LocalTrade'] = []
     trades_open: List['LocalTrade'] = []
+    # Copy of trades_open - but indexed by pair
+    bt_trades_open_pp: Dict[str, List['LocalTrade']] = defaultdict(list)
+    bt_open_open_trade_count: int = 0
     total_profit: float = 0
     realized_profit: float = 0
 
@@ -538,6 +542,8 @@ class LocalTrade():
         """
         LocalTrade.trades = []
         LocalTrade.trades_open = []
+        LocalTrade.bt_trades_open_pp = defaultdict(list)
+        LocalTrade.bt_open_open_trade_count = 0
         LocalTrade.total_profit = 0
 
     def adjust_min_max_rates(self, current_price: float, current_price_low: float) -> None:
@@ -1067,6 +1073,8 @@ class LocalTrade():
     @staticmethod
     def close_bt_trade(trade):
         LocalTrade.trades_open.remove(trade)
+        LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
+        LocalTrade.bt_open_open_trade_count -= 1
         LocalTrade.trades.append(trade)
         LocalTrade.total_profit += trade.close_profit_abs
 
@@ -1074,12 +1082,16 @@ class LocalTrade():
     def add_bt_trade(trade):
         if trade.is_open:
             LocalTrade.trades_open.append(trade)
+            LocalTrade.bt_trades_open_pp[trade.pair].append(trade)
+            LocalTrade.bt_open_open_trade_count += 1
         else:
             LocalTrade.trades.append(trade)
 
     @staticmethod
     def remove_bt_trade(trade):
         LocalTrade.trades_open.remove(trade)
+        LocalTrade.bt_trades_open_pp[trade.pair].remove(trade)
+        LocalTrade.bt_open_open_trade_count -= 1
 
     @staticmethod
     def get_open_trades() -> List[Any]:
@@ -1096,7 +1108,7 @@ class LocalTrade():
         if Trade.use_db:
             return Trade.query.filter(Trade.is_open.is_(True)).count()
         else:
-            return len(LocalTrade.trades_open)
+            return LocalTrade.bt_open_open_trade_count
 
     @staticmethod
     def stoploss_reinitialization(desired_stoploss):
