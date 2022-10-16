@@ -10,6 +10,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.util import PeriodicCache
@@ -67,10 +68,10 @@ class AgeFilter(IPairList):
             f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
         ) if self._max_days_listed else '')
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [

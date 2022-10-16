@@ -11,6 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.types import Tickers
 from freqtrade.misc import deep_merge_dicts, json_load
 
 
@@ -59,7 +60,7 @@ class Binance(Exchange):
                 )
             ))
 
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Dict:
+    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
         if self.trading_mode == TradingMode.FUTURES:
             # Binance's future result has no bid/ask values.

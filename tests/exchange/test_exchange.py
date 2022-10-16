@@ -1834,6 +1834,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
         'last': 41,
     }
     }
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=True)
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     api_mock.fetch_bids_asks = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -1882,6 +1883,11 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     exchange.get_tickers()
     assert api_mock.fetch_tickers.call_count == 1
     assert api_mock.fetch_bids_asks.call_count == (1 if exchange_name == 'binance' else 0)
+
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=False)
+    assert exchange.get_tickers() == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -2339,7 +2345,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
             await exchange._async_get_candle_history(
-                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                "ETH/BTC", "5m", CandleType.SPOT,
+                since_ms=(arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
     assert num_log_has_re(msg, caplog) == 3
 
     caplog.clear()
@@ -2355,7 +2362,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
         for _ in range(3):
             with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
                 await exchange._async_get_candle_history(
-                    "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                    "ETH/BTC", "5m", CandleType.SPOT,
+                    (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
         # Expect the "returned exception" message 12 times (4 retries * 3 (loop))
         assert num_log_has_re(msg, caplog) == 12
         assert num_log_has_re(msg2, caplog) == 9

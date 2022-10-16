@@ -11,6 +11,7 @@ from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.mixins import LoggingMixin
 from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -45,6 +46,15 @@ class PairListManager(LoggingMixin):
         if not self._pairlist_handlers:
             raise OperationalException("No Pairlist Handlers defined")
 
+        if self._tickers_needed and not self._exchange.exchange_has('fetchTickers'):
+            invalid = ". ".join([p.name for p in self._pairlist_handlers if p.needstickers])
+
+            raise OperationalException(
+                "Exchange does not support fetchTickers, therefore the following pairlists "
+                "cannot be used. Please edit your config and restart the bot.\n"
+                f"{invalid}."
+            )
+
         refresh_period = config.get('pairlist_refresh_period', 3600)
         LoggingMixin.__init__(self, logger, refresh_period)
 
@@ -76,7 +86,7 @@ class PairListManager(LoggingMixin):
         return [{p.name: p.short_desc()} for p in self._pairlist_handlers]
 
     @cached(TTLCache(maxsize=1, ttl=1800))
-    def _get_cached_tickers(self):
+    def _get_cached_tickers(self) -> Tickers:
         return self._exchange.get_tickers()
 
     def refresh_pairlist(self) -> None:

@@ -142,6 +142,19 @@ dataframe['outlier'] = np.where(dataframe['DI_values'] > self.di_max.value/10, 1
 
 This specific hyperopt would help you understand the appropriate `DI_values` for your particular parameter space.
 
+## Using Tensorboard
+
+CatBoost models benefit from tracking training metrics via Tensorboard. You can take advantage of the FreqAI integration to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
+
+```bash
+cd freqtrade
+tensorboard --logdir user_data/models/unique-id
+```
+
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
+
+![tensorboard](assets/tensorboard.jpg)
+
 ## Setting up a follower
 
 You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:

@@ -1078,6 +1078,10 @@ class LocalTrade():
             LocalTrade.trades.append(trade)
 
     @staticmethod
+    def remove_bt_trade(trade):
+        LocalTrade.trades_open.remove(trade)
+
+    @staticmethod
     def get_open_trades() -> List[Any]:
         """
         Query trades from persistence layer

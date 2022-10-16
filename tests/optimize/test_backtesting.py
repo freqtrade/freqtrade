@@ -799,6 +799,35 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
+def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
+    # This strategy intentionally places unfillable orders.
+    default_conf['strategy'] = 'StrategyTestV3CustomEntryPrice'
+    default_conf['startup_candle_count'] = 0
+    # Cancel unfilled order after 4 minutes on 5m timeframe.
+    default_conf["unfilledtimeout"] = {"entry": 4}
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    # Testing dataframe contains 11 candles. Expecting 10 timed out orders.
+    timerange = TimeRange('date', 'date', 1517227800, 1517231100)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    min_date, max_date = get_timerange(data)
+
+    result = backtesting.backtest(
+        processed=deepcopy(data),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=1,
+        position_stacking=False,
+    )
+
+    assert result['timedout_entry_orders'] == 10
+
+
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)

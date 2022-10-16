@@ -77,7 +77,7 @@ class BaseRegressionModel(IFreqaiModel):
     ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param: unfiltered_df: Full dataframe for the current backtest period.
+        :param unfiltered_df: Full dataframe for the current backtest period.
         :return:
         :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove

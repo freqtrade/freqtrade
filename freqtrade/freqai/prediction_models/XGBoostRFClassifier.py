@@ -7,7 +7,7 @@ import pandas as pd
 from pandas import DataFrame
 from pandas.api.types import is_integer_dtype
 from sklearn.preprocessing import LabelEncoder
-from xgboost import XGBClassifier
+from xgboost import XGBRFClassifier
 
 from freqtrade.freqai.base_models.BaseClassifierModel import BaseClassifierModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -16,7 +16,7 @@ from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(BaseClassifierModel):
+class XGBoostRFClassifier(BaseClassifierModel):
     """
     User created prediction model. The class needs to override three necessary
     functions, predict(), train(), fit(). The class inherits ModelHandler which
@@ -26,8 +26,9 @@ class XGBoostClassifier(BaseClassifierModel):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :param data_dictionary: the dictionary constructed by DataHandler to hold
-                                all the training and test data/labels.
+        :params:
+        :data_dictionary: the dictionary constructed by DataHandler to hold
+        all the training and test data/labels.
         """
 
         X = data_dictionary["train_features"].to_numpy()
@@ -52,7 +53,7 @@ class XGBoostClassifier(BaseClassifierModel):
 
         init_model = self.get_init_model(dk.pair)
 
-        model = XGBClassifier(**self.model_training_parameters)
+        model = XGBRFClassifier(**self.model_training_parameters)
 
         model.fit(X=X, y=y, eval_set=eval_set, sample_weight=train_weights,
                   xgb_model=init_model)
@@ -64,7 +65,7 @@ class XGBoostClassifier(BaseClassifierModel):
     ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
-        :param unfiltered_df: Full dataframe for the current backtest period.
+        :param: unfiltered_df: Full dataframe for the current backtest period.
         :return:
         :pred_df: dataframe containing the predictions
         :do_predict: np.array of 1s and 0s to indicate places where freqai needed to remove
