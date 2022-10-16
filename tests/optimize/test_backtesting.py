@@ -97,7 +97,6 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 10,
-        'position_stacking': False,
     }
 
 
@@ -735,7 +734,6 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
     results = result['results']
     assert not results.empty
@@ -822,7 +820,6 @@ def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) 
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        position_stacking=False,
     )
 
     assert result['timedout_entry_orders'] == 10
@@ -848,7 +845,6 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        position_stacking=False,
     )
     assert not results['results'].empty
     assert len(results['results']) == 1
@@ -880,7 +876,6 @@ def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> N
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
 
 
@@ -935,7 +930,6 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
     assert count == 5
 
@@ -979,7 +973,6 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
             start_date=min_date,
             end_date=max_date,
             max_open_trades=1,
-            position_stacking=False,
             enable_protections=default_conf.get('enable_protections', False),
         )
         assert len(results['results']) == numres
@@ -1023,7 +1016,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        position_stacking=False,
         enable_protections=default_conf.get('enable_protections', False),
     )
     assert len(results['results']) == expected
@@ -1136,7 +1128,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
-        'position_stacking': False,
     }
 
     results = backtesting.backtest(**backtest_conf)
@@ -1159,7 +1150,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,
-        'position_stacking': False,
     }
     results = backtesting.backtest(**backtest_conf)
     assert len(evaluate_result_multi(results['results'], '5m', 1)) == 0

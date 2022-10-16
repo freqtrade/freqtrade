@@ -151,6 +151,7 @@ class Backtesting:
         self.trading_mode: TradingMode = config.get('trading_mode', TradingMode.SPOT)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
+        self._position_stacking: bool = self.config.get('position_stacking', False)
 
         self.init_backtest()
 
@@ -1069,12 +1070,12 @@ class Backtesting:
 
     def backtest_loop(
             self, row: Tuple, pair: str, current_time: datetime, end_date: datetime,
-            max_open_trades: int, position_stacking: bool, enable_protections: bool,
+            max_open_trades: int, enable_protections: bool,
             open_trade_count_start: int) -> int:
         """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
 
-        Backtesting processing for one candle.
+        Backtesting processing for one candle/pair.
         """
         for t in list(LocalTrade.bt_trades_open_pp[pair]):
             # 1. Manage currently open orders of active trades
@@ -1090,7 +1091,7 @@ class Backtesting:
         # don't open on the last row
         trade_dir = self.check_for_trade_entry(row)
         if (
-            (position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
+            (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
             and self.trade_slot_available(max_open_trades, open_trade_count_start)
             and current_time != end_date
             and trade_dir is not None
@@ -1137,9 +1138,9 @@ class Backtesting:
                 self.run_protections(enable_protections, pair, current_time, trade.trade_direction)
         return open_trade_count_start
 
-    def backtest(self, processed: Dict,  # noqa: max-complexity: 13
+    def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
-                 max_open_trades: int = 0, position_stacking: bool = False,
+                 max_open_trades: int = 0,
                  enable_protections: bool = False) -> Dict[str, Any]:
         """
         Implement backtesting functionality
@@ -1153,7 +1154,6 @@ class Backtesting:
         :param start_date: backtesting timerange start datetime
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
-        :param position_stacking: do we allow position stacking?
         :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
@@ -1187,7 +1187,7 @@ class Backtesting:
 
                 open_trade_count_start = self.backtest_loop(
                     row, pair, current_time, end_date, max_open_trades,
-                    position_stacking, enable_protections, open_trade_count_start)
+                    enable_protections, open_trade_count_start)
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
@@ -1249,7 +1249,6 @@ class Backtesting:
             start_date=min_date,
             end_date=max_date,
             max_open_trades=max_open_trades,
-            position_stacking=self.config.get('position_stacking', False),
             enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
