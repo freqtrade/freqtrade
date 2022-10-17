@@ -97,14 +97,14 @@ class bb_scalp_15m(WAOStrategy):
     process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = True
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'trailing_stop_loss': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
@@ -179,7 +179,7 @@ class bb_scalp_15m(WAOStrategy):
                 # & (dataframe['ema_9'] > dataframe['sma_200'])
                 # & (dataframe['macdhist'] > -0.08)
             ),
-            'buy'] = 1
+            'entry'] = 1
 
         return dataframe
 
@@ -196,5 +196,5 @@ class bb_scalp_15m(WAOStrategy):
                 # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
-            'sell'] = 1
+            'exit'] = 1
         return dataframe
