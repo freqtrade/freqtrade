@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -58,8 +59,10 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
 
         fit_params = []
         for i in range(len(eval_sets)):
-            fit_params.append(
-                {'eval_set': eval_sets[i],  'init_model': init_models[i]})
+            fit_params.append({
+                    'eval_set': eval_sets[i],  'init_model': init_models[i],
+                    'log_cout': sys.stdout, 'log_cerr': sys.stderr,
+                 })
 
         model = FreqaiMultiOutputRegressor(estimator=cbr)
         thread_training = self.freqai_info.get('multitarget_parallel_training', False)

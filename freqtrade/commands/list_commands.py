@@ -90,6 +90,21 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
 
 
+def start_list_freqAI_models(args: Dict[str, Any]) -> None:
+    """
+    Print files with FreqAI models custom classes available in the directory
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+    from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+    model_objs = FreqaiModelResolver.search_all_objects(config, not args['print_one_column'])
+    # Sort alphabetically
+    model_objs = sorted(model_objs, key=lambda x: x['name'])
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in model_objs]))
+    else:
+        _print_objs_tabular(model_objs, config.get('print_colorized', False))
+
+
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
     Print timeframes available on Exchange
