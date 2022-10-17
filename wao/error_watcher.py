@@ -3,13 +3,12 @@ import threading
 
 import watchdog.events
 import watchdog.observers
-import sys
 
 from wao.notifier import post_request
 from wao.brain_config import BrainConfig
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
+from execution.config import Config
+from execution.romeo import Romeo, RomeoExitPriceType
 
 
 class RomeoExitPriceType(Enum):
@@ -23,8 +22,13 @@ def is_freqtrade_error(error_line):
     return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
 
 
+def is_timed_out_error(error_line):
+    lower_string = error_line.lower()
+    return "connection timed out" in lower_string or "read timed out" in lower_string or "internal error; unable to process your request" in lower_string
+
+
 def stop_bot(error_line):
-    stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
+    stop_bot_command = "python3 " + BrainConfig.FREQTRADE_PATH + "/wao/stop_bot.py " + str(
         BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
                            .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
     result_log = subprocess.Popen([stop_bot_command],
@@ -40,10 +44,14 @@ def smooth_romeo_restart(error_line):
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
     error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
-    post_request(error_line)
+    post_request(error_line, is_from_error_handler=True)
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
+        # romeo.send_error_report(error_line) #todo
+    # else:
+    #     post_request(error_line) #todo uncomment
+    #     send_to_trello(error_line) #todo title-error_line, description-error_line
 
 
 def string_to_list(string):
@@ -66,7 +74,7 @@ def check_condition(file_name):
 
 def __check_condition(file_name):
     error_line = get_error_line(file_name)
-    if error_line is not None and not is_freqtrade_error(error_line):
+    if error_line is not None and not is_freqtrade_error(error_line) and not is_timed_out_error(error_line):
         if BrainConfig.IS_SMOOTH_ERROR_HANDLING_ENABLED:
             smooth_romeo_restart(error_line)
         else:
