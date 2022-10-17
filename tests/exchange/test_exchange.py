@@ -4341,9 +4341,10 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 1, 'spot'),
     ('LTC/USD', 1, 'futures'),
     ('XLTCUSDT', 0.01, 'futures'),
-    ('ETH/USDT:USDT', 10, 'futures')
+    ('ETH/USDT:USDT', 10, 'futures'),
+    ('TORN/USDT:USDT', None, 'futures'),  # Don't fail for unavailable pairs.
 ])
-def est__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
+def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'

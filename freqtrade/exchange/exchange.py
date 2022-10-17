@@ -412,9 +412,11 @@ class Exchange:
 
     def get_contract_size(self, pair: str) -> float:
         if self.trading_mode == TradingMode.FUTURES:
-            market = self.markets[pair]
+            market = self.markets.get(pair, {})
             contract_size: float = 1.0
-            if market['contractSize'] is not None:
+            if not market:
+                return None
+            if market.get('contractSize') is not None:
                 # ccxt has contractSize in markets as string
                 contract_size = float(market['contractSize'])
             return contract_size
