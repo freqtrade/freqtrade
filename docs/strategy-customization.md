@@ -670,13 +670,13 @@ It can also be used in specific callbacks to get the signal that caused the acti
 
 ``` python
 # fetch current dataframe
-if self.dp.runmode.value in ('live', 'dry_run'):
-    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
-                                                                timeframe=self.timeframe)
+dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                         timeframe=self.timeframe)
 ```
 
 !!! Note "No data available"
     Returns an empty dataframe if the requested pair was not cached.
+    You can check for this with `if dataframe.empty:` and handle this case accordingly.
     This should not happen when using whitelisted pairs.
 
 ### *orderbook(pair, maximum)*
