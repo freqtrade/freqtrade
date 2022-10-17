@@ -5,6 +5,6 @@
 scikit-learn==1.1.2
 joblib==1.2.0
 catboost==1.1; platform_machine != 'aarch64'
-lightgbm==3.3.2
+lightgbm==3.3.3
 xgboost==1.6.2
 tensorboard==2.10.1
