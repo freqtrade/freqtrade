@@ -1,4 +1,4 @@
-numpy==1.23.3
+numpy==1.23.4
 pandas==1.5.0; platform_machine != 'armv7l'
 # Piwheels doesn't have 1.5.0 yet.
 pandas==1.4.3; platform_machine == 'armv7l'
