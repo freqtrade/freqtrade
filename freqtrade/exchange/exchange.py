@@ -410,7 +410,7 @@ class Exchange:
         else:
             return DataFrame()
 
-    def get_contract_size(self, pair: str) -> float:
+    def get_contract_size(self, pair: str) -> Optional[float]:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets.get(pair, {})
             contract_size: float = 1.0
