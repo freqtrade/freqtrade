@@ -11,12 +11,6 @@ from execution.config import Config
 from execution.romeo import Romeo, RomeoExitPriceType
 
 
-class RomeoExitPriceType(Enum):
-    SS = 1
-    PT = 2
-    ENTRY_PRICE = 3
-
-
 def is_freqtrade_error(error_line):
     lower_string = error_line.lower()
     return "freqtrade" in lower_string and ("warning" in lower_string or "error" in lower_string)
