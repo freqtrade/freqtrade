@@ -257,6 +257,7 @@ class Hyperopt:
             logger.debug("Hyperopt has 'protection' space")
             # Enable Protections if protection space is selected.
             self.config['enable_protections'] = True
+            self.backtesting.enable_protections = True
             self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
@@ -338,7 +339,6 @@ class Hyperopt:
             start_date=self.min_date,
             end_date=self.max_date,
             max_open_trades=self.max_open_trades,
-            enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
         bt_results.update({

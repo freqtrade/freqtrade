@@ -973,7 +973,6 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
             start_date=min_date,
             end_date=max_date,
             max_open_trades=1,
-            enable_protections=default_conf.get('enable_protections', False),
         )
         assert len(results['results']) == numres
 
@@ -1016,7 +1015,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        enable_protections=default_conf.get('enable_protections', False),
     )
     assert len(results['results']) == expected
 
