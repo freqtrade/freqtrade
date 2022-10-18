@@ -71,6 +71,7 @@ class FreqaiDataKitchen:
         self.data_path = Path()
         self.label_list: List = []
         self.training_features_list: List = []
+        self.constant_features_list: List = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
         self.backtest_predictions_folder: str = "backtesting_predictions"
@@ -206,15 +207,14 @@ class FreqaiDataKitchen:
 
         drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
         drop_index = drop_index.replace(True, 1).replace(False, 0)  # pep8 requirement.
-        ft_params = self.freqai_config["feature_parameters"]
         if (training_filter):
-            if not ft_params.get(
-                "principal_component_analysis", False
-            ):
-                const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
-                if const_cols:
-                    filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
-                    logger.warning(f"Removed features {const_cols} with constant values.")
+            const_cols = list((filtered_df.nunique() == 1).loc[lambda x: x].index)
+            if const_cols:
+                filtered_df = filtered_df.filter(filtered_df.columns.difference(const_cols))
+                self.constant_features_list = const_cols
+                logger.warning(f"Removed features {const_cols} with constant values.")
+            else:
+                self.constant_features_list = []
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
@@ -245,9 +245,7 @@ class FreqaiDataKitchen:
             self.data["filter_drop_index_training"] = drop_index
 
         else:
-            if not ft_params.get(
-                "principal_component_analysis", False
-            ):
+            if len(self.constant_features_list):
                 filtered_df = self.check_pred_labels(filtered_df)
             # we are backtesting so we need to preserve row number to send back to strategy,
             # so now we use do_predict to avoid any prediction based on a NaN
@@ -474,15 +472,14 @@ class FreqaiDataKitchen:
         :params:
         :df_predictions: incoming predictions
         """
-        train_labels = self.data_dictionary["train_features"].columns
-        pred_labels = df_predictions.columns
-        num_diffs = len(pred_labels.difference(train_labels))
-        if num_diffs != 0:
-            df_predictions = df_predictions[train_labels]
-            logger.warning(
-                f"Removed {num_diffs} features from prediction features, "
-                f"these were likely considered constant values during most recent training."
-            )
+        constant_labels = self.constant_features_list
+        df_predictions = df_predictions.filter(
+            df_predictions.columns.difference(constant_labels)
+        )
+        logger.warning(
+            f"Removed {len(constant_labels)} features from prediction features, "
+            f"these were considered constant values during most recent training."
+        )
 
         return df_predictions
 
