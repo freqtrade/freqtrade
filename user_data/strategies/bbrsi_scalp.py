@@ -132,7 +132,7 @@ class bbrsi_scalp(WAOStrategy):
                 # & (dataframe['ema_9'] > dataframe['sma_200'])
                 # & (dataframe['macdhist'] > -0.08)
             ),
-            'entry'] = 1
+            'buy'] = 1
 
         return dataframe
 
@@ -149,5 +149,5 @@ class bbrsi_scalp(WAOStrategy):
                 # | (qtpylib.crossed_below(dataframe['ema_9'], dataframe['sma_200']))
 
             ),
-            'exit'] = 1
+            'sell'] = 1
         return dataframe
