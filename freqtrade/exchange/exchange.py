@@ -58,7 +58,6 @@ from freqtrade.exchange.exchange_utils import (
     ROUND,
     ROUND_DOWN,
     ROUND_UP,
-    CcxtModuleType,
     amount_to_contract_precision,
     amount_to_contracts,
     amount_to_precision,
@@ -75,6 +74,7 @@ from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_prev_date,
     timeframe_to_seconds,
 )
+from freqtrade.exchange.exchange_ws import ExchangeWS
 from freqtrade.exchange.types import OHLCVResponse, OrderBook, Ticker, Tickers
 from freqtrade.misc import (
     chunks,
@@ -230,7 +230,11 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-        self._has_watch_ohlcv = self.exchange_has('watchOHLCV')
+        self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
+        self._has_watch_ohlcv = self.exchange_has("watchOHLCV")
+        self._exchange_ws: Optional[ExchangeWS] = None
+        if self._has_watch_ohlcv:
+            self._exchange_ws = ExchangeWS(self._config, self._ws_async)
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
@@ -2222,10 +2226,14 @@ class Exchange:
         data = sorted(data, key=lambda x: x[0])
         return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
-    async def _async_watch_ohlcv(self, pair: str, timeframe: str,
-                                 candle_type: CandleType) -> Tuple[str, str, str, List]:
+    async def _async_watch_ohlcv(
+        self, pair: str, timeframe: str, candle_type: CandleType
+    ) -> Tuple[str, str, str, List]:
         start = time.time()
-        data = await self._api_async.watch_ohlcv(pair, timeframe, )
+        data = await self._api_async.watch_ohlcv(
+            pair,
+            timeframe,
+        )
 
         logger.info(f"watch {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
         return pair, timeframe, candle_type, data
@@ -2239,19 +2247,28 @@ class Exchange:
         cache: bool,
     ) -> Coroutine[Any, Any, OHLCVResponse]:
         not_all_data = cache and self.required_candle_call_count > 1
+        if cache:
+            if self._exchange_ws:
+                # Subscribe to websocket
+                self._exchange_ws.schedule_ohlcv(pair, timeframe, candle_type)
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
             min_date = date_minus_candles(timeframe, candle_limit - 5).timestamp()
-            one_date = date_minus_candles(timeframe, 1).timestamp()
+            date_minus_candles(timeframe, 1).timestamp()
             last_refresh = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
-            if (self._has_watch_ohlcv
-                    and candle_type in (CandleType.SPOT, CandleType.FUTURES)
-                    and one_date <= last_refresh):
-                logger.info(f"Using watch {pair}, {timeframe}, {candle_type}")
-                return self._async_watch_ohlcv(pair, timeframe, candle_type)
-                pass
+            # if self._exchange_ws:
+            # self._exchange_ws.schedule_ohlcv(pair, timeframe, candle_type)
+            # if (
+            #     self._has_watch_ohlcv
+            #     and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+            #     and one_date <= last_refresh
+            # ):
+            # logger.info(f"Using watch {pair}, {timeframe}, {candle_type}")
+            # return self._async_watch_ohlcv(pair, timeframe, candle_type)
+            # pass
             # Check if 1 call can get us updated candles without hole in the data.
-            elif min_date < last_refresh:
+            # el
+            if min_date < last_refresh:
                 # Cache can be used - do one-off call.
                 not_all_data = False
             else:
