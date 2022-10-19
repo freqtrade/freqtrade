@@ -1936,6 +1936,7 @@ class Exchange:
                 candle_limit = self.ohlcv_candle_limit(timeframe, self._config['candle_type_def'])
                 # Age out old candles
                 ohlcv_df = ohlcv_df.tail(candle_limit + self._startup_candle_count)
+                ohlcv_df = ohlcv_df.reset_index(drop=True)
                 self._klines[(pair, timeframe, c_type)] = ohlcv_df
             else:
                 self._klines[(pair, timeframe, c_type)] = ohlcv_df
