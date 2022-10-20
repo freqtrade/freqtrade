@@ -191,3 +191,19 @@ def plot_feature_importance(model: Any, pair: str, dk: FreqaiDataKitchen,
         fig.update_layout(title_text=f"Best and worst features by importance {pair}")
         label = label.replace('&', '').replace('%', '')  # escape two FreqAI specific characters
         store_plot_file(fig, f"{dk.model_filename}-{label}.html", dk.data_path)
+
+
+def get_timerange_backtest_live_models(config: Config):
+    """
+    Returns a formated timerange for backtest live/ready models
+    :param config: Configuration dictionary
+
+    :return: a string timerange (format example: '20220801-20220822')
+    """
+    dk = FreqaiDataKitchen(config)
+    models_path = dk.get_full_models_path(config)
+    timerange, _ = dk.get_timerange_and_assets_end_dates_from_ready_models(models_path)
+    start_date = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+    end_date = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
+    tr = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+    return tr

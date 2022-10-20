@@ -135,8 +135,8 @@ class Backtesting:
         self.precision_mode = self.exchange.precisionMode
 
         if self.config.get('freqai_backtest_live_models', False):
-            from freqtrade.freqai import freqai_util
-            self.config['timerange'] = freqai_util.get_timerange_backtest_live_models(self.config)
+            from freqtrade.freqai import utils
+            self.config['timerange'] = utils.get_timerange_backtest_live_models(self.config)
 
         self.timerange = TimeRange.parse_timerange(
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))
