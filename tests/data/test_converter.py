@@ -80,10 +80,10 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     ticks = [
         [
             1511686200000,  # 8:50:00
-            8.794e-05,  # open
-            8.948e-05,  # high
-            8.794e-05,  # low
-            8.88e-05,  # close
+            8.794e-07,  # open
+            8.948e-07,  # high
+            8.794e-07,  # low
+            8.88e-07,  # close
             2255,  # volume (in quote currency)
         ],
         [
@@ -118,6 +118,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     assert len(data) == 3
     caplog.set_level(logging.DEBUG)
     data2 = ohlcv_fill_up_missing_data(data, timeframe, "UNITTEST/BTC")
+    assert log_has_re(r"Price jump in .* between two candles .* detected\.", caplog)
     assert len(data2) == 4
     # 3rd candle has been filled
     row = data2.loc[2, :]

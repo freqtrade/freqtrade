@@ -119,6 +119,14 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         else:
             # Don't be verbose if only a small amount is missing
             logger.debug(message)
+    candle_price_gap = 0
+    if not df.empty and 'close' in df.columns:
+        returns = df['close'].pct_change().dropna()
+        if len(returns):
+            candle_price_gap = max(abs(returns))
+    if candle_price_gap > 0.3:
+        logger.info(f"Price jump in {pair} between two candles of {candle_price_gap:.2%} detected.")
+
     return df
 
 
