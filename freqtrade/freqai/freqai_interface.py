@@ -83,8 +83,6 @@ class IFreqaiModel(ABC):
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.train_queue = self._set_train_queue()
-        self.last_trade_database_summary: DataFrame = {}
-        self.current_trade_database_summary: DataFrame = {}
         self.analysis_lock = Lock()
         self.inference_time: float = 0
         self.train_time: float = 0
@@ -93,6 +91,8 @@ class IFreqaiModel(ABC):
         self.base_tf_seconds = timeframe_to_seconds(self.config['timeframe'])
         self.continual_learning = self.freqai_info.get('continual_learning', False)
         self.plot_features = self.ft_params.get("plot_feature_importances", 0)
+        self.corr_dataframes: Dict[str, DataFrame] = {}
+        self.get_corr_dataframes: bool = True
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
@@ -363,10 +363,10 @@ class IFreqaiModel(ABC):
         # load the model and associated data into the data kitchen
         self.model = self.dd.load_data(metadata["pair"], dk)
 
-        with self.analysis_lock:
-            dataframe = self.dk.use_strategy_to_populate_indicators(
-                strategy, prediction_dataframe=dataframe, pair=metadata["pair"]
-            )
+        dataframe = dk.use_strategy_to_populate_indicators(
+            strategy, prediction_dataframe=dataframe, pair=metadata["pair"],
+            do_corr_pairs=self.get_corr_dataframes
+        )
 
         if not self.model:
             logger.warning(
@@ -374,6 +374,13 @@ class IFreqaiModel(ABC):
             )
             self.dd.return_null_values_to_strategy(dataframe, dk)
             return dk
+
+        if self.get_corr_dataframes:
+            self.corr_dataframes = dk.extract_corr_pair_columns_from_populated_indicators(dataframe)
+            self.get_corr_dataframes = False
+        else:
+            dataframe = dk.attach_corr_pair_columns(
+                dataframe, self.corr_dataframes, metadata["pair"])
 
         dk.find_labels(dataframe)
 
@@ -680,6 +687,7 @@ class IFreqaiModel(ABC):
                                    " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
+                self.get_corr_dataframes = True
         return
 
     def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
