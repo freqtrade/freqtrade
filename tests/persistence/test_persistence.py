@@ -2404,7 +2404,7 @@ def test_Trade_object_idem():
         'get_enter_tag_performance',
         'get_mix_tag_performance',
         'get_trading_volume',
-
+        'from_json',
     )
     EXCLUDES2 = ('trades', 'trades_open', 'bt_trades_open_pp', 'bt_open_open_trade_count',
                  'total_profit')
