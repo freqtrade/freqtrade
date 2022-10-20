@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -30,6 +31,14 @@ class CatboostClassifier(BaseClassifierModel):
             label=data_dictionary["train_labels"],
             weight=data_dictionary["train_weights"],
         )
+        if self.freqai_info.get("data_split_parameters", {}).get("test_size", 0.1) == 0:
+            test_data = None
+        else:
+            test_data = Pool(
+                data=data_dictionary["test_features"],
+                label=data_dictionary["test_labels"],
+                weight=data_dictionary["test_weights"],
+            )
 
         cbr = CatBoostClassifier(
             allow_writing_files=True,
@@ -40,6 +49,7 @@ class CatboostClassifier(BaseClassifierModel):
 
         init_model = self.get_init_model(dk.pair)
 
-        cbr.fit(train_data, init_model=init_model)
+        cbr.fit(X=train_data, eval_set=test_data, init_model=init_model,
+                log_cout=sys.stdout, log_cerr=sys.stderr)
 
         return cbr

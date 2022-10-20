@@ -122,7 +122,6 @@ class Hyperopt:
         else:
             logger.debug('Ignoring max_open_trades (--disable-max-market-positions was used) ...')
             self.max_open_trades = 0
-        self.position_stacking = self.config.get('position_stacking', False)
 
         if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_exit_signal is enabled
@@ -258,6 +257,7 @@ class Hyperopt:
             logger.debug("Hyperopt has 'protection' space")
             # Enable Protections if protection space is selected.
             self.config['enable_protections'] = True
+            self.backtesting.enable_protections = True
             self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
@@ -339,8 +339,6 @@ class Hyperopt:
             start_date=self.min_date,
             end_date=self.max_date,
             max_open_trades=self.max_open_trades,
-            position_stacking=self.position_stacking,
-            enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
         bt_results.update({

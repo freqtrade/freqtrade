@@ -655,13 +655,13 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 # fetch live / historical candle (OHLCV) data for the first informative pair
 inf_pair, inf_timeframe = self.informative_pairs()[0]
 informative = self.dp.get_pair_dataframe(pair=inf_pair,
-                                            timeframe=inf_timeframe)
+                                         timeframe=inf_timeframe)
 ```
 
 !!! Warning "Warning about backtesting"
-    Be careful when using dataprovider in backtesting. `historic_ohlcv()` (and `get_pair_dataframe()`
-    for the backtesting runmode) provides the full time-range in one go,
-    so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode.
+    In backtesting, `dp.get_pair_dataframe()` behavior differs depending on where it's called.
+    Within `populate_*()` methods, `dp.get_pair_dataframe()` returns the full timerange. Please make sure to not "look into the future" to avoid surprises when running in dry/live mode.
+    Within [callbacks](strategy-callbacks.md), you'll get the full timerange up to the current (simulated) candle.
 
 ### *get_analyzed_dataframe(pair, timeframe)*
 
@@ -670,13 +670,13 @@ It can also be used in specific callbacks to get the signal that caused the acti
 
 ``` python
 # fetch current dataframe
-if self.dp.runmode.value in ('live', 'dry_run'):
-    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
-                                                                timeframe=self.timeframe)
+dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                         timeframe=self.timeframe)
 ```
 
 !!! Note "No data available"
     Returns an empty dataframe if the requested pair was not cached.
+    You can check for this with `if dataframe.empty:` and handle this case accordingly.
     This should not happen when using whitelisted pairs.
 
 ### *orderbook(pair, maximum)*

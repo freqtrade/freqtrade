@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -47,6 +48,7 @@ class CatboostRegressor(BaseRegressionModel):
             **self.model_training_parameters,
         )
 
-        model.fit(X=train_data, eval_set=test_data, init_model=init_model)
+        model.fit(X=train_data, eval_set=test_data, init_model=init_model,
+                  log_cout=sys.stdout, log_cerr=sys.stderr)
 
         return model

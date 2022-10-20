@@ -7,7 +7,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
 import pandas as pd
@@ -148,7 +148,7 @@ class IFreqaiModel(ABC):
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         self.clean_up()
         if self.live:
-            self.inference_timer('stop')
+            self.inference_timer('stop', metadata["pair"])
         return dataframe
 
     def clean_up(self):
@@ -217,12 +217,14 @@ class IFreqaiModel(ABC):
                     logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
                                    f"Message: {msg}, skipping.")
 
-                self.train_timer('stop')
+                self.train_timer('stop', pair)
 
                 # only rotate the queue after the first has been trained.
                 self.train_queue.rotate(-1)
 
                 self.dd.save_historic_predictions_to_disk()
+                if self.freqai_info.get('write_metrics_to_disk', False):
+                    self.dd.save_metric_tracker_to_disk()
 
     def start_backtesting(
         self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
@@ -677,7 +679,7 @@ class IFreqaiModel(ABC):
 
         return
 
-    def inference_timer(self, do='start'):
+    def inference_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
         the whitelist. This will check if the time spent is more than 1/4 the time
@@ -688,7 +690,10 @@ class IFreqaiModel(ABC):
             self.begin_time = time.time()
         elif do == 'stop':
             end = time.time()
-            self.inference_time += (end - self.begin_time)
+            time_spent = (end - self.begin_time)
+            if self.freqai_info.get('write_metrics_to_disk', False):
+                self.dd.update_metric_tracker('inference_time', time_spent, pair)
+            self.inference_time += time_spent
             if self.pair_it == self.total_pairs:
                 logger.info(
                     f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
@@ -699,7 +704,7 @@ class IFreqaiModel(ABC):
                 self.inference_time = 0
         return
 
-    def train_timer(self, do='start'):
+    def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent training the full pairlist in
         FreqAI.
@@ -709,7 +714,11 @@ class IFreqaiModel(ABC):
             self.begin_time_train = time.time()
         elif do == 'stop':
             end = time.time()
-            self.train_time += (end - self.begin_time_train)
+            time_spent = (end - self.begin_time_train)
+            if self.freqai_info.get('write_metrics_to_disk', False):
+                self.dd.collect_metrics(time_spent, pair)
+
+            self.train_time += time_spent
             if self.pair_it_train == self.total_pairs:
                 logger.info(
                     f'Total time spent training pairlist {self.train_time:.2f} seconds')

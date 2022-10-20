@@ -540,6 +540,8 @@ CONF_SCHEMA = {
             "properties": {
                 "enabled": {"type": "boolean", "default": False},
                 "keras": {"type": "boolean", "default": False},
+                "write_metrics_to_disk": {"type": "boolean", "default": False},
+                "purge_old_models": {"type": "boolean", "default": True},
                 "conv_width": {"type": "integer", "default": 2},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "number", "default": 7},

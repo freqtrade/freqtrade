@@ -1,7 +1,6 @@
 import csv
 import logging
 import sys
-from pathlib import Path
 from typing import Any, Dict, List
 
 import rapidjson
@@ -10,7 +9,6 @@ from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, validate_exchanges
@@ -41,7 +39,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
 
 
-def _print_objs_tabular(objs: List, print_colorized: bool, base_dir: Path) -> None:
+def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     if print_colorized:
         colorama_init(autoreset=True)
         red = Fore.RED
@@ -55,7 +53,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool, base_dir: Path) -> No
     names = [s['name'] for s in objs]
     objs_to_print = [{
         'name': s['name'] if s['name'] else "--",
-        'location': s['location'].relative_to(base_dir),
+        'location': s['location_rel'],
         'status': (red + "LOAD FAILED" + reset if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
                    else yellow + "DUPLICATE NAME" + reset)
@@ -76,9 +74,8 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     strategy_objs = StrategyResolver.search_all_objects(
-        directory, not args['print_one_column'], config.get('recursive_strategy_search', False))
+        config, not args['print_one_column'], config.get('recursive_strategy_search', False))
     # Sort alphabetically
     strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
     for obj in strategy_objs:
@@ -90,7 +87,22 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategy_objs]))
     else:
-        _print_objs_tabular(strategy_objs, config.get('print_colorized', False), directory)
+        _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
+
+
+def start_list_freqAI_models(args: Dict[str, Any]) -> None:
+    """
+    Print files with FreqAI models custom classes available in the directory
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+    from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+    model_objs = FreqaiModelResolver.search_all_objects(config, not args['print_one_column'])
+    # Sort alphabetically
+    model_objs = sorted(model_objs, key=lambda x: x['name'])
+    if args['print_one_column']:
+        print('\n'.join([s['name'] for s in model_objs]))
+    else:
+        _print_objs_tabular(model_objs, config.get('print_colorized', False))
 
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:

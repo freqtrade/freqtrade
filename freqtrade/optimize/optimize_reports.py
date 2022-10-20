@@ -408,10 +408,10 @@ def generate_strategy_stats(pairlist: List[str],
 
     exit_reason_stats = generate_exit_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
-    left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
-                                              starting_balance=start_balance,
-                                              results=results.loc[results['is_open']],
-                                              skip_nan=True)
+    left_open_results = generate_pair_metrics(
+        pairlist, stake_currency=stake_currency, starting_balance=start_balance,
+        results=results.loc[results['exit_reason'] == 'force_exit'], skip_nan=True)
+
     daily_stats = generate_daily_stats(results)
     trade_stats = generate_trading_stats(results)
     best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],

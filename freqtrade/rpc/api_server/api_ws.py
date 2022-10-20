@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Dict
 
@@ -89,6 +90,8 @@ async def _process_consumer_request(
         for _, message in analyzed_df.items():
             response = WSAnalyzedDFMessage(data=message)
             await channel.send(response.dict(exclude_none=True))
+            # Throttle the messages to 50/s
+            await asyncio.sleep(0.02)
 
 
 @router.websocket("/message/ws")
