@@ -50,7 +50,7 @@ class BaseRegressionModel(IFreqaiModel):
                     f"{end_date} --------------------")
         # split data into train/test data.
         data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)
-        if not self.freqai_info.get("fit_live_predictions", 0) or not self.live:
+        if not self.freqai_info.get("fit_live_predictions_candles", 0) or not self.live:
             dk.fit_labels()
         # normalize all data based on train_dataset only
         data_dictionary = dk.normalize_data(data_dictionary)
