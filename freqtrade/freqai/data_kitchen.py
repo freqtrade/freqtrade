@@ -957,6 +957,9 @@ class FreqaiDataKitchen:
             append_df[f"{label}_mean"] = self.data["labels_mean"][label]
             append_df[f"{label}_std"] = self.data["labels_std"][label]
 
+        for extra_col in self.data["extra_returns_per_train"]:
+            append_df["{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
+
         append_df["do_predict"] = do_predict
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
             append_df["DI_values"] = self.DI_values
