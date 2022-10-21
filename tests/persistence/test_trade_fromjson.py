@@ -178,3 +178,4 @@ def test_trade_fromjson():
     assert len(trade.orders) == 5
     last_o = trade.orders[-1]
     assert last_o.order_filled_date == datetime(2022, 10, 18, 9, 45, 22, tzinfo=timezone.utc)
+    assert isinstance(last_o.order_date, datetime)

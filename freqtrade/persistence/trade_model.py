@@ -1593,7 +1593,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 average=order["average"],
                 cost=order["cost"],
                 filled=order["filled"],
-                order_date=order["order_date"],
+                order_date=datetime.strptime(order["order_date"], DATETIME_PRINT_FORMAT),
                 order_filled_date=(datetime.fromtimestamp(
                     order["order_filled_timestamp"] // 1000, tz=timezone.utc)
                     if order["order_filled_timestamp"] else None),
