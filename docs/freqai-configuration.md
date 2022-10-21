@@ -192,11 +192,11 @@ dataframe["target_roi"] = dataframe["&-s_close_mean"] + dataframe["&-s_close_std
 dataframe["sell_roi"] = dataframe["&-s_close_mean"] - dataframe["&-s_close_std"] * 1.25
 ```
 
-To consider the population of *historical predictions* for creating the dynamic target instead of information from the training as discussed above, you would set `fit_live_prediction_candles` in the config to the number of historical prediction candles you wish to use to generate target statistics.
+To consider the population of *historical predictions* for creating the dynamic target instead of information from the training as discussed above, you would set `fit_live_predictions_candles` in the config to the number of historical prediction candles you wish to use to generate target statistics.
 
 ```json
     "freqai": {
-        "fit_live_prediction_candles": 300,
+        "fit_live_predictions_candles": 300,
     }
 ```
 
