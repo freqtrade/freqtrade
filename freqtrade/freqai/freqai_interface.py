@@ -61,15 +61,16 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
+        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.retrain = False
         self.first = True
         self.set_full_path()
+        self.record_configs()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
-        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
         self.keras: bool = self.freqai_info.get("keras", False)
@@ -526,14 +527,24 @@ class IFreqaiModel(ABC):
         return file_exists
 
     def set_full_path(self) -> None:
+        """
+        Creates and sets the full path for the identifier
+        """
         self.full_path = Path(
             self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
-        shutil.copy(
-            self.config["config_files"][0],
-            Path(self.full_path, Path(self.config["config_files"][0]).name),
-        )
+
+    def record_configs(self) -> None:
+        """
+        Records configs in the full path for reproducibility
+        """
+        self.config_record_path = self.full_path / Path("configs")
+        self.config_record_path.mkdir(parents=True, exist_ok=True)
+
+        for config in self.config["config_files"]:
+            dest_config_path = self.config_record_path / Path(config).name
+            shutil.copyfile(config, dest_config_path)
 
     def extract_data_and_train_model(
         self,
