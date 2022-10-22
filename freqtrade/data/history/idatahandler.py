@@ -335,6 +335,20 @@ class IDataHandler(ABC):
                     "Use `freqtrade download-data` to download the data"
                 )
             return True
+        else:
+            candle_price_gap = 0
+            if (candle_type in (CandleType.SPOT, CandleType.FUTURES) and
+                    not pairdf.empty
+                    and 'close' in pairdf.columns and 'open' in pairdf.columns):
+                # Detect gaps between prior close and open
+                gaps = ((pairdf['open'] - pairdf['close'].shift(1)) / pairdf['close'].shift(1))
+                gaps = gaps.dropna()
+                if len(gaps):
+                    candle_price_gap = max(abs(gaps))
+            if candle_price_gap > 0.1:
+                logger.info(f"Price jump in {pair} between two candles of "
+                            f"{candle_price_gap:.2%} detected.")
+
         return False
 
     def _validate_pairdata(self, pair, pairdata: DataFrame, timeframe: str,
