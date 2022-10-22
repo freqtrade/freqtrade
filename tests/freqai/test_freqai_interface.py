@@ -19,7 +19,7 @@ from tests.freqai.conftest import get_patched_freqai_strategy
 
 def is_arm() -> bool:
     machine = platform.machine()
-    return "arm" in machine or "aarch74" in machine
+    return "arm" in machine or "aarch64" in machine
 
 
 def is_mac() -> bool:
