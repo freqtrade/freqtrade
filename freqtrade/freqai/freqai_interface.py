@@ -531,7 +531,7 @@ class IFreqaiModel(ABC):
         Creates and sets the full path for the identifier
         """
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
+            self.config["user_data_dir"] / "models" / f"{self.identifier}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
 
