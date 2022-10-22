@@ -156,7 +156,7 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
 
 def test_datahandler__check_empty_df(testdatadir, caplog):
     dh = JsonDataHandler(testdatadir)
-    expected_text = r"Price jump in UNITTEST/USDT between"
+    expected_text = r"Price jump in UNITTEST/USDT, 1h, spot between"
     df = DataFrame([
         [
             1511686200000,  # 8:50:00
@@ -192,7 +192,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
         ]
     ], columns=['date', 'open', 'high', 'low', 'close', 'volume'])
 
-    dh._check_empty_df(df, 'UNITTEST/USDT', '1h', CandleType.SPOT, True)
+    dh._check_empty_df(df, 'UNITTEST/USDT', '1h', CandleType.SPOT, True, True)
     assert not log_has_re(expected_text, caplog)
     df = DataFrame([
         [
@@ -229,7 +229,7 @@ def test_datahandler__check_empty_df(testdatadir, caplog):
         ]
     ], columns=['date', 'open', 'high', 'low', 'close', 'volume'])
 
-    dh._check_empty_df(df, 'UNITTEST/USDT', '1h', CandleType.SPOT, True)
+    dh._check_empty_df(df, 'UNITTEST/USDT', '1h', CandleType.SPOT, True, True)
     assert log_has_re(expected_text, caplog)
 
 
