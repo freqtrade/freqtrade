@@ -411,7 +411,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
 
     def get_ticker_indicator(self):
         return int(self.config["timeframe"][:-1])
-    """
+
     def custom_exit(
         self, pair: str, trade: Trade, current_time, current_rate, current_profit, **kwargs
     ):
@@ -464,7 +464,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
 
         if current_profit < -roi_decay:
             return "roi_custom_loss"
-    """
+
     def confirm_trade_exit(
         self,
         pair: str,
