@@ -1,14 +1,14 @@
-numpy==1.23.3
+numpy==1.23.4
 pandas==1.5.0; platform_machine != 'armv7l'
 # Piwheels doesn't have 1.5.0 yet.
 pandas==1.4.3; platform_machine == 'armv7l'
 pandas-ta==0.3.14b
 
-ccxt==1.95.30
+ccxt==2.0.25
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==38.0.1
 aiohttp==3.8.3
-SQLAlchemy==1.4.41
+SQLAlchemy==1.4.42
 python-telegram-bot==13.14
 arrow==1.2.3
 cachetools==4.2.2
@@ -37,7 +37,7 @@ orjson==3.8.0
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.85.0
+fastapi==0.85.1
 pydantic>=1.8.0
 uvicorn==0.18.3
 pyjwt==2.5.0

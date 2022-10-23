@@ -42,7 +42,6 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
     results = result['results']
     assert not results.empty

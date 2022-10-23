@@ -3969,15 +3969,17 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
     patch_get_signal(freqtrade)
     if has_err:
         with pytest.raises(DependencyException, match=r"Not enough amount to exit trade."):
-            assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
+            assert freqtrade._safe_exit_amount(trade, trade.pair, trade.amount)
     else:
         wallet_update.reset_mock()
-        assert freqtrade._safe_exit_amount(trade.pair, trade.amount) == amount_wallet
+        assert trade.amount != amount_wallet
+        assert freqtrade._safe_exit_amount(trade, trade.pair, trade.amount) == amount_wallet
         assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
+        assert trade.amount == amount_wallet
         assert wallet_update.call_count == 1
         caplog.clear()
         wallet_update.reset_mock()
-        assert freqtrade._safe_exit_amount(trade.pair, amount_wallet) == amount_wallet
+        assert freqtrade._safe_exit_amount(trade, trade.pair, amount_wallet) == amount_wallet
         assert not log_has_re(r'.*Falling back to wallet-amount.', caplog)
         assert wallet_update.call_count == 1
 

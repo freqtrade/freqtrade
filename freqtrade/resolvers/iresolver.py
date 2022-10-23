@@ -42,6 +42,8 @@ class IResolver:
     object_type_str: str
     user_subdir: Optional[str] = None
     initial_search_path: Optional[Path]
+    # Optional config setting containing a path (strategy_path, freqaimodel_path)
+    extra_path: Optional[str] = None
 
     @classmethod
     def build_search_paths(cls, config: Config, user_subdir: Optional[str] = None,
@@ -57,6 +59,9 @@ class IResolver:
         # Add extra directory to the top of the search paths
         for dir in extra_dirs:
             abs_paths.insert(0, Path(dir).resolve())
+
+        if cls.extra_path and (extra := config.get(cls.extra_path)):
+            abs_paths.insert(0, Path(extra).resolve())
 
         return abs_paths
 

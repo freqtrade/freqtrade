@@ -1471,12 +1471,13 @@ class FreqtradeBot(LoggingMixin):
         )
         return cancelled
 
-    def _safe_exit_amount(self, pair: str, amount: float) -> float:
+    def _safe_exit_amount(self, trade: Trade, pair: str, amount: float) -> float:
         """
         Get sellable amount.
         Should be trade.amount - but will fall back to the available amount if necessary.
         This should cover cases where get_real_amount() was not able to update the amount
         for whatever reason.
+        :param trade: Trade we're working with
         :param pair: Pair we're trying to sell
         :param amount: amount we expect to be available
         :return: amount to sell
@@ -1495,6 +1496,7 @@ class FreqtradeBot(LoggingMixin):
             return amount
         elif wallet_amount > amount * 0.98:
             logger.info(f"{pair} - Falling back to wallet-amount {wallet_amount} -> {amount}.")
+            trade.amount = wallet_amount
             return wallet_amount
         else:
             raise DependencyException(
@@ -1553,7 +1555,7 @@ class FreqtradeBot(LoggingMixin):
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergency_exit", "market")
 
-        amount = self._safe_exit_amount(trade.pair, sub_trade_amt or trade.amount)
+        amount = self._safe_exit_amount(trade, trade.pair, sub_trade_amt or trade.amount)
         time_in_force = self.strategy.order_time_in_force['exit']
 
         if (exit_check.exit_type != ExitType.LIQUIDATION
@@ -1828,7 +1830,7 @@ class FreqtradeBot(LoggingMixin):
         never in base currency.
         """
         self.wallets.update()
-        amount_ = amount
+        amount_ = trade.amount
         if order_obj.ft_order_side == trade.exit_side or order_obj.ft_order_side == 'stoploss':
             # check against remaining amount!
             amount_ = trade.amount - amount

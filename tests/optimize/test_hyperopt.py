@@ -336,7 +336,7 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
-    assert hasattr(hyperopt, "position_stacking")
+    assert hasattr(hyperopt.backtesting, "_position_stacking")
 
 
 def test_hyperopt_format_results(hyperopt):
@@ -704,7 +704,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
     assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
-    assert hasattr(hyperopt, "position_stacking")
+    assert hasattr(hyperopt.backtesting, "_position_stacking")
 
 
 def test_simplified_interface_all_failed(mocker, hyperopt_conf, caplog) -> None:
@@ -778,7 +778,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
-    assert hasattr(hyperopt, "position_stacking")
+    assert hasattr(hyperopt.backtesting, "_position_stacking")
 
 
 def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
@@ -821,7 +821,7 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     assert hasattr(hyperopt.backtesting.strategy, "advise_entry")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
-    assert hasattr(hyperopt, "position_stacking")
+    assert hasattr(hyperopt.backtesting, "_position_stacking")
 
 
 @pytest.mark.parametrize("space", [
