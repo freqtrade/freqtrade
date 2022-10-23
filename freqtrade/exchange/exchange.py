@@ -233,7 +233,7 @@ class Exchange:
         self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
         self._has_watch_ohlcv = self.exchange_has("watchOHLCV")
         self._exchange_ws: Optional[ExchangeWS] = None
-        if exchange_config.get('enable_ws', True) and self._has_watch_ohlcv:
+        if exchange_config.get("enable_ws", True) and self._has_watch_ohlcv:
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
 
         logger.info(f'Using Exchange "{self.name}"')
