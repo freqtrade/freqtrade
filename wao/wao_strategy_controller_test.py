@@ -1,4 +1,3 @@
-import sys
 from wao.wao_strategy_controller import WAOStrategyController
 import time
 import datetime

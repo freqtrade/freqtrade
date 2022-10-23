@@ -2,7 +2,6 @@ import threading
 import watchdog
 import os
 import time
-import sys
 from wao.brain_config import BrainConfig
 from wao._429_watcher import _429_Watcher
 from wao.error_watcher import Error_Watcher

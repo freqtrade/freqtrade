@@ -1,4 +1,3 @@
-import sys
 from wao.brain_config import BrainConfig
 import requests
 
