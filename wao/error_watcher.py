@@ -9,6 +9,7 @@ from wao.brain_config import BrainConfig
 
 from execution.config import Config
 from execution.romeo import Romeo, RomeoExitPriceType
+from execution.notifier import Notifier
 
 
 def is_freqtrade_error(error_line):
