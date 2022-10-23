@@ -1834,6 +1834,7 @@ def test_get_tickers(default_conf, mocker, exchange_name):
         'last': 41,
     }
     }
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=True)
     api_mock.fetch_tickers = MagicMock(return_value=tick)
     api_mock.fetch_bids_asks = MagicMock(return_value={})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
@@ -1882,6 +1883,11 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     exchange.get_tickers()
     assert api_mock.fetch_tickers.call_count == 1
     assert api_mock.fetch_bids_asks.call_count == (1 if exchange_name == 'binance' else 0)
+
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
+    mocker.patch('freqtrade.exchange.exchange.Exchange.exchange_has', return_value=False)
+    assert exchange.get_tickers() == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -2190,6 +2196,9 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     time_machine.move_to(start + timedelta(hours=99, minutes=30))
 
     exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch("freqtrade.exchange.Exchange.ohlcv_candle_limit", return_value=100)
+    assert exchange._startup_candle_count == 0
+
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     pair1 = ('IOTA/ETH', '1h', candle_type)
     pair2 = ('XRP/ETH', '1h', candle_type)
@@ -2230,30 +2239,36 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res) == 2
     assert len(res[pair1]) == 99
     assert len(res[pair2]) == 99
+    assert res[pair2].at[0, 'open']
     assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
     refresh_pior = exchange._pairs_last_refresh_time[pair1]
 
-    # New candle on exchange - only return 50 candles (but one candle further)
-    new_startdate = (start + timedelta(hours=51)).strftime('%Y-%m-%d %H:%M')
-    ohlcv = generate_test_data_raw('1h', 50, new_startdate)
+    # New candle on exchange - return 100 candles - but skip one candle so we actually get 2 candles
+    # in one go
+    new_startdate = (start + timedelta(hours=2)).strftime('%Y-%m-%d %H:%M')
+    # mocker.patch("freqtrade.exchange.Exchange.ohlcv_candle_limit", return_value=100)
+    ohlcv = generate_test_data_raw('1h', 100, new_startdate)
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     res = exchange.refresh_latest_ohlcv(pairs)
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert len(res) == 2
     assert len(res[pair1]) == 100
     assert len(res[pair2]) == 100
+    # Verify index starts at 0
+    assert res[pair2].at[0, 'open']
     assert refresh_pior != exchange._pairs_last_refresh_time[pair1]
 
     assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0] // 1000
     assert exchange._pairs_last_refresh_time[pair2] == ohlcv[-1][0] // 1000
     exchange._api_async.fetch_ohlcv.reset_mock()
 
-    # Retry same call - no action.
+    # Retry same call - from cache
     res = exchange.refresh_latest_ohlcv(pairs)
     assert exchange._api_async.fetch_ohlcv.call_count == 0
     assert len(res) == 2
     assert len(res[pair1]) == 100
     assert len(res[pair2]) == 100
+    assert res[pair2].at[0, 'open']
 
     # Move to distant future (so a 1 call would cause a hole in the data)
     time_machine.move_to(start + timedelta(hours=2000))
@@ -2266,6 +2281,7 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     # Cache eviction - new data.
     assert len(res[pair1]) == 99
     assert len(res[pair2]) == 99
+    assert res[pair2].at[0, 'open']
 
 
 @pytest.mark.asyncio
@@ -2339,7 +2355,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
             await exchange._async_get_candle_history(
-                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                "ETH/BTC", "5m", CandleType.SPOT,
+                since_ms=(arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
     assert num_log_has_re(msg, caplog) == 3
 
     caplog.clear()
@@ -2355,7 +2372,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
         for _ in range(3):
             with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
                 await exchange._async_get_candle_history(
-                    "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+                    "ETH/BTC", "5m", CandleType.SPOT,
+                    (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
         # Expect the "returned exception" message 12 times (4 retries * 3 (loop))
         assert num_log_has_re(msg, caplog) == 12
         assert num_log_has_re(msg2, caplog) == 9
@@ -4333,9 +4351,10 @@ def test__fetch_and_calculate_funding_fees_datetime_called(
     ('XLTCUSDT', 1, 'spot'),
     ('LTC/USD', 1, 'futures'),
     ('XLTCUSDT', 0.01, 'futures'),
-    ('ETH/USDT:USDT', 10, 'futures')
+    ('ETH/USDT:USDT', 10, 'futures'),
+    ('TORN/USDT:USDT', None, 'futures'),  # Don't fail for unavailable pairs.
 ])
-def est__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
+def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['margin_mode'] = 'isolated'

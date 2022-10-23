@@ -1028,6 +1028,31 @@ def test__validate_pricing_rules(default_conf, caplog) -> None:
         validate_config_consistency(conf)
 
 
+def test__validate_freqai_include_timeframes(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf.update({
+            "freqai": {
+                "enabled": True,
+                "feature_parameters": {
+                    "include_timeframes": ["1m", "5m"],
+                    "include_corr_pairlist": [],
+                },
+                "data_split_parameters": {},
+                "model_training_parameters": {}
+            }
+    })
+    with pytest.raises(OperationalException, match=r"Main timeframe of .*"):
+        validate_config_consistency(conf)
+    # Validation pass
+    conf.update({'timeframe': '1m'})
+    validate_config_consistency(conf)
+    conf.update({'analyze_per_epoch': True})
+
+    with pytest.raises(OperationalException,
+                       match=r"Using analyze-per-epoch .* not supported with a FreqAI strategy."):
+        validate_config_consistency(conf)
+
+
 def test__validate_consumers(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf.update({

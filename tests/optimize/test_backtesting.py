@@ -97,7 +97,6 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 10,
-        'position_stacking': False,
     }
 
 
@@ -735,7 +734,6 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
     results = result['results']
     assert not results.empty
@@ -799,6 +797,34 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
                 t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
 
 
+def test_backtest_timedout_entry_orders(default_conf, fee, mocker, testdatadir) -> None:
+    # This strategy intentionally places unfillable orders.
+    default_conf['strategy'] = 'StrategyTestV3CustomEntryPrice'
+    default_conf['startup_candle_count'] = 0
+    # Cancel unfilled order after 4 minutes on 5m timeframe.
+    default_conf["unfilledtimeout"] = {"entry": 4}
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    mocker.patch("freqtrade.exchange.Exchange.get_max_pair_stake_amount", return_value=float('inf'))
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    # Testing dataframe contains 11 candles. Expecting 10 timed out orders.
+    timerange = TimeRange('date', 'date', 1517227800, 1517231100)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    min_date, max_date = get_timerange(data)
+
+    result = backtesting.backtest(
+        processed=deepcopy(data),
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=1,
+    )
+
+    assert result['timedout_entry_orders'] == 10
+
+
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
@@ -819,7 +845,6 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        position_stacking=False,
     )
     assert not results['results'].empty
     assert len(results['results']) == 1
@@ -851,7 +876,6 @@ def test_backtest_trim_no_data_left(default_conf, fee, mocker, testdatadir) -> N
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
 
 
@@ -906,7 +930,6 @@ def test_backtest_dataprovider_analyzed_df(default_conf, fee, mocker, testdatadi
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
-        position_stacking=False,
     )
     assert count == 5
 
@@ -950,8 +973,6 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
             start_date=min_date,
             end_date=max_date,
             max_open_trades=1,
-            position_stacking=False,
-            enable_protections=default_conf.get('enable_protections', False),
         )
         assert len(results['results']) == numres
 
@@ -994,8 +1015,6 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
-        position_stacking=False,
-        enable_protections=default_conf.get('enable_protections', False),
     )
     assert len(results['results']) == expected
 
@@ -1107,7 +1126,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
-        'position_stacking': False,
     }
 
     results = backtesting.backtest(**backtest_conf)
@@ -1130,7 +1148,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,
-        'position_stacking': False,
     }
     results = backtesting.backtest(**backtest_conf)
     assert len(evaluate_result_multi(results['results'], '5m', 1)) == 0

@@ -1,4 +1,6 @@
 import logging
+import sys
+from pathlib import Path
 from typing import Any, Dict
 
 from catboost import CatBoostRegressor, Pool
@@ -41,10 +43,12 @@ class CatboostRegressor(BaseRegressionModel):
         init_model = self.get_init_model(dk.pair)
 
         model = CatBoostRegressor(
-            allow_writing_files=False,
+            allow_writing_files=True,
+            train_dir=Path(dk.data_path),
             **self.model_training_parameters,
         )
 
-        model.fit(X=train_data, eval_set=test_data, init_model=init_model)
+        model.fit(X=train_data, eval_set=test_data, init_model=init_model,
+                  log_cout=sys.stdout, log_cerr=sys.stderr)
 
         return model

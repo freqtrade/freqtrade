@@ -3,7 +3,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
-import pytest
 from requests import RequestException
 
 from freqtrade.enums import ExitType, RPCMessageType
@@ -337,33 +336,17 @@ def test_exception_send_msg(default_conf, mocker, caplog):
                    caplog)
 
     default_conf["webhook"] = get_webhook_dict()
-    default_conf["webhook"]["webhookentry"]["value1"] = "{DEADBEEF:8f}"
+    default_conf["webhook"]["strategy_msg"] = {"value1": "{DEADBEEF:8f}"}
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     msg = {
-        'type': RPCMessageType.ENTRY,
-        'exchange': 'Binance',
-        'pair': 'ETH/BTC',
-        'limit': 0.005,
-        'order_type': 'limit',
-        'stake_amount': 0.8,
-        'stake_amount_fiat': 500,
-        'stake_currency': 'BTC',
-        'fiat_currency': 'EUR'
+        'type': RPCMessageType.STRATEGY_MSG,
+        'msg': 'hello world',
     }
     webhook.send_msg(msg)
     assert log_has("Problem calling Webhook. Please check your webhook configuration. "
                    "Exception: 'DEADBEEF'", caplog)
-
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
-    msg = {
-        'type': 'DEADBEEF',
-        'status': 'whatever'
-    }
-    with pytest.raises(NotImplementedError):
-        webhook.send_msg(msg)
 
     # Test no failure for not implemented but known messagetypes
     for e in RPCMessageType:
