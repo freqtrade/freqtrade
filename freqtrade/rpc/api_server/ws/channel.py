@@ -40,6 +40,7 @@ class WebSocketChannel:
         self.throttle = throttle
 
         self._subscriptions: List[str] = []
+        # 32 is the size of the receiving queue in websockets package
         self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=32)
         self._relay_task = asyncio.create_task(self.relay())
 
