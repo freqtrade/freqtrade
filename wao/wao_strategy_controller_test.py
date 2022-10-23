@@ -1,4 +1,6 @@
-from wao.wao_strategy_controller import WAOStrategyController
+import sys
+sys.path.append("wao/")
+from wao_strategy_controller import WAOStrategyController
 import time
 import datetime
 brain = 'Freq_bb_15m'
