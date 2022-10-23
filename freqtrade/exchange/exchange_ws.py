@@ -91,7 +91,6 @@ class ExchangeWS():
             self, pair: str, timeframe: str, candle_type: CandleType) -> Tuple[str, str, str, List]:
 
         while (pair, timeframe, candle_type) in self._pairs_watching:
-            logger.info(self._pairs_watching)
             start = time.time()
             data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
             self.pairs_last_refresh[(pair, timeframe, candle_type)] = time.time()
