@@ -25,6 +25,7 @@ class WebSocketChannel:
         websocket: WebSocketType,
         channel_id: Optional[str] = None,
         drain_timeout: int = 3,
+        throttle: float = 0.01,
         serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer
     ):
 
@@ -36,6 +37,7 @@ class WebSocketChannel:
         self._serializer_cls = serializer_cls
 
         self.drain_timeout = drain_timeout
+        self.throttle = throttle
 
         self._subscriptions: List[str] = []
         self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=32)
@@ -49,6 +51,10 @@ class WebSocketChannel:
 
     def __repr__(self):
         return f"WebSocketChannel({self.channel_id}, {self.remote_addr})"
+
+    @property
+    def raw(self):
+        return self._websocket.raw
 
     @property
     def remote_addr(self):
@@ -131,7 +137,7 @@ class WebSocketChannel:
                 # Could cause problems with queue size if too low, and
                 # problems with network traffik if too high.
                 # 0.01 = 100/s
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(self.throttle)
             except RuntimeError:
                 # The connection was closed, just exit the task
                 return
@@ -171,6 +177,7 @@ class ChannelManager:
         with self._lock:
             channel = self.channels.get(websocket)
             if channel:
+                logger.info(f"Disconnecting channel {channel}")
                 if not channel.is_closed():
                     await channel.close()
 
@@ -181,9 +188,8 @@ class ChannelManager:
         Disconnect all Channels
         """
         with self._lock:
-            for websocket, channel in self.channels.copy().items():
-                if not channel.is_closed():
-                    await channel.close()
+            for websocket in self.channels.copy().keys():
+                await self.on_disconnect(websocket)
 
             self.channels = dict()
 
@@ -195,11 +201,9 @@ class ChannelManager:
         """
         with self._lock:
             message_type = data.get('type')
-            for websocket, channel in self.channels.copy().items():
+            for channel in self.channels.copy().values():
                 if channel.subscribed_to(message_type):
-                    if not await channel.send(data):
-                        logger.info(f"Channel {channel} is too far behind, disconnecting")
-                        await self.on_disconnect(websocket)
+                    await self.send_direct(channel, data)
 
     async def send_direct(self, channel, data):
         """
@@ -208,7 +212,8 @@ class ChannelManager:
         :param direct_channel: The WebSocketChannel object to send data through
         :param data: The data to send
         """
-        await channel.send(data)
+        if not await channel.send(data):
+            await self.on_disconnect(channel.raw)
 
     def has_channels(self):
         """
