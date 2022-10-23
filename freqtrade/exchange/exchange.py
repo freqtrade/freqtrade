@@ -1996,9 +1996,9 @@ class Exchange:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
 
-        return not (
+        return (
             (self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
-             + interval_in_sec) >= arrow.utcnow().int_timestamp
+             + interval_in_sec) <= arrow.utcnow().int_timestamp
         )
 
     @retrier_async
