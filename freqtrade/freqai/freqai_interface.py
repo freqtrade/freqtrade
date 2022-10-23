@@ -1,5 +1,5 @@
+import json
 import logging
-import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -65,7 +65,6 @@ class IFreqaiModel(ABC):
         self.retrain = False
         self.first = True
         self.set_full_path()
-        self.record_configs()
         self.follow_mode: bool = self.freqai_info.get("follow_mode", False)
         self.save_backtest_models: bool = self.freqai_info.get("save_backtest_models", True)
         if self.save_backtest_models:
@@ -97,6 +96,8 @@ class IFreqaiModel(ABC):
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+
+        self.record_params()
 
     def __getstate__(self):
         """
@@ -535,16 +536,23 @@ class IFreqaiModel(ABC):
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
 
-    def record_configs(self) -> None:
+    def record_params(self) -> None:
         """
-        Records configs in the full path for reproducibility
+        Records run params in the full path for reproducibility
         """
-        self.config_record_path = self.full_path / Path("configs")
-        self.config_record_path.mkdir(parents=True, exist_ok=True)
+        self.params_record_path = self.full_path / "run_params.json"
 
-        for config in self.config["config_files"]:
-            dest_config_path = self.config_record_path / Path(config).name
-            shutil.copyfile(config, dest_config_path)
+        run_params = {
+            "freqai": self.config.get('freqai', {}),
+            "timeframe": self.config.get('timeframe'),
+            "stake_amount": self.config.get('stake_amount'),
+            "stake_currency": self.config.get('stake_currency'),
+            "max_open_trades": self.config.get('max_open_trades'),
+            "pairs": self.config.get('exchange', {}).get('pair_whitelist')
+        }
+
+        with open(self.params_record_path, "w") as handle:
+            json.dump(run_params, handle, indent=4)
 
     def extract_data_and_train_model(
         self,
