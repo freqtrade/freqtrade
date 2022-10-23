@@ -142,8 +142,13 @@ class Worker:
         sleep_duration = max(throttle_secs - time_passed, 0.0)
         logger.debug(f"Throttling with '{func.__name__}()': sleep for {sleep_duration:.2f} s, "
                      f"last iteration took {time_passed:.2f} s.")
-        time.sleep(sleep_duration)
+        self._sleep(sleep_duration)
         return result
+
+    @staticmethod
+    def _sleep(sleep_duration: float) -> None:
+        """Local sleep method - to improve testability"""
+        time.sleep(sleep_duration)
 
     def _process_stopped(self) -> None:
         self.freqtrade.process_stopped()
