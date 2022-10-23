@@ -587,6 +587,7 @@ def get_default_conf(testdatadir):
         "exchange": {
             "name": "binance",
             "key": "key",
+            "enable_ws": False,
             "secret": "secret",
             "pair_whitelist": ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC"],
             "pair_blacklist": [
@@ -628,6 +629,7 @@ def get_default_conf_usdt(testdatadir):
                 "name": "binance",
                 "enabled": True,
                 "key": "key",
+                "enable_ws": False,
                 "secret": "secret",
                 "pair_whitelist": [
                     "ETH/USDT",

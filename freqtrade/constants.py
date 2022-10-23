@@ -539,6 +539,7 @@ CONF_SCHEMA = {
             "type": "object",
             "properties": {
                 "name": {"type": "string"},
+                "enable_ws": {"type": "boolean", "default": True},
                 "key": {"type": "string", "default": ""},
                 "secret": {"type": "string", "default": ""},
                 "password": {"type": "string", "default": ""},
