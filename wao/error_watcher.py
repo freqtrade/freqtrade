@@ -3,17 +3,12 @@ import threading
 
 import watchdog.events
 import watchdog.observers
-import sys
 
 from wao.notifier import post_request
 from wao.brain_config import BrainConfig
 
-sys.path.append(BrainConfig.EXECUTION_PATH)
-from config import Config
-from romeo import Romeo, RomeoExitPriceType
-from notifier import Notifier
-
-
+from execution.config import Config
+from execution.romeo import Romeo, RomeoExitPriceType
 
 
 def is_freqtrade_error(error_line):
@@ -27,7 +22,7 @@ def is_timed_out_error(error_line):
 
 
 def stop_bot(error_line):
-    stop_bot_command = "python3 " + BrainConfig.EXECUTION_PATH + "/stop_bot.py " + str(
+    stop_bot_command = "python3 " + BrainConfig.FREQTRADE_PATH + "/wao/stop_bot.py " + str(
         BrainConfig.MODE) + " " + Config.BRAIN + " " + error_line.split("\n")[0].replace("_", "") \
                            .replace(": ", ":").replace(" ", "#").replace("(", "").replace(")", "")
     result_log = subprocess.Popen([stop_bot_command],
@@ -43,6 +38,7 @@ def smooth_romeo_restart(error_line):
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
     error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
+    post_request(error_line, is_from_error_handler=True)
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)

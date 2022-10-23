@@ -6,17 +6,18 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy  # noqa
 from wao.wao_strategy import WAOStrategy
+from wao.brain_config import BrainConfig
 
 
 class bb_scalp_15m(WAOStrategy):
     timeframe = '15m'
-    brain = "Freq_bb_15m"
+    BrainConfig.BRAIN = "Freq_bb_15m"
 
     def __init__(self, config: dict):
         self.coin = str(config.get('pairs')[0]).split('/')[0]
         if self.coin == 'BTC' or self.coin == 'ADA':
-            self.brain = "Freq_bb_15m_ada_btc"
-        super().__init__(config, self.brain, 4, 0.14)
+            BrainConfig.BRAIN = "Freq_bb_15m_ada_btc"
+        super().__init__(config, 4, 0.14)
 
     # minimal_roi = {
     #     "360": 0.006,  # Exit after 500 minutes there is at least 0.5% profit
@@ -96,14 +97,14 @@ class bb_scalp_15m(WAOStrategy):
     process_only_new_candles = False
 
     # Experimental settings (configuration will overide these if set)
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = True
+    use_exit_signal = True
+    exit_profit_only = True
+    ignore_roi_if_entry_signal = True
 
     # Optional order type mapping.
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
         'trailing_stop_loss': 'limit',
         'stoploss': 'limit',
         'stoploss_on_exchange': False
