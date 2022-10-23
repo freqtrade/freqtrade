@@ -16,7 +16,7 @@ class WebSocketProxy:
         self._websocket: Union[FastAPIWebSocket, WebSocket] = websocket
 
     @property
-    def raw(self):
+    def raw_websocket(self):
         return self._websocket
 
     @property

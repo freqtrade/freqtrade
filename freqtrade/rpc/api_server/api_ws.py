@@ -73,7 +73,7 @@ async def _process_consumer_request(
         whitelist = rpc._ws_request_whitelist()
 
         # Format response
-        response = WSWhitelistMessage(data=whitelist).dict(exclude_none=True)
+        response = WSWhitelistMessage(data=whitelist)
         # Send it back
         await channel_manager.send_direct(channel, response)
 
@@ -89,7 +89,7 @@ async def _process_consumer_request(
 
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
-            response = WSAnalyzedDFMessage(data=message).dict(exclude_none=True)
+            response = WSAnalyzedDFMessage(data=message)
             await channel_manager.send_direct(channel, response)
 
 

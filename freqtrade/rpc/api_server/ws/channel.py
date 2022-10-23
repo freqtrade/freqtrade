@@ -10,6 +10,7 @@ from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
                                                     WebSocketSerializer)
 from freqtrade.rpc.api_server.ws.types import WebSocketType
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchema
 
 
 logger = logging.getLogger(__name__)
@@ -54,8 +55,8 @@ class WebSocketChannel:
         return f"WebSocketChannel({self.channel_id}, {self.remote_addr})"
 
     @property
-    def raw(self):
-        return self._websocket.raw
+    def raw_websocket(self):
+        return self._websocket.raw_websocket
 
     @property
     def remote_addr(self):
@@ -192,29 +193,26 @@ class ChannelManager:
             for websocket in self.channels.copy().keys():
                 await self.on_disconnect(websocket)
 
-            self.channels = dict()
-
-    async def broadcast(self, data):
+    async def broadcast(self, message: WSMessageSchema):
         """
-        Broadcast data on all Channels
+        Broadcast a message on all Channels
 
-        :param data: The data to send
+        :param message: The message to send
         """
         with self._lock:
-            message_type = data.get('type')
             for channel in self.channels.copy().values():
-                if channel.subscribed_to(message_type):
-                    await self.send_direct(channel, data)
+                if channel.subscribed_to(message.type):
+                    await self.send_direct(channel, message)
 
-    async def send_direct(self, channel, data):
+    async def send_direct(self, channel: WebSocketChannel, message: WSMessageSchema):
         """
-        Send data directly through direct_channel only
+        Send a message directly through direct_channel only
 
-        :param direct_channel: The WebSocketChannel object to send data through
-        :param data: The data to send
+        :param direct_channel: The WebSocketChannel object to send the message through
+        :param message: The message to send
         """
-        if not await channel.send(data):
-            await self.on_disconnect(channel.raw)
+        if not await channel.send(message.dict(exclude_none=True)):
+            await self.on_disconnect(channel.raw_websocket)
 
     def has_channels(self):
         """
