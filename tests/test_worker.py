@@ -103,6 +103,16 @@ def test_throttle_sleep_time(mocker, default_conf, caplog) -> None:
         assert sleep_mock.call_count == 1
         assert 394.8 < sleep_mock.call_args[0][0] < 395.1
 
+        t.move_to("2022-09-01 05:01:00 +00:00")
+
+        sleep_mock.reset_mock()
+        # Throttle for more than 5m (1 timeframe)
+        assert worker._throttle(throttled_func, throttle_secs=400, timeframe='5m',
+                                timeframe_offset=0.4, x=5) == 42
+        assert sleep_mock.call_count == 1
+        # 300 (5m) - 60 (1m - see set time above) - 5 (duration of throttled_func) = 235
+        assert 235 < sleep_mock.call_args[0][0] < 235.4
+
 
 def test_throttle_with_assets(mocker, default_conf) -> None:
     def throttled_func(nb_assets=-1):
