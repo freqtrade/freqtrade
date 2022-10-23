@@ -1,4 +1,3 @@
-import json
 import logging
 import threading
 import time
@@ -21,7 +20,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance
+from freqtrade.freqai.utils import plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -97,7 +96,7 @@ class IFreqaiModel(ABC):
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
 
-        self.record_params()
+        record_params(config, self.full_path)
 
     def __getstate__(self):
         """
@@ -535,24 +534,6 @@ class IFreqaiModel(ABC):
             self.config["user_data_dir"] / "models" / f"{self.identifier}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
-
-    def record_params(self) -> None:
-        """
-        Records run params in the full path for reproducibility
-        """
-        self.params_record_path = self.full_path / "run_params.json"
-
-        run_params = {
-            "freqai": self.config.get('freqai', {}),
-            "timeframe": self.config.get('timeframe'),
-            "stake_amount": self.config.get('stake_amount'),
-            "stake_currency": self.config.get('stake_currency'),
-            "max_open_trades": self.config.get('max_open_trades'),
-            "pairs": self.config.get('exchange', {}).get('pair_whitelist')
-        }
-
-        with open(self.params_record_path, "w") as handle:
-            json.dump(run_params, handle, indent=4)
 
     def extract_data_and_train_model(
         self,
