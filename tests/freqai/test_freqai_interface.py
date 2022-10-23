@@ -160,12 +160,12 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 @pytest.mark.parametrize(
     "model, num_files, strat",
     [
-        ("LightGBMRegressor", 7, "freqai_test_strat"),
-        ("XGBoostRegressor", 7, "freqai_test_strat"),
-        ("CatboostRegressor", 7, "freqai_test_strat"),
-        ("XGBoostClassifier", 7, "freqai_test_classifier"),
-        ("LightGBMClassifier", 7, "freqai_test_classifier"),
-        ("CatboostClassifier", 7, "freqai_test_classifier")
+        ("LightGBMRegressor", 6, "freqai_test_strat"),
+        ("XGBoostRegressor", 6, "freqai_test_strat"),
+        ("CatboostRegressor", 6, "freqai_test_strat"),
+        ("XGBoostClassifier", 6, "freqai_test_classifier"),
+        ("LightGBMClassifier", 6, "freqai_test_classifier"),
+        ("CatboostClassifier", 6, "freqai_test_classifier")
     ],
     )
 def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
@@ -200,7 +200,6 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    # Changed from 6 to 7 because of the /configs directory
     assert len(model_folders) == num_files
     assert log_has_re(
         "Removed features ",
@@ -236,8 +235,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    # Changed from 9 to 10 because of the /configs dir
-    assert len(model_folders) == 10
+    assert len(model_folders) == 9
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -263,7 +261,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    assert len(model_folders) == 7
+    assert len(model_folders) == 6
 
     # without deleting the existing folder structure, re-run
 
