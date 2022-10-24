@@ -4,7 +4,11 @@ import watchdog.observers
 import os
 from pathlib import Path
 
-from wao.notifier import post_request
+# Revert
+import sys
+sys.path.append("wao/")
+from notifier import post_request
+# Revert
 
 
 class _429_Watcher(watchdog.events.PatternMatchingEventHandler):

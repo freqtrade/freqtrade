@@ -1,5 +1,9 @@
-from wao.brain_config import BrainConfig
+# Revert
+import sys
+sys.path.append("wao/")
+from brain_config import BrainConfig
 import requests
+# Revert
 
 from execution.config import Config
 from execution.keys import Keys
