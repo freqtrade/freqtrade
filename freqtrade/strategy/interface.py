@@ -1072,26 +1072,26 @@ class IStrategy(ABC, HyperStrategyMixin):
                        trade.stop_loss > (high or current_rate)
                        )
 
+        # Make sure current_profit is calculated using high for backtesting.
+        bound = (low if trade.is_short else high)
+        bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
         if self.use_custom_stoploss and dir_correct:
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
-                                                      current_rate=current_rate,
-                                                      current_profit=current_profit)
+                                                      current_rate=(bound or current_rate),
+                                                      current_profit=bound_profit)
             # Sanity check - error cases will return None
             if stop_loss_value:
-                # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
-                trade.adjust_stop_loss(current_rate, stop_loss_value)
+                # logger.info(f"{trade.pair} {stop_loss_value=} {bound_profit=}")
+                trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
         if self.trailing_stop and dir_correct:
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
-
             # Make sure current_profit is calculated using high for backtesting.
-            bound = low if trade.is_short else high
-            bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
             if not (self.trailing_only_offset_is_reached and bound_profit < sl_offset):
