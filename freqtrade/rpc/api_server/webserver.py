@@ -16,6 +16,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.ws import ChannelManager
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchema
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
@@ -127,10 +128,10 @@ class ApiServer(RPCHandler):
         cls._has_rpc = False
         cls._rpc = None
 
-    def send_msg(self, msg: Dict[str, str]) -> None:
+    def send_msg(self, msg: Dict[str, Any]) -> None:
         if self._ws_queue:
             sync_q = self._ws_queue.sync_q
-            sync_q.put(msg)
+            sync_q.put(WSMessageSchema(**msg))
 
     def handle_rpc_exception(self, request, exc):
         logger.exception(f"API Error calling: {exc}")
@@ -194,8 +195,8 @@ class ApiServer(RPCHandler):
             while True:
                 logger.debug("Getting queue messages...")
                 # Get data from queue
-                message = await async_queue.get()
-                logger.debug(f"Found message of type: {message.get('type')}")
+                message: WSMessageSchema = await async_queue.get()
+                logger.debug(f"Found message of type: {message.type}")
                 # Broadcast it
                 await self._ws_channel_manager.broadcast(message)
         except asyncio.CancelledError:
