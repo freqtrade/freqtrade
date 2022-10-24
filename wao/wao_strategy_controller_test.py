@@ -13,7 +13,7 @@ sell_reason = 'sell_signal'
 current_time = str(datetime.datetime.now()).replace('.', '+')
 time_out_hours = 7
 
-controller = WAOStrategyController(brain, time_out_hours, dup)
+controller = WAOStrategyController(time_out_hours, dup)
 
 
 controller.on_buy_signal(current_time,  coin)
