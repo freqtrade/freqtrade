@@ -468,8 +468,7 @@ class FreqaiDataKitchen:
     def check_pred_labels(self, df_predictions: DataFrame) -> DataFrame:
         """
         Check that prediction feature labels match training feature labels.
-        :params:
-        :df_predictions: incoming predictions
+        :param df_predictions: incoming predictions
         """
         constant_labels = self.data['constant_features_list']
         df_predictions = df_predictions.filter(
