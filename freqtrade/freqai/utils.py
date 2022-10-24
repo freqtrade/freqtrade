@@ -211,10 +211,10 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
     }
 
     with open(params_record_path, "w") as handle:
-        rapidjson.dump(run_params, handle, indent=4, default=np_encoder,
-                       number_mode=rapidjson.NM_NATIVE)
-
-
-def np_encoder(self, object):
-    if isinstance(object, np.generic):
-        return object.item()
+        rapidjson.dump(
+            run_params,
+            handle,
+            indent=4,
+            default=str,
+            number_mode=rapidjson.NM_NATIVE
+        )
