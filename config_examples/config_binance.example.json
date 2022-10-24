@@ -53,7 +53,7 @@
             "XTZ/BTC"
         ],
         "pair_blacklist": [
-            "BNB/BTC"
+            "BNB/.*"
         ]
     },
     "pairlists": [
