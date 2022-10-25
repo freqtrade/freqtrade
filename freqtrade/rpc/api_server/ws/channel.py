@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from threading import RLock
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
 from fastapi import WebSocket as FastAPIWebSocket
@@ -10,7 +10,7 @@ from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
                                                     WebSocketSerializer)
 from freqtrade.rpc.api_server.ws.types import WebSocketType
-from freqtrade.rpc.api_server.ws_schemas import WSMessageSchema
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 
 
 logger = logging.getLogger(__name__)
@@ -193,7 +193,7 @@ class ChannelManager:
             for websocket in self.channels.copy().keys():
                 await self.on_disconnect(websocket)
 
-    async def broadcast(self, message: WSMessageSchema):
+    async def broadcast(self, message: WSMessageSchemaType):
         """
         Broadcast a message on all Channels
 
@@ -201,17 +201,18 @@ class ChannelManager:
         """
         with self._lock:
             for channel in self.channels.copy().values():
-                if channel.subscribed_to(message.type):
+                if channel.subscribed_to(message.get('type')):
                     await self.send_direct(channel, message)
 
-    async def send_direct(self, channel: WebSocketChannel, message: WSMessageSchema):
+    async def send_direct(
+            self, channel: WebSocketChannel, message: Union[WSMessageSchemaType, Dict[str, Any]]):
         """
         Send a message directly through direct_channel only
 
         :param direct_channel: The WebSocketChannel object to send the message through
         :param message: The message to send
         """
-        if not await channel.send(message.dict(exclude_none=True)):
+        if not await channel.send(message):
             await self.on_disconnect(channel.raw_websocket)
 
     def has_channels(self):

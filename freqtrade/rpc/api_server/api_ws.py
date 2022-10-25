@@ -75,7 +75,7 @@ async def _process_consumer_request(
         # Format response
         response = WSWhitelistMessage(data=whitelist)
         # Send it back
-        await channel_manager.send_direct(channel, response)
+        await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
     elif type == RPCRequestType.ANALYZED_DF:
         limit = None
@@ -90,7 +90,7 @@ async def _process_consumer_request(
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
             response = WSAnalyzedDFMessage(data=message)
-            await channel_manager.send_direct(channel, response)
+        await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
 
 @router.websocket("/message/ws")
