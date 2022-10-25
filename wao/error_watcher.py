@@ -43,13 +43,14 @@ def smooth_romeo_restart(error_line):
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
     error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
-    send_to_trello(title=error_line,description=error_line)
+    # send_to_trello(title=error_line,description=error_line)
     post_request(error_line, is_from_error_handler=True)
-    
+    romeo.send_error_report(error_line)
 
+    
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
-        romeo.send_error_report(error_line)
+        # romeo.send_error_report(error_line)
     else:
         pass
         # send_to_trello(title=error_line,description=error_line)
