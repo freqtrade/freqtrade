@@ -2,13 +2,9 @@ import threading
 import watchdog
 import os
 import time
-# Revert
-import sys
-sys.path.append("wao/")
-from brain_config import BrainConfig
-from _429_watcher import _429_Watcher
-from error_watcher import Error_Watcher
-# Revert
+from wao.brain_config import BrainConfig
+from wao._429_watcher import _429_Watcher
+from wao.error_watcher import Error_Watcher
 import pickle
 
 from execution.config import Config

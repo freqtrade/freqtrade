@@ -4,12 +4,8 @@ import threading
 import watchdog.events
 import watchdog.observers
 
-# Revert
-import sys
-sys.path.append("wao/")
-from notifier import post_request
-from brain_config import BrainConfig
-# Revert
+from wao.notifier import post_request
+from wao.brain_config import BrainConfig
 
 from execution.config import Config
 from execution.romeo import Romeo, RomeoExitPriceType

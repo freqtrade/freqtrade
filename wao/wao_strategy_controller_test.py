@@ -1,11 +1,7 @@
-# Revert
-import sys
-sys.path.append("wao/")
-from wao_strategy_controller import WAOStrategyController
-# Revert
+from wao.wao_strategy_controller import WAOStrategyController
 import time
 import datetime
-brain = 'Freq_Cluc5werk'
+brain = ''
 dup = 0.1
 mode = "test"
 coin = "ETH"
