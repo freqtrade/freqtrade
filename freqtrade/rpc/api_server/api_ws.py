@@ -90,7 +90,7 @@ async def _process_consumer_request(
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
             response = WSAnalyzedDFMessage(data=message)
-        await channel_manager.send_direct(channel, response.dict(exclude_none=True))
+            await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
 
 @router.websocket("/message/ws")
