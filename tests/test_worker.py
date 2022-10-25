@@ -111,7 +111,7 @@ def test_throttle_sleep_time(mocker, default_conf, caplog) -> None:
                                 timeframe_offset=0.4, x=5) == 42
         assert sleep_mock.call_count == 1
         # 300 (5m) - 60 (1m - see set time above) - 5 (duration of throttled_func) = 235
-        assert 235 < sleep_mock.call_args[0][0] < 235.4
+        assert 235.2 < sleep_mock.call_args[0][0] < 235.6
 
 
 def test_throttle_with_assets(mocker, default_conf) -> None:
