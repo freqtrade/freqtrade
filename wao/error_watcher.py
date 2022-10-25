@@ -39,13 +39,14 @@ def smooth_romeo_restart(error_line):
     is_romeo_alive = romeo is not None
     error_line = "[REPORT TO TRELLO]" + error_line
     error_line += (" [SENDING SS]" if is_romeo_alive else " [POOL EMPTY. NO ROMEO FOUND]")
-    post_request(error_line, is_from_error_handler=True)
+    post_request(error_line, )
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
         romeo.send_error_report(error_line)
     else:
-        post_request(error_line)
+        post_request(error_line,is_from_error_handler=True)
+        send_to_trello(title=error_line,description=error_line)
 
 def string_to_list(string):
     return list(string.split("\n"))
@@ -84,6 +85,11 @@ def get_error_line(file_name):
                 return line_str
     return None
 
+def send_to_trello(title,description):
+    notifier = Notifier(BrainConfig.MODE)
+    notifier.create_trello_bug_ticket(title,description)
+    notifier.post_request(description,is_from_error_report=True)
+    
 
 class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
