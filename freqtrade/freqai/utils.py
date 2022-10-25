@@ -216,5 +216,5 @@ def record_params(config: Dict[str, Any], full_path: Path) -> None:
             handle,
             indent=4,
             default=str,
-            number_mode=rapidjson.NM_NATIVE
+            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
         )
