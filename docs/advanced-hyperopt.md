@@ -78,6 +78,8 @@ This function needs to return a floating point number (`float`). Smaller numbers
 To override a pre-defined space (`roi_space`, `generate_roi_table`, `stoploss_space`, `trailing_space`), define a nested class called Hyperopt and define the required spaces as follows:
 
 ```python
+from freqtrade.optimize.space import Integer, SKDecimal
+
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
         # Define a custom stoploss space.
