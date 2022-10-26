@@ -1076,7 +1076,11 @@ class Exchange:
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        raise OperationalException(f"stoploss is not implemented for {self.name}.")
+        if not self._ft_has.get('stoploss_on_exchange'):
+            raise OperationalException(f"stoploss is not implemented for {self.name}.")
+
+        return ((side == "sell" and stop_loss > float(order['stopPrice'])) or
+                (side == "buy" and stop_loss < float(order['stopPrice'])))
 
     def _get_stop_order_type(self, user_order_type) -> Tuple[str, str]:
 

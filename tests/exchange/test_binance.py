@@ -162,9 +162,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
-    # Test with invalid order case
-    order['type'] = 'stop_loss'
-    assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
 def test_fill_leverage_tiers_binance(default_conf, mocker):

@@ -42,24 +42,6 @@ class Binance(Exchange):
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
-        """
-        Verify stop_loss against stoploss-order value (limit or price)
-        Returns True if adjustment is necessary.
-        :param side: "buy" or "sell"
-        """
-        order_types = ('stop_loss_limit', 'stop', 'stop_market')
-
-        return (
-            order.get('stopPrice', None) is None
-            or (
-                order['type'] in order_types
-                and (
-                    (side == "sell" and stop_loss > float(order['stopPrice'])) or
-                    (side == "buy" and stop_loss < float(order['stopPrice']))
-                )
-            ))
-
     def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
         if self.trading_mode == TradingMode.FUTURES:
