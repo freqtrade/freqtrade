@@ -42,10 +42,9 @@ def smooth_romeo_restart(error_line):
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
-        romeo.send_error_report(error_line)
+        romeo.send_error_report(error_line) #send_to_trello_and_telegram
     else:
-        post_request(error_line,is_from_error_handler=True)
-        send_to_trello(title=error_line,description=error_line)
+        send_to_trello_and_telegram(title=error_line,description=error_line)
 
 def string_to_list(string):
     return list(string.split("\n"))
@@ -84,7 +83,7 @@ def get_error_line(file_name):
                 return line_str
     return None
 
-def send_to_trello(title,description):
+def send_to_trello_and_telegram(title,description):
     notifier = Notifier(BrainConfig.MODE)
     notifier.create_trello_bug_ticket(title,description)
     notifier.post_request(description,is_from_error_report=True)
