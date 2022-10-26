@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from threading import RLock
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
 from fastapi import WebSocket as FastAPIWebSocket
@@ -10,6 +10,7 @@ from freqtrade.rpc.api_server.ws.proxy import WebSocketProxy
 from freqtrade.rpc.api_server.ws.serializer import (HybridJSONWebSocketSerializer,
                                                     WebSocketSerializer)
 from freqtrade.rpc.api_server.ws.types import WebSocketType
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ class WebSocketChannel:
         self,
         websocket: WebSocketType,
         channel_id: Optional[str] = None,
+        drain_timeout: int = 3,
+        throttle: float = 0.01,
         serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer
     ):
 
@@ -34,7 +37,11 @@ class WebSocketChannel:
         # The Serializing class for the WebSocket object
         self._serializer_cls = serializer_cls
 
+        self.drain_timeout = drain_timeout
+        self.throttle = throttle
+
         self._subscriptions: List[str] = []
+        # 32 is the size of the receiving queue in websockets package
         self.queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=32)
         self._relay_task = asyncio.create_task(self.relay())
 
@@ -48,6 +55,10 @@ class WebSocketChannel:
         return f"WebSocketChannel({self.channel_id}, {self.remote_addr})"
 
     @property
+    def raw_websocket(self):
+        return self._websocket.raw_websocket
+
+    @property
     def remote_addr(self):
         return self._websocket.remote_addr
 
@@ -57,11 +68,19 @@ class WebSocketChannel:
         """
         await self._wrapped_ws.send(data)
 
-    async def send(self, data):
+    async def send(self, data) -> bool:
         """
-        Add the data to the queue to be sent
+        Add the data to the queue to be sent.
+        :returns: True if data added to queue, False otherwise
         """
-        self.queue.put_nowait(data)
+        try:
+            await asyncio.wait_for(
+                self.queue.put(data),
+                timeout=self.drain_timeout
+            )
+            return True
+        except asyncio.TimeoutError:
+            return False
 
     async def recv(self):
         """
@@ -119,8 +138,8 @@ class WebSocketChannel:
                 # Limit messages per sec.
                 # Could cause problems with queue size if too low, and
                 # problems with network traffik if too high.
-                # 0.001 = 1000/s
-                await asyncio.sleep(0.001)
+                # 0.01 = 100/s
+                await asyncio.sleep(self.throttle)
             except RuntimeError:
                 # The connection was closed, just exit the task
                 return
@@ -160,6 +179,7 @@ class ChannelManager:
         with self._lock:
             channel = self.channels.get(websocket)
             if channel:
+                logger.info(f"Disconnecting channel {channel}")
                 if not channel.is_closed():
                     await channel.close()
 
@@ -170,36 +190,30 @@ class ChannelManager:
         Disconnect all Channels
         """
         with self._lock:
-            for websocket, channel in self.channels.copy().items():
-                if not channel.is_closed():
-                    await channel.close()
+            for websocket in self.channels.copy().keys():
+                await self.on_disconnect(websocket)
 
-            self.channels = dict()
-
-    async def broadcast(self, data):
+    async def broadcast(self, message: WSMessageSchemaType):
         """
-        Broadcast data on all Channels
+        Broadcast a message on all Channels
 
-        :param data: The data to send
+        :param message: The message to send
         """
         with self._lock:
-            message_type = data.get('type')
-            for websocket, channel in self.channels.copy().items():
-                if channel.subscribed_to(message_type):
-                    if not channel.queue.full():
-                        await channel.send(data)
-                    else:
-                        logger.info(f"Channel {channel} is too far behind, disconnecting")
-                        await self.on_disconnect(websocket)
+            for channel in self.channels.copy().values():
+                if channel.subscribed_to(message.get('type')):
+                    await self.send_direct(channel, message)
 
-    async def send_direct(self, channel, data):
+    async def send_direct(
+            self, channel: WebSocketChannel, message: Union[WSMessageSchemaType, Dict[str, Any]]):
         """
-        Send data directly through direct_channel only
+        Send a message directly through direct_channel only
 
-        :param direct_channel: The WebSocketChannel object to send data through
-        :param data: The data to send
+        :param direct_channel: The WebSocketChannel object to send the message through
+        :param message: The message to send
         """
-        await channel.send(data)
+        if not await channel.send(message):
+            await self.on_disconnect(channel.raw_websocket)
 
     def has_channels(self):
         """
