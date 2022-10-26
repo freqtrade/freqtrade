@@ -1110,7 +1110,7 @@ class Exchange:
                 'In stoploss limit order, stop price should be more than limit price')
         return limit_rate
 
-    def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
+    def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
         params = self._params.copy()
         # Verify if stopPrice works for your exchange!
         params.update({'stopPrice': stop_price})
@@ -1159,7 +1159,8 @@ class Exchange:
             return dry_order
 
         try:
-            params = self._get_stop_params(ordertype=ordertype, stop_price=stop_price_norm)
+            params = self._get_stop_params(side=side, ordertype=ordertype,
+                                           stop_price=stop_price_norm)
             if self.trading_mode == TradingMode.FUTURES:
                 params['reduceOnly'] = True
 

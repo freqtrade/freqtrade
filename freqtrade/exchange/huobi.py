@@ -2,6 +2,7 @@
 import logging
 from typing import Dict
 
+from freqtrade.constants import BuySell
 from freqtrade.exchange import Exchange
 
 
@@ -35,7 +36,7 @@ class Huobi(Exchange):
             )
         )
 
-    def _get_stop_params(self, ordertype: str, stop_price: float) -> Dict:
+    def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> Dict:
 
         params = self._params.copy()
         params.update({
