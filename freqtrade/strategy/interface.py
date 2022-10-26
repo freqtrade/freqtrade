@@ -739,10 +739,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pair = str(metadata.get('pair'))
 
+        new_candle = self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']
         # Test if seen this pair and last candle before.
         # always run if process_only_new_candles is set to false
-        if (not self.process_only_new_candles or
-                self._last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]['date']):
+        if not self.process_only_new_candles or new_candle:
 
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
@@ -751,7 +751,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             candle_type = self.config.get('candle_type_def', CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
-            self.dp._emit_df((pair, self.timeframe, candle_type), dataframe)
+            self.dp._emit_df((pair, self.timeframe, candle_type), dataframe, new_candle)
 
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")

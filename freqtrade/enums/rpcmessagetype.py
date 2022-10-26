@@ -21,6 +21,7 @@ class RPCMessageType(str, Enum):
 
     WHITELIST = 'whitelist'
     ANALYZED_DF = 'analyzed_df'
+    NEW_CANDLE = 'new_candle'
 
     def __repr__(self):
         return self.value
