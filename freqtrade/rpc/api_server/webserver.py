@@ -16,6 +16,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.ws import ChannelManager
+from freqtrade.rpc.api_server.ws_schemas import WSMessageSchemaType
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
@@ -127,7 +128,7 @@ class ApiServer(RPCHandler):
         cls._has_rpc = False
         cls._rpc = None
 
-    def send_msg(self, msg: Dict[str, str]) -> None:
+    def send_msg(self, msg: Dict[str, Any]) -> None:
         if self._ws_queue:
             sync_q = self._ws_queue.sync_q
             sync_q.put(msg)
@@ -194,14 +195,10 @@ class ApiServer(RPCHandler):
             while True:
                 logger.debug("Getting queue messages...")
                 # Get data from queue
-                message = await async_queue.get()
+                message: WSMessageSchemaType = await async_queue.get()
                 logger.debug(f"Found message of type: {message.get('type')}")
                 # Broadcast it
                 await self._ws_channel_manager.broadcast(message)
-                # Limit messages per sec.
-                # Could cause problems with queue size if too low, and
-                # problems with network traffik if too high.
-                await asyncio.sleep(0.001)
         except asyncio.CancelledError:
             pass
 

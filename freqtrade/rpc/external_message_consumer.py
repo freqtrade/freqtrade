@@ -270,6 +270,11 @@ class ExternalMessageConsumer:
                     logger.debug(f"Connection to {channel} still alive...")
 
                     continue
+                except (websockets.exceptions.ConnectionClosed):
+                    # Just eat the error and continue reconnecting
+                    logger.warning(f"Disconnection in {channel} - retrying in {self.sleep_time}s")
+                    await asyncio.sleep(self.sleep_time)
+                    break
                 except Exception as e:
                     logger.warning(f"Ping error {channel} - retrying in {self.sleep_time}s")
                     logger.debug(e, exc_info=e)

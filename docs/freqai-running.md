@@ -161,9 +161,13 @@ You can indicate to the bot that it should not train models, but instead should 
 
 ```json
     "freqai": {
+        "enabled": true,
         "follow_mode": true,
-        "identifier": "example"
+        "identifier": "example",
+        "feature_parameters": {
+        // leader bots feature_parameters inserted here 
+        },
     }
 ```
 
-In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models.
+In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models. The user will also need to duplicate the `feature_parameters` parameters from from the leaders freqai configuration file into the freqai section of the followers config. 
