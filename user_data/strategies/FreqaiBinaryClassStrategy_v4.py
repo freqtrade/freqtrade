@@ -359,7 +359,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         hours_candle_stability = 4
-        if df["do_predict"].rolling(12 * 4).sum().iloc[-1] == 12 * 4:  # enter the market if last `hours_candle_stability` are stable
+        if df["do_predict"].rolling(12 * hours_candle_stability).sum().iloc[-1] == 12 * hours_candle_stability:  # enter the market if last `hours_candle_stability` are stable
             enter_long_conditions = [df["do_predict"] == 1, df["min"] >= self.minima_threhsold]
 
             if enter_long_conditions:
@@ -375,9 +375,7 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
                         reduce(lambda x, y: x & y, enter_short_conditions), ["enter_short", "enter_tag"]
                     ] = (1, "short")
         else:
-            df["enter_long", "enter_tag"] = (0, "long")
-            if self.can_short:
-                df["enter_short", "enter_tag"] = (0, "short")
+            df["enter_long"] = np.zeros(df.shape[0])
         return df
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
@@ -390,23 +388,6 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
             exit_short_conditions = [df["do_predict"] == 1, df["min"] >= self.minima_threhsold]
             if exit_short_conditions:
                 df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
-        
-        if self.config['runmode'].value in ('live', 'dry_run'):
-            trades = Trade.get_trades_proxy(pair=metadata["pair"], is_open=True)
-            if trades:
-                if df["do_predict"].iloc[-1] != 1:
-                    avg_entry_price = sum([trade.open_rate * trade.amount  for trade in trades]) / sum([trade.amount for trade in trades])
-                    if not trades[0].is_short:
-                        profit = df["close"].iloc[-1] / avg_entry_price - 1
-                    else:
-                        profit = avg_entry_price / df["close"].iloc[-1] - 1
-                    logger.warning(f"Market changed, {metadata['pair']} profit is {profit}")
-                    # if profit < 0: # force sell
-                    last_candle = np.zeros(df.shape[0])
-                    last_candle[-1] = 1
-                    cond = [df["do_predict"] != 1, last_candle]
-                    df.loc[reduce(lambda x, y : x & y, cond),
-                           [f"exit_{'short' if trades[0].is_short else 'long'}", "exit_tag"]] = (1, "OOD Exit")
         return df
 
     def get_ticker_indicator(self):
@@ -425,45 +406,11 @@ class FreqaiBinaryClassStrategy_v4(IStrategy):
             return None
         trade_candle = trade_candle.squeeze()
 
-        follow_mode = self.config.get("freqai", {}).get("follow_mode", False)
+        if dataframe["do_predict"].iloc[-1] != 1:
+            return f"OOD_{trade.enter_tag}_Exit"
 
-        if not follow_mode:
-            pair_dict = self.model.bridge.dd.pair_dict
-        else:
-            pair_dict = self.model.bridge.dd.follower_dict
-
-        entry_tag = trade.enter_tag
-
-        if (
-            "prediction" + entry_tag not in pair_dict[pair]
-            or pair_dict[pair]["prediction" + entry_tag] > 0
-        ):
-            with self.model.bridge.lock:
-                if entry_tag == "long":
-                    pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&s-maxima"])
-                else:
-                    pair_dict[pair]["prediction" + entry_tag] = abs(trade_candle["&-s_close"])
-                if not follow_mode:
-                    self.model.bridge.dd.save_drawer_to_disk()
-                else:
-                    self.model.bridge.dd.save_follower_dict_to_disk()
-
-        roi_price = pair_dict[pair]["prediction" + entry_tag]
-        roi_time = self.max_roi_time_long.value
-
-        roi_decay = roi_price * (
-            1 - ((current_time - trade.open_date_utc).seconds) / (roi_time * 60)
-        )
-        if roi_decay < 0:
-            roi_decay = self.linear_roi_offset.value
-        else:
-            roi_decay += self.linear_roi_offset.value
-
-        if current_profit > roi_decay:
-            return "roi_custom_win"
-
-        if current_profit < -roi_decay:
-            return "roi_custom_loss"
+        if (current_time - trade.open_date_utc).seconds > self.max_roi_time_long.value * 60:
+            return f"{trade.enter_tag}_Expired"
 
     def confirm_trade_exit(
         self,
