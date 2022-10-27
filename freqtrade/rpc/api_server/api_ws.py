@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Any, Dict
 
@@ -11,6 +10,7 @@ from freqtrade.enums import RPCMessageType, RPCRequestType
 from freqtrade.rpc.api_server.api_auth import validate_ws_token
 from freqtrade.rpc.api_server.deps import get_channel_manager, get_rpc
 from freqtrade.rpc.api_server.ws import WebSocketChannel
+from freqtrade.rpc.api_server.ws.channel import ChannelManager
 from freqtrade.rpc.api_server.ws_schemas import (WSAnalyzedDFMessage, WSMessageSchema,
                                                  WSRequestSchema, WSWhitelistMessage)
 from freqtrade.rpc.rpc import RPC
@@ -37,7 +37,8 @@ async def is_websocket_alive(ws: WebSocket) -> bool:
 async def _process_consumer_request(
     request: Dict[str, Any],
     channel: WebSocketChannel,
-    rpc: RPC
+    rpc: RPC,
+    channel_manager: ChannelManager
 ):
     """
     Validate and handle a request from a websocket consumer
@@ -74,7 +75,7 @@ async def _process_consumer_request(
         # Format response
         response = WSWhitelistMessage(data=whitelist)
         # Send it back
-        await channel.send(response.dict(exclude_none=True))
+        await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
     elif type == RPCRequestType.ANALYZED_DF:
         limit = None
@@ -89,9 +90,7 @@ async def _process_consumer_request(
         # For every dataframe, send as a separate message
         for _, message in analyzed_df.items():
             response = WSAnalyzedDFMessage(data=message)
-            await channel.send(response.dict(exclude_none=True))
-            # Throttle the messages to 50/s
-            await asyncio.sleep(0.02)
+            await channel_manager.send_direct(channel, response.dict(exclude_none=True))
 
 
 @router.websocket("/message/ws")
@@ -116,7 +115,7 @@ async def message_endpoint(
                     request = await channel.recv()
 
                     # Process the request here
-                    await _process_consumer_request(request, channel, rpc)
+                    await _process_consumer_request(request, channel, rpc, channel_manager)
 
             except (WebSocketDisconnect, WebSocketException):
                 # Handle client disconnects
