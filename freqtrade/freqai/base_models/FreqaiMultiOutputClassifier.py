@@ -97,8 +97,10 @@ class FreqaiMultiOutputClassifier(MultiOutputClassifier):
                 ``n_classes``) for that particular output.
                 """
         check_is_fitted(self)
-        results = np.hstack([estimator.predict_proba(X) for estimator in self.estimators_])
-        return np.squeeze(results)
+        results = np.squeeze(np.hstack(
+            [estimator.predict_proba(X) for estimator in self.estimators_]
+        ))
+        return results
 
     def predict(self, X):
         """Predict multi-output variable using model for each target variable.
@@ -122,6 +124,6 @@ class FreqaiMultiOutputClassifier(MultiOutputClassifier):
             delayed(e.predict)(X) for e in self.estimators_
         )
 
-        results = np.asarray(y).T
+        results = np.squeeze(np.asarray(y).T)
 
-        return np.squeeze(results)
+        return results
