@@ -67,8 +67,6 @@ class ExchangeWS():
         logger.info(f"Task finished {result}")
         # self._pairs_scheduled.discard(pair, timeframe, candle_type)
 
-        logger.info(f"Task finished {task}")
-
     async def continuously_async_watch_ohlcv(
             self, pair: str, timeframe: str, candle_type: CandleType) -> Tuple[str, str, str, List]:
 
@@ -77,7 +75,7 @@ class ExchangeWS():
             data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
             self.pairs_last_refresh[(pair, timeframe, candle_type)] = time.time()
             logger.info(
-                f"watch1 done {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
+                f"watch done {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
 
     def schedule_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         self._pairs_watching.add((pair, timeframe, candle_type))
