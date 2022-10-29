@@ -2004,11 +2004,8 @@ class Exchange:
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
-
-        return (
-            (self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0)
-             + interval_in_sec) < arrow.utcnow().int_timestamp
-        )
+        plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        return plr < arrow.utcnow().int_timestamp
 
     @retrier_async
     async def _async_get_candle_history(
