@@ -1,5 +1,4 @@
 import logging
-import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -21,7 +20,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance
+from freqtrade.freqai.utils import plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -61,6 +60,7 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
+        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -69,7 +69,6 @@ class IFreqaiModel(ABC):
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
-        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
         self.keras: bool = self.freqai_info.get("keras", False)
@@ -96,6 +95,8 @@ class IFreqaiModel(ABC):
 
         self._threads: List[threading.Thread] = []
         self._stop_event = threading.Event()
+
+        record_params(config, self.full_path)
 
     def __getstate__(self):
         """
@@ -526,14 +527,13 @@ class IFreqaiModel(ABC):
         return file_exists
 
     def set_full_path(self) -> None:
+        """
+        Creates and sets the full path for the identifier
+        """
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
+            self.config["user_data_dir"] / "models" / f"{self.identifier}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
-        shutil.copy(
-            self.config["config_files"][0],
-            Path(self.full_path, Path(self.config["config_files"][0]).name),
-        )
 
     def extract_data_and_train_model(
         self,

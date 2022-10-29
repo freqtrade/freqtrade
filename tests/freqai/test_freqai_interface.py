@@ -234,6 +234,7 @@ def test_start_backtesting_subdaily_backtest_period(mocker, freqai_conf):
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
+
     assert len(model_folders) == 9
 
     shutil.rmtree(Path(freqai.dk.full_path))
