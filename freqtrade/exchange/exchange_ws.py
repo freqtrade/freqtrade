@@ -2,12 +2,13 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from threading import Thread
 from typing import Dict, List, Set, Tuple
 
 from freqtrade.constants import Config
 from freqtrade.enums.candletype import CandleType
+from freqtrade.exchange.exchange import timeframe_to_seconds
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,6 @@ class ExchangeWS():
         Remove pairs from watchlist if they've not been requested within
         the last timeframe (+ offset)
         """
-        from freqtrade.exchange.exchange import timeframe_to_seconds
         for p in list(self._pairs_watching):
             _, timeframe, _ = p
             timeframe_s = timeframe_to_seconds(timeframe)
@@ -75,8 +75,8 @@ class ExchangeWS():
             start = time.time()
             data = await self.ccxt_object.watch_ohlcv(pair, timeframe)
             self.pairs_last_refresh[(pair, timeframe, candle_type)] = time.time()
-            logger.info(
-                f"watch done {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
+            # logger.info(
+            #     f"watch done {pair}, {timeframe}, data {len(data)} in {time.time() - start:.2f}s")
 
     def schedule_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         self._pairs_watching.add((pair, timeframe, candle_type))
@@ -92,6 +92,7 @@ class ExchangeWS():
         """
         candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
         # Fake 1 candle - which is then removed again
-        candles.append([int(datetime.now(timezone.utc).timestamp() * 1000), 0, 0, 0, 0, 0])
+        # TODO: is this really a good idea??
+        candles.append([candles[-1][0], 0, 0, 0, 0, 0])
         logger.info(f"watch result for {pair}, {timeframe} with length {len(candles)}")
         return pair, timeframe, candle_type, candles
