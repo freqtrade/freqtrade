@@ -72,6 +72,7 @@ class IFreqaiModel(ABC):
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
+        self.corr_pairlist = self.ft_params.get("include_corr_pairlist", [])
         self.keras: bool = self.freqai_info.get("keras", False)
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
@@ -375,12 +376,8 @@ class IFreqaiModel(ABC):
             self.dd.return_null_values_to_strategy(dataframe, dk)
             return dk
 
-        if self.get_corr_dataframes:
-            self.corr_dataframes = dk.extract_corr_pair_columns_from_populated_indicators(dataframe)
-            self.get_corr_dataframes = False
-        else:
-            dataframe = dk.attach_corr_pair_columns(
-                dataframe, self.corr_dataframes, metadata["pair"])
+        if self.corr_pairlist:
+            dataframe = self.cache_corr_pairlist_dfs(dataframe, dk)
 
         dk.find_labels(dataframe)
 
@@ -687,7 +684,8 @@ class IFreqaiModel(ABC):
                                    " avoid blinding open trades and degrading performance.")
                 self.pair_it = 0
                 self.inference_time = 0
-                self.get_corr_dataframes = True
+                if self.corr_pairlist:
+                    self.get_corr_dataframes = True
         return
 
     def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
@@ -745,6 +743,29 @@ class IFreqaiModel(ABC):
         logger.info('Set existing queue from trained timestamps. '
                     f'Best approximation queue: {best_queue}')
         return best_queue
+
+    def cache_corr_pairlist_dfs(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> DataFrame:
+        """
+        Cache the corr_pairlist dfs to speed up performance for subsequent pairs during the
+        current candle.
+        :param dataframe: strategy fed dataframe
+        :param dk: datakitchen object for current asset
+        :return: dataframe to attach/extract cached corr_pair dfs to/from.
+        """
+
+        if self.get_corr_dataframes:
+            self.corr_dataframes = dk.extract_corr_pair_columns_from_populated_indicators(dataframe)
+            if not self.corr_dataframes:
+                logger.warning("Couldn't cache corr_pair dataframes for improved performance. "
+                               "Consider ensuring that the full coin/stake, e.g. XYZ/USD, "
+                               "is included in the column names when you are creating features "
+                               "in `populate_any_indicators()`.")
+            self.get_corr_dataframes = not bool(self.corr_dataframes)
+        else:
+            dataframe = dk.attach_corr_pair_columns(
+                dataframe, self.corr_dataframes, dk.pair)
+
+        return dataframe
 
     # Following methods which are overridden by user made prediction models.
     # See freqai/prediction_models/CatboostPredictionModel.py for an example.

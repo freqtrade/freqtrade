@@ -1133,17 +1133,19 @@ class FreqaiDataKitchen:
         """
         Find the columns of the dataframe corresponding to the corr_pairlist, save them
         in a dictionary to be reused and attached to other pairs.
-        :params:
-        :dataframe: fully populated dataframe (current pair + corr_pairs)
-        :return:
-        :corr_dataframes: dictionary of dataframes to be attached to other pairs in same candle.
+
+        :param dataframe: fully populated dataframe (current pair + corr_pairs)
+        :return: corr_dataframes, dictionary of dataframes to be attached
+                 to other pairs in same candle.
         """
         corr_dataframes: Dict[str, DataFrame] = {}
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
-            coin = pair.split('/')[0]
-            pair_cols = [col for col in dataframe.columns if coin in col]
+            valid_strs = [f"%-{pair}", f"%{pair}", f"%_{pair}"]
+            pair_cols = [col for col in dataframe.columns if
+                         any(substr in col for substr in valid_strs)]
+            pair_cols.insert(0, 'date')
             corr_dataframes[pair] = dataframe.filter(pair_cols, axis=1)
 
         return corr_dataframes
@@ -1153,10 +1155,10 @@ class FreqaiDataKitchen:
                                  current_pair: str) -> DataFrame:
         """
         Attach the existing corr_pair dataframes to the current pair dataframe before training
-        :params:
-        :dataframe: current pair strategy dataframe, indicators populated already
-        :corr_dataframes: dictionary of saved dataframes from earlier in the same candle
-        :current_pair: current pair to which we will attach corr pair dataframe
+
+        :param dataframe: current pair strategy dataframe, indicators populated already
+        :param corr_dataframes: dictionary of saved dataframes from earlier in the same candle
+        :param current_pair: current pair to which we will attach corr pair dataframe
         :return:
         :dataframe: current pair dataframe of populated indicators, concatenated with corr_pairs
                     ready for training
@@ -1164,8 +1166,8 @@ class FreqaiDataKitchen:
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
-            if current_pair not in pair:
-                dataframe = pd.concat([dataframe, corr_dataframes[pair]], axis=1)
+            if current_pair != pair:
+                dataframe = dataframe.merge(corr_dataframes[pair], how='left', on='date')
 
         return dataframe
 
@@ -1186,15 +1188,15 @@ class FreqaiDataKitchen:
         :param base_dataframes: dict = dict containing the current pair dataframes
                                 (for user defined timeframes)
         :param metadata: dict = strategy furnished pair metadata
-        :returns:
+        :return:
         dataframe: DataFrame = dataframe containing populated indicators
         """
 
         # for prediction dataframe creation, we let dataprovider handle everything in the strategy
         # so we create empty dictionaries, which allows us to pass None to
         # `populate_any_indicators()`. Signaling we want the dp to give us the live dataframe.
-        tfs = self.freqai_config["feature_parameters"].get("include_timeframes")
-        pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+        pairs: List[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
         if not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
             for tf in tfs:
@@ -1219,16 +1221,16 @@ class FreqaiDataKitchen:
             )
 
         # ensure corr pairs are always last
-        for i in pairs:
-            if pair in i:
+        for corr_pair in pairs:
+            if pair == corr_pair:
                 continue  # dont repeat anything from whitelist
             for tf in tfs:
                 if pairs and do_corr_pairs:
                     dataframe = strategy.populate_any_indicators(
-                        i,
+                        corr_pair,
                         dataframe.copy(),
                         tf,
-                        informative=corr_dataframes[i][tf]
+                        informative=corr_dataframes[corr_pair][tf]
                     )
 
         self.get_unique_classes_from_labels(dataframe)
