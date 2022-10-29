@@ -16,6 +16,9 @@ class WAOStrategyController:
         create_watchers()
         clear_cumulative_value()
         create_initial_account_balance_binance_file()
+        Config.IS_SCHEDULE_ORDER = BrainConfig.IS_SCHEDULE_ORDER
+        Config.IS_LIMIT_STOP_ORDER_ENABLED = BrainConfig.IS_LIMIT_STOP_ORDER_ENABLED
+        Config.WORKSPACE_NORMAL = BrainConfig.WORKSPACE_NORMAL
         if BrainConfig.IS_BACKTEST:
             send_start_deliminator_message(BrainConfig.BRAIN,
                                            BrainConfig.BACKTEST_MONTH_LIST[
