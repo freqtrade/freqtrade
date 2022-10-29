@@ -42,9 +42,10 @@ def smooth_romeo_restart(error_line):
 
     if is_romeo_alive:
         romeo.perform_sell_signal(RomeoExitPriceType.SS)
-        romeo.send_error_report(error_line) #send_to_trello_and_telegram
+        romeo.send_error_report(error_line)  # send_to_trello_and_telegram
     else:
-        send_to_trello_and_telegram(title=error_line,description=error_line)
+        send_to_trello_and_telegram(title=error_line, description=error_line)
+
 
 def string_to_list(string):
     return list(string.split("\n"))
@@ -73,21 +74,31 @@ def __check_condition(file_name):
             stop_bot(error_line)
 
 
+def populate_last_error_lines(line_lower):
+    if len(BrainConfig.LAST_ERROR_LINES) <= 3:
+        BrainConfig.LAST_ERROR_LINES.append(line_lower)
+    else:
+        BrainConfig.LAST_ERROR_LINES.pop()
+        BrainConfig.LAST_ERROR_LINES.insert(0, line_lower)
+
+
 def get_error_line(file_name):
     list_of_lines = get_tail_cmd_result(file_name)
     if len(list_of_lines) > 0:
         for line in list_of_lines:
             line_str = str(line)
             line_lower = line_str.lower()
-            if "error" in line_lower or "exception" in line_lower:
+            if ("error" in line_lower or "exception" in line_lower) and (line_lower not in BrainConfig.LAST_ERROR_LINES):
+                populate_last_error_lines(line_lower)
                 return line_str
     return None
 
-def send_to_trello_and_telegram(title,description):
+
+def send_to_trello_and_telegram(title, description):
     notifier = Notifier(BrainConfig.MODE)
-    notifier.create_trello_bug_ticket(title,description)
-    notifier.post_request(description,is_from_error_report=True)
-    
+    notifier.create_trello_bug_ticket(title, description)
+    notifier.post_request(description, is_from_error_report=True)
+
 
 class Error_Watcher(watchdog.events.PatternMatchingEventHandler):
 
