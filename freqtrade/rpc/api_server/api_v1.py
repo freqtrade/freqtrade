@@ -1,13 +1,11 @@
 import logging
 from copy import deepcopy
-from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
-from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -253,11 +251,9 @@ def plot_config(rpc: RPC = Depends(get_rpc)):
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
 def list_strategies(config=Depends(get_config)):
-    directory = Path(config.get(
-        'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
     strategies = StrategyResolver.search_all_objects(
-        directory, False, config.get('recursive_strategy_search', False))
+        config, False, config.get('recursive_strategy_search', False))
     strategies = sorted(strategies, key=lambda x: x['name'])
 
     return {'strategies': [x['name'] for x in strategies]}

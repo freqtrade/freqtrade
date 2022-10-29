@@ -62,7 +62,7 @@ class ExternalMessageConsumer:
         self.enabled = self._emc_config.get('enabled', False)
         self.producers: List[Producer] = self._emc_config.get('producers', [])
 
-        self.wait_timeout = self._emc_config.get('wait_timeout', 300)  # in seconds
+        self.wait_timeout = self._emc_config.get('wait_timeout', 30)  # in seconds
         self.ping_timeout = self._emc_config.get('ping_timeout', 10)  # in seconds
         self.sleep_time = self._emc_config.get('sleep_time', 10)  # in seconds
 
@@ -174,6 +174,7 @@ class ExternalMessageConsumer:
         :param producer: Dictionary containing producer info
         :param lock: An asyncio Lock
         """
+        channel = None
         while self._running:
             try:
                 host, port = producer['host'], producer['port']
@@ -182,7 +183,11 @@ class ExternalMessageConsumer:
                 ws_url = f"ws://{host}:{port}/api/v1/message/ws?token={token}"
 
                 # This will raise InvalidURI if the url is bad
-                async with websockets.connect(ws_url, max_size=self.message_size_limit) as ws:
+                async with websockets.connect(
+                    ws_url,
+                    max_size=self.message_size_limit,
+                    ping_interval=None
+                ) as ws:
                     channel = WebSocketChannel(ws, channel_id=name)
 
                     logger.info(f"Producer connection success - {channel}")
@@ -224,6 +229,10 @@ class ExternalMessageConsumer:
                 logger.exception(e)
                 continue
 
+            finally:
+                if channel:
+                    await channel.close()
+
     async def _receive_messages(
         self,
         channel: WebSocketChannel,
@@ -261,6 +270,11 @@ class ExternalMessageConsumer:
                     logger.debug(f"Connection to {channel} still alive...")
 
                     continue
+                except (websockets.exceptions.ConnectionClosed):
+                    # Just eat the error and continue reconnecting
+                    logger.warning(f"Disconnection in {channel} - retrying in {self.sleep_time}s")
+                    await asyncio.sleep(self.sleep_time)
+                    break
                 except Exception as e:
                     logger.warning(f"Ping error {channel} - retrying in {self.sleep_time}s")
                     logger.debug(e, exc_info=e)

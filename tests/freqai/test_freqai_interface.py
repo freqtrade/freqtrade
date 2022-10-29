@@ -7,7 +7,11 @@ import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import RunMode
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
+from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
@@ -18,15 +22,22 @@ def is_arm() -> bool:
     return "arm" in machine or "aarch64" in machine
 
 
+def is_mac() -> bool:
+    machine = platform.system()
+    return "Darwin" in machine
+
+
 @pytest.mark.parametrize('model', [
     'LightGBMRegressor',
     'XGBoostRegressor',
+    'XGBoostRFRegressor',
     'CatboostRegressor',
     ])
-def test_extract_data_and_train_model_Regressors(mocker, freqai_conf, model):
+def test_extract_data_and_train_model_Standard(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostRegressor':
         pytest.skip("CatBoost is not supported on ARM")
 
+    model_save_ext = 'joblib'
     freqai_conf.update({"freqaimodel": model})
     freqai_conf.update({"timerange": "20180110-20180130"})
     freqai_conf.update({"strategy": "freqai_test_strat"})
@@ -43,16 +54,23 @@ def test_extract_data_and_train_model_Regressors(mocker, freqai_conf, model):
 
     freqai.dd.pair_dict = MagicMock()
 
-    data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
-    new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    data_load_timerange = TimeRange.parse_timerange("20180125-20180130")
+    new_timerange = TimeRange.parse_timerange("20180127-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
+    freqai.train_timer("start", "ADA/BTC")
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
+    freqai.train_timer("stop", "ADA/BTC")
+    freqai.dd.save_metric_tracker_to_disk()
+    freqai.dd.save_drawer_to_disk()
 
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_model.joblib").is_file()
+    assert Path(freqai.dk.full_path / "metric_tracker.json").is_file()
+    assert Path(freqai.dk.full_path / "pair_dictionary.json").is_file()
+    assert Path(freqai.dk.data_path /
+                f"{freqai.dk.model_filename}_model.{model_save_ext}").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
-    assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -83,6 +101,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange)
@@ -92,7 +111,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_metadata.json").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_trained_df.pkl").is_file()
     assert Path(freqai.dk.data_path / f"{freqai.dk.model_filename}_svm_model.joblib").is_file()
-    assert len(freqai.dk.data['training_features_list']) == 26
+    assert len(freqai.dk.data['training_features_list']) == 14
 
     shutil.rmtree(Path(freqai.dk.full_path))
 
@@ -101,6 +120,7 @@ def test_extract_data_and_train_model_MultiTargets(mocker, freqai_conf, model):
     'LightGBMClassifier',
     'CatboostClassifier',
     'XGBoostClassifier',
+    'XGBoostRFClassifier',
     ])
 def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     if is_arm() and model == 'CatboostClassifier':
@@ -124,6 +144,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
 
     data_load_timerange = TimeRange.parse_timerange("20180110-20180130")
     new_timerange = TimeRange.parse_timerange("20180120-20180130")
+    freqai.dk.set_paths('ADA/BTC', None)
 
     freqai.extract_data_and_train_model(new_timerange, "ADA/BTC",
                                         strategy, freqai.dk, data_load_timerange)
@@ -136,9 +157,28 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
-def test_start_backtesting(mocker, freqai_conf):
-    freqai_conf.update({"timerange": "20180120-20180130"})
+@pytest.mark.parametrize(
+    "model, num_files, strat",
+    [
+        ("LightGBMRegressor", 6, "freqai_test_strat"),
+        ("XGBoostRegressor", 6, "freqai_test_strat"),
+        ("CatboostRegressor", 6, "freqai_test_strat"),
+        ("XGBoostClassifier", 6, "freqai_test_classifier"),
+        ("LightGBMClassifier", 6, "freqai_test_classifier"),
+        ("CatboostClassifier", 6, "freqai_test_classifier")
+    ],
+    )
+def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog):
     freqai_conf.get("freqai", {}).update({"save_backtest_models": True})
+    freqai_conf['runmode'] = RunMode.BACKTEST
+    Trade.use_db = False
+    if is_arm() and "Catboost" in model:
+        pytest.skip("CatBoost is not supported on ARM")
+
+    freqai_conf.update({"freqaimodel": model})
+    freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf.update({"strategy": strat})
+
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
     strategy.dp = DataProvider(freqai_conf, exchange)
@@ -152,13 +192,24 @@ def test_start_backtesting(mocker, freqai_conf):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+    for i in range(5):
+        df[f'%-constant_{i}'] = i
+        # df.loc[:, f'%-constant_{i}'] = i
 
     metadata = {"pair": "LTC/BTC"}
     freqai.start_backtesting(df, metadata, freqai.dk)
     model_folders = [x for x in freqai.dd.full_path.iterdir() if x.is_dir()]
 
-    assert len(model_folders) == 6
-
+    assert len(model_folders) == num_files
+    assert log_has_re(
+        "Removed features ",
+        caplog,
+    )
+    assert log_has_re(
+        "Removed 5 features from prediction features, ",
+        caplog,
+    )
+    Backtesting.cleanup()
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
@@ -211,7 +262,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
 
     assert len(model_folders) == 6
 
-    # without deleting the exiting folder structure, re-run
+    # without deleting the existing folder structure, re-run
 
     freqai_conf.update({"timerange": "20180120-20180130"})
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
@@ -227,6 +278,7 @@ def test_start_backtesting_from_existing_folder(mocker, freqai_conf, caplog):
     corr_df, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
 
     df = freqai.dk.use_strategy_to_populate_indicators(strategy, corr_df, base_df, "LTC/BTC")
+
     freqai.start_backtesting(df, metadata, freqai.dk)
 
     assert log_has_re(
@@ -283,6 +335,7 @@ def test_follow_mode(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
     df = strategy.dp.get_pair_dataframe('ADA/BTC', '5m')
+
     freqai.start_live(df, metadata, strategy, freqai.dk)
 
     assert len(freqai.dk.return_dataframe.index) == 5702
@@ -375,3 +428,40 @@ def test_freqai_informative_pairs(mocker, freqai_conf, timeframes, corr_pairs):
     pairs_b = strategy.gather_informative_pairs()
     # we expect unique pairs * timeframes
     assert len(pairs_b) == len(set(pairlist + corr_pairs)) * len(timeframes)
+
+
+def test_start_set_train_queue(mocker, freqai_conf, caplog):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    pairlist = PairListManager(exchange, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange, pairlist)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = False
+
+    freqai.train_queue = freqai._set_train_queue()
+
+    assert log_has_re(
+        "Set fresh train queue from whitelist.",
+        caplog,
+    )
+
+
+def test_get_required_data_timerange(mocker, freqai_conf):
+    time_range = get_required_data_timerange(freqai_conf)
+    assert (time_range.stopts - time_range.startts) == 177300
+
+
+def test_download_all_data_for_training(mocker, freqai_conf, caplog, tmpdir):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    pairlist = PairListManager(exchange, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange, pairlist)
+    freqai_conf['pairs'] = freqai_conf['exchange']['pair_whitelist']
+    freqai_conf['datadir'] = Path(tmpdir)
+    download_all_data_for_training(strategy.dp, freqai_conf)
+
+    assert log_has_re(
+        "Downloading",
+        caplog,
+    )

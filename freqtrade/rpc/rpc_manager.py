@@ -88,10 +88,13 @@ class RPCManager:
         """
         while queue:
             msg = queue.popleft()
-            self.send_msg({
-                'type': RPCMessageType.STRATEGY_MSG,
-                'msg': msg,
-            })
+            logger.info('Sending rpc strategy_msg: %s', msg)
+            for mod in self.registered_modules:
+                if mod._config.get(mod.name, {}).get('allow_custom_messages', False):
+                    mod.send_msg({
+                        'type': RPCMessageType.STRATEGY_MSG,
+                        'msg': msg,
+                    })
 
     def startup_messages(self, config: Config, pairlist, protections) -> None:
         if config['dry_run']:

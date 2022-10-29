@@ -2,10 +2,11 @@
 Precision pair list filter
 """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Ticker
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -44,15 +45,15 @@ class PrecisionFilter(IPairList):
         """
         return f"{self.name} - Filtering untradable pairs."
 
-    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
+    def _validate_pair(self, pair: str, ticker: Optional[Ticker]) -> bool:
         """
         Check if pair has enough room to add a stoploss to avoid "unsellable" buys of very
         low value pairs.
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
+        :param ticker: ticker dict as returned from ccxt.fetch_ticker
         :return: True if the pair can stay, false if it should be removed
         """
-        if ticker.get('last', None) is None:
+        if not ticker or ticker.get('last', None) is None:
             self.log_once(f"Removed {pair} from whitelist, because "
                           "ticker['last'] is empty (Usually no trade in the last 24h).",
                           logger.info)

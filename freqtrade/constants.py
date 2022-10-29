@@ -5,7 +5,7 @@ bot constants
 """
 from typing import Any, Dict, List, Literal, Tuple
 
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, RPCMessageType
 
 
 DEFAULT_CONFIG = 'config.json'
@@ -31,7 +31,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'CalmarHyperOptLoss',
                          'MaxDrawDownHyperOptLoss', 'MaxDrawDownRelativeHyperOptLoss',
                          'ProfitDrawDownHyperOptLoss']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'ProducerPairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
@@ -282,6 +282,7 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'allow_custom_messages': {'type': 'boolean', 'default': True},
                 'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
@@ -344,6 +345,8 @@ CONF_SCHEMA = {
                 'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
                 'retries': {'type': 'integer', 'minimum': 0},
                 'retry_delay': {'type': 'number', 'minimum': 0},
+                **dict([(x, {'type': 'object'}) for x in RPCMessageType]),
+                # Below -> Deprecated
                 'webhookentry': {'type': 'object'},
                 'webhookentrycancel': {'type': 'object'},
                 'webhookentryfill': {'type': 'object'},
@@ -537,6 +540,8 @@ CONF_SCHEMA = {
             "properties": {
                 "enabled": {"type": "boolean", "default": False},
                 "keras": {"type": "boolean", "default": False},
+                "write_metrics_to_disk": {"type": "boolean", "default": False},
+                "purge_old_models": {"type": "boolean", "default": True},
                 "conv_width": {"type": "integer", "default": 2},
                 "train_period_days": {"type": "integer", "default": 0},
                 "backtest_period_days": {"type": "number", "default": 7},
@@ -567,6 +572,7 @@ CONF_SCHEMA = {
                     "properties": {
                         "test_size": {"type": "number"},
                         "random_state": {"type": "integer"},
+                        "shuffle": {"type": "boolean", "default": False}
                     },
                 },
                 "model_training_parameters": {
@@ -652,5 +658,6 @@ LongShort = Literal['long', 'short']
 EntryExit = Literal['entry', 'exit']
 BuySell = Literal['buy', 'sell']
 MakerTaker = Literal['maker', 'taker']
+BidAsk = Literal['bid', 'ask']
 
 Config = Dict[str, Any]

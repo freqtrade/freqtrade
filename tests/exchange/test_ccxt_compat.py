@@ -56,7 +56,7 @@ EXCHANGES = {
         'leverage_in_spot_market': True,
     },
     'kucoin': {
-        'pair': 'BTC/USDT',
+        'pair': 'XRP/USDT',
         'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
@@ -137,6 +137,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
             'freqtrade.exchange.binance.Binance.fill_leverage_tiers')
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.fetch_trading_fees')
         class_mocker.patch('freqtrade.exchange.okx.Okx.additional_exchange_init')
+        class_mocker.patch('freqtrade.exchange.binance.Binance.additional_exchange_init')
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.load_cached_leverage_tiers',
                            return_value=None)
         class_mocker.patch('freqtrade.exchange.exchange.Exchange.cache_leverage_tiers')
@@ -267,9 +268,8 @@ class TestCCXTExchange():
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
-    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe):
+    def ccxt__async_get_candle_history(self, exchange, exchangename, pair, timeframe, candle_type):
 
-        candle_type = CandleType.SPOT
         timeframe_ms = timeframe_to_msecs(timeframe)
         now = timeframe_to_prev_date(
                 timeframe, datetime.now(timezone.utc))
@@ -301,7 +301,8 @@ class TestCCXTExchange():
             return
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']
-        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
+        self.ccxt__async_get_candle_history(
+            exchange, exchangename, pair, timeframe, CandleType.SPOT)
 
     def test_ccxt__async_get_candle_history_futures(self, exchange_futures):
         exchange, exchangename = exchange_futures
@@ -310,7 +311,8 @@ class TestCCXTExchange():
             return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         timeframe = EXCHANGES[exchangename]['timeframe']
-        self.ccxt__async_get_candle_history(exchange, exchangename, pair, timeframe)
+        self.ccxt__async_get_candle_history(
+            exchange, exchangename, pair, timeframe, CandleType.FUTURES)
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
         exchange, exchangename = exchange_futures

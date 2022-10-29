@@ -75,6 +75,7 @@ setup(
         'joblib>=1.2.0',
         'pyarrow; platform_machine != "armv7l"',
         'fastapi',
+        'pydantic>=1.8.0',
         'uvicorn',
         'psutil',
         'pyjwt',

@@ -12,7 +12,7 @@ import tabulate
 from colorama import Fore, Style
 from pandas import isna, json_normalize
 
-from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES, Config
+from freqtrade.constants import FTHYPT_FILEVERSION, Config
 from freqtrade.enums import HyperoptState
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
@@ -50,9 +50,8 @@ class HyperoptTools():
         Get Strategy-location (filename) from strategy_name
         """
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
-        directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
         strategy_objs = StrategyResolver.search_all_objects(
-            directory, False, config.get('recursive_strategy_search', False))
+            config, False, config.get('recursive_strategy_search', False))
         strategies = [s for s in strategy_objs if s['name'] == strategy_name]
         if strategies:
             strategy = strategies[0]

@@ -30,6 +30,7 @@ class StrategyResolver(IResolver):
     object_type_str = "Strategy"
     user_subdir = USERPATH_STRATEGIES
     initial_search_path = None
+    extra_path = "strategy_path"
 
     @staticmethod
     def load_strategy(config: Config = None) -> IStrategy:
