@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import time
+from datetime import datetime, timezone
 from threading import Thread
 from typing import Dict, List, Set, Tuple
 
@@ -17,12 +18,12 @@ class ExchangeWS():
         self.config = config
         self.ccxt_object = ccxt_object
         self._thread = Thread(name="ccxt_ws", target=self.start)
-        self._background_tasks = set()
+        self._background_tasks: Set[asyncio.Task] = set()
 
         self._pairs_watching: Set[Tuple[str, str, CandleType]] = set()
         self._pairs_scheduled: Set[Tuple[str, str, CandleType]] = set()
-        self.pairs_last_refresh: Dict[Tuple[str, str, CandleType], int] = {}
-        self.pairs_last_request: Dict[Tuple[str, str, CandleType], int] = {}
+        self.pairs_last_refresh: Dict[Tuple[str, str, CandleType], float] = {}
+        self.pairs_last_request: Dict[Tuple[str, str, CandleType], float] = {}
         self._thread.start()
 
     def start(self) -> None:
@@ -68,7 +69,7 @@ class ExchangeWS():
         # self._pairs_scheduled.discard(pair, timeframe, candle_type)
 
     async def continuously_async_watch_ohlcv(
-            self, pair: str, timeframe: str, candle_type: CandleType) -> Tuple[str, str, str, List]:
+            self, pair: str, timeframe: str, candle_type: CandleType) -> None:
 
         while (pair, timeframe, candle_type) in self._pairs_watching:
             start = time.time()
@@ -83,3 +84,14 @@ class ExchangeWS():
         # asyncio.run_coroutine_threadsafe(self.schedule_schedule(), loop=self._loop)
         asyncio.run_coroutine_threadsafe(self.schedule_while_true(), loop=self._loop)
         self.cleanup_expired()
+
+    async def get_ohlcv(
+            self, pair: str, timeframe: str, candle_type: CandleType) -> Tuple[str, str, str, List]:
+        """
+        Returns cached klines from ccxt's "watch" cache.
+        """
+        candles = self.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
+        # Fake 1 candle - which is then removed again
+        candles.append([int(datetime.now(timezone.utc).timestamp() * 1000), 0, 0, 0, 0, 0])
+        logger.info(f"watch result for {pair}, {timeframe} with length {len(candles)}")
+        return pair, timeframe, candle_type, candles

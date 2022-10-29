@@ -2228,15 +2228,6 @@ class Exchange:
         data = sorted(data, key=lambda x: x[0])
         return pair, timeframe, candle_type, data, self._ohlcv_partial_candle
 
-    async def _async_watch_ohlcv(
-        self, pair: str, timeframe: str, candle_type: CandleType
-    ) -> Tuple[str, str, str, List]:
-        candles = self._exchange_ws.ccxt_object.ohlcvs.get(pair, {}).get(timeframe)
-        # Fake 1 candle - which is then removed again
-        candles.append([int(datetime.now(timezone.utc).timestamp() * 1000), 0, 0, 0, 0, 0])
-        logger.info(f"watch result for {pair}, {timeframe} with length {len(candles)}")
-        return pair, timeframe, candle_type, candles
-
     def _build_coroutine(
         self,
         pair: str,
@@ -2264,7 +2255,7 @@ class Exchange:
                     # Usable result ...
                     logger.info(f"reuse watch result for {pair}, {timeframe}, {x}")
 
-                    return self._async_watch_ohlcv(pair, timeframe, candle_type)
+                    return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type)
 
             # Check if 1 call can get us updated candles without hole in the data.
             if min_date < last_refresh:
