@@ -354,13 +354,18 @@ class FreqaiDataKitchen:
         :param df: Dataframe to be standardized
         """
 
+        train_max = []
+        train_min = []
         for item in df.keys():
-            df[item] = (
-                2
-                * (df[item] - self.data[f"{item}_min"])
-                / (self.data[f"{item}_max"] - self.data[f"{item}_min"])
-                - 1
-            )
+            train_max.append(self.data[item + "_max"])
+            train_min.append(self.data[item + "_min"])
+
+        train_max_series = pd.Series(train_max, index=df.keys())
+        train_min_series = pd.Series(train_min, index=df.keys())
+
+        df = (
+            2 * (df - train_min_series) / (train_max_series - train_min_series) - 1
+        )
 
         return df
 
