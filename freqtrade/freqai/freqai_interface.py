@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
 from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
@@ -84,7 +83,6 @@ class IFreqaiModel(ABC):
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
         self.train_queue = self._set_train_queue()
-        self.analysis_lock = Lock()
         self.inference_time: float = 0
         self.train_time: float = 0
         self.begin_time: float = 0
@@ -563,10 +561,9 @@ class IFreqaiModel(ABC):
             data_load_timerange, pair, dk
         )
 
-        with self.analysis_lock:
-            unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
-                strategy, corr_dataframes, base_dataframes, pair
-            )
+        unfiltered_dataframe = dk.use_strategy_to_populate_indicators(
+            strategy, corr_dataframes, base_dataframes, pair
+        )
 
         unfiltered_dataframe = dk.slice_dataframe(new_trained_timerange, unfiltered_dataframe)
 
