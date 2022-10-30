@@ -36,7 +36,6 @@ class IPairList(LoggingMixin, ABC):
         self._pairlistconfig = pairlistconfig
         self._pairlist_pos = pairlist_pos
         self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
-        self._last_refresh = 0
         LoggingMixin.__init__(self, logger, self.refresh_period)
 
     @property
