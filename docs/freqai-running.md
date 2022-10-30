@@ -142,15 +142,32 @@ dataframe['outlier'] = np.where(dataframe['DI_values'] > self.di_max.value/10, 1
 
 This specific hyperopt would help you understand the appropriate `DI_values` for your particular parameter space.
 
+## Using Tensorboard
+
+CatBoost models benefit from tracking training metrics via Tensorboard. You can take advantage of the FreqAI integration to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:
+
+```bash
+cd freqtrade
+tensorboard --logdir user_data/models/unique-id
+```
+
+where `unique-id` is the `identifier` set in the `freqai` configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).
+
+![tensorboard](assets/tensorboard.jpg)
+
 ## Setting up a follower
 
 You can indicate to the bot that it should not train models, but instead should look for models trained by a leader with a specific `identifier` by defining:
 
 ```json
     "freqai": {
+        "enabled": true,
         "follow_mode": true,
-        "identifier": "example"
+        "identifier": "example",
+        "feature_parameters": {
+        // leader bots feature_parameters inserted here 
+        },
     }
 ```
 
-In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models.
+In this example, the user has a leader bot with the `"identifier": "example"`. The leader bot is already running or is launched simultaneously with the follower. The follower will load models created by the leader and inference them to obtain predictions instead of training its own models. The user will also need to duplicate the `feature_parameters` parameters from from the leaders freqai configuration file into the freqai section of the followers config. 

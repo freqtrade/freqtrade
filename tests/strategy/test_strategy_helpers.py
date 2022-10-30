@@ -5,29 +5,8 @@ import pytest
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
-from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
-                                timeframe_to_minutes)
-from tests.conftest import get_patched_exchange
-
-
-def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
-    np.random.seed(42)
-    tf_mins = timeframe_to_minutes(timeframe)
-
-    base = np.random.normal(20, 2, size=size)
-
-    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
-    df = pd.DataFrame({
-        'date': date,
-        'open': base,
-        'high': base + np.random.normal(2, 1, size=size),
-        'low': base - np.random.normal(2, 1, size=size),
-        'close': base + np.random.normal(0, 1, size=size),
-        'volume': np.random.normal(200, size=size)
-    }
-    )
-    df = df.dropna()
-    return df
+from freqtrade.strategy import merge_informative_pair, stoploss_from_absolute, stoploss_from_open
+from tests.conftest import generate_test_data, get_patched_exchange
 
 
 def test_merge_informative_pair():

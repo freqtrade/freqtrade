@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = '2022.10.dev'
+__version__ = '2022.11.dev'
 
 if 'dev' in __version__:
     try:
@@ -16,6 +16,6 @@ if 'dev' in __version__:
             from pathlib import Path
             versionfile = Path('./freqtrade_commit')
             if versionfile.is_file():
-                __version__ = f"docker-{versionfile.read_text()[:8]}"
+                __version__ = f"docker-{__version__}-{versionfile.read_text()[:8]}"
         except Exception:
             pass

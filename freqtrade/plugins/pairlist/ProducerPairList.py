@@ -7,6 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -68,10 +69,10 @@ class ProducerPairList(IPairList):
 
         return pairs
 
-    def gen_pairlist(self, tickers: Dict) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> List[str]:
         """
         Generate the pairlist
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: List of pairs
         """
         pairs = self._filter_pairlist(None)
@@ -79,12 +80,12 @@ class ProducerPairList(IPairList):
         pairs = self._whitelist_for_active_markets(self.verify_whitelist(pairs, logger.info))
         return pairs
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
         :param pairlist: pairlist to filter or sort
-        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
+        :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
         return self._filter_pairlist(pairlist)

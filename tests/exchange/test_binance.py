@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import ccxt
 import pytest
 
-from freqtrade.enums import MarginMode, TradingMode
+from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -162,9 +162,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     }
     assert exchange.stoploss_adjust(sl1, order, side=side)
     assert not exchange.stoploss_adjust(sl2, order, side=side)
-    # Test with invalid order case
-    order['type'] = 'stop_loss'
-    assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
 def test_fill_leverage_tiers_binance(default_conf, mocker):
@@ -542,7 +539,7 @@ def test__set_leverage_binance(mocker, default_conf):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('candle_type', ['mark', ''])
+@pytest.mark.parametrize('candle_type', [CandleType.MARK, ''])
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [
         [

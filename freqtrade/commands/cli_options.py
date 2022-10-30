@@ -49,7 +49,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=0,
     ),
     "logfile": Arg(
-        '--logfile',
+        '--logfile', '--log-file',
         help="Log to the file specified. Special values are: 'syslog', 'journald'. "
              "See the documentation for more details.",
         metavar='FILE',

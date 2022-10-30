@@ -1,5 +1,4 @@
 import logging
-import shutil
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -7,7 +6,7 @@ from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Literal, Tuple
 
 import numpy as np
 import pandas as pd
@@ -22,7 +21,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from freqtrade.freqai.utils import plot_feature_importance
+from freqtrade.freqai.utils import plot_feature_importance, record_params
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -62,6 +61,7 @@ class IFreqaiModel(ABC):
             "data_split_parameters", {})
         self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {})
+        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.retrain = False
         self.first = True
         self.set_full_path()
@@ -70,7 +70,6 @@ class IFreqaiModel(ABC):
         if self.save_backtest_models:
             logger.info('Backtesting module configured to save all models.')
         self.dd = FreqaiDataDrawer(Path(self.full_path), self.config, self.follow_mode)
-        self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
         self.keras: bool = self.freqai_info.get("keras", False)
@@ -100,12 +99,13 @@ class IFreqaiModel(ABC):
         self.strategy: Optional[IStrategy] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
 
+        record_params(config, self.full_path)
+
     def __getstate__(self):
         """
         Return an empty state to be pickled in hyperopt
         """
         return ({})
-        self.strategy: Optional[IStrategy] = None
 
     def assert_config(self, config: Config) -> None:
 
@@ -149,7 +149,7 @@ class IFreqaiModel(ABC):
         dataframe = dk.remove_features_from_df(dk.return_dataframe)
         self.clean_up()
         if self.live:
-            self.inference_timer('stop')
+            self.inference_timer('stop', metadata["pair"])
         return dataframe
 
     def clean_up(self):
@@ -210,29 +210,31 @@ class IFreqaiModel(ABC):
             (_, trained_timestamp, _) = self.dd.get_pair_dict_info(pair)
 
             dk = FreqaiDataKitchen(self.config, self.live, pair)
-            dk.set_paths(pair, trained_timestamp)
             (
                 retrain,
                 new_trained_timerange,
                 data_load_timerange,
             ) = dk.check_if_new_training_required(trained_timestamp)
-            dk.set_paths(pair, new_trained_timerange.stopts)
 
             if retrain:
                 self.train_timer('start')
+                dk.set_paths(pair, new_trained_timerange.stopts)
                 try:
                     self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
                 except Exception as msg:
-                    logger.warning(f'Training {pair} raised exception {msg}, skipping.')
+                    logger.warning(f"Training {pair} raised exception {msg.__class__.__name__}. "
+                                   f"Message: {msg}, skipping.")
 
-                self.train_timer('stop')
+                self.train_timer('stop', pair)
 
                 # only rotate the queue after the first has been trained.
                 self.train_queue.rotate(-1)
 
                 self.dd.save_historic_predictions_to_disk()
+                if self.freqai_info.get('write_metrics_to_disk', False):
+                    self.dd.save_metric_tracker_to_disk()
 
     def start_backtesting(
         self, dataframe: DataFrame, metadata: dict, dk: FreqaiDataKitchen
@@ -281,9 +283,7 @@ class IFreqaiModel(ABC):
             )
 
             trained_timestamp_int = int(trained_timestamp.stopts)
-            dk.data_path = Path(
-                dk.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp_int}"
-                )
+            dk.set_paths(pair, trained_timestamp_int)
 
             dk.set_new_model_names(pair, trained_timestamp)
 
@@ -540,14 +540,13 @@ class IFreqaiModel(ABC):
         return file_exists
 
     def set_full_path(self) -> None:
+        """
+        Creates and sets the full path for the identifier
+        """
         self.full_path = Path(
-            self.config["user_data_dir"] / "models" / f"{self.freqai_info['identifier']}"
+            self.config["user_data_dir"] / "models" / f"{self.identifier}"
         )
         self.full_path.mkdir(parents=True, exist_ok=True)
-        shutil.copy(
-            self.config["config_files"][0],
-            Path(self.full_path, Path(self.config["config_files"][0]).name),
-        )
 
     def extract_data_and_train_model(
         self,
@@ -616,11 +615,11 @@ class IFreqaiModel(ABC):
         If the user reuses an identifier on a subsequent instance,
         this function will not be called. In that case, "real" predictions
         will be appended to the loaded set of historic predictions.
-        :param: df: DataFrame = the dataframe containing the training feature data
-        :param: model: Any = A model which was `fit` using a common library such as
-        catboost or lightgbm
-        :param: dk: FreqaiDataKitchen = object containing methods for data analysis
-        :param: pair: str = current pair
+        :param df: DataFrame = the dataframe containing the training feature data
+        :param model: Any = A model which was `fit` using a common library such as
+                      catboost or lightgbm
+        :param dk: FreqaiDataKitchen = object containing methods for data analysis
+        :param pair: str = current pair
         """
 
         self.dd.historic_predictions[pair] = pred_df
@@ -671,7 +670,7 @@ class IFreqaiModel(ABC):
 
         return
 
-    def inference_timer(self, do='start'):
+    def inference_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
         the whitelist. This will check if the time spent is more than 1/4 the time
@@ -682,7 +681,10 @@ class IFreqaiModel(ABC):
             self.begin_time = time.time()
         elif do == 'stop':
             end = time.time()
-            self.inference_time += (end - self.begin_time)
+            time_spent = (end - self.begin_time)
+            if self.freqai_info.get('write_metrics_to_disk', False):
+                self.dd.update_metric_tracker('inference_time', time_spent, pair)
+            self.inference_time += time_spent
             if self.pair_it == self.total_pairs:
                 logger.info(
                     f'Total time spent inferencing pairlist {self.inference_time:.2f} seconds')
@@ -693,7 +695,7 @@ class IFreqaiModel(ABC):
                 self.inference_time = 0
         return
 
-    def train_timer(self, do='start'):
+    def train_timer(self, do: Literal['start', 'stop'] = 'start', pair: str = ''):
         """
         Timer designed to track the cumulative time spent training the full pairlist in
         FreqAI.
@@ -703,7 +705,11 @@ class IFreqaiModel(ABC):
             self.begin_time_train = time.time()
         elif do == 'stop':
             end = time.time()
-            self.train_time += (end - self.begin_time_train)
+            time_spent = (end - self.begin_time_train)
+            if self.freqai_info.get('write_metrics_to_disk', False):
+                self.dd.collect_metrics(time_spent, pair)
+
+            self.train_time += time_spent
             if self.pair_it_train == self.total_pairs:
                 logger.info(
                     f'Total time spent training pairlist {self.train_time:.2f} seconds')

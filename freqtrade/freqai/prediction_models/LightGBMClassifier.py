@@ -20,9 +20,8 @@ class LightGBMClassifier(BaseClassifierModel):
     def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
-        :params:
-        :data_dictionary: the dictionary constructed by DataHandler to hold
-        all the training and test data/labels.
+        :param data_dictionary: the dictionary constructed by DataHandler to hold
+                                all the training and test data/labels.
         """
 
         if self.freqai_info.get('data_split_parameters', {}).get('test_size', 0.1) == 0:
