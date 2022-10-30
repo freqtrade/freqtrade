@@ -98,6 +98,13 @@ class FreqaiDataDrawer:
                 "model_filename": "", "trained_timestamp": 0,
                 "data_path": "", "extras": {}}
         self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
+        self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
+        if 'rl_config' in self.freqai_info:
+            self.model_type = 'stable_baselines'
+            logger.warning('User indicated rl_config, FreqAI will now use stable_baselines3'
+                           ' to save models.')
+        else:
+            self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
     def update_metric_tracker(self, metric: str, value: float, pair: str) -> None:
         """
@@ -124,13 +131,6 @@ class FreqaiDataDrawer:
         self.update_metric_tracker('cpu_load1min', load1 / cpus, pair)
         self.update_metric_tracker('cpu_load5min', load5 / cpus, pair)
         self.update_metric_tracker('cpu_load15min', load15 / cpus, pair)
-        self.limit_ram_use = self.freqai_info.get('limit_ram_usage', False)
-        if 'rl_config' in self.freqai_info:
-            self.model_type = 'stable_baselines'
-            logger.warning('User indicated rl_config, FreqAI will now use stable_baselines3'
-                           ' to save models.')
-        else:
-            self.model_type = self.freqai_info.get('model_save_type', 'joblib')
 
     def load_drawer_from_disk(self):
         """
