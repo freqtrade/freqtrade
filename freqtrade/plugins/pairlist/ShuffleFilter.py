@@ -35,7 +35,7 @@ class ShuffleFilter(IPairList):
             logger.info(f"Backtesting mode detected, applying seed value: {self._seed}")
 
         self._random = random.Random(self._seed)
-        self._shuffle: ShuffleValues = pairlistconfig.get('shuffle', 'candle')
+        self._shuffle_freq: ShuffleValues = pairlistconfig.get('shuffle_frequency', 'candle')
         self.__pairlist_cache = PeriodicCache(
                     maxsize=1000, ttl=timeframe_to_seconds(self._config['timeframe']))
 
@@ -52,7 +52,7 @@ class ShuffleFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return (f"{self.name} - Shuffling pairs every {self._shuffle}" +
+        return (f"{self.name} - Shuffling pairs every {self._shuffle_freq}" +
                 (f", seed = {self._seed}." if self._seed is not None else "."))
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
@@ -65,7 +65,7 @@ class ShuffleFilter(IPairList):
         """
         pairlist_bef = tuple(pairlist)
         pairlist_new = self.__pairlist_cache.get(pairlist_bef)
-        if pairlist_new and self._shuffle == 'candle':
+        if pairlist_new and self._shuffle_freq == 'candle':
             # Use cached pairlist.
             return pairlist_new
         # Shuffle is done inplace

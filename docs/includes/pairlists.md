@@ -287,12 +287,12 @@ Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 -
 Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
 
 By default, ShuffleFilter will shuffle pairs once per candle.
-To shuffle on every iteration, set `"shuffle"` to `"iteration"` instead of  the default of `"candle"`.
+To shuffle on every iteration, set `"shuffle_frequency"` to `"iteration"` instead of  the default of `"candle"`.
 
 ``` json
     {
         "method": "ShuffleFilter", 
-        "shuffle": "candle",
+        "shuffle_frequency": "candle",
         "seed": 42
     }
 
