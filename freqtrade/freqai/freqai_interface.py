@@ -72,7 +72,7 @@ class IFreqaiModel(ABC):
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
-        self.corr_pairlist = self.ft_params.get("include_corr_pairlist", [])
+        self.corr_pairlist: List[str] = self.ft_params.get("include_corr_pairlist", [])
         self.keras: bool = self.freqai_info.get("keras", False)
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
