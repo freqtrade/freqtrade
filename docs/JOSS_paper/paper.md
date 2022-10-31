@@ -58,7 +58,7 @@ Forecasting chaotic time-series based systems, such as equity/cryptocurrency mar
 
 # Summary
 
-[`FreqAI`](https://www.freqtrade.io/en/latest/freqai/) evolved from a desire to test and compare a range of adaptive time-series forecasting methods on chaotic data. Cryptocurrency markets provide a unique data source since they are operational 24/7 and the data is freely available. Luckily, an existing open-source software, [`Freqtrade`](https://www.freqtrade.io/en/stable/), had already matured under a range of talented developers to support robust data collection/storage, as well as robust live environmental interactions for standard algorithmic trading. `Freqtrade` also provides a set of data analysis/visualization tools for the evaluation of historical performance as well as live environmental feedback. `FreqAI` builds on top of `Freqtrade` to include a user-friendly well tested interface for integrating external machine learning libraries for adaptive time-series forecasting. Beyond enabling the integration of existing libraries, `FreqAI` hosts a range of custom algorithms and methodologies aimed at improving computational and predictive performances. Thus, `FreqAI` contains a range of unique features which can be easily tested in combination with all the existing Python-accessible machine learning libraries to generate novel research on live and historical data. 
+[`FreqAI`](https://www.freqtrade.io/en/latest/freqai/) evolved from a desire to test and compare a range of adaptive time-series forecasting methods on chaotic data. Cryptocurrency markets provide a unique data source since they are operational 24/7 and the data is freely available via a variety of open-sourced [exchange APIs](https://docs.ccxt.com/en/latest/manual.html#exchange-structure). Luckily, an existing open-source software, [`Freqtrade`](https://www.freqtrade.io/en/stable/), had already matured under a range of talented developers to support robust data collection/storage, as well as robust live environmental interactions for standard algorithmic trading. `Freqtrade` also provides a set of data analysis/visualization tools for the evaluation of historical performance as well as live environmental feedback. `FreqAI` builds on top of `Freqtrade` to include a user-friendly well tested interface for integrating external machine learning libraries for adaptive time-series forecasting. Beyond enabling the integration of existing libraries, `FreqAI` hosts a range of custom algorithms and methodologies aimed at improving computational and predictive performances. Thus, `FreqAI` contains a range of unique features which can be easily tested in combination with all the existing Python-accessible machine learning libraries to generate novel research on live and historical data. 
 
 The high-level overview of the software is depicted in Figure 1.
 
@@ -81,14 +81,14 @@ which are all leveraged in `FreqAI` for users to use as templates or extend with
 
 Beyond the industry standard methods available through external libraries - `FreqAI` includes novel methods which are not available anywhere else in the open-source (or scientific) world. For example, `FreqAI` provides :
 
-* a custom algorithm/methodology for adaptive modeling
-* rapid and self-monitored feature engineering tools
-* unique model features/indicators
-* optimized data collection algorithms
-* safely integrated outlier detection methods
-* websocket communicated forecasts
+* a custom algorithm/methodology for adaptive modeling details [here](https://www.freqtrade.io/en/stable/freqai/#general-approach) and [here](https://www.freqtrade.io/en/stable/freqai-developers/#project-architecture)
+* rapid and self-monitored feature engineering tools, details [here](https://www.freqtrade.io/en/stable/freqai-feature-engineering/#feature-engineering)
+* unique model features/indicators, such as the [inlier metric](https://www.freqtrade.io/en/stable/freqai-feature-engineering/#inlier-metric)
+* optimized data collection/storage algorithms, all code shown [here](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/freqai/data_drawer.py)
+* safely integrated outlier detection methods, details [here](https://www.freqtrade.io/en/stable/freqai-feature-engineering/#outlier-detection)
+* websocket communicated forecasts, details [here](https://www.freqtrade.io/en/stable/producer-consumer/)
 
-Of particular interest for researchers, `FreqAI` provides the option of large scale experimentation via an optimized websocket communications interface.
+Of particular interest for researchers, `FreqAI` provides the option of large scale experimentation via an optimized [websocket communications interface](https://www.freqtrade.io/en/stable/producer-consumer/).
 
 ## Optimizing the back-end
 
@@ -105,7 +105,7 @@ Both of these modules and their respective data management systems are built on 
 * futures/leverage trading
 * dollar cost averaging
 * trading strategy handling
-* a variety of free data sources via CCXT (FTX, Binance, Kucoin etc.)
+* a variety of free data sources via [CCXT](https://docs.ccxt.com/en/latest/manual.html#exchange-structure) (FTX, Binance, Kucoin etc.)
 
 These features derive from a strong external developer community that shares in the benefit and stability of a communal CI (Continuous Integration) system. Beyond the developer community, `FreqAI` benefits strongly from the userbase of `Freqtrade`, where most `FreqAI` beta-testers/developers originated. This symbiotic relationship between `Freqtrade` and `FreqAI` ignited a thoroughly tested [`beta`](https://github.com/freqtrade/freqtrade/pull/6832), which demanded a four month beta and [comprehensive documentation](https://www.freqtrade.io/en/latest/freqai/) containing:
 
@@ -179,7 +179,7 @@ There are two other open-source tools which are geared toward helping users buil
 
 # On-going research
 
-Emergent Methods, based in Arvada CO, is actively using `FreqAI` to perform large scale experiments aimed at comparing machine learning libraries in live and historical environments. Past projects include backtesting parametric sweeps, while active projects include a 3 week live deployment comparison between `CatboosRegressor`, `LightGBMRegressor`, and `XGBoostRegressor`. Results from these studies are on track for publication in scientific journals as well as more general data science blogs (e.g. Medium).
+Emergent Methods, based in Arvada CO, is actively using `FreqAI` to perform large scale experiments aimed at comparing machine learning libraries in live and historical environments. Past projects include backtesting parametric sweeps, while active projects include a 3 week live deployment comparison between `CatboosRegressor`, `LightGBMRegressor`, and `XGBoostRegressor`. Results from these studies are planned for submission to scientific journals as well as more general data science blogs (e.g. Medium).
 
 # Installing and running `FreqAI`
 
