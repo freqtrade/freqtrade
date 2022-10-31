@@ -5,7 +5,7 @@
 Low level feature engineering is performed in the user strategy within a function called `populate_any_indicators()`. That function sets the `base features` such as, `RSI`, `MFI`, `EMA`, `SMA`, time of day, volume, etc. The `base features` can be custom indicators or they can be imported from any technical-analysis library that you can find. One important syntax rule is that all `base features` string names are prepended with `%-{pair}`, while labels/targets are prepended with `&`.
 
 !!! Note
-    Adding the full pair string, e.g. XYZ/USD, in the feature name enables improved performance for dataframe caching on the backend. If users elect *not* to add the full pair string in the feature string, FreqAI will operate in a reduced performance mode.
+    Adding the full pair string, e.g. XYZ/USD, in the feature name enables improved performance for dataframe caching on the backend. If you decide *not* to add the full pair string in the feature string, FreqAI will operate in a reduced performance mode.
 
 Meanwhile, high level feature engineering is handled within `"feature_parameters":{}` in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the `base_features` such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."
 
