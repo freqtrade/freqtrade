@@ -54,5 +54,5 @@ python-dateutil==2.8.2
 schedule==1.1.0
 
 #WS Messages
-websockets==10.3
+websockets==10.4
 janus==1.0.0
